@@ -1,0 +1,4 @@
+FPS CAP: true
+RESOLUTION: true
+FULLSCREEN: true
+VSYNC: true
