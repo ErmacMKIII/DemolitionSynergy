@@ -92,7 +92,7 @@ public class Block extends Model {
     private void readFromTxtFile(String fileName) {
         InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
         BufferedReader br = null;
-        try {            
+        try {
             br = new BufferedReader(new InputStreamReader(in));
             String line;
             while ((line = br.readLine()) != null) {
@@ -109,7 +109,7 @@ public class Block extends Model {
                     indices.add(Integer.parseInt(things[2]));
                     indices.add(Integer.parseInt(things[3]));
                 }
-            }            
+            }
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Block.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {

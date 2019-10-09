@@ -45,15 +45,15 @@ public class Game {
     public static final int RIGHT = 3;
 
     public static final float EPSILON = 0.001f;
-    
+
     private static int upsCap; // updates per second cap 
     private static int ups; // current update per second
     private static int fpsMax; // fps max or fps cap 
 
     private final Window myWindow;
-    private final GameTime gameTime; 
+    private final GameTime gameTime;
     private final Renderer renderer;
-    
+
     private boolean[] keys = new boolean[1024];
 
     private float lastX = 0.0f;
@@ -69,12 +69,13 @@ public class Game {
     private final boolean[] mouseButtons = new boolean[8];
 
     private static GLFWKeyCallback defaultKeyCallback;
-    private static GLFWCursorPosCallback defaultCursorCallback;    
-    
+    private static GLFWCursorPosCallback defaultCursorCallback;
+
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
-    
-    public static final Object OBJ = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
-    
+
+    public static final Object OBJ_MUTEX = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
+    public static final Object OBJ_UPS = new Object();
+
     public Game(int width, int height, String title, int upsCap, int fpsMax) {
         lastX = width / 2.0f;
         lastY = height / 2.0f;
@@ -86,10 +87,10 @@ public class Game {
         keys = new boolean[1024];
         initCallbacks();
         GL.setCapabilities(null);
-        Window.unloadContext();        
-    }   
+        Window.unloadContext();
+    }
 
-   private void observerDo() {
+    private void observerDo() {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             if (!renderer.getLevelRenderer().hasCollisionWithCritter(renderer.getLevelRenderer().getObserver(), AMOUNT, FORWARD)) {
                 renderer.getLevelRenderer().getObserver().moveForward(AMOUNT);
@@ -247,7 +248,7 @@ public class Game {
                 blockColorNum = 0;
             }
         }
-    }    
+    }
 
     private void initCallbacks() {
         GLFWErrorCallback.createPrint(System.err).set();
@@ -320,44 +321,44 @@ public class Game {
                 }
             }
         });
-    }   
-    
-    public void go() {                                
+    }
+
+    public void go() {
         gameTime.start(); // start the game time 
         renderer.start(); // start the renderer
-                
+
         long timer0 = System.currentTimeMillis();
 
-        ups = 0;                        
-                
-        while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {            
-            synchronized (OBJ) {
+        ups = 0;
+
+        while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
+            synchronized (OBJ_UPS) {
                 try {
-                    OBJ.wait();
+                    OBJ_UPS.wait();
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                
+            }
+            synchronized (OBJ_MUTEX) {
                 myWindow.loadContext();
-                GL.setCapabilities(MasterRenderer.getGlCaps());                                                
-                
+                GL.setCapabilities(MasterRenderer.getGlCaps());
+
                 while (GameTime.getUpsDelta() >= 1.0) { // ensurance that this will go 80*diff -> 80 times per second                
                     GLFW.glfwPollEvents();
                     observerDo();
                     editorDo();
                     ups++;
                     GameTime.decUpsDelta();
-                }                                    
+                }
 
-                if (System.currentTimeMillis() > timer0 + 1000) {             
-                    ups = 0;                
+                if (System.currentTimeMillis() > timer0 + 1000) {
+                    ups = 0;
                     timer0 += 1000;
                 }
-                
+
                 GL.setCapabilities(null);
-                Window.unloadContext();                            
+                Window.unloadContext();
             }
-            
         }
         try {
             gameTime.join(); // waits for gameTime to finish life
@@ -383,18 +384,18 @@ public class Game {
 
     public static int getUps() {
         return ups;
-    }        
-    
+    }
+
     public static int getFpsMax() {
         return fpsMax;
     }
 
     public static void setFpsMax(int fpsMax) {
         Game.fpsMax = fpsMax;
-    }    
-
-    public static Object getOBJ() {
-        return OBJ;
     }
-        
+
+    public static Object getOBJ_MUTEX() {
+        return OBJ_MUTEX;
+    }
+
 }

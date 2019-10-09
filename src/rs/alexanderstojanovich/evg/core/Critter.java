@@ -36,7 +36,7 @@ public class Critter {
         this.model = new Model(modelFileName, textureFileName, shaderProgram);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
-        this.model.setLight(camera.getPos());        
+        this.model.setLight(camera.getPos());
         initModelPos();
     }
 
@@ -52,8 +52,8 @@ public class Critter {
         model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f)));
     }
 
-    public void moveForward(float amount) {        
-        if (givenControl) {         
+    public void moveForward(float amount) {
+        if (givenControl) {
             camera.moveForward(amount);
             model.setPos(model.getPos().add(camera.getFront().mul(amount)));
         }

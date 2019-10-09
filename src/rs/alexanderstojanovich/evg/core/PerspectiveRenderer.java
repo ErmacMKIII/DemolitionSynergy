@@ -43,7 +43,7 @@ public class PerspectiveRenderer {
         // LH is for OpenGL way, it's required..
         projectionMatrix = new Matrix4f().setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
         FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
-        projectionMatrix.get(fb);          
+        projectionMatrix.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
     }
@@ -57,7 +57,7 @@ public class PerspectiveRenderer {
     public Window getMyWindow() {
         return myWindow;
     }
-   
+
     public ShaderProgram getShaderProgram() {
         return shaderProgram;
     }

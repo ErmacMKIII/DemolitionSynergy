@@ -69,25 +69,27 @@ public class Model implements Comparable<Model> {
     protected float rY = 0.0f;
     protected float rZ = 0.0f;
 
-    protected Vector4f primaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);;
+    protected Vector4f primaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    ;
     protected Vector4f secondaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     protected Vector4f tertiaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    protected Vector3f light = new Vector3f();;
+    protected Vector3f light = new Vector3f();
+    ;
 
     protected boolean passable = false; // is movement through this model possible
     // fluid models are passable whilst solid ones aren't               
 
     public Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
-        
+
     }
 
     public Model(String modelFileName) {
-        this.modelFileName = modelFileName;        
+        this.modelFileName = modelFileName;
         readFromObjFile(modelFileName);
         bufferVertices();
-        bufferIndices();       
-        calcDims();        
+        bufferIndices();
+        calcDims();
     }
 
     public Model(String modelFileName, ShaderProgram shaderProgram) {
@@ -96,35 +98,35 @@ public class Model implements Comparable<Model> {
         bufferVertices();
         bufferIndices();
         this.shaderProgram = shaderProgram;
-        this.pos = new Vector3f();        
-        calcDims();               
+        this.pos = new Vector3f();
+        calcDims();
     }
 
-    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram) {       
-        this.modelFileName = modelFileName;
-        this.primaryTexture = new Texture(textureFileName);
-        readFromObjFile(modelFileName);
-        bufferVertices();
-        bufferIndices();
-        this.shaderProgram = shaderProgram; 
-        calcDims();        
-    }
-
-    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {        
+    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram) {
         this.modelFileName = modelFileName;
         this.primaryTexture = new Texture(textureFileName);
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
         this.shaderProgram = shaderProgram;
-        this.pos = pos;        
-        calcDims();        
-        this.primaryColor = primaryColor;        
+        calcDims();
+    }
+
+    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
+        this.modelFileName = modelFileName;
+        this.primaryTexture = new Texture(textureFileName);
+        readFromObjFile(modelFileName);
+        bufferVertices();
+        bufferIndices();
+        this.shaderProgram = shaderProgram;
+        this.pos = pos;
+        calcDims();
+        this.primaryColor = primaryColor;
         this.passable = passable;
     }
 
     private void readFromObjFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);        
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));
@@ -154,13 +156,13 @@ public class Model implements Comparable<Model> {
                     }
                 }
             }
-        
+
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Model.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(Model.class.getName()).log(Level.SEVERE, null, ex);
         }
-        if (br != null) {                
+        if (br != null) {
             try {
                 br.close();
             } catch (IOException ex) {
@@ -283,8 +285,8 @@ public class Model implements Comparable<Model> {
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
         Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);        
-        modelMatrix.get(fb);           
+        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
+        modelMatrix.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
     }

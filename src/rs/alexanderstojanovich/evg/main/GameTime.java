@@ -24,61 +24,69 @@ import rs.alexanderstojanovich.evg.core.Window;
  * @author Coa
  */
 public class GameTime extends Thread { // serves for measuring the time amongs the threads
+
     private final Window myWindow;
     private static double lastTime = GLFW.glfwGetTime();
     private static double currTime = 0.0;
-    
+
     private static double diff = 0.0; // shows current global game time
 
-    private static double upsDelta = 0.0; // for main thread
-    private static double fpsDelta = 0.0; // for renderer thread
-    
-    
+    private static double upsDelta = 0; // for main thread
+    private static double fpsDelta = 0; // for renderer thread
+
     public GameTime(Window myWindow) {
+        super("GameTime");
         this.myWindow = myWindow;
-    }           
-    
+    }
+
     @Override
     public void run() {
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized(Game.OBJ) {         
+            synchronized (Game.OBJ_MUTEX) {
                 currTime = GLFW.glfwGetTime();
-                diff = currTime - lastTime;                                          
+                diff = currTime - lastTime;
                 upsDelta += diff * Game.getUpsCap(); // default upsCap=80
                 if (upsDelta >= 1.0) {
-                    Game.OBJ.notifyAll();
-                }           
+                    synchronized (Game.OBJ_UPS) {
+                        Game.OBJ_UPS.notify();
+                    }
+                }
                 fpsDelta += diff * Game.getFpsMax(); // default fpsMax=100            
                 if (fpsDelta >= 1.0) {
-                    Game.OBJ.notifyAll();
-                }            
-                lastTime = currTime;                
+                    synchronized (Renderer.OBJ_FPS) {
+                        Renderer.OBJ_FPS.notify();
+                    }
+                }
+                lastTime = currTime;
             }
         }
         // last time for everyone to wake up before finish
-        synchronized(Game.OBJ) {
-            Game.OBJ.notifyAll();
+        synchronized (Game.OBJ_UPS) {
+            Game.OBJ_UPS.notify();
+        }
+        synchronized (Renderer.OBJ_FPS) {
+            Renderer.OBJ_FPS.notify();
         }
     }
-    
+
     public static void decUpsDelta() {
         upsDelta--;
     }
-    
+
     public static void decFpsDelta() {
         fpsDelta--;
     }
-               
+
     public Window getMyWindow() {
         return myWindow;
-    }    
+    }
 
     public static double getUpsDelta() {
         return upsDelta;
     }
-    
+
     public static double getFpsDelta() {
         return fpsDelta;
-    }    
-          
+    }
+
 }

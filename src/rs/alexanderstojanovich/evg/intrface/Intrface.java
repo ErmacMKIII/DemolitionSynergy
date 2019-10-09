@@ -30,9 +30,9 @@ import rs.alexanderstojanovich.evg.main.Game;
  * @author Coa
  */
 public class Intrface {
-    
+
     private final Window myWindow;
-    
+
     private Quad crosshair;
     private Text infoText;
     private Text collText;
@@ -49,13 +49,13 @@ public class Intrface {
     private Menu editorMenu;
 
     private final LevelRenderer levelRenderer;
-    
+
     public Intrface(Window myWindow, LevelRenderer levelRenderer) {
         this.myWindow = myWindow;
         this.levelRenderer = levelRenderer;
         initIntrface();
     }
-            
+
     private void initIntrface() {
         infoText = new Text(myWindow, "consolas.png", "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.95f, 0.95f));
         collText = new Text(myWindow, "consolas.png", "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.95f, -0.95f));
@@ -235,7 +235,7 @@ public class Intrface {
             }
         };
     }
-    
+
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
@@ -249,7 +249,7 @@ public class Intrface {
             collText.getColor().z = 0.0f;
         }
     }
-    
+
     public void toggleShowHelp() {
         showHelp = !showHelp;
         if (showHelp) {
@@ -262,7 +262,7 @@ public class Intrface {
             crosshair.setEnabled(true);
         }
     }
-    
+
     public void render() {
         commandDialog.render();
         saveDialog.render();
@@ -333,5 +333,5 @@ public class Intrface {
     public void setShowHelp(boolean showHelp) {
         this.showHelp = showHelp;
     }
-        
+
 }

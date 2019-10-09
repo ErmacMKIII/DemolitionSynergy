@@ -44,7 +44,7 @@ public class Quad {
         this.myWindow = window;
         this.width = width;
         this.height = height;
-        this.texture = new Texture(textureFileName);        
+        this.texture = new Texture(textureFileName);
     }
 
     public Quad(Window window, float width, float height, Texture texture) {

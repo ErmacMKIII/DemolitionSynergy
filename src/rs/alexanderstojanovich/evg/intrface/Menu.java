@@ -69,7 +69,7 @@ public abstract class Menu {
         this.title = new Text(myWindow, textureFileName, title);
         this.scale = 1.0f;
         this.title.setScale(scale);
-        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));                                
+        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         readFromFile(fileName, textureFileName);
         Texture mngTexture = new Texture("minigun.png");
         quad = new Quad(window, 27, 27, mngTexture);
@@ -88,7 +88,7 @@ public abstract class Menu {
         this.title.setScale(this.scale);
         this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.enabled = false;
-        this.pos = pos;                        
+        this.pos = pos;
         readFromFile(fileName, textureFileName);
         Texture mngTexture = new Texture("minigun.png");
         quad = new Quad(window, 27, 27, mngTexture);

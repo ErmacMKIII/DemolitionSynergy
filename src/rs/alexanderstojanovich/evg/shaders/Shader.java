@@ -54,7 +54,7 @@ public class Shader {
         StringBuilder text = new StringBuilder();
         InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
         BufferedReader br = null;
-        try {            
+        try {
             br = new BufferedReader(new InputStreamReader(in));
             String line;
             while ((line = br.readLine()) != null) {

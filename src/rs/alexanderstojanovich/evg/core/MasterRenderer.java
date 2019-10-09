@@ -32,8 +32,8 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class MasterRenderer {
 
     private static GLCapabilities glCaps;
-    private final Window myWindow;    
-    
+    private final Window myWindow;
+
     private ShaderProgram shaderProgram;
 
     public MasterRenderer(Window window) {
@@ -69,22 +69,22 @@ public class MasterRenderer {
         shaders.add(vertexShader);
         shaders.add(fragmentShader);
         shaderProgram = new ShaderProgram(shaders);
-    }     
-    
+    }
+
     public void render() {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
     public static GLCapabilities getGlCaps() {
         return glCaps;
-    }   
+    }
 
     public Window getMyWindow() {
         return myWindow;
-    }    
+    }
 
     public ShaderProgram getShaderProgram() {
         return shaderProgram;
-    }    
+    }
 
 }

@@ -49,7 +49,7 @@ public class Window {
     public Window(int width, int height, String title) {
         this.width = width;
         this.height = height;
-        this.title = title;        
+        this.title = title;
         init(width, height, title);
     }
 
@@ -203,6 +203,6 @@ public class Window {
 
     public int getMIN_HEIGHT() {
         return MIN_HEIGHT;
-    }    
+    }
 
 }

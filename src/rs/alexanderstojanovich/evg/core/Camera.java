@@ -40,25 +40,24 @@ public class Camera { // is 3D looking camera
     public static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
 
     // three vectors determining exact camera position aka camera vectors
-    private Vector3f front; 
+    private Vector3f front;
     private Vector3f up;
     private Vector3f right;
 
-    
     private float yaw = (float) (-Math.PI / 2); // sideways look angle
     private float pitch = 0.0f; // up and down look angle
 
     public Camera(ShaderProgram shaderProgram) {
         this.pos = new Vector3f();
-        this.shaderProgram = shaderProgram;        
-        
+        this.shaderProgram = shaderProgram;
+
         this.front = Z_AXIS;
         this.up = Y_AXIS;
         this.right = X_AXIS;
     }
 
     public Camera(Vector3f pos, ShaderProgram shaderProgram) {
-        this.pos = pos;        
+        this.pos = pos;
         this.shaderProgram = shaderProgram;
 
         this.front = Z_AXIS;
@@ -72,29 +71,29 @@ public class Camera { // is 3D looking camera
 
         this.front = front;
         this.up = up;
-        this.right = right;        
+        this.right = right;
     }
 
     private void updateViewMatrix() {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);        
-        viewMatrix.get(fb);        
+        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
+        viewMatrix.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "viewMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
     }
 
-    private void updateCameraVectors() {  
+    private void updateCameraVectors() {
         Vector3f temp1 = new Vector3f();
         front = front.normalize(temp1);
         Vector3f temp2 = new Vector3f();
         right = Y_AXIS.cross(front, temp2).normalize(temp2);
         Vector3f temp3 = new Vector3f();
-        up = front.cross(right, temp3).normalize(temp3);        
+        up = front.cross(right, temp3).normalize(temp3);
     }
 
     private void calcViewMatrix() {
         updateCameraVectors();
-        Vector3f temp = new Vector3f();        
-        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);        
+        Vector3f temp = new Vector3f();
+        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }
 
     private void updateCameraPosition() {
@@ -109,30 +108,30 @@ public class Camera { // is 3D looking camera
 
     public void moveForward(float amount) {
         updateCameraVectors();
-        Vector3f temp = new Vector3f();        
-        pos = pos.add(front.mul(amount, temp), temp);                 
+        Vector3f temp = new Vector3f();
+        pos = pos.add(front.mul(amount, temp), temp);
     }
 
     public void moveBackward(float amount) {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
-        pos = pos.sub(front.mul(amount, temp), temp);       
+        pos = pos.sub(front.mul(amount, temp), temp);
     }
 
     public void moveLeft(float amount) {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
-        pos = pos.sub(right.mul(amount, temp), temp);        
+        pos = pos.sub(right.mul(amount, temp), temp);
     }
 
     public void moveRight(float amount) {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
-        pos = pos.add(right.mul(amount, temp), temp);        
+        pos = pos.add(right.mul(amount, temp), temp);
     }
 
     public void turnLeft(float angle) {
-        lookAt((float) (yaw - angle), pitch);        
+        lookAt((float) (yaw - angle), pitch);
     }
 
     public void turnRight(float angle) {
@@ -167,14 +166,14 @@ public class Camera { // is 3D looking camera
         updateCameraVectors();
     }
 
-    public void render() {               
+    public void render() {
         calcViewMatrix();
         shaderProgram.bind();
         updateViewMatrix();
         updateCameraPosition();
         updateCameraFront();
         ShaderProgram.unbind();
-    }   
+    }
 
     public boolean intersects(Model model) {
         boolean coll = false;
@@ -191,7 +190,7 @@ public class Camera { // is 3D looking camera
         boolean yea = false;
         for (Vertex vertex : model.getVertices()) {
             Vector3f temp = new Vector3f();
-            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);                        
+            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
             if (vx.dot(front) >= 0.5) {
                 yea = true;
                 break;

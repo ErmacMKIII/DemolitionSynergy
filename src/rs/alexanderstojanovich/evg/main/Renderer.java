@@ -32,14 +32,18 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
  * @author Coa
  */
 public class Renderer extends Thread {
-    
+
     private final Window myWindow;
     private final MasterRenderer masterRenderer;
     private final PerspectiveRenderer perspectiveRenderer;
     private final LevelRenderer levelRenderer;
     private final WaterRenderer waterRenderer;
-    private final Intrface intrface;        
-    
+    private final Intrface intrface;
+
+    public static final Object OBJ_FPS = new Object();
+
+    public static final int FPS_POWER = 100;
+
     public Renderer(Window myWindow) {
         super("Renderer");
         this.myWindow = myWindow;
@@ -47,33 +51,35 @@ public class Renderer extends Thread {
         perspectiveRenderer = new PerspectiveRenderer(myWindow, masterRenderer.getShaderProgram());
         levelRenderer = new LevelRenderer(masterRenderer.getShaderProgram());
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-        intrface = new Intrface(myWindow, levelRenderer);        
+        intrface = new Intrface(myWindow, levelRenderer);
     }
-    
+
     @Override
-    public void run() {                                
-        
+    public void run() {
+
         long timer0 = System.currentTimeMillis();
         long timer1 = System.currentTimeMillis();
         long timer2 = System.currentTimeMillis();
-        
-        int fps = 0;                         
-        while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {            
-            synchronized (Game.OBJ) {
+
+        int fps = 0;
+        while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
+            synchronized (OBJ_FPS) {
                 try {
-                    Game.OBJ.wait();
+                    OBJ_FPS.wait();
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                myWindow.loadContext();                                                                
-                GL.setCapabilities(MasterRenderer.getGlCaps());                                                 
-                
+            }
+            synchronized (Game.OBJ_MUTEX) {
+                myWindow.loadContext();
+                GL.setCapabilities(MasterRenderer.getGlCaps());
+
                 if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
                     masterRenderer.render();
-                    perspectiveRenderer.render();    
-                    levelRenderer.render(levelRenderer.getObserver().getCamera());    
-                    waterRenderer.render();        
-                    intrface.render();        
+                    perspectiveRenderer.render();
+                    levelRenderer.render(levelRenderer.getObserver().getCamera());
+                    waterRenderer.render();
+                    intrface.render();
                     myWindow.render();
                     fps++;
                     GameTime.decFpsDelta();
@@ -83,7 +89,7 @@ public class Renderer extends Thread {
                     intrface.getInfoText().getColor().x = 0.0f;
                     intrface.getInfoText().getColor().y = 1.0f;
                     intrface.getInfoText().getColor().z = 0.0f;
-                    intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);                
+                    intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
                     fps = 0;
                     timer0 += 1000;
                 }
@@ -104,13 +110,12 @@ public class Renderer extends Thread {
                 if (System.currentTimeMillis() > timer2 + 250) {
                     levelRenderer.animate();
                     timer2 += 250;
-                }      
-                
+                }
+
                 GL.setCapabilities(null);
-                Window.unloadContext();                
-            }                   
+                Window.unloadContext();
+            }
         }
-        
     }
 
     public Window getMyWindow() {
@@ -136,5 +141,5 @@ public class Renderer extends Thread {
     public Intrface getIntrface() {
         return intrface;
     }
-        
+
 }

@@ -68,19 +68,18 @@ public class Editor {
     public static void selectCurr(LevelRenderer levelRenderer) {
         deselect(); // algorithm is select the nearest that interesects the camera ray
         if (!levelRenderer.getSolidBlocks().isEmpty() || !levelRenderer.getFluidBlocks().isEmpty()) {
-            Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();            
+            Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();
             float minDistanceOfSolid = Float.POSITIVE_INFINITY;
-            float minDistanceOfFluid = Float.POSITIVE_INFINITY;                
-            
+            float minDistanceOfFluid = Float.POSITIVE_INFINITY;
+
             Block minSolid = null;
             Block minFluid = null;
             for (Block solidBlock : levelRenderer.getSolidBlocks()) {
-                Vector3f vect = solidBlock.getPos();                
+                Vector3f vect = solidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (solidBlock.intersectsRay(
-                        levelRenderer.getObserver().getCamera().getFront(), 
-                        levelRenderer.getObserver().getCamera().getPos())
-                        ) {
+                        levelRenderer.getObserver().getCamera().getFront(),
+                        levelRenderer.getObserver().getCamera().getPos())) {
                     if (distance < minDistanceOfSolid) {
                         minDistanceOfSolid = distance;
                         minSolid = solidBlock;
@@ -92,9 +91,8 @@ public class Editor {
                 Vector3f vect = fluidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (fluidBlock.intersectsRay(
-                        levelRenderer.getObserver().getCamera().getFront(), 
-                        levelRenderer.getObserver().getCamera().getPos())
-                        ) {
+                        levelRenderer.getObserver().getCamera().getFront(),
+                        levelRenderer.getObserver().getCamera().getPos())) {
                     if (distance < minDistanceOfFluid) {
                         minDistanceOfFluid = distance;
                         minFluid = fluidBlock;

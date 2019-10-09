@@ -60,7 +60,7 @@ public class LevelRenderer {
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", "marble.png", shaderProgram, new Vector3f(10.5f, 0, -3), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);        
+        observer = new Critter("icosphere.obj", "marble.png", shaderProgram, new Vector3f(10.5f, 0, -3), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         solidBlocks.clear();
         fluidBlocks.clear();
@@ -322,16 +322,16 @@ public class LevelRenderer {
             Editor.selectedNew.render();
         }
 
-        for (int i = 0; i < solidBlocks.size(); i++) {
-            if (camera.doesSee(solidBlocks.get(i))) {
-                solidBlocks.get(i).setLight(camera.getPos());
-                solidBlocks.get(i).render();
+        for (Block solidBlock : solidBlocks) {
+            if (camera.doesSee(solidBlock)) {
+                solidBlock.setLight(camera.getPos());
+                solidBlock.render();
             }
         }
-        for (int i = 0; i < fluidBlocks.size(); i++) {
-            if (camera.doesSee(fluidBlocks.get(i))) {
-                fluidBlocks.get(i).setLight(camera.getPos());
-                fluidBlocks.get(i).render();
+        for (Block fluidBlock : fluidBlocks) {
+            if (camera.doesSee(fluidBlock)) {
+                fluidBlock.setLight(camera.getPos());
+                fluidBlock.render();
             }
         }
     }

@@ -17,10 +17,11 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.ArrayList;
-import rs.alexanderstojanovich.evg.models.Block;
+import java.util.List;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
+import rs.alexanderstojanovich.evg.models.Block;
 
 /**
  *
@@ -30,7 +31,7 @@ public class WaterRenderer {
 
     private final Window myWindow;
     private final LevelRenderer levelRenderer;
-    private ArrayList<Float> waterHeights;
+    private List<Float> waterHeights = new ArrayList<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
 //    private Quad quad;
@@ -39,7 +40,6 @@ public class WaterRenderer {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
-        this.waterHeights = new ArrayList<>();
         this.camera = new Camera(this.levelRenderer.getShaderProgram());
 //        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
 //        this.quad.setScale(0.25f);
@@ -49,14 +49,14 @@ public class WaterRenderer {
 
     private void refresh() {
         waterHeights.clear();
-        for (int i = 0; i < levelRenderer.getFluidBlocks().size(); i++) {
-            if (levelRenderer.getFluidBlocks().get(i).getEnabledFaces()[Block.TOP]) {
-                levelRenderer.getFluidBlocks().get(i).setTertiaryTexture(frameBuffer.getTexture());
-                if (!waterHeights.contains(levelRenderer.getFluidBlocks().get(i).giveSurfacePos())) {
-                    waterHeights.add(levelRenderer.getFluidBlocks().get(i).giveSurfacePos());
+        for (Block fluidBlock : levelRenderer.getFluidBlocks()) {
+            if (fluidBlock.getEnabledFaces()[Block.TOP]) {
+                fluidBlock.setTertiaryTexture(frameBuffer.getTexture());
+                if (!waterHeights.contains(fluidBlock.giveSurfacePos())) {
+                    waterHeights.add(fluidBlock.giveSurfacePos());
                 }
             } else {
-                levelRenderer.getFluidBlocks().get(i).setTertiaryTexture(null);
+                fluidBlock.setTertiaryTexture(null);
             }
         }
     }
@@ -72,7 +72,7 @@ public class WaterRenderer {
 
     private void updateCamera(float waterHeight) {
         camera.getPos().x = levelRenderer.getObserver().getCamera().getPos().x;
-        camera.getPos().y = 2 * waterHeight - levelRenderer.getObserver().getCamera().getPos().y;
+        camera.getPos().y = 2.0f * waterHeight - levelRenderer.getObserver().getCamera().getPos().y;
         camera.getPos().z = levelRenderer.getObserver().getCamera().getPos().z;
         camera.lookAt(levelRenderer.getObserver().getCamera().getYaw(), -levelRenderer.getObserver().getCamera().getPitch());
     }
@@ -90,21 +90,23 @@ public class WaterRenderer {
 
     public void render() {
         refresh();
-        for (int i = 0; i < waterHeights.size(); i++) {
-            capture(waterHeights.get(i));
+        float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
+        for (float height : waterHeights) {
+            if (height <= obsHeight) {
+                capture(height);
+            }
         }
-//        quad.renderReversed();
     }
 
     public Window getMyWindow() {
         return myWindow;
-    }   
+    }
 
     public LevelRenderer getLevelRenderer() {
         return levelRenderer;
     }
-   
-    public ArrayList<Float> getWaterHeights() {
+
+    public List<Float> getWaterHeights() {
         return waterHeights;
     }
 
@@ -115,11 +117,11 @@ public class WaterRenderer {
     public FrameBuffer getFrameBuffer() {
         return frameBuffer;
     }
-   
+
     public Camera getCamera() {
         return camera;
     }
-   
+
 //    public Quad getQuad() {
 //        return quad;
 //    }

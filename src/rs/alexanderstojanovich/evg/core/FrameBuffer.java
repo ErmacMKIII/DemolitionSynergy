@@ -74,10 +74,10 @@ public class FrameBuffer {
     public Window getMyWindow() {
         return myWindow;
     }
-    
+
     public int getFbo() {
         return fbo;
-    }  
+    }
 
     public Texture getTexture() {
         return texture;
