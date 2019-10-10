@@ -40,6 +40,8 @@ public class Quad {
     private Vector2f pos = new Vector2f();
     private boolean enabled = true;
 
+    private boolean ignoreFactor = false;
+
     public Quad(Window window, float width, float height, String textureFileName) {
         this.myWindow = window;
         this.width = width;
@@ -52,6 +54,22 @@ public class Quad {
         this.width = width;
         this.height = height;
         this.texture = texture;
+    }
+
+    public Quad(Window window, float width, float height, String textureFileName, boolean ignoreFactor) {
+        this.myWindow = window;
+        this.width = width;
+        this.height = height;
+        this.texture = new Texture(textureFileName);
+        this.ignoreFactor = ignoreFactor;
+    }
+
+    public Quad(Window window, float width, float height, Texture texture, boolean ignoreFactor) {
+        this.myWindow = window;
+        this.width = width;
+        this.height = height;
+        this.texture = texture;
+        this.ignoreFactor = ignoreFactor;
     }
 
     public void render() {
@@ -109,11 +127,13 @@ public class Quad {
     }
 
     public float giveRelativeWidth() {
-        return width * scale / myWindow.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
+        return width * widthFactor * scale / myWindow.getWidth();
     }
 
     public float giveRelativeHeight() {
-        return height * scale / myWindow.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
+        return height * heightFactor * scale / myWindow.getHeight();
     }
 
     public Window getWindow() {
@@ -160,10 +180,6 @@ public class Quad {
         return myWindow;
     }
 
-    public void setMyWindow(Window myWindow) {
-        this.myWindow = myWindow;
-    }
-
     public float getScale() {
         return scale;
     }
@@ -182,6 +198,14 @@ public class Quad {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public boolean isIgnoreFactor() {
+        return ignoreFactor;
+    }
+
+    public void setIgnoreFactor(boolean ignoreFactor) {
+        this.ignoreFactor = ignoreFactor;
     }
 
 }

@@ -50,6 +50,8 @@ public class Intrface {
 
     private final LevelRenderer levelRenderer;
 
+    public static final String FONT_IMG = "hack.png";
+
     public Intrface(Window myWindow, LevelRenderer levelRenderer) {
         this.myWindow = myWindow;
         this.levelRenderer = levelRenderer;
@@ -57,15 +59,15 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new Text(myWindow, "consolas.png", "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.95f, 0.95f));
-        collText = new Text(myWindow, "consolas.png", "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.95f, -0.95f));
-        helpText = new Text(myWindow, "consolas.png", "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.95f, 0.75f));
+        infoText = new Text(myWindow, FONT_IMG, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
+        collText = new Text(myWindow, FONT_IMG, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
+        helpText = new Text(myWindow, FONT_IMG, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.75f));
         helpText.setContent(Text.readFromFile("help.txt"));
         helpText.setEnabled(false);
 
-        crosshair = new Quad(myWindow, 27, 27, "crosshairUltimate.png");
+        crosshair = new Quad(myWindow, 27, 27, "crosshairUltimate.png", true); // it ignores resolution changes and doesn't scale
 
-        mainMenu = new Menu(myWindow, "", "mainMenu.txt", "consolas.png", new Vector2f(-0.5f, 0.5f), 2.0f) {
+        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
 
@@ -88,10 +90,13 @@ public class Intrface {
             }
         };
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
-        Quad logo = new Quad(myWindow, 180, 100, "ds_acro.png");
+        Quad logo = new Quad(myWindow, 180, 100, "ds_title_gray.png");
+        logo.getColor().x = 1.0f;
+        logo.getColor().y = 0.7f;
+        logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
 
-        commandDialog = new Dialog(myWindow, "consolas.png", new Vector2f(-0.95f, 0.85f)) {
+        commandDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 boolean success = true;
@@ -137,7 +142,7 @@ public class Intrface {
             }
         };
 
-        saveDialog = new Dialog(myWindow, "consolas.png", new Vector2f(-0.95f, 0.85f)) {
+        saveDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -145,7 +150,7 @@ public class Intrface {
             }
         };
 
-        loadDialog = new Dialog(myWindow, "consolas.png", new Vector2f(-0.95f, 0.85f)) {
+        loadDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -153,7 +158,7 @@ public class Intrface {
             }
         };
 
-        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", "consolas.png", new Vector2f(-0.5f, 0.5f), 2.0f) {
+        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -203,7 +208,7 @@ public class Intrface {
                 }
             }
         };
-        Object[] fpsCaps = {35, 60, 75, 100, 200};
+        Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
         Object[] resolutions = myWindow.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
         optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
@@ -212,7 +217,7 @@ public class Intrface {
         optionsMenu.getOptions()[3] = new Combo(swtch, 0);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_RIGHT);
 
-        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", "consolas.png", new Vector2f(-0.5f, 0.5f), 2.0f) {
+        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();

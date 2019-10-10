@@ -43,8 +43,8 @@ public class Window {
     private boolean vsync = false;
     private boolean fullscreen = false;
 
-    public final int MIN_WIDTH = 640;
-    public final int MIN_HEIGHT = 480;
+    public static final int MIN_WIDTH = 640;
+    public static final int MIN_HEIGHT = 480;
 
     public Window(int width, int height, String title) {
         this.width = width;
@@ -195,14 +195,6 @@ public class Window {
 
     public boolean isFullscreen() {
         return fullscreen;
-    }
-
-    public int getMIN_WIDTH() {
-        return MIN_WIDTH;
-    }
-
-    public int getMIN_HEIGHT() {
-        return MIN_HEIGHT;
     }
 
 }

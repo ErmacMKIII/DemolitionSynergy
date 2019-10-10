@@ -78,8 +78,8 @@ public class Text {
         this.content = content;
         this.color = new Vector3f(1.0f, 1.0f, 1.0f);
         this.pos = new Vector2f();
-        this.charWidth = 27;
-        this.charHeight = 27;
+        this.charWidth = 24;
+        this.charHeight = 24;
         this.scale = 1.0f;
         this.enabled = true;
     }
@@ -90,8 +90,8 @@ public class Text {
         this.content = content;
         this.color = color;
         this.pos = pos;
-        this.charWidth = 27;
-        this.charHeight = 27;
+        this.charWidth = 24;
+        this.charHeight = 24;
         this.scale = 1.0f;
         this.enabled = true;
     }
@@ -154,11 +154,13 @@ public class Text {
     }
 
     public float giveRelativeWidth() {
-        return scale * charWidth / myWindow.getWidth();
+        float widthFactor = myWindow.getWidth() / Window.MIN_WIDTH;
+        return scale * widthFactor * charWidth / myWindow.getWidth();
     }
 
     public float giveRelativeHeight() {
-        return scale * charHeight / myWindow.getHeight();
+        float heightFactor = myWindow.getHeight() / Window.MIN_HEIGHT;
+        return scale * heightFactor * charHeight / myWindow.getHeight();
     }
 
     public Window getMyWindow() {
