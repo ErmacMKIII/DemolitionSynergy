@@ -146,7 +146,8 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
-                return (levelRenderer.saveLevelToFile(command));
+                levelRenderer.saveLevelToFile(command);
+                return true;
             }
         };
 

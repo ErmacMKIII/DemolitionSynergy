@@ -70,12 +70,10 @@ public class Model implements Comparable<Model> {
     protected float rZ = 0.0f;
 
     protected Vector4f primaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    ;
     protected Vector4f secondaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     protected Vector4f tertiaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     protected Vector3f light = new Vector3f();
-    ;
 
     protected boolean passable = false; // is movement through this model possible
     // fluid models are passable whilst solid ones aren't               

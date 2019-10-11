@@ -258,7 +258,7 @@ public class Editor {
                     loaded.getPrimaryColor().w = 0.5f;
                     break;
                 case 3:
-                    texture = new Texture("doom.png");
+                    texture = new Texture("doom0.png");
                     loaded.setPassable(false);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;

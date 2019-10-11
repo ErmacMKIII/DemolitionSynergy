@@ -16,24 +16,24 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
-import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -47,6 +47,8 @@ public class LevelRenderer {
     private List<Block> fluidBlocks = new LinkedList<>();
 
     private Critter observer;
+
+    private byte[] buffer = new byte[0x100000];
 
     public LevelRenderer(ShaderProgram shaderProgram) {
         this.shaderProgram = shaderProgram;
@@ -66,7 +68,7 @@ public class LevelRenderer {
         fluidBlocks.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block("doom.png", shaderProgram);
+                Block entity = new Block("doom0.png", shaderProgram);
                 entity.setScale(1.0f);
 
                 entity.getPos().x = 0.25f * i + i * 4;
@@ -85,42 +87,216 @@ public class LevelRenderer {
         }
     }
 
-    public boolean saveLevelToFile(String filename) {
+    private void storeLevelToBuffer() {
+        int pos = 0;
+        buffer[0] = 'D';
+        buffer[1] = 'S';
+        pos += 2;
+        Camera camera = this.observer.getCamera();
+        byte[] campos = Vector3fUtils.vec3fToByteArray(camera.getPos());
+        System.arraycopy(campos, 0, buffer, pos, campos.length);
+        pos += campos.length;
+
+        byte[] camfront = Vector3fUtils.vec3fToByteArray(camera.getFront());
+        System.arraycopy(camfront, 0, buffer, pos, camfront.length);
+        pos += camfront.length;
+
+        byte[] camup = Vector3fUtils.vec3fToByteArray(camera.getUp());
+        System.arraycopy(camup, 0, buffer, pos, camup.length);
+        pos += camup.length;
+
+        byte[] camright = Vector3fUtils.vec3fToByteArray(camera.getRight());
+        System.arraycopy(camup, 0, buffer, pos, camright.length);
+        pos += camright.length;
+
+        buffer[pos++] = 'S';
+        buffer[pos++] = 'O';
+        buffer[pos++] = 'L';
+        buffer[pos++] = 'I';
+        buffer[pos++] = 'D';
+
+        int solidNum = solidBlocks.size();
+        buffer[pos++] = (byte) (solidNum);
+        buffer[pos++] = (byte) (solidNum >> 8);
+
+        for (Block solidBlock : solidBlocks) {
+            byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
+            System.arraycopy(texName, 0, buffer, pos, 5);
+            pos += 5;
+            byte[] solidPos = Vector3fUtils.vec3fToByteArray(solidBlock.getPos());
+            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
+            pos += solidPos.length;
+            Vector4f primCol = solidBlock.getPrimaryColor();
+            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
+            pos += solidCol.length;
+        }
+
+        buffer[pos++] = 'F';
+        buffer[pos++] = 'L';
+        buffer[pos++] = 'U';
+        buffer[pos++] = 'I';
+        buffer[pos++] = 'D';
+
+        int fluidNum = fluidBlocks.size();
+        buffer[pos++] = (byte) (fluidNum);
+        buffer[pos++] = (byte) (fluidNum >> 8);
+
+        for (Block fluidBlock : fluidBlocks) {
+            byte[] texName = fluidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
+            System.arraycopy(texName, 0, buffer, pos, 5);
+            pos += 5;
+            byte[] solidPos = Vector3fUtils.vec3fToByteArray(fluidBlock.getPos());
+            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
+            pos += solidPos.length;
+            Vector4f primCol = fluidBlock.getPrimaryColor();
+            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
+            pos += solidCol.length;
+        }
+
+        buffer[pos++] = 'E';
+        buffer[pos++] = 'N';
+        buffer[pos++] = 'D';
+    }
+
+    private boolean loadLevelFromBuffer() {
         boolean success = false;
-        if (filename.isEmpty()) {
-            return false;
-        }
-        if (!filename.endsWith(".txt")) {
-            filename += ".txt";
-        }
-        try {
+        int pos = 0;
+        if (buffer[0] == 'D' && buffer[1] == 'S') {
+            solidBlocks.clear();
+            fluidBlocks.clear();
+            pos += 2;
+            byte[] posArr = new byte[12];
+            System.arraycopy(buffer, pos, posArr, 0, posArr.length);
+            Vector3f campos = Vector3fUtils.vec3fFromByteArray(posArr);
+            pos += posArr.length;
 
-            Collections.shuffle(solidBlocks);
-            Collections.shuffle(fluidBlocks);
+            byte[] frontArr = new byte[12];
+            System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
+            Vector3f camfront = Vector3fUtils.vec3fFromByteArray(frontArr);
+            pos += frontArr.length;
 
-            Collections.sort(solidBlocks);
-            Collections.sort(fluidBlocks);
+            byte[] upArr = new byte[12];
+            System.arraycopy(buffer, pos, frontArr, 0, upArr.length);
+            Vector3f camup = Vector3fUtils.vec3fFromByteArray(upArr);
+            pos += upArr.length;
 
-            File f = new File(filename);
-            FileWriter fw = new FileWriter(f);
-            PrintWriter pw = new PrintWriter(fw);
+            byte[] rightArr = new byte[12];
+            System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
+            Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
+            pos += rightArr.length;
 
-            pw.println(observer.toString());
-
-            for (int i = 0; i < solidBlocks.size(); i++) {
-                Block solidEntity = solidBlocks.get(i);
-                pw.println(solidEntity.toString());
+            Camera obsCamera = new Camera(campos, shaderProgram, camfront, camup, camright);
+            Model obsModel = new Model("icosphere.obj", shaderProgram);
+            obsModel.setScale(0.25f);
+            observer = new Critter(obsCamera, obsModel);
+            observer.setGivenControl(true);
+            char[] solid = new char[5];
+            for (int i = 0; i < solid.length; i++) {
+                solid[i] = (char) buffer[pos++];
             }
-            for (int j = 0; j < fluidBlocks.size(); j++) {
-                Block fluidEntity = fluidBlocks.get(j);
-                pw.println(fluidEntity.toString());
+            String strSolid = String.valueOf(solid);
+            if (strSolid.equals("SOLID")) {
+                int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                pos += 2;
+                for (int i = 0; i < solidNum; i++) {
+                    char[] texNameArr = new char[5];
+                    for (int k = 0; k < texNameArr.length; k++) {
+                        texNameArr[k] = (char) buffer[pos++];
+                    }
+                    String texName = String.valueOf(texNameArr);
+
+                    byte[] blockPosArr = new byte[12];
+                    System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
+                    Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+                    pos += blockPosArr.length;
+
+                    byte[] blockPosCol = new byte[12];
+                    System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
+                    Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+                    pos += blockPosCol.length;
+
+                    Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
+
+                    Block block = new Block(texName + ".png", shaderProgram, blockPos, primaryColor, false);
+                    solidBlocks.add(block);
+                }
+
+                char[] fluid = new char[5];
+                for (int i = 0; i < fluid.length; i++) {
+                    fluid[i] = (char) buffer[pos++];
+                }
+                String strFluid = String.valueOf(fluid);
+                if (strFluid.equals("FLUID")) {
+                    int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                    pos += 2;
+                    for (int i = 0; i < fluidNum; i++) {
+                        char[] texNameArr = new char[5];
+                        for (int k = 0; k < texNameArr.length; k++) {
+                            texNameArr[k] = (char) buffer[pos++];
+                        }
+                        String texName = String.valueOf(texNameArr);
+
+                        byte[] blockPosArr = new byte[12];
+                        System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
+                        Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+                        pos += blockPosArr.length;
+
+                        byte[] blockPosCol = new byte[12];
+                        System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
+                        Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+                        pos += blockPosCol.length;
+
+                        Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
+
+                        Block block = new Block(texName + ".png", shaderProgram, blockPos, primaryColor, true);
+                        fluidBlocks.add(block);
+                    }
+
+                    char[] end = new char[3];
+                    for (int i = 0; i < end.length; i++) {
+                        end[i] = (char) buffer[pos++];
+                    }
+                    String strEnd = String.valueOf(end);
+                    if (strEnd.equals("END")) {
+                        updateFluids();
+                        success = true;
+                    }
+                }
             }
-            pw.close();
-            success = true;
-        } catch (IOException ex) {
-            Logger.getLogger(MasterRenderer.class.getName()).log(Level.SEVERE, null, ex);
         }
         return success;
+    }
+
+    public void saveLevelToFile(String filename) {
+        if (!filename.endsWith(".dat")) {
+            filename += ".dat";
+        }
+        FileOutputStream fos = null;
+        File file = new File(filename);
+        if (file.exists()) {
+            file.delete();
+        }
+        Arrays.fill(buffer, (byte) 0);
+        storeLevelToBuffer(); // saves level to buffer first
+        try {
+            fos = new FileOutputStream(file);
+            fos.write(buffer);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        if (fos != null) {
+            try {
+                fos.close();
+            } catch (IOException ex) {
+                Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }
 
     public boolean loadLevelFromFile(String filename) {
@@ -128,95 +304,26 @@ public class LevelRenderer {
         if (filename.isEmpty()) {
             return false;
         }
-        if (!filename.endsWith(".txt")) {
-            filename += ".txt";
+        if (!filename.endsWith(".dat")) {
+            filename += ".dat";
         }
+        File file = new File(filename);
+        FileInputStream fis = null;
         try {
-            File f = new File(filename);
-            if (!f.exists()) {
-                return false;
-            } else {
-                FileReader fr = new FileReader(f);
-                BufferedReader br = new BufferedReader(fr);
-                solidBlocks.clear();
-                fluidBlocks.clear();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (line.startsWith("Critter{") && line.endsWith("}")) {
-                        // Camera data
-                        String cameraData = line.substring(line.indexOf("Camera{"), line.indexOf("}") + 1);
-                        String[] data = cameraData.substring(cameraData.indexOf("{") + 1, cameraData.lastIndexOf("}")).trim().split(",");
-
-                        String[] posData = data[0].substring(data[0].indexOf("(") + 1, data[0].lastIndexOf(")")).split(";");
-                        Vector3f pos = new Vector3f(Float.parseFloat(posData[0]), Float.parseFloat(posData[1]), Float.parseFloat(posData[2]));
-
-                        String[] frontData = data[1].substring(data[1].indexOf("(") + 1, data[1].lastIndexOf(")")).split(";");
-                        Vector3f front = new Vector3f(Float.parseFloat(frontData[0]), Float.parseFloat(frontData[1]), Float.parseFloat(frontData[2]));
-
-                        String[] upData = data[2].substring(data[2].indexOf("(") + 1, data[2].lastIndexOf(")")).split(";");
-                        Vector3f up = new Vector3f(Float.parseFloat(upData[0]), Float.parseFloat(upData[1]), Float.parseFloat(upData[2]));
-
-                        String[] rightData = data[3].substring(data[3].indexOf("(") + 1, data[3].lastIndexOf(")")).split(";");
-                        Vector3f right = new Vector3f(Float.parseFloat(rightData[0]), Float.parseFloat(rightData[1]), Float.parseFloat(rightData[2]));
-
-                        Camera camera = new Camera(pos, shaderProgram, front, up, right);
-                        // Model data                        
-                        String modelData = line.substring(line.indexOf("Model{"), line.indexOf("}", line.indexOf("Model{")) + 1);
-                        data = modelData.substring(modelData.indexOf("{") + 1, modelData.lastIndexOf("}")).trim().split(",");
-
-                        String modelFileName = data[0].substring(data[0].indexOf("=") + 1);
-
-                        String textureFileName = data[1].substring(data[1].indexOf("=") + 1);
-
-                        posData = data[2].substring(data[2].indexOf("(") + 1, data[2].lastIndexOf(")")).split(";");
-                        pos = new Vector3f(Float.parseFloat(posData[0]), Float.parseFloat(posData[1]), Float.parseFloat(posData[2]));
-
-                        float scale = Float.parseFloat(data[3].substring(data[3].indexOf("=") + 1));
-
-                        String[] colorData = data[4].substring(data[4].indexOf("(") + 1, data[4].lastIndexOf(")")).split(";");
-                        Vector4f color = new Vector4f(Float.parseFloat(colorData[0]), Float.parseFloat(colorData[1]), Float.parseFloat(colorData[2]), Float.parseFloat(colorData[3]));
-
-                        boolean passable = Boolean.parseBoolean(data[5].substring(data[5].indexOf("=") + 1));
-
-                        Model model = new Model(modelFileName, textureFileName, shaderProgram, pos, color, passable);
-                        model.setScale(scale);
-                        // making the critter                                                
-                        observer = new Critter(camera, model);
-                        observer.setGivenControl(true);
-                    } else if (line.startsWith("Block{") && line.endsWith("}")) {
-                        String[] data = line.substring(line.indexOf("{") + 1, line.lastIndexOf("}")).trim().split(",");
-
-                        String textureFileName = data[0].substring(data[0].indexOf("=") + 1);
-
-                        String[] posData = data[1].substring(data[1].indexOf("(") + 1, data[1].lastIndexOf(")")).split(";");
-                        Vector3f pos = new Vector3f(Float.parseFloat(posData[0]), Float.parseFloat(posData[1]), Float.parseFloat(posData[2]));
-
-                        float scale = Float.parseFloat(data[2].substring(data[2].indexOf("=") + 1));
-
-                        String[] colorData = data[3].substring(data[3].indexOf("(") + 1, data[3].lastIndexOf(")")).split(";");
-                        Vector4f color = new Vector4f(Float.parseFloat(colorData[0]), Float.parseFloat(colorData[1]), Float.parseFloat(colorData[2]), Float.parseFloat(colorData[3]));
-
-                        boolean passable = Boolean.parseBoolean(data[4].substring(data[4].indexOf("=") + 1));
-
-                        Block entity = new Block(textureFileName, shaderProgram, pos, color, passable);
-                        entity.setScale(scale);
-                        if (passable) {
-                            fluidBlocks.add(entity);
-                        } else {
-                            solidBlocks.add(entity);
-                        }
-                    }
-                }
-                br.close();
-                Collections.shuffle(solidBlocks);
-                Collections.shuffle(fluidBlocks);
-                Collections.sort(solidBlocks);
-                Collections.sort(fluidBlocks);
-                updateFluids();
-                success = true;
-            }
+            fis = new FileInputStream(file);
+            fis.read(buffer);
+            success = loadLevelFromBuffer();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(MasterRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        if (fis != null) {
+            try {
+                fis.close();
+            } catch (IOException ex) {
+                Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return success;
     }

@@ -43,6 +43,7 @@ public class Critter {
     public Critter(Camera camera, Model model) {
         this.camera = camera;
         this.model = model;
+        initModelPos();
     }
 
     private void initModelPos() {
