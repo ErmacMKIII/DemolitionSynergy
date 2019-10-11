@@ -49,6 +49,7 @@ public class LevelRenderer {
     private Critter observer;
 
     private byte[] buffer = new byte[0x100000];
+    private int pos = 0;
 
     public LevelRenderer(ShaderProgram shaderProgram) {
         this.shaderProgram = shaderProgram;
@@ -88,7 +89,7 @@ public class LevelRenderer {
     }
 
     private void storeLevelToBuffer() {
-        int pos = 0;
+        pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
         pos += 2;
@@ -164,7 +165,7 @@ public class LevelRenderer {
 
     private boolean loadLevelFromBuffer() {
         boolean success = false;
-        int pos = 0;
+        pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidBlocks.clear();
             fluidBlocks.clear();
@@ -284,7 +285,7 @@ public class LevelRenderer {
         storeLevelToBuffer(); // saves level to buffer first
         try {
             fos = new FileOutputStream(file);
-            fos.write(buffer);
+            fos.write(buffer, 0, pos); // save buffer to file at pos mark
         } catch (FileNotFoundException ex) {
             Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
@@ -364,8 +365,8 @@ public class LevelRenderer {
     }
 
     public void animate() {
-        for (int i = 0; i < fluidBlocks.size(); i++) {
-            fluidBlocks.get(i).animate();
+        for (Block fluidBlock : fluidBlocks) {
+            fluidBlock.animate();
         }
     }
 
