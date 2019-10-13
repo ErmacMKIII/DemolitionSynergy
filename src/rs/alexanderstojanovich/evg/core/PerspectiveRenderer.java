@@ -50,7 +50,7 @@ public class PerspectiveRenderer {
 
     public void render() {
         shaderProgram.bind();
-        perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 2.0f * Game.EPSILON, 1.0f / (2.0f * Game.EPSILON));
+        perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), Game.EPSILON, 1.0f / Game.EPSILON);
         ShaderProgram.unbind();
     }
 

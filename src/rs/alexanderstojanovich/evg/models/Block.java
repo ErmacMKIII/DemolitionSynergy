@@ -27,6 +27,9 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector2f;
@@ -43,18 +46,33 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Block extends Model {
 
+    public static final int NONE = -1;
     public static final int LEFT = 0;
     public static final int RIGHT = 1;
     public static final int BOTTOM = 2;
     public static final int TOP = 3;
     public static final int BACK = 4;
     public static final int FRONT = 5;
-    private boolean[] enabledFaces; // which faces we enabled for rendering and which we disabled    
+    private final boolean[] enabledFaces = new boolean[6];
+    ; // which faces we enabled for rendering and which we disabled    
+    
+    private final Map<Integer, Block> adjacentBlockMap = new HashMap<>(); // helps locating neighbours blocks           
+    private boolean verticesReversed = false;
+
+    public static final List<Vector3f> FACE_NORMALS = new ArrayList<>();
+
+    static {
+        FACE_NORMALS.add(new Vector3f(-1.0f, 0.0f, 0.0f));
+        FACE_NORMALS.add(new Vector3f(1.0f, 0.0f, 0.0f));
+        FACE_NORMALS.add(new Vector3f(0.0f, -1.0f, 0.0f));
+        FACE_NORMALS.add(new Vector3f(0.0f, 1.0f, 0.0f));
+        FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, -1.0f));
+        FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
+    }
 
     public Block(ShaderProgram shaderProgram) {
         super();
         this.shaderProgram = shaderProgram;
-        enabledFaces = new boolean[6];
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
         bufferVertices();
@@ -62,11 +80,10 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(String textureFileName, ShaderProgram shaderProgram) {
+    public Block(Texture primaryTexture, ShaderProgram shaderProgram) {
         super();
-        this.primaryTexture = new Texture(textureFileName);
+        this.primaryTexture = primaryTexture;
         this.shaderProgram = shaderProgram;
-        this.enabledFaces = new boolean[6];
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
         bufferVertices();
@@ -74,11 +91,10 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(String textureFileName, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Block(Texture primaryTexture, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
         super();
-        this.primaryTexture = new Texture(textureFileName);
+        this.primaryTexture = primaryTexture;
         this.shaderProgram = shaderProgram;
-        this.enabledFaces = new boolean[6];
         Arrays.fill(enabledFaces, true);
         this.pos = pos;
         this.primaryColor = primaryColor;
@@ -125,22 +141,24 @@ public class Block extends Model {
     }
 
     private void bufferVertices() {
-        // storing vertices and normals in the buffer
+        // storing vertices and FACE_NORMALS in the buffer
         FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
-        for (int i = 0; i < vertices.size(); i++) {
-            fb.put(vertices.get(i).getPos().x);
-            fb.put(vertices.get(i).getPos().y);
-            fb.put(vertices.get(i).getPos().z);
+        for (Vertex vertex : vertices) {
+            if (vertex.isEnabled()) {
+                fb.put(vertex.getPos().x);
+                fb.put(vertex.getPos().y);
+                fb.put(vertex.getPos().z);
 
-            fb.put(vertices.get(i).getNormal().x);
-            fb.put(vertices.get(i).getNormal().y);
-            fb.put(vertices.get(i).getNormal().z);
+                fb.put(vertex.getNormal().x);
+                fb.put(vertex.getNormal().y);
+                fb.put(vertex.getNormal().z);
 
-            fb.put(vertices.get(i).getUv().x);
-            fb.put(vertices.get(i).getUv().y);
+                fb.put(vertex.getUv().x);
+                fb.put(vertex.getUv().y);
+            }
         }
         fb.flip();
-        // storing vertices and normals buffer on the graphics card
+        // storing vertices and FACE_NORMALS buffer on the graphics card
         vbo = GL15.glGenBuffers();
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
@@ -150,8 +168,8 @@ public class Block extends Model {
     private void bufferIndices() {
         // storing indices in the buffer
         IntBuffer ib = BufferUtils.createIntBuffer(indices.size());
-        for (int i = 0; i < indices.size(); i++) {
-            ib.put(indices.get(i));
+        for (Integer index : indices) {
+            ib.put(index);
         }
         ib.flip();
         // storing indices buffer on the graphics card
@@ -193,84 +211,94 @@ public class Block extends Model {
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
-        int faceNum = -1;
-        if (Math.abs((this.pos.x - this.width / 2) - (block.pos.x + block.width / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().y - block.getPos().y) <= Game.EPSILON
-                && Math.abs(this.getPos().z - block.getPos().z) <= Game.EPSILON) {
+        int faceNum = NONE;
+        if (((this.pos.x - this.width / 2.0f) - (block.pos.x + block.width / 2.0f)) == 0.0f
+                && (this.getPos().y - block.getPos().y) == 0.0f
+                && (this.getPos().z - block.getPos().z) == 0.0f) {
             faceNum = LEFT;
-        } else if (Math.abs((this.pos.x + this.width / 2) - (block.pos.x - block.width / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().y - block.getPos().y) <= Game.EPSILON
-                && Math.abs(this.getPos().z - block.getPos().z) <= Game.EPSILON) {
+        } else if (((this.pos.x + this.width / 2.0f) - (block.pos.x - block.width / 2.0f)) == 0.0f
+                && (this.getPos().y - block.getPos().y) == 0.0f
+                && (this.getPos().z - block.getPos().z) == 0.0f) {
             faceNum = RIGHT;
-        } else if (Math.abs((this.pos.y - this.height / 2) - (block.pos.y + block.height / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().z - block.getPos().z) <= Game.EPSILON
-                && Math.abs(this.getPos().x - block.getPos().x) <= Game.EPSILON) {
+        } else if (((this.pos.y - this.height / 2.0f) - (block.pos.y + block.height / 2.0f)) == 0.0f
+                && (this.getPos().z - block.getPos().z) == 0.0f
+                && (this.getPos().x - block.getPos().x) == 0.0f) {
             faceNum = BOTTOM;
-        } else if (Math.abs((this.pos.y + this.height / 2) - (block.pos.y - block.height / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().z - block.getPos().z) <= Game.EPSILON
-                && Math.abs(this.getPos().x - block.getPos().x) <= Game.EPSILON) {
+        } else if (((this.pos.y + this.height / 2.0f) - (block.pos.y - block.height / 2.0f)) == 0.0f
+                && (this.getPos().z - block.getPos().z) == 0.0f
+                && (this.getPos().x - block.getPos().x) == 0.0f) {
             faceNum = TOP;
-        } else if (Math.abs((this.pos.z - this.depth / 2) - (block.pos.z + block.depth / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().x - block.getPos().x) <= Game.EPSILON
-                && Math.abs(this.getPos().y - block.getPos().y) <= Game.EPSILON) {
+        } else if (((this.pos.z - this.depth / 2.0f) - (block.pos.z + block.depth / 2.0f)) == 0.0f
+                && (this.getPos().x - block.getPos().x) == 0.0f
+                && (this.getPos().y - block.getPos().y) == 0.0f) {
             faceNum = BACK;
-        } else if (Math.abs((this.pos.z + this.depth / 2) - (block.pos.z - block.depth / 2)) <= 2 * Game.EPSILON
-                && Math.abs(this.getPos().x - block.getPos().x) <= Game.EPSILON
-                && Math.abs(this.getPos().y - block.getPos().y) <= Game.EPSILON) {
+        } else if (((this.pos.z + this.depth / 2.0f) - (block.pos.z - block.depth / 2.0f)) == 0.0f
+                && (this.getPos().x - block.getPos().x) == 0.0f
+                && (this.getPos().y - block.getPos().y) == 0.0f) {
             faceNum = FRONT;
         }
         return faceNum;
     }
 
-    public void removeFace(int faceNum) {
-        if (faceNum >= 0 && faceNum <= 5 && enabledFaces[faceNum]) {
-            ArrayList<Integer> collection = new ArrayList<Integer>();
-
-            for (int i = 0; i < 4; i++) {
-                collection.add(4 * faceNum + i);
-            }
-            if (indices.containsAll(collection)) {
-                indices.removeAll(collection);
-                enabledFaces[faceNum] = false;
-                bufferIndices();
-            }
-        }
+    public List<Vertex> getFace(int faceNum) {
+        return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
-    public void addFace(int faceNum) {
-        if (faceNum >= 0 && faceNum <= 5 && !enabledFaces[faceNum]) {
-            ArrayList<Integer> collection = new ArrayList<Integer>();
-
-            collection.add(4 * faceNum);
-            collection.add(4 * faceNum + 1);
-            collection.add(4 * faceNum + 2);
-
-            collection.add(4 * faceNum + 2);
-            collection.add(4 * faceNum + 3);
-            collection.add(4 * faceNum);
-
-            if (!indices.containsAll(collection)) {
-                indices.addAll(collection);
-                enabledFaces[faceNum] = true;
-                bufferIndices();
+    public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
+        boolean bool = false;
+        int counter = 0;
+        for (Vector3f normal : FACE_NORMALS) {
+            Vector3f temp1 = new Vector3f();
+            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
+            Vector3f temp2 = new Vector3f();
+            Vector3f vy = front.add(pos, temp2).normalize(temp2);
+            if (vx.dot(vy) >= -0.5f) {
+                counter++;
+                break;
             }
         }
+        if (counter >= 1 && counter <= 3) {
+            bool = true;
+        }
+        return bool;
     }
 
-    public void reconstructAllFaces() {
-        for (int i = 0; i < 6; i++) {
-            if (!enabledFaces[i]) {
-                addFace(i);
-            }
+    public void disableFace(int faceNum) {
+        for (Vertex vertex : getFace(faceNum)) {
+            vertex.setEnabled(false);
         }
+        this.enabledFaces[faceNum] = false;
+        bufferVertices();
     }
 
-    public void destructAllFaces() {
-        for (int i = 0; i < 6; i++) {
-            if (enabledFaces[i]) {
-                removeFace(i);
-            }
+    public void enableFace(int faceNum) {
+        for (Vertex vertex : getFace(faceNum)) {
+            vertex.setEnabled(true);
         }
+        this.enabledFaces[faceNum] = true;
+        bufferVertices();
+    }
+
+    public void enableAllFaces() {
+        for (Vertex vertex : vertices) {
+            vertex.setEnabled(true);
+        }
+        bufferVertices();
+    }
+
+    public void disableAllFaces() {
+        for (Vertex vertex : vertices) {
+            vertex.setEnabled(false);
+        }
+        bufferVertices();
+    }
+
+    public void reverseFaceVertexOrder() {
+        for (int j = 0; j <= 5; j++) {
+            Collections.reverse(getFace(j));
+        }
+        verticesReversed = !verticesReversed;
+        bufferVertices();
     }
 
     public void setUVsForSkybox() {
@@ -324,12 +352,27 @@ public class Block extends Model {
         Collections.reverse(vertices.subList(4 * FRONT, 4 * FRONT + 3));
     }
 
+    public boolean hasFaces() {
+        boolean arg = false;
+        for (Boolean bool : enabledFaces) {
+            arg = arg || bool;
+            if (arg) {
+                break;
+            }
+        }
+        return arg;
+    }
+
     public boolean[] getEnabledFaces() {
         return enabledFaces;
     }
 
-    public void setEnabledFaces(boolean[] enabledFaces) {
-        this.enabledFaces = enabledFaces;
+    public Map<Integer, Block> getAdjacentBlockMap() {
+        return adjacentBlockMap;
+    }
+
+    public boolean isVerticesReversed() {
+        return verticesReversed;
     }
 
 }

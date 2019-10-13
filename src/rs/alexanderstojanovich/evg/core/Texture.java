@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -30,12 +32,33 @@ public class Texture {
     private Image image;
     private int textureID;
 
+    public static final Texture LOGO = new Texture("ds_title_gray.png");
+    public static final Texture CROSSHAIR = new Texture("crosshairUltimate.png");
+    public static final Texture MINIGUN = new Texture("minigun.png");
+    public static final Texture FONT = new Texture("hack.png");
+    public static final Texture DOOM0 = new Texture("doom0.png");
+    public static final Texture CRATE = new Texture("crate.png");
+    public static final Texture STONE = new Texture("stone.png");
+    public static final Texture WATER = new Texture("water.png");
+    public static final Texture NIGHT = new Texture("night.png");
+    public static final Texture MARBLE = new Texture("marble.png");
+
+    public static final Map<String, Texture> TEX_MAP = new HashMap<>();
+
+    static {
+        TEX_MAP.put("minigun", MINIGUN);
+        TEX_MAP.put("doom0", DOOM0);
+        TEX_MAP.put("crate", CRATE);
+        TEX_MAP.put("stone", STONE);
+        TEX_MAP.put("water", WATER);
+    }
+
     public Texture(int width, int height) {
         this.image = new Image(width, height);
         loadToGraphicCard();
     }
 
-    public Texture(String fileName) {
+    private Texture(String fileName) {
         this.image = new Image(fileName);
         loadToGraphicCard();
     }

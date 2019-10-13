@@ -66,12 +66,12 @@ public abstract class Menu {
     public Menu(Window window, String title, String fileName, String textureFileName) {
         this.myWindow = window;
         this.fileName = fileName;
-        this.title = new Text(myWindow, textureFileName, title);
+        this.title = new Text(myWindow, Texture.FONT, title);
         this.scale = 1.0f;
         this.title.setScale(scale);
         this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
-        readFromFile(fileName, textureFileName);
-        Texture mngTexture = new Texture("minigun.png");
+        readFromFile(fileName);
+        Texture mngTexture = Texture.MINIGUN;
         quad = new Quad(window, 27, 27, mngTexture);
         quad.getPos().x = items.get(selected).getPos().x;
         quad.getPos().x -= items.get(selected).giveRelativeWidth();
@@ -83,14 +83,14 @@ public abstract class Menu {
     public Menu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
         this.myWindow = window;
         this.fileName = fileName;
-        this.title = new Text(myWindow, textureFileName, title);
+        this.title = new Text(myWindow, Texture.FONT, title);
         this.scale = scale;
         this.title.setScale(this.scale);
         this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.enabled = false;
         this.pos = pos;
-        readFromFile(fileName, textureFileName);
-        Texture mngTexture = new Texture("minigun.png");
+        readFromFile(fileName);
+        Texture mngTexture = Texture.MINIGUN;
         quad = new Quad(window, 27, 27, mngTexture);
         quad.getPos().x = items.get(selected).getPos().x;
         quad.getPos().y = items.get(selected).getPos().y;
@@ -101,14 +101,14 @@ public abstract class Menu {
         quad.setScale(scale);
     }
 
-    private void readFromFile(String fileName, String textureFileName) {
+    private void readFromFile(String fileName) {
         InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String line;
             while ((line = br.readLine()) != null) {
                 String[] things = line.trim().split(":");
-                Text item = new Text(myWindow, textureFileName, things[0]);
+                Text item = new Text(myWindow, Texture.FONT, things[0]);
                 item.setScale(scale);
                 if (Boolean.parseBoolean(things[1].trim())) {
                     item.getColor().x = 0.0f;

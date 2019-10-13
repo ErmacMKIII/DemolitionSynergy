@@ -22,6 +22,7 @@ import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
+import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 
@@ -59,13 +60,13 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new Text(myWindow, FONT_IMG, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
-        collText = new Text(myWindow, FONT_IMG, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
-        helpText = new Text(myWindow, FONT_IMG, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.75f));
+        infoText = new Text(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
+        collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
+        helpText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.75f));
         helpText.setContent(Text.readFromFile("help.txt"));
         helpText.setEnabled(false);
 
-        crosshair = new Quad(myWindow, 27, 27, "crosshairUltimate.png", true); // it ignores resolution changes and doesn't scale
+        crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
 
         mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
             @Override
@@ -90,13 +91,13 @@ public class Intrface {
             }
         };
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
-        Quad logo = new Quad(myWindow, 180, 100, "ds_title_gray.png");
+        Quad logo = new Quad(myWindow, 180, 100, Texture.LOGO);
         logo.getColor().x = 1.0f;
         logo.getColor().y = 0.7f;
         logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
 
-        commandDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
+        commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 boolean success = true;
@@ -142,7 +143,7 @@ public class Intrface {
             }
         };
 
-        saveDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
+        saveDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -151,7 +152,7 @@ public class Intrface {
             }
         };
 
-        loadDialog = new Dialog(myWindow, FONT_IMG, new Vector2f(-0.95f, 0.85f)) {
+        loadDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();

@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import rs.alexanderstojanovich.evg.core.Texture;
 
 /**
  *
@@ -46,7 +47,7 @@ public abstract class AdvMenu extends Menu {
         values = new Text[items.size()];
         options = new Combo[items.size()];
         for (int i = 0; i < values.length; i++) {
-            values[i] = new Text(myWindow, "hack.png", "");
+            values[i] = new Text(myWindow, Texture.FONT, "");
             values[i].getPos().x = items.get(i).getPos().x;
             values[i].getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).giveRelativeWidth();
             values[i].getPos().y = items.get(i).getPos().y;

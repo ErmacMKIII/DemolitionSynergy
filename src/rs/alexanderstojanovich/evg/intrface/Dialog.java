@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import rs.alexanderstojanovich.evg.core.Texture;
 
 /**
  *
@@ -35,9 +36,9 @@ public abstract class Dialog {
     private boolean enabled;
     private boolean done;
 
-    public Dialog(Window window, String textureFileName, Vector2f pos) {
+    public Dialog(Window window, Texture texture, Vector2f pos) {
         this.myWindow = window;
-        this.dialog = new Text(myWindow, textureFileName, "");
+        this.dialog = new Text(myWindow, texture, "");
         this.dialog.setPos(pos);
         this.enabled = false;
         this.done = false;

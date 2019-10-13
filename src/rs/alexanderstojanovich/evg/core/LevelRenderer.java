@@ -28,7 +28,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
@@ -48,32 +47,35 @@ public class LevelRenderer {
 
     private Critter observer;
 
-    private byte[] buffer = new byte[0x100000];
+    private final byte[] buffer = new byte[0x100000];
     private int pos = 0;
+
+    public static final float SKYBOX_SCALE = Math.round(1.0f / Game.EPSILON);
+    public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f));
 
     public LevelRenderer(ShaderProgram shaderProgram) {
         this.shaderProgram = shaderProgram;
         // setting skybox
-        skybox = new Block("night.png", shaderProgram);
+        skybox = new Block(Texture.NIGHT, shaderProgram);
         skybox.setUVsForSkybox();
-        skybox.setScale(1.0f / (4.0f * Game.EPSILON));
+        skybox.setScale(SKYBOX_SCALE);
         // setting observer
-        observer = new Critter("icosphere.obj", "marble.png", shaderProgram, new Vector3f(10.5f, 0, -3), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", "marble.png", shaderProgram, new Vector3f(10.5f, 0, -3), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         solidBlocks.clear();
         fluidBlocks.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block("doom0.png", shaderProgram);
+                Block entity = new Block(Texture.DOOM0, shaderProgram);
                 entity.setScale(1.0f);
 
-                entity.getPos().x = 0.25f * i + i * 4;
-                entity.getPos().y = 0.25f * j + j * 4;
+                entity.getPos().x = 0.5f * i + i * 1.5f;
+                entity.getPos().y = 0.5f * j + j * 1.5f;
                 entity.getPos().z = 3.0f;
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
@@ -222,7 +224,7 @@ public class LevelRenderer {
 
                     Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
 
-                    Block block = new Block(texName + ".png", shaderProgram, blockPos, primaryColor, false);
+                    Block block = new Block(Texture.TEX_MAP.get(texName), shaderProgram, blockPos, primaryColor, false);
                     solidBlocks.add(block);
                 }
 
@@ -253,7 +255,7 @@ public class LevelRenderer {
 
                         Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
 
-                        Block block = new Block(texName + ".png", shaderProgram, blockPos, primaryColor, true);
+                        Block block = new Block(Texture.TEX_MAP.get(texName), shaderProgram, blockPos, primaryColor, true);
                         fluidBlocks.add(block);
                     }
 
@@ -263,6 +265,7 @@ public class LevelRenderer {
                     }
                     String strEnd = String.valueOf(end);
                     if (strEnd.equals("END")) {
+                        updateAll();
                         updateFluids();
                         success = true;
                     }
@@ -329,16 +332,68 @@ public class LevelRenderer {
         return success;
     }
 
-    public void updateFluids() {
-        for (Block fluidBlock : fluidBlocks) {
-            fluidBlock.reconstructAllFaces();
+    public void updateSolidNeighbors() {
+        for (Block solidBlockI : solidBlocks) {
+            for (Block solidBlockJ : solidBlocks) {
+                if (solidBlockI != solidBlockJ) {
+                    int faceNum = solidBlockI.faceAdjacentBy(solidBlockJ);
+                    if (faceNum != Block.NONE) {
+                        solidBlockI.getAdjacentBlockMap().put(faceNum, solidBlockJ);
+                    }
+                }
+            }
         }
+    }
 
+    public void updateFluidNeighbors() {
         for (Block fluidBlockI : fluidBlocks) {
             for (Block fluidBlockJ : fluidBlocks) {
                 if (fluidBlockI != fluidBlockJ) {
                     int faceNum = fluidBlockI.faceAdjacentBy(fluidBlockJ);
-                    fluidBlockI.removeFace(faceNum);
+                    if (faceNum != Block.NONE) {
+                        fluidBlockI.getAdjacentBlockMap().put(faceNum, fluidBlockJ);
+                    }
+                }
+            }
+        }
+    }
+
+    public void updateSolidToFluidNeighbors() {
+        for (Block solidBlock : solidBlocks) {
+            for (Block fluidBlock : fluidBlocks) {
+                int faceNum = solidBlock.faceAdjacentBy(fluidBlock);
+                if (faceNum != Block.NONE) {
+                    solidBlock.getAdjacentBlockMap().put(faceNum, fluidBlock);
+                }
+            }
+        }
+    }
+
+    public void updateFluidToSolidNeighbors() {
+        for (Block fluidBlock : fluidBlocks) {
+            for (Block solidBlock : solidBlocks) {
+                int faceNum = fluidBlock.faceAdjacentBy(solidBlock);
+                if (faceNum != Block.NONE) {
+                    solidBlock.getAdjacentBlockMap().put(faceNum, fluidBlock);
+                }
+            }
+        }
+    }
+
+    public void updateAll() {
+        updateSolidNeighbors();
+        updateFluidNeighbors();
+        updateSolidToFluidNeighbors();
+        updateFluidToSolidNeighbors();
+    }
+
+    public void updateFluids() {
+        for (Block fluidBlock : fluidBlocks) {
+            fluidBlock.enableAllFaces();
+            for (int i = 0; i <= 5; i++) {
+                Block otherFluidBlock = fluidBlock.getAdjacentBlockMap().get(i);
+                if (otherFluidBlock != null) {
+                    fluidBlock.disableFace(i);
                 }
             }
         }
@@ -378,51 +433,19 @@ public class LevelRenderer {
         return yea;
     }
 
-    public boolean hasCollisionWithCritter(Critter critter, float amount, int direction) {
-        Vector3f predCam = new Vector3f(critter.getCamera().getPos().x, critter.getCamera().getPos().y, critter.getCamera().getPos().z);
-        Model predModel = new Model();
-        predModel.setPos(critter.getModel().getPos());
-        predModel.setScale(critter.getModel().getScale());
-        switch (direction) {
-            case Game.FORWARD: // FORWARD
-                predCam = predCam.add(critter.getCamera().getFront().mul(amount));
-                predModel.setPos(predModel.getPos().add(critter.getCamera().getFront().mul(amount)));
-                break;
-            case Game.BACKWARD: // BACKWARD
-                predCam = predCam.sub(critter.getCamera().getFront().mul(amount));
-                predModel.setPos(predModel.getPos().sub(critter.getCamera().getFront().mul(amount)));
-                break;
-            case Game.LEFT: // LEFT
-                predCam = predCam.sub(critter.getCamera().getRight().mul(amount));
-                predModel.setPos(predModel.getPos().sub(critter.getCamera().getRight().mul(amount)));
-                break;
-            case Game.RIGHT: // RIGHT
-                predCam = predCam.add(critter.getCamera().getRight().mul(amount));
-                predModel.setPos(predModel.getPos().add(critter.getCamera().getRight().mul(amount)));
-                break;
-        }
+    public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
-        coll = !(skybox.contains(predCam) || !skybox.intersects(predModel));
+        coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
         for (int i = 0; i < solidBlocks.size() && !coll; i++) {
             Block entity = solidBlocks.get(i);
-            coll = entity.contains(predCam) || entity.intersects(predModel);
+            coll = entity.contains(critter.getPredictor()) || entity.intersects(critter.getPredModel());
         }
         return coll;
     }
 
-    private void prepare() {
-        if (isCameraInFluid()) {
-            GL11.glDisable(GL11.GL_CULL_FACE);
-        } else {
-            GL11.glEnable(GL11.GL_CULL_FACE);
-        }
-    }
-
     public void render(Camera camera) {
-        prepare();
 
         camera.render();
-
         skybox.render();
 
         if (Editor.selectedNew != null) {
@@ -431,13 +454,21 @@ public class LevelRenderer {
         }
 
         for (Block solidBlock : solidBlocks) {
-            if (camera.doesSee(solidBlock)) {
+            if (camera.doesSee(solidBlock)
+                    && solidBlock.canBeSeenBy(camera.getFront(), camera.getPos())) {
                 solidBlock.setLight(camera.getPos());
                 solidBlock.render();
             }
         }
+        boolean cameraInFluid = isCameraInFluid();
+
         for (Block fluidBlock : fluidBlocks) {
-            if (camera.doesSee(fluidBlock)) {
+            if (camera.doesSee(fluidBlock)
+                    && fluidBlock.hasFaces()
+                    && fluidBlock.canBeSeenBy(camera.getFront(), camera.getPos())) {
+                if (Boolean.logicalXor(cameraInFluid, fluidBlock.isVerticesReversed())) {
+                    fluidBlock.reverseFaceVertexOrder();
+                }
                 fluidBlock.setLight(camera.getPos());
                 fluidBlock.render();
             }

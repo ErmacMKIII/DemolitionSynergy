@@ -100,9 +100,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram) {
+    public Model(String modelFileName, Texture primaryTexture, ShaderProgram shaderProgram) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = new Texture(textureFileName);
+        this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
@@ -110,9 +110,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(String modelFileName, String textureFileName, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Model(String modelFileName, Texture primaryTexture, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = new Texture(textureFileName);
+        this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
@@ -172,17 +172,19 @@ public class Model implements Comparable<Model> {
     private void bufferVertices() {
         // storing vertices and normals in the buffer
         FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
-        for (int i = 0; i < vertices.size(); i++) {
-            fb.put(vertices.get(i).getPos().x);
-            fb.put(vertices.get(i).getPos().y);
-            fb.put(vertices.get(i).getPos().z);
+        for (Vertex vertex : vertices) {
+            if (vertex.isEnabled()) {
+                fb.put(vertex.getPos().x);
+                fb.put(vertex.getPos().y);
+                fb.put(vertex.getPos().z);
 
-            fb.put(vertices.get(i).getNormal().x);
-            fb.put(vertices.get(i).getNormal().y);
-            fb.put(vertices.get(i).getNormal().z);
+                fb.put(vertex.getNormal().x);
+                fb.put(vertex.getNormal().y);
+                fb.put(vertex.getNormal().z);
 
-            fb.put(vertices.get(i).getUv().x);
-            fb.put(vertices.get(i).getUv().y);
+                fb.put(vertex.getUv().x);
+                fb.put(vertex.getUv().y);
+            }
         }
         fb.flip();
         // storing vertices and normals buffer on the graphics card
@@ -195,8 +197,8 @@ public class Model implements Comparable<Model> {
     private void bufferIndices() {
         // storing indices in the buffer
         IntBuffer ib = BufferUtils.createIntBuffer(indices.size());
-        for (int i = 0; i < indices.size(); i++) {
-            ib.put(indices.get(i));
+        for (Integer index : indices) {
+            ib.put(index);
         }
         ib.flip();
         // storing indices buffer on the graphics card
@@ -337,21 +339,42 @@ public class Model implements Comparable<Model> {
 
     public boolean contains(Vector3f x) {
         boolean ints = false;
-        boolean boolX = x.x >= pos.x - width / 2 && x.x <= pos.x + width / 2;
-        boolean boolY = x.y >= pos.y - height / 2 && x.y <= pos.y + height / 2;
-        boolean boolZ = x.z >= pos.z - depth / 2 && x.z <= pos.z + depth / 2;
+        boolean boolX = x.x >= pos.x - width / 2.0f && x.x <= pos.x + width / 2.0f;
+        boolean boolY = x.y >= pos.y - height / 2.0f && x.y <= pos.y + height / 2.0f;
+        boolean boolZ = x.z >= pos.z - depth / 2.0f && x.z <= pos.z + depth / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public boolean containsExactly(Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x > pos.x - width / 2.0f && x.x < pos.x + width / 2.0f;
+        boolean boolY = x.y > pos.y - height / 2.0f && x.y < pos.y + height / 2.0f;
+        boolean boolZ = x.z > pos.z - depth / 2.0f && x.z < pos.z + depth / 2.0f;
         ints = boolX && boolY && boolZ;
         return ints;
     }
 
     public boolean intersects(Model model) {
         boolean coll = false;
-        boolean boolX = this.pos.x - this.width / 2 < model.pos.x + model.width / 2
-                && this.pos.x + this.width / 2 > model.pos.x - model.width / 2;
-        boolean boolY = this.pos.y - this.height / 2 < model.pos.y + model.height / 2
-                && this.pos.y + this.height / 2 > model.pos.y - model.height / 2;
-        boolean boolZ = this.pos.z - this.depth / 2 < model.pos.z + model.depth / 2
-                && this.pos.z + this.depth / 2 > model.pos.z - model.depth / 2;
+        boolean boolX = this.pos.x - this.width / 2.0f <= model.pos.x + model.width / 2.0f
+                && this.pos.x + this.width / 2.0f >= model.pos.x - model.width / 2.0f;
+        boolean boolY = this.pos.y - this.height / 2.0f <= model.pos.y + model.height / 2.0f
+                && this.pos.y + this.height / 2.0f >= model.pos.y - model.height / 2.0f;
+        boolean boolZ = this.pos.z - this.depth / 2.0f <= model.pos.z + model.depth / 2.0f
+                && this.pos.z + this.depth / 2.0f >= model.pos.z - model.depth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
+    public boolean intersectsExactly(Model model) {
+        boolean coll = false;
+        boolean boolX = this.pos.x - this.width / 2.0f < model.pos.x + model.width / 2.0f
+                && this.pos.x + this.width / 2.0f > model.pos.x - model.width / 2.0f;
+        boolean boolY = this.pos.y - this.height / 2.0f < model.pos.y + model.height / 2.0f
+                && this.pos.y + this.height / 2.0f > model.pos.y - model.height / 2.0f;
+        boolean boolZ = this.pos.z - this.depth / 2.0f < model.pos.z + model.depth / 2.0f
+                && this.pos.z + this.depth / 2.0f > model.pos.z - model.depth / 2.0f;
         coll = boolX && boolY && boolZ;
         return coll;
     }
@@ -362,7 +385,7 @@ public class Model implements Comparable<Model> {
             Vector3f temp = new Vector3f();
             Vector3f x0 = vertex.getPos().add(pos, temp); // point on the plane translated
             Vector3f n = vertex.getNormal(); // normal of the plane
-            if (l.dot(n) != 0) {
+            if (l.dot(n) != 0.0f) {
                 float d = x0.sub(l0).dot(n) / l.dot(n);
                 Vector3f x = l.mul(d, temp).add(l0, temp);
                 if (contains(x)) {
@@ -417,7 +440,7 @@ public class Model implements Comparable<Model> {
     }
 
     public float giveSurfacePos() {
-        return (this.pos.y + this.height / 2);
+        return (this.pos.y + this.height / 2.0f);
     }
 
     public void updateSurfacePos() {

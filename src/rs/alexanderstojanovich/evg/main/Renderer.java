@@ -42,8 +42,6 @@ public class Renderer extends Thread {
 
     public static final Object OBJ_FPS = new Object();
 
-    public static final int FPS_POWER = 100;
-
     public Renderer(Window myWindow) {
         super("Renderer");
         this.myWindow = myWindow;

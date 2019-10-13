@@ -27,23 +27,29 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Critter {
 
-    private Camera camera;
-    private Model model;
+    private final Camera camera;
+    private final Model model;
     private boolean givenControl = true;
+    private Vector3f predictor;
+    private final Model predModel;
 
-    public Critter(String modelFileName, String textureFileName, ShaderProgram shaderProgram, Vector3f pos, Vector4f color, float scale) {
+    public Critter(String modelFileName, Texture texture, ShaderProgram shaderProgram, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos, shaderProgram);
-        this.model = new Model(modelFileName, textureFileName, shaderProgram);
+        this.model = new Model(modelFileName, texture, shaderProgram);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());
         initModelPos();
+        this.predictor = pos;
+        this.predModel = new Model(modelFileName);
     }
 
     public Critter(Camera camera, Model model) {
         this.camera = camera;
         this.model = model;
         initModelPos();
+        this.predictor = camera.getPos();
+        this.predModel = new Model(model.getModelFileName());
     }
 
     private void initModelPos() {
@@ -56,31 +62,65 @@ public class Critter {
     public void moveForward(float amount) {
         if (givenControl) {
             camera.moveForward(amount);
-            model.setPos(model.getPos().add(camera.getFront().mul(amount)));
+            Vector3f temp = new Vector3f();
+            model.getPos().add(camera.getFront().mul(amount, temp), temp);
         }
     }
 
     public void moveBackward(float amount) {
         if (givenControl) {
             camera.moveBackward(amount);
-            model.setPos(model.getPos().sub(camera.getFront().mul(amount)));
+            Vector3f temp = new Vector3f();
+            model.getPos().sub(camera.getFront().mul(amount, temp), temp);
         }
     }
 
     public void moveLeft(float amount) {
         if (givenControl) {
             camera.moveLeft(amount);
-            model.setPos(model.getPos().sub(camera.getRight().mul(amount)));
+            Vector3f temp = new Vector3f();
+            model.getPos().sub(camera.getRight().mul(amount, temp), temp);
         }
     }
 
     public void moveRight(float amount) {
         if (givenControl) {
             camera.moveRight(amount);
-            model.setPos(model.getPos().add(camera.getRight().mul(amount)));
+            Vector3f temp = new Vector3f();
+            model.setPos(model.getPos().add(camera.getRight().mul(amount, temp), temp));
         }
     }
 
+    //--------------------------------------------------------------------------
+    public void movePredictorForward(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = camera.getPos().add(camera.getFront().mul(amount, temp1), temp1);
+        predModel.setPos(model.getPos().add(camera.getFront().mul(amount, temp2), temp2));
+    }
+
+    public void movePredictorBackward(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = camera.getPos().sub(camera.getFront().mul(amount, temp1), temp1);
+        predModel.setPos(model.getPos().sub(camera.getFront().mul(amount, temp2), temp2));
+    }
+
+    public void movePredictorLeft(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = camera.getPos().sub(camera.getRight().mul(amount, temp1), temp1);
+        predModel.setPos(model.getPos().sub(camera.getRight().mul(amount, temp2), temp2));
+    }
+
+    public void movePredictorRight(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = camera.getPos().add(camera.getRight().mul(amount, temp1), temp1);
+        predModel.setPos(model.getPos().add(camera.getRight().mul(amount, temp2), temp2));
+    }
+
+    //--------------------------------------------------------------------------
     public void turnLeft(float angle) {
         if (givenControl) {
             camera.turnLeft(angle);
@@ -106,6 +146,7 @@ public class Critter {
     public void render() {
         if (givenControl) {
             camera.render();
+            model.render();
         }
         /*else {
             model.render();
@@ -121,16 +162,8 @@ public class Critter {
         return camera;
     }
 
-    public void setCamera(Camera camera) {
-        this.camera = camera;
-    }
-
     public Model getModel() {
         return model;
-    }
-
-    public void setModel(Model model) {
-        this.model = model;
     }
 
     public boolean isGivenControl() {
@@ -139,6 +172,14 @@ public class Critter {
 
     public void setGivenControl(boolean givenControl) {
         this.givenControl = givenControl;
+    }
+
+    public Vector3f getPredictor() {
+        return predictor;
+    }
+
+    public Model getPredModel() {
+        return predModel;
     }
 
 }

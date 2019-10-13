@@ -46,13 +46,12 @@ public class GameTime extends Thread { // serves for measuring the time amongs t
                 currTime = GLFW.glfwGetTime();
                 diff = currTime - lastTime;
                 upsDelta += diff * Game.getUpsCap(); // default upsCap=80
+                fpsDelta += diff * Game.getFpsMax(); // default fpsMax=100
                 if (upsDelta >= 1.0) {
                     synchronized (Game.OBJ_UPS) {
                         Game.OBJ_UPS.notify();
                     }
-                }
-                fpsDelta += diff * Game.getFpsMax(); // default fpsMax=100            
-                if (fpsDelta >= 1.0) {
+                } else if (fpsDelta >= 1.0) {
                     synchronized (Renderer.OBJ_FPS) {
                         Renderer.OBJ_FPS.notify();
                     }

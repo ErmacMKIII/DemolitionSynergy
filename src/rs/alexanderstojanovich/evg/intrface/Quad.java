@@ -42,26 +42,11 @@ public class Quad {
 
     private boolean ignoreFactor = false;
 
-    public Quad(Window window, float width, float height, String textureFileName) {
-        this.myWindow = window;
-        this.width = width;
-        this.height = height;
-        this.texture = new Texture(textureFileName);
-    }
-
     public Quad(Window window, float width, float height, Texture texture) {
         this.myWindow = window;
         this.width = width;
         this.height = height;
         this.texture = texture;
-    }
-
-    public Quad(Window window, float width, float height, String textureFileName, boolean ignoreFactor) {
-        this.myWindow = window;
-        this.width = width;
-        this.height = height;
-        this.texture = new Texture(textureFileName);
-        this.ignoreFactor = ignoreFactor;
     }
 
     public Quad(Window window, float width, float height, Texture texture, boolean ignoreFactor) {

@@ -30,6 +30,7 @@ public class Vertex {
     private Vector3f pos;
     private Vector3f normal;
     private Vector2f uv;
+    private boolean enabled = true;
 
     public Vertex(float x, float y, float z) {
         this.pos = new Vector3f(x, y, z);
@@ -88,6 +89,14 @@ public class Vertex {
 
     public void setUv(Vector2f uv) {
         this.uv = uv;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
 }

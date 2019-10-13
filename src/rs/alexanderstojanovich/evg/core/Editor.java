@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.util.Collections;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -30,7 +29,7 @@ public class Editor {
     private static Block loaded = null;
     public static Block selectedNew = null;
     private static Block selectedCurr = null;
-    private static final Texture SELECTED_TEXTURE = new Texture("minigun.png");
+    private static final Texture SELECTED_TEXTURE = Texture.MINIGUN;
 
     private static int value = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
@@ -45,16 +44,22 @@ public class Editor {
         }
         selectedNew = loaded;
 
-        Vector3f frontBuff = new Vector3f();
-        frontBuff.x = 2.0f * levelRenderer.getObserver().getCamera().getFront().x * selectedNew.getWidth();
-        frontBuff.y = 2.0f * levelRenderer.getObserver().getCamera().getFront().y * selectedNew.getHeight();
-        frontBuff.z = 2.0f * levelRenderer.getObserver().getCamera().getFront().z * selectedNew.getDepth();
-        Vector3f temp = new Vector3f();
-        Vector3f vect = levelRenderer.getObserver().getCamera().getPos().add(frontBuff, temp);
+        // fetching..
+        Critter obs = levelRenderer.getObserver();
+        Vector3f pos = obs.getCamera().getPos();
+        Vector3f front = obs.getCamera().getFront();
+        // initial calculation
+        selectedNew.getPos().x = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.x)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().y = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.y)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().z = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.z)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
 
-        selectedNew.getPos().x = vect.x;
-        selectedNew.getPos().y = vect.y;
-        selectedNew.getPos().z = vect.z;
+        Vector3f temp = new Vector3f();
+        selectedNew.setPos(selectedNew.getPos().div(2.0f, temp));
+
+        // make it follows player camera
+        selectedNew.getPos().x += Math.round(pos.x);
+        selectedNew.getPos().y += Math.round(pos.y);
+        selectedNew.getPos().z += Math.round(pos.z);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;
@@ -148,27 +153,28 @@ public class Editor {
             selectedNew.getPos().z = selectedCurr.getPos().z;
 
             switch (position) {
-                default:
                 case Block.LEFT:
-                    selectedNew.getPos().x += selectedCurr.getWidth() / 2.0f + selectedNew.getWidth() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().x += selectedCurr.getWidth() / 2.0f + selectedNew.getWidth() / 2.0f;
                     break;
                 case Block.RIGHT:
-                    selectedNew.getPos().x -= selectedCurr.getWidth() / 2.0f + selectedNew.getWidth() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().x -= selectedCurr.getWidth() / 2.0f + selectedNew.getWidth() / 2.0f;
                     break;
                 case Block.BOTTOM:
-                    selectedNew.getPos().y += selectedCurr.getHeight() / 2.0f + selectedNew.getHeight() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().y += selectedCurr.getHeight() / 2.0f + selectedNew.getHeight() / 2.0f;
                     break;
                 case Block.TOP:
-                    selectedNew.getPos().y -= selectedCurr.getHeight() / 2.0f + selectedNew.getHeight() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().y -= selectedCurr.getHeight() / 2.0f + selectedNew.getHeight() / 2.0f;
                     break;
                 case Block.BACK:
-                    selectedNew.getPos().z += selectedCurr.getDepth() / 2.0f + selectedNew.getDepth() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().z += selectedCurr.getDepth() / 2.0f + selectedNew.getDepth() / 2.0f;
                     break;
                 case Block.FRONT:
-                    selectedNew.getPos().z -= selectedCurr.getDepth() / 2.0f + selectedNew.getDepth() / 2.0f + Game.EPSILON;
+                    selectedNew.getPos().z -= selectedCurr.getDepth() / 2.0f + selectedNew.getDepth() / 2.0f;
                     break;
-
+                default:
+                    break;
             }
+
             if (!cannotPlace(levelRenderer)) {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
@@ -183,18 +189,19 @@ public class Editor {
         boolean cant = false;
         boolean placeOccupied = levelRenderer.isPlaceOccupiedBySolid(selectedNew.getPos())
                 || levelRenderer.isPlaceOccupiedByFluid(selectedNew.getPos());
-
         boolean intsSolid = false;
         for (int i = 0; i < levelRenderer.getSolidBlocks().size() && !intsSolid; i++) {
-            intsSolid = selectedNew.intersects(levelRenderer.getSolidBlocks().get(i));
+            intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().get(i));
         }
 
         boolean intsFluid = false;
         for (int j = 0; j < levelRenderer.getFluidBlocks().size() && !intsFluid; j++) {
-            intsFluid = selectedNew.intersects(levelRenderer.getFluidBlocks().get(j));
+            intsFluid = selectedNew.intersectsExactly(levelRenderer.getFluidBlocks().get(j));
         }
 
-        cant = placeOccupied || intsSolid || intsFluid;
+        boolean leavesSkybox = !levelRenderer.getSkybox().containsExactly(selectedNew.getPos())
+                || !levelRenderer.getSkybox().intersectsExactly(selectedNew);
+        cant = placeOccupied || intsSolid || intsFluid || leavesSkybox;
         if (cant) {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;
@@ -211,13 +218,13 @@ public class Editor {
                 selectedNew.setSecondaryTexture(null);
                 if (selectedNew.isPassable()) {
                     levelRenderer.getFluidBlocks().add(selectedNew);
-                    Collections.shuffle(levelRenderer.getFluidBlocks());
-                    Collections.sort(levelRenderer.getFluidBlocks());
+                    levelRenderer.updateFluidNeighbors();
+                    levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
                 } else {
+                    levelRenderer.updateSolidNeighbors();
+                    levelRenderer.updateSolidToFluidNeighbors();
                     levelRenderer.getSolidBlocks().add(selectedNew);
-                    Collections.shuffle(levelRenderer.getSolidBlocks());
-                    Collections.sort(levelRenderer.getSolidBlocks());
                 }
                 loaded = new Block(levelRenderer.getShaderProgram());
                 selectLoadedTexture();
@@ -228,6 +235,16 @@ public class Editor {
 
     public static void remove(LevelRenderer levelRenderer) {
         if (selectedCurr != null) {
+            for (int i = 0; i <= 5; i++) {
+                Block otherBlock = selectedCurr.getAdjacentBlockMap().get(i);
+                if (otherBlock != null) {
+                    if (i % 2 == 0) {
+                        otherBlock.getAdjacentBlockMap().remove(i + 1);
+                    } else {
+                        otherBlock.getAdjacentBlockMap().remove(i - 1);
+                    }
+                }
+            }
             if (selectedCurr.isPassable()) {
                 levelRenderer.getFluidBlocks().remove(selectedCurr);
                 levelRenderer.updateFluids();
@@ -243,22 +260,22 @@ public class Editor {
         if (loaded != null) {
             switch (value) {
                 case 0:
-                    texture = new Texture("crate.png");
+                    texture = Texture.CRATE;
                     loaded.setPassable(false);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 1:
-                    texture = new Texture("stone.png");
+                    texture = Texture.STONE;
                     loaded.setPassable(false);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 2:
-                    texture = new Texture("water.png");
+                    texture = Texture.WATER;
                     loaded.setPassable(true);
                     loaded.getPrimaryColor().w = 0.5f;
                     break;
                 case 3:
-                    texture = new Texture("doom0.png");
+                    texture = Texture.DOOM0;
                     loaded.setPassable(false);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;

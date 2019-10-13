@@ -7,8 +7,8 @@
 <!-- the Compile on Save feature is turned off for the project. -->
 <!-- You can turn off the Compile on Save (or Deploy on Save) setting -->
 <!-- in the project's Project Properties dialog box.-->
-<project name="ErmacVoxelGame04_DETROIT" default="default" basedir=".">
-    <description>Builds, tests, and runs the project ErmacVoxelGame04_DETROIT.</description>
+<project name="ErmacVoxelGame05_ECUADOR" default="default" basedir=".">
+    <description>Builds, tests, and runs the project ErmacVoxelGame05_ECUADOR.</description>
     <import file="nbproject/build-impl.xml"/>
     <!--
 
@@ -58,7 +58,7 @@
 
     An example of overriding the target for project execution could look like this:
 
-        <target name="run" depends="ErmacVoxelGame04_DETROIT-impl.jar">
+        <target name="run" depends="ErmacVoxelGame05_ECUADOR-impl.jar">
             <exec dir="bin" executable="launcher.exe">
                 <arg file="${dist.jar}"/>
             </exec>

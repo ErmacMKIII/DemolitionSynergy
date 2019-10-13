@@ -72,9 +72,9 @@ public class Text {
         return text.toString();
     }
 
-    public Text(Window window, String textureFileName, String content) {
+    public Text(Window window, Texture texture, String content) {
         this.myWindow = window;
-        this.texture = new Texture(textureFileName);
+        this.texture = texture;
         this.content = content;
         this.color = new Vector3f(1.0f, 1.0f, 1.0f);
         this.pos = new Vector2f();
@@ -84,9 +84,9 @@ public class Text {
         this.enabled = true;
     }
 
-    public Text(Window window, String textureFileName, String content, Vector3f color, Vector2f pos) {
+    public Text(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
         this.myWindow = window;
-        this.texture = new Texture(textureFileName);
+        this.texture = texture;
         this.content = content;
         this.color = color;
         this.pos = pos;
@@ -96,9 +96,9 @@ public class Text {
         this.enabled = true;
     }
 
-    public Text(Window window, String textureFileName, String content, Vector2f pos, float charWidth, float charHeight) {
+    public Text(Window window, Texture texture, String content, Vector2f pos, float charWidth, float charHeight) {
         this.myWindow = window;
-        this.texture = new Texture(textureFileName);
+        this.texture = texture;
         this.content = content;
         this.pos = pos;
         this.charWidth = charWidth;
