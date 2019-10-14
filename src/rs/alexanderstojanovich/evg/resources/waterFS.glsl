@@ -12,11 +12,6 @@ uniform sampler2D modelTexture0; // this is primary texture
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
 
-vec2 reflUV(){
-    vec2 ndc = (glPosOut.xy/glPosOut.w) /2.0 + 0.5;
-    return vec2(ndc.x, -ndc.y);
-}
-
 void main(){            
     vec3 finalColor = modelColor0.rgb * texture(modelTexture0, uvOut).rgb;                    
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
