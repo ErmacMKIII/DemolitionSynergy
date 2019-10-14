@@ -14,8 +14,6 @@ uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
-uniform float waterHeight;
-
 void main(){      
     glPosOut = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
     modelPosOut = (modelMatrix * vec4(pos, 1.0)).xyz;  

@@ -7,10 +7,7 @@ in vec4 glPosOut;
 in vec3 modelPosOut;
 
 uniform vec4 modelColor0;
-uniform vec3 modelLight;
 uniform sampler2D modelTexture0; // this is primary texture
-uniform vec3 cameraPos;
-uniform vec3 cameraFront;
 
 void main(){            
     vec3 finalColor = modelColor0.rgb * texture(modelTexture0, uvOut).rgb;                    
