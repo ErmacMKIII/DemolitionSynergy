@@ -30,8 +30,8 @@ public class Critter {
     private final Camera camera;
     private final Model model;
     private boolean givenControl = true;
-    private Vector3f predictor;
-    private final Model predModel;
+    private Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
+    private final Model predModel = new Model("icosphere.obj");
 
     public Critter(String modelFileName, Texture texture, ShaderProgram shaderProgram, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos, shaderProgram);
@@ -39,55 +39,52 @@ public class Critter {
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());
-        initModelPos();
-        this.predictor = pos;
-        this.predModel = new Model(modelFileName);
+        updateModelPos();
     }
 
     public Critter(Camera camera, Model model) {
         this.camera = camera;
         this.model = model;
-        initModelPos();
-        this.predictor = camera.getPos();
-        this.predModel = new Model(model.getModelFileName());
+        updateModelPos();
     }
 
-    private void initModelPos() {
+    private void updateModelPos() {
         model.getPos().x = camera.getPos().x;
         model.getPos().y = camera.getPos().y;
         model.getPos().z = camera.getPos().z;
-        model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f)));
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f temp3 = new Vector3f();
+        model.setPos(model.getPos().sub(camera.getFront().mul(model.getDepth() / 2.0f, temp1), temp1));
+        model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
+        model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
     }
 
     public void moveForward(float amount) {
         if (givenControl) {
             camera.moveForward(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().add(camera.getFront().mul(amount, temp), temp);
+            updateModelPos();
         }
     }
 
     public void moveBackward(float amount) {
         if (givenControl) {
             camera.moveBackward(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().sub(camera.getFront().mul(amount, temp), temp);
+            updateModelPos();
         }
     }
 
     public void moveLeft(float amount) {
         if (givenControl) {
             camera.moveLeft(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().sub(camera.getRight().mul(amount, temp), temp);
+            updateModelPos();
         }
     }
 
     public void moveRight(float amount) {
         if (givenControl) {
             camera.moveRight(amount);
-            Vector3f temp = new Vector3f();
-            model.setPos(model.getPos().add(camera.getRight().mul(amount, temp), temp));
+            updateModelPos();
         }
     }
 
@@ -146,11 +143,8 @@ public class Critter {
     public void render() {
         if (givenControl) {
             camera.render();
-            model.render();
         }
-        /*else {
-            model.render();
-        }*/
+//        model.render();
     }
 
     @Override

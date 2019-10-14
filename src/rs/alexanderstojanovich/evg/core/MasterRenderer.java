@@ -63,8 +63,8 @@ public class MasterRenderer {
     }
 
     private void initShaders() {
-        Shader vertexShader = new Shader("mainVertexShader.txt", GL20.GL_VERTEX_SHADER);
-        Shader fragmentShader = new Shader("mainFragmentShader.txt", GL20.GL_FRAGMENT_SHADER);
+        Shader vertexShader = new Shader("mainVS.glsl", Shader.VERTEX_SHADER);
+        Shader fragmentShader = new Shader("mainFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> shaders = new ArrayList<>();
         shaders.add(vertexShader);
         shaders.add(fragmentShader);

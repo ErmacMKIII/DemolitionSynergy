@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -60,12 +61,12 @@ public class LevelRenderer {
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
-        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
         observer.setGivenControl(true);
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, shaderProgram, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
         observer.setGivenControl(true);
         solidBlocks.clear();
         fluidBlocks.clear();
@@ -193,8 +194,8 @@ public class LevelRenderer {
             pos += rightArr.length;
 
             Camera obsCamera = new Camera(campos, shaderProgram, camfront, camup, camright);
-            Model obsModel = new Model("icosphere.obj", shaderProgram);
-            obsModel.setScale(0.25f);
+            Model obsModel = new Model("icosphere.obj", Texture.MARBLE, shaderProgram);
+            obsModel.setScale(0.01f);
             observer = new Critter(obsCamera, obsModel);
             observer.setGivenControl(true);
             char[] solid = new char[5];
@@ -438,26 +439,55 @@ public class LevelRenderer {
         coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
         for (int i = 0; i < solidBlocks.size() && !coll; i++) {
             Block entity = solidBlocks.get(i);
-            coll = entity.contains(critter.getPredictor()) || entity.intersects(critter.getPredModel());
+            coll = entity.containsExactly(critter.getPredictor()); // || entity.intersectsExactly(critter.getPredModel());
         }
         return coll;
     }
 
-    public void render(Camera camera) {
+    public void render() { // regular level rendering
 
-        camera.render();
-        skybox.render();
+        observer.render();
+        skybox.render(shaderProgram);
+
+        Camera obsCamera = observer.getCamera();
 
         if (Editor.selectedNew != null) {
-            Editor.selectedNew.setLight(camera.getPos());
-            Editor.selectedNew.render();
+            Editor.selectedNew.setLight(obsCamera.getPos());
+            Editor.selectedNew.render(shaderProgram);
         }
+
+        for (Block solidBlock : solidBlocks) {
+            if (obsCamera.doesSee(solidBlock)
+                    && solidBlock.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())) {
+                solidBlock.setLight(obsCamera.getPos());
+                solidBlock.render(shaderProgram);
+            }
+        }
+        boolean cameraInFluid = isCameraInFluid();
+
+        for (Block fluidBlock : fluidBlocks) {
+            if (obsCamera.doesSee(fluidBlock)
+                    && fluidBlock.hasFaces()
+                    && fluidBlock.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())) {
+                if (Boolean.logicalXor(cameraInFluid, fluidBlock.isVerticesReversed())) {
+                    fluidBlock.reverseFaceVertexOrder();
+                }
+                fluidBlock.setLight(obsCamera.getPos());
+                fluidBlock.render(shaderProgram);
+            }
+        }
+    }
+
+    public void render(Camera camera, ShaderProgram shaderProgram) { // render for framebuffer (water renderer)
+
+        camera.render();
+        skybox.render(shaderProgram);
 
         for (Block solidBlock : solidBlocks) {
             if (camera.doesSee(solidBlock)
                     && solidBlock.canBeSeenBy(camera.getFront(), camera.getPos())) {
                 solidBlock.setLight(camera.getPos());
-                solidBlock.render();
+                solidBlock.render(shaderProgram);
             }
         }
         boolean cameraInFluid = isCameraInFluid();
@@ -470,7 +500,7 @@ public class LevelRenderer {
                     fluidBlock.reverseFaceVertexOrder();
                 }
                 fluidBlock.setLight(camera.getPos());
-                fluidBlock.render();
+                fluidBlock.render(shaderProgram);
             }
         }
     }

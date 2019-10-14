@@ -60,8 +60,7 @@ public class Model implements Comparable<Model> {
     protected int vbo; // vertex buffer object
     protected int ibo; // index buffer object        
 
-    protected ShaderProgram shaderProgram;
-
+//    protected ShaderProgram shaderProgram;
     protected Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
 
@@ -95,7 +94,6 @@ public class Model implements Comparable<Model> {
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
-        this.shaderProgram = shaderProgram;
         this.pos = new Vector3f();
         calcDims();
     }
@@ -106,7 +104,6 @@ public class Model implements Comparable<Model> {
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
-        this.shaderProgram = shaderProgram;
         calcDims();
     }
 
@@ -116,7 +113,6 @@ public class Model implements Comparable<Model> {
         readFromObjFile(modelFileName);
         bufferVertices();
         bufferIndices();
-        this.shaderProgram = shaderProgram;
         this.pos = pos;
         calcDims();
         this.primaryColor = primaryColor;
@@ -234,7 +230,7 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         Texture.enable();
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
@@ -250,18 +246,18 @@ public class Model implements Comparable<Model> {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            transform();
-            useLight();
-            if (primaryTexture != null) {
-                primaryColor();
+            transform(shaderProgram);
+            useLight(shaderProgram);
+            if (primaryTexture != null) { // this is primary texture
+                primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
-            if (secondaryTexture != null) {
-                secondaryColor();
+            if (secondaryTexture != null) { // this is editor overlay texture
+                secondaryColor(shaderProgram);
                 secondaryTexture.bind(1, shaderProgram, "modelTexture1");
             }
-            if (tertiaryTexture != null) {
-                tertiaryColor();
+            if (tertiaryTexture != null) { // this is reflective texture
+                tertiaryColor(shaderProgram);
                 tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
             }
         }
@@ -279,7 +275,7 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
-    public void transform() {
+    public void transform(ShaderProgram shaderProgram) {
         Matrix4f translationMatrix = new Matrix4f().translate(pos);
         Matrix4f rotationMatrix = new Matrix4f().rotateAffineXYZ(rX, rY, rZ);
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
@@ -291,22 +287,22 @@ public class Model implements Comparable<Model> {
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
     }
 
-    public void primaryColor() {
+    public void primaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor0");
         GL20.glUniform4f(uniformLocation, primaryColor.x, primaryColor.y, primaryColor.z, primaryColor.w);
     }
 
-    public void secondaryColor() {
+    public void secondaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor1");
         GL20.glUniform4f(uniformLocation, secondaryColor.x, secondaryColor.y, secondaryColor.z, secondaryColor.w);
     }
 
-    public void tertiaryColor() {
+    public void tertiaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor2");
         GL20.glUniform4f(uniformLocation, tertiaryColor.x, tertiaryColor.y, tertiaryColor.z, tertiaryColor.w);
     }
 
-    public void useLight() {
+    public void useLight(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelLight");
         GL20.glUniform3f(uniformLocation, light.x, light.y, light.z);
     }
@@ -440,15 +436,14 @@ public class Model implements Comparable<Model> {
     }
 
     public float giveSurfacePos() {
-        return (this.pos.y + this.height / 2.0f);
+        return (this.pos.y - this.height / 2.0f);
     }
 
-    public void updateSurfacePos() {
-        float surfacePos = giveSurfacePos();
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelSurfacePos");
-        GL20.glUniform1f(uniformLocation, surfacePos);
-    }
-
+//    public void updateSurfacePos() {
+//        float surfacePos = giveSurfacePos();
+//        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelSurfacePos");
+//        GL20.glUniform1f(uniformLocation, surfacePos);
+//    }
     public String getModelFileName() {
         return modelFileName;
     }
@@ -535,14 +530,6 @@ public class Model implements Comparable<Model> {
 
     public void setIbo(int ibo) {
         this.ibo = ibo;
-    }
-
-    public ShaderProgram getShaderProgram() {
-        return shaderProgram;
-    }
-
-    public void setShaderProgram(ShaderProgram shaderProgram) {
-        this.shaderProgram = shaderProgram;
     }
 
     public Vector3f getPos() {

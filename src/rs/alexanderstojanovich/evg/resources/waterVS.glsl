@@ -19,7 +19,7 @@ uniform float waterHeight;
 void main(){      
     glPosOut = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
     modelPosOut = (modelMatrix * vec4(pos, 1.0)).xyz;    
-    vec4 plane = vec4(0, 1, 0, -waterHeight);
+    vec4 plane = vec4(0.0, 1.0, 0.0, -waterHeight);
     gl_ClipDistance[0] = dot(plane, modelMatrix * vec4(pos, 1.0));
     gl_Position = glPosOut;        
     normalOut = normal;

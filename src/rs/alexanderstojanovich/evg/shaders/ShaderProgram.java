@@ -27,7 +27,7 @@ import org.lwjgl.opengl.GL20;
 public class ShaderProgram {
 
     private int program; // made to link all the shaders    
-    private List<Shader> shaders;
+    private final List<Shader> shaders;
 
     public ShaderProgram(List<Shader> shaders) {
         program = GL20.glCreateProgram();
@@ -82,16 +82,8 @@ public class ShaderProgram {
         return program;
     }
 
-    public void setProgram(int program) {
-        this.program = program;
-    }
-
     public List<Shader> getShaders() {
         return shaders;
-    }
-
-    public void setShaders(List<Shader> shaders) {
-        this.shaders = shaders;
     }
 
 }

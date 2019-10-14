@@ -54,12 +54,12 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.z)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
 
         Vector3f temp = new Vector3f();
-        selectedNew.setPos(selectedNew.getPos().div(2.0f, temp));
+        selectedNew.setPos(selectedNew.getPos().div(LevelRenderer.SKYBOX_WIDTH, temp).mul(2.0f, temp));
 
         // make it follows player camera
-        selectedNew.getPos().x += Math.round(pos.x);
-        selectedNew.getPos().y += Math.round(pos.y);
-        selectedNew.getPos().z += Math.round(pos.z);
+        selectedNew.getPos().x += Math.round((pos.x) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
+        selectedNew.getPos().y += Math.round((pos.y) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
+        selectedNew.getPos().z += Math.round((pos.z) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;

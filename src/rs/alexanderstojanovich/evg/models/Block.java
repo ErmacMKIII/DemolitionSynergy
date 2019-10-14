@@ -72,7 +72,6 @@ public class Block extends Model {
 
     public Block(ShaderProgram shaderProgram) {
         super();
-        this.shaderProgram = shaderProgram;
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
         bufferVertices();
@@ -83,7 +82,6 @@ public class Block extends Model {
     public Block(Texture primaryTexture, ShaderProgram shaderProgram) {
         super();
         this.primaryTexture = primaryTexture;
-        this.shaderProgram = shaderProgram;
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
         bufferVertices();
@@ -94,7 +92,6 @@ public class Block extends Model {
     public Block(Texture primaryTexture, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
         super();
         this.primaryTexture = primaryTexture;
-        this.shaderProgram = shaderProgram;
         Arrays.fill(enabledFaces, true);
         this.pos = pos;
         this.primaryColor = primaryColor;

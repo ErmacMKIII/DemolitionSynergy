@@ -22,6 +22,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.shaders.Shader;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -33,6 +35,7 @@ public class WaterRenderer {
     private final LevelRenderer levelRenderer;
     private List<Float> waterHeights = new ArrayList<>();
     private final FrameBuffer frameBuffer;
+    private final ShaderProgram waterShader;
     private final Camera camera;
 //    private Quad quad;
 
@@ -40,11 +43,19 @@ public class WaterRenderer {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
-        this.camera = new Camera(this.levelRenderer.getShaderProgram());
+        List<Shader> shaders = new ArrayList<>();
+        Shader vertex = new Shader("waterVS.glsl", Shader.VERTEX_SHADER);
+        Shader fragment = new Shader("waterFS.glsl", Shader.FRAGMENT_SHADER);
+        shaders.add(vertex);
+        shaders.add(fragment);
+        this.waterShader = new ShaderProgram(shaders);
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), waterShader);
+        this.camera = new Camera(waterShader);
 //        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
 //        this.quad.setScale(0.25f);
 //        this.quad.getPos().x = -0.85f * 0.95f;
 //        this.quad.getPos().y = -0.7f;
+//        quad.setEnabled(true);
     }
 
     private void refresh() {
@@ -56,7 +67,7 @@ public class WaterRenderer {
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                     && topSolidBlock == null // it must be nothing on top of it
                     && waterHeight <= obsHeight) { // and it needs to be below the observer
-                fluidBlock.setTertiaryTexture(frameBuffer.getTexture());
+                fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer
                 if (!waterHeights.contains(waterHeight)) {
                     waterHeights.add(waterHeight);
                 }
@@ -71,7 +82,7 @@ public class WaterRenderer {
     }
 
     private void updateClipPlane(float waterHeight) {
-        int uniformLocation = GL20.glGetUniformLocation(levelRenderer.getShaderProgram().getProgram(), "waterHeight");
+        int uniformLocation = GL20.glGetUniformLocation(waterShader.getProgram(), "waterHeight");
         GL20.glUniform1f(uniformLocation, waterHeight);
     }
 
@@ -88,7 +99,7 @@ public class WaterRenderer {
         frameBuffer.bind();
         prepare();
         updateCamera(waterHeight);
-        levelRenderer.render(camera);
+        levelRenderer.render(camera, waterShader);
         frameBuffer.unbind();
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
@@ -98,6 +109,7 @@ public class WaterRenderer {
         for (float height : waterHeights) {
             capture(height);
         }
+//        quad.render();        
     }
 
     public Window getMyWindow() {

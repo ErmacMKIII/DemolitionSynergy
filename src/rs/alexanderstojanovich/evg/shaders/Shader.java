@@ -38,6 +38,9 @@ public class Shader {
 
     private int shader;
 
+    public static int VERTEX_SHADER = GL20.GL_VERTEX_SHADER;
+    public static int FRAGMENT_SHADER = GL20.GL_FRAGMENT_SHADER;
+
     // we'll need filename and type of shader (vertex or fragment)
     public Shader(String filename, int type) {
         this.type = type;
@@ -96,24 +99,12 @@ public class Shader {
         return type;
     }
 
-    public void setType(int type) {
-        this.type = type;
-    }
-
     public String getSrc() {
         return src;
     }
 
-    public void setSrc(String src) {
-        this.src = src;
-    }
-
     public int getShader() {
         return shader;
-    }
-
-    public void setShader(int shader) {
-        this.shader = shader;
     }
 
 }

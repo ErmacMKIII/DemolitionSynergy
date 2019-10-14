@@ -20,7 +20,7 @@ uniform vec3 cameraFront;
 
 float attenuation(vec3 lightSrc, vec3 target){
     float distance = length(lightSrc - target);
-    float attenuation = 1.0 / (pow(distance, 2) - 4 * distance + 4);        
+    float attenuation = 1.0 / (pow(distance, 2) - 4.0 * distance + 4.0);        
     attenuation = clamp(attenuation, 0.0, 1.0);
     return attenuation;
 }
@@ -55,10 +55,10 @@ void main(){
     
     float fresnel = dot(normalize(cameraPos), normalOut);
 
-    vec4 finalColor = brightness * (modelColor0 * texture(modelTexture0, uvOut) 
-                    + modelColor1 * texture(modelTexture1, uvOut)
-                    + fresnel * modelColor2 * texture(modelTexture2, reflUV()));
-    float opacity = modelColor0.w * texture(modelTexture0, uvOut).w;    
+    vec3 finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb 
+                    + modelColor1.rgb * texture(modelTexture1, uvOut).rgb
+                    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);
+    float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     
-    gl_FragColor = vec4(finalColor.xyz, opacity);    
+    gl_FragColor = vec4(finalColor.rgb, alpha);    
 }

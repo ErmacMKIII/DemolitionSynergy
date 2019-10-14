@@ -91,6 +91,7 @@ public class Camera { // is 3D looking camera
     }
 
     private void calcViewMatrix() {
+        updateCameraVectors();
         Vector3f temp = new Vector3f();
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }

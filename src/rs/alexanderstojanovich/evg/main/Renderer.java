@@ -35,7 +35,6 @@ public class Renderer extends Thread {
 
     private final Window myWindow;
     private final MasterRenderer masterRenderer;
-    private final PerspectiveRenderer perspectiveRenderer;
     private final LevelRenderer levelRenderer;
     private final WaterRenderer waterRenderer;
     private final Intrface intrface;
@@ -46,8 +45,8 @@ public class Renderer extends Thread {
         super("Renderer");
         this.myWindow = myWindow;
         masterRenderer = new MasterRenderer(myWindow);
-        perspectiveRenderer = new PerspectiveRenderer(myWindow, masterRenderer.getShaderProgram());
         levelRenderer = new LevelRenderer(masterRenderer.getShaderProgram());
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), masterRenderer.getShaderProgram());
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
         intrface = new Intrface(myWindow, levelRenderer);
     }
@@ -74,8 +73,7 @@ public class Renderer extends Thread {
 
                 if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
                     masterRenderer.render();
-                    perspectiveRenderer.render();
-                    levelRenderer.render(levelRenderer.getObserver().getCamera());
+                    levelRenderer.render();
                     waterRenderer.render();
                     intrface.render();
                     myWindow.render();
@@ -122,10 +120,6 @@ public class Renderer extends Thread {
 
     public MasterRenderer getMasterRenderer() {
         return masterRenderer;
-    }
-
-    public PerspectiveRenderer getPerspectiveRenderer() {
-        return perspectiveRenderer;
     }
 
     public LevelRenderer getLevelRenderer() {
