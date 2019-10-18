@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -44,6 +45,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
     private final int[] vboEntries = new int[65536];
+    private final int[] ibos = new int[65536];
     public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
     private int mutualIbo;
     private boolean indicesBuffered = false;
@@ -81,10 +83,33 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     public void bufferIndices() { // call it before any rendering
-        mutualIbo = GL15.glGenBuffers();
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mutualIbo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, CONST_INT_BUFFER, GL15.GL_STATIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        int blkIndex = 0;
+        for (Block block : blockList) {
+            List<Integer> indices = new ArrayList<>();
+            for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // i - face number                                
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+            }
+            // storing indices in the buffer
+            IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+            for (Integer index : indices) {
+                intBuff.put(index);
+            }
+            intBuff.flip();
+            // storing indices buffer on the graphics card
+            int ibo = GL15.glGenBuffers();
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            // finally assigning it to the array element
+            ibos[blkIndex] = ibo;
+            blkIndex++;
+        }
         indicesBuffered = true;
     }
 
@@ -187,7 +212,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mutualIbo);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -217,6 +241,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos[blkIndex]);
                     GL32.glDrawElementsBaseVertex(
                             GL11.GL_TRIANGLES,
                             Block.INDICES_COUNT,
@@ -224,7 +249,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                             0,
                             vboEntries[blkIndex]
                     );
-
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
                     Texture.unbind(0);
                     Texture.unbind(1);
                     Texture.unbind(2);
@@ -239,7 +264,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL20.glDisableVertexAttribArray(2);
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             Texture.disable();
         }

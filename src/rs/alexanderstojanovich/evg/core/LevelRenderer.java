@@ -415,6 +415,7 @@ public class LevelRenderer {
                 }
             }
         }
+        fluidBlocks.bufferAll();
     }
 
     public boolean isPlaceOccupiedBySolid(Vector3f pos) {
