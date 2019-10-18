@@ -25,7 +25,7 @@ import org.joml.Vector3f;
  */
 public class Vertex {
 
-    public static final int SIZE = 8;
+    public static final int SIZE = 8; // size in floats -> it means 8 floats
 
     private Vector3f pos;
     private Vector3f normal;
@@ -65,6 +65,17 @@ public class Vertex {
         this.pos = pos;
         this.normal = normal;
         this.uv = uv;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Vertex) {
+            Vertex that = (Vertex) obj;
+            return (this.pos.equals(that.pos)
+                    && this.normal.equals(that.normal)
+                    && this.uv.equals(that.uv));
+        }
+        return false;
     }
 
     public Vector3f getPos() {

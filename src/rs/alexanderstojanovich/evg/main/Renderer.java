@@ -45,8 +45,8 @@ public class Renderer extends Thread {
         super("Renderer");
         this.myWindow = myWindow;
         masterRenderer = new MasterRenderer(myWindow);
-        levelRenderer = new LevelRenderer(masterRenderer.getShaderProgram());
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), masterRenderer.getShaderProgram());
+        levelRenderer = new LevelRenderer(myWindow, masterRenderer.getMainShader());
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), masterRenderer.getMainShader());
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
         intrface = new Intrface(myWindow, levelRenderer);
     }
@@ -74,7 +74,7 @@ public class Renderer extends Thread {
                 if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
                     masterRenderer.render();
                     levelRenderer.render();
-                    waterRenderer.render();
+//                    waterRenderer.render();
                     intrface.render();
                     myWindow.render();
                     fps++;
@@ -104,7 +104,8 @@ public class Renderer extends Thread {
                 }
 
                 if (System.currentTimeMillis() > timer2 + 250) {
-                    levelRenderer.animate();
+//                    levelRenderer.animate();
+                    levelRenderer.getFluidBlocks().animate();
                     timer2 += 250;
                 }
 

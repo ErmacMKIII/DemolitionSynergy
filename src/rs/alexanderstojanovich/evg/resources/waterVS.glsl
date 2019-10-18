@@ -25,4 +25,3 @@ void main(){
     normalOut = normal;
     uvOut = uv;    
 }
-

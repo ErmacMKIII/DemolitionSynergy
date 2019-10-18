@@ -38,7 +38,6 @@ import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -53,13 +52,18 @@ public class Block extends Model {
     public static final int TOP = 3;
     public static final int BACK = 4;
     public static final int FRONT = 5;
+    // which faces we enabled for rendering and which we disabled
     private final boolean[] enabledFaces = new boolean[6];
-    ; // which faces we enabled for rendering and which we disabled    
-    
+
     private final Map<Integer, Block> adjacentBlockMap = new HashMap<>(); // helps locating neighbours blocks           
     private boolean verticesReversed = false;
 
     public static final List<Vector3f> FACE_NORMALS = new ArrayList<>();
+
+    public static final int VERTEX_COUNT = 24;
+    public static final int INDICES_COUNT = 36;
+
+    public static final Block CONST = new Block();
 
     static {
         FACE_NORMALS.add(new Vector3f(-1.0f, 0.0f, 0.0f));
@@ -70,7 +74,7 @@ public class Block extends Model {
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
     }
 
-    public Block(ShaderProgram shaderProgram) {
+    public Block() {
         super();
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
@@ -79,7 +83,7 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(Texture primaryTexture, ShaderProgram shaderProgram) {
+    public Block(Texture primaryTexture) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
@@ -89,7 +93,7 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(Texture primaryTexture, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Block(Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
@@ -237,8 +241,12 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public List<Vertex> getFace(int faceNum) {
+    public List<Vertex> getFaceVertices(int faceNum) {
         return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
+    }
+
+    public static List<Integer> getConstFaceIndices(int faceNum) {
+        return CONST.indices.subList(6 * faceNum, 6 * (faceNum + 1));
     }
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
@@ -260,42 +268,54 @@ public class Block extends Model {
         return bool;
     }
 
-    public void disableFace(int faceNum) {
-        for (Vertex vertex : getFace(faceNum)) {
+    public void disableFace(int faceNum, boolean selfBuffer) {
+        for (Vertex vertex : getFaceVertices(faceNum)) {
             vertex.setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
-        bufferVertices();
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
-    public void enableFace(int faceNum) {
-        for (Vertex vertex : getFace(faceNum)) {
+    public void enableFace(int faceNum, boolean selfBuffer) {
+        for (Vertex vertex : getFaceVertices(faceNum)) {
             vertex.setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
-        bufferVertices();
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
-    public void enableAllFaces() {
+    public void enableAllFaces(boolean selfBuffer) {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(true);
         }
-        bufferVertices();
+        Arrays.fill(enabledFaces, true);
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
-    public void disableAllFaces() {
+    public void disableAllFaces(boolean selfBuffer) {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(false);
         }
-        bufferVertices();
+        Arrays.fill(enabledFaces, false);
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
-    public void reverseFaceVertexOrder() {
+    public void reverseFaceVertexOrder(boolean selfBuffer) {
         for (int j = 0; j <= 5; j++) {
-            Collections.reverse(getFace(j));
+            Collections.reverse(getFaceVertices(j));
         }
         verticesReversed = !verticesReversed;
-        bufferVertices();
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
     public void setUVsForSkybox() {
@@ -358,6 +378,26 @@ public class Block extends Model {
             }
         }
         return arg;
+    }
+
+    public int getNumOfEnabledFaces() {
+        int num = 0;
+        for (int i = 0; i <= 5; i++) {
+            if (enabledFaces[i]) {
+                num++;
+            }
+        }
+        return num;
+    }
+
+    public int getNumOfEnabledVertices() {
+        int num = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.isEnabled()) {
+                num++;
+            }
+        }
+        return num;
     }
 
     public boolean[] getEnabledFaces() {

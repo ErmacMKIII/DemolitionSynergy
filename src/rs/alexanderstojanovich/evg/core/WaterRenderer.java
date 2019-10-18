@@ -61,7 +61,7 @@ public class WaterRenderer {
     private void refresh() {
         waterHeights.clear();
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
-        for (Block fluidBlock : levelRenderer.getFluidBlocks()) {
+        for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
             float waterHeight = fluidBlock.giveSurfacePos();
             Block topSolidBlock = fluidBlock.getAdjacentBlockMap().get(Block.TOP);
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top

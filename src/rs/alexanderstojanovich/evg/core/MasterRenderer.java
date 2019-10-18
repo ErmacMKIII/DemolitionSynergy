@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GLCapabilities;
 import rs.alexanderstojanovich.evg.shaders.Shader;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -34,7 +34,7 @@ public class MasterRenderer {
     private static GLCapabilities glCaps;
     private final Window myWindow;
 
-    private ShaderProgram shaderProgram;
+    private ShaderProgram mainShader;
 
     public MasterRenderer(Window window) {
         this.myWindow = window;
@@ -68,7 +68,7 @@ public class MasterRenderer {
         List<Shader> shaders = new ArrayList<>();
         shaders.add(vertexShader);
         shaders.add(fragmentShader);
-        shaderProgram = new ShaderProgram(shaders);
+        mainShader = new ShaderProgram(shaders);
     }
 
     public void render() {
@@ -83,8 +83,8 @@ public class MasterRenderer {
         return myWindow;
     }
 
-    public ShaderProgram getShaderProgram() {
-        return shaderProgram;
+    public ShaderProgram getMainShader() {
+        return mainShader;
     }
 
 }

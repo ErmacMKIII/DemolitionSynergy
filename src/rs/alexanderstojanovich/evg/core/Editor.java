@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 
 /**
@@ -39,7 +38,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block(levelRenderer.getShaderProgram());
+            loaded = new Block();
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -72,14 +71,14 @@ public class Editor {
 
     public static void selectCurr(LevelRenderer levelRenderer) {
         deselect(); // algorithm is select the nearest that interesects the camera ray
-        if (!levelRenderer.getSolidBlocks().isEmpty() || !levelRenderer.getFluidBlocks().isEmpty()) {
+        if (!levelRenderer.getSolidBlocks().getBlockList().isEmpty() || !levelRenderer.getFluidBlocks().getBlockList().isEmpty()) {
             Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();
             float minDistanceOfSolid = Float.POSITIVE_INFINITY;
             float minDistanceOfFluid = Float.POSITIVE_INFINITY;
 
             Block minSolid = null;
             Block minFluid = null;
-            for (Block solidBlock : levelRenderer.getSolidBlocks()) {
+            for (Block solidBlock : levelRenderer.getSolidBlocks().getBlockList()) {
                 Vector3f vect = solidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (solidBlock.intersectsRay(
@@ -92,7 +91,7 @@ public class Editor {
                 }
             }
 
-            for (Block fluidBlock : levelRenderer.getFluidBlocks()) {
+            for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
                 Vector3f vect = fluidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (fluidBlock.intersectsRay(
@@ -144,7 +143,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(levelRenderer.getShaderProgram());
+                loaded = new Block();
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -190,13 +189,13 @@ public class Editor {
         boolean placeOccupied = levelRenderer.isPlaceOccupiedBySolid(selectedNew.getPos())
                 || levelRenderer.isPlaceOccupiedByFluid(selectedNew.getPos());
         boolean intsSolid = false;
-        for (int i = 0; i < levelRenderer.getSolidBlocks().size() && !intsSolid; i++) {
-            intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().get(i));
+        for (int i = 0; i < levelRenderer.getSolidBlocks().getBlockList().size() && !intsSolid; i++) {
+            intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().getBlockList().get(i));
         }
 
         boolean intsFluid = false;
-        for (int j = 0; j < levelRenderer.getFluidBlocks().size() && !intsFluid; j++) {
-            intsFluid = selectedNew.intersectsExactly(levelRenderer.getFluidBlocks().get(j));
+        for (int j = 0; j < levelRenderer.getFluidBlocks().getBlockList().size() && !intsFluid; j++) {
+            intsFluid = selectedNew.intersectsExactly(levelRenderer.getFluidBlocks().getBlockList().get(j));
         }
 
         boolean leavesSkybox = !levelRenderer.getSkybox().containsExactly(selectedNew.getPos())
@@ -217,16 +216,16 @@ public class Editor {
             if (!cannotPlace(levelRenderer) && !levelRenderer.getObserver().getCamera().intersects(selectedNew)) {
                 selectedNew.setSecondaryTexture(null);
                 if (selectedNew.isPassable()) {
-                    levelRenderer.getFluidBlocks().add(selectedNew);
+                    levelRenderer.getFluidBlocks().getBlockList().add(selectedNew);
                     levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
                 } else {
                     levelRenderer.updateSolidNeighbors();
                     levelRenderer.updateSolidToFluidNeighbors();
-                    levelRenderer.getSolidBlocks().add(selectedNew);
+                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew);
                 }
-                loaded = new Block(levelRenderer.getShaderProgram());
+                loaded = new Block();
                 selectLoadedTexture();
             }
         }
@@ -246,10 +245,10 @@ public class Editor {
                 }
             }
             if (selectedCurr.isPassable()) {
-                levelRenderer.getFluidBlocks().remove(selectedCurr);
+                levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
                 levelRenderer.updateFluids();
             } else {
-                levelRenderer.getSolidBlocks().remove(selectedCurr);
+                levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
             }
         }
         deselect();

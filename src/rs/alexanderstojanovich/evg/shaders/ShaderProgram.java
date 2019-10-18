@@ -26,7 +26,7 @@ import org.lwjgl.opengl.GL20;
  */
 public class ShaderProgram {
 
-    private int program; // made to link all the shaders    
+    private final int program; // made to link all the shaders    
     private final List<Shader> shaders;
 
     public ShaderProgram(List<Shader> shaders) {

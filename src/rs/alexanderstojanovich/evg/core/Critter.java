@@ -35,7 +35,7 @@ public class Critter {
 
     public Critter(String modelFileName, Texture texture, ShaderProgram shaderProgram, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos, shaderProgram);
-        this.model = new Model(modelFileName, texture, shaderProgram);
+        this.model = new Model(modelFileName, texture);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());

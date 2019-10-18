@@ -36,6 +36,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL31;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -60,7 +61,6 @@ public class Model implements Comparable<Model> {
     protected int vbo; // vertex buffer object
     protected int ibo; // index buffer object        
 
-//    protected ShaderProgram shaderProgram;
     protected Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
 
@@ -76,6 +76,8 @@ public class Model implements Comparable<Model> {
 
     protected boolean passable = false; // is movement through this model possible
     // fluid models are passable whilst solid ones aren't               
+
+    protected Matrix4f modelMatrix = new Matrix4f();
 
     public Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
@@ -98,7 +100,7 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(String modelFileName, Texture primaryTexture, ShaderProgram shaderProgram) {
+    public Model(String modelFileName, Texture primaryTexture) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
@@ -107,7 +109,7 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(String modelFileName, Texture primaryTexture, ShaderProgram shaderProgram, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Model(String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
@@ -275,34 +277,38 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
-    public void transform(ShaderProgram shaderProgram) {
+    public void calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().translate(pos);
         Matrix4f rotationMatrix = new Matrix4f().rotateAffineXYZ(rX, rY, rZ);
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
-        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
+        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
+    }
+
+    protected void transform(ShaderProgram shaderProgram) {
+        calcModelMatrix();
         FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
         modelMatrix.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
     }
 
-    public void primaryColor(ShaderProgram shaderProgram) {
+    protected void primaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor0");
         GL20.glUniform4f(uniformLocation, primaryColor.x, primaryColor.y, primaryColor.z, primaryColor.w);
     }
 
-    public void secondaryColor(ShaderProgram shaderProgram) {
+    protected void secondaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor1");
         GL20.glUniform4f(uniformLocation, secondaryColor.x, secondaryColor.y, secondaryColor.z, secondaryColor.w);
     }
 
-    public void tertiaryColor(ShaderProgram shaderProgram) {
+    protected void tertiaryColor(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor2");
         GL20.glUniform4f(uniformLocation, tertiaryColor.x, tertiaryColor.y, tertiaryColor.z, tertiaryColor.w);
     }
 
-    public void useLight(ShaderProgram shaderProgram) {
+    protected void useLight(ShaderProgram shaderProgram) {
         int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelLight");
         GL20.glUniform3f(uniformLocation, light.x, light.y, light.z);
     }
@@ -398,7 +404,7 @@ public class Model implements Comparable<Model> {
         return "Model{" + "modelFileName=" + modelFileName + ", texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", passable=" + passable + '}';
     }
 
-    public void animate() {
+    public void animate(boolean selfBuffer) {
         for (int i = 0; i < indices.size(); i += 3) {
             Vertex a = vertices.get(indices.get(i));
             Vertex b = vertices.get(indices.get(i + 1));
@@ -408,7 +414,10 @@ public class Model implements Comparable<Model> {
             b.setUv(a.getUv());
             a.setUv(temp);
         }
-        bufferVertices();
+
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
     public void adjustSize(float width, float height, float depth) {
@@ -448,96 +457,52 @@ public class Model implements Comparable<Model> {
         return modelFileName;
     }
 
-    public void setModelFileName(String modelFileName) {
-        this.modelFileName = modelFileName;
-    }
-
     public List<Vertex> getVertices() {
         return vertices;
-    }
-
-    public void setVertices(List<Vertex> vertices) {
-        this.vertices = vertices;
     }
 
     public List<Integer> getIndices() {
         return indices;
     }
 
-    public void setIndices(List<Integer> indices) {
-        this.indices = indices;
-    }
-
     public Texture getPrimaryTexture() {
         return primaryTexture;
-    }
-
-    public void setPrimaryTexture(Texture primaryTexture) {
-        this.primaryTexture = primaryTexture;
     }
 
     public Texture getSecondaryTexture() {
         return secondaryTexture;
     }
 
-    public void setSecondaryTexture(Texture secondaryTexture) {
-        this.secondaryTexture = secondaryTexture;
-    }
-
     public Texture getTertiaryTexture() {
         return tertiaryTexture;
-    }
-
-    public void setTertiaryTexture(Texture tertiaryTexture) {
-        this.tertiaryTexture = tertiaryTexture;
     }
 
     public float getWidth() {
         return width;
     }
 
-    public void setWidth(float width) {
-        this.width = width;
-    }
-
     public float getHeight() {
         return height;
-    }
-
-    public void setHeight(float height) {
-        this.height = height;
     }
 
     public float getDepth() {
         return depth;
     }
 
-    public void setDepth(float depth) {
-        this.depth = depth;
-    }
-
     public int getVbo() {
         return vbo;
-    }
-
-    public void setVbo(int vbo) {
-        this.vbo = vbo;
     }
 
     public int getIbo() {
         return ibo;
     }
 
-    public void setIbo(int ibo) {
-        this.ibo = ibo;
-    }
-
     public Vector3f getPos() {
         return pos;
     }
 
-    public void setPos(Vector3f pos) {
-        this.pos = pos;
+    public Matrix4f getModelMatrix() {
+        return modelMatrix;
     }
 
     public float getScale() {
@@ -613,6 +578,22 @@ public class Model implements Comparable<Model> {
 
     public void setPassable(boolean passable) {
         this.passable = passable;
+    }
+
+    public void setPos(Vector3f pos) {
+        this.pos = pos;
+    }
+
+    public void setPrimaryTexture(Texture primaryTexture) {
+        this.primaryTexture = primaryTexture;
+    }
+
+    public void setSecondaryTexture(Texture secondaryTexture) {
+        this.secondaryTexture = secondaryTexture;
+    }
+
+    public void setTertiaryTexture(Texture tertiaryTexture) {
+        this.tertiaryTexture = tertiaryTexture;
     }
 
 }
