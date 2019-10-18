@@ -45,6 +45,8 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     // this is maximum amount of blocks of the type game can hold
     private final int[] vboEntries = new int[65536];
     public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
+    private int mutualIbo;
+    private boolean indicesBuffered = false;
 
     public void bufferVertices() { // call it before any rendering        
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
@@ -78,6 +80,19 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         verticesBuffered = true;
     }
 
+    public void bufferIndices() { // call it before any rendering
+        mutualIbo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mutualIbo);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, CONST_INT_BUFFER, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        indicesBuffered = true;
+    }
+
+    public void bufferAll() { // buffer both, call it before any rendering
+        bufferVertices();
+        bufferIndices();
+    }
+
     public static IntBuffer getConstIntBuffer() {
         IntBuffer intBuff = BufferUtils.createIntBuffer(Block.INDICES_COUNT);
         for (Integer index : Block.CONST.indices) {
@@ -97,7 +112,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void prepare() { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
-                block.reverseFaceVertexOrder(true);
+                block.reverseFaceVertexOrder(false);
             }
             verticesReversed = !verticesReversed;
             bufferVertices();
@@ -106,10 +121,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // standard render all
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (verticesBuffered && shaderProgram != null) {
+        if (verticesBuffered && indicesBuffered && shaderProgram != null) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mutualIbo);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -140,7 +156,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,
-                        CONST_INT_BUFFER,
+                        Block.INDICES_COUNT,
+                        GL11.GL_UNSIGNED_INT,
+                        0,
                         vboEntries[blkIndex]
                 );
 
@@ -157,6 +175,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL20.glDisableVertexAttribArray(2);
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             Texture.disable();
         }
@@ -164,10 +183,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // powerful render if block is visible by camera
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (verticesBuffered && shaderProgram != null) {
+        if (verticesBuffered && indicesBuffered && shaderProgram != null) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mutualIbo);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -199,7 +219,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
                     GL32.glDrawElementsBaseVertex(
                             GL11.GL_TRIANGLES,
-                            CONST_INT_BUFFER,
+                            Block.INDICES_COUNT,
+                            GL11.GL_UNSIGNED_INT,
+                            0,
                             vboEntries[blkIndex]
                     );
 
@@ -217,6 +239,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL20.glDisableVertexAttribArray(2);
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             Texture.disable();
         }
@@ -248,6 +271,14 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public int[] getVboEntries() {
         return vboEntries;
+    }
+
+    public int getMutualIbo() {
+        return mutualIbo;
+    }
+
+    public boolean isIndicesBuffered() {
+        return indicesBuffered;
     }
 
 }

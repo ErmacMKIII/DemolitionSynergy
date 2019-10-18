@@ -102,8 +102,8 @@ public class LevelRenderer {
                 solidBlocks.getBlockList().add(entity);
             }
         }
-        solidBlocks.bufferVertices();
-        fluidBlocks.bufferVertices();
+        solidBlocks.bufferAll();
+        fluidBlocks.bufferAll();
     }
 
     private void storeLevelToBuffer() {
@@ -283,8 +283,8 @@ public class LevelRenderer {
                     if (strEnd.equals("END")) {
                         updateAll();
                         updateFluids();
-                        solidBlocks.bufferVertices();
-                        fluidBlocks.bufferVertices();
+                        solidBlocks.bufferAll();
+                        fluidBlocks.bufferAll();
                         success = true;
                     }
                 }
@@ -399,9 +399,9 @@ public class LevelRenderer {
     }
 
     public void updateAll() {
-//        updateSolidNeighbors();
+        updateSolidNeighbors();
         updateFluidNeighbors();
-//        updateSolidToFluidNeighbors();
+        updateSolidToFluidNeighbors();
         updateFluidToSolidNeighbors();
     }
 
@@ -415,7 +415,6 @@ public class LevelRenderer {
                 }
             }
         }
-        fluidBlocks.bufferVertices();
     }
 
     public boolean isPlaceOccupiedBySolid(Vector3f pos) {
