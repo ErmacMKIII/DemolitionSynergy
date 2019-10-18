@@ -1,5 +1,5 @@
 # DemolitionSynergy
-Voxel Engine using latest LWJGL.
+Voxel Engine Game using latest LWJGL.
 
 In order to build the project you are gonna need NetBeans IDE 8.2 and following libraries:
 1. LWJGL 3.2.3 with JOML 1.9.17 : http://www.mediafire.com/file/154v2m697dkl788/EVG_LWJGL3.2.3_LIBS.7z/file
