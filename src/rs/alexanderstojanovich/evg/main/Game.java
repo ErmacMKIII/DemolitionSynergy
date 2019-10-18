@@ -45,7 +45,7 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    public static final float EPSILON = 0.00001f;
+    public static final float EPSILON = 0.0001f;
 
     private static int upsCap; // updates per second cap 
     private static int ups; // current update per second
@@ -61,7 +61,7 @@ public class Game {
     private float lastY = 0.0f;
     private float xoffset = 0.0f;
     private float yoffset = 0.0f;
-    private float mouseSensitivity = 3.0f;
+    private static float mouseSensitivity = 3.0f;
     private boolean moveMouse = false;
 
     private int crosshairColorNum = 0;
@@ -76,6 +76,8 @@ public class Game {
 
     public static final Object OBJ_MUTEX = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
     public static final Object OBJ_UPS = new Object();
+
+    private static boolean waterEffects = true;
 
     public Game(int width, int height, String title, int upsCap, int fpsMax) {
         lastX = width / 2.0f;
@@ -409,6 +411,22 @@ public class Game {
 
     public static Object getOBJ_MUTEX() {
         return OBJ_MUTEX;
+    }
+
+    public static float getMouseSensitivity() {
+        return mouseSensitivity;
+    }
+
+    public static void setMouseSensitivity(float mouseSensitivity) {
+        Game.mouseSensitivity = mouseSensitivity;
+    }
+
+    public static boolean isWaterEffects() {
+        return waterEffects;
+    }
+
+    public static void setWaterEffects(boolean waterEffects) {
+        Game.waterEffects = waterEffects;
     }
 
 }

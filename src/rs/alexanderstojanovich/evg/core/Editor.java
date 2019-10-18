@@ -220,10 +220,12 @@ public class Editor {
                     levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
+                    levelRenderer.getFluidBlocks().bufferAll();
                 } else {
                     levelRenderer.updateSolidNeighbors();
                     levelRenderer.updateSolidToFluidNeighbors();
                     levelRenderer.getSolidBlocks().getBlockList().add(selectedNew);
+                    levelRenderer.getSolidBlocks().bufferAll();
                 }
                 loaded = new Block();
                 selectLoadedTexture();
@@ -247,8 +249,10 @@ public class Editor {
             if (selectedCurr.isPassable()) {
                 levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
                 levelRenderer.updateFluids();
+                levelRenderer.getFluidBlocks().bufferAll();
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
+                levelRenderer.getSolidBlocks().bufferAll();
             }
         }
         deselect();

@@ -415,7 +415,6 @@ public class LevelRenderer {
                 }
             }
         }
-        fluidBlocks.bufferAll();
     }
 
     public boolean isPlaceOccupiedBySolid(Vector3f pos) {
@@ -502,44 +501,34 @@ public class LevelRenderer {
         fluidBlocks.prepare();
         fluidBlocks.renderIf(voxelShader, obsCamera.getPos(), fluidBlockPredicate);
 
-//          for (Block fluidBlock : fluidBlocks.getBlockList()) {
-//            if (obsCamera.doesSee(fluidBlock)
-//                    && fluidBlock.hasFaces()
-//                    && fluidBlock.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())) {
-//                if (Boolean.logicalXor(isCameraInFluid(), fluidBlock.isVerticesReversed())) {
-//                    fluidBlock.reverseFaceVertexOrder(true);
-//                }
-//                fluidBlock.setLight(obsCamera.getPos());
-//                fluidBlock.render(voxelShader);
-//            }
-//        }  
     }
 
     public void render(Camera camera, ShaderProgram shaderProgram) { // render for framebuffer (water renderer)
 
-//        camera.render();
-//        skybox.render(mainShader);
-//
-//        for (Block solidBlock : solidBlocks.getBlockList()) {
-//            if (camera.doesSee(solidBlock)
-//                    && solidBlock.canBeSeenBy(camera.getFront(), camera.getPos())) {
-//                solidBlock.setLight(camera.getPos());
-//                solidBlock.render(mainShader);
-//            }
-//        }
-//        boolean cameraInFluid = isCameraInFluid();
-//
-//        for (Block fluidBlock : fluidBlocks.getBlockList()) {
-//            if (camera.doesSee(fluidBlock)
-//                    && fluidBlock.hasFaces()
-//                    && fluidBlock.canBeSeenBy(camera.getFront(), camera.getPos())) {
-//                if (Boolean.logicalXor(cameraInFluid, fluidBlock.isVerticesReversed())) {
-//                    fluidBlock.reverseFaceVertexOrder();
-//                }
-//                fluidBlock.setLight(camera.getPos());
-//                fluidBlock.render(mainShader);
-//            }
-//        }
+        camera.render();
+        skybox.render(shaderProgram);
+
+        Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
+            @Override
+            public boolean test(Block t) {
+                return (camera.doesSee(t)
+                        && t.canBeSeenBy(camera.getFront(), camera.getPos()));
+            }
+        };
+        solidBlocks.renderIf(shaderProgram, camera.getPos(), solidBlockPredicate);
+
+        Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
+            @Override
+            public boolean test(Block t) {
+                return (camera.doesSee(t)
+                        && t.canBeSeenBy(camera.getFront(), camera.getPos())
+                        && t.hasFaces());
+            }
+        };
+
+        fluidBlocks.setCameraInFluid(isCameraInFluid());
+        fluidBlocks.prepare();
+        fluidBlocks.renderIf(shaderProgram, camera.getPos(), fluidBlockPredicate);
     }
 
     public Window getMyWindow() {

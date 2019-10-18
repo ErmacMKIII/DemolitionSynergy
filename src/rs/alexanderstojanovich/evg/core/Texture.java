@@ -58,7 +58,7 @@ public class Texture {
         loadToGraphicCard();
     }
 
-    private Texture(String fileName) {
+    public Texture(String fileName) {
         this.image = new Image(fileName);
         loadToGraphicCard();
     }

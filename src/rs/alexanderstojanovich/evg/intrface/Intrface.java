@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 
@@ -50,12 +51,14 @@ public class Intrface {
     private Menu editorMenu;
 
     private final LevelRenderer levelRenderer;
+    private final WaterRenderer waterRenderer;
 
     public static final String FONT_IMG = "hack.png";
 
-    public Intrface(Window myWindow, LevelRenderer levelRenderer) {
+    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer) {
         this.myWindow = myWindow;
         this.levelRenderer = levelRenderer;
+        this.waterRenderer = waterRenderer;
         initIntrface();
     }
 
@@ -100,44 +103,71 @@ public class Intrface {
         commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
-                boolean success = true;
+                boolean success = false;
                 String[] things = command.split(" ");
-                switch (things[0].toLowerCase()) {
-                    case "fps_max":
-                    case "fpsmax":
-                        int num = Integer.parseInt(things[1]);
-                        if (num > 0) {
-                            Game.setFpsMax(num);
-                        } else {
+                if (things.length > 0) {
+                    switch (things[0].toLowerCase()) {
+                        case "fps_max":
+                        case "fpsmax":
+                            if (things.length == 2) {
+                                int num = Integer.parseInt(things[1]);
+                                if (num > 0) {
+                                    Game.setFpsMax(num);
+                                    success = true;
+                                }
+                            }
+                            break;
+                        case "resolution":
+                        case "res":
+                            if (things.length == 3) {
+                                int width = Integer.parseInt(things[1]);
+                                int height = Integer.parseInt(things[2]);
+                                success = myWindow.setResolution(width, height);
+                                myWindow.centerTheWindow();
+                            }
+                            break;
+                        case "fullscreen":
+                            myWindow.fullscreen();
+                            myWindow.centerTheWindow();
+                            success = true;
+                            break;
+                        case "windowed":
+                            myWindow.windowed();
+                            myWindow.centerTheWindow();
+                            success = true;
+                            break;
+                        case "v_sync":
+                        case "vsync":
+                            if (things.length == 2) {
+                                if (Boolean.parseBoolean(things[1])) {
+                                    myWindow.enableVSync();
+                                } else {
+                                    myWindow.disableVSync();
+                                }
+                                success = true;
+                            }
+                            break;
+                        case "water_effects":
+                            if (things.length == 2) {
+                                if (Boolean.parseBoolean(things[1])) {
+                                    Game.setWaterEffects(true);
+                                } else {
+                                    Game.setWaterEffects(false);
+                                    waterRenderer.removeEffects();
+                                }
+                                success = true;
+                            }
+                        case "msens":
+                        case "mouse_sensitivity":
+                            if (things.length == 2) {
+                                Game.setMouseSensitivity(Float.parseFloat(things[1]));
+                                success = true;
+                            }
+                            break;
+                        default:
                             success = false;
-                        }
-                        break;
-                    case "resolution":
-                    case "res":
-                        int width = Integer.parseInt(things[1]);
-                        int height = Integer.parseInt(things[2]);
-                        success = myWindow.setResolution(width, height);
-                        myWindow.centerTheWindow();
-                        break;
-                    case "fullscreen":
-                        myWindow.fullscreen();
-                        myWindow.centerTheWindow();
-                        break;
-                    case "windowed":
-                        myWindow.windowed();
-                        myWindow.centerTheWindow();
-                        break;
-                    case "v_sync":
-                    case "vsync":
-                        if (Boolean.parseBoolean(things[1])) {
-                            myWindow.enableVSync();
-                        } else {
-                            myWindow.disableVSync();
-                        }
-                        break;
-                    default:
-                        success = false;
-                        break;
+                            break;
+                    }
                 }
                 return success;
             }
@@ -172,6 +202,8 @@ public class Intrface {
                 getValues()[1].setContent(String.valueOf(myWindow.getWidth()) + "x" + String.valueOf(myWindow.getHeight()));
                 getValues()[2].setContent(myWindow.isFullscreen() ? "ON" : "OFF");
                 getValues()[3].setContent(myWindow.isVsync() ? "ON" : "OFF");
+                getValues()[4].setContent(Game.isWaterEffects() ? "ON" : "OFF");
+                getValues()[5].setContent(String.valueOf(Game.getMouseSensitivity()));
             }
 
             @Override
@@ -208,16 +240,35 @@ public class Intrface {
                             break;
                     }
                 }
+                //--------------------------------------------------------------
+                if (getOptions()[4].giveCurrent() != null) {
+                    switch (getOptions()[4].giveCurrent().toString()) {
+                        case "OFF":
+                            Game.setWaterEffects(false);
+                            waterRenderer.removeEffects();
+                            break;
+                        case "ON":
+                            Game.setWaterEffects(true);
+                            break;
+                    }
+                }
+                //--------------------------------------------------------------
+                if (getOptions()[5].giveCurrent() != null) {
+                    Game.setMouseSensitivity(Float.parseFloat(getOptions()[5].giveCurrent().toString()));
+                }
             }
         };
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
         Object[] resolutions = myWindow.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
+        Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
         optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
         optionsMenu.getOptions()[1] = new Combo(resolutions, 0);
         optionsMenu.getOptions()[2] = new Combo(swtch, 0);
         optionsMenu.getOptions()[3] = new Combo(swtch, 0);
-        optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_RIGHT);
+        optionsMenu.getOptions()[4] = new Combo(swtch, 1);
+        optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
+        optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
         editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
             @Override
@@ -241,6 +292,7 @@ public class Intrface {
                 }
             }
         };
+        editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
     }
 
     public void setCollText(boolean mode) {
@@ -339,6 +391,10 @@ public class Intrface {
 
     public void setShowHelp(boolean showHelp) {
         this.showHelp = showHelp;
+    }
+
+    public WaterRenderer getWaterRenderer() {
+        return waterRenderer;
     }
 
 }

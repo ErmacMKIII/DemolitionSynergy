@@ -60,6 +60,9 @@ public class WaterRenderer {
 
     private void refresh() {
         waterHeights.clear();
+        if (frameBuffer.getTexture() == null) {
+            frameBuffer.setTexture(new Texture(512, 512));
+        }
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
         for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
             float waterHeight = fluidBlock.giveSurfacePos();
@@ -106,10 +109,19 @@ public class WaterRenderer {
 
     public void render() {
         refresh();
+        float minHeight = Float.NEGATIVE_INFINITY;
         for (float height : waterHeights) {
-            capture(height);
+            if (minHeight < height) {
+                minHeight = height;
+            }
         }
-//        quad.render();        
+        capture(minHeight);
+    }
+
+    public void removeEffects() {
+        for (Block block : levelRenderer.getFluidBlocks().getBlockList()) {
+            block.setTertiaryTexture(null);
+        }
     }
 
     public Window getMyWindow() {

@@ -48,7 +48,7 @@ public class Renderer extends Thread {
         levelRenderer = new LevelRenderer(myWindow, masterRenderer.getMainShader());
         PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), masterRenderer.getMainShader());
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-        intrface = new Intrface(myWindow, levelRenderer);
+        intrface = new Intrface(myWindow, levelRenderer, waterRenderer);
     }
 
     @Override
@@ -74,7 +74,9 @@ public class Renderer extends Thread {
                 if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
                     masterRenderer.render();
                     levelRenderer.render();
-//                    waterRenderer.render();
+                    if (Game.isWaterEffects()) {
+                        waterRenderer.render();
+                    }
                     intrface.render();
                     myWindow.render();
                     fps++;
