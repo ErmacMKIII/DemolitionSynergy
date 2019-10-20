@@ -313,11 +313,9 @@ public class Intrface {
         if (showHelp) {
             helpText.setEnabled(true);
             collText.setEnabled(false);
-            crosshair.setEnabled(false);
         } else {
             helpText.setEnabled(false);
             collText.setEnabled(true);
-            crosshair.setEnabled(true);
         }
     }
 
@@ -331,7 +329,7 @@ public class Intrface {
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
-        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()) {
+        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !showHelp) {
             crosshair.render();
         }
     }

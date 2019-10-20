@@ -75,8 +75,8 @@ public class LevelRenderer {
                 Block entity = new Block(Texture.DOOM0);
                 entity.setScale(1.0f);
 
-                entity.getPos().x = 0.5f * i + i * 1.5f;
-                entity.getPos().y = 0.5f * j + j * 1.5f;
+                entity.getPos().x = 4.0f * i;
+                entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;

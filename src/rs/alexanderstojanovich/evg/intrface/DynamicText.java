@@ -39,11 +39,11 @@ import rs.alexanderstojanovich.evg.util.Pair;
 public class DynamicText extends Text {
 
     private int bigVbo; // vbo containing all the quads (characters)
+    private int[] vboEntries;
     private final List<Pair<Float, Float>> pairList = new LinkedList<>(); // pairs xinc, ydec
-
     private static final Vector2f[] VERTICES = new Vector2f[4]; //            
     private static final int[] INDICES = {0, 1, 2, 3};
-    private static final IntBuffer INT_BUFFER = BufferUtils.createIntBuffer(6);
+    private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -52,9 +52,9 @@ public class DynamicText extends Text {
         VERTICES[3] = new Vector2f(-1.0f, 1.0f);
 
         for (int i : INDICES) {
-            INT_BUFFER.put(i);
+            CONST_INT_BUFFER.put(i);
         }
-        INT_BUFFER.flip();
+        CONST_INT_BUFFER.flip();
     }
 
     public DynamicText(Window window, Texture texture, String content) {
@@ -76,8 +76,12 @@ public class DynamicText extends Text {
         pairList.clear();
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(content.length() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         String[] lines = content.split("\n");
+        vboEntries = new int[1024];
+        int e = 0;
+        int offset = 0;
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
+                vboEntries[e++] = offset;
                 int j = i % 32;
                 int k = i / 32;
                 int asciiCode = (int) (lines[l].charAt(i));
@@ -113,7 +117,9 @@ public class DynamicText extends Text {
                     bigFloatBuff.put(VERTICES[v].y);
                     bigFloatBuff.put(uvs[v].x);
                     bigFloatBuff.put(uvs[v].y);
+                    offset++;
                 }
+
             }
         }
         bigFloatBuff.flip();
@@ -133,8 +139,7 @@ public class DynamicText extends Text {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                         
-
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv            
             for (int k = 0; k < content.length(); k++) {
                 ShaderProgram.getIntrfaceShader().bind();
                 ShaderProgram.getIntrfaceShader().updateUniform(quad.getPos(), "trans");
@@ -144,22 +149,22 @@ public class DynamicText extends Text {
                 ShaderProgram.getIntrfaceShader().updateUniform(quad.getColor(), "color");
                 texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
 
-                Pair<Float, Float> pair = pairList.get(k);
+                Pair<Float, Float> pair = pairList.get(vboEntries[k] >> 2);
                 float xinc = (float) pair.getKey();
                 float ydec = (float) pair.getValue();
 
                 ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
                 ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
 
-                GL32.glDrawElementsBaseVertex(GL11.GL_QUADS, INT_BUFFER, 4 * k);
+                GL32.glDrawElementsBaseVertex(GL11.GL_QUADS, CONST_INT_BUFFER, vboEntries[k]);
             }
-
             Texture.unbind(0);
             ShaderProgram.unbind();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             Texture.disable();
+
         }
     }
 
