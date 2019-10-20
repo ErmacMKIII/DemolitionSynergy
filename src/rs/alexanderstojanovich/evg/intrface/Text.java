@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import rs.alexanderstojanovich.evg.core.Window;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.Shader;
 

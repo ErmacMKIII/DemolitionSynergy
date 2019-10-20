@@ -332,9 +332,9 @@ public class Intrface {
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
-//        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()) {
-        crosshair.render();
-//        }
+        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()) {
+            crosshair.render();
+        }
     }
 
     public Window getMyWindow() {

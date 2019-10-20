@@ -26,13 +26,13 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * @author Coa
  */
 public class Critter {
-
+    
     private final Camera camera;
     private final Model model;
     private boolean givenControl = true;
     private Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
     private final Model predModel = new Model("icosphere.obj");
-
+    
     public Critter(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos);
         this.model = new Model(modelFileName, texture);
@@ -41,13 +41,13 @@ public class Critter {
         this.model.setLight(camera.getPos());
         updateModelPos();
     }
-
+    
     public Critter(Camera camera, Model model) {
         this.camera = camera;
         this.model = model;
         updateModelPos();
     }
-
+    
     private void updateModelPos() {
         model.getPos().x = camera.getPos().x;
         model.getPos().y = camera.getPos().y;
@@ -58,29 +58,30 @@ public class Critter {
         model.setPos(model.getPos().sub(camera.getFront().mul(model.getDepth() / 2.0f, temp1), temp1));
         model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
         model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
+        predModel.setScale(model.getScale());
     }
-
+    
     public void moveForward(float amount) {
         if (givenControl) {
             camera.moveForward(amount);
             updateModelPos();
         }
     }
-
+    
     public void moveBackward(float amount) {
         if (givenControl) {
             camera.moveBackward(amount);
             updateModelPos();
         }
     }
-
+    
     public void moveLeft(float amount) {
         if (givenControl) {
             camera.moveLeft(amount);
             updateModelPos();
         }
     }
-
+    
     public void moveRight(float amount) {
         if (givenControl) {
             camera.moveRight(amount);
@@ -95,21 +96,21 @@ public class Critter {
         predictor = camera.getPos().add(camera.getFront().mul(amount, temp1), temp1);
         predModel.setPos(model.getPos().add(camera.getFront().mul(amount, temp2), temp2));
     }
-
+    
     public void movePredictorBackward(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().sub(camera.getFront().mul(amount, temp1), temp1);
         predModel.setPos(model.getPos().sub(camera.getFront().mul(amount, temp2), temp2));
     }
-
+    
     public void movePredictorLeft(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().sub(camera.getRight().mul(amount, temp1), temp1);
         predModel.setPos(model.getPos().sub(camera.getRight().mul(amount, temp2), temp2));
     }
-
+    
     public void movePredictorRight(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
@@ -124,14 +125,14 @@ public class Critter {
             model.setrX(-angle);
         }
     }
-
+    
     public void turnRight(float angle) {
         if (givenControl) {
             camera.turnRight(angle);
             model.setrX(angle);
         }
     }
-
+    
     public void lookAt(float mouseSensitivity, float xoffset, float yoffset) {
         if (givenControl) {
             camera.lookAt(mouseSensitivity, xoffset, yoffset);
@@ -139,41 +140,41 @@ public class Critter {
             model.setrY(camera.getYaw());
         }
     }
-
+    
     public void render(ShaderProgram shaderProgram) {
         if (givenControl) {
             camera.render(shaderProgram);
         }
 //        model.render();
     }
-
+    
     @Override
     public String toString() {
         return "Critter{" + "camera=" + camera + ", model=" + model + '}';
     }
-
+    
     public Camera getCamera() {
         return camera;
     }
-
+    
     public Model getModel() {
         return model;
     }
-
+    
     public boolean isGivenControl() {
         return givenControl;
     }
-
+    
     public void setGivenControl(boolean givenControl) {
         this.givenControl = givenControl;
     }
-
+    
     public Vector3f getPredictor() {
         return predictor;
     }
-
+    
     public Model getPredModel() {
         return predModel;
     }
-
+    
 }

@@ -278,11 +278,12 @@ public class Model implements Comparable<Model> {
     }
 
     public void calcModelMatrix() {
-        Matrix4f translationMatrix = new Matrix4f().translate(pos);
-        Matrix4f rotationMatrix = new Matrix4f().rotateAffineXYZ(rX, rY, rZ);
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos);
+        Matrix4f rotationMatrix = new Matrix4f().setRotationXYZ(rX, rY, rZ);
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
-        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix));
+        Matrix4f temp = new Matrix4f();
+        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
     }
 
     protected void transform(ShaderProgram shaderProgram) {
@@ -435,6 +436,7 @@ public class Model implements Comparable<Model> {
 
     public void calcDimsPub() {
         calcDims();
+        calcModelMatrix();
     }
 
     public float giveSurfacePos() {

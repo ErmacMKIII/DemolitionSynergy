@@ -60,13 +60,13 @@ public class LevelRenderer {
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
-        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.5f);
         observer.setGivenControl(true);
         PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getVoxelShader());
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.5f);
         observer.setGivenControl(true);
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
@@ -443,7 +443,7 @@ public class LevelRenderer {
         coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
         for (int i = 0; i < solidBlocks.getBlockList().size() && !coll; i++) {
             Block entity = solidBlocks.getBlockList().get(i);
-            coll = entity.containsExactly(critter.getPredictor()); // || entity.intersectsExactly(critter.getPredModel());
+            coll = entity.containsExactly(critter.getPredictor()) || entity.intersectsExactly(critter.getPredModel());
         }
         return coll;
     }
