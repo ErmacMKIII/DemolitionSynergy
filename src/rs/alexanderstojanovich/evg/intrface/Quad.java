@@ -70,15 +70,15 @@ public class Quad {
     }
 
     private void init() {
-        vertices[0] = new Vector2f(-1.0f, 1.0f);
-        vertices[1] = new Vector2f(1.0f, 1.0f);
-        vertices[2] = new Vector2f(1.0f, -1.0f);
-        vertices[3] = new Vector2f(-1.0f, -1.0f);
+        vertices[0] = new Vector2f(-1.0f, -1.0f);
+        vertices[1] = new Vector2f(1.0f, -1.0f);
+        vertices[2] = new Vector2f(1.0f, 1.0f);
+        vertices[3] = new Vector2f(-1.0f, 1.0f);
 
-        uvs[0] = new Vector2f(0.0f, 0.0f);
-        uvs[1] = new Vector2f(1.0f, 0.0f);
-        uvs[2] = new Vector2f(1.0f, 1.0f);
-        uvs[3] = new Vector2f(0.0f, 1.0f);
+        uvs[0] = new Vector2f(0.0f, 1.0f);
+        uvs[1] = new Vector2f(1.0f, 1.0f);
+        uvs[2] = new Vector2f(1.0f, 0.0f);
+        uvs[3] = new Vector2f(0.0f, 0.0f);
 
         FloatBuffer fb = BufferUtils.createFloatBuffer(16);
         for (int i = 0; i < 4; i++) {

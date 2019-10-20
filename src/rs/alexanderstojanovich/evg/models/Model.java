@@ -136,7 +136,7 @@ public class Model implements Comparable<Model> {
                     Vertex vertex = new Vertex(pos);
                     vertices.add(vertex);
                 } else if (things[0].equals("vt")) {
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1 - Float.parseFloat(things[2]));
+                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1.0f - Float.parseFloat(things[2]));
                     uvs.add(uv);
                 } else if (things[0].equals("vn")) {
                     Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));

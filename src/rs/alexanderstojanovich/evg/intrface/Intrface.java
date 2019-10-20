@@ -71,7 +71,7 @@ public class Intrface {
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
 
-        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
+        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
 
@@ -190,7 +190,7 @@ public class Intrface {
             }
         };
 
-        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
+        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -270,7 +270,7 @@ public class Intrface {
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
-        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
+        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();

@@ -112,16 +112,16 @@ public class Text {
                     float ydec = k + l * LINE_SPACING;
 
                     quad.getUvs()[0].x = cellU;
-                    quad.getUvs()[0].y = cellV;
+                    quad.getUvs()[0].y = cellV + CELL_SIZE;
 
                     quad.getUvs()[1].x = cellU + CELL_SIZE;
-                    quad.getUvs()[1].y = cellV;
+                    quad.getUvs()[1].y = cellV + CELL_SIZE;
 
                     quad.getUvs()[2].x = cellU + CELL_SIZE;
-                    quad.getUvs()[2].y = cellV + CELL_SIZE;
+                    quad.getUvs()[2].y = cellV;
 
                     quad.getUvs()[3].x = cellU;
-                    quad.getUvs()[3].y = cellV + CELL_SIZE;
+                    quad.getUvs()[3].y = cellV;
 
                     quad.buffer();
 

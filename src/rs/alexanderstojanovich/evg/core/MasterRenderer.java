@@ -16,13 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GLCapabilities;
-import rs.alexanderstojanovich.evg.shaders.Shader;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -56,8 +52,8 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-//        GL11.glEnable(GL11.GL_CULL_FACE);
-//        GL11.glCullFace(GL11.GL_BACK);
+        GL11.glEnable(GL11.GL_CULL_FACE);
+        GL11.glCullFace(GL11.GL_BACK);
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black
     }
 
