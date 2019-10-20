@@ -60,13 +60,13 @@ public class LevelRenderer {
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
-        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.5f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getVoxelShader());
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.5f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
