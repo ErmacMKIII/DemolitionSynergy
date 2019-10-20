@@ -31,14 +31,14 @@ import rs.alexanderstojanovich.evg.core.Texture;
 public abstract class Dialog {
 
     private Window myWindow;
-    private Text dialog;
+    private DynamicText dialog;
     private StringBuilder input; // this is the answer we type from keyboard
     private boolean enabled;
     private boolean done;
 
     public Dialog(Window window, Texture texture, Vector2f pos) {
         this.myWindow = window;
-        this.dialog = new Text(myWindow, texture, "");
+        this.dialog = new DynamicText(myWindow, texture, "");
         this.dialog.getQuad().setPos(pos);
         this.enabled = false;
         this.done = false;
@@ -129,11 +129,11 @@ public abstract class Dialog {
         this.myWindow = myWindow;
     }
 
-    public Text getDialog() {
+    public DynamicText getDialog() {
         return dialog;
     }
 
-    public void setDialog(Text dialog) {
+    public void setDialog(DynamicText dialog) {
         this.dialog = dialog;
     }
 

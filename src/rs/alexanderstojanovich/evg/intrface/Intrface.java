@@ -36,9 +36,9 @@ public class Intrface {
     private final Window myWindow;
 
     private Quad crosshair;
-    private Text infoText;
-    private Text collText;
-    private Text helpText;
+    private DynamicText infoText;
+    private DynamicText collText;
+    private DynamicText helpText;
 
     private boolean showHelp = false;
 
@@ -63,10 +63,9 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new Text(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
-        collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
-        helpText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
-        helpText.setContent(Text.readFromFile("help.txt"));
+        infoText = new DynamicText(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
+        collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
+        helpText = new DynamicText(myWindow, Texture.FONT, Text.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
         helpText.setEnabled(false);
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -345,15 +344,15 @@ public class Intrface {
         return crosshair;
     }
 
-    public Text getInfoText() {
+    public DynamicText getInfoText() {
         return infoText;
     }
 
-    public Text getCollText() {
+    public DynamicText getCollText() {
         return collText;
     }
 
-    public Text getHelpText() {
+    public DynamicText getHelpText() {
         return helpText;
     }
 

@@ -36,17 +36,17 @@ import rs.alexanderstojanovich.evg.shaders.Shader;
  */
 public class Text {
 
-    private Window myWindow;
-    private Texture texture;
-    private String content;
+    protected Window myWindow;
+    protected Texture texture;
+    protected String content;
 
-    private static final int GRID_SIZE = 16;
-    private static final float CELL_SIZE = 1.0f / GRID_SIZE;
+    protected static final int GRID_SIZE = 16;
+    protected static final float CELL_SIZE = 1.0f / GRID_SIZE;
     public static final float LINE_SPACING = 1.35f;
 
-    private final Quad quad;
+    protected final Quad quad;
 
-    private boolean enabled;
+    protected boolean enabled;
 
     public static final int STD_FONT_WIDTH = 24;
     public static final int STD_FONT_HEIGHT = 24;

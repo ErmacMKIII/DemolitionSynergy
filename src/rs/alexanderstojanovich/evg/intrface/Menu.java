@@ -47,13 +47,13 @@ public abstract class Menu {
     protected Window myWindow;
 
     private Quad logo; // only basic menus have logo
-    protected Text title;
+    protected DynamicText title;
 
     protected String fileName;
     protected boolean enabled = false;
 
     protected Vector2f pos = new Vector2f();
-    protected List<Text> items = new ArrayList<>();
+    protected List<DynamicText> items = new ArrayList<>();
 
     protected float itemScale = 1.0f;
 
@@ -66,7 +66,7 @@ public abstract class Menu {
     public Menu(Window window, String title, String fileName, String textureFileName) {
         this.myWindow = window;
         this.fileName = fileName;
-        this.title = new Text(myWindow, Texture.FONT, title);
+        this.title = new DynamicText(myWindow, Texture.FONT, title);
         this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         readFromFile(fileName);
         Texture mngTexture = Texture.MINIGUN;
@@ -79,7 +79,7 @@ public abstract class Menu {
     public Menu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
         this.myWindow = window;
         this.fileName = fileName;
-        this.title = new Text(myWindow, Texture.FONT, title);
+        this.title = new DynamicText(myWindow, Texture.FONT, title);
         this.title.getQuad().setScale(scale);
         this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.enabled = false;
@@ -103,7 +103,7 @@ public abstract class Menu {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] things = line.trim().split(":");
-                Text item = new Text(myWindow, Texture.FONT, things[0]);
+                DynamicText item = new DynamicText(myWindow, Texture.FONT, things[0]);
                 if (Boolean.parseBoolean(things[1].trim())) {
                     item.getQuad().getColor().x = 0.0f;
                     item.getQuad().getColor().y = 1.0f;
@@ -114,7 +114,7 @@ public abstract class Menu {
                     item.getQuad().getColor().z = 0.0f;
                 }
                 item.getQuad().getPos().x = pos.x;
-                item.getQuad().getPos().y = -Text.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
+                item.getQuad().getPos().y = -DynamicText.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
                 item.getQuad().setScale(itemScale);
                 items.add(item);
             }
@@ -163,7 +163,7 @@ public abstract class Menu {
 
     protected int longestWord() {
         int longest = 0;
-        for (Text item : items) {
+        for (DynamicText item : items) {
             if (item.getContent().length() > longest) {
                 longest = item.getContent().length();
             }
@@ -176,7 +176,7 @@ public abstract class Menu {
             int longest = longestWord();
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
                     * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+            title.getQuad().getPos().y = DynamicText.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
             title.render();
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = pos.x;
@@ -184,11 +184,11 @@ public abstract class Menu {
                 logo.render();
             }
             int index = 0;
-            for (Text item : items) {
+            for (DynamicText item : items) {
                 Quad itemQuad = item.getQuad();
                 int itemDiff = longest - item.getContent().length();
                 itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
-                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                itemQuad.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
                 item.render();
                 index++;
             }
@@ -243,7 +243,7 @@ public abstract class Menu {
         return pos;
     }
 
-    public List<Text> getItems() {
+    public List<DynamicText> getItems() {
         return items;
     }
 
@@ -259,7 +259,7 @@ public abstract class Menu {
         this.enabled = enabled;
     }
 
-    public void setItems(List<Text> items) {
+    public void setItems(List<DynamicText> items) {
         this.items = items;
     }
 
@@ -287,7 +287,7 @@ public abstract class Menu {
         this.pos = pos;
     }
 
-    public Text getTitle() {
+    public DynamicText getTitle() {
         return title;
     }
 

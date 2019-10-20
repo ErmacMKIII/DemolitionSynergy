@@ -52,6 +52,9 @@ public class Quad {
 
     private int vbo;
 
+    public static final int VERTEX_SIZE = 4;
+    public static final int VERTEX_COUNT = 4;
+
     public Quad(Window window, int width, int height, Texture texture) {
         this.myWindow = window;
         this.width = width;
@@ -80,7 +83,7 @@ public class Quad {
         uvs[2] = new Vector2f(1.0f, 0.0f);
         uvs[3] = new Vector2f(0.0f, 0.0f);
 
-        FloatBuffer fb = BufferUtils.createFloatBuffer(16);
+        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
         for (int i = 0; i < 4; i++) {
             fb.put(vertices[i].x);
             fb.put(vertices[i].y);

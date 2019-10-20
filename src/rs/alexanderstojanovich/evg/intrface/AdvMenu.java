@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evg.main.Game;
  */
 public abstract class AdvMenu extends Menu {
 
-    private Text[] values; // correct and current values we display
+    private DynamicText[] values; // correct and current values we display
     private Combo[] options; // options we can set we display
 
     public AdvMenu(Window window, String title, String fileName, String textureFileName) {
@@ -44,10 +44,10 @@ public abstract class AdvMenu extends Menu {
     }
 
     private void init() {
-        values = new Text[items.size()];
+        values = new DynamicText[items.size()];
         options = new Combo[items.size()];
         for (int i = 0; i < values.length; i++) {
-            values[i] = new Text(myWindow, Texture.FONT, "");
+            values[i] = new DynamicText(myWindow, Texture.FONT, "");
             values[i].getQuad().getPos().x = items.get(i).getQuad().getPos().x;
             values[i].getQuad().getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).getQuad().giveRelativeWidth();
             values[i].getQuad().getPos().y = items.get(i).getQuad().getPos().y;
@@ -103,14 +103,14 @@ public abstract class AdvMenu extends Menu {
             int longest = longestWord();
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
                     * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+            title.getQuad().getPos().y = DynamicText.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
             title.render();
             int index = 0;
-            for (Text item : items) {
+            for (DynamicText item : items) {
                 Quad itemQuad = item.getQuad();
                 int itemDiff = longest - item.getContent().length();
                 itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
-                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                itemQuad.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
                 item.render();
                 values[index].getQuad().getPos().x = item.getQuad().getPos().x;
                 values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
@@ -125,11 +125,11 @@ public abstract class AdvMenu extends Menu {
         }
     }
 
-    public Text[] getValues() {
+    public DynamicText[] getValues() {
         return values;
     }
 
-    public void setValues(Text[] values) {
+    public void setValues(DynamicText[] values) {
         this.values = values;
     }
 
