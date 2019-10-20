@@ -55,50 +55,45 @@ public abstract class Menu {
     protected Vector2f pos = new Vector2f();
     protected List<Text> items = new ArrayList<>();
 
+    protected float itemScale = 1.0f;
+
     protected int selected = 0;
 
-    protected Quad quad;
+    protected Quad iterator; // is minigun iterator
 
-    protected float scale;
-
-    protected float alignmentAmount = 0.0f;
+    protected float alignmentAmount = ALIGNMENT_LEFT;
 
     public Menu(Window window, String title, String fileName, String textureFileName) {
         this.myWindow = window;
         this.fileName = fileName;
         this.title = new Text(myWindow, Texture.FONT, title);
-        this.scale = 1.0f;
-        this.title.setScale(scale);
-        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         readFromFile(fileName);
         Texture mngTexture = Texture.MINIGUN;
-        quad = new Quad(window, 27, 27, mngTexture);
-        quad.getPos().x = items.get(selected).getPos().x;
-        quad.getPos().x -= items.get(selected).giveRelativeWidth();
-        quad.getPos().y = items.get(selected).getPos().y;
-        quad.setColor(items.get(selected).getColor());
-        quad.setScale(scale);
+        iterator = new Quad(window, 24, 24, mngTexture);
+        iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
+        iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+        iterator.setColor(items.get(selected).getQuad().getColor());
     }
 
     public Menu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
         this.myWindow = window;
         this.fileName = fileName;
         this.title = new Text(myWindow, Texture.FONT, title);
-        this.scale = scale;
-        this.title.setScale(this.scale);
-        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.getQuad().setScale(scale);
+        this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.enabled = false;
         this.pos = pos;
+        this.itemScale = scale;
         readFromFile(fileName);
         Texture mngTexture = Texture.MINIGUN;
-        quad = new Quad(window, 27, 27, mngTexture);
-        quad.getPos().x = items.get(selected).getPos().x;
-        quad.getPos().y = items.get(selected).getPos().y;
-        quad.getColor().x = items.get(selected).getColor().x;
-        quad.getPos().x -= items.get(selected).giveRelativeWidth();
-        quad.getColor().y = items.get(selected).getColor().y;
-        quad.setColor(items.get(selected).getColor());
-        quad.setScale(scale);
+        iterator = new Quad(window, 24, 24, mngTexture);
+        iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
+        iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+        iterator.getColor().x = items.get(selected).getQuad().getColor().x;
+        iterator.getColor().y = items.get(selected).getQuad().getColor().y;
+        iterator.setColor(items.get(selected).getQuad().getColor());
+        iterator.setScale(scale);
     }
 
     private void readFromFile(String fileName) {
@@ -109,18 +104,18 @@ public abstract class Menu {
             while ((line = br.readLine()) != null) {
                 String[] things = line.trim().split(":");
                 Text item = new Text(myWindow, Texture.FONT, things[0]);
-                item.setScale(scale);
                 if (Boolean.parseBoolean(things[1].trim())) {
-                    item.getColor().x = 0.0f;
-                    item.getColor().y = 1.0f;
-                    item.getColor().z = 0.0f;
+                    item.getQuad().getColor().x = 0.0f;
+                    item.getQuad().getColor().y = 1.0f;
+                    item.getQuad().getColor().z = 0.0f;
                 } else {
-                    item.getColor().x = 1.0f;
-                    item.getColor().y = 0.0f;
-                    item.getColor().z = 0.0f;
+                    item.getQuad().getColor().x = 1.0f;
+                    item.getQuad().getColor().y = 0.0f;
+                    item.getQuad().getColor().z = 0.0f;
                 }
-                item.getPos().x = pos.x;
-                item.getPos().y = -Text.LINE_SPACING * items.size() * item.giveRelativeHeight() + pos.y;
+                item.getQuad().getPos().x = pos.x;
+                item.getQuad().getPos().y = -Text.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
+                item.getQuad().setScale(itemScale);
                 items.add(item);
             }
             br.close();
@@ -168,9 +163,9 @@ public abstract class Menu {
 
     protected int longestWord() {
         int longest = 0;
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).getContent().length() > longest) {
-                longest = items.get(i).getContent().length();
+        for (Text item : items) {
+            if (item.getContent().length() > longest) {
+                longest = item.getContent().length();
             }
         }
         return longest;
@@ -179,27 +174,28 @@ public abstract class Menu {
     public void render() {
         if (enabled) {
             int longest = longestWord();
-            title.getPos().x = alignmentAmount * (longest - title.getContent().length())
-                    * title.giveRelativeWidth() + pos.x;
-            title.getPos().y = Text.LINE_SPACING * title.giveRelativeHeight() + pos.y;
+            title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
+                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
+            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
             title.render();
             if (logo != null && title.getContent().equals("")) {
-                logo.getPos().x = alignmentAmount * (longest - title.getContent().length())
-                        * title.giveRelativeWidth() + pos.x;
-                logo.getPos().y = logo.giveRelativeHeight() + pos.y;
+                logo.getPos().x = pos.x;
+                logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
                 logo.render();
             }
-
-            for (int i = 0; i < items.size(); i++) {
-                items.get(i).getPos().x = alignmentAmount * (longest - items.get(i).getContent().length())
-                        * items.get(i).giveRelativeWidth() + pos.x;
-                items.get(i).getPos().y = -Text.LINE_SPACING * (i + 1) * items.get(i).giveRelativeHeight() + pos.y;
-                items.get(i).render();
+            int index = 0;
+            for (Text item : items) {
+                Quad itemQuad = item.getQuad();
+                int itemDiff = longest - item.getContent().length();
+                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
+                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                item.render();
+                index++;
             }
-            quad.getPos().x = items.get(selected).getPos().x;
-            quad.getPos().x -= 2 * items.get(selected).giveRelativeWidth();
-            quad.getPos().y = items.get(selected).getPos().y;
-            quad.render();
+            iterator.getPos().x = items.get(selected).getQuad().getPos().x;
+            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
+            iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            iterator.render();
         }
     }
 
@@ -208,7 +204,7 @@ public abstract class Menu {
         if (selected < 0) {
             selected = items.size() - 1;
         }
-        quad.setColor(items.get(selected).getColor());
+        iterator.setColor(items.get(selected).getQuad().getColor());
     }
 
     public void selectNext() {
@@ -216,7 +212,7 @@ public abstract class Menu {
         if (selected > items.size() - 1) {
             selected = 0;
         }
-        quad.setColor(items.get(selected).getColor());
+        iterator.setColor(items.get(selected).getQuad().getColor());
     }
 
     public Window getMyWindow() {
@@ -271,20 +267,12 @@ public abstract class Menu {
         this.selected = selected;
     }
 
-    public Quad getQuad() {
-        return quad;
+    public Quad getIterator() {
+        return iterator;
     }
 
-    public void setQuad(Quad quad) {
-        this.quad = quad;
-    }
-
-    public float getScale() {
-        return scale;
-    }
-
-    public void setScale(float scale) {
-        this.scale = scale;
+    public void setIterator(Quad iterator) {
+        this.iterator = iterator;
     }
 
     public float getAlignmentAmount() {
@@ -293,6 +281,18 @@ public abstract class Menu {
 
     public void setAlignmentAmount(float alignmentAmount) {
         this.alignmentAmount = alignmentAmount;
+    }
+
+    public void setPos(Vector2f pos) {
+        this.pos = pos;
+    }
+
+    public Text getTitle() {
+        return title;
+    }
+
+    public float getItemScale() {
+        return itemScale;
     }
 
 }

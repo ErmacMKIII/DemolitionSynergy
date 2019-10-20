@@ -21,9 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,7 +31,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Model;
-import rs.alexanderstojanovich.evg.shaders.Shader;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -44,8 +41,6 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class LevelRenderer {
 
     private final Window myWindow;
-    private final ShaderProgram mainShader;
-    private final ShaderProgram voxelShader;
     private final Block skybox;
     private final Blocks solidBlocks = new Blocks();
     private final Blocks fluidBlocks = new Blocks();
@@ -58,28 +53,20 @@ public class LevelRenderer {
     public static final float SKYBOX_SCALE = Math.round(1.0f / Game.EPSILON);
     public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f));
 
-    public LevelRenderer(Window myWindow, ShaderProgram shaderProgram) {
+    public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
-        this.mainShader = shaderProgram;
-        // initializing voxel shader
-        List<Shader> shaders = new ArrayList<>();
-        Shader vertex = new Shader("voxelVS.glsl", Shader.VERTEX_SHADER);
-        Shader fragment = new Shader("voxelFS.glsl", Shader.FRAGMENT_SHADER);
-        shaders.add(vertex);
-        shaders.add(fragment);
-        voxelShader = new ShaderProgram(shaders);
         // setting skybox
         skybox = new Block(Texture.NIGHT);
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
-        observer = new Critter("icosphere.obj", Texture.MARBLE, mainShader, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
         observer.setGivenControl(true);
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), voxelShader);
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getVoxelShader());
     }
 
     public void startNewLevel() {
-        observer = new Critter("icosphere.obj", Texture.MARBLE, mainShader, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
         observer.setGivenControl(true);
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
@@ -208,7 +195,7 @@ public class LevelRenderer {
             Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
             pos += rightArr.length;
 
-            Camera obsCamera = new Camera(campos, mainShader, camfront, camup, camright);
+            Camera obsCamera = new Camera(campos, camfront, camup, camright);
             Model obsModel = new Model("icosphere.obj", Texture.MARBLE);
             obsModel.setScale(0.01f);
             observer = new Critter(obsCamera, obsModel);
@@ -461,23 +448,15 @@ public class LevelRenderer {
         return coll;
     }
 
-    public void render() { // regular level rendering
-
-        observer.render();
-        skybox.render(mainShader);
-
+    public void render(ShaderProgram shaderProgram) { // render for regular level rendering
         Camera obsCamera = observer.getCamera();
+        obsCamera.render(shaderProgram);
+        skybox.render(shaderProgram);
 
         if (Editor.selectedNew != null) {
             Editor.selectedNew.setLight(obsCamera.getPos());
-            Editor.selectedNew.render(mainShader);
+            Editor.selectedNew.render(shaderProgram);
         }
-
-        voxelShader.bind();
-        obsCamera.updateViewMatrix(voxelShader);
-        obsCamera.updateCameraPosition(voxelShader);
-        obsCamera.updateCameraFront(voxelShader);
-        ShaderProgram.unbind();
 
         Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
             @Override
@@ -486,7 +465,7 @@ public class LevelRenderer {
                         && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos()));
             }
         };
-        solidBlocks.renderIf(voxelShader, obsCamera.getPos(), solidBlockPredicate);
+        solidBlocks.renderIf(shaderProgram, obsCamera.getPos(), solidBlockPredicate);
 
         Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
             @Override
@@ -499,14 +478,18 @@ public class LevelRenderer {
 
         fluidBlocks.setCameraInFluid(isCameraInFluid());
         fluidBlocks.prepare();
-        fluidBlocks.renderIf(voxelShader, obsCamera.getPos(), fluidBlockPredicate);
-
+        fluidBlocks.renderIf(shaderProgram, obsCamera.getPos(), fluidBlockPredicate);
     }
 
-    public void render(Camera camera, ShaderProgram shaderProgram) { // render for framebuffer (water renderer)
+    public void render(Camera camera, ShaderProgram shaderProgram) { // render for both regular level rendering and framebuffer (water renderer)
 
-        camera.render();
+        camera.render(shaderProgram);
         skybox.render(shaderProgram);
+
+        if (Editor.selectedNew != null) {
+            Editor.selectedNew.setLight(camera.getPos());
+            Editor.selectedNew.render(shaderProgram);
+        }
 
         Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
             @Override
@@ -533,14 +516,6 @@ public class LevelRenderer {
 
     public Window getMyWindow() {
         return myWindow;
-    }
-
-    public ShaderProgram getMainShader() {
-        return mainShader;
-    }
-
-    public ShaderProgram getVoxelShader() {
-        return voxelShader;
     }
 
     public Block getSkybox() {

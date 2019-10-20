@@ -65,13 +65,13 @@ public class Intrface {
     private void initIntrface() {
         infoText = new Text(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
         collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
-        helpText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.75f));
+        helpText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
         helpText.setContent(Text.readFromFile("help.txt"));
         helpText.setEnabled(false);
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
 
-        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
+        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
             @Override
             protected void leave() {
 
@@ -93,12 +93,12 @@ public class Intrface {
                 }
             }
         };
-        mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
         Quad logo = new Quad(myWindow, 180, 100, Texture.LOGO);
         logo.getColor().x = 1.0f;
         logo.getColor().y = 0.7f;
         logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
+        mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
         commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
@@ -190,7 +190,7 @@ public class Intrface {
             }
         };
 
-        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
+        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -270,7 +270,7 @@ public class Intrface {
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
-        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(-0.5f, 0.5f), 2.0f) {
+        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -298,14 +298,14 @@ public class Intrface {
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.getColor().x = 1.0f;
-            collText.getColor().y = 0.0f;
-            collText.getColor().z = 0.0f;
+            collText.getQuad().getColor().x = 1.0f;
+            collText.getQuad().getColor().y = 0.0f;
+            collText.getQuad().getColor().z = 0.0f;
         } else {
             collText.setContent("No Collision");
-            collText.getColor().x = 0.0f;
-            collText.getColor().y = 1.0f;
-            collText.getColor().z = 0.0f;
+            collText.getQuad().getColor().x = 0.0f;
+            collText.getQuad().getColor().y = 1.0f;
+            collText.getQuad().getColor().z = 0.0f;
         }
     }
 
@@ -332,9 +332,9 @@ public class Intrface {
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
-        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()) {
-            crosshair.render();
-        }
+//        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()) {
+        crosshair.render();
+//        }
     }
 
     public Window getMyWindow() {

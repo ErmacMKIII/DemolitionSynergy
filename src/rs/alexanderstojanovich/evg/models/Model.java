@@ -287,30 +287,23 @@ public class Model implements Comparable<Model> {
 
     protected void transform(ShaderProgram shaderProgram) {
         calcModelMatrix();
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
-        modelMatrix.get(fb);
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelMatrix");
-        GL20.glUniformMatrix4fv(uniformLocation, false, fb);
+        shaderProgram.updateUniform(modelMatrix, "modelMatrix");
     }
 
     protected void primaryColor(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor0");
-        GL20.glUniform4f(uniformLocation, primaryColor.x, primaryColor.y, primaryColor.z, primaryColor.w);
+        shaderProgram.updateUniform(primaryColor, "modelColor0");
     }
 
     protected void secondaryColor(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor1");
-        GL20.glUniform4f(uniformLocation, secondaryColor.x, secondaryColor.y, secondaryColor.z, secondaryColor.w);
+        shaderProgram.updateUniform(secondaryColor, "modelColor1");
     }
 
     protected void tertiaryColor(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelColor2");
-        GL20.glUniform4f(uniformLocation, tertiaryColor.x, tertiaryColor.y, tertiaryColor.z, tertiaryColor.w);
+        shaderProgram.updateUniform(tertiaryColor, "modelColor2");
     }
 
     protected void useLight(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelLight");
-        GL20.glUniform3f(uniformLocation, light.x, light.y, light.z);
+        shaderProgram.updateUniform(light, "modelLight");
     }
 
     private void calcDims() {

@@ -16,7 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.shaders;
 
+import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.List;
+import org.joml.Matrix4f;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 
@@ -28,6 +35,42 @@ public class ShaderProgram {
 
     private final int program; // made to link all the shaders    
     private final List<Shader> shaders;
+
+    private static ShaderProgram mainShader;
+    private static ShaderProgram voxelShader;
+    private static ShaderProgram waterShader;
+    private static ShaderProgram intrfaceShader;
+
+    public static void initAllShaders() { // requires initialized OpenGL capabilities
+        // 1. Init main shader (skybox, camera)
+        Shader mainVertexShader = new Shader("mainVS.glsl", Shader.VERTEX_SHADER);
+        Shader mainFragmentShader = new Shader("mainFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> mainShaders = new ArrayList<>();
+        mainShaders.add(mainVertexShader);
+        mainShaders.add(mainFragmentShader);
+        mainShader = new ShaderProgram(mainShaders);
+        // 2. Init voxel shader (solid blocks and fluid blocks)
+        Shader voxelVertexShader = new Shader("voxelVS.glsl", Shader.VERTEX_SHADER);
+        Shader voxelFragmentShader = new Shader("voxelFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> voxelShaders = new ArrayList<>();
+        voxelShaders.add(voxelVertexShader);
+        voxelShaders.add(voxelFragmentShader);
+        voxelShader = new ShaderProgram(voxelShaders);
+        // 3. Init water shader (water effects)
+        Shader waterVertexShader = new Shader("waterVS.glsl", Shader.VERTEX_SHADER);
+        Shader waterFragmentShader = new Shader("waterFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> waterShaders = new ArrayList<>();
+        waterShaders.add(waterVertexShader);
+        waterShaders.add(waterFragmentShader);
+        waterShader = new ShaderProgram(waterShaders);
+        // 4. Init interface shader (crosshair, text, menus and fonts)
+        Shader intrfaceVertexShader = new Shader("intrfaceVS.glsl", Shader.VERTEX_SHADER);
+        Shader intrfaceFragmentShader = new Shader("intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> intrfaceShaders = new ArrayList<>();
+        intrfaceShaders.add(intrfaceVertexShader);
+        intrfaceShaders.add(intrfaceFragmentShader);
+        intrfaceShader = new ShaderProgram(intrfaceShaders);
+    }
 
     public ShaderProgram(List<Shader> shaders) {
         program = GL20.glCreateProgram();
@@ -78,12 +121,55 @@ public class ShaderProgram {
         GL20.glBindAttribLocation(program, attribute, variableName);
     }
 
+    public void updateUniform(float number, String name) {
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniform1f(uniformLocation, number);
+    }
+
+    public void updateUniform(Vector2f vect, String name) {
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniform2f(uniformLocation, vect.x, vect.y);
+    }
+
+    public void updateUniform(Vector3f vect, String name) {
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniform3f(uniformLocation, vect.x, vect.y, vect.z);
+    }
+
+    public void updateUniform(Vector4f vect, String name) {
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniform4f(uniformLocation, vect.x, vect.y, vect.z, vect.w);
+    }
+
+    public void updateUniform(Matrix4f mat, String name) {
+        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
+        mat.get(fb);
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniformMatrix4fv(uniformLocation, false, fb);
+    }
+
     public int getProgram() {
         return program;
     }
 
     public List<Shader> getShaders() {
         return shaders;
+    }
+
+    public static ShaderProgram getMainShader() {
+        return mainShader;
+    }
+
+    public static ShaderProgram getVoxelShader() {
+        return voxelShader;
+    }
+
+    public static ShaderProgram getWaterShader() {
+        return waterShader;
+    }
+
+    public static ShaderProgram getIntrfaceShader() {
+        return intrfaceShader;
     }
 
 }

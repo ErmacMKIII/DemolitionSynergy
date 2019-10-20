@@ -7,21 +7,16 @@ layout (location = 2) in vec2 uv;
 out vec3 normalOut;
 out vec2 uvOut;
 
-out vec4 glPosOut;
-out vec3 modelPosOut;
-
 uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
 uniform float waterHeight;
 
-void main(){      
-    glPosOut = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
-    modelPosOut = (modelMatrix * vec4(pos, 1.0)).xyz;    
+void main() {      
+    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);       
     vec4 plane = vec4(0.0, 1.0, 0.0, -waterHeight);
-    gl_ClipDistance[0] = dot(plane, modelMatrix * vec4(pos, 1.0));
-    gl_Position = glPosOut;        
+    gl_ClipDistance[0] = dot(plane, modelMatrix * vec4(pos, 1.0));    
     normalOut = normal;
     uvOut = uv;    
 }

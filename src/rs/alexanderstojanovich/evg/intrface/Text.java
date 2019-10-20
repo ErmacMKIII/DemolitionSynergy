@@ -27,7 +27,6 @@ import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Texture;
-import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.Shader;
 
@@ -40,19 +39,17 @@ public class Text {
     private Window myWindow;
     private Texture texture;
     private String content;
-    private Vector3f color;
-    private Vector2f pos;
 
     private static final int GRID_SIZE = 16;
     private static final float CELL_SIZE = 1.0f / GRID_SIZE;
-    public static final float LINE_SPACING = 1.15f;
+    public static final float LINE_SPACING = 1.35f;
 
-    private float charWidth;
-    private float charHeight;
-
-    private float scale;
+    private final Quad quad;
 
     private boolean enabled;
+
+    public static final int STD_FONT_WIDTH = 24;
+    public static final int STD_FONT_HEIGHT = 24;
 
     public static String readFromFile(String fileName) {
         StringBuilder text = new StringBuilder();
@@ -76,11 +73,7 @@ public class Text {
         this.myWindow = window;
         this.texture = texture;
         this.content = content;
-        this.color = new Vector3f(1.0f, 1.0f, 1.0f);
-        this.pos = new Vector2f();
-        this.charWidth = 24;
-        this.charHeight = 24;
-        this.scale = 1.0f;
+        this.quad = new Quad(window, STD_FONT_WIDTH, STD_FONT_HEIGHT, texture);
         this.enabled = true;
     }
 
@@ -88,22 +81,18 @@ public class Text {
         this.myWindow = window;
         this.texture = texture;
         this.content = content;
-        this.color = color;
-        this.pos = pos;
-        this.charWidth = 24;
-        this.charHeight = 24;
-        this.scale = 1.0f;
+        this.quad = new Quad(window, STD_FONT_WIDTH, STD_FONT_HEIGHT, texture);
+        quad.setPos(pos);
+        quad.setColor(color);
         this.enabled = true;
     }
 
-    public Text(Window window, Texture texture, String content, Vector2f pos, float charWidth, float charHeight) {
+    public Text(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         this.myWindow = window;
         this.texture = texture;
         this.content = content;
-        this.pos = pos;
-        this.charWidth = charWidth;
-        this.charHeight = charHeight;
-        this.scale = 1.0f;
+        this.quad = new Quad(window, charWidth, charHeight, texture);
+        quad.setPos(pos);
         this.enabled = true;
     }
 
@@ -112,55 +101,34 @@ public class Text {
             String[] lines = content.split("\n");
             for (int l = 0; l < lines.length; l++) {
                 for (int i = 0; i < lines[l].length(); i++) {
-                    int j = i % 31;
-                    int k = i / 31;
+                    int j = i % 32;
+                    int k = i / 32;
                     int asciiCode = (int) (lines[l].charAt(i));
 
                     float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
                     float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                    float x = giveRelativeWidth();
-                    float xinc = j * giveRelativeWidth();
+                    float xinc = j;
+                    float ydec = k + l * LINE_SPACING;
 
-                    float y = giveRelativeHeight();
-                    float ydec = (k + l * LINE_SPACING) * giveRelativeHeight();
+                    quad.getUvs()[0].x = cellU;
+                    quad.getUvs()[0].y = cellV;
 
-                    Texture.enable();
-                    texture.bind();
+                    quad.getUvs()[1].x = cellU + CELL_SIZE;
+                    quad.getUvs()[1].y = cellV;
 
-                    GL11.glColor4f(color.x, color.y, color.z, 1.0f);
+                    quad.getUvs()[2].x = cellU + CELL_SIZE;
+                    quad.getUvs()[2].y = cellV + CELL_SIZE;
 
-                    GL11.glBegin(GL11.GL_QUADS);
+                    quad.getUvs()[3].x = cellU;
+                    quad.getUvs()[3].y = cellV + CELL_SIZE;
 
-                    GL11.glTexCoord2f(cellU, cellV + CELL_SIZE);
-                    GL11.glVertex2f(-x + xinc + pos.x, -y - ydec + pos.y);
+                    quad.buffer();
 
-                    GL11.glTexCoord2f(cellU + CELL_SIZE, cellV + CELL_SIZE);
-                    GL11.glVertex2f(x + xinc + pos.x, -y - ydec + pos.y);
-
-                    GL11.glTexCoord2f(cellU + CELL_SIZE, cellV);
-                    GL11.glVertex2f(x + xinc + pos.x, y - ydec + pos.y);
-
-                    GL11.glTexCoord2f(cellU, cellV);
-                    GL11.glVertex2f(-x + xinc + pos.x, y - ydec + pos.y);
-
-                    GL11.glEnd();
-
-                    Texture.unbind();
-                    Texture.disable();
+                    quad.render(xinc, ydec);
                 }
             }
         }
-    }
-
-    public float giveRelativeWidth() {
-        float widthFactor = myWindow.getWidth() / Window.MIN_WIDTH;
-        return scale * widthFactor * charWidth / myWindow.getWidth();
-    }
-
-    public float giveRelativeHeight() {
-        float heightFactor = myWindow.getHeight() / Window.MIN_HEIGHT;
-        return scale * heightFactor * charHeight / myWindow.getHeight();
     }
 
     public Window getMyWindow() {
@@ -187,52 +155,16 @@ public class Text {
         this.content = content;
     }
 
-    public Vector3f getColor() {
-        return color;
-    }
-
-    public void setColor(Vector3f color) {
-        this.color = color;
-    }
-
-    public Vector2f getPos() {
-        return pos;
-    }
-
-    public void setPos(Vector2f pos) {
-        this.pos = pos;
-    }
-
-    public float getCharWidth() {
-        return charWidth;
-    }
-
-    public void setCharWidth(float charWidth) {
-        this.charWidth = charWidth;
-    }
-
-    public float getCharHeight() {
-        return charHeight;
-    }
-
-    public void setCharHeight(float charHeight) {
-        this.charHeight = charHeight;
-    }
-
-    public float getScale() {
-        return scale;
-    }
-
-    public void setScale(float scale) {
-        this.scale = scale;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Quad getQuad() {
+        return quad;
     }
 
 }

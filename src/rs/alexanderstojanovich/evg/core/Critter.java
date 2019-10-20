@@ -33,8 +33,8 @@ public class Critter {
     private Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
     private final Model predModel = new Model("icosphere.obj");
 
-    public Critter(String modelFileName, Texture texture, ShaderProgram shaderProgram, Vector3f pos, Vector4f color, float scale) {
-        this.camera = new Camera(pos, shaderProgram);
+    public Critter(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
+        this.camera = new Camera(pos);
         this.model = new Model(modelFileName, texture);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
@@ -140,9 +140,9 @@ public class Critter {
         }
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (givenControl) {
-            camera.render();
+            camera.render(shaderProgram);
         }
 //        model.render();
     }

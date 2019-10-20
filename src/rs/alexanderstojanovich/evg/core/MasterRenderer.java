@@ -39,7 +39,7 @@ public class MasterRenderer {
     public MasterRenderer(Window window) {
         this.myWindow = window;
         initGL(); // load GL context into this thread  -> important!
-        initShaders(); // it's important that first GL is done and then this one
+        ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one
     }
 
     private void initGL() {
@@ -56,19 +56,9 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 
-        GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glCullFace(GL11.GL_BACK);
-
+//        GL11.glEnable(GL11.GL_CULL_FACE);
+//        GL11.glCullFace(GL11.GL_BACK);
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black
-    }
-
-    private void initShaders() {
-        Shader vertexShader = new Shader("mainVS.glsl", Shader.VERTEX_SHADER);
-        Shader fragmentShader = new Shader("mainFS.glsl", Shader.FRAGMENT_SHADER);
-        List<Shader> shaders = new ArrayList<>();
-        shaders.add(vertexShader);
-        shaders.add(fragmentShader);
-        mainShader = new ShaderProgram(shaders);
     }
 
     public void render() {

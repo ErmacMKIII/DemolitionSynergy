@@ -26,6 +26,7 @@ import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -45,10 +46,10 @@ public class Renderer extends Thread {
         super("Renderer");
         this.myWindow = myWindow;
         masterRenderer = new MasterRenderer(myWindow);
-        levelRenderer = new LevelRenderer(myWindow, masterRenderer.getMainShader());
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), masterRenderer.getMainShader());
+        levelRenderer = new LevelRenderer(myWindow);
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
         intrface = new Intrface(myWindow, levelRenderer, waterRenderer);
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getMainShader());
     }
 
     @Override
@@ -73,7 +74,7 @@ public class Renderer extends Thread {
 
                 if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
                     masterRenderer.render();
-                    levelRenderer.render();
+                    levelRenderer.render(ShaderProgram.getMainShader());
                     if (Game.isWaterEffects()) {
                         waterRenderer.render();
                     }
@@ -84,9 +85,9 @@ public class Renderer extends Thread {
                 }
 
                 if (System.currentTimeMillis() > timer0 + 1000) {
-                    intrface.getInfoText().getColor().x = 0.0f;
-                    intrface.getInfoText().getColor().y = 1.0f;
-                    intrface.getInfoText().getColor().z = 0.0f;
+                    intrface.getInfoText().getQuad().getColor().x = 0.0f;
+                    intrface.getInfoText().getQuad().getColor().y = 1.0f;
+                    intrface.getInfoText().getQuad().getColor().z = 0.0f;
                     intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
                     fps = 0;
                     timer0 += 1000;

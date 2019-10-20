@@ -14,7 +14,7 @@ uniform mat4 modelMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
-void main(){      
+void main() {      
     glPosOut = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
     modelPosOut = (modelMatrix * vec4(pos, 1.0)).xyz;  
     gl_Position = glPosOut;        

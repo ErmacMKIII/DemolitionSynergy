@@ -3,13 +3,10 @@
 in vec3 normalOut;
 in vec2 uvOut;
 
-in vec4 glPosOut;
-in vec3 modelPosOut;
-
 uniform vec4 modelColor0;
 uniform sampler2D modelTexture0; // this is primary texture
 
-void main(){            
+void main() {            
     vec3 finalColor = modelColor0.rgb * texture(modelTexture0, uvOut).rgb;                    
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     

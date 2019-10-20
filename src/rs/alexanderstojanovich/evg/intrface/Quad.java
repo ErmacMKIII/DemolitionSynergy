@@ -16,11 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.nio.FloatBuffer;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.lwjgl.BufferUtils;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.core.Texture;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -30,8 +35,8 @@ public class Quad {
 
     private Window myWindow;
 
-    private float width;
-    private float height;
+    private int width;
+    private int height;
     private Texture texture;
 
     private Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -42,83 +47,136 @@ public class Quad {
 
     private boolean ignoreFactor = false;
 
-    public Quad(Window window, float width, float height, Texture texture) {
+    private final Vector2f[] vertices = new Vector2f[4];
+    private final Vector2f[] uvs = new Vector2f[4];
+
+    private int vbo;
+
+    public Quad(Window window, int width, int height, Texture texture) {
         this.myWindow = window;
         this.width = width;
         this.height = height;
         this.texture = texture;
+        init();
     }
 
-    public Quad(Window window, float width, float height, Texture texture, boolean ignoreFactor) {
+    public Quad(Window window, int width, int height, Texture texture, boolean ignoreFactor) {
         this.myWindow = window;
         this.width = width;
         this.height = height;
         this.texture = texture;
         this.ignoreFactor = ignoreFactor;
+        init();
     }
 
-    public void render() {
+    private void init() {
+        vertices[0] = new Vector2f(-1.0f, 1.0f);
+        vertices[1] = new Vector2f(1.0f, 1.0f);
+        vertices[2] = new Vector2f(1.0f, -1.0f);
+        vertices[3] = new Vector2f(-1.0f, -1.0f);
+
+        uvs[0] = new Vector2f(0.0f, 0.0f);
+        uvs[1] = new Vector2f(1.0f, 0.0f);
+        uvs[2] = new Vector2f(1.0f, 1.0f);
+        uvs[3] = new Vector2f(0.0f, 1.0f);
+
+        FloatBuffer fb = BufferUtils.createFloatBuffer(16);
+        for (int i = 0; i < 4; i++) {
+            fb.put(vertices[i].x);
+            fb.put(vertices[i].y);
+            fb.put(uvs[i].x);
+            fb.put(uvs[i].y);
+        }
+        fb.flip();
+        vbo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    public void buffer() { // requires vertices and uvs to be set (used for fonts)
+        FloatBuffer fb = BufferUtils.createFloatBuffer(16);
+        for (int i = 0; i < 4; i++) {
+            fb.put(vertices[i].x);
+            fb.put(vertices[i].y);
+            fb.put(uvs[i].x);
+            fb.put(uvs[i].y);
+        }
+        fb.flip();
+        vbo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_DYNAMIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    public void render() { // used for crosshair
         if (enabled) {
-            float x = giveRelativeWidth();
-            float y = giveRelativeHeight();
+            float relWidth = giveRelativeWidth();
+            float relHeight = giveRelativeHeight();
             Texture.enable();
-            texture.bind();
-            GL11.glColor4f(color.x, color.y, color.z, 1.0f);
-            GL11.glBegin(GL11.GL_QUADS);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                         
+            ShaderProgram.getIntrfaceShader().bind();
+            ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
+            ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
+            ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
+            ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
+            ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
+            texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
+            ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "xinc");
+            ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "ydec");
+            GL11.glDrawArrays(GL11.GL_QUADS, 0, 4);
 
-            GL11.glTexCoord2f(0.0f, 1.0f);
-            GL11.glVertex2f(-x + pos.x, -y + pos.y);
-
-            GL11.glTexCoord2f(1.0f, 1.0f);
-            GL11.glVertex2f(x + pos.x, -y + pos.y);
-
-            GL11.glTexCoord2f(1.0f, 0.0f);
-            GL11.glVertex2f(x + pos.x, y + pos.y);
-
-            GL11.glTexCoord2f(0.0f, 0.0f);
-            GL11.glVertex2f(-x + pos.x, y + pos.y);
-
-            GL11.glEnd();
-            Texture.unbind();
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
             Texture.disable();
         }
     }
 
-    public void renderReversed() {
+    public void render(float xinc, float ydec) { // used for fonts
         if (enabled) {
-            float x = giveRelativeWidth();
-            float y = giveRelativeHeight();
+            float relWidth = giveRelativeWidth();
+            float relHeight = giveRelativeHeight();
             Texture.enable();
-            texture.bind();
-            GL11.glColor4f(color.x, color.y, color.z, 1.0f);
-            GL11.glBegin(GL11.GL_QUADS);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                         
+            ShaderProgram.getIntrfaceShader().bind();
+            ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
+            ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
+            ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
+            ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
+            ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
+            texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
+            ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
+            ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
+            GL11.glDrawArrays(GL11.GL_QUADS, 0, 4);
 
-            GL11.glTexCoord2f(0.0f, 0.0f);
-            GL11.glVertex2f(-x + pos.x, -y + pos.y);
-
-            GL11.glTexCoord2f(1.0f, 0.0f);
-            GL11.glVertex2f(x + pos.x, -y + pos.y);
-
-            GL11.glTexCoord2f(1.0f, 1.0f);
-            GL11.glVertex2f(x + pos.x, y + pos.y);
-
-            GL11.glTexCoord2f(0.0f, 1.0f);
-            GL11.glVertex2f(-x + pos.x, y + pos.y);
-
-            GL11.glEnd();
-            Texture.unbind();
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
             Texture.disable();
         }
     }
 
     public float giveRelativeWidth() {
         float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return width * widthFactor * scale / myWindow.getWidth();
+        return width * widthFactor / myWindow.getWidth();
     }
 
     public float giveRelativeHeight() {
         float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
-        return height * heightFactor * scale / myWindow.getHeight();
+        return height * heightFactor / myWindow.getHeight();
     }
 
     public Window getWindow() {
@@ -129,19 +187,19 @@ public class Quad {
         this.myWindow = window;
     }
 
-    public float getWidth() {
+    public int getWidth() {
         return width;
     }
 
-    public void setWidth(float width) {
+    public void setWidth(int width) {
         this.width = width;
     }
 
-    public float getHeight() {
+    public int getHeight() {
         return height;
     }
 
-    public void setHeight(float height) {
+    public void setHeight(int height) {
         this.height = height;
     }
 
@@ -191,6 +249,22 @@ public class Quad {
 
     public void setIgnoreFactor(boolean ignoreFactor) {
         this.ignoreFactor = ignoreFactor;
+    }
+
+    public int getVbo() {
+        return vbo;
+    }
+
+    public Vector2f[] getVertices() {
+        return vertices;
+    }
+
+    public Vector2f[] getUvs() {
+        return uvs;
+    }
+
+    public void setPos(Vector2f pos) {
+        this.pos = pos;
     }
 
 }

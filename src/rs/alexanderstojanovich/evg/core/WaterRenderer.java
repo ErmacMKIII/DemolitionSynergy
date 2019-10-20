@@ -19,10 +19,8 @@ package rs.alexanderstojanovich.evg.core;
 import java.util.ArrayList;
 import java.util.List;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.shaders.Shader;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -35,7 +33,6 @@ public class WaterRenderer {
     private final LevelRenderer levelRenderer;
     private List<Float> waterHeights = new ArrayList<>();
     private final FrameBuffer frameBuffer;
-    private final ShaderProgram waterShader;
     private final Camera camera;
 //    private Quad quad;
 
@@ -43,14 +40,8 @@ public class WaterRenderer {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
-        List<Shader> shaders = new ArrayList<>();
-        Shader vertex = new Shader("waterVS.glsl", Shader.VERTEX_SHADER);
-        Shader fragment = new Shader("waterFS.glsl", Shader.FRAGMENT_SHADER);
-        shaders.add(vertex);
-        shaders.add(fragment);
-        this.waterShader = new ShaderProgram(shaders);
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), waterShader);
-        this.camera = new Camera(waterShader);
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterShader());
+        this.camera = new Camera();
 //        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
 //        this.quad.setScale(0.25f);
 //        this.quad.getPos().x = -0.85f * 0.95f;
@@ -85,8 +76,7 @@ public class WaterRenderer {
     }
 
     private void updateClipPlane(float waterHeight) {
-        int uniformLocation = GL20.glGetUniformLocation(waterShader.getProgram(), "waterHeight");
-        GL20.glUniform1f(uniformLocation, waterHeight);
+        ShaderProgram.getWaterShader().updateUniform(waterHeight, "waterHeight");
     }
 
     private void updateCamera(float waterHeight) {
@@ -102,7 +92,7 @@ public class WaterRenderer {
         frameBuffer.bind();
         prepare();
         updateCamera(waterHeight);
-        levelRenderer.render(camera, waterShader);
+        levelRenderer.render(camera, ShaderProgram.getWaterShader());
         frameBuffer.unbind();
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }

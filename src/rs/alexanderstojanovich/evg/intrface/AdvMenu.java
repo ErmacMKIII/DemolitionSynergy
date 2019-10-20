@@ -17,12 +17,12 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import org.joml.Vector2f;
-import rs.alexanderstojanovich.evg.core.Combo;
-import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
@@ -48,9 +48,9 @@ public abstract class AdvMenu extends Menu {
         options = new Combo[items.size()];
         for (int i = 0; i < values.length; i++) {
             values[i] = new Text(myWindow, Texture.FONT, "");
-            values[i].getPos().x = items.get(i).getPos().x;
-            values[i].getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).giveRelativeWidth();
-            values[i].getPos().y = items.get(i).getPos().y;
+            values[i].getQuad().getPos().x = items.get(i).getQuad().getPos().x;
+            values[i].getQuad().getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).getQuad().giveRelativeWidth();
+            values[i].getQuad().getPos().y = items.get(i).getQuad().getPos().y;
         }
     }
 
@@ -101,24 +101,27 @@ public abstract class AdvMenu extends Menu {
         if (enabled) {
             refreshValues();
             int longest = longestWord();
-            title.getPos().x = alignmentAmount * (longest - title.getContent().length())
-                    * title.giveRelativeWidth() + pos.x;
-            title.getPos().y = Text.LINE_SPACING * title.giveRelativeHeight() + pos.y;
+            title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
+                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
+            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
             title.render();
-            for (int i = 0; i < items.size(); i++) {
-                items.get(i).getPos().x = alignmentAmount * (longest - items.get(i).getContent().length())
-                        * items.get(i).giveRelativeWidth() + pos.x;
-                items.get(i).getPos().y = -Text.LINE_SPACING * (i + 1) * items.get(i).giveRelativeHeight() + pos.y;
-                items.get(i).render();
-                values[i].getPos().x = items.get(i).getPos().x;
-                values[i].getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).giveRelativeWidth();
-                values[i].getPos().y = items.get(i).getPos().y;
-                values[i].render();
+            int index = 0;
+            for (Text item : items) {
+                Quad itemQuad = item.getQuad();
+                int itemDiff = longest - item.getContent().length();
+                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
+                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                item.render();
+                values[index].getQuad().getPos().x = item.getQuad().getPos().x;
+                values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
+                values[index].getQuad().getPos().y = item.getQuad().getPos().y;
+                values[index].render();
+                index++;
             }
-            quad.getPos().x = items.get(selected).getPos().x;
-            quad.getPos().x -= 2 * items.get(selected).giveRelativeWidth();
-            quad.getPos().y = items.get(selected).getPos().y;
-            quad.render();
+            iterator.getPos().x = items.get(selected).getQuad().getPos().x;
+            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
+            iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            iterator.render();
         }
     }
 

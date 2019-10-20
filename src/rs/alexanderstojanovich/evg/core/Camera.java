@@ -33,7 +33,6 @@ public class Camera { // is 3D looking camera
 
     private Vector3f pos; // is camera position in space; it's uniform
     private final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
-    private final ShaderProgram shaderProgram; // is shader program used to bind viewMatrix
 
     public static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -47,45 +46,32 @@ public class Camera { // is 3D looking camera
     private float yaw = (float) (-Math.PI / 2); // sideways look angle
     private float pitch = 0.0f; // up and down look angle
 
-    public Camera(ShaderProgram shaderProgram) {
+    public Camera() {
         this.pos = new Vector3f();
-        this.shaderProgram = shaderProgram;
 
         this.front = Z_AXIS;
         this.up = Y_AXIS;
         this.right = X_AXIS;
     }
 
-    public Camera(Vector3f pos, ShaderProgram shaderProgram) {
+    public Camera(Vector3f pos) {
         this.pos = pos;
-        this.shaderProgram = shaderProgram;
 
         this.front = Z_AXIS;
         this.up = Y_AXIS;
         this.right = X_AXIS;
     }
 
-    public Camera(Vector3f pos, ShaderProgram shaderProgram, Vector3f front, Vector3f up, Vector3f right) {
+    public Camera(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
         this.pos = pos;
-        this.shaderProgram = shaderProgram;
 
         this.front = front;
         this.up = up;
         this.right = right;
     }
 
-    private void updateViewMatrix() {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
-        viewMatrix.get(fb);
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "viewMatrix");
-        GL20.glUniformMatrix4fv(uniformLocation, false, fb);
-    }
-
     public void updateViewMatrix(ShaderProgram shaderProgram) {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
-        viewMatrix.get(fb);
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "viewMatrix");
-        GL20.glUniformMatrix4fv(uniformLocation, false, fb);
+        shaderProgram.updateUniform(viewMatrix, "viewMatrix");
     }
 
     private void updateCameraVectors() {
@@ -103,24 +89,12 @@ public class Camera { // is 3D looking camera
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }
 
-    private void updateCameraPosition() {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "cameraPos");
-        GL20.glUniform3f(uniformLocation, pos.x, pos.y, pos.z);
+    private void updateCameraPosition(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(pos, "cameraPos");
     }
 
-    public void updateCameraPosition(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "cameraPos");
-        GL20.glUniform3f(uniformLocation, pos.x, pos.y, pos.z);
-    }
-
-    private void updateCameraFront() {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "cameraFront");
-        GL20.glUniform3f(uniformLocation, front.x, front.y, front.z);
-    }
-
-    public void updateCameraFront(ShaderProgram shaderProgram) {
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "cameraFront");
-        GL20.glUniform3f(uniformLocation, front.x, front.y, front.z);
+    private void updateCameraFront(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(front, "cameraFront");
     }
 
     public void moveForward(float amount) {
@@ -183,12 +157,12 @@ public class Camera { // is 3D looking camera
         updateCameraVectors();
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         calcViewMatrix();
         shaderProgram.bind();
-        updateViewMatrix();
-        updateCameraPosition();
-        updateCameraFront();
+        updateViewMatrix(shaderProgram);
+        updateCameraPosition(shaderProgram);
+        updateCameraFront(shaderProgram);
         ShaderProgram.unbind();
     }
 
@@ -231,10 +205,6 @@ public class Camera { // is 3D looking camera
 
     public Matrix4f getViewMatrix() {
         return viewMatrix;
-    }
-
-    public ShaderProgram getShaderProgram() {
-        return shaderProgram;
     }
 
     public Vector3f getFront() {
