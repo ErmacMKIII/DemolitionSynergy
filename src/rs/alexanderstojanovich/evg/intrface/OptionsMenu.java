@@ -28,17 +28,17 @@ import rs.alexanderstojanovich.evg.main.Game;
  *
  * @author Coa
  */
-public abstract class AdvMenu extends Menu {
+public abstract class OptionsMenu extends Menu {
 
     private DynamicText[] values; // correct and current values we display
     private Combo[] options; // options we can set we display
 
-    public AdvMenu(Window window, String title, String fileName, String textureFileName) {
+    public OptionsMenu(Window window, String title, String fileName, String textureFileName) {
         super(window, title, fileName, textureFileName);
         init();
     }
 
-    public AdvMenu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
+    public OptionsMenu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
         super(window, title, fileName, textureFileName, pos, scale);
         init();
     }

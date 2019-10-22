@@ -26,66 +26,91 @@ import rs.alexanderstojanovich.evg.core.Window;
 public class GameTime extends Thread { // serves for measuring the time amongs the threads
 
     private final Window myWindow;
-    private static double lastTime = GLFW.glfwGetTime();
-    private static double currTime = 0.0;
+    private double lastTime = GLFW.glfwGetTime();
+    private double currTime = 0.0;
 
-    private static double diff = 0.0; // shows current global game time
+    private double diff = 0.0; // shows current global game time
 
-    private static double upsDelta = 0; // for main thread
-    private static double fpsDelta = 0; // for renderer thread
+    private double upsDelta = 0.0; // for main thread, ups ticks
+    private double fpsDelta = 0.0; // for renderer thread, fps ticks
 
-    public GameTime(Window myWindow) {
+    private final Object objMutex; // for mutual exclusion
+    private final Object objUps; // for waking up the Game (Main) Thread
+    private final Object objFps; // for waking up the Renderer Thread    
+
+    public GameTime(Window myWindow, Object objMutex, Object objUps, Object objFps) {
         super("GameTime");
         this.myWindow = myWindow;
+        this.objMutex = objMutex;
+        this.objUps = objUps;
+        this.objFps = objFps;
     }
 
     @Override
     public void run() {
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized (Game.OBJ_MUTEX) {
-                currTime = GLFW.glfwGetTime();
-                diff = currTime - lastTime;
-                upsDelta += diff * Game.getUpsCap(); // default upsCap=80
-                fpsDelta += diff * Game.getFpsMax(); // default fpsMax=100
-                if (upsDelta >= 1.0) {
-                    synchronized (Game.OBJ_UPS) {
-                        Game.OBJ_UPS.notify();
-                    }
-                } else if (fpsDelta >= 1.0) {
-                    synchronized (Renderer.OBJ_FPS) {
-                        Renderer.OBJ_FPS.notify();
-                    }
+            currTime = GLFW.glfwGetTime();
+            diff = currTime - lastTime;
+            upsDelta += diff * Game.getUpsCap(); // default upsCap=80                
+            if (upsDelta >= 1.0) {
+                upsDelta--;
+                synchronized (objUps) {
+                    objUps.notify();
                 }
-                lastTime = currTime;
             }
+            fpsDelta += diff * Game.getFpsMax(); // default fpsMax=100            
+            if (fpsDelta >= 1.0 && upsDelta < 1.0) { // this upsDelta less than one prevents lag                    
+                fpsDelta--;
+                synchronized (objFps) {
+                    objFps.notify();
+                }
+            }
+            lastTime = currTime;
         }
+
         // last time for everyone to wake up before finish
-        synchronized (Game.OBJ_UPS) {
-            Game.OBJ_UPS.notify();
+        synchronized (objUps) {
+            objUps.notify();
         }
-        synchronized (Renderer.OBJ_FPS) {
-            Renderer.OBJ_FPS.notify();
+        synchronized (objFps) {
+            objFps.notify();
         }
-    }
-
-    public static void decUpsDelta() {
-        upsDelta--;
-    }
-
-    public static void decFpsDelta() {
-        fpsDelta--;
     }
 
     public Window getMyWindow() {
         return myWindow;
     }
 
-    public static double getUpsDelta() {
+    public double getLastTime() {
+        return lastTime;
+    }
+
+    public double getCurrTime() {
+        return currTime;
+    }
+
+    public double getDiff() {
+        return diff;
+    }
+
+    public double getUpsDelta() {
         return upsDelta;
     }
 
-    public static double getFpsDelta() {
+    public double getFpsDelta() {
         return fpsDelta;
+    }
+
+    public Object getObjMutex() {
+        return objMutex;
+    }
+
+    public Object getObjUps() {
+        return objUps;
+    }
+
+    public Object getObjFps() {
+        return objFps;
     }
 
 }

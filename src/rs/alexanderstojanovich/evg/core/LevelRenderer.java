@@ -318,6 +318,9 @@ public class LevelRenderer {
         }
         File file = new File(filename);
         FileInputStream fis = null;
+        if (!file.exists()) {
+            return false; // this prevents further fail
+        }
         try {
             fis = new FileInputStream(file);
             fis.read(buffer);
@@ -443,7 +446,7 @@ public class LevelRenderer {
         coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
         for (int i = 0; i < solidBlocks.getBlockList().size() && !coll; i++) {
             Block entity = solidBlocks.getBlockList().get(i);
-            coll = entity.containsExactly(critter.getPredictor()) || entity.intersectsExactly(critter.getPredModel());
+            coll = entity.contains(critter.getPredictor()) || entity.intersects(critter.getPredModel()); // relaxed (without exactly) is better restriction
         }
         return coll;
     }

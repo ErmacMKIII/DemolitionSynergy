@@ -48,17 +48,17 @@ public class Editor {
         Vector3f pos = obs.getCamera().getPos();
         Vector3f front = obs.getCamera().getFront();
         // initial calculation
-        selectedNew.getPos().x = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.x)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().y = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.y)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().z = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.z)) % (2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().x = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.x)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().y = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.y)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().z = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.z)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
 
         Vector3f temp = new Vector3f();
-        selectedNew.setPos(selectedNew.getPos().div(LevelRenderer.SKYBOX_WIDTH, temp).mul(2.0f, temp));
+        selectedNew.setPos(selectedNew.getPos().div(Math.round(LevelRenderer.SKYBOX_WIDTH / 4.0f), temp));
 
         // make it follows player camera
-        selectedNew.getPos().x += Math.round((pos.x) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
-        selectedNew.getPos().y += Math.round((pos.y) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
-        selectedNew.getPos().z += Math.round((pos.z) % (2.0f * LevelRenderer.SKYBOX_WIDTH));
+        selectedNew.getPos().x += Math.round(pos.x) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().y += Math.round(pos.y) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+        selectedNew.getPos().z += Math.round(pos.z) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;

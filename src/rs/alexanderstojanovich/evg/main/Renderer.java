@@ -40,11 +40,13 @@ public class Renderer extends Thread {
     private final WaterRenderer waterRenderer;
     private final Intrface intrface;
 
-    public static final Object OBJ_FPS = new Object();
+    private final Object objFps = new Object();
+    private final Object objMutex; // got from the Game    
 
-    public Renderer(Window myWindow) {
+    public Renderer(Window myWindow, Object objMutex) {
         super("Renderer");
         this.myWindow = myWindow;
+        this.objMutex = objMutex;
         masterRenderer = new MasterRenderer(myWindow);
         levelRenderer = new LevelRenderer(myWindow);
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
@@ -61,28 +63,25 @@ public class Renderer extends Thread {
 
         int fps = 0;
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized (OBJ_FPS) {
+            synchronized (objFps) {
                 try {
-                    OBJ_FPS.wait();
+                    objFps.wait();
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            synchronized (Game.OBJ_MUTEX) {
+            synchronized (objMutex) {
                 myWindow.loadContext();
                 GL.setCapabilities(MasterRenderer.getGlCaps());
 
-                if (GameTime.getFpsDelta() >= 1.0) { // ensurance that this will go 100*diff -> 100 times per second 
-                    masterRenderer.render();
-                    levelRenderer.render(ShaderProgram.getMainShader());
-                    if (Game.isWaterEffects()) {
-                        waterRenderer.render();
-                    }
-                    intrface.render();
-                    myWindow.render();
-                    fps++;
-                    GameTime.decFpsDelta();
+                masterRenderer.render();
+                levelRenderer.render(ShaderProgram.getMainShader());
+                if (Game.isWaterEffects()) {
+                    waterRenderer.render();
                 }
+                intrface.render();
+                myWindow.render();
+                fps++;
 
                 if (System.currentTimeMillis() > timer0 + 1000) {
                     intrface.getInfoText().getQuad().getColor().x = 0.0f;
@@ -136,6 +135,14 @@ public class Renderer extends Thread {
 
     public Intrface getIntrface() {
         return intrface;
+    }
+
+    public Object getObjFps() {
+        return objFps;
+    }
+
+    public Object getObjMutex() {
+        return objMutex;
     }
 
 }

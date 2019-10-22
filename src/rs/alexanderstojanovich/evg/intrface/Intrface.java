@@ -47,7 +47,7 @@ public class Intrface {
     private Dialog loadDialog;
 
     private Menu mainMenu;
-    private AdvMenu optionsMenu;
+    private OptionsMenu optionsMenu;
     private Menu editorMenu;
 
     private final LevelRenderer levelRenderer;
@@ -189,7 +189,7 @@ public class Intrface {
             }
         };
 
-        optionsMenu = new AdvMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        optionsMenu = new OptionsMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -374,7 +374,7 @@ public class Intrface {
         return mainMenu;
     }
 
-    public AdvMenu getOptionsMenu() {
+    public OptionsMenu getOptionsMenu() {
         return optionsMenu;
     }
 

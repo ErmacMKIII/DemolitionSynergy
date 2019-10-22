@@ -16,12 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import rs.alexanderstojanovich.evg.core.Editor;
-import rs.alexanderstojanovich.evg.core.Window;
 import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import rs.alexanderstojanovich.evg.models.Block;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -29,7 +26,10 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.Critter;
+import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.models.Block;
 
 /**
  *
@@ -48,7 +48,7 @@ public class Game {
     public static final float EPSILON = 0.0001f;
 
     private static int upsCap; // updates per second cap 
-    private static int ups; // current update per second
+    private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap 
 
     private final Window myWindow;
@@ -74,8 +74,8 @@ public class Game {
 
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
 
-    public static final Object OBJ_MUTEX = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
-    public static final Object OBJ_UPS = new Object();
+    private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
+    private final Object objUps = new Object();
 
     private static boolean waterEffects = true;
 
@@ -85,8 +85,8 @@ public class Game {
         Game.upsCap = upsCap;
         Game.fpsMax = fpsMax;
         myWindow = new Window(width, height, title);
-        gameTime = new GameTime(myWindow);
-        renderer = new Renderer(myWindow);
+        renderer = new Renderer(myWindow, objMutex);
+        gameTime = new GameTime(myWindow, objMutex, objUps, renderer.getObjFps());
         keys = new boolean[1024];
         initCallbacks();
         GL.setCapabilities(null);
@@ -347,24 +347,21 @@ public class Game {
         ups = 0;
 
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized (OBJ_UPS) {
+            synchronized (objUps) {
                 try {
-                    OBJ_UPS.wait();
+                    objUps.wait();
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            synchronized (OBJ_MUTEX) {
+            synchronized (objMutex) {
                 myWindow.loadContext();
                 GL.setCapabilities(MasterRenderer.getGlCaps());
 
-                while (GameTime.getUpsDelta() >= 1.0) { // ensurance that this will go 80*diff -> 80 times per second                
-                    GLFW.glfwPollEvents();
-                    observerDo();
-                    editorDo();
-                    ups++;
-                    GameTime.decUpsDelta();
-                }
+                GLFW.glfwPollEvents();
+                observerDo();
+                editorDo();
+                ups++;
 
                 if (System.currentTimeMillis() > timer0 + 1000) {
                     ups = 0;
@@ -409,8 +406,12 @@ public class Game {
         Game.fpsMax = fpsMax;
     }
 
-    public static Object getOBJ_MUTEX() {
-        return OBJ_MUTEX;
+    public Object getObjMutex() {
+        return objMutex;
+    }
+
+    public Object getObjUps() {
+        return objUps;
     }
 
     public static float getMouseSensitivity() {
