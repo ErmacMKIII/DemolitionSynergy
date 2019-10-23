@@ -38,7 +38,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block();
+            loaded = new Block(true);
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -143,7 +143,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block();
+                loaded = new Block(true);
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -227,7 +227,7 @@ public class Editor {
                     levelRenderer.getSolidBlocks().getBlockList().add(selectedNew);
                     levelRenderer.getSolidBlocks().bufferAll();
                 }
-                loaded = new Block();
+                loaded = new Block(true);
                 selectLoadedTexture();
             }
         }

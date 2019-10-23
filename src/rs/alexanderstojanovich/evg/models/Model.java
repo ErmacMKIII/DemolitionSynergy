@@ -36,7 +36,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL31;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -83,38 +82,45 @@ public class Model implements Comparable<Model> {
 
     }
 
-    public Model(String modelFileName) {
+    public Model(boolean selfBuffer, String modelFileName) {
         this.modelFileName = modelFileName;
         readFromObjFile(modelFileName);
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {   // used for self buffering (old school), if Blocks class is being used to load blocks keep it off.
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 
-    public Model(String modelFileName, ShaderProgram shaderProgram) {
+    public Model(boolean selfBuffer, String modelFileName, ShaderProgram shaderProgram) {
         this.modelFileName = modelFileName;
         readFromObjFile(modelFileName);
-        bufferVertices();
-        bufferIndices();
-        this.pos = new Vector3f();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 
-    public Model(String modelFileName, Texture primaryTexture) {
+    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 
-    public Model(String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         this.pos = pos;
         calcDims();
         this.primaryColor = primaryColor;

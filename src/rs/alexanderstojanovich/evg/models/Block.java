@@ -63,7 +63,7 @@ public class Block extends Model {
     public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
 
-    public static final Block CONST = new Block();
+    public static final Block CONST = new Block(true);
 
     static {
         FACE_NORMALS.add(new Vector3f(-1.0f, 0.0f, 0.0f));
@@ -74,26 +74,30 @@ public class Block extends Model {
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
     }
 
-    public Block() {
+    public Block(boolean selfBuffer) {
         super();
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 
-    public Block(Texture primaryTexture) {
+    public Block(boolean selfBuffer, Texture primaryTexture) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 
-    public Block(Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
@@ -101,8 +105,10 @@ public class Block extends Model {
         this.primaryColor = primaryColor;
         this.passable = passable;
         readFromTxtFile("cube.txt");
-        bufferVertices();
-        bufferIndices();
+        if (selfBuffer) {
+            bufferVertices();
+            bufferIndices();
+        }
         calcDims();
     }
 

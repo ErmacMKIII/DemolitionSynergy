@@ -31,11 +31,11 @@ public class Critter {
     private final Model model;
     private boolean givenControl = true;
     private Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
-    private final Model predModel = new Model("icosphere.obj");
+    private final Model predModel = new Model(true, "icosphere.obj");
 
     public Critter(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos);
-        this.model = new Model(modelFileName, texture);
+        this.model = new Model(true, modelFileName, texture);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());

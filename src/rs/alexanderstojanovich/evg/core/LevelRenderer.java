@@ -61,7 +61,7 @@ public class LevelRenderer {
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
         // setting skybox
-        skybox = new Block(Texture.NIGHT);
+        skybox = new Block(true, Texture.NIGHT);
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
@@ -79,7 +79,7 @@ public class LevelRenderer {
         fluidBlocks.setVerticesReversed(false);
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block(Texture.DOOM0);
+                Block entity = new Block(false, Texture.DOOM0);
                 entity.setScale(1.0f);
 
                 entity.getPos().x = 4.0f * i;
@@ -247,7 +247,7 @@ public class LevelRenderer {
             pos += rightArr.length;
 
             Camera obsCamera = new Camera(campos, camfront, camup, camright);
-            Model obsModel = new Model("icosphere.obj", Texture.MARBLE);
+            Model obsModel = new Model(true, "icosphere.obj", Texture.MARBLE);
             obsModel.setScale(0.01f);
             observer = new Critter(obsCamera, obsModel);
             observer.setGivenControl(true);
@@ -279,7 +279,7 @@ public class LevelRenderer {
 
                     Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
 
-                    Block block = new Block(Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
+                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
                 }
                 progress += 40;
@@ -310,7 +310,7 @@ public class LevelRenderer {
 
                         Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
 
-                        Block block = new Block(Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+                        Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
                     }
                     progress += 40;
