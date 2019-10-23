@@ -101,8 +101,8 @@ public class Text {
             String[] lines = content.split("\n");
             for (int l = 0; l < lines.length; l++) {
                 for (int i = 0; i < lines[l].length(); i++) {
-                    int j = i % 32;
-                    int k = i / 32;
+                    int j = i % 64;
+                    int k = i / 64;
                     int asciiCode = (int) (lines[l].charAt(i));
 
                     float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;

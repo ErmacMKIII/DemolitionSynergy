@@ -45,6 +45,7 @@ public class Intrface {
     private Dialog commandDialog;
     private Dialog saveDialog;
     private Dialog loadDialog;
+    private Dialog randLvlDialog;
 
     private Menu mainMenu;
     private OptionsMenu optionsMenu;
@@ -189,6 +190,14 @@ public class Intrface {
             }
         };
 
+        randLvlDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+            @Override
+            protected boolean execute(String command) {
+                Editor.deselect();
+                return levelRenderer.generateRandomLevel(Integer.valueOf(command));
+            }
+        };
+
         optionsMenu = new OptionsMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
@@ -282,6 +291,9 @@ public class Intrface {
                     case "START NEW LEVEL":
                         levelRenderer.startNewLevel();
                         break;
+                    case "GENERATE RANDOM LEVEL":
+                        randLvlDialog.open("ENTER NUMBER OF BLOCKS (MAX 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!");
+                        break;
                     case "SAVE LEVEL TO FILE":
                         saveDialog.open("SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!");
                         break;
@@ -323,6 +335,7 @@ public class Intrface {
         commandDialog.render();
         saveDialog.render();
         loadDialog.render();
+        randLvlDialog.render();
         infoText.render();
         collText.render();
         helpText.render();
@@ -392,6 +405,10 @@ public class Intrface {
 
     public WaterRenderer getWaterRenderer() {
         return waterRenderer;
+    }
+
+    public Dialog getRandLvlDialog() {
+        return randLvlDialog;
     }
 
 }

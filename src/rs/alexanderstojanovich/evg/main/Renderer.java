@@ -102,6 +102,14 @@ public class Renderer extends Thread {
                     if (intrface.getLoadDialog().isDone()) {
                         intrface.getLoadDialog().setEnabled(false);
                     }
+
+                    if (intrface.getLoadDialog().isDone()) {
+                        intrface.getLoadDialog().setEnabled(false);
+                    }
+
+                    if (intrface.getRandLvlDialog().isDone()) {
+                        intrface.getRandLvlDialog().setEnabled(false);
+                    }
                     timer1 += 5000;
                 }
 

@@ -53,6 +53,9 @@ public class LevelRenderer {
     public static final float SKYBOX_SCALE = Math.round(1.0f / Game.EPSILON);
     public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f));
 
+    public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
+    public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
+
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
         // setting skybox
@@ -91,6 +94,22 @@ public class LevelRenderer {
         }
         solidBlocks.bufferAll();
         fluidBlocks.bufferAll();
+    }
+
+    public boolean generateRandomLevel(Integer numberOfBlocks) {
+        boolean success = false;
+        observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
+        observer.setGivenControl(true);
+        solidBlocks.getBlockList().clear();
+        fluidBlocks.getBlockList().clear();
+        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
+            success = RandomLevelGenerator.generate(this, numberOfBlocks);
+            updateAll();
+            updateFluids();
+            solidBlocks.bufferAll();
+            fluidBlocks.bufferAll();
+        }
+        return success;
     }
 
     private void storeLevelToBuffer() {

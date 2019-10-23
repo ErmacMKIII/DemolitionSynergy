@@ -257,7 +257,7 @@ public class Block extends Model {
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.1f) {
+            if (Math.abs(vx.dot(vy)) >= 0.05f) {
                 counter++;
                 break;
             }
