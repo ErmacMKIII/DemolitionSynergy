@@ -19,9 +19,11 @@ package rs.alexanderstojanovich.evg.intrface;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
+import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -32,9 +34,9 @@ import rs.alexanderstojanovich.evg.main.Game;
  * @author Coa
  */
 public class Intrface {
-
+    
     private final Window myWindow;
-
+    
     private Quad crosshair;
     private DynamicText infoText; // displays update and framerate
     private DynamicText collText; // collision info
@@ -42,43 +44,46 @@ public class Intrface {
     private DynamicText progText; // progress text;
 
     private boolean showHelp = false;
-
+    
     private Dialog commandDialog;
     private Dialog saveDialog;
     private Dialog loadDialog;
     private Dialog randLvlDialog;
-
+    
     private Menu mainMenu;
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
-
+    
     private final LevelRenderer levelRenderer;
     private final WaterRenderer waterRenderer;
-
+    
     public static final String FONT_IMG = "hack.png";
-
-    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer) {
+    
+    private final Object objMutex;
+    
+    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer, Object objMutex) {
         this.myWindow = myWindow;
         this.levelRenderer = levelRenderer;
         this.waterRenderer = waterRenderer;
+        this.objMutex = objMutex;
         initIntrface();
     }
-
+    
     private void initIntrface() {
         infoText = new DynamicText(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
         collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
         helpText = new DynamicText(myWindow, Texture.FONT, Text.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
         progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.85f));
         helpText.setEnabled(false);
-
+        
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
 
         mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
-
+                
             }
-
+            
             @Override
             protected void execute() {
                 String s = mainMenu.getItems().get(mainMenu.getSelected()).getContent();
@@ -101,7 +106,7 @@ public class Intrface {
         logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
-
+        
         commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
@@ -124,27 +129,45 @@ public class Intrface {
                             if (things.length == 3) {
                                 int width = Integer.parseInt(things[1]);
                                 int height = Integer.parseInt(things[2]);
-                                success = myWindow.setResolution(width, height);
-                                myWindow.centerTheWindow();
+                                synchronized (objMutex) {
+                                    myWindow.loadContext();
+                                    GL.setCapabilities(MasterRenderer.getGlCaps());
+                                    success = myWindow.setResolution(width, height);
+                                    myWindow.centerTheWindow();
+                                    GL.setCapabilities(null);
+                                    Window.unloadContext();
+                                }
                             }
                             break;
                         case "fullscreen":
-                            myWindow.fullscreen();
-                            myWindow.centerTheWindow();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.fullscreen();
+                                myWindow.centerTheWindow();
+                                Window.unloadContext();
+                            }
                             success = true;
                             break;
                         case "windowed":
-                            myWindow.windowed();
-                            myWindow.centerTheWindow();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.windowed();
+                                myWindow.centerTheWindow();
+                                Window.unloadContext();
+                            }
                             success = true;
                             break;
                         case "v_sync":
                         case "vsync":
                             if (things.length == 2) {
-                                if (Boolean.parseBoolean(things[1])) {
-                                    myWindow.enableVSync();
-                                } else {
-                                    myWindow.disableVSync();
+                                synchronized (objMutex) {
+                                    myWindow.loadContext();
+                                    if (Boolean.parseBoolean(things[1])) {
+                                        myWindow.enableVSync();
+                                    } else {
+                                        myWindow.disableVSync();
+                                    }
+                                    Window.unloadContext();
                                 }
                                 success = true;
                             }
@@ -174,7 +197,7 @@ public class Intrface {
                 return success;
             }
         };
-
+        
         saveDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
@@ -183,7 +206,7 @@ public class Intrface {
                 return levelRenderer.saveLevelToFile(command);
             }
         };
-
+        
         loadDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
@@ -192,7 +215,7 @@ public class Intrface {
                 return (levelRenderer.loadLevelFromFile(command));
             }
         };
-
+        
         randLvlDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
@@ -201,13 +224,13 @@ public class Intrface {
                 return levelRenderer.generateRandomLevel(Integer.valueOf(command));
             }
         };
-
+        
         optionsMenu = new OptionsMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
             }
-
+            
             @Override
             protected void refreshValues() {
                 getValues()[0].setContent(String.valueOf(Game.getFpsMax()));
@@ -217,7 +240,7 @@ public class Intrface {
                 getValues()[4].setContent(Game.isWaterEffects() ? "ON" : "OFF");
                 getValues()[5].setContent(String.valueOf(Game.getMouseSensitivity()));
             }
-
+            
             @Override
             protected void execute() {
                 if (getOptions()[0].giveCurrent() != null) {
@@ -226,18 +249,32 @@ public class Intrface {
                 //--------------------------------------------------------------
                 if (getOptions()[1].giveCurrent() != null) {
                     String[] things = getOptions()[1].giveCurrent().toString().split("x");
-                    myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
+                    synchronized (objMutex) {
+                        myWindow.loadContext();
+                        GL.setCapabilities(MasterRenderer.getGlCaps());
+                        myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
+                        GL.setCapabilities(null);
+                        Window.unloadContext();
+                    }
                 }
                 //--------------------------------------------------------------
                 if (getOptions()[2].giveCurrent() != null) {
                     switch (getOptions()[2].giveCurrent().toString()) {
                         case "OFF":
-                            myWindow.windowed();
-                            myWindow.centerTheWindow();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.windowed();
+                                myWindow.centerTheWindow();
+                                Window.unloadContext();
+                            }
                             break;
                         case "ON":
-                            myWindow.fullscreen();
-                            myWindow.centerTheWindow();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.fullscreen();
+                                myWindow.centerTheWindow();
+                                Window.unloadContext();
+                            }
                             break;
                     }
                 }
@@ -245,10 +282,18 @@ public class Intrface {
                 if (getOptions()[3].giveCurrent() != null) {
                     switch (getOptions()[3].giveCurrent().toString()) {
                         case "OFF":
-                            myWindow.disableVSync();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.disableVSync();
+                                Window.unloadContext();
+                            }
                             break;
                         case "ON":
-                            myWindow.enableVSync();
+                            synchronized (objMutex) {
+                                myWindow.loadContext();
+                                myWindow.enableVSync();
+                                Window.unloadContext();
+                            }
                             break;
                     }
                 }
@@ -281,13 +326,13 @@ public class Intrface {
         optionsMenu.getOptions()[4] = new Combo(swtch, 1);
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
-
+        
         editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
             }
-
+            
             @Override
             protected void execute() {
                 String s = editorMenu.getItems().get(editorMenu.getSelected()).getContent();
@@ -313,7 +358,7 @@ public class Intrface {
         };
         editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
     }
-
+    
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
@@ -327,7 +372,7 @@ public class Intrface {
             collText.getQuad().getColor().z = 0.0f;
         }
     }
-
+    
     public void toggleShowHelp() {
         showHelp = !showHelp;
         if (showHelp) {
@@ -338,7 +383,7 @@ public class Intrface {
             collText.setEnabled(true);
         }
     }
-
+    
     public void render() {
         commandDialog.render();
         saveDialog.render();
@@ -366,73 +411,77 @@ public class Intrface {
             crosshair.render();
         }
     }
-
+    
     public Window getMyWindow() {
         return myWindow;
     }
-
+    
     public Quad getCrosshair() {
         return crosshair;
     }
-
+    
     public DynamicText getInfoText() {
         return infoText;
     }
-
+    
     public DynamicText getCollText() {
         return collText;
     }
-
+    
     public DynamicText getHelpText() {
         return helpText;
     }
-
+    
     public boolean isShowHelp() {
         return showHelp;
     }
-
+    
     public Dialog getCommandDialog() {
         return commandDialog;
     }
-
+    
     public Dialog getSaveDialog() {
         return saveDialog;
     }
-
+    
     public Dialog getLoadDialog() {
         return loadDialog;
     }
-
+    
     public Menu getMainMenu() {
         return mainMenu;
     }
-
+    
     public OptionsMenu getOptionsMenu() {
         return optionsMenu;
     }
-
+    
     public Menu getEditorMenu() {
         return editorMenu;
     }
-
+    
     public LevelRenderer getLevelRenderer() {
         return levelRenderer;
     }
-
+    
     public void setShowHelp(boolean showHelp) {
         this.showHelp = showHelp;
     }
-
+    
     public WaterRenderer getWaterRenderer() {
         return waterRenderer;
     }
-
+    
     public Dialog getRandLvlDialog() {
         return randLvlDialog;
     }
-
+    
     public DynamicText getProgText() {
         return progText;
     }
-
+    
+    public Object getObjMutex() {
+        return objMutex;
+    }
+    
 }

@@ -51,17 +51,12 @@ public class Renderer extends Thread {
         masterRenderer = new MasterRenderer(myWindow);
         levelRenderer = new LevelRenderer(myWindow);
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-        intrface = new Intrface(myWindow, levelRenderer, waterRenderer);
+        intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
         PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getMainShader());
     }
 
     @Override
     public void run() {
-
-        synchronized (objMutex) {
-            myWindow.loadContext();
-            GL.setCapabilities(MasterRenderer.getGlCaps());
-        }
 
         long timer0 = System.currentTimeMillis();
         long timer1 = System.currentTimeMillis();
@@ -76,76 +71,80 @@ public class Renderer extends Thread {
                     Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            masterRenderer.render();
-            if (!levelRenderer.isWorking()) {
-                levelRenderer.render(ShaderProgram.getMainShader());
-                if (Game.isWaterEffects()) {
-                    waterRenderer.render();
+
+            synchronized (objMutex) {
+                myWindow.loadContext();
+                GL.setCapabilities(MasterRenderer.getGlCaps());
+
+                masterRenderer.render();
+                if (!levelRenderer.isWorking()) {
+                    levelRenderer.render(ShaderProgram.getMainShader());
+                    if (Game.isWaterEffects()) {
+                        waterRenderer.render();
+                    }
+                } else {
+                    intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
+                    if (!intrface.getProgText().isBuffered()) {
+                        intrface.getProgText().buffer();
+                    }
+                    intrface.getProgText().render();
                 }
-            } else {
-                intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
-                if (!intrface.getProgText().isBuffered()) {
-                    intrface.getProgText().buffer();
+
+                Critter obs = levelRenderer.getObserver();
+                boolean bool = levelRenderer.hasCollisionWithCritter(obs);
+                intrface.setCollText(bool);
+
+                intrface.render();
+                myWindow.render();
+                fps++;
+
+                if (System.currentTimeMillis() > timer0 + 1000) {
+                    intrface.getInfoText().getQuad().getColor().x = 0.0f;
+                    intrface.getInfoText().getQuad().getColor().y = 1.0f;
+                    intrface.getInfoText().getQuad().getColor().z = 0.0f;
+                    intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
+                    fps = 0;
+                    timer0 += 1000;
                 }
-                intrface.getProgText().render();
+
+                if (System.currentTimeMillis() > timer1 + 5000) {
+                    if (intrface.getCommandDialog().isDone()) {
+                        intrface.getCommandDialog().setEnabled(false);
+                    }
+                    if (intrface.getSaveDialog().isDone()) {
+                        intrface.getSaveDialog().setEnabled(false);
+                    }
+                    if (intrface.getLoadDialog().isDone()) {
+                        intrface.getLoadDialog().setEnabled(false);
+                    }
+                    if (intrface.getLoadDialog().isDone()) {
+                        intrface.getLoadDialog().setEnabled(false);
+                    }
+                    if (intrface.getRandLvlDialog().isDone()) {
+                        intrface.getRandLvlDialog().setEnabled(false);
+                    }
+                    timer1 += 5000;
+                }
+
+                if (System.currentTimeMillis() > timer2 + 250) {
+
+                    if (levelRenderer.getProgress() == 100) {
+                        intrface.getProgText().setEnabled(false);
+                        levelRenderer.setProgress(0);
+                    }
+
+                    if (levelRenderer.getProgress() == 0) {
+                        levelRenderer.getFluidBlocks().animate();
+                    }
+
+                    timer2 += 250;
+                }
+
+                GL.setCapabilities(null);
+                Window.unloadContext();
             }
-
-            Critter obs = levelRenderer.getObserver();
-            boolean bool = levelRenderer.hasCollisionWithCritter(obs);
-            intrface.setCollText(bool);
-
-            intrface.render();
-            myWindow.render();
-            fps++;
-
-            if (System.currentTimeMillis() > timer0 + 1000) {
-                intrface.getInfoText().getQuad().getColor().x = 0.0f;
-                intrface.getInfoText().getQuad().getColor().y = 1.0f;
-                intrface.getInfoText().getQuad().getColor().z = 0.0f;
-                intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
-                fps = 0;
-                timer0 += 1000;
-            }
-
-            if (System.currentTimeMillis() > timer1 + 5000) {
-                if (intrface.getCommandDialog().isDone()) {
-                    intrface.getCommandDialog().setEnabled(false);
-                }
-                if (intrface.getSaveDialog().isDone()) {
-                    intrface.getSaveDialog().setEnabled(false);
-                }
-                if (intrface.getLoadDialog().isDone()) {
-                    intrface.getLoadDialog().setEnabled(false);
-                }
-                if (intrface.getLoadDialog().isDone()) {
-                    intrface.getLoadDialog().setEnabled(false);
-                }
-                if (intrface.getRandLvlDialog().isDone()) {
-                    intrface.getRandLvlDialog().setEnabled(false);
-                }
-                timer1 += 5000;
-            }
-
-            if (System.currentTimeMillis() > timer2 + 250) {
-
-                if (levelRenderer.getProgress() == 100) {
-                    intrface.getProgText().setEnabled(false);
-                    levelRenderer.setProgress(0);
-                }
-
-                if (levelRenderer.getProgress() == 0) {
-                    levelRenderer.getFluidBlocks().animate();
-                }
-
-                timer2 += 250;
-            }
-
         }
 
-        synchronized (objMutex) {
-            GL.setCapabilities(null);
-            Window.unloadContext();
-        }
     }
 
     public Window getMyWindow() {
