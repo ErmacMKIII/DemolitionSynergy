@@ -300,4 +300,12 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         return indicesBuffered;
     }
 
+    public int[] getIbos() {
+        return ibos;
+    }
+
+    public void setVerticesReversed(boolean verticesReversed) {
+        this.verticesReversed = verticesReversed;
+    }
+
 }

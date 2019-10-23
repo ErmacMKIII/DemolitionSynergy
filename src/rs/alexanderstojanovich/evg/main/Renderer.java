@@ -75,10 +75,16 @@ public class Renderer extends Thread {
                 GL.setCapabilities(MasterRenderer.getGlCaps());
 
                 masterRenderer.render();
-                levelRenderer.render(ShaderProgram.getMainShader());
-                if (Game.isWaterEffects()) {
-                    waterRenderer.render();
+                if (levelRenderer.getProgress() == 0) {
+                    levelRenderer.render(ShaderProgram.getMainShader());
+                    if (Game.isWaterEffects()) {
+                        waterRenderer.render();
+                    }
+                } else {
+                    intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
+                    intrface.getProgText().render();
                 }
+
                 intrface.render();
                 myWindow.render();
                 fps++;
@@ -102,11 +108,9 @@ public class Renderer extends Thread {
                     if (intrface.getLoadDialog().isDone()) {
                         intrface.getLoadDialog().setEnabled(false);
                     }
-
                     if (intrface.getLoadDialog().isDone()) {
                         intrface.getLoadDialog().setEnabled(false);
                     }
-
                     if (intrface.getRandLvlDialog().isDone()) {
                         intrface.getRandLvlDialog().setEnabled(false);
                     }
@@ -114,8 +118,14 @@ public class Renderer extends Thread {
                 }
 
                 if (System.currentTimeMillis() > timer2 + 250) {
-//                    levelRenderer.animate();
+
                     levelRenderer.getFluidBlocks().animate();
+
+                    if (levelRenderer.getProgress() == 100) {
+                        intrface.getProgText().setEnabled(false);
+                        levelRenderer.setProgress(0);
+                    }
+
                     timer2 += 250;
                 }
 

@@ -36,9 +36,10 @@ public class Intrface {
     private final Window myWindow;
 
     private Quad crosshair;
-    private DynamicText infoText;
-    private DynamicText collText;
-    private DynamicText helpText;
+    private DynamicText infoText; // displays update and framerate
+    private DynamicText collText; // collision info
+    private DynamicText helpText; // displays the help (toggle)
+    private DynamicText progText; // progress text;
 
     private boolean showHelp = false;
 
@@ -67,6 +68,7 @@ public class Intrface {
         infoText = new DynamicText(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
         collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
         helpText = new DynamicText(myWindow, Texture.FONT, Text.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
+        progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.85f));
         helpText.setEnabled(false);
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -177,8 +179,8 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
-                levelRenderer.saveLevelToFile(command);
-                return true;
+                progText.enabled = true;
+                return levelRenderer.saveLevelToFile(command);
             }
         };
 
@@ -186,6 +188,7 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
+                progText.enabled = true;
                 return (levelRenderer.loadLevelFromFile(command));
             }
         };
@@ -194,6 +197,7 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
+                progText.enabled = true;
                 return levelRenderer.generateRandomLevel(Integer.valueOf(command));
             }
         };
@@ -289,15 +293,19 @@ public class Intrface {
                 String s = editorMenu.getItems().get(editorMenu.getSelected()).getContent();
                 switch (s) {
                     case "START NEW LEVEL":
+                        progText.setEnabled(true);
                         levelRenderer.startNewLevel();
                         break;
                     case "GENERATE RANDOM LEVEL":
-                        randLvlDialog.open("ENTER NUMBER OF BLOCKS (MAX 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!");
+                        progText.setEnabled(true);
+                        randLvlDialog.open("ENTER MAX NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!");
                         break;
                     case "SAVE LEVEL TO FILE":
+                        progText.setEnabled(true);
                         saveDialog.open("SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!");
                         break;
                     case "LOAD LEVEL FROM FILE":
+                        progText.setEnabled(true);
                         loadDialog.open("LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!");
                         break;
                 }
@@ -409,6 +417,10 @@ public class Intrface {
 
     public Dialog getRandLvlDialog() {
         return randLvlDialog;
+    }
+
+    public DynamicText getProgText() {
+        return progText;
     }
 
 }

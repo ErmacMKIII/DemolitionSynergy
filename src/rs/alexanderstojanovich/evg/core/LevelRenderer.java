@@ -56,6 +56,8 @@ public class LevelRenderer {
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
 
+    private int progress = 0;
+
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
         // setting skybox
@@ -69,10 +71,12 @@ public class LevelRenderer {
     }
 
     public void startNewLevel() {
+        progress = 0;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
+        fluidBlocks.setVerticesReversed(false);
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(Texture.DOOM0);
@@ -90,8 +94,11 @@ public class LevelRenderer {
                 entity.setLight(observer.getModel().getPos());
 
                 solidBlocks.getBlockList().add(entity);
+
+                progress += Math.round(100.0f / 9.0f);
             }
         }
+        progress = 100;
         solidBlocks.bufferAll();
         fluidBlocks.bufferAll();
     }
@@ -99,20 +106,28 @@ public class LevelRenderer {
     public boolean generateRandomLevel(Integer numberOfBlocks) {
         boolean success = false;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
-        observer.setGivenControl(true);
+        observer.setGivenControl(false);
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
+        fluidBlocks.setVerticesReversed(false);
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
-            success = RandomLevelGenerator.generate(this, numberOfBlocks);
+            RandomLevelGenerator.generate(this, numberOfBlocks);
             updateAll();
             updateFluids();
             solidBlocks.bufferAll();
             fluidBlocks.bufferAll();
+            success = true;
         }
+        observer.setGivenControl(true);
         return success;
     }
 
-    private void storeLevelToBuffer() {
+    private boolean storeLevelToBuffer() {
+        boolean success = false;
+        if (progress > 0) {
+            return false;
+        }
+        progress = 0;
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -156,6 +171,8 @@ public class LevelRenderer {
             byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
+
+            progress += Math.round(100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size()));
         }
 
         buffer[pos++] = 'F';
@@ -180,19 +197,34 @@ public class LevelRenderer {
             byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
+
+            progress += Math.round(100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size()));
         }
 
         buffer[pos++] = 'E';
         buffer[pos++] = 'N';
         buffer[pos++] = 'D';
+
+        progress = 100;
+
+        if (progress == 100) {
+            success = true;
+        }
+
+        return success;
     }
 
     private boolean loadLevelFromBuffer() {
         boolean success = false;
+        if (progress > 0) {
+            return false;
+        }
+        progress = 0;
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidBlocks.getBlockList().clear();
             fluidBlocks.getBlockList().clear();
+            fluidBlocks.setVerticesReversed(false);
             pos += 2;
             byte[] posArr = new byte[12];
             System.arraycopy(buffer, pos, posArr, 0, posArr.length);
@@ -224,6 +256,7 @@ public class LevelRenderer {
                 solid[i] = (char) buffer[pos++];
             }
             String strSolid = String.valueOf(solid);
+            progress += 10;
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
@@ -249,7 +282,7 @@ public class LevelRenderer {
                     Block block = new Block(Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
                 }
-
+                progress += 40;
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -280,7 +313,7 @@ public class LevelRenderer {
                         Block block = new Block(Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
                     }
-
+                    progress += 40;
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -291,6 +324,7 @@ public class LevelRenderer {
                         updateFluids();
                         solidBlocks.bufferAll();
                         fluidBlocks.bufferAll();
+                        progress += 10;
                         success = true;
                     }
                 }
@@ -299,7 +333,8 @@ public class LevelRenderer {
         return success;
     }
 
-    public void saveLevelToFile(String filename) {
+    public boolean saveLevelToFile(String filename) {
+        boolean success = false;
         if (!filename.endsWith(".dat")) {
             filename += ".dat";
         }
@@ -309,7 +344,7 @@ public class LevelRenderer {
             file.delete();
         }
         Arrays.fill(buffer, (byte) 0);
-        storeLevelToBuffer(); // saves level to bufferVertices first
+        success = storeLevelToBuffer(); // saves level to bufferVertices first
         try {
             fos = new FileOutputStream(file);
             fos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
@@ -325,6 +360,7 @@ public class LevelRenderer {
                 Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        return success;
     }
 
     public boolean loadLevelFromFile(String filename) {
@@ -558,6 +594,14 @@ public class LevelRenderer {
 
     public void setObserver(Critter observer) {
         this.observer = observer;
+    }
+
+    public int getProgress() {
+        return progress;
+    }
+
+    public void setProgress(int progress) {
+        this.progress = progress;
     }
 
 }
