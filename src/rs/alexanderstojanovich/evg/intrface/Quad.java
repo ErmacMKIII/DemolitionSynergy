@@ -20,11 +20,11 @@ import java.nio.FloatBuffer;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
-import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.core.Texture;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -47,20 +47,33 @@ public class Quad {
 
     private boolean ignoreFactor = false;
 
-    private final Vector2f[] vertices = new Vector2f[4];
-    private final Vector2f[] uvs = new Vector2f[4];
+    private static final Vector2f[] VERTICES = new Vector2f[4];
+    private static final Vector2f[] UVS = new Vector2f[4];
 
     private int vbo;
 
     public static final int VERTEX_SIZE = 4;
     public static final int VERTEX_COUNT = 4;
 
+    private boolean buffered = false;
+
+    static {
+        VERTICES[0] = new Vector2f(-1.0f, -1.0f);
+        VERTICES[1] = new Vector2f(1.0f, -1.0f);
+        VERTICES[2] = new Vector2f(1.0f, 1.0f);
+        VERTICES[3] = new Vector2f(-1.0f, 1.0f);
+
+        UVS[0] = new Vector2f(0.0f, 1.0f);
+        UVS[1] = new Vector2f(1.0f, 1.0f);
+        UVS[2] = new Vector2f(1.0f, 0.0f);
+        UVS[3] = new Vector2f(0.0f, 0.0f);
+    }
+
     public Quad(Window window, int width, int height, Texture texture) {
         this.myWindow = window;
         this.width = width;
         this.height = height;
         this.texture = texture;
-        init();
     }
 
     public Quad(Window window, int width, int height, Texture texture, boolean ignoreFactor) {
@@ -69,51 +82,26 @@ public class Quad {
         this.height = height;
         this.texture = texture;
         this.ignoreFactor = ignoreFactor;
-        init();
     }
 
-    private void init() {
-        vertices[0] = new Vector2f(-1.0f, -1.0f);
-        vertices[1] = new Vector2f(1.0f, -1.0f);
-        vertices[2] = new Vector2f(1.0f, 1.0f);
-        vertices[3] = new Vector2f(-1.0f, 1.0f);
-
-        uvs[0] = new Vector2f(0.0f, 1.0f);
-        uvs[1] = new Vector2f(1.0f, 1.0f);
-        uvs[2] = new Vector2f(1.0f, 0.0f);
-        uvs[3] = new Vector2f(0.0f, 0.0f);
-
+    public void buffer() {
         FloatBuffer fb = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
         for (int i = 0; i < 4; i++) {
-            fb.put(vertices[i].x);
-            fb.put(vertices[i].y);
-            fb.put(uvs[i].x);
-            fb.put(uvs[i].y);
+            fb.put(VERTICES[i].x);
+            fb.put(VERTICES[i].y);
+            fb.put(UVS[i].x);
+            fb.put(UVS[i].y);
         }
         fb.flip();
         vbo = GL15.glGenBuffers();
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-    }
-
-    public void buffer() { // requires vertices and uvs to be set (used for fonts)
-        FloatBuffer fb = BufferUtils.createFloatBuffer(16);
-        for (int i = 0; i < 4; i++) {
-            fb.put(vertices[i].x);
-            fb.put(vertices[i].y);
-            fb.put(uvs[i].x);
-            fb.put(uvs[i].y);
-        }
-        fb.flip();
-        vbo = GL15.glGenBuffers();
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_DYNAMIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        buffered = true;
     }
 
     public void render() { // used for crosshair
-        if (enabled) {
+        if (enabled && buffered) {
             float relWidth = giveRelativeWidth();
             float relHeight = giveRelativeHeight();
             Texture.enable();
@@ -143,7 +131,7 @@ public class Quad {
     }
 
     public void render(float xinc, float ydec) { // used for fonts
-        if (enabled) {
+        if (enabled && buffered) {
             float relWidth = giveRelativeWidth();
             float relHeight = giveRelativeHeight();
             Texture.enable();
@@ -258,16 +246,24 @@ public class Quad {
         return vbo;
     }
 
-    public Vector2f[] getVertices() {
-        return vertices;
+    public static Vector2f[] getVERTICES() {
+        return VERTICES;
     }
 
-    public Vector2f[] getUvs() {
-        return uvs;
+    public boolean isBuffered() {
+        return buffered;
+    }
+
+    public Vector2f[] getUVS() {
+        return UVS;
     }
 
     public void setPos(Vector2f pos) {
         this.pos = pos;
+    }
+
+    public void setBuffered(boolean buffered) {
+        this.buffered = buffered;
     }
 
 }

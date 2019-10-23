@@ -177,10 +177,16 @@ public abstract class Menu {
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
                     * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
             title.getQuad().getPos().y = DynamicText.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+            if (!title.isBuffered()) {
+                title.buffer();
+            }
             title.render();
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = pos.x;
                 logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
+                if (!logo.isBuffered()) {
+                    logo.buffer();
+                }
                 logo.render();
             }
             int index = 0;
@@ -189,12 +195,20 @@ public abstract class Menu {
                 int itemDiff = longest - item.getContent().length();
                 itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
                 itemQuad.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+
+                if (!item.isBuffered()) {
+                    item.buffer();
+                }
+
                 item.render();
                 index++;
             }
             iterator.getPos().x = items.get(selected).getQuad().getPos().x;
             iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
             iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            if (!iterator.isBuffered()) {
+                iterator.buffer();
+            }
             iterator.render();
         }
     }

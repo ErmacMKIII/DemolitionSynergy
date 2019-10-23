@@ -48,8 +48,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     private final int[] ibos = new int[65536];
     public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
     private boolean indicesBuffered = false;
+    private boolean buffered = false;
 
-    public void bufferVertices() { // call it before any rendering        
+    private void bufferVertices() { // call it before any rendering        
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         int blkIndex = 0;
         int offset = 0;
@@ -81,7 +82,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         verticesBuffered = true;
     }
 
-    public void bufferIndices() { // call it before any rendering
+    private void bufferIndices() { // call it before any rendering
         int blkIndex = 0;
         for (Block block : blockList) {
             List<Integer> indices = new ArrayList<>();
@@ -115,6 +116,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void bufferAll() { // buffer both, call it before any rendering
         bufferVertices();
         bufferIndices();
+        buffered = true;
     }
 
     public static IntBuffer getConstIntBuffer() {
@@ -145,7 +147,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // standard render all
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (verticesBuffered && indicesBuffered && shaderProgram != null) {
+        if (buffered && shaderProgram != null) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
@@ -207,7 +209,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // powerful render if block is visible by camera
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (verticesBuffered && indicesBuffered && shaderProgram != null) {
+        if (buffered && shaderProgram != null) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
@@ -268,6 +270,10 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
+    public boolean isBuffered() {
+        return buffered;
+    }
+
     public List<Block> getBlockList() {
         return blockList;
     }
@@ -306,6 +312,10 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public void setVerticesReversed(boolean verticesReversed) {
         this.verticesReversed = verticesReversed;
+    }
+
+    public void setBuffered(boolean buffered) {
+        this.buffered = buffered;
     }
 
 }

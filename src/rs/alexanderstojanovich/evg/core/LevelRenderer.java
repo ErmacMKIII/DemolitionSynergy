@@ -98,9 +98,9 @@ public class LevelRenderer {
                 progress += Math.round(100.0f / 9.0f);
             }
         }
+        solidBlocks.setBuffered(false);
+        fluidBlocks.setBuffered(false);
         progress = 100;
-        solidBlocks.bufferAll();
-        fluidBlocks.bufferAll();
     }
 
     public boolean generateRandomLevel(Integer numberOfBlocks) {
@@ -114,10 +114,11 @@ public class LevelRenderer {
             RandomLevelGenerator.generate(this, numberOfBlocks);
             updateAll();
             updateFluids();
-            solidBlocks.bufferAll();
-            fluidBlocks.bufferAll();
             success = true;
         }
+        solidBlocks.setBuffered(false);
+        fluidBlocks.setBuffered(false);
+
         observer.setGivenControl(true);
         return success;
     }
@@ -247,7 +248,7 @@ public class LevelRenderer {
             pos += rightArr.length;
 
             Camera obsCamera = new Camera(campos, camfront, camup, camright);
-            Model obsModel = new Model(true, "icosphere.obj", Texture.MARBLE);
+            Model obsModel = new Model(false, "icosphere.obj", Texture.MARBLE);
             obsModel.setScale(0.01f);
             observer = new Critter(obsCamera, obsModel);
             observer.setGivenControl(true);
@@ -282,6 +283,9 @@ public class LevelRenderer {
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
                 }
+
+                solidBlocks.setBuffered(false);
+
                 progress += 40;
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
@@ -313,6 +317,9 @@ public class LevelRenderer {
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
                     }
+
+                    fluidBlocks.setBuffered(false);
+
                     progress += 40;
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
@@ -322,8 +329,6 @@ public class LevelRenderer {
                     if (strEnd.equals("END")) {
                         updateAll();
                         updateFluids();
-                        solidBlocks.bufferAll();
-                        fluidBlocks.bufferAll();
                         progress += 10;
                         success = true;
                     }
@@ -511,9 +516,17 @@ public class LevelRenderer {
         obsCamera.render(shaderProgram);
         skybox.render(shaderProgram);
 
-        if (Editor.selectedNew != null) {
-            Editor.selectedNew.setLight(obsCamera.getPos());
-            Editor.selectedNew.render(shaderProgram);
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(obsCamera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(shaderProgram);
+        }
+
+        if (!solidBlocks.isBuffered()) {
+            solidBlocks.bufferAll();
         }
 
         Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
@@ -524,6 +537,10 @@ public class LevelRenderer {
             }
         };
         solidBlocks.renderIf(shaderProgram, obsCamera.getPos(), solidBlockPredicate);
+
+        if (!fluidBlocks.isBuffered()) {
+            fluidBlocks.bufferAll();
+        }
 
         Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
             @Override
@@ -544,9 +561,17 @@ public class LevelRenderer {
         camera.render(shaderProgram);
         skybox.render(shaderProgram);
 
-        if (Editor.selectedNew != null) {
-            Editor.selectedNew.setLight(camera.getPos());
-            Editor.selectedNew.render(shaderProgram);
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(camera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(shaderProgram);
+        }
+
+        if (!solidBlocks.isBuffered()) {
+            solidBlocks.bufferAll();
         }
 
         Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
@@ -557,6 +582,10 @@ public class LevelRenderer {
             }
         };
         solidBlocks.renderIf(shaderProgram, camera.getPos(), solidBlockPredicate);
+
+        if (!fluidBlocks.isBuffered()) {
+            fluidBlocks.bufferAll();
+        }
 
         Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
             @Override

@@ -44,6 +44,7 @@ public class DynamicText extends Text {
     private static final Vector2f[] VERTICES = new Vector2f[4]; //            
     private static final int[] INDICES = {0, 1, 2, 3};
     private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
+    private boolean buffered = false;
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -59,20 +60,17 @@ public class DynamicText extends Text {
 
     public DynamicText(Window window, Texture texture, String content) {
         super(window, texture, content);
-        buffer();
     }
 
     public DynamicText(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
         super(window, texture, content, color, pos);
-        buffer();
     }
 
     public DynamicText(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         super(window, texture, content, pos, charWidth, charHeight);
-        buffer();
     }
 
-    private void buffer() {
+    public void buffer() {
         pairList.clear();
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(content.length() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         String[] lines = content.split("\n");
@@ -127,11 +125,12 @@ public class DynamicText extends Text {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        buffered = true;
     }
 
     @Override
     public void render() {
-        if (enabled) {
+        if (enabled && buffered) {
             float relWidth = quad.giveRelativeWidth();
             float relHeight = quad.giveRelativeHeight();
             Texture.enable();
@@ -164,8 +163,13 @@ public class DynamicText extends Text {
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             Texture.disable();
-
         }
+    }
+
+    @Override
+    public void setContent(String content) {
+        super.setContent(content);
+        buffered = false;
     }
 
     public int getBigVbo() {
@@ -176,10 +180,12 @@ public class DynamicText extends Text {
         return pairList;
     }
 
-    @Override
-    public void setContent(String content) {
-        super.setContent(content);
-        buffer();
+    public boolean isBuffered() {
+        return buffered;
+    }
+
+    public void setBuffered(boolean buffered) {
+        this.buffered = buffered;
     }
 
 }

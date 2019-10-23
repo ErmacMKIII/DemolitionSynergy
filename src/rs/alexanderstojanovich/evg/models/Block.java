@@ -81,6 +81,7 @@ public class Block extends Model {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }
@@ -93,6 +94,7 @@ public class Block extends Model {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }
@@ -108,6 +110,7 @@ public class Block extends Model {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }

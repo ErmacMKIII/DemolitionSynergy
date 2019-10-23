@@ -99,10 +99,8 @@ public class Game {
             obs.movePredictorForward(AMOUNT);
             if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.moveForward(AMOUNT);
-                renderer.getIntrface().setCollText(false);
             } else {
                 obs.movePredictorBackward(AMOUNT);
-                renderer.getIntrface().setCollText(true);
             }
         }
         if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
@@ -110,10 +108,8 @@ public class Game {
             obs.movePredictorBackward(AMOUNT);
             if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.moveBackward(AMOUNT);
-                renderer.getIntrface().setCollText(false);
             } else {
                 obs.movePredictorForward(AMOUNT);
-                renderer.getIntrface().setCollText(true);
             }
 
         }
@@ -122,10 +118,8 @@ public class Game {
             obs.movePredictorLeft(AMOUNT);
             if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.moveLeft(AMOUNT);
-                renderer.getIntrface().setCollText(false);
             } else {
                 obs.movePredictorRight(AMOUNT);
-                renderer.getIntrface().setCollText(true);
             }
         }
         if (keys[GLFW.GLFW_KEY_D]) {
@@ -133,10 +127,8 @@ public class Game {
             obs.movePredictorRight(AMOUNT);
             if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.moveRight(AMOUNT);
-                renderer.getIntrface().setCollText(false);
             } else {
                 obs.movePredictorLeft(AMOUNT);
-                renderer.getIntrface().setCollText(true);
             }
         }
         if (keys[GLFW.GLFW_KEY_LEFT]) {
@@ -194,10 +186,10 @@ public class Game {
     }
 
     private void setNewBlockColor(float red, float green, float blue) {
-        if (Editor.selectedNew != null) {
-            Editor.selectedNew.getPrimaryColor().x = red;
-            Editor.selectedNew.getPrimaryColor().y = green;
-            Editor.selectedNew.getPrimaryColor().z = blue;
+        if (Editor.getSelectedNew() != null) {
+            Editor.getSelectedNew().getPrimaryColor().x = red;
+            Editor.getSelectedNew().getPrimaryColor().y = green;
+            Editor.getSelectedNew().getPrimaryColor().z = blue;
         }
     }
 
@@ -233,7 +225,7 @@ public class Game {
     }
 
     private void cycleBlockColor() {
-        if (Editor.selectedNew != null) {
+        if (Editor.getSelectedNew() != null) {
             switch (blockColorNum) {
                 case 0:
                     setNewBlockColor(1.0f, 0.0f, 0.0f); // RED                
@@ -354,23 +346,25 @@ public class Game {
                     Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            synchronized (objMutex) {
-                myWindow.loadContext();
-                GL.setCapabilities(MasterRenderer.getGlCaps());
+//            synchronized (objMutex) {
+//                myWindow.loadContext();
+//                GL.setCapabilities(MasterRenderer.getGlCaps());
+//            }
 
-                GLFW.glfwPollEvents();
-                observerDo();
-                editorDo();
-                ups++;
+            GLFW.glfwPollEvents();
+            observerDo();
+            editorDo();
+            ups++;
 
-                if (System.currentTimeMillis() > timer0 + 1000) {
-                    ups = 0;
-                    timer0 += 1000;
-                }
-
-                GL.setCapabilities(null);
-                Window.unloadContext();
+            if (System.currentTimeMillis() > timer0 + 1000) {
+                ups = 0;
+                timer0 += 1000;
             }
+
+//            synchronized (objMutex) {
+//                GL.setCapabilities(null);
+//                Window.unloadContext();
+//            }
         }
         try {
             gameTime.join(); // waits for gameTime to finish life

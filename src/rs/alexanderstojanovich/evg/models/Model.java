@@ -78,6 +78,8 @@ public class Model implements Comparable<Model> {
 
     protected Matrix4f modelMatrix = new Matrix4f();
 
+    protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
+
     public Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }
@@ -88,6 +90,7 @@ public class Model implements Comparable<Model> {
         if (selfBuffer) {   // used for self buffering (old school), if Blocks class is being used to load blocks keep it off.
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }
@@ -98,6 +101,7 @@ public class Model implements Comparable<Model> {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }
@@ -109,6 +113,7 @@ public class Model implements Comparable<Model> {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         calcDims();
     }
@@ -120,6 +125,7 @@ public class Model implements Comparable<Model> {
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
+            buffered = true;
         }
         this.pos = pos;
         calcDims();
@@ -210,6 +216,12 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
+        bufferVertices();
+        bufferIndices();
+        buffered = true;
     }
 
     public void calcNormals() {
@@ -595,6 +607,10 @@ public class Model implements Comparable<Model> {
 
     public void setTertiaryTexture(Texture tertiaryTexture) {
         this.tertiaryTexture = tertiaryTexture;
+    }
+
+    public boolean isBuffered() {
+        return buffered;
     }
 
 }

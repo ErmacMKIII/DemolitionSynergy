@@ -26,7 +26,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 public class Editor {
 
     private static Block loaded = null;
-    public static Block selectedNew = null;
+    private static Block selectedNew = null;
     private static Block selectedCurr = null;
     private static final Texture SELECTED_TEXTURE = Texture.MINIGUN;
 
@@ -38,7 +38,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block(true);
+            loaded = new Block(false);
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -143,7 +143,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(true);
+                loaded = new Block(false);
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -220,14 +220,12 @@ public class Editor {
                     levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
-                    levelRenderer.getFluidBlocks().bufferAll();
                 } else {
                     levelRenderer.updateSolidNeighbors();
                     levelRenderer.updateSolidToFluidNeighbors();
                     levelRenderer.getSolidBlocks().getBlockList().add(selectedNew);
-                    levelRenderer.getSolidBlocks().bufferAll();
                 }
-                loaded = new Block(true);
+                loaded = new Block(false);
                 selectLoadedTexture();
             }
         }
@@ -249,10 +247,8 @@ public class Editor {
             if (selectedCurr.isPassable()) {
                 levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
                 levelRenderer.updateFluids();
-                levelRenderer.getFluidBlocks().bufferAll();
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
-                levelRenderer.getSolidBlocks().bufferAll();
             }
         }
         deselect();
@@ -303,6 +299,14 @@ public class Editor {
                 selectLoadedTexture();
             }
         }
+    }
+
+    public static Block getSelectedNew() {
+        return selectedNew;
+    }
+
+    public static Block getSelectedCurr() {
+        return selectedCurr;
     }
 
 }

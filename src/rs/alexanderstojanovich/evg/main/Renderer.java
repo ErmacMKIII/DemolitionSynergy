@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
+import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -82,8 +83,15 @@ public class Renderer extends Thread {
                     }
                 } else {
                     intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
+                    if (!intrface.getProgText().isBuffered()) {
+                        intrface.getProgText().buffer();
+                    }
                     intrface.getProgText().render();
                 }
+
+                Critter obs = levelRenderer.getObserver();
+                boolean bool = levelRenderer.hasCollisionWithCritter(obs);
+                intrface.setCollText(bool);
 
                 intrface.render();
                 myWindow.render();
@@ -119,11 +127,13 @@ public class Renderer extends Thread {
 
                 if (System.currentTimeMillis() > timer2 + 250) {
 
-                    levelRenderer.getFluidBlocks().animate();
-
                     if (levelRenderer.getProgress() == 100) {
                         intrface.getProgText().setEnabled(false);
                         levelRenderer.setProgress(0);
+                    }
+
+                    if (levelRenderer.getProgress() == 0) {
+                        levelRenderer.getFluidBlocks().animate();
                     }
 
                     timer2 += 250;

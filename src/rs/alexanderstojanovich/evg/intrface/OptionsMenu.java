@@ -104,6 +104,9 @@ public abstract class OptionsMenu extends Menu {
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
                     * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
             title.getQuad().getPos().y = DynamicText.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+            if (!title.isBuffered()) {
+                title.buffer();
+            }
             title.render();
             int index = 0;
             for (DynamicText item : items) {
@@ -111,6 +114,10 @@ public abstract class OptionsMenu extends Menu {
                 int itemDiff = longest - item.getContent().length();
                 itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
                 itemQuad.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+
+                if (!item.isBuffered()) {
+                    item.buffer();
+                }
                 item.render();
                 values[index].getQuad().getPos().x = item.getQuad().getPos().x;
                 values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
@@ -121,6 +128,9 @@ public abstract class OptionsMenu extends Menu {
             iterator.getPos().x = items.get(selected).getQuad().getPos().x;
             iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
             iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            if (!iterator.isBuffered()) {
+                iterator.buffer();
+            }
             iterator.render();
         }
     }

@@ -344,13 +344,25 @@ public class Intrface {
         saveDialog.render();
         loadDialog.render();
         randLvlDialog.render();
+        if (!infoText.isBuffered()) {
+            infoText.buffer();
+        }
         infoText.render();
+        if (!collText.isBuffered()) {
+            collText.buffer();
+        }
         collText.render();
+        if (!helpText.isBuffered()) {
+            helpText.buffer();
+        }
         helpText.render();
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
         if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !showHelp) {
+            if (!crosshair.isBuffered()) {
+                crosshair.buffer();
+            }
             crosshair.render();
         }
     }
