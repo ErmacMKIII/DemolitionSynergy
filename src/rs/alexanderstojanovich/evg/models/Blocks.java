@@ -147,7 +147,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // standard render all
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null) {
+        if (buffered && shaderProgram != null && !blockList.isEmpty()) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
@@ -209,7 +209,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     // powerful render if block is visible by camera
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (buffered && shaderProgram != null) {
+        if (buffered && shaderProgram != null && !blockList.isEmpty()) {
             Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);

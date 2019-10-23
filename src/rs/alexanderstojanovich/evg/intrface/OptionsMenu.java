@@ -122,6 +122,9 @@ public abstract class OptionsMenu extends Menu {
                 values[index].getQuad().getPos().x = item.getQuad().getPos().x;
                 values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
                 values[index].getQuad().getPos().y = item.getQuad().getPos().y;
+                if (!values[index].isBuffered()) {
+                    values[index].buffer();
+                }
                 values[index].render();
                 index++;
             }

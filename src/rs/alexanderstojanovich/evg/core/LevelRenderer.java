@@ -58,6 +58,8 @@ public class LevelRenderer {
 
     private int progress = 0;
 
+    private boolean working = false;
+
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
         // setting skybox
@@ -71,6 +73,7 @@ public class LevelRenderer {
     }
 
     public void startNewLevel() {
+        working = true;
         progress = 0;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
@@ -101,10 +104,13 @@ public class LevelRenderer {
         solidBlocks.setBuffered(false);
         fluidBlocks.setBuffered(false);
         progress = 100;
+        working = false;
     }
 
     public boolean generateRandomLevel(Integer numberOfBlocks) {
+        working = true;
         boolean success = false;
+        progress = 0;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(false);
         solidBlocks.getBlockList().clear();
@@ -120,10 +126,14 @@ public class LevelRenderer {
         fluidBlocks.setBuffered(false);
 
         observer.setGivenControl(true);
+        progress = 100;
+
+        working = false;
         return success;
     }
 
     private boolean storeLevelToBuffer() {
+        working = true;
         boolean success = false;
         if (progress > 0) {
             return false;
@@ -211,11 +221,12 @@ public class LevelRenderer {
         if (progress == 100) {
             success = true;
         }
-
+        working = false;
         return success;
     }
 
     private boolean loadLevelFromBuffer() {
+        working = true;
         boolean success = false;
         if (progress > 0) {
             return false;
@@ -335,6 +346,7 @@ public class LevelRenderer {
                 }
             }
         }
+        working = false;
         return success;
     }
 
@@ -631,6 +643,10 @@ public class LevelRenderer {
 
     public void setProgress(int progress) {
         this.progress = progress;
+    }
+
+    public boolean isWorking() {
+        return working;
     }
 
 }

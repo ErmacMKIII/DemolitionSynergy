@@ -27,7 +27,6 @@ import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.Editor;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.models.Block;
 
@@ -346,10 +345,6 @@ public class Game {
                     Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-//            synchronized (objMutex) {
-//                myWindow.loadContext();
-//                GL.setCapabilities(MasterRenderer.getGlCaps());
-//            }
 
             GLFW.glfwPollEvents();
             observerDo();
@@ -361,10 +356,6 @@ public class Game {
                 timer0 += 1000;
             }
 
-//            synchronized (objMutex) {
-//                GL.setCapabilities(null);
-//                Window.unloadContext();
-//            }
         }
         try {
             gameTime.join(); // waits for gameTime to finish life
@@ -372,8 +363,11 @@ public class Game {
         } catch (InterruptedException ex) {
             Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
         }
-        myWindow.loadContext();
-        myWindow.destroy();
+
+        synchronized (objMutex) {
+            myWindow.loadContext();
+            myWindow.destroy();
+        }
     }
 
     public static GLFWKeyCallback getDefaultKeyCallback() {

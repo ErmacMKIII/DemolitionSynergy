@@ -17,11 +17,8 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.models.Block;
 
 /**
@@ -217,10 +214,8 @@ public class RandomLevelGenerator {
                     fluidBlocks--;
                 }
                 // this provides external monitoring of level generation progress
-                levelRenderer.setProgress(100 - Math.round((solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
+                levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
             }
-
-            levelRenderer.setProgress(100);
         }
     }
 
