@@ -27,13 +27,13 @@ import org.lwjgl.opengl.GL32;
 public class FrameBuffer {
 
     private final Window myWindow;
-    private int fbo;
-    private Texture texture;
+    private static int fbo;
+    private static Texture texture;
 
     public FrameBuffer(Window window) {
         this.myWindow = window;
         createFrameBuffer();
-        this.texture = new Texture(512, 512);
+        FrameBuffer.texture = new Texture(512, 512);
         createDepthBuffer();
         configureFrameBuffer();
     }
@@ -79,12 +79,12 @@ public class FrameBuffer {
         return fbo;
     }
 
-    public Texture getTexture() {
+    public static Texture getTexture() {
         return texture;
     }
 
-    public void setTexture(Texture texture) {
-        this.texture = texture;
+    public static void setTexture(Texture texture) {
+        FrameBuffer.texture = texture;
     }
 
 }

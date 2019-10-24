@@ -37,20 +37,20 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new LinkedList<>();
-    private int bigVbo;
-    private boolean verticesBuffered = false;
-    private boolean cameraInFluid = false;
-    private boolean verticesReversed = false;
+    protected final List<Block> blockList = new LinkedList<>();
+    protected int bigVbo;
+    protected boolean verticesBuffered = false;
+    protected boolean cameraInFluid = false;
+    protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    private final int[] vboEntries = new int[65536];
-    private final int[] ibos = new int[65536];
+    protected final int[] vboEntries = new int[65536];
+    protected final int[] ibos = new int[65536];
     public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
-    private boolean indicesBuffered = false;
-    private boolean buffered = false;
+    protected boolean indicesBuffered = false;
+    protected boolean buffered = false;
 
-    private void bufferVertices() { // call it before any rendering        
+    protected void bufferVertices() { // call it before any rendering        
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         int blkIndex = 0;
         int offset = 0;
@@ -82,7 +82,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         verticesBuffered = true;
     }
 
-    private void bufferIndices() { // call it before any rendering
+    protected void bufferIndices() { // call it before any rendering
         int blkIndex = 0;
         for (Block block : blockList) {
             List<Integer> indices = new ArrayList<>();

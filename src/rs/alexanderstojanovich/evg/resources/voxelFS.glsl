@@ -7,8 +7,10 @@ in vec2 uvOut;
 
 in vec4 glPosOut;
 in vec3 modelPosOut;
+in vec4 colorOut;
 
-uniform vec4 modelColor0;
+flat in int instanceIdOut;
+
 uniform vec4 modelColor1;
 uniform vec4 modelColor2;
 uniform vec3 modelLight;
@@ -17,6 +19,7 @@ uniform sampler2D modelTexture1; // this is editor overlay texture
 uniform sampler2D modelTexture2; // this is reflective texture
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
+uniform int selectedIndex; // this is for selected block by editor
 
 float attenuation(vec3 lightSrc, vec3 target){
     float distance = length(lightSrc - target);
@@ -38,11 +41,12 @@ float specularLight(vec3 lightSrc, vec3 target, vec3 normal){
 }
 
 vec2 reflUV() {
-    vec2 ndc = (glPosOut.xy/glPosOut.w) / 2.0 + 0.5;
+    vec2 ndc = (glPosOut.xy / glPosOut.w) / 2.0 + 0.5;
     return vec2(ndc.x, -ndc.y);
 }
 
 void main() {
+	vec4 modelColor0 = colorOut;
     vec3 lightDir = normalize(modelLight - modelPosOut);    
     float theta = dot(lightDir, -cameraFront);
     float brightness;
@@ -55,10 +59,17 @@ void main() {
     
     float fresnel = dot(normalize(cameraPos), normalOut);
 
-    vec3 finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb 
+	vec3 finalColor;
+	if (selectedIndex == instanceIdOut) {
+		finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb
                     + modelColor1.rgb * texture(modelTexture1, uvOut).rgb
-                    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);
+				    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);		
+	} else {
+		finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb                    
+				    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);		
+	}
+	    
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     
-    gl_FragColor = vec4(finalColor.rgb, alpha);    
+    gl_FragColor = vec4(finalColor.rgb, alpha);    	
 }

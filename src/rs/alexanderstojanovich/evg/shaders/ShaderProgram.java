@@ -121,9 +121,14 @@ public class ShaderProgram {
         GL20.glBindAttribLocation(program, attribute, variableName);
     }
 
-    public void updateUniform(float number, String name) {
+    public void updateUniform(int value, String name) {
         int uniformLocation = GL20.glGetUniformLocation(program, name);
-        GL20.glUniform1f(uniformLocation, number);
+        GL20.glUniform1i(uniformLocation, value);
+    }
+
+    public void updateUniform(float value, String name) {
+        int uniformLocation = GL20.glGetUniformLocation(program, name);
+        GL20.glUniform1f(uniformLocation, value);
     }
 
     public void updateUniform(Vector2f vect, String name) {

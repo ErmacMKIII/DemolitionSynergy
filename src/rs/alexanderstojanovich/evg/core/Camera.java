@@ -16,11 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -89,11 +86,11 @@ public class Camera { // is 3D looking camera
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }
 
-    private void updateCameraPosition(ShaderProgram shaderProgram) {
+    public void updateCameraPosition(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(pos, "cameraPos");
     }
 
-    private void updateCameraFront(ShaderProgram shaderProgram) {
+    public void updateCameraFront(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(front, "cameraFront");
     }
 

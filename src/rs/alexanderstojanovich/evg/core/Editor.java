@@ -26,8 +26,12 @@ import rs.alexanderstojanovich.evg.models.Block;
 public class Editor {
 
     private static Block loaded = null;
+
     private static Block selectedNew = null;
+
     private static Block selectedCurr = null;
+    private static int selectedCurrIndex = -1;
+
     private static final Texture SELECTED_TEXTURE = Texture.MINIGUN;
 
     private static int value = 0; // value about which texture to use
@@ -78,6 +82,8 @@ public class Editor {
 
             Block minSolid = null;
             Block minFluid = null;
+            int minSolidBlkIndex = -1;
+            int solidBlkIndex = 0;
             for (Block solidBlock : levelRenderer.getSolidBlocks().getBlockList()) {
                 Vector3f vect = solidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
@@ -87,10 +93,14 @@ public class Editor {
                     if (distance < minDistanceOfSolid) {
                         minDistanceOfSolid = distance;
                         minSolid = solidBlock;
+                        minSolidBlkIndex = solidBlkIndex;
                     }
                 }
+                solidBlkIndex++;
             }
 
+            int minFluidBlkIndex = -1;
+            int fluidBlkIndex = 0;
             for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
                 Vector3f vect = fluidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
@@ -100,8 +110,10 @@ public class Editor {
                     if (distance < minDistanceOfFluid) {
                         minDistanceOfFluid = distance;
                         minFluid = fluidBlock;
+                        minFluidBlkIndex = fluidBlkIndex;
                     }
                 }
+                fluidBlkIndex++;
             }
 
             if (minDistanceOfSolid < minDistanceOfFluid) {
@@ -112,6 +124,7 @@ public class Editor {
                     selectedCurr.getSecondaryColor().z = 0.0f;
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                    selectedCurrIndex = minSolidBlkIndex;
                 }
             } else if (minDistanceOfSolid >= minDistanceOfFluid) {
                 if (minFluid != null) {
@@ -121,6 +134,7 @@ public class Editor {
                     selectedCurr.getSecondaryColor().z = 0.0f;
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                    selectedCurrIndex = minFluidBlkIndex;
                 }
             }
         }
@@ -135,6 +149,7 @@ public class Editor {
             selectedCurr.getSecondaryColor().w = 1.0f;
         }
         selectedNew = selectedCurr = null;
+        selectedCurrIndex = -1;
     }
 
     public static void selectAdjacent(LevelRenderer levelRenderer, int position) {
@@ -307,6 +322,14 @@ public class Editor {
 
     public static Block getSelectedCurr() {
         return selectedCurr;
+    }
+
+    public static int getSelectedCurrIndex() {
+        return selectedCurrIndex;
+    }
+
+    public static Texture getSELECTED_TEXTURE() {
+        return SELECTED_TEXTURE;
     }
 
 }

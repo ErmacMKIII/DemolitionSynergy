@@ -78,7 +78,7 @@ public class Renderer extends Thread {
 
                 masterRenderer.render();
                 if (!levelRenderer.isWorking()) {
-                    levelRenderer.render(ShaderProgram.getMainShader());
+                    levelRenderer.render();
                     if (Game.isWaterEffects()) {
                         waterRenderer.render();
                     }
