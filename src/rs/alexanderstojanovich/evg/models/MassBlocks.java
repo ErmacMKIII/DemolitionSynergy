@@ -17,6 +17,9 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
@@ -35,13 +38,15 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * @author Coa
  */
 public class MassBlocks extends Blocks {
-
+    
     public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
-
+    
     private int mat4Vbo; // is for model matrix shared amongst the vertices of the same instance
     private int vec4Vbo; // this is for color shared amongst the vertices of the same instance
 
+    private Texture mutualTexture;
+    
     private void bufferMatrices() {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blockList.size() * MAT4_SIZE);
         for (Block block : blockList) {
@@ -62,7 +67,7 @@ public class MassBlocks extends Blocks {
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
-
+    
     private void bufferVectors() {
         FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blockList.size() * VEC4_SIZE);
         for (Block block : blockList) {
@@ -78,7 +83,7 @@ public class MassBlocks extends Blocks {
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
-
+    
     @Override
     public void bufferAll() {
         bufferVertices();
@@ -88,11 +93,12 @@ public class MassBlocks extends Blocks {
         buffered = true;
     }
 
+    // it always renders all of them instanced
     @Override
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
             Texture.enable();
-
+            
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
@@ -101,7 +107,7 @@ public class MassBlocks extends Blocks {
             GL20.glEnableVertexAttribArray(5);
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
-
+            
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
             GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
@@ -110,7 +116,7 @@ public class MassBlocks extends Blocks {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
             GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
             GL33.glVertexAttribDivisor(3, 1);
-
+            
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
             GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
             GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
@@ -121,17 +127,19 @@ public class MassBlocks extends Blocks {
             GL33.glVertexAttribDivisor(5, 1);
             GL33.glVertexAttribDivisor(6, 1);
             GL33.glVertexAttribDivisor(7, 1);
-
+            
             shaderProgram.bind();
-
+            
             shaderProgram.updateUniform(lightSrc, "modelLight");
-            Texture.DOOM0.bind(0, shaderProgram, "modelTexture0");
+            if (mutualTexture != null) {
+                mutualTexture.bind(0, shaderProgram, "modelTexture0");
+            }
             shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
             shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
             Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
             shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
             FrameBuffer.getTexture().bind(2, shaderProgram, "modelTexture2");
-
+            
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos[0]);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
@@ -141,15 +149,15 @@ public class MassBlocks extends Blocks {
                     blockList.size(),
                     vboEntries[0]
             );
-
+            
             Texture.unbind(0);
             Texture.unbind(1);
-
+            
             ShaderProgram.unbind();
-
+            
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
+            
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
@@ -158,9 +166,143 @@ public class MassBlocks extends Blocks {
             GL20.glDisableVertexAttribArray(5);
             GL20.glDisableVertexAttribArray(6);
             GL20.glDisableVertexAttribArray(7);
-
+            
             Texture.disable();
         }
     }
 
+    // it renders instanced all of them if all blocks passes the test
+    @Override
+    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {        
+        if (buffered && shaderProgram != null && !blockList.isEmpty()) {
+            boolean allPass = true;
+            for (Block block : blockList) {
+                allPass = allPass && predicate.test(block);
+                if (!allPass) {
+                    break;
+                }
+            }
+            
+            if (allPass) {
+                Texture.enable();
+                
+                GL20.glEnableVertexAttribArray(0);
+                GL20.glEnableVertexAttribArray(1);
+                GL20.glEnableVertexAttribArray(2);
+                GL20.glEnableVertexAttribArray(3);
+                GL20.glEnableVertexAttribArray(4);
+                GL20.glEnableVertexAttribArray(5);
+                GL20.glEnableVertexAttribArray(6);
+                GL20.glEnableVertexAttribArray(7);
+                
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+                GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
+                GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
+                GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
+
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
+                GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
+                GL33.glVertexAttribDivisor(3, 1);
+                
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
+                GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
+                GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
+                GL20.glVertexAttribPointer(6, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 32); // this is for column2
+                GL20.glVertexAttribPointer(7, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 48); // this is for column3                       
+
+                GL33.glVertexAttribDivisor(4, 1);
+                GL33.glVertexAttribDivisor(5, 1);
+                GL33.glVertexAttribDivisor(6, 1);
+                GL33.glVertexAttribDivisor(7, 1);
+                
+                shaderProgram.bind();
+                
+                shaderProgram.updateUniform(lightSrc, "modelLight");
+                if (mutualTexture != null) {
+                    mutualTexture.bind(0, shaderProgram, "modelTexture0");
+                }
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
+                shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
+                Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
+                FrameBuffer.getTexture().bind(2, shaderProgram, "modelTexture2");
+                
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos[0]);
+                GL32.glDrawElementsInstancedBaseVertex(
+                        GL11.GL_TRIANGLES,
+                        Block.INDICES_COUNT,
+                        GL11.GL_UNSIGNED_INT,
+                        0,
+                        blockList.size(),
+                        vboEntries[0]
+                );
+                
+                Texture.unbind(0);
+                Texture.unbind(1);
+                
+                ShaderProgram.unbind();
+                
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+                
+                GL20.glDisableVertexAttribArray(0);
+                GL20.glDisableVertexAttribArray(1);
+                GL20.glDisableVertexAttribArray(2);
+                GL20.glDisableVertexAttribArray(3);
+                GL20.glDisableVertexAttribArray(4);
+                GL20.glDisableVertexAttribArray(5);
+                GL20.glDisableVertexAttribArray(6);
+                GL20.glDisableVertexAttribArray(7);
+                
+                Texture.disable();
+            }
+        }
+    }
+    
+    public Texture getMutualTexture() {
+        return mutualTexture;
+    }
+    
+    public void setMutualTexture(Texture mutualTexture) {
+        this.mutualTexture = mutualTexture;
+    }    
+    
+    public static List<MassBlocks> split(Blocks blocks) {
+        List<MassBlocks> result = new LinkedList<>();
+        Texture currTexture = null;
+        MassBlocks currSeries = null;
+        for (Block block : blocks.getBlockList()) {
+            if (block.getPrimaryTexture() != currTexture) {
+                if (currSeries != null) {
+                    result.add(currSeries);
+                }
+                currTexture = block.getPrimaryTexture();
+                currSeries = new MassBlocks();
+                currSeries.setMutualTexture(currTexture);                
+            } else if (currSeries != null) {                
+                currSeries.getBlockList().add(block);                
+            }
+        }
+        return result;
+    }
+    
+    public static List<MassBlocks> split(Blocks blocks, Predicate<Block> predicate) {
+        List<MassBlocks> result = new LinkedList<>();
+        Texture currTexture = null;
+        MassBlocks currSeries = null;
+        for (Block block : blocks.getBlockList()) {
+            if (block.getPrimaryTexture() != currTexture) {
+                if (currSeries != null) {
+                    result.add(currSeries);
+                }
+                currTexture = block.getPrimaryTexture();
+                currSeries = new MassBlocks();
+                currSeries.setMutualTexture(currTexture);                
+            } else if (currSeries != null && predicate.test(block)) {                
+                currSeries.getBlockList().add(block);                
+            }
+        }
+        return result;
+    }
+    
 }

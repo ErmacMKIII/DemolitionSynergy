@@ -96,38 +96,46 @@ public class Game {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
             obs.movePredictorForward(AMOUNT);
-            if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
-                obs.moveForward(AMOUNT);
-            } else {
+            if (renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.movePredictorBackward(AMOUNT);
+                renderer.setAssertCollision(true);
+            } else {
+                obs.moveForward(AMOUNT);
+                renderer.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
             obs.movePredictorBackward(AMOUNT);
-            if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
-                obs.moveBackward(AMOUNT);
-            } else {
+            if (renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.movePredictorForward(AMOUNT);
+                renderer.setAssertCollision(true);
+            } else {
+                obs.moveBackward(AMOUNT);
+                renderer.setAssertCollision(false);
             }
 
         }
         if (keys[GLFW.GLFW_KEY_A]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
             obs.movePredictorLeft(AMOUNT);
-            if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
-                obs.moveLeft(AMOUNT);
-            } else {
+            if (renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.movePredictorRight(AMOUNT);
+                renderer.setAssertCollision(true);
+            } else {
+                obs.moveLeft(AMOUNT);
+                renderer.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_D]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
             obs.movePredictorRight(AMOUNT);
-            if (!renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
-                obs.moveRight(AMOUNT);
-            } else {
+            if (renderer.getLevelRenderer().hasCollisionWithCritter(obs)) {
                 obs.movePredictorLeft(AMOUNT);
+                renderer.setAssertCollision(true);
+            } else {
+                obs.moveRight(AMOUNT);
+                renderer.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_LEFT]) {

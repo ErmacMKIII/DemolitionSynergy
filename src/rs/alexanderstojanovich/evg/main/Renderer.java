@@ -44,6 +44,8 @@ public class Renderer extends Thread {
     private final Object objFps = new Object();
     private final Object objMutex; // got from the Game    
 
+    private boolean assertCollision = false;
+
     public Renderer(Window myWindow, Object objMutex) {
         super("Renderer");
         this.myWindow = myWindow;
@@ -78,7 +80,7 @@ public class Renderer extends Thread {
 
                 masterRenderer.render();
                 if (!levelRenderer.isWorking()) {
-                    levelRenderer.render();
+                    levelRenderer.render(ShaderProgram.getMainShader());
                     if (Game.isWaterEffects()) {
                         waterRenderer.render();
                     }
@@ -91,8 +93,7 @@ public class Renderer extends Thread {
                 }
 
                 Critter obs = levelRenderer.getObserver();
-                boolean bool = levelRenderer.hasCollisionWithCritter(obs);
-                intrface.setCollText(bool);
+                intrface.setCollText(assertCollision);
 
                 intrface.render();
                 myWindow.render();
@@ -173,6 +174,14 @@ public class Renderer extends Thread {
 
     public Object getObjMutex() {
         return objMutex;
+    }
+
+    public boolean isAssertCollision() {
+        return assertCollision;
+    }
+
+    public void setAssertCollision(boolean assertCollision) {
+        this.assertCollision = assertCollision;
     }
 
 }
