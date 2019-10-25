@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,39 +38,56 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  *
  * @author Coa
  */
-public class BlocksSeries {
+public class BlocksSeries { // mutual class made from solid and fluid blocks with instanced rendering
 
     public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
-
+    
     private final List<Integer> mat4Vbos = new ArrayList<>(); // is for model matrix shared amongst the vertices of the same instance
     private final List<Integer> vec4Vbos = new ArrayList<>(); // this is for color shared amongst the vertices of the same instance
     private final List<Texture> blocksTextures = new ArrayList<>(); // this is for texture series;
+    // it has 2^6 combinations, cuz each face can be enabled or disabled
+    private final List<IntBuffer> intBuffs = new ArrayList<>();
 
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
     private final int[] vboEntries = new int[65536];
     private boolean buffered = false;
-
+    
     private final List<Blocks> blocksSeries = new LinkedList<>();
-
+    
     public BlocksSeries(Blocks blocks) {
         Texture currTexture = null;
-        Blocks currSeries = null;
+        Blocks currSeries = null;        
+        int currBits = -1;
         for (Block block : blocks.getBlockList()) {
-            if (block.getPrimaryTexture() != currTexture) {
+            // on texture change make new series or
+            // on faces bits change make new series                
+            int blockFacesBits = block.getEnabledFacesBits();
+            if (block.getPrimaryTexture() != currTexture
+                    || currBits != blockFacesBits) {                
                 currSeries = new Blocks();
                 blocksSeries.add(currSeries);
                 currTexture = block.getPrimaryTexture();
+                currBits = blockFacesBits;
                 blocksTextures.add(currTexture);
-            }
 
+                // storing indices in the buffer
+                IntBuffer intBuff = BufferUtils.createIntBuffer(block.indices.size());
+                for (Integer index : block.indices) {
+                    intBuff.put(index);
+                }
+                intBuff.flip();
+                intBuffs.add(intBuff);
+            }            
+            
             if (currSeries != null) {
                 currSeries.getBlockList().add(block);
             }
+            
         }
     }
-
+    
     public void bufferMatrices(Blocks blocks) {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * MAT4_SIZE);
         for (Block block : blocks.getBlockList()) {
@@ -91,7 +109,7 @@ public class BlocksSeries {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         mat4Vbos.add(mat4Vbo);
     }
-
+    
     public void bufferVectors(Blocks blocks) {
         FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC4_SIZE);
         for (Block block : blocks.getBlockList()) {
@@ -108,7 +126,7 @@ public class BlocksSeries {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         vec4Vbos.add(vec4Vbo);
     }
-
+    
     public void bufferAll() {
         for (Blocks blocks : blocksSeries) {
             blocks.bufferVertices();
@@ -118,13 +136,13 @@ public class BlocksSeries {
         }
         buffered = true;
     }
-
+    
     public void animate() { // call only for fluid blocks
-        for (Blocks blocks : blocksSeries) {
-            blocks.animate();
-        }
+//        for (Blocks blocks : blocksSeries) {
+//            blocks.animate();
+//        }
     }
-
+    
     public void prepare() { // call only for fluid blocks before rendering
         for (Blocks blocks : blocksSeries) {
             blocks.prepare();
@@ -135,7 +153,7 @@ public class BlocksSeries {
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !blocksSeries.isEmpty()) {
             Texture.enable();
-
+            
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
@@ -144,9 +162,9 @@ public class BlocksSeries {
             GL20.glEnableVertexAttribArray(5);
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
-
+            
             int seriesIndex = 0;
-            for (Blocks blocks : blocksSeries) {
+            for (Blocks blocks : blocksSeries) {                
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, blocks.getBigVbo());
                 GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
                 GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
@@ -155,7 +173,7 @@ public class BlocksSeries {
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbos.get(seriesIndex));
                 GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
                 GL33.glVertexAttribDivisor(3, 1);
-
+                
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbos.get(seriesIndex));
                 GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
                 GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
@@ -166,41 +184,39 @@ public class BlocksSeries {
                 GL33.glVertexAttribDivisor(5, 1);
                 GL33.glVertexAttribDivisor(6, 1);
                 GL33.glVertexAttribDivisor(7, 1);
-
+                
                 shaderProgram.bind();
-
+                
                 shaderProgram.updateUniform(lightSrc, "modelLight");
-
+                
                 Texture blocksTexture = blocksTextures.get(seriesIndex);
                 if (blocksTexture != null) {
                     blocksTexture.bind(0, shaderProgram, "modelTexture0");
                 }
-
+                
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
                 shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
                 Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                 FrameBuffer.getTexture().bind(2, shaderProgram, "modelTexture2");
-
-                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, blocks.getIbos()[0]);
+                
                 GL32.glDrawElementsInstancedBaseVertex(
                         GL11.GL_TRIANGLES,
-                        Block.INDICES_COUNT,
-                        GL11.GL_UNSIGNED_INT,
-                        0,
+                        intBuffs.get(seriesIndex),
                         blocks.getBlockList().size(),
                         vboEntries[0]
                 );
-
+                
                 Texture.unbind(0);
                 Texture.unbind(1);
+                Texture.unbind(2);
                 ShaderProgram.unbind();
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
+                
                 seriesIndex++;
             }
-
+            
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
@@ -209,33 +225,33 @@ public class BlocksSeries {
             GL20.glDisableVertexAttribArray(5);
             GL20.glDisableVertexAttribArray(6);
             GL20.glDisableVertexAttribArray(7);
-
+            
             Texture.disable();
         }
     }
-
+    
     public List<Integer> getMat4Vbos() {
         return mat4Vbos;
     }
-
+    
     public List<Integer> getVec4Vbos() {
         return vec4Vbos;
     }
-
+    
     public List<Blocks> getBlocksSeries() {
         return blocksSeries;
     }
-
+    
     public int[] getVboEntries() {
         return vboEntries;
     }
-
+    
     public boolean isBuffered() {
         return buffered;
     }
-
+    
     public List<Texture> getBlocksTextures() {
         return blocksTextures;
     }
-
+    
 }

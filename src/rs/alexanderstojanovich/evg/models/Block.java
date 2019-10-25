@@ -421,4 +421,14 @@ public class Block extends Model {
         return verticesReversed;
     }
 
+    public int getEnabledFacesBits() {
+        int bits = 0;
+        for (int j = 0; j <= 5; j++) {
+            if (enabledFaces[j]) {
+                bits++;
+            }
+            bits <<= 1;
+        }
+        return bits;
+    }
 }

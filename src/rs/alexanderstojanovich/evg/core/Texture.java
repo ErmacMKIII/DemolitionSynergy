@@ -46,7 +46,6 @@ public class Texture {
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
     static {
-        TEX_MAP.put("minigun", MINIGUN);
         TEX_MAP.put("doom0", DOOM0);
         TEX_MAP.put("crate", CRATE);
         TEX_MAP.put("stone", STONE);
