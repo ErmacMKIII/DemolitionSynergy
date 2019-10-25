@@ -425,9 +425,9 @@ public class Block extends Model {
         int bits = 0;
         for (int j = 0; j <= 5; j++) {
             if (enabledFaces[j]) {
-                bits++;
+                int mask = 1 << j;
+                bits |= mask;
             }
-            bits <<= 1;
         }
         return bits;
     }

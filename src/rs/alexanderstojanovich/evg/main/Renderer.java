@@ -20,7 +20,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
-import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -134,7 +133,7 @@ public class Renderer extends Thread {
                     }
 
                     if (levelRenderer.getProgress() == 0) {
-                        levelRenderer.getFluidBlocks().animate();
+                        levelRenderer.animate();
                     }
 
                     timer2 += 250;

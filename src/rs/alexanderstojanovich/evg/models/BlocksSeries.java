@@ -50,36 +50,47 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     private final List<IntBuffer> intBuffs = new ArrayList<>();
 
     // array with offsets in the big float buffer
-    // this is maximum amount of blocks of the type game can hold
-    private final int[] vboEntries = new int[65536];
+    // this is maximum amount of blocks of the type game can hold  
     private boolean buffered = false;
     
     private final List<Blocks> blocksSeries = new LinkedList<>();
     
+    private boolean cameraInFluid = false;
+    
     public BlocksSeries(Blocks blocks) {
         Texture currTexture = null;
-        Blocks currSeries = null;        
+        Blocks currSeries = null;
         int currBits = -1;
         for (Block block : blocks.getBlockList()) {
             // on texture change make new series or
             // on faces bits change make new series                
             int blockFacesBits = block.getEnabledFacesBits();
             if (block.getPrimaryTexture() != currTexture
-                    || currBits != blockFacesBits) {                
+                    || currBits != blockFacesBits) {
                 currSeries = new Blocks();
                 blocksSeries.add(currSeries);
                 currTexture = block.getPrimaryTexture();
                 currBits = blockFacesBits;
                 blocksTextures.add(currTexture);
-
+                
+                List<Integer> indices = new ArrayList<>();
+                for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
+                    indices.add(4 * j);
+                    indices.add(4 * j + 1);
+                    indices.add(4 * j + 2);
+                    
+                    indices.add(4 * j + 2);
+                    indices.add(4 * j + 3);
+                    indices.add(4 * j);
+                }
                 // storing indices in the buffer
-                IntBuffer intBuff = BufferUtils.createIntBuffer(block.indices.size());
-                for (Integer index : block.indices) {
+                IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+                for (Integer index : indices) {
                     intBuff.put(index);
                 }
                 intBuff.flip();
                 intBuffs.add(intBuff);
-            }            
+            }
             
             if (currSeries != null) {
                 currSeries.getBlockList().add(block);
@@ -138,13 +149,14 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     }
     
     public void animate() { // call only for fluid blocks
-//        for (Blocks blocks : blocksSeries) {
-//            blocks.animate();
-//        }
+        for (Blocks blocks : blocksSeries) {
+            blocks.animate();
+        }
     }
     
     public void prepare() { // call only for fluid blocks before rendering
         for (Blocks blocks : blocksSeries) {
+            blocks.setCameraInFluid(cameraInFluid);
             blocks.prepare();
         }
     }
@@ -164,7 +176,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glEnableVertexAttribArray(7);
             
             int seriesIndex = 0;
-            for (Blocks blocks : blocksSeries) {                
+            for (Blocks blocks : blocksSeries) {
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, blocks.getBigVbo());
                 GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
                 GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
@@ -204,7 +216,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                         GL11.GL_TRIANGLES,
                         intBuffs.get(seriesIndex),
                         blocks.getBlockList().size(),
-                        vboEntries[0]
+                        blocks.getVboEntries()[0]
                 );
                 
                 Texture.unbind(0);
@@ -242,16 +254,20 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         return blocksSeries;
     }
     
-    public int[] getVboEntries() {
-        return vboEntries;
-    }
-    
     public boolean isBuffered() {
         return buffered;
     }
     
     public List<Texture> getBlocksTextures() {
         return blocksTextures;
+    }
+    
+    public boolean isCameraInFluid() {
+        return cameraInFluid;
+    }
+    
+    public void setCameraInFluid(boolean cameraInFluid) {
+        this.cameraInFluid = cameraInFluid;
     }
     
 }

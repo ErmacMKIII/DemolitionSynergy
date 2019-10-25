@@ -311,7 +311,6 @@ public class LevelRenderer {
                 }
 
                 solidBlocks.setBuffered(false);
-//                solidSeries = new BlocksSeries(solidBlocks);
 
                 progress += 40;
                 char[] fluid = new char[5];
@@ -346,7 +345,6 @@ public class LevelRenderer {
                     }
 
                     fluidBlocks.setBuffered(false);
-//                    fluidSeries = new BlocksSeries(fluidBlocks);
 
                     progress += 40;
                     char[] end = new char[3];
@@ -357,7 +355,8 @@ public class LevelRenderer {
                     if (strEnd.equals("END")) {
                         updateAll();
                         updateFluids();
-
+                        solidSeries = new BlocksSeries(solidBlocks);
+                        fluidSeries = new BlocksSeries(fluidBlocks);
                         progress += 10;
                         success = true;
                     }
@@ -518,7 +517,8 @@ public class LevelRenderer {
     }
 
     public void animate() {
-        fluidBlocks.animate();
+//        fluidBlocks.animate();
+        fluidSeries.animate();
     }
 
     public boolean isCameraInFluid() {
@@ -554,53 +554,55 @@ public class LevelRenderer {
             editorNew.render(ShaderProgram.getMainShader());
         }
         // copy uniforms from main shader to voxel shader
-//        ShaderProgram.getVoxelShader().bind();
-//        obsCamera.updateViewMatrix(ShaderProgram.getVoxelShader());
-//        obsCamera.updateCameraPosition(ShaderProgram.getVoxelShader());
-//        obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
-//        ShaderProgram.unbind();
+        ShaderProgram.getVoxelShader().bind();
+        obsCamera.updateViewMatrix(ShaderProgram.getVoxelShader());
+        obsCamera.updateCameraPosition(ShaderProgram.getVoxelShader());
+        obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
+        ShaderProgram.unbind();
 
         // render solid series     
-//        if (!solidSeries.isBuffered()) {
-//            solidSeries.bufferAll();
-//        }
-//        solidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
-//
-//        // render fluid blocks      
-//        if (!fluidSeries.isBuffered()) {
-//            fluidSeries.bufferAll();
-//        }
-//        fluidSeries.prepare();
-//        fluidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
+        if (!solidSeries.isBuffered()) {
+            solidSeries.bufferAll();
+        }
+        solidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
+
+        // render fluid blocks      
+        if (!fluidSeries.isBuffered()) {
+            fluidSeries.bufferAll();
+        }
+
+        fluidSeries.setCameraInFluid(isCameraInFluid());
+        fluidSeries.prepare();
+        fluidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
         if (!solidBlocks.isBuffered()) {
             solidBlocks.bufferAll();
         }
-
-        Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
-            @Override
-            public boolean test(Block t) {
-                return (obsCamera.doesSee(t)
-                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos()));
-            }
-        };
-        solidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), solidBlockPredicate);
-
-        if (!fluidBlocks.isBuffered()) {
-            fluidBlocks.bufferAll();
-        }
-
-        Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
-            @Override
-            public boolean test(Block t) {
-                return (obsCamera.doesSee(t)
-                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
-                        && t.hasFaces());
-            }
-        };
-
-        fluidBlocks.setCameraInFluid(isCameraInFluid());
-        fluidBlocks.prepare();
-        fluidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), fluidBlockPredicate);
+//
+//        Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
+//            @Override
+//            public boolean test(Block t) {
+//                return (obsCamera.doesSee(t)
+//                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos()));
+//            }
+//        };
+//        solidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), solidBlockPredicate);
+//
+//        if (!fluidBlocks.isBuffered()) {
+//            fluidBlocks.bufferAll();
+//        }
+//
+//        Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
+//            @Override
+//            public boolean test(Block t) {
+//                return (obsCamera.doesSee(t)
+//                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
+//                        && t.hasFaces());
+//            }
+//        };
+//
+//        fluidBlocks.setCameraInFluid(isCameraInFluid());
+//        fluidBlocks.prepare();
+//        fluidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), fluidBlockPredicate);
 
     }
 
