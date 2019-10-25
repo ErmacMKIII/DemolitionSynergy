@@ -80,9 +80,9 @@ public class Renderer extends Thread {
 
                 masterRenderer.render();
                 if (!levelRenderer.isWorking()) {
-                    levelRenderer.render(ShaderProgram.getMainShader());
+                    levelRenderer.render();
                     if (Game.isWaterEffects()) {
-                        waterRenderer.render();
+//                        waterRenderer.render();
                     }
                 } else {
                     intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
@@ -92,7 +92,6 @@ public class Renderer extends Thread {
                     intrface.getProgText().render();
                 }
 
-                Critter obs = levelRenderer.getObserver();
                 intrface.setCollText(assertCollision);
 
                 intrface.render();

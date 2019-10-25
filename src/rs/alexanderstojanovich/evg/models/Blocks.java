@@ -37,20 +37,18 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    protected final List<Block> blockList = new LinkedList<>();
-    protected int bigVbo;
-    protected boolean verticesBuffered = false;
-    protected boolean cameraInFluid = false;
-    protected boolean verticesReversed = false;
+    private final List<Block> blockList = new LinkedList<>();
+    private int bigVbo;
+    private boolean cameraInFluid = false;
+    private boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    protected final int[] vboEntries = new int[65536];
-    protected final int[] ibos = new int[65536];
+    private final int[] vboEntries = new int[65536];
+    private final int[] ibos = new int[65536];
     public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
-    protected boolean indicesBuffered = false;
-    protected boolean buffered = false;
+    private boolean buffered = false;
 
-    protected void bufferVertices() { // call it before any rendering        
+    public void bufferVertices() { // call it before any rendering        
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         int blkIndex = 0;
         int offset = 0;
@@ -78,15 +76,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        verticesBuffered = true;
     }
 
-    protected void bufferIndices() { // call it before any rendering
+    public void bufferIndices() { // call it before any rendering
         int blkIndex = 0;
         for (Block block : blockList) {
             List<Integer> indices = new ArrayList<>();
-            for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // i - face number                                
+            for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
                 indices.add(4 * j);
                 indices.add(4 * j + 1);
                 indices.add(4 * j + 2);
@@ -110,7 +106,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             ibos[blkIndex] = ibo;
             blkIndex++;
         }
-        indicesBuffered = true;
     }
 
     public void bufferAll() { // buffer both, call it before any rendering
@@ -282,10 +277,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         return bigVbo;
     }
 
-    public boolean isVerticesBuffered() {
-        return verticesBuffered;
-    }
-
     public boolean isVerticesReversed() {
         return verticesReversed;
     }
@@ -300,10 +291,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public int[] getVboEntries() {
         return vboEntries;
-    }
-
-    public boolean isIndicesBuffered() {
-        return indicesBuffered;
     }
 
     public int[] getIbos() {
