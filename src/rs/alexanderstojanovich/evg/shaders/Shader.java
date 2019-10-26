@@ -33,13 +33,15 @@ import rs.alexanderstojanovich.evg.main.Game;
  */
 public class Shader {
 
-    private int type;
-    private String src;
+    private final int type;
+    private final String src;
 
     private int shader;
 
     public static int VERTEX_SHADER = GL20.GL_VERTEX_SHADER;
     public static int FRAGMENT_SHADER = GL20.GL_FRAGMENT_SHADER;
+
+    public static final String EFFECTS_DIR = "/effects/";
 
     // we'll need filename and type of shader (vertex or fragment)
     public Shader(String filename, int type) {
@@ -55,7 +57,7 @@ public class Shader {
 
     private String readFromFile(String fileName) {
         StringBuilder text = new StringBuilder();
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + EFFECTS_DIR + fileName);
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));

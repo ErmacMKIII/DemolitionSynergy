@@ -50,7 +50,7 @@ void main() {
     vec3 lightDir = normalize(modelLight - modelPosOut);    
     float theta = dot(lightDir, -cameraFront);
     float brightness;
-    if (theta >= 0){                                              
+    if (theta >= 0) {                                              
         brightness = max((ambientLight + diffuseLight(modelLight, modelPosOut, normalOut) 
             + specularLight(modelLight, modelPosOut, normalOut)) * attenuation(modelLight, modelPosOut), ambientLight);
     } else {

@@ -41,13 +41,13 @@ public class Image {
         this.height = height;
     }
 
-    public Image(String fileName) {
+    public Image(String subDir, String fileName) {
         this.fileName = fileName;
-        loadImage();
+        loadImage(subDir, fileName);
     }
 
-    private void loadImage() {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+    private void loadImage(String subDir, String fileName) {
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + subDir + fileName);
         try {
             PNGDecoder decoder = new PNGDecoder(in);
             // Set the width and height of the image

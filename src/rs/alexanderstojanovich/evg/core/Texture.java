@@ -21,6 +21,7 @@ import java.util.Map;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -32,16 +33,16 @@ public class Texture {
     private Image image;
     private int textureID;
 
-    public static final Texture LOGO = new Texture("ds_title_gray.png");
-    public static final Texture CROSSHAIR = new Texture("crosshairUltimate.png");
-    public static final Texture MINIGUN = new Texture("minigun.png");
-    public static final Texture FONT = new Texture("hack.png");
-    public static final Texture DOOM0 = new Texture("doom0.png");
-    public static final Texture CRATE = new Texture("crate.png");
-    public static final Texture STONE = new Texture("stone.png");
-    public static final Texture WATER = new Texture("water.png");
-    public static final Texture NIGHT = new Texture("night.png");
-    public static final Texture MARBLE = new Texture("marble.png");
+    public static final Texture LOGO = new Texture(Game.INTRFACE_SUBDIR, "ds_title_gray.png");
+    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_SUBDIR, "crosshairUltimate.png");
+    public static final Texture MINIGUN = new Texture(Game.INTRFACE_SUBDIR, "minigun.png");
+    public static final Texture FONT = new Texture(Game.INTRFACE_SUBDIR, "hack.png");
+    public static final Texture DOOM0 = new Texture(Game.WORLD_SUBDIR, "doom0.png");
+    public static final Texture CRATE = new Texture(Game.WORLD_SUBDIR, "crate.png");
+    public static final Texture STONE = new Texture(Game.WORLD_SUBDIR, "stone.png");
+    public static final Texture WATER = new Texture(Game.WORLD_SUBDIR, "water.png");
+    public static final Texture NIGHT = new Texture(Game.WORLD_SUBDIR, "night.png");
+    public static final Texture MARBLE = new Texture(Game.WORLD_SUBDIR, "marble.png");
 
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
@@ -57,8 +58,8 @@ public class Texture {
         loadToGraphicCard();
     }
 
-    public Texture(String fileName) {
-        this.image = new Image(fileName);
+    public Texture(String subDir, String fileName) {
+        this.image = new Image(subDir, fileName);
         loadToGraphicCard();
     }
 

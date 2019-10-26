@@ -40,7 +40,7 @@ public class WaterRenderer {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterShader());
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterBaseShader());
         this.camera = new Camera();
 //        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
 //        this.quad.setScale(0.25f);
@@ -51,8 +51,8 @@ public class WaterRenderer {
 
     private void refresh() {
         waterHeights.clear();
-        if (frameBuffer.getTexture() == null) {
-            frameBuffer.setTexture(new Texture(512, 512));
+        if (FrameBuffer.getTexture() == null) {
+            FrameBuffer.setTexture(new Texture(512, 512));
         }
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
         for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
@@ -76,7 +76,7 @@ public class WaterRenderer {
     }
 
     private void updateClipPlane(float waterHeight) {
-        ShaderProgram.getWaterShader().updateUniform(waterHeight, "waterHeight");
+        ShaderProgram.getWaterBaseShader().updateUniform(waterHeight, "waterHeight");
     }
 
     private void updateCamera(float waterHeight) {
@@ -92,7 +92,7 @@ public class WaterRenderer {
         frameBuffer.bind();
         prepare();
         updateCamera(waterHeight);
-        levelRenderer.render(camera, ShaderProgram.getWaterShader());
+        levelRenderer.render(camera);
         frameBuffer.unbind();
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }

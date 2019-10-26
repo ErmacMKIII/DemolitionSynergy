@@ -97,7 +97,7 @@ public abstract class Menu {
     }
 
     private void readFromFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + Game.INTRFACE_SUBDIR + fileName);
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String line;

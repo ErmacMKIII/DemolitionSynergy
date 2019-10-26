@@ -73,6 +73,11 @@ public class Game {
 
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
 
+    public static final String FONTS_SUBDIR = "fonts/";
+    public static final String INTRFACE_SUBDIR = "intrface/";
+    public static final String WORLD_SUBDIR = "world/";
+    public static final String EFFECTS_SUBDIR = "effects/";
+
     private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
     private final Object objUps = new Object();
 

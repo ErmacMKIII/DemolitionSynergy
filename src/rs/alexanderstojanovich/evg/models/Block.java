@@ -116,7 +116,7 @@ public class Block extends Model {
     }
 
     private void readFromTxtFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + Game.WORLD_SUBDIR + fileName);
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));

@@ -38,7 +38,8 @@ public class ShaderProgram {
 
     private static ShaderProgram mainShader;
     private static ShaderProgram voxelShader;
-    private static ShaderProgram waterShader;
+    private static ShaderProgram waterBaseShader;
+    private static ShaderProgram waterVoxelShader;
     private static ShaderProgram intrfaceShader;
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
@@ -56,14 +57,21 @@ public class ShaderProgram {
         voxelShaders.add(voxelVertexShader);
         voxelShaders.add(voxelFragmentShader);
         voxelShader = new ShaderProgram(voxelShaders);
-        // 3. Init water shader (water effects)
-        Shader waterVertexShader = new Shader("waterVS.glsl", Shader.VERTEX_SHADER);
-        Shader waterFragmentShader = new Shader("waterFS.glsl", Shader.FRAGMENT_SHADER);
-        List<Shader> waterShaders = new ArrayList<>();
-        waterShaders.add(waterVertexShader);
-        waterShaders.add(waterFragmentShader);
-        waterShader = new ShaderProgram(waterShaders);
-        // 4. Init interface shader (crosshair, text, menus and fonts)
+        // 3. Init base water shader (water effects)
+        Shader waterBaseVertexShader = new Shader("waterBaseVS.glsl", Shader.VERTEX_SHADER);
+        Shader waterBaseFragmentShader = new Shader("waterBaseFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> waterBaseShaders = new ArrayList<>();
+        waterBaseShaders.add(waterBaseVertexShader);
+        waterBaseShaders.add(waterBaseFragmentShader);
+        waterBaseShader = new ShaderProgram(waterBaseShaders);
+        // 4. Init voxel water shader (water effects)
+        Shader waterVoxelVertexShader = new Shader("waterVoxelVS.glsl", Shader.VERTEX_SHADER);
+        Shader waterVoxelFragmentShader = new Shader("waterVoxelFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> waterVoxelShaders = new ArrayList<>();
+        waterVoxelShaders.add(waterVoxelVertexShader);
+        waterVoxelShaders.add(waterVoxelFragmentShader);
+        waterVoxelShader = new ShaderProgram(waterBaseShaders);
+        // 5. Init interface shader (crosshair, text, menus and fonts)
         Shader intrfaceVertexShader = new Shader("intrfaceVS.glsl", Shader.VERTEX_SHADER);
         Shader intrfaceFragmentShader = new Shader("intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> intrfaceShaders = new ArrayList<>();
@@ -169,12 +177,16 @@ public class ShaderProgram {
         return voxelShader;
     }
 
-    public static ShaderProgram getWaterShader() {
-        return waterShader;
+    public static ShaderProgram getWaterBaseShader() {
+        return waterBaseShader;
     }
 
     public static ShaderProgram getIntrfaceShader() {
         return intrfaceShader;
+    }
+
+    public static ShaderProgram getWaterVoxelShader() {
+        return waterVoxelShader;
     }
 
 }

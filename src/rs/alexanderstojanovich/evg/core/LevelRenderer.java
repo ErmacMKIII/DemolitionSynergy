@@ -576,10 +576,10 @@ public class LevelRenderer {
         }
     }
 
-    public void render(Camera camera, ShaderProgram shaderProgram) { // render for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         // render skybox
-        camera.render(shaderProgram);
-        skybox.render(shaderProgram);
+        camera.render(ShaderProgram.getWaterBaseShader());
+        skybox.render(ShaderProgram.getWaterBaseShader());
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -590,17 +590,17 @@ public class LevelRenderer {
             editorNew.render(ShaderProgram.getMainShader());
         }
         // copy uniforms from main shader to voxel shader
-        ShaderProgram.getVoxelShader().bind();
-        camera.updateViewMatrix(ShaderProgram.getVoxelShader());
-        camera.updateCameraPosition(ShaderProgram.getVoxelShader());
-        camera.updateCameraFront(ShaderProgram.getVoxelShader());
+        ShaderProgram.getWaterVoxelShader().bind();
+        camera.updateViewMatrix(ShaderProgram.getWaterVoxelShader());
+        camera.updateCameraPosition(ShaderProgram.getWaterVoxelShader());
+        camera.updateCameraFront(ShaderProgram.getWaterVoxelShader());
         ShaderProgram.unbind();
 
         // render solid series     
         if (!solidSeries.isBuffered()) {
             solidSeries.bufferAll();
         }
-        solidSeries.render(ShaderProgram.getVoxelShader(), camera.getPos());
+        solidSeries.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
 
         // render fluid blocks      
         if (!fluidSeries.isBuffered()) {
@@ -609,7 +609,7 @@ public class LevelRenderer {
 
         fluidSeries.setCameraInFluid(isCameraInFluid());
         fluidSeries.prepare();
-        fluidSeries.render(ShaderProgram.getVoxelShader(), camera.getPos());
+        fluidSeries.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
         if (!solidBlocks.isBuffered()) {
             solidBlocks.bufferAll();
         }

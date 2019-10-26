@@ -23,6 +23,8 @@ import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
+import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
@@ -72,7 +74,7 @@ public class Window {
         }
         // setting the icon
         GLFWImage image = GLFWImage.malloc();
-        Image icon = new Image("ds_icon.png");
+        Image icon = new Image(Game.INTRFACE_SUBDIR, "ds_icon.png");
         image.set(icon.getWidth(), icon.getHeight(), icon.getContent());
         GLFWImage.Buffer buffer = GLFWImage.malloc(1);
         buffer.put(0, image);
