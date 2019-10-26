@@ -61,53 +61,22 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     private void init(Blocks blocks) {
         Tuple<Blocks, Integer, Integer, Texture, IntBuffer> currTuple = null;
-        Blocks currBlocks = null;
-        Texture currTexture = null;
-        IntBuffer currBuff = null;
         for (Block block : blocks.getBlockList()) {
-            int indexOfSeriesByTexture = indexOfSeries(currTexture);
-            int indexOfSeriesByIntBuff = indexOfSeries(currBuff);
+            Texture blockTexture = block.primaryTexture;
+            IntBuffer blockBuffer = createIntBuffer(block);
+            int indexOfSeriesByTexture = indexOfSeries(blockTexture);
+            int indexOfSeriesByIntBuff = indexOfSeries(blockBuffer);
 
-            if (indexOfSeriesByTexture == -1 || indexOfSeriesByIntBuff == -1) {
-                currBlocks = new Blocks();
-                currTuple = new Tuple<>(currBlocks, 0, 0, null, null);
+            if (indexOfSeriesByTexture == -1
+                    || indexOfSeriesByIntBuff == -1) {
+                currTuple = new Tuple<>(new Blocks(), 0, 0, null, null);
                 blocksSeries.add(currTuple);
             }
 
-            if (indexOfSeriesByTexture == -1) {
-                currTexture = block.primaryTexture;
-            } 
-            
             if (currTuple != null) {
-                currTuple.setD(currTexture);
-            }
-
-            if (indexOfSeriesByIntBuff == -1) {
-                List<Integer> indices = new ArrayList<>();
-                for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
-                    indices.add(4 * j);
-                    indices.add(4 * j + 1);
-                    indices.add(4 * j + 2);
-
-                    indices.add(4 * j + 2);
-                    indices.add(4 * j + 3);
-                    indices.add(4 * j);
-                }
-                // storing indices in the buffer
-                IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
-                for (Integer index : indices) {
-                    intBuff.put(index);
-                }
-                intBuff.flip();
-                currBuff = intBuff;
-            } 
-            
-            if (currTuple != null) {
-                currTuple.setE(currBuff);
-            }
-
-            if (currBlocks != null) {
-                currBlocks.getBlockList().add(block);
+                currTuple.setD(blockTexture);
+                currTuple.setE(blockBuffer);
+                currTuple.getA().getBlockList().add(block);
             }
 
         }
@@ -138,6 +107,27 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             serIndex++;
         }
         return keyIndex;
+    }
+
+    private static IntBuffer createIntBuffer(Block block) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
+            indices.add(4 * j);
+            indices.add(4 * j + 1);
+            indices.add(4 * j + 2);
+
+            indices.add(4 * j + 2);
+            indices.add(4 * j + 3);
+            indices.add(4 * j);
+        }
+        // storing indices in the buffer
+        IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+        intBuff.flip();
+        return intBuff;
     }
 
     public void bufferVectors(Blocks blocks, int seriesIndex) {
