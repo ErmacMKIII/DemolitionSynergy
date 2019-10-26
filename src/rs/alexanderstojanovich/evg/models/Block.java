@@ -421,7 +421,8 @@ public class Block extends Model {
         return verticesReversed;
     }
 
-    public int getEnabledFacesBits() {
+    // used in Blocks Series to get face represenation in bits form
+    public int getFaceBits() {
         int bits = 0;
         for (int j = 0; j <= 5; j++) {
             if (enabledFaces[j]) {
@@ -430,5 +431,34 @@ public class Block extends Model {
             }
         }
         return bits;
+    }
+
+    // make int buffer base on bits form of faces
+    public static IntBuffer createIntBuffer(int faceBits) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = 0; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+        // storing indices in the buffer
+        IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+        intBuff.flip();
+        return intBuff;
     }
 }

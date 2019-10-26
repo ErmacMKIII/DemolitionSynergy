@@ -574,77 +574,45 @@ public class LevelRenderer {
         if (!solidBlocks.isBuffered()) {
             solidBlocks.bufferAll();
         }
-//
-//        Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
-//            @Override
-//            public boolean test(Block t) {
-//                return (obsCamera.doesSee(t)
-//                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos()));
-//            }
-//        };
-//        solidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), solidBlockPredicate);
-//
-//        if (!fluidBlocks.isBuffered()) {
-//            fluidBlocks.bufferAll();
-//        }
-//
-//        Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
-//            @Override
-//            public boolean test(Block t) {
-//                return (obsCamera.doesSee(t)
-//                        && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
-//                        && t.hasFaces());
-//            }
-//        };
-//
-//        fluidBlocks.setCameraInFluid(isCameraInFluid());
-//        fluidBlocks.prepare();
-//        fluidBlocks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), fluidBlockPredicate);
-
     }
 
-    public void render(Camera camera, ShaderProgram shaderProgram) { // render for both regular level rendering and framebuffer (water renderer)
-//        camera.render(shaderProgram);
-//        skybox.render(shaderProgram);
-//
-//        Block editorNew = Editor.getSelectedNew();
-//        if (editorNew != null) {
-//            editorNew.setLight(camera.getPos());
-//            if (!editorNew.isBuffered()) {
-//                editorNew.bufferAll();
-//            }
-//            editorNew.render(shaderProgram);
-//        }
-//
-//        if (!solidBlocks.isBuffered()) {
-//            solidBlocks.bufferAll();
-//        }
-//
-//        Predicate<Block> solidBlockPredicate = new Predicate<Block>() {
-//            @Override
-//            public boolean test(Block t) {
-//                return (camera.doesSee(t)
-//                        && t.canBeSeenBy(camera.getFront(), camera.getPos()));
-//            }
-//        };
-//        solidBlocks.renderIf(shaderProgram, camera.getPos(), solidBlockPredicate);
-//
-//        if (!fluidBlocks.isBuffered()) {
-//            fluidBlocks.bufferAll();
-//        }
-//
-//        Predicate<Block> fluidBlockPredicate = new Predicate<Block>() {
-//            @Override
-//            public boolean test(Block t) {
-//                return (camera.doesSee(t)
-//                        && t.canBeSeenBy(camera.getFront(), camera.getPos())
-//                        && t.hasFaces());
-//            }
-//        };
-//
-//        fluidBlocks.setCameraInFluid(isCameraInFluid());
-//        fluidBlocks.prepare();
-//        fluidBlocks.renderIf(shaderProgram, camera.getPos(), fluidBlockPredicate);
+    public void render(Camera camera, ShaderProgram shaderProgram) { // render for both regular level rendering and framebuffer (water renderer)        
+        // render skybox
+        camera.render(shaderProgram);
+        skybox.render(shaderProgram);
+
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(camera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(ShaderProgram.getMainShader());
+        }
+        // copy uniforms from main shader to voxel shader
+        ShaderProgram.getVoxelShader().bind();
+        camera.updateViewMatrix(ShaderProgram.getVoxelShader());
+        camera.updateCameraPosition(ShaderProgram.getVoxelShader());
+        camera.updateCameraFront(ShaderProgram.getVoxelShader());
+        ShaderProgram.unbind();
+
+        // render solid series     
+        if (!solidSeries.isBuffered()) {
+            solidSeries.bufferAll();
+        }
+        solidSeries.render(ShaderProgram.getVoxelShader(), camera.getPos());
+
+        // render fluid blocks      
+        if (!fluidSeries.isBuffered()) {
+            fluidSeries.bufferAll();
+        }
+
+        fluidSeries.setCameraInFluid(isCameraInFluid());
+        fluidSeries.prepare();
+        fluidSeries.render(ShaderProgram.getVoxelShader(), camera.getPos());
+        if (!solidBlocks.isBuffered()) {
+            solidBlocks.bufferAll();
+        }
     }
 
     public Window getMyWindow() {

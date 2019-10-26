@@ -49,9 +49,9 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     private boolean buffered = false;
     // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
     // single vec4Vbo is color shared amongst the vertices of the same instance    
-    //--------------------------A--------B--------C--------D---------E---------------------------
-    //------------------------blocks-mat4Vbos-vec4Vbos--texture---intBuff------------------------
-    private final List<Tuple<Blocks, Integer, Integer, Texture, IntBuffer>> blocksSeries = new LinkedList<>();
+    //--------------------------A--------B--------C-------D--------E-----------------------------
+    //------------------------blocks-mat4Vbos-vec4Vbos-texture-faceEnBits------------------------
+    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new LinkedList<>();
 
     private boolean cameraInFluid = false;
 
@@ -60,74 +60,39 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     }
 
     private void init(Blocks blocks) {
-        Tuple<Blocks, Integer, Integer, Texture, IntBuffer> currTuple = null;
+        Tuple<Blocks, Integer, Integer, Texture, Integer> currTuple = null; // current processing tuple        
         for (Block block : blocks.getBlockList()) {
             Texture blockTexture = block.primaryTexture;
-            IntBuffer blockBuffer = createIntBuffer(block);
-            int indexOfSeriesByTexture = indexOfSeries(blockTexture);
-            int indexOfSeriesByIntBuff = indexOfSeries(blockBuffer);
+            Integer blockFaceBits = block.getFaceBits();
 
-            if (indexOfSeriesByTexture == -1
-                    || indexOfSeriesByIntBuff == -1) {
-                currTuple = new Tuple<>(new Blocks(), 0, 0, null, null);
+            int indexOfSeries = indexOfSeries(blockTexture, blockFaceBits);
+
+            if (indexOfSeries == -1) {
+                currTuple = new Tuple<>(new Blocks(), 0, 0, blockTexture, blockFaceBits);
                 blocksSeries.add(currTuple);
+            } else {
+                currTuple = blocksSeries.get(indexOfSeries);
             }
 
             if (currTuple != null) {
-                currTuple.setD(blockTexture);
-                currTuple.setE(blockBuffer);
                 currTuple.getA().getBlockList().add(block);
             }
 
         }
-        System.err.println("blockSeries size " + blocksSeries.size());
     }
 
-    private int indexOfSeries(IntBuffer keyBuffer) {
+    private int indexOfSeries(Texture keyTexture, Integer keyFaceBits) {
         int serIndex = 0;
         int keyIndex = -1;
-        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
-            if (tuple.getE() != null && tuple.getE().equals(keyBuffer)) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+            if (tuple.getD() != null && tuple.getD().equals(keyTexture)
+                    && tuple.getE() != null && tuple.getE().equals(keyFaceBits)) {
                 keyIndex = serIndex;
                 break;
             }
             serIndex++;
         }
         return keyIndex;
-    }
-
-    private int indexOfSeries(Texture keyTexture) {
-        int serIndex = 0;
-        int keyIndex = -1;
-        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
-            if (tuple.getD() != null && tuple.getD().equals(keyTexture)) {
-                keyIndex = serIndex;
-                break;
-            }
-            serIndex++;
-        }
-        return keyIndex;
-    }
-
-    private static IntBuffer createIntBuffer(Block block) {
-        // creating indices
-        List<Integer> indices = new ArrayList<>();
-        for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
-            indices.add(4 * j);
-            indices.add(4 * j + 1);
-            indices.add(4 * j + 2);
-
-            indices.add(4 * j + 2);
-            indices.add(4 * j + 3);
-            indices.add(4 * j);
-        }
-        // storing indices in the buffer
-        IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
-        for (Integer index : indices) {
-            intBuff.put(index);
-        }
-        intBuff.flip();
-        return intBuff;
     }
 
     public void bufferVectors(Blocks blocks, int seriesIndex) {
@@ -171,10 +136,10 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     public void bufferAll() {
         int seriesIndex = 0;
-        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
             Blocks blocks = tuple.getA();
             blocks.bufferVertices();
-            blocks.bufferIndices();
+//            blocks.bufferIndices();
             bufferMatrices(blocks, seriesIndex);
             bufferVectors(blocks, seriesIndex);
             seriesIndex++;
@@ -183,13 +148,13 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     }
 
     public void animate() { // call only for fluid blocks
-        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
             tuple.getA().animate();
         }
     }
 
     public void prepare() { // call only for fluid blocks before rendering        
-        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
             Blocks blocks = tuple.getA();
             blocks.setCameraInFluid(cameraInFluid);
             blocks.prepare();
@@ -210,7 +175,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
 
-            for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getA().getBigVbo());
                 GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
                 GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
@@ -248,7 +213,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
                 GL32.glDrawElementsInstancedBaseVertex(
                         GL11.GL_TRIANGLES,
-                        tuple.getE(),
+                        Block.createIntBuffer(tuple.getE()),
                         tuple.getA().getBlockList().size(),
                         tuple.getA().getVboEntries()[0]
                 );
@@ -282,7 +247,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         this.buffered = buffered;
     }
 
-    public List<Tuple<Blocks, Integer, Integer, Texture, IntBuffer>> getBlocksSeries() {
+    public List<Tuple<Blocks, Integer, Integer, Texture, Integer>> getBlocksSeries() {
         return blocksSeries;
     }
 

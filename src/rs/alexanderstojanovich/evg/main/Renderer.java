@@ -81,7 +81,7 @@ public class Renderer extends Thread {
                 if (!levelRenderer.isWorking()) {
                     levelRenderer.render();
                     if (Game.isWaterEffects()) {
-//                        waterRenderer.render();
+                        waterRenderer.render();
                     }
                 } else {
                     intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
