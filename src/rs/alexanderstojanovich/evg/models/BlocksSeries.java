@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.FrameBuffer;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
  *
@@ -42,43 +43,52 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
-    
-    private final List<Integer> mat4Vbos = new ArrayList<>(); // is for model matrix shared amongst the vertices of the same instance
-    private final List<Integer> vec4Vbos = new ArrayList<>(); // this is for color shared amongst the vertices of the same instance
-    private final List<Texture> blocksTextures = new ArrayList<>(); // this is for texture series;
-    // it has 2^6 combinations, cuz each face can be enabled or disabled
-    private final List<IntBuffer> intBuffs = new ArrayList<>();
 
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold  
     private boolean buffered = false;
-    
-    private final List<Blocks> blocksSeries = new LinkedList<>();
-    
+    // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
+    // single vec4Vbo is color shared amongst the vertices of the same instance    
+    //--------------------------A--------B--------C--------D---------E---------------------------
+    //------------------------blocks-mat4Vbos-vec4Vbos--texture---intBuff------------------------
+    private final List<Tuple<Blocks, Integer, Integer, Texture, IntBuffer>> blocksSeries = new LinkedList<>();
+
     private boolean cameraInFluid = false;
-    
+
     public BlocksSeries(Blocks blocks) {
+        init(blocks);
+    }
+
+    private void init(Blocks blocks) {
+        Tuple<Blocks, Integer, Integer, Texture, IntBuffer> currTuple = null;
+        Blocks currBlocks = null;
         Texture currTexture = null;
-        Blocks currSeries = null;
-        int currBits = -1;
+        IntBuffer currBuff = null;
         for (Block block : blocks.getBlockList()) {
-            // on texture change make new series or
-            // on faces bits change make new series                
-            int blockFacesBits = block.getEnabledFacesBits();
-            if (block.getPrimaryTexture() != currTexture
-                    || currBits != blockFacesBits) {
-                currSeries = new Blocks();
-                blocksSeries.add(currSeries);
-                currTexture = block.getPrimaryTexture();
-                currBits = blockFacesBits;
-                blocksTextures.add(currTexture);
-                
+            int indexOfSeriesByTexture = indexOfSeries(currTexture);
+            int indexOfSeriesByIntBuff = indexOfSeries(currBuff);
+
+            if (indexOfSeriesByTexture == -1 || indexOfSeriesByIntBuff == -1) {
+                currBlocks = new Blocks();
+                currTuple = new Tuple<>(currBlocks, 0, 0, null, null);
+                blocksSeries.add(currTuple);
+            }
+
+            if (indexOfSeriesByTexture == -1) {
+                currTexture = block.primaryTexture;
+            } 
+            
+            if (currTuple != null) {
+                currTuple.setD(currTexture);
+            }
+
+            if (indexOfSeriesByIntBuff == -1) {
                 List<Integer> indices = new ArrayList<>();
                 for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
                     indices.add(4 * j);
                     indices.add(4 * j + 1);
                     indices.add(4 * j + 2);
-                    
+
                     indices.add(4 * j + 2);
                     indices.add(4 * j + 3);
                     indices.add(4 * j);
@@ -89,17 +99,65 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                     intBuff.put(index);
                 }
                 intBuff.flip();
-                intBuffs.add(intBuff);
-            }
+                currBuff = intBuff;
+            } 
             
-            if (currSeries != null) {
-                currSeries.getBlockList().add(block);
+            if (currTuple != null) {
+                currTuple.setE(currBuff);
             }
-            
+
+            if (currBlocks != null) {
+                currBlocks.getBlockList().add(block);
+            }
+
         }
+        System.err.println("blockSeries size " + blocksSeries.size());
     }
-    
-    public void bufferMatrices(Blocks blocks) {
+
+    private int indexOfSeries(IntBuffer keyBuffer) {
+        int serIndex = 0;
+        int keyIndex = -1;
+        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            if (tuple.getE() != null && tuple.getE().equals(keyBuffer)) {
+                keyIndex = serIndex;
+                break;
+            }
+            serIndex++;
+        }
+        return keyIndex;
+    }
+
+    private int indexOfSeries(Texture keyTexture) {
+        int serIndex = 0;
+        int keyIndex = -1;
+        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            if (tuple.getD() != null && tuple.getD().equals(keyTexture)) {
+                keyIndex = serIndex;
+                break;
+            }
+            serIndex++;
+        }
+        return keyIndex;
+    }
+
+    public void bufferVectors(Blocks blocks, int seriesIndex) {
+        FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC4_SIZE);
+        for (Block block : blocks.getBlockList()) {
+            Vector4f color = block.getPrimaryColor();
+            vec4FloatBuff.put(color.x);
+            vec4FloatBuff.put(color.y);
+            vec4FloatBuff.put(color.z);
+            vec4FloatBuff.put(color.w);
+        }
+        vec4FloatBuff.flip();
+        int vec4Vbo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatBuff, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        blocksSeries.get(seriesIndex).setB(vec4Vbo);
+    }
+
+    public void bufferMatrices(Blocks blocks, int seriesIndex) {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * MAT4_SIZE);
         for (Block block : blocks.getBlockList()) {
             block.calcModelMatrix();
@@ -118,44 +176,31 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        mat4Vbos.add(mat4Vbo);
+        blocksSeries.get(seriesIndex).setC(mat4Vbo);
     }
-    
-    public void bufferVectors(Blocks blocks) {
-        FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC4_SIZE);
-        for (Block block : blocks.getBlockList()) {
-            Vector4f color = block.getPrimaryColor();
-            vec4FloatBuff.put(color.x);
-            vec4FloatBuff.put(color.y);
-            vec4FloatBuff.put(color.z);
-            vec4FloatBuff.put(color.w);
-        }
-        vec4FloatBuff.flip();
-        int vec4Vbo = GL15.glGenBuffers();
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatBuff, GL15.GL_STATIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        vec4Vbos.add(vec4Vbo);
-    }
-    
+
     public void bufferAll() {
-        for (Blocks blocks : blocksSeries) {
+        int seriesIndex = 0;
+        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            Blocks blocks = tuple.getA();
             blocks.bufferVertices();
             blocks.bufferIndices();
-            bufferMatrices(blocks);
-            bufferVectors(blocks);
+            bufferMatrices(blocks, seriesIndex);
+            bufferVectors(blocks, seriesIndex);
+            seriesIndex++;
         }
         buffered = true;
     }
-    
+
     public void animate() { // call only for fluid blocks
-        for (Blocks blocks : blocksSeries) {
-            blocks.animate();
+        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            tuple.getA().animate();
         }
     }
-    
-    public void prepare() { // call only for fluid blocks before rendering
-        for (Blocks blocks : blocksSeries) {
+
+    public void prepare() { // call only for fluid blocks before rendering        
+        for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+            Blocks blocks = tuple.getA();
             blocks.setCameraInFluid(cameraInFluid);
             blocks.prepare();
         }
@@ -165,7 +210,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !blocksSeries.isEmpty()) {
             Texture.enable();
-            
+
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
@@ -174,19 +219,18 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glEnableVertexAttribArray(5);
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
-            
-            int seriesIndex = 0;
-            for (Blocks blocks : blocksSeries) {
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, blocks.getBigVbo());
+
+            for (Tuple<Blocks, Integer, Integer, Texture, IntBuffer> tuple : blocksSeries) {
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getA().getBigVbo());
                 GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
                 GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
                 GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
 
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbos.get(seriesIndex));
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getB());
                 GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
                 GL33.glVertexAttribDivisor(3, 1);
-                
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbos.get(seriesIndex));
+
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getC());
                 GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
                 GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
                 GL20.glVertexAttribPointer(6, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 32); // this is for column2
@@ -196,39 +240,37 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                 GL33.glVertexAttribDivisor(5, 1);
                 GL33.glVertexAttribDivisor(6, 1);
                 GL33.glVertexAttribDivisor(7, 1);
-                
+
                 shaderProgram.bind();
-                
+
                 shaderProgram.updateUniform(lightSrc, "modelLight");
-                
-                Texture blocksTexture = blocksTextures.get(seriesIndex);
+
+                Texture blocksTexture = tuple.getD();
                 if (blocksTexture != null) {
                     blocksTexture.bind(0, shaderProgram, "modelTexture0");
                 }
-                
+
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
                 shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
                 Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                 FrameBuffer.getTexture().bind(2, shaderProgram, "modelTexture2");
-                
+
                 GL32.glDrawElementsInstancedBaseVertex(
                         GL11.GL_TRIANGLES,
-                        intBuffs.get(seriesIndex),
-                        blocks.getBlockList().size(),
-                        blocks.getVboEntries()[0]
+                        tuple.getE(),
+                        tuple.getA().getBlockList().size(),
+                        tuple.getA().getVboEntries()[0]
                 );
-                
+
                 Texture.unbind(0);
                 Texture.unbind(1);
                 Texture.unbind(2);
                 ShaderProgram.unbind();
                 GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-                
-                seriesIndex++;
             }
-            
+
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
@@ -237,37 +279,29 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glDisableVertexAttribArray(5);
             GL20.glDisableVertexAttribArray(6);
             GL20.glDisableVertexAttribArray(7);
-            
+
             Texture.disable();
         }
     }
-    
-    public List<Integer> getMat4Vbos() {
-        return mat4Vbos;
-    }
-    
-    public List<Integer> getVec4Vbos() {
-        return vec4Vbos;
-    }
-    
-    public List<Blocks> getBlocksSeries() {
-        return blocksSeries;
-    }
-    
+
     public boolean isBuffered() {
         return buffered;
     }
-    
-    public List<Texture> getBlocksTextures() {
-        return blocksTextures;
+
+    public void setBuffered(boolean buffered) {
+        this.buffered = buffered;
     }
-    
+
+    public List<Tuple<Blocks, Integer, Integer, Texture, IntBuffer>> getBlocksSeries() {
+        return blocksSeries;
+    }
+
     public boolean isCameraInFluid() {
         return cameraInFluid;
     }
-    
+
     public void setCameraInFluid(boolean cameraInFluid) {
         this.cameraInFluid = cameraInFluid;
     }
-    
+
 }

@@ -109,6 +109,16 @@ public class Texture {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Texture) {
+            Texture that = (Texture) obj;
+            return this.textureID == that.textureID;
+        } else {
+            return false;
+        }
+    }
+
     public Image getImage() {
         return image;
     }
