@@ -557,10 +557,11 @@ public class LevelRenderer {
         obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
         ShaderProgram.unbind();
 
-        // render solid series     
+        // render solid series         
         if (!solidSeries.isBuffered()) {
             solidSeries.bufferAll();
         }
+
         solidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
 
         // render fluid blocks      
@@ -587,7 +588,7 @@ public class LevelRenderer {
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
-            editorNew.render(ShaderProgram.getMainShader());
+            editorNew.render(ShaderProgram.getWaterBaseShader());
         }
         // copy uniforms from main shader to voxel shader
         ShaderProgram.getWaterVoxelShader().bind();

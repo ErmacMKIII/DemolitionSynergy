@@ -32,7 +32,7 @@ public class WaterRenderer {
     private final Window myWindow;
     private final LevelRenderer levelRenderer;
     private List<Float> waterHeights = new ArrayList<>();
-    private final FrameBuffer frameBuffer;
+    private FrameBuffer frameBuffer;
     private final Camera camera;
 //    private Quad quad;
 
@@ -52,7 +52,7 @@ public class WaterRenderer {
     private void refresh() {
         waterHeights.clear();
         if (FrameBuffer.getTexture() == null) {
-            FrameBuffer.setTexture(new Texture(512, 512));
+            frameBuffer = new FrameBuffer(myWindow);
         }
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
         for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
@@ -61,7 +61,7 @@ public class WaterRenderer {
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                     && topSolidBlock == null // it must be nothing on top of it
                     && waterHeight <= obsHeight) { // and it needs to be below the observer
-                fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer
+                fluidBlock.setTertiaryTexture(FrameBuffer.getTexture()); // it's passed to level Renderer
                 if (!waterHeights.contains(waterHeight)) {
                     waterHeights.add(waterHeight);
                 }
@@ -109,9 +109,7 @@ public class WaterRenderer {
     }
 
     public void removeEffects() {
-        for (Block block : levelRenderer.getFluidBlocks().getBlockList()) {
-            block.setTertiaryTexture(null);
-        }
+        FrameBuffer.setTexture(null);
     }
 
     public Window getMyWindow() {
@@ -134,6 +132,14 @@ public class WaterRenderer {
         return frameBuffer;
     }
 
+    public void setWaterHeights(List<Float> waterHeights) {
+        this.waterHeights = waterHeights;
+    }
+
+    public void setFrameBuffer(FrameBuffer frameBuffer) {
+        this.frameBuffer = frameBuffer;
+    }
+
     public Camera getCamera() {
         return camera;
     }
@@ -144,5 +150,5 @@ public class WaterRenderer {
 //
 //    public void setQuad(Quad quad) {
 //        this.quad = quad;
-//    }
+//    }            
 }

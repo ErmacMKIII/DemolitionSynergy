@@ -26,15 +26,15 @@ import rs.alexanderstojanovich.evg.models.Block;
  * @author Coa
  */
 public class RandomLevelGenerator {
-
+    
     private static final int MAX_FLUID_BATCH_SIZE = 100;
     private static final int MAX_SOLID_BATCH_SIZE = 10;
-
+    
     private static final int POS_MAX = Math.round(LevelRenderer.SKYBOX_WIDTH);
     private static final int POS_MIN = Math.round(-LevelRenderer.SKYBOX_WIDTH);
-
+    
     private static final Random RANDOM = new Random();
-
+    
     private static Texture randomSolidTexture() {
         int randTexture = RANDOM.nextInt(3);
         switch (randTexture) {
@@ -47,7 +47,7 @@ public class RandomLevelGenerator {
         }
         return null;
     }
-
+    
     private static Block generateRandomSolidBlock(LevelRenderer levelRenderer) {
         float posx;
         float posy;
@@ -74,7 +74,7 @@ public class RandomLevelGenerator {
         levelRenderer.getSolidBlocks().getBlockList().add(solidBlock);
         return solidBlock;
     }
-
+    
     private static Block generateRandomFluidBlock(LevelRenderer levelRenderer) {
         float posx;
         float posy;
@@ -101,7 +101,7 @@ public class RandomLevelGenerator {
         levelRenderer.getFluidBlocks().getBlockList().add(fluidBlock);
         return fluidBlock;
     }
-
+    
     private static Block generateRandomSolidBlockAdjacent(LevelRenderer levelRenderer, Block block) {
         int randFace;
         Vector3f adjPos;
@@ -143,7 +143,7 @@ public class RandomLevelGenerator {
         levelRenderer.getSolidBlocks().getBlockList().add(solidAdjBlock);
         return solidAdjBlock;
     }
-
+    
     private static Block generateRandomFluidBlockAdjacent(LevelRenderer levelRenderer, Block block) {
         int randFace;
         Vector3f adjPos;
@@ -185,12 +185,12 @@ public class RandomLevelGenerator {
         levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
         return fluidAdjBlock;
     }
-
+    
     public static void generate(LevelRenderer levelRenderer, int numberOfBlocks) {
         if (levelRenderer.getProgress() == 0) {
             int solidBlocks = 1 + RANDOM.nextInt(numberOfBlocks + 1);
             int fluidBlocks = numberOfBlocks - solidBlocks;
-
+            
             while (solidBlocks > 0 && fluidBlocks > 0) {
                 //------------------------------------------------------------------
                 int solidBatch = 1 + RANDOM.nextInt(MAX_SOLID_BATCH_SIZE);
@@ -207,16 +207,17 @@ public class RandomLevelGenerator {
                 Block fluidBlock = generateRandomFluidBlock(levelRenderer);
                 fluidBatch--;
                 fluidBlocks--;
-
+                
                 while (fluidBatch > 0) {
                     fluidBlock = generateRandomFluidBlockAdjacent(levelRenderer, fluidBlock);
                     fluidBatch--;
                     fluidBlocks--;
                 }
+                RANDOM.setSeed(System.currentTimeMillis());
                 // this provides external monitoring of level generation progress
                 levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
             }
         }
     }
-
+    
 }

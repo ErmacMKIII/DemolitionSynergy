@@ -75,7 +75,6 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             if (currTuple != null) {
                 currTuple.getA().getBlockList().add(block);
             }
-
         }
     }
 
@@ -174,54 +173,61 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glEnableVertexAttribArray(7);
 
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getA().getBigVbo());
-                GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
-                GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
-                GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
+                // if tuple has any blocks to be rendered and
+                // if face bits are greater than zero, i.e. tuple has something to be rendered
+                if (!tuple.getA().getBlockList().isEmpty() && tuple.getE() > 0) {
+                    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getA().getBigVbo());
+                    GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
+                    GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
+                    GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
 
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getB());
-                GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
-                GL33.glVertexAttribDivisor(3, 1);
+                    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getB());
+                    GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
+                    GL33.glVertexAttribDivisor(3, 1);
 
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getC());
-                GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
-                GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
-                GL20.glVertexAttribPointer(6, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 32); // this is for column2
-                GL20.glVertexAttribPointer(7, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 48); // this is for column3                       
+                    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getC());
+                    GL20.glVertexAttribPointer(4, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 0); // this is for column0
+                    GL20.glVertexAttribPointer(5, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 16); // this is for column1
+                    GL20.glVertexAttribPointer(6, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 32); // this is for column2
+                    GL20.glVertexAttribPointer(7, 4, GL11.GL_FLOAT, false, MAT4_SIZE * 4, 48); // this is for column3                       
 
-                GL33.glVertexAttribDivisor(4, 1);
-                GL33.glVertexAttribDivisor(5, 1);
-                GL33.glVertexAttribDivisor(6, 1);
-                GL33.glVertexAttribDivisor(7, 1);
+                    GL33.glVertexAttribDivisor(4, 1);
+                    GL33.glVertexAttribDivisor(5, 1);
+                    GL33.glVertexAttribDivisor(6, 1);
+                    GL33.glVertexAttribDivisor(7, 1);
 
-                shaderProgram.bind();
+                    shaderProgram.bind();
 
-                shaderProgram.updateUniform(lightSrc, "modelLight");
+                    shaderProgram.updateUniform(lightSrc, "modelLight");
 
-                Texture blocksTexture = tuple.getD();
-                if (blocksTexture != null) {
-                    blocksTexture.bind(0, shaderProgram, "modelTexture0");
+                    Texture blocksTexture = tuple.getD();
+                    if (blocksTexture != null) {
+                        blocksTexture.bind(0, shaderProgram, "modelTexture0");
+                    }
+
+                    shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
+                    shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
+                    Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
+                    shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
+                    Texture frameBuffTexture = FrameBuffer.getTexture();
+                    if (frameBuffTexture != null) {
+                        frameBuffTexture.bind(2, shaderProgram, "modelTexture2");
+                    }
+
+                    GL32.glDrawElementsInstancedBaseVertex(
+                            GL11.GL_TRIANGLES,
+                            Block.createIntBuffer(tuple.getE()),
+                            tuple.getA().getBlockList().size(),
+                            tuple.getA().getVboEntries()[0]
+                    );
+
+                    Texture.unbind(0);
+                    Texture.unbind(1);
+                    Texture.unbind(2);
+                    ShaderProgram.unbind();
+                    GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
                 }
-
-                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
-                shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
-                Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
-                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
-                FrameBuffer.getTexture().bind(2, shaderProgram, "modelTexture2");
-
-                GL32.glDrawElementsInstancedBaseVertex(
-                        GL11.GL_TRIANGLES,
-                        Block.createIntBuffer(tuple.getE()),
-                        tuple.getA().getBlockList().size(),
-                        tuple.getA().getVboEntries()[0]
-                );
-
-                Texture.unbind(0);
-                Texture.unbind(1);
-                Texture.unbind(2);
-                ShaderProgram.unbind();
-                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             }
 
             GL20.glDisableVertexAttribArray(0);
