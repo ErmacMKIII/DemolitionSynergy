@@ -54,9 +54,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posx = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
         } while (levelRenderer.isPlaceOccupiedBySolid(randPos)
                 || levelRenderer.isPlaceOccupiedByFluid(randPos)
@@ -78,9 +78,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posx = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+            posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
         } while (levelRenderer.isPlaceOccupiedBySolid(randPos)
                 || levelRenderer.isPlaceOccupiedByFluid(randPos)

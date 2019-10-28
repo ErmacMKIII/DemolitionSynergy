@@ -38,6 +38,9 @@ public class Editor {
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
 
+    // for making linear interpolation between front and position, so it depends from both to some extent
+    public static final float ALPHA = (float) Math.sqrt(0.5f);
+
     public static void selectNew(LevelRenderer levelRenderer) {
         deselect();
         if (loaded == null) // first time it's null
@@ -51,18 +54,12 @@ public class Editor {
         Critter obs = levelRenderer.getObserver();
         Vector3f pos = obs.getCamera().getPos();
         Vector3f front = obs.getCamera().getFront();
-        // initial calculation
-        selectedNew.getPos().x = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.x)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().y = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.y)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().z = (Math.round(LevelRenderer.SKYBOX_WIDTH * front.z)) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-
-        Vector3f temp = new Vector3f();
-        selectedNew.setPos(selectedNew.getPos().div(Math.round(LevelRenderer.SKYBOX_WIDTH / 4.0f), temp));
-
-        // make it follows player camera
-        selectedNew.getPos().x += Math.round(pos.x) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().y += Math.round(pos.y) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
-        selectedNew.getPos().z += Math.round(pos.z) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
+        final float skyboxWidth = LevelRenderer.SKYBOX_WIDTH;
+        // initial calculation (make it dependant to point player looking at)
+        // and make it follows player camera
+        selectedNew.getPos().x = Math.round((1.0f - ALPHA) * skyboxWidth * front.x + ALPHA * pos.x) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().y = Math.round((1.0f - ALPHA) * skyboxWidth * front.y + ALPHA * pos.y) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().z = Math.round((1.0f - ALPHA) * skyboxWidth * front.z + ALPHA * pos.z) % Math.round(2.0f * skyboxWidth);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;
