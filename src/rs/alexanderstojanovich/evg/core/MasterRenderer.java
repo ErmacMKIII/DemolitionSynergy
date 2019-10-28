@@ -30,8 +30,6 @@ public class MasterRenderer {
     private static GLCapabilities glCaps;
     private final Window myWindow;
 
-    private ShaderProgram mainShader;
-
     public MasterRenderer(Window window) {
         this.myWindow = window;
         initGL(); // load GL context into this thread  -> important!
@@ -68,10 +66,6 @@ public class MasterRenderer {
 
     public Window getMyWindow() {
         return myWindow;
-    }
-
-    public ShaderProgram getMainShader() {
-        return mainShader;
     }
 
 }

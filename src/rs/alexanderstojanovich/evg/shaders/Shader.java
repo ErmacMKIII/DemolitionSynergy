@@ -41,8 +41,6 @@ public class Shader {
     public static int VERTEX_SHADER = GL20.GL_VERTEX_SHADER;
     public static int FRAGMENT_SHADER = GL20.GL_FRAGMENT_SHADER;
 
-    public static final String EFFECTS_DIR = "/effects/";
-
     // we'll need filename and type of shader (vertex or fragment)
     public Shader(String filename, int type) {
         this.type = type;
@@ -57,7 +55,7 @@ public class Shader {
 
     private String readFromFile(String fileName) {
         StringBuilder text = new StringBuilder();
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + EFFECTS_DIR + fileName);
+        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + Game.EFFECTS_SUBDIR + fileName);
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));
