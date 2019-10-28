@@ -206,7 +206,12 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                     }
 
                     shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
-                    shaderProgram.updateUniform(Editor.getSelectedCurrIndex(), "selectedIndex");
+
+                    Block selected = Editor.getSelectedCurr();
+                    int selectedIndex = tuple.getA().getBlockList().indexOf(selected);
+
+                    shaderProgram.updateUniform(selectedIndex, "selectedIndex");
+
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
                     shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                     Texture frameBuffTexture = FrameBuffer.getTexture();

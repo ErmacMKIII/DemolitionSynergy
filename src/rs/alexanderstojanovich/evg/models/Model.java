@@ -613,4 +613,21 @@ public class Model implements Comparable<Model> {
         return buffered;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Model) {
+            Model that = (Model) obj;
+            return (this.vertices.equals(that.vertices)
+                    && this.indices.equals(that.indices)
+                    && this.pos.equals(that.pos)
+                    && this.primaryTexture.equals(that.primaryTexture)
+                    && this.primaryColor.equals(that.primaryColor)
+                    && this.width == that.width
+                    && this.height == that.height
+                    && this.depth == that.depth);
+        } else {
+            return false;
+        }
+    }
+
 }

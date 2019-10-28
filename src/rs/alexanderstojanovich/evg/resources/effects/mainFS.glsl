@@ -20,7 +20,7 @@ uniform vec3 cameraFront;
 
 float attenuation(vec3 lightSrc, vec3 target){
     float distance = length(lightSrc - target);
-    float attenuation = 1.0 / (pow(distance, 2) - 4.0 * distance + 4.0);        
+    float attenuation = 1.0 / (pow(distance, 2.0) - 4.0 * distance + 4.0);        
     attenuation = clamp(attenuation, 0.0, 1.0);
     return attenuation;
 }
@@ -38,7 +38,7 @@ float specularLight(vec3 lightSrc, vec3 target, vec3 normal){
 }
 
 vec2 reflUV() {
-    vec2 ndc = (glPosOut.xy/glPosOut.w) / 2.0 + 0.5;
+    vec2 ndc = (glPosOut.xy / glPosOut.w) / 2.0 + 0.5;
     return vec2(ndc.x, -ndc.y);
 }
 
