@@ -78,7 +78,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         }
     }
 
-    private int indexOfSeries(Texture keyTexture, Integer keyFaceBits) {
+    public int indexOfSeries(Texture keyTexture, Integer keyFaceBits) {
         int serIndex = 0;
         int keyIndex = -1;
         for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
@@ -136,7 +136,6 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
             Blocks blocks = tuple.getA();
             blocks.bufferVertices();
-//            blocks.bufferIndices();
             bufferMatrices(blocks, seriesIndex);
             bufferVectors(blocks, seriesIndex);
             seriesIndex++;

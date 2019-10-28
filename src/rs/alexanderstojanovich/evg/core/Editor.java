@@ -18,6 +18,8 @@ package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Blocks;
+import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
  *
@@ -38,9 +40,6 @@ public class Editor {
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
 
-    // for making linear interpolation between front and position, so it depends from both to some extent
-    public static final float ALPHA = (float) Math.sqrt(0.5f);
-
     public static void selectNew(LevelRenderer levelRenderer) {
         deselect();
         if (loaded == null) // first time it's null
@@ -56,10 +55,10 @@ public class Editor {
         Vector3f front = obs.getCamera().getFront();
         final float skyboxWidth = LevelRenderer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
-        // and make it follows player camera
-        selectedNew.getPos().x = Math.round((1.0f - ALPHA) * skyboxWidth * front.x + ALPHA * pos.x) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().y = Math.round((1.0f - ALPHA) * skyboxWidth * front.y + ALPHA * pos.y) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().z = Math.round((1.0f - ALPHA) * skyboxWidth * front.z + ALPHA * pos.z) % Math.round(2.0f * skyboxWidth);
+        // and make it follows player camera        
+        selectedNew.getPos().x = (Math.round(skyboxWidth * front.x / 4.0f) + Math.round(pos.x)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().y = (Math.round(skyboxWidth * front.y / 4.0f) + Math.round(pos.y)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().z = (Math.round(skyboxWidth * front.z / 4.0f) + Math.round(pos.z)) % Math.round(2.0f * skyboxWidth);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;
@@ -227,15 +226,45 @@ public class Editor {
         if (selectedNew != null) {
             if (!cannotPlace(levelRenderer) && !levelRenderer.getObserver().getCamera().intersects(selectedNew)) {
                 selectedNew.setSecondaryTexture(null);
-                if (selectedNew.isPassable()) {
-                    levelRenderer.getFluidBlocks().getBlockList().add(selectedNew);
+                if (selectedNew.isPassable()) { // if block is solid
+                    levelRenderer.getFluidBlocks().getBlockList().add(selectedNew); // add the block to the fluid blocks
                     levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
-                } else {
+                    //----------------------------------------------------------
+                    int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
+                            selectedNew.getPrimaryTexture(),
+                            selectedNew.getFaceBits()
+                    );
+                    if (indexOfSeries == -1) { // make new tuple and add the block
+                        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = new Tuple<>(
+                                new Blocks(), 0, 0, selectedNew.getPrimaryTexture(), selectedNew.getFaceBits()
+                        );
+                        tuple.getA().getBlockList().add(selectedNew);
+                        levelRenderer.getFluidSeries().getBlocksSeries().add(tuple);
+                    } else { // add the block to the existing tuple
+                        levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
+                    }
+                    levelRenderer.getFluidSeries().setBuffered(false);
+                } else { // else if block is fluid
+                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks                   
                     levelRenderer.updateSolidNeighbors();
                     levelRenderer.updateSolidToFluidNeighbors();
-                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew);
+                    //----------------------------------------------------------
+                    int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
+                            selectedNew.getPrimaryTexture(),
+                            selectedNew.getFaceBits()
+                    );
+                    if (indexOfSeries == -1) { // make new tuple and add the block
+                        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = new Tuple<>(
+                                new Blocks(), 0, 0, selectedNew.getPrimaryTexture(), selectedNew.getFaceBits()
+                        );
+                        tuple.getA().getBlockList().add(selectedNew);
+                        levelRenderer.getSolidSeries().getBlocksSeries().add(tuple);
+                    } else { // add the block to the existing tuple
+                        levelRenderer.getSolidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
+                    }
+                    levelRenderer.getSolidSeries().setBuffered(false);
                 }
                 loaded = new Block(false);
                 selectLoadedTexture();
@@ -259,8 +288,34 @@ public class Editor {
             if (selectedCurr.isPassable()) {
                 levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
                 levelRenderer.updateFluids();
+                //--------------------------------------------------------------
+//                int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
+//                        selectedCurr.getPrimaryTexture(),
+//                        selectedCurr.getFaceBits()
+//                );
+//                if (indexOfSeries == -1) { // find the tuple and remove the block
+//                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries);
+//                    tuple.getA().getBlockList().remove(selectedCurr);
+//                    if (tuple.getA().getBlockList().isEmpty()) {
+//                        levelRenderer.getFluidSeries().getBlocksSeries().remove(tuple);
+//                    }
+//                }
+                levelRenderer.getFluidSeries().setBuffered(false);
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
+                //--------------------------------------------------------------
+                int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
+                        selectedCurr.getPrimaryTexture(),
+                        selectedCurr.getFaceBits()
+                );
+                if (indexOfSeries != -1) { // find the tuple and remove the block
+                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getSolidSeries().getBlocksSeries().get(indexOfSeries);
+                    tuple.getA().getBlockList().remove(selectedCurr);
+                    if (tuple.getA().getBlockList().isEmpty()) {
+                        levelRenderer.getSolidSeries().getBlocksSeries().remove(tuple);
+                    }
+                }
+                levelRenderer.getSolidSeries().setBuffered(false);
             }
         }
         deselect();

@@ -135,11 +135,11 @@ public class LevelRenderer {
         fluidBlocks.setBuffered(false);
 
         observer.setGivenControl(true);
-        progress = 100;
 
         solidSeries = new BlocksSeries(solidBlocks);
         fluidSeries = new BlocksSeries(fluidBlocks);
 
+        progress = 100;
         working = false;
         return success;
     }
@@ -650,6 +650,14 @@ public class LevelRenderer {
 
     public boolean isWorking() {
         return working;
+    }
+
+    public BlocksSeries getSolidSeries() {
+        return solidSeries;
+    }
+
+    public BlocksSeries getFluidSeries() {
+        return fluidSeries;
     }
 
 }
