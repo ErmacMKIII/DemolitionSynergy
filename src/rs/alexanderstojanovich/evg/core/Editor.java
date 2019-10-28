@@ -289,17 +289,17 @@ public class Editor {
                 levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
                 levelRenderer.updateFluids();
                 //--------------------------------------------------------------
-//                int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
-//                        selectedCurr.getPrimaryTexture(),
-//                        selectedCurr.getFaceBits()
-//                );
-//                if (indexOfSeries == -1) { // find the tuple and remove the block
-//                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries);
-//                    tuple.getA().getBlockList().remove(selectedCurr);
-//                    if (tuple.getA().getBlockList().isEmpty()) {
-//                        levelRenderer.getFluidSeries().getBlocksSeries().remove(tuple);
-//                    }
-//                }
+                int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
+                        selectedCurr.getPrimaryTexture(),
+                        selectedCurr.getFaceBits()
+                );
+                if (indexOfSeries != -1) { // find the tuple and remove the block
+                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries);
+                    tuple.getA().getBlockList().remove(selectedCurr);
+                    if (tuple.getA().getBlockList().isEmpty()) {
+                        levelRenderer.getFluidSeries().getBlocksSeries().remove(tuple);
+                    }
+                }
                 levelRenderer.getFluidSeries().setBuffered(false);
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);

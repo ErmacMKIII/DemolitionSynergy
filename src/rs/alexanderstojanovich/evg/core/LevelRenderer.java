@@ -102,7 +102,7 @@ public class LevelRenderer {
 
                 solidBlocks.getBlockList().add(entity);
 
-                progress += Math.round(100.0f / 9.0f);
+                progress += Math.round(80.0f / 9.0f);
             }
         }
 
@@ -110,7 +110,9 @@ public class LevelRenderer {
         fluidBlocks.setBuffered(false);
 
         solidSeries = new BlocksSeries(solidBlocks);
+        progress += Math.round(0.1f * solidSeries.getProgress());
         fluidSeries = new BlocksSeries(fluidBlocks);
+        progress += Math.round(0.1f * fluidSeries.getProgress());
 
         progress = 100;
         working = false;
@@ -137,7 +139,9 @@ public class LevelRenderer {
         observer.setGivenControl(true);
 
         solidSeries = new BlocksSeries(solidBlocks);
+        progress += Math.round(0.1f * solidSeries.getProgress());
         fluidSeries = new BlocksSeries(fluidBlocks);
+        progress += Math.round(0.1f * fluidSeries.getProgress());
 
         progress = 100;
         working = false;
@@ -353,13 +357,15 @@ public class LevelRenderer {
                         updateAll();
                         updateFluids();
                         solidSeries = new BlocksSeries(solidBlocks);
+                        progress += Math.round(0.1f * solidSeries.getProgress());
                         fluidSeries = new BlocksSeries(fluidBlocks);
-                        progress += 10;
+                        progress += Math.round(0.1f * fluidSeries.getProgress());
                         success = true;
                     }
                 }
             }
         }
+        progress = 100;
         working = false;
         return success;
     }

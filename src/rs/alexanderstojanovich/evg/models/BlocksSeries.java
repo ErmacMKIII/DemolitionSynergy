@@ -53,11 +53,15 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     private boolean cameraInFluid = false;
 
+    // is initialization progress
+    private int progress = 0;
+
     public BlocksSeries(Blocks blocks) {
         init(blocks);
     }
 
     private void init(Blocks blocks) {
+        progress = 0;
         Tuple<Blocks, Integer, Integer, Texture, Integer> currTuple = null; // current processing tuple        
         for (Block block : blocks.getBlockList()) {
             Texture blockTexture = block.primaryTexture;
@@ -75,7 +79,10 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             if (currTuple != null) {
                 currTuple.getA().getBlockList().add(block);
             }
+
+            progress += Math.round(1.0f / blocks.getBlockList().size());
         }
+        progress = 100;
     }
 
     public int indexOfSeries(Texture keyTexture, Integer keyFaceBits) {
@@ -265,6 +272,10 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     public void setCameraInFluid(boolean cameraInFluid) {
         this.cameraInFluid = cameraInFluid;
+    }
+
+    public int getProgress() {
+        return progress;
     }
 
 }
