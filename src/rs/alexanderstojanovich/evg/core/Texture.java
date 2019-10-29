@@ -76,9 +76,11 @@ public class Texture {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
     }
 
-    public void bind() {
+    public void bind(ShaderProgram shaderProgram, String textureUniformName) {
         GL13.glActiveTexture(GL13.GL_TEXTURE0);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
+        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), textureUniformName);
+        GL20.glUniform1i(uniformLocation, 0);
     }
 
     public void bind(int textureUnitNum, ShaderProgram shaderProgram, String textureUniformName) {

@@ -24,6 +24,7 @@ import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -134,6 +135,7 @@ public class Intrface {
                                     GL.setCapabilities(MasterRenderer.getGlCaps());
                                     success = myWindow.setResolution(width, height);
                                     myWindow.centerTheWindow();
+                                    PerspectiveRenderer.updatePerspective(myWindow);
                                     GL.setCapabilities(null);
                                     Window.unloadContext();
                                 }
@@ -253,6 +255,7 @@ public class Intrface {
                         myWindow.loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
+                        PerspectiveRenderer.updatePerspective(myWindow);
                         GL.setCapabilities(null);
                         Window.unloadContext();
                     }

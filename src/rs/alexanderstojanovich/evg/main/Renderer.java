@@ -53,7 +53,6 @@ public class Renderer extends Thread {
         levelRenderer = new LevelRenderer(myWindow);
         waterRenderer = new WaterRenderer(myWindow, levelRenderer);
         intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getMainShader());
     }
 
     @Override
@@ -78,6 +77,7 @@ public class Renderer extends Thread {
                 GL.setCapabilities(MasterRenderer.getGlCaps());
 
                 masterRenderer.render();
+
                 if (!levelRenderer.isWorking()) {
                     levelRenderer.render();
                     if (Game.isWaterEffects()) {

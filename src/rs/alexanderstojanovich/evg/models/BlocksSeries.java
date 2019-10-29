@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL33;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.FrameBuffer;
 import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
@@ -219,10 +220,9 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                     shaderProgram.updateUniform(selectedIndex, "selectedIndex");
 
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
-                    shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
-                    Texture frameBuffTexture = FrameBuffer.getTexture();
-                    if (frameBuffTexture != null) {
-                        frameBuffTexture.bind(2, shaderProgram, "modelTexture2");
+
+                    if (Game.isWaterEffects()) {
+                        shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                     }
 
                     GL32.glDrawElementsInstancedBaseVertex(
@@ -233,8 +233,8 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                     );
 
                     Texture.unbind(0);
-                    Texture.unbind(1);
-                    Texture.unbind(2);
+//                    Texture.unbind(1);
+//                    Texture.unbind(2);
                     ShaderProgram.unbind();
                     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);

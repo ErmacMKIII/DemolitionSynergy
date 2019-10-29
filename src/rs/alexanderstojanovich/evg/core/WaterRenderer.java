@@ -32,8 +32,8 @@ public class WaterRenderer {
 
     private final Window myWindow;
     private final LevelRenderer levelRenderer;
-    private List<Float> waterHeights = new ArrayList<>();
-    private FrameBuffer frameBuffer;
+    private final List<Float> waterHeights = new ArrayList<>();
+    private final FrameBuffer frameBuffer;
     private final Camera camera;
     private Quad quad;
 
@@ -41,10 +41,8 @@ public class WaterRenderer {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterBaseShader());
-        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterVoxelShader());
         this.camera = new Camera();
-        this.quad = new Quad(myWindow, 400, 300, FrameBuffer.getTexture());
+        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
         this.quad.setScale(0.25f);
         this.quad.getPos().x = -0.85f * 0.95f;
         this.quad.getPos().y = -0.7f;
@@ -52,10 +50,6 @@ public class WaterRenderer {
     }
 
     private void refresh() {
-        waterHeights.clear();
-        if (FrameBuffer.getTexture() == null) {
-            frameBuffer = new FrameBuffer(myWindow);
-        }
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
         for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
             float waterHeight = fluidBlock.giveSurfacePos();
@@ -63,11 +57,12 @@ public class WaterRenderer {
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                     && topSolidBlock == null // it must be nothing on top of it
                     && waterHeight <= obsHeight) { // and it needs to be below the observer
-                fluidBlock.setTertiaryTexture(FrameBuffer.getTexture()); // it's passed to level Renderer
+                fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer
                 if (!waterHeights.contains(waterHeight)) {
                     waterHeights.add(waterHeight);
                 }
             } else {
+                waterHeights.remove(waterHeight);
                 fluidBlock.setTertiaryTexture(null);
             }
         }
@@ -111,7 +106,7 @@ public class WaterRenderer {
     }
 
     public void removeEffects() {
-        FrameBuffer.setTexture(null);
+        prepare();
     }
 
     public Window getMyWindow() {
@@ -126,20 +121,8 @@ public class WaterRenderer {
         return waterHeights;
     }
 
-    public void setWaterHeights(ArrayList<Float> waterHeights) {
-        this.waterHeights = waterHeights;
-    }
-
     public FrameBuffer getFrameBuffer() {
         return frameBuffer;
-    }
-
-    public void setWaterHeights(List<Float> waterHeights) {
-        this.waterHeights = waterHeights;
-    }
-
-    public void setFrameBuffer(FrameBuffer frameBuffer) {
-        this.frameBuffer = frameBuffer;
     }
 
     public Camera getCamera() {

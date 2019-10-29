@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.core;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -26,16 +27,17 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * @author Coa
  */
 public class MasterRenderer {
-
+    
     private static GLCapabilities glCaps;
     private final Window myWindow;
-
+    
     public MasterRenderer(Window window) {
         this.myWindow = window;
         initGL(); // load GL context into this thread  -> important!
-        ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one
+        ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
+        PerspectiveRenderer.updatePerspective(myWindow);
     }
-
+    
     private void initGL() {
         // load context
         myWindow.loadContext();
@@ -43,29 +45,32 @@ public class MasterRenderer {
         myWindow.disableVSync();
         // create openGL context        
         glCaps = GL.createCapabilities();
-
+        
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
-
+        
+        GL11.glEnable(GL11.GL_DEPTH_RANGE);
+        GL11.glDepthRange(Game.EPSILON, 1.0f / Game.EPSILON);
+        
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-
+        
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
-
+        
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black
     }
-
+    
     public void render() {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
-
+    
     public static GLCapabilities getGlCaps() {
         return glCaps;
     }
-
+    
     public Window getMyWindow() {
         return myWindow;
     }
-
+    
 }

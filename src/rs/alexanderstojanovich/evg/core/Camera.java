@@ -95,25 +95,21 @@ public class Camera { // is 3D looking camera
     }
 
     public void moveForward(float amount) {
-        updateCameraVectors();
         Vector3f temp = new Vector3f();
         pos = pos.add(front.mul(amount, temp), temp);
     }
 
     public void moveBackward(float amount) {
-        updateCameraVectors();
         Vector3f temp = new Vector3f();
         pos = pos.sub(front.mul(amount, temp), temp);
     }
 
     public void moveLeft(float amount) {
-        updateCameraVectors();
         Vector3f temp = new Vector3f();
         pos = pos.sub(right.mul(amount, temp), temp);
     }
 
     public void moveRight(float amount) {
-        updateCameraVectors();
         Vector3f temp = new Vector3f();
         pos = pos.add(right.mul(amount, temp), temp);
     }
@@ -142,7 +138,6 @@ public class Camera { // is 3D looking camera
         front.x = (float) (Math.cos(yaw) * Math.cos(pitch));
         front.y = (float) Math.sin(pitch);
         front.z = (float) (-Math.sin(yaw) * Math.cos(pitch));
-        updateCameraVectors();
     }
 
     public void lookAt(float yaw, float pitch) {
@@ -151,7 +146,6 @@ public class Camera { // is 3D looking camera
         front.x = (float) (Math.cos(this.yaw) * Math.cos(this.pitch));
         front.y = (float) Math.sin(this.pitch);
         front.z = (float) (-Math.sin(this.yaw) * Math.cos(this.pitch));
-        updateCameraVectors();
     }
 
     public void render(ShaderProgram shaderProgram) {

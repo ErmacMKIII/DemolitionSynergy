@@ -28,12 +28,11 @@ public class FrameBuffer {
 
     private final Window myWindow;
     private static int fbo;
-    private static Texture texture;
+    private final Texture texture = new Texture(512, 512);
 
     public FrameBuffer(Window window) {
         this.myWindow = window;
         createFrameBuffer();
-        FrameBuffer.texture = new Texture(512, 512);
         createDepthBuffer();
         configureFrameBuffer();
     }
@@ -48,7 +47,7 @@ public class FrameBuffer {
         // the depth buffer
         int depthRenderBuffer = GL30.glGenRenderbuffers();
         GL30.glBindRenderbuffer(GL30.GL_RENDERBUFFER, depthRenderBuffer);
-        GL30.glRenderbufferStorage(GL30.GL_RENDERBUFFER, GL11.GL_DEPTH_COMPONENT, texture.getImage().getWidth(), texture.getImage().getHeight());
+        GL30.glRenderbufferStorage(GL30.GL_RENDERBUFFER, GL30.GL_DEPTH_COMPONENT24, texture.getImage().getWidth(), texture.getImage().getHeight());
         GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_RENDERBUFFER, depthRenderBuffer);
     }
 
@@ -79,12 +78,8 @@ public class FrameBuffer {
         return fbo;
     }
 
-    public static Texture getTexture() {
+    public Texture getTexture() {
         return texture;
-    }
-
-    public static void setTexture(Texture texture) {
-        FrameBuffer.texture = texture;
     }
 
 }
