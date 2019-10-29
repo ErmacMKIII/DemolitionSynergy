@@ -52,7 +52,7 @@ public class FrameBuffer {
         GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_RENDERBUFFER, depthRenderBuffer);
     }
 
-    public void configureFrameBuffer() {
+    private void configureFrameBuffer() {
         // set "renderedTexture" as our colour attachement #0
         GL32.glFramebufferTexture(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, texture.getTextureID(), 0);
         // unbinding

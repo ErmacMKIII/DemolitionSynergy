@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -34,19 +35,20 @@ public class WaterRenderer {
     private List<Float> waterHeights = new ArrayList<>();
     private FrameBuffer frameBuffer;
     private final Camera camera;
-//    private Quad quad;
+    private Quad quad;
 
     public WaterRenderer(Window window, LevelRenderer levelRenderer) {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
         PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterBaseShader());
+        PerspectiveRenderer.updatePerspective(myWindow.getWidth(), myWindow.getHeight(), ShaderProgram.getWaterVoxelShader());
         this.camera = new Camera();
-//        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
-//        this.quad.setScale(0.25f);
-//        this.quad.getPos().x = -0.85f * 0.95f;
-//        this.quad.getPos().y = -0.7f;
-//        quad.setEnabled(true);
+        this.quad = new Quad(myWindow, 400, 300, FrameBuffer.getTexture());
+        this.quad.setScale(0.25f);
+        this.quad.getPos().x = -0.85f * 0.95f;
+        this.quad.getPos().y = -0.7f;
+        quad.setEnabled(true);
     }
 
     private void refresh() {
@@ -99,13 +101,13 @@ public class WaterRenderer {
 
     public void render() {
         refresh();
-        float minHeight = Float.NEGATIVE_INFINITY;
         for (float height : waterHeights) {
-            if (minHeight < height) {
-                minHeight = height;
-            }
+            capture(height);
         }
-        capture(minHeight);
+        if (!quad.isBuffered()) {
+            quad.buffer();
+        }
+        quad.render();
     }
 
     public void removeEffects() {
@@ -144,11 +146,11 @@ public class WaterRenderer {
         return camera;
     }
 
-//    public Quad getQuad() {
-//        return quad;
-//    }
-//
-//    public void setQuad(Quad quad) {
-//        this.quad = quad;
-//    }            
+    public Quad getQuad() {
+        return quad;
+    }
+
+    public void setQuad(Quad quad) {
+        this.quad = quad;
+    }
 }
