@@ -91,6 +91,7 @@ public class Game {
         myWindow = new Window(width, height, title);
         renderer = new Renderer(myWindow, objMutex);
         gameTime = new GameTime(myWindow, objMutex, objUps, renderer.getObjFps());
+        renderer.setGameTime(gameTime); // it has to be this way
         keys = new boolean[1024];
         initCallbacks();
         GL.setCapabilities(null);
@@ -351,14 +352,15 @@ public class Game {
         ups = 0;
 
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized (objUps) {
-                try {
-                    objUps.wait();
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
+            if (gameTime.getUpsDelta() < 1.0) { // if it exhausted all the ticks put the thread to sleep           
+                synchronized (objUps) {
+                    try {
+                        objUps.wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
-
             GLFW.glfwPollEvents();
             observerDo();
             editorDo();
@@ -368,7 +370,6 @@ public class Game {
                 ups = 0;
                 timer0 += 1000;
             }
-
         }
         try {
             gameTime.join(); // waits for gameTime to finish life

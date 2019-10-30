@@ -22,11 +22,9 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -44,6 +42,8 @@ public class Renderer extends Thread {
     private final Object objMutex; // got from the Game    
 
     private boolean assertCollision = false;
+
+    private GameTime gameTime; // this has to be set externally
 
     public Renderer(Window myWindow, Object objMutex) {
         super("Renderer");
@@ -64,14 +64,15 @@ public class Renderer extends Thread {
 
         int fps = 0;
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            synchronized (objFps) {
-                try {
-                    objFps.wait();
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
+            if (gameTime != null && gameTime.getFpsDelta() < 1.0) {
+                synchronized (objFps) {
+                    try {
+                        objFps.wait();
+                    } catch (InterruptedException ex) {
+                        Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
-
             synchronized (objMutex) {
                 myWindow.loadContext();
                 GL.setCapabilities(MasterRenderer.getGlCaps());
@@ -180,6 +181,14 @@ public class Renderer extends Thread {
 
     public void setAssertCollision(boolean assertCollision) {
         this.assertCollision = assertCollision;
+    }
+
+    public GameTime getGameTime() {
+        return gameTime;
+    }
+
+    public void setGameTime(GameTime gameTime) {
+        this.gameTime = gameTime;
     }
 
 }
