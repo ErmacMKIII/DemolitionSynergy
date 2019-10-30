@@ -180,7 +180,6 @@ public class Intrface {
                                     Game.setWaterEffects(true);
                                 } else {
                                     Game.setWaterEffects(false);
-                                    waterRenderer.removeEffects();
                                 }
                                 success = true;
                             }
@@ -305,7 +304,6 @@ public class Intrface {
                     switch (getOptions()[4].giveCurrent().toString()) {
                         case "OFF":
                             Game.setWaterEffects(false);
-                            waterRenderer.removeEffects();
                             break;
                         case "ON":
                             Game.setWaterEffects(true);

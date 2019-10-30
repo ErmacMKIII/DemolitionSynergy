@@ -28,7 +28,6 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import rs.alexanderstojanovich.evg.core.Editor;
-import rs.alexanderstojanovich.evg.core.FrameBuffer;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -56,6 +55,8 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     // is initialization progress
     private int progress = 0;
+
+    private Texture waterTexture;
 
     public BlocksSeries(Blocks blocks) {
         init(blocks);
@@ -221,8 +222,9 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
 
-                    if (Game.isWaterEffects()) {
+                    if (waterTexture != null && Game.isWaterEffects()) {
                         shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
+                        waterTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
                     GL32.glDrawElementsInstancedBaseVertex(
@@ -233,8 +235,9 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                     );
 
                     Texture.unbind(0);
-//                    Texture.unbind(1);
-//                    Texture.unbind(2);
+                    Texture.unbind(1);
+                    Texture.unbind(2);
+
                     ShaderProgram.unbind();
                     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -276,6 +279,14 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
 
     public int getProgress() {
         return progress;
+    }
+
+    public Texture getWaterTexture() {
+        return waterTexture;
+    }
+
+    public void setWaterTexture(Texture waterTexture) {
+        this.waterTexture = waterTexture;
     }
 
 }

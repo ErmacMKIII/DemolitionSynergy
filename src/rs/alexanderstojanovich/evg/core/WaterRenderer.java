@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.intrface.Quad;
@@ -35,18 +36,12 @@ public class WaterRenderer {
     private final List<Float> waterHeights = new ArrayList<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
-    private Quad quad;
 
     public WaterRenderer(Window window, LevelRenderer levelRenderer) {
         this.myWindow = window;
         this.levelRenderer = levelRenderer;
         this.frameBuffer = new FrameBuffer(myWindow);
         this.camera = new Camera();
-        this.quad = new Quad(myWindow, 400, 300, frameBuffer.getTexture());
-        this.quad.setScale(0.25f);
-        this.quad.getPos().x = -0.85f * 0.95f;
-        this.quad.getPos().y = -0.7f;
-        quad.setEnabled(true);
     }
 
     private void refresh() {
@@ -57,7 +52,8 @@ public class WaterRenderer {
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                     && topSolidBlock == null // it must be nothing on top of it
                     && waterHeight <= obsHeight) { // and it needs to be below the observer
-                fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer
+                fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
+                levelRenderer.getFluidSeries().setWaterTexture(frameBuffer.getTexture());
                 if (!waterHeights.contains(waterHeight)) {
                     waterHeights.add(waterHeight);
                 }
@@ -84,29 +80,23 @@ public class WaterRenderer {
     }
 
     private void capture(float waterHeight) {
-        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
-        frameBuffer.bind();
-        prepare();
         updateCamera(waterHeight);
         levelRenderer.render(camera);
-        frameBuffer.unbind();
-        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     public void render() {
+        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
+        frameBuffer.bind();
+
+        prepare();
         refresh();
         for (float height : waterHeights) {
             capture(height);
         }
-        if (!quad.isBuffered()) {
-            quad.buffer();
-        }
-        quad.render();
-    }
 
-    public void removeEffects() {
-        prepare();
+        frameBuffer.unbind();
+        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     public Window getMyWindow() {
@@ -129,11 +119,4 @@ public class WaterRenderer {
         return camera;
     }
 
-    public Quad getQuad() {
-        return quad;
-    }
-
-    public void setQuad(Quad quad) {
-        this.quad = quad;
-    }
 }
