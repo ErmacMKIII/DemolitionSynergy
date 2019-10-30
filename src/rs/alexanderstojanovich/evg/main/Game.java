@@ -81,6 +81,8 @@ public class Game {
 
     private static boolean waterEffects = true;
 
+    private static double upsTicks = 0.0;
+
     public Game(int width, int height, String title, int upsCap, int fpsMax) {
         lastX = width / 2.0f;
         lastY = height / 2.0f;
@@ -349,7 +351,6 @@ public class Game {
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double diff;
-        double upsTicks = 0.0;
 
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
             currTime = GLFW.glfwGetTime();
@@ -426,6 +427,10 @@ public class Game {
 
     public static void setWaterEffects(boolean waterEffects) {
         Game.waterEffects = waterEffects;
+    }
+
+    public static double getUpsTicks() {
+        return upsTicks;
     }
 
 }

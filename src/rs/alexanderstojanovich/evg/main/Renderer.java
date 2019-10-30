@@ -40,6 +40,8 @@ public class Renderer extends Thread {
 
     private boolean assertCollision = false;
 
+    private static double fpsTicks = 0.0;
+
     public Renderer(Window myWindow, Object objMutex) {
         super("Renderer");
         this.myWindow = myWindow;
@@ -62,7 +64,6 @@ public class Renderer extends Thread {
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double diff;
-        double fpsTicks = 0.0;
 
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
             synchronized (objMutex) {
@@ -74,7 +75,7 @@ public class Renderer extends Thread {
                 fpsTicks += diff * Game.getFpsMax();
                 lastTime = currTime;
 
-                if (fpsTicks >= 1.0) {
+                if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) {
                     masterRenderer.render();
 
                     if (!levelRenderer.isWorking()) {
@@ -177,6 +178,14 @@ public class Renderer extends Thread {
 
     public void setAssertCollision(boolean assertCollision) {
         this.assertCollision = assertCollision;
+    }
+
+    public static double getFpsTicks() {
+        return fpsTicks;
+    }
+
+    public static void setFpsTicks(double fpsTicks) {
+        Renderer.fpsTicks = fpsTicks;
     }
 
 }

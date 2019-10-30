@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.Renderer;
 
 /**
  *
@@ -121,6 +122,7 @@ public class Intrface {
                                 int num = Integer.parseInt(things[1]);
                                 if (num > 0) {
                                     Game.setFpsMax(num);
+                                    Renderer.setFpsTicks(0.0);
                                     success = true;
                                 }
                             }
@@ -246,6 +248,7 @@ public class Intrface {
             protected void execute() {
                 if (getOptions()[0].giveCurrent() != null) {
                     Game.setFpsMax((int) getOptions()[0].giveCurrent());
+                    Renderer.setFpsTicks(0.0);
                 }
                 //--------------------------------------------------------------
                 if (getOptions()[1].giveCurrent() != null) {
