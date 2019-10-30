@@ -51,7 +51,6 @@ public class Game {
     private static int fpsMax; // fps max or fps cap 
 
     private final Window myWindow;
-    private final GameTime gameTime;
     private final Renderer renderer;
 
     private boolean[] keys = new boolean[1024];
@@ -79,7 +78,6 @@ public class Game {
     public static final String EFFECTS_SUBDIR = "effects/";
 
     private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
-    private final Object objUps = new Object();
 
     private static boolean waterEffects = true;
 
@@ -90,8 +88,6 @@ public class Game {
         Game.fpsMax = fpsMax;
         myWindow = new Window(width, height, title);
         renderer = new Renderer(myWindow, objMutex);
-        gameTime = new GameTime(myWindow, objMutex, objUps, renderer.getObjFps());
-        renderer.setGameTime(gameTime); // it has to be this way
         keys = new boolean[1024];
         initCallbacks();
         GL.setCapabilities(null);
@@ -344,35 +340,39 @@ public class Game {
     }
 
     public void go() {
-        gameTime.start(); // start the game time 
         renderer.start(); // start the renderer
 
         long timer0 = System.currentTimeMillis();
 
         ups = 0;
 
+        double lastTime = GLFW.glfwGetTime();
+        double currTime;
+        double diff;
+        double upsTicks = 0.0;
+
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            if (gameTime.getUpsDelta() < 1.0) { // if it exhausted all the ticks put the thread to sleep           
-                synchronized (objUps) {
-                    try {
-                        objUps.wait();
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
+            currTime = GLFW.glfwGetTime();
+            diff = currTime - lastTime;
+            upsTicks += diff * upsCap;
+            lastTime = currTime;
+
+            while (upsTicks >= 1.0) {
+                GLFW.glfwPollEvents();
+                observerDo();
+                editorDo();
+                ups++;
+                upsTicks--;
             }
-            GLFW.glfwPollEvents();
-            observerDo();
-            editorDo();
-            ups++;
 
             if (System.currentTimeMillis() > timer0 + 1000) {
                 ups = 0;
                 timer0 += 1000;
             }
+
         }
+
         try {
-            gameTime.join(); // waits for gameTime to finish life
             renderer.join(); // waits for the renderer to finish life
         } catch (InterruptedException ex) {
             Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
@@ -410,10 +410,6 @@ public class Game {
 
     public Object getObjMutex() {
         return objMutex;
-    }
-
-    public Object getObjUps() {
-        return objUps;
     }
 
     public static float getMouseSensitivity() {

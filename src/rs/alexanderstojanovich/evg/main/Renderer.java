@@ -16,8 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
@@ -38,12 +36,9 @@ public class Renderer extends Thread {
     private final WaterRenderer waterRenderer;
     private final Intrface intrface;
 
-    private final Object objFps = new Object();
     private final Object objMutex; // got from the Game    
 
     private boolean assertCollision = false;
-
-    private GameTime gameTime; // this has to be set externally
 
     public Renderer(Window myWindow, Object objMutex) {
         super("Renderer");
@@ -63,40 +58,45 @@ public class Renderer extends Thread {
         long timer2 = System.currentTimeMillis();
 
         int fps = 0;
+
+        double lastTime = GLFW.glfwGetTime();
+        double currTime;
+        double diff;
+        double fpsTicks = 0.0;
+
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
-            if (gameTime != null && gameTime.getFpsDelta() < 1.0) {
-                synchronized (objFps) {
-                    try {
-                        objFps.wait();
-                    } catch (InterruptedException ex) {
-                        Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
             synchronized (objMutex) {
                 myWindow.loadContext();
                 GL.setCapabilities(MasterRenderer.getGlCaps());
 
-                masterRenderer.render();
+                currTime = GLFW.glfwGetTime();
+                diff = currTime - lastTime;
+                fpsTicks += diff * Game.getFpsMax();
+                lastTime = currTime;
 
-                if (!levelRenderer.isWorking()) {
-                    levelRenderer.render();
-                    if (Game.isWaterEffects()) {
-                        waterRenderer.render();
+                if (fpsTicks >= 1.0) {
+                    masterRenderer.render();
+
+                    if (!levelRenderer.isWorking()) {
+                        levelRenderer.render();
+                        if (Game.isWaterEffects()) {
+                            waterRenderer.render();
+                        }
+                    } else {
+                        intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
+                        if (!intrface.getProgText().isBuffered()) {
+                            intrface.getProgText().buffer();
+                        }
+                        intrface.getProgText().render();
                     }
-                } else {
-                    intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
-                    if (!intrface.getProgText().isBuffered()) {
-                        intrface.getProgText().buffer();
-                    }
-                    intrface.getProgText().render();
+
+                    intrface.setCollText(assertCollision);
+
+                    intrface.render();
+                    myWindow.render();
+                    fps++;
+                    fpsTicks--;
                 }
-
-                intrface.setCollText(assertCollision);
-
-                intrface.render();
-                myWindow.render();
-                fps++;
 
                 if (System.currentTimeMillis() > timer0 + 1000) {
                     intrface.getInfoText().getQuad().getColor().x = 0.0f;
@@ -167,10 +167,6 @@ public class Renderer extends Thread {
         return intrface;
     }
 
-    public Object getObjFps() {
-        return objFps;
-    }
-
     public Object getObjMutex() {
         return objMutex;
     }
@@ -181,14 +177,6 @@ public class Renderer extends Thread {
 
     public void setAssertCollision(boolean assertCollision) {
         this.assertCollision = assertCollision;
-    }
-
-    public GameTime getGameTime() {
-        return gameTime;
-    }
-
-    public void setGameTime(GameTime gameTime) {
-        this.gameTime = gameTime;
     }
 
 }
