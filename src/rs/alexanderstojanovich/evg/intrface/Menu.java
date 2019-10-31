@@ -233,10 +233,6 @@ public abstract class Menu {
         return myWindow;
     }
 
-    public void setMyWindow(Window myWindow) {
-        this.myWindow = myWindow;
-    }
-
     public Quad getLogo() {
         return logo;
     }

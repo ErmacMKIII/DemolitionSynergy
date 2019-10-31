@@ -54,8 +54,8 @@ public class LevelRenderer {
     private final byte[] buffer = new byte[0x100000];
     private int pos = 0;
 
-    public static final float SKYBOX_SCALE = Math.round(1.0f / Game.EPSILON);
-    public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f));
+    public static final float SKYBOX_SCALE = Math.round(337.5f / Game.EPSILON); // default 3375000.0
+    public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f)); // default 150.0
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
@@ -75,7 +75,8 @@ public class LevelRenderer {
         observer.setGivenControl(true);
     }
 
-    public void startNewLevel() {
+    public boolean startNewLevel() {
+        boolean success = false;
         working = true;
         progress = 0;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
@@ -115,9 +116,11 @@ public class LevelRenderer {
 
         progress = 100;
         working = false;
+        success = true;
+        return success;
     }
 
-    public boolean generateRandomLevel(Integer numberOfBlocks) {
+    public boolean generateRandomLevel(int numberOfBlocks) {
         working = true;
         boolean success = false;
         progress = 0;

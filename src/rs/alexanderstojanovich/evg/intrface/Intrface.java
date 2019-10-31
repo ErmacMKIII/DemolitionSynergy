@@ -464,8 +464,8 @@ public class Intrface {
         return editorMenu;
     }
 
-    public LevelRenderer getLevelRenderer() {
-        return levelRenderer;
+    public static String getFONT_IMG() {
+        return FONT_IMG;
     }
 
     public void setShowHelp(boolean showHelp) {

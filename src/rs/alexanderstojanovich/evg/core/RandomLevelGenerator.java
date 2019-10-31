@@ -16,9 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.util.Random;
+import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.models.Block;
 
 /**
@@ -27,13 +28,13 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class RandomLevelGenerator {
 
-    private static final int MAX_FLUID_BATCH_SIZE = 100;
-    private static final int MAX_SOLID_BATCH_SIZE = 10;
+    private static int maxFluidBatchSize = 100;
+    private static int maxSolidBatchSize = 10;
 
     private static final int POS_MAX = Math.round(LevelRenderer.SKYBOX_WIDTH);
     private static final int POS_MIN = Math.round(-LevelRenderer.SKYBOX_WIDTH);
 
-    private static final Random RANDOM = new Random();
+    private static final Random RANDOM = new Random(0x123456789L);
 
     private static Texture randomSolidTexture() {
         int randTexture = RANDOM.nextInt(3);
@@ -185,40 +186,53 @@ public class RandomLevelGenerator {
             int solidBlocks = 1 + RANDOM.nextInt(numberOfBlocks + 1);
             int fluidBlocks = numberOfBlocks - solidBlocks;
 
-            while (solidBlocks > 0 && fluidBlocks > 0) {
+            float alpha = RANDOM.nextFloat();
+
+            maxSolidBatchSize = (int) ((1.0f - alpha) * solidBlocks);
+            maxFluidBatchSize = (int) (alpha * fluidBlocks);
+
+            while ((solidBlocks > 0 || fluidBlocks > 0)
+                    && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
                 //------------------------------------------------------------------
-                int solidBatch = 1 + RANDOM.nextInt(MAX_SOLID_BATCH_SIZE);
-                Block solidBlock = generateRandomSolidBlock(levelRenderer);
-                solidBatch--;
-                solidBlocks--;
-                while (solidBatch > 0) {
-                    if (solidBlock.getAdjacentBlockMap().size() < 6) {
-                        solidBlock = generateRandomSolidBlockAdjacent(levelRenderer, solidBlock);
-                    } else {
-                        solidBlock = generateRandomSolidBlock(levelRenderer);
-                    }
+                if (solidBlocks > 0) {
+                    int solidBatch = 1 + RANDOM.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
+                    Block solidBlock = generateRandomSolidBlock(levelRenderer);
                     solidBatch--;
                     solidBlocks--;
-                    // this provides external monitoring of level generation progress
-                    levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
+                    while (solidBatch > 0
+                            && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                        if (solidBlock.getAdjacentBlockMap().size() < 6) {
+                            solidBlock = generateRandomSolidBlockAdjacent(levelRenderer, solidBlock);
+                        } else {
+                            solidBlock = generateRandomSolidBlock(levelRenderer);
+                        }
+                        solidBatch--;
+                        solidBlocks--;
+                        levelRenderer.updateSolidNeighbors();
+                        levelRenderer.updateSolidToFluidNeighbors();
+                    }
                 }
                 //------------------------------------------------------------------
-                int fluidBatch = 1 + RANDOM.nextInt(MAX_FLUID_BATCH_SIZE);
-                Block fluidBlock = generateRandomFluidBlock(levelRenderer);
-                fluidBatch--;
-                fluidBlocks--;
-
-                while (fluidBatch > 0) {
-                    if (fluidBlock.getAdjacentBlockMap().size() < 6) {
-                        fluidBlock = generateRandomFluidBlockAdjacent(levelRenderer, fluidBlock);
-                    } else {
-                        fluidBlock = generateRandomFluidBlock(levelRenderer);
-                    }
+                if (fluidBlocks > 0) {
+                    int fluidBatch = 1 + RANDOM.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
+                    Block fluidBlock = generateRandomFluidBlock(levelRenderer);
                     fluidBatch--;
                     fluidBlocks--;
-                    // this provides external monitoring of level generation progress
-                    levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
+
+                    while (fluidBatch > 0
+                            && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                        if (fluidBlock.getAdjacentBlockMap().size() < 6) {
+                            fluidBlock = generateRandomFluidBlockAdjacent(levelRenderer, fluidBlock);
+                        } else {
+                            fluidBlock = generateRandomFluidBlock(levelRenderer);
+                        }
+                        fluidBatch--;
+                        fluidBlocks--;
+                        levelRenderer.updateFluidNeighbors();
+                        levelRenderer.updateFluidToSolidNeighbors();
+                    }
                 }
+                //------------------------------------------------------------------
                 // this provides external monitoring of level generation progress
                 levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
             }

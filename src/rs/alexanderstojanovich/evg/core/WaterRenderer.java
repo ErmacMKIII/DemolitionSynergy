@@ -18,10 +18,8 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -91,10 +89,14 @@ public class WaterRenderer {
 
         prepare();
         refresh();
-        for (float height : waterHeights) {
-            capture(height);
-        }
 
+        float maxHeight = Float.NEGATIVE_INFINITY;
+        for (float height : waterHeights) {
+            if (height > maxHeight) {
+                maxHeight = height;
+            }
+        }
+        capture(maxHeight);
         frameBuffer.unbind();
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }

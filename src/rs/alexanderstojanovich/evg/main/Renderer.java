@@ -75,7 +75,7 @@ public class Renderer extends Thread {
                 fpsTicks += diff * Game.getFpsMax();
                 lastTime = currTime;
 
-                if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) {
+                if (fpsTicks >= 1.0) {
                     masterRenderer.render();
 
                     if (!levelRenderer.isWorking()) {

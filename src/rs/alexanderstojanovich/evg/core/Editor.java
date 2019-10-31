@@ -56,9 +56,9 @@ public class Editor {
         final float skyboxWidth = LevelRenderer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
         // and make it follows player camera        
-        selectedNew.getPos().x = (Math.round(skyboxWidth * front.x / 4.0f) + Math.round(pos.x)) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().y = (Math.round(skyboxWidth * front.y / 4.0f) + Math.round(pos.y)) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().z = (Math.round(skyboxWidth * front.z / 4.0f) + Math.round(pos.z)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().x = (Math.round(8.0f * front.x) + Math.round(pos.x)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(2.0f * skyboxWidth);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;

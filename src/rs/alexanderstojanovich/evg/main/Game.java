@@ -342,7 +342,8 @@ public class Game {
     }
 
     public void go() {
-        renderer.start(); // start the renderer
+        // start the renderer
+        renderer.start();
 
         long timer0 = System.currentTimeMillis();
 
@@ -374,7 +375,7 @@ public class Game {
         }
 
         try {
-            renderer.join(); // waits for the renderer to finish life
+            renderer.join(); // waits for the renderer to finish life         
         } catch (InterruptedException ex) {
             Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
         }
