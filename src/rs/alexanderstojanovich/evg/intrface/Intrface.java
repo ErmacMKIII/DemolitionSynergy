@@ -50,7 +50,7 @@ public class Intrface {
     private Dialog commandDialog;
     private Dialog saveDialog;
     private Dialog loadDialog;
-    private Dialog randLvlDialog;
+    private ConcurrentDialog randLvlDialog;
 
     private Menu mainMenu;
     private OptionsMenu optionsMenu;
@@ -219,7 +219,7 @@ public class Intrface {
             }
         };
 
-        randLvlDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();

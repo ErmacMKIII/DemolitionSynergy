@@ -28,15 +28,28 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class RandomLevelGenerator {
 
-    private static int maxFluidBatchSize = 100;
-    private static int maxSolidBatchSize = 10;
+    private int maxFluidBatchSize = 0;
+    private int maxSolidBatchSize = 0;
 
-    private static final int POS_MAX = Math.round(LevelRenderer.SKYBOX_WIDTH);
-    private static final int POS_MIN = Math.round(-LevelRenderer.SKYBOX_WIDTH);
+    private final int POS_MAX = Math.round(LevelRenderer.SKYBOX_WIDTH);
+    private final int POS_MIN = Math.round(-LevelRenderer.SKYBOX_WIDTH);
 
-    private static final Random RANDOM = new Random(0x123456789L);
+    private final Random RANDOM = new Random(0x123456789L);
 
-    private static Texture randomSolidTexture() {
+    private final LevelRenderer levelRenderer;
+
+    private int numberOfBlocks = 0;
+
+    public RandomLevelGenerator(LevelRenderer levelRenderer) {
+        this.levelRenderer = levelRenderer;
+    }
+
+    public RandomLevelGenerator(LevelRenderer levelRenderer, int numberOfBlocks) {
+        this.levelRenderer = levelRenderer;
+        this.numberOfBlocks = numberOfBlocks;
+    }
+
+    private Texture randomSolidTexture() {
         int randTexture = RANDOM.nextInt(3);
         switch (randTexture) {
             case 0:
@@ -49,7 +62,7 @@ public class RandomLevelGenerator {
         return null;
     }
 
-    private static Block generateRandomSolidBlock(LevelRenderer levelRenderer) {
+    private Block generateRandomSolidBlock() {
         float posx;
         float posy;
         float posz;
@@ -73,7 +86,7 @@ public class RandomLevelGenerator {
         return solidBlock;
     }
 
-    private static Block generateRandomFluidBlock(LevelRenderer levelRenderer) {
+    private Block generateRandomFluidBlock() {
         float posx;
         float posy;
         float posz;
@@ -97,7 +110,7 @@ public class RandomLevelGenerator {
         return fluidBlock;
     }
 
-    private static Block generateRandomSolidBlockAdjacent(LevelRenderer levelRenderer, Block block) {
+    private Block generateRandomSolidBlockAdjacent(Block block) {
         int randFace;
         Vector3f adjPos;
         do {
@@ -139,7 +152,7 @@ public class RandomLevelGenerator {
         return solidAdjBlock;
     }
 
-    private static Block generateRandomFluidBlockAdjacent(LevelRenderer levelRenderer, Block block) {
+    private Block generateRandomFluidBlockAdjacent(Block block) {
         int randFace;
         Vector3f adjPos;
         do {
@@ -181,10 +194,12 @@ public class RandomLevelGenerator {
         return fluidAdjBlock;
     }
 
-    public static void generate(LevelRenderer levelRenderer, int numberOfBlocks) {
+    public void generate() {
         if (levelRenderer.getProgress() == 0) {
             int solidBlocks = 1 + RANDOM.nextInt(numberOfBlocks + 1);
             int fluidBlocks = numberOfBlocks - solidBlocks;
+
+            final int totalAmount = solidBlocks + fluidBlocks;
 
             float alpha = RANDOM.nextFloat();
 
@@ -196,15 +211,15 @@ public class RandomLevelGenerator {
                 //------------------------------------------------------------------
                 if (solidBlocks > 0) {
                     int solidBatch = 1 + RANDOM.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
-                    Block solidBlock = generateRandomSolidBlock(levelRenderer);
+                    Block solidBlock = generateRandomSolidBlock();
                     solidBatch--;
                     solidBlocks--;
                     while (solidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
                         if (solidBlock.getAdjacentBlockMap().size() < 6) {
-                            solidBlock = generateRandomSolidBlockAdjacent(levelRenderer, solidBlock);
+                            solidBlock = generateRandomSolidBlockAdjacent(solidBlock);
                         } else {
-                            solidBlock = generateRandomSolidBlock(levelRenderer);
+                            solidBlock = generateRandomSolidBlock();
                         }
                         solidBatch--;
                         solidBlocks--;
@@ -215,16 +230,16 @@ public class RandomLevelGenerator {
                 //------------------------------------------------------------------
                 if (fluidBlocks > 0) {
                     int fluidBatch = 1 + RANDOM.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
-                    Block fluidBlock = generateRandomFluidBlock(levelRenderer);
+                    Block fluidBlock = generateRandomFluidBlock();
                     fluidBatch--;
                     fluidBlocks--;
 
                     while (fluidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
                         if (fluidBlock.getAdjacentBlockMap().size() < 6) {
-                            fluidBlock = generateRandomFluidBlockAdjacent(levelRenderer, fluidBlock);
+                            fluidBlock = generateRandomFluidBlockAdjacent(fluidBlock);
                         } else {
-                            fluidBlock = generateRandomFluidBlock(levelRenderer);
+                            fluidBlock = generateRandomFluidBlock();
                         }
                         fluidBatch--;
                         fluidBlocks--;
@@ -234,9 +249,30 @@ public class RandomLevelGenerator {
                 }
                 //------------------------------------------------------------------
                 // this provides external monitoring of level generation progress
-                levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (numberOfBlocks)));
+                levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (totalAmount)));
             }
+
         }
+    }
+
+    public LevelRenderer getLevelRenderer() {
+        return levelRenderer;
+    }
+
+    public int getMaxFluidBatchSize() {
+        return maxFluidBatchSize;
+    }
+
+    public int getMaxSolidBatchSize() {
+        return maxSolidBatchSize;
+    }
+
+    public int getNumberOfBlocks() {
+        return numberOfBlocks;
+    }
+
+    public void setNumberOfBlocks(int numberOfBlocks) {
+        this.numberOfBlocks = numberOfBlocks;
     }
 
 }

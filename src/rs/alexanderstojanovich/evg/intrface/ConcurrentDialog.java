@@ -16,40 +16,36 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.joml.Vector2f;
-import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
  * @author Coa
  */
-public abstract class Dialog {
-    
-    protected final Window myWindow;
-    protected final DynamicText dialog;
-    protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
-    protected boolean enabled;
-    protected boolean done;
-    
-    public Dialog(Window window, Texture texture, Vector2f pos) {
-        this.myWindow = window;
-        this.dialog = new DynamicText(myWindow, texture, "");
-        this.dialog.getQuad().setPos(pos);
-        this.enabled = false;
-        this.done = false;
-    }
-    
-    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog        
+public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread
 
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+    public ConcurrentDialog(Window window, Texture texture, Vector2f pos) {
+        super(window, texture, pos);
+    }
+
+    @Override
+    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog     
+
+    @Override
     public void open(String question, String success, String fail) {
         if (input.length() == 0) {
             enabled = true;
-            done = false;            
+            done = false;
             dialog.setContent(question + "_");
             dialog.getQuad().getColor().x = 1.0f;
             dialog.getQuad().getColor().y = 1.0f;
@@ -79,24 +75,31 @@ public abstract class Dialog {
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         if (!input.toString().equals("")) {
-                            boolean execStatus = execute(input.toString());
-                            if (execStatus) {
-                                dialog.setContent(success);
-                                dialog.getQuad().getColor().x = 0.0f;
-                                dialog.getQuad().getColor().y = 1.0f;
-                                dialog.getQuad().getColor().z = 0.0f;
-                            } else {
-                                dialog.setContent(fail);
-                                dialog.getQuad().getColor().x = 1.0f;
-                                dialog.getQuad().getColor().y = 0.0f;
-                                dialog.getQuad().getColor().z = 0.0f;
-                            }
+                            Runnable command = new Runnable() {
+                                @Override
+                                public void run() {
+                                    boolean ok = execute(input.toString());
+                                    if (ok) {
+                                        dialog.setContent(success);
+                                        dialog.getQuad().getColor().x = 0.0f;
+                                        dialog.getQuad().getColor().y = 1.0f;
+                                        dialog.getQuad().getColor().z = 0.0f;
+                                    } else {
+                                        dialog.setContent(fail);
+                                        dialog.getQuad().getColor().x = 1.0f;
+                                        dialog.getQuad().getColor().y = 0.0f;
+                                        dialog.getQuad().getColor().z = 0.0f;
+                                    }
+                                    input.setLength(0);
+                                    done = true;
+                                }
+                            };
+                            executorService.execute(command);
                         } else {
                             dialog.setContent("");
                             enabled = false;
+                            done = true;
                         }
-                        input.setLength(0);
-                        done = true;
                         // pls use getter for done and setter for enabled outside
                         // using timer to determine when to stop showing dialog 
                         // to set enabled to false
@@ -113,42 +116,9 @@ public abstract class Dialog {
             });
         }
     }
-    
-    public void render() {
-        if (enabled) {
-            if (!dialog.isBuffered()) {
-                dialog.buffer();
-            }
-            dialog.render();
-        }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
     }
-    
-    public Window getMyWindow() {
-        return myWindow;
-    }
-    
-    public DynamicText getDialog() {
-        return dialog;
-    }
-    
-    public StringBuilder getInput() {
-        return input;
-    }    
-    
-    public boolean isEnabled() {
-        return enabled;
-    }
-    
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-    
-    public boolean isDone() {
-        return done;
-    }
-    
-    public void setDone(boolean done) {
-        this.done = done;
-    }
-    
+
 }

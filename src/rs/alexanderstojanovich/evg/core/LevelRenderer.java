@@ -64,8 +64,11 @@ public class LevelRenderer {
 
     private boolean working = false;
 
+    private final RandomLevelGenerator randomLevelGenerator;
+
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
+        this.randomLevelGenerator = new RandomLevelGenerator(this);
         // setting skybox
         skybox = new Block(true, Texture.NIGHT);
         skybox.setUVsForSkybox();
@@ -76,6 +79,9 @@ public class LevelRenderer {
     }
 
     public boolean startNewLevel() {
+        if (working || progress > 0) {
+            return false;
+        }
         boolean success = false;
         working = true;
         progress = 0;
@@ -121,6 +127,9 @@ public class LevelRenderer {
     }
 
     public boolean generateRandomLevel(int numberOfBlocks) {
+        if (working || progress > 0) {
+            return false;
+        }
         working = true;
         boolean success = false;
         progress = 0;
@@ -130,8 +139,8 @@ public class LevelRenderer {
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
-            RandomLevelGenerator.generate(this, numberOfBlocks);
-            updateAll();
+            randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
+            randomLevelGenerator.generate();
             updateFluids();
             success = true;
         }
@@ -373,6 +382,9 @@ public class LevelRenderer {
     }
 
     public boolean saveLevelToFile(String filename) {
+        if (working || progress > 0) {
+            return false;
+        }
         boolean success = false;
         if (!filename.endsWith(".dat")) {
             filename += ".dat";
@@ -403,6 +415,9 @@ public class LevelRenderer {
     }
 
     public boolean loadLevelFromFile(String filename) {
+        if (working || progress > 0) {
+            return false;
+        }
         boolean success = false;
         if (filename.isEmpty()) {
             return false;
@@ -666,6 +681,10 @@ public class LevelRenderer {
 
     public BlocksSeries getFluidSeries() {
         return fluidSeries;
+    }
+
+    public RandomLevelGenerator getRandomLevelGenerator() {
+        return randomLevelGenerator;
     }
 
 }
