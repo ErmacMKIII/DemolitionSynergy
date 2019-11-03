@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -40,7 +40,7 @@ public class DynamicText extends Text {
 
     private int bigVbo; // vbo containing all the quads (characters)
     private int[] vboEntries;
-    private final List<Pair<Float, Float>> pairList = new LinkedList<>(); // pairs xinc, ydec
+    private final List<Pair<Float, Float>> pairList = new ArrayList<>(); // pairs xinc, ydec
     private static final Vector2f[] VERTICES = new Vector2f[4]; //            
     private static final int[] INDICES = {0, 1, 2, 3};
     private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);

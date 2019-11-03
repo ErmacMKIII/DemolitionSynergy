@@ -17,7 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -42,14 +42,12 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
 
-    // array with offsets in the big float buffer
-    // this is maximum amount of blocks of the type game can hold  
     private boolean buffered = false;
     // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-mat4Vbos-vec4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new LinkedList<>();
+    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new ArrayList<>();
 
     private boolean cameraInFluid = false;
 

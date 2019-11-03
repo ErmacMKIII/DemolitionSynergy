@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
@@ -37,7 +37,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new LinkedList<>();
+    private final List<Block> blockList = new ArrayList<>();
     private int bigVbo;
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;

@@ -29,13 +29,13 @@ import rs.alexanderstojanovich.evg.core.Texture;
  * @author Coa
  */
 public abstract class Dialog {
-    
+
     protected final Window myWindow;
     protected final DynamicText dialog;
     protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
     protected boolean enabled;
     protected boolean done;
-    
+
     public Dialog(Window window, Texture texture, Vector2f pos) {
         this.myWindow = window;
         this.dialog = new DynamicText(myWindow, texture, "");
@@ -43,13 +43,13 @@ public abstract class Dialog {
         this.enabled = false;
         this.done = false;
     }
-    
+
     protected abstract boolean execute(String command); // we need to override this upon creation of the dialog        
 
     public void open(String question, String success, String fail) {
         if (input.length() == 0) {
             enabled = true;
-            done = false;            
+            done = false;
             dialog.setContent(question + "_");
             dialog.getQuad().getColor().x = 1.0f;
             dialog.getQuad().getColor().y = 1.0f;
@@ -113,7 +113,7 @@ public abstract class Dialog {
             });
         }
     }
-    
+
     public void render() {
         if (enabled) {
             if (!dialog.isBuffered()) {
@@ -122,33 +122,33 @@ public abstract class Dialog {
             dialog.render();
         }
     }
-    
+
     public Window getMyWindow() {
         return myWindow;
     }
-    
+
     public DynamicText getDialog() {
         return dialog;
     }
-    
+
     public StringBuilder getInput() {
         return input;
-    }    
-    
+    }
+
     public boolean isEnabled() {
         return enabled;
     }
-    
+
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    
+
     public boolean isDone() {
         return done;
     }
-    
+
     public void setDone(boolean done) {
         this.done = done;
     }
-    
+
 }
