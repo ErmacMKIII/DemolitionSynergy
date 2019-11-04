@@ -28,9 +28,6 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class RandomLevelGenerator {
 
-    private int maxFluidBatchSize = 0;
-    private int maxSolidBatchSize = 0;
-
     private final int POS_MAX = Math.round(LevelRenderer.SKYBOX_WIDTH);
     private final int POS_MIN = Math.round(-LevelRenderer.SKYBOX_WIDTH);
 
@@ -111,10 +108,11 @@ public class RandomLevelGenerator {
     }
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
+        int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
         int randFace;
         Vector3f adjPos;
         do {
-            randFace = RANDOM.nextInt(6);
+            randFace = possibleFaces[RANDOM.nextInt(possibleFaces.length)];
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
@@ -148,19 +146,20 @@ public class RandomLevelGenerator {
         Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 1.0f);
         Texture adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
-        
+
         block.getAdjacentBlockMap().put(randFace, solidAdjBlock);
         solidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block);
-        
+
         levelRenderer.getSolidBlocks().getBlockList().add(solidAdjBlock);
         return solidAdjBlock;
     }
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
+        int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
         int randFace;
         Vector3f adjPos;
         do {
-            randFace = RANDOM.nextInt(6);
+            randFace = possibleFaces[RANDOM.nextInt(possibleFaces.length)];
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
@@ -196,7 +195,7 @@ public class RandomLevelGenerator {
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
         block.getAdjacentBlockMap().put(randFace, fluidAdjBlock);
         fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block);
-        levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);        
+        levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
         return fluidAdjBlock;
     }
 
@@ -207,13 +206,14 @@ public class RandomLevelGenerator {
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
-            float alpha = RANDOM.nextFloat();
-
-            maxSolidBatchSize = (int) ((1.0f - alpha) * solidBlocks);
-            maxFluidBatchSize = (int) (alpha * fluidBlocks);
-
             while ((solidBlocks > 0 || fluidBlocks > 0)
                     && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+
+                float alpha = RANDOM.nextFloat();
+
+                int maxSolidBatchSize = (int) ((1.0f - alpha) * solidBlocks);
+                int maxFluidBatchSize = (int) (alpha * fluidBlocks);
+
                 //------------------------------------------------------------------
                 if (solidBlocks > 0) {
                     int solidBatch = 1 + RANDOM.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
@@ -231,8 +231,8 @@ public class RandomLevelGenerator {
                         solidBatch--;
                         solidBlocks--;
                         levelRenderer.updateSolidToFluidNeighbors();
-                    }                
-                }                                    
+                    }
+                }
                 //------------------------------------------------------------------
                 if (fluidBlocks > 0) {
                     int fluidBatch = 1 + RANDOM.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
@@ -248,10 +248,10 @@ public class RandomLevelGenerator {
                             fluidBlock = generateRandomFluidBlock();
                         }
                         fluidBatch--;
-                        fluidBlocks--;                        
+                        fluidBlocks--;
                         levelRenderer.updateFluidToSolidNeighbors();
-                    }                
-                }                    
+                    }
+                }
                 //------------------------------------------------------------------
                 // this provides external monitoring of level generation progress
                 System.err.println("Amount of blocks left: " + (solidBlocks + fluidBlocks));
@@ -263,14 +263,6 @@ public class RandomLevelGenerator {
 
     public LevelRenderer getLevelRenderer() {
         return levelRenderer;
-    }
-
-    public int getMaxFluidBatchSize() {
-        return maxFluidBatchSize;
-    }
-
-    public int getMaxSolidBatchSize() {
-        return maxSolidBatchSize;
     }
 
     public int getNumberOfBlocks() {

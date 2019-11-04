@@ -461,4 +461,16 @@ public class Block extends Model {
         intBuff.flip();
         return intBuff;
     }
+
+    // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
+    public int[] getAdjacentFreeFaceNumbers() {
+        int[] result = new int[6 - adjacentBlockMap.size()];
+        int face = -1;
+        for (int i = 0; i < 5; i++) {
+            if (adjacentBlockMap.get(i) == null) {
+                result[++face] = i;
+            }
+        }
+        return result;
+    }
 }
