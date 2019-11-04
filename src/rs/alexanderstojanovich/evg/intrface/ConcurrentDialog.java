@@ -16,8 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
@@ -30,19 +28,39 @@ import rs.alexanderstojanovich.evg.main.Game;
  *
  * @author Coa
  */
-public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread
+public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread                
 
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Runnable command = new Runnable() { // executable command (calls execute method)
+        @Override
+        public void run() {
+            boolean ok = execute(input.toString());
+            if (ok) {
+                dialog.setContent(success);
+                dialog.getQuad().getColor().x = 0.0f;
+                dialog.getQuad().getColor().y = 1.0f;
+                dialog.getQuad().getColor().z = 0.0f;
+            } else {
+                dialog.setContent(fail);
+                dialog.getQuad().getColor().x = 1.0f;
+                dialog.getQuad().getColor().y = 0.0f;
+                dialog.getQuad().getColor().z = 0.0f;
+            }
+            input.setLength(0);
+            done = true;
+        }
+    };
 
-    public ConcurrentDialog(Window window, Texture texture, Vector2f pos) {
-        super(window, texture, pos);
+    private Thread dialogThread; // thread which executes command     
+
+    public ConcurrentDialog(Window window, Texture texture, Vector2f pos, String question, String success, String fail) {
+        super(window, texture, pos, question, success, fail);
     }
 
     @Override
     protected abstract boolean execute(String command); // we need to override this upon creation of the dialog     
 
     @Override
-    public void open(String question, String success, String fail) {
+    public void open() {
         if (input.length() == 0) {
             enabled = true;
             done = false;
@@ -75,26 +93,8 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         if (!input.toString().equals("")) {
-                            Runnable command = new Runnable() {
-                                @Override
-                                public void run() {
-                                    boolean ok = execute(input.toString());
-                                    if (ok) {
-                                        dialog.setContent(success);
-                                        dialog.getQuad().getColor().x = 0.0f;
-                                        dialog.getQuad().getColor().y = 1.0f;
-                                        dialog.getQuad().getColor().z = 0.0f;
-                                    } else {
-                                        dialog.setContent(fail);
-                                        dialog.getQuad().getColor().x = 1.0f;
-                                        dialog.getQuad().getColor().y = 0.0f;
-                                        dialog.getQuad().getColor().z = 0.0f;
-                                    }
-                                    input.setLength(0);
-                                    done = true;
-                                }
-                            };
-                            executorService.execute(command);
+                            dialogThread = new Thread(command, "Concurrent Dialog Thread");
+                            dialogThread.start();
                         } else {
                             dialog.setContent("");
                             enabled = false;
@@ -117,8 +117,12 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
         }
     }
 
-    public ExecutorService getExecutorService() {
-        return executorService;
+    public Runnable getCommand() {
+        return command;
+    }
+
+    public Thread getDialogThread() {
+        return dialogThread;
     }
 
 }

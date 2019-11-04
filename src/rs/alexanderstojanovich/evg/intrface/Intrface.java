@@ -109,7 +109,8 @@ public class Intrface {
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
-        commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+        commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+                "ENTER COMMAND: ", "OK", "ERROR!") {
             @Override
             protected boolean execute(String command) {
                 boolean success = false;
@@ -201,7 +202,8 @@ public class Intrface {
             }
         };
 
-        saveDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+        saveDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+                "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -210,7 +212,8 @@ public class Intrface {
             }
         };
 
-        loadDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+        loadDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+                "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -219,7 +222,8 @@ public class Intrface {
             }
         };
 
-        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f)) {
+        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+                "ENTER MAX NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -347,15 +351,15 @@ public class Intrface {
                         break;
                     case "GENERATE RANDOM LEVEL":
                         progText.setEnabled(true);
-                        randLvlDialog.open("ENTER MAX NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!");
+                        randLvlDialog.open();
                         break;
                     case "SAVE LEVEL TO FILE":
                         progText.setEnabled(true);
-                        saveDialog.open("SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!");
+                        saveDialog.open();
                         break;
                     case "LOAD LEVEL FROM FILE":
                         progText.setEnabled(true);
-                        loadDialog.open("LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!");
+                        loadDialog.open();
                         break;
                 }
             }
@@ -476,7 +480,7 @@ public class Intrface {
         return waterRenderer;
     }
 
-    public Dialog getRandLvlDialog() {
+    public ConcurrentDialog getRandLvlDialog() {
         return randLvlDialog;
     }
 

@@ -118,22 +118,22 @@ public class RandomLevelGenerator {
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
-                    adjPos.x += block.getWidth() / 2.0f + block.getWidth() / 2.0f;
-                    break;
-                case Block.RIGHT:
                     adjPos.x -= block.getWidth() / 2.0f + block.getWidth() / 2.0f;
                     break;
-                case Block.BOTTOM:
-                    adjPos.y += block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                case Block.RIGHT:
+                    adjPos.x += block.getWidth() / 2.0f + block.getWidth() / 2.0f;
                     break;
-                case Block.TOP:
+                case Block.BOTTOM:
                     adjPos.y -= block.getHeight() / 2.0f + block.getHeight() / 2.0f;
                     break;
+                case Block.TOP:
+                    adjPos.y += block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                    break;
                 case Block.BACK:
-                    adjPos.z += block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    adjPos.z -= block.getDepth() / 2.0f + block.getDepth() / 2.0f;
                     break;
                 case Block.FRONT:
-                    adjPos.z -= block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    adjPos.z += block.getDepth() / 2.0f + block.getDepth() / 2.0f;
                     break;
                 default:
                     break;
@@ -148,6 +148,10 @@ public class RandomLevelGenerator {
         Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 1.0f);
         Texture adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
+        
+        block.getAdjacentBlockMap().put(randFace, solidAdjBlock);
+        solidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block);
+        
         levelRenderer.getSolidBlocks().getBlockList().add(solidAdjBlock);
         return solidAdjBlock;
     }
@@ -160,22 +164,22 @@ public class RandomLevelGenerator {
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
-                    adjPos.x += block.getWidth() / 2.0f + block.getWidth() / 2.0f;
-                    break;
-                case Block.RIGHT:
                     adjPos.x -= block.getWidth() / 2.0f + block.getWidth() / 2.0f;
                     break;
-                case Block.BOTTOM:
-                    adjPos.y += block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                case Block.RIGHT:
+                    adjPos.x += block.getWidth() / 2.0f + block.getWidth() / 2.0f;
                     break;
-                case Block.TOP:
+                case Block.BOTTOM:
                     adjPos.y -= block.getHeight() / 2.0f + block.getHeight() / 2.0f;
                     break;
+                case Block.TOP:
+                    adjPos.y += block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                    break;
                 case Block.BACK:
-                    adjPos.z += block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    adjPos.z -= block.getDepth() / 2.0f + block.getDepth() / 2.0f;
                     break;
                 case Block.FRONT:
-                    adjPos.z -= block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    adjPos.z += block.getDepth() / 2.0f + block.getDepth() / 2.0f;
                     break;
                 default:
                     break;
@@ -190,7 +194,9 @@ public class RandomLevelGenerator {
         Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 0.5f);
         Texture adjTexture = Texture.WATER;
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
-        levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
+        block.getAdjacentBlockMap().put(randFace, fluidAdjBlock);
+        fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block);
+        levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);        
         return fluidAdjBlock;
     }
 
@@ -216,6 +222,7 @@ public class RandomLevelGenerator {
                     solidBlocks--;
                     while (solidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                        System.err.println("solid batch loop!");
                         if (solidBlock.getAdjacentBlockMap().size() < 6) {
                             solidBlock = generateRandomSolidBlockAdjacent(solidBlock);
                         } else {
@@ -223,35 +230,34 @@ public class RandomLevelGenerator {
                         }
                         solidBatch--;
                         solidBlocks--;
-                        levelRenderer.updateSolidNeighbors();
                         levelRenderer.updateSolidToFluidNeighbors();
-                    }
-                }
+                    }                
+                }                                    
                 //------------------------------------------------------------------
                 if (fluidBlocks > 0) {
                     int fluidBatch = 1 + RANDOM.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
                     Block fluidBlock = generateRandomFluidBlock();
                     fluidBatch--;
                     fluidBlocks--;
-
                     while (fluidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                        System.err.println("fluid batch loop!");
                         if (fluidBlock.getAdjacentBlockMap().size() < 6) {
                             fluidBlock = generateRandomFluidBlockAdjacent(fluidBlock);
                         } else {
                             fluidBlock = generateRandomFluidBlock();
                         }
                         fluidBatch--;
-                        fluidBlocks--;
-                        levelRenderer.updateFluidNeighbors();
+                        fluidBlocks--;                        
                         levelRenderer.updateFluidToSolidNeighbors();
-                    }
-                }
+                    }                
+                }                    
                 //------------------------------------------------------------------
                 // this provides external monitoring of level generation progress
+                System.err.println("Amount of blocks left: " + (solidBlocks + fluidBlocks));
                 levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (totalAmount)));
             }
-
+            levelRenderer.updateAll();
         }
     }
 

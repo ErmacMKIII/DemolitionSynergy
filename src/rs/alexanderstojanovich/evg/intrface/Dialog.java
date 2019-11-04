@@ -36,17 +36,25 @@ public abstract class Dialog {
     protected boolean enabled;
     protected boolean done;
 
-    public Dialog(Window window, Texture texture, Vector2f pos) {
+    protected final String question; // question message
+    protected final String success; // message if succesful execution
+    protected final String fail; // message if failure
+
+    public Dialog(Window window, Texture texture, Vector2f pos,
+            String question, String success, String fail) {
         this.myWindow = window;
         this.dialog = new DynamicText(myWindow, texture, "");
         this.dialog.getQuad().setPos(pos);
         this.enabled = false;
         this.done = false;
+        this.question = question;
+        this.success = success;
+        this.fail = fail;
     }
 
     protected abstract boolean execute(String command); // we need to override this upon creation of the dialog        
 
-    public void open(String question, String success, String fail) {
+    public void open() {
         if (input.length() == 0) {
             enabled = true;
             done = false;
@@ -149,6 +157,18 @@ public abstract class Dialog {
 
     public void setDone(boolean done) {
         this.done = done;
+    }
+
+    public String getQuestion() {
+        return question;
+    }
+
+    public String getSuccess() {
+        return success;
+    }
+
+    public String getFail() {
+        return fail;
     }
 
 }

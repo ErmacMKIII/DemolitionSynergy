@@ -481,6 +481,7 @@ public class LevelRenderer {
                 int faceNum = solidBlock.faceAdjacentBy(fluidBlock);
                 if (faceNum != Block.NONE) {
                     solidBlock.getAdjacentBlockMap().put(faceNum, fluidBlock);
+                    fluidBlock.getAdjacentBlockMap().put(faceNum % 2 == 0 ? faceNum + 1 : faceNum - 1, solidBlock);
                 }
             }
         }
@@ -491,7 +492,8 @@ public class LevelRenderer {
             for (Block solidBlock : solidBlocks.getBlockList()) {
                 int faceNum = fluidBlock.faceAdjacentBy(solidBlock);
                 if (faceNum != Block.NONE) {
-                    solidBlock.getAdjacentBlockMap().put(faceNum, fluidBlock);
+                    fluidBlock.getAdjacentBlockMap().put(faceNum, solidBlock);
+                    solidBlock.getAdjacentBlockMap().put(faceNum % 2 == 0 ? faceNum + 1 : faceNum - 1, fluidBlock);
                 }
             }
         }
@@ -509,7 +511,7 @@ public class LevelRenderer {
             fluidBlock.enableAllFaces(false);
             for (int i = 0; i <= 5; i++) {
                 Block otherFluidBlock = fluidBlock.getAdjacentBlockMap().get(i);
-                if (otherFluidBlock != null) {
+                if (otherFluidBlock != null && otherFluidBlock.isPassable()) {
                     fluidBlock.disableFace(i, false);
                 }
             }

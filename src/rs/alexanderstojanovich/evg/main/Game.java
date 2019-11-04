@@ -282,16 +282,16 @@ public class Game {
                     renderer.getIntrface().getMainMenu().open();
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getCommandDialog().open("ENTER COMMAND: ", "OK", "ERROR!");
+                    renderer.getIntrface().getCommandDialog().open();
                 } else if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     renderer.getIntrface().toggleShowHelp();
                 } else if (key == GLFW.GLFW_KEY_F2 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getSaveDialog().open("SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!");
+                    renderer.getIntrface().getSaveDialog().open();
                 } else if (key == GLFW.GLFW_KEY_F3 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getLoadDialog().open("LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!");
+                    renderer.getIntrface().getLoadDialog().open();
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -374,7 +374,12 @@ public class Game {
 
         }
 
+        Thread randDialogThread = renderer.getIntrface().getRandLvlDialog().getDialogThread();
+
         try {
+            if (randDialogThread != null && randDialogThread.isAlive()) {
+                randDialogThread.join();
+            }
             renderer.join(); // waits for the renderer to finish life         
         } catch (InterruptedException ex) {
             Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
