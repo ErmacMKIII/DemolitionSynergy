@@ -203,6 +203,7 @@ public class RandomLevelGenerator {
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
         block.getAdjacentBlockMap().put(randFace, fluidAdjBlock);
         fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block);
+
         levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
         return fluidAdjBlock;
     }
@@ -231,19 +232,24 @@ public class RandomLevelGenerator {
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
                         if (solidBlock == null) {
                             solidBlock = generateRandomSolidBlock();
-                        } else {
+                            solidAdjBlock = solidBlock;
+                            solidBatch--;
+                            solidBlocks--;
+                            levelRenderer.updateSolidToFluidNeighbors();
+                            // this provides external monitoring of level generation progress                        
+                            levelRenderer.incProgress(80.0f / (float) totalAmount);
+                        } else if (solidAdjBlock != null && RANDOM.nextInt(2) == 0) {
                             solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
-                        }
-
-                        if (solidAdjBlock == null) {
+                            if (solidAdjBlock != null) {
+                                solidBatch--;
+                                solidBlocks--;
+                                levelRenderer.updateSolidToFluidNeighbors();
+                                // this provides external monitoring of level generation progress                        
+                                levelRenderer.incProgress(80.0f / (float) totalAmount);
+                            }
+                        } else {
                             solidBlock = null;
                         }
-
-                        solidBatch--;
-                        solidBlocks--;
-                        levelRenderer.updateSolidToFluidNeighbors();
-                        // this provides external monitoring of level generation progress                        
-                        levelRenderer.incProgress(80.0f / (float) totalAmount);
                     }
                 }
                 //------------------------------------------------------------------
@@ -255,19 +261,24 @@ public class RandomLevelGenerator {
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
                         if (fluidBlock == null) {
                             fluidBlock = generateRandomFluidBlock();
-                        } else {
+                            fluidAdjBlock = fluidBlock;
+                            fluidBatch--;
+                            fluidBlocks--;
+                            levelRenderer.updateFluidToSolidNeighbors();
+                            // this provides external monitoring of level generation progress                        
+                            levelRenderer.incProgress(80.0f / (float) totalAmount);
+                        } else if (fluidAdjBlock != null && RANDOM.nextInt(2) == 0) {
                             fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
-                        }
-
-                        if (fluidAdjBlock == null) {
+                            if (fluidAdjBlock != null) {
+                                fluidBatch--;
+                                fluidBlocks--;
+                                levelRenderer.updateFluidToSolidNeighbors();
+                                // this provides external monitoring of level generation progress                        
+                                levelRenderer.incProgress(80.0f / (float) totalAmount);
+                            }
+                        } else {
                             fluidBlock = null;
                         }
-
-                        fluidBatch--;
-                        fluidBlocks--;
-                        levelRenderer.updateFluidToSolidNeighbors();
-                        // this provides external monitoring of level generation progress                        
-                        levelRenderer.incProgress(80.0f / (float) totalAmount);
                     }
                 }
                 //------------------------------------------------------------------                                                

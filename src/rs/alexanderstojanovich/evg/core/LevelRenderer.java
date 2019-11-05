@@ -218,7 +218,6 @@ public class LevelRenderer {
             pos += solidCol.length;
 
             progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
-            System.err.println(progress);
         }
 
         buffer[pos++] = 'F';
@@ -245,7 +244,6 @@ public class LevelRenderer {
             pos += solidCol.length;
 
             progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
-            System.err.println(progress);
         }
 
         buffer[pos++] = 'E';
