@@ -84,7 +84,7 @@ public class Renderer extends Thread {
                             waterRenderer.render();
                         }
                     } else {
-                        intrface.getProgText().setContent("Loading progress: " + levelRenderer.getProgress() + "%");
+                        intrface.getProgText().setContent("Loading progress: " + Math.round(levelRenderer.getProgress()) + "%");
                         if (!intrface.getProgText().isBuffered()) {
                             intrface.getProgText().buffer();
                         }

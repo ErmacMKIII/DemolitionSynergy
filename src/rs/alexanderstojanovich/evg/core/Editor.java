@@ -228,6 +228,7 @@ public class Editor {
                 selectedNew.setSecondaryTexture(null);
                 if (selectedNew.isPassable()) { // if block is solid
                     levelRenderer.getFluidBlocks().getBlockList().add(selectedNew); // add the block to the fluid blocks
+                    levelRenderer.getFluidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
                     levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluidToSolidNeighbors();
                     levelRenderer.updateFluids();
@@ -247,7 +248,8 @@ public class Editor {
                     }
                     levelRenderer.getFluidSeries().setBuffered(false);
                 } else { // else if block is fluid
-                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks                   
+                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks
+                    levelRenderer.getSolidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
                     levelRenderer.updateSolidNeighbors();
                     levelRenderer.updateSolidToFluidNeighbors();
                     //----------------------------------------------------------

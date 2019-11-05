@@ -37,6 +37,8 @@ public class RandomLevelGenerator {
 
     private int numberOfBlocks = 0;
 
+    private int remainingBlocks = 0;
+
     public RandomLevelGenerator(LevelRenderer levelRenderer) {
         this.levelRenderer = levelRenderer;
     }
@@ -109,6 +111,9 @@ public class RandomLevelGenerator {
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
         int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
+        if (possibleFaces.length == 0) {
+            return null;
+        }
         int randFace;
         Vector3f adjPos;
         do {
@@ -156,6 +161,9 @@ public class RandomLevelGenerator {
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
         int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
+        if (possibleFaces.length == 0) {
+            return null;
+        }
         int randFace;
         Vector3f adjPos;
         do {
@@ -217,45 +225,52 @@ public class RandomLevelGenerator {
                 //------------------------------------------------------------------
                 if (solidBlocks > 0) {
                     int solidBatch = 1 + RANDOM.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
-                    Block solidBlock = generateRandomSolidBlock();
-                    solidBatch--;
-                    solidBlocks--;
+                    Block solidBlock = null;
+                    Block solidAdjBlock = null;
                     while (solidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
-                        System.err.println("solid batch loop!");
-                        if (solidBlock.getAdjacentBlockMap().size() < 6) {
-                            solidBlock = generateRandomSolidBlockAdjacent(solidBlock);
-                        } else {
+                        if (solidBlock == null) {
                             solidBlock = generateRandomSolidBlock();
+                        } else {
+                            solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
                         }
+
+                        if (solidAdjBlock == null) {
+                            solidBlock = null;
+                        }
+
                         solidBatch--;
                         solidBlocks--;
                         levelRenderer.updateSolidToFluidNeighbors();
+                        // this provides external monitoring of level generation progress                        
+                        levelRenderer.incProgress(80.0f / (float) totalAmount);
                     }
                 }
                 //------------------------------------------------------------------
                 if (fluidBlocks > 0) {
                     int fluidBatch = 1 + RANDOM.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
-                    Block fluidBlock = generateRandomFluidBlock();
-                    fluidBatch--;
-                    fluidBlocks--;
+                    Block fluidBlock = null;
+                    Block fluidAdjBlock = null;
                     while (fluidBatch > 0
                             && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
-                        System.err.println("fluid batch loop!");
-                        if (fluidBlock.getAdjacentBlockMap().size() < 6) {
-                            fluidBlock = generateRandomFluidBlockAdjacent(fluidBlock);
-                        } else {
+                        if (fluidBlock == null) {
                             fluidBlock = generateRandomFluidBlock();
+                        } else {
+                            fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
                         }
+
+                        if (fluidAdjBlock == null) {
+                            fluidBlock = null;
+                        }
+
                         fluidBatch--;
                         fluidBlocks--;
                         levelRenderer.updateFluidToSolidNeighbors();
+                        // this provides external monitoring of level generation progress                        
+                        levelRenderer.incProgress(80.0f / (float) totalAmount);
                     }
                 }
-                //------------------------------------------------------------------
-                // this provides external monitoring of level generation progress
-                System.err.println("Amount of blocks left: " + (solidBlocks + fluidBlocks));
-                levelRenderer.setProgress(80 - Math.round(0.8f * (solidBlocks + fluidBlocks) / (float) (totalAmount)));
+                //------------------------------------------------------------------                                                
             }
             levelRenderer.updateAll();
         }

@@ -27,6 +27,7 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,19 @@ public class Block extends Model {
     public static final int INDICES_COUNT = 36;
 
     public static final Block CONST = new Block(true);
+
+    public static final Comparator<Block> Y_AXIS_COMP = new Comparator<Block>() {
+        @Override
+        public int compare(Block o1, Block o2) {
+            if (o1.getPos().y > o2.getPos().y) {
+                return 1;
+            } else if (o1.getPos().y == o2.getPos().y) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    };
 
     static {
         FACE_NORMALS.add(new Vector3f(-1.0f, 0.0f, 0.0f));
@@ -466,7 +480,7 @@ public class Block extends Model {
     public int[] getAdjacentFreeFaceNumbers() {
         int[] result = new int[6 - adjacentBlockMap.size()];
         int face = -1;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i <= 5; i++) {
             if (adjacentBlockMap.get(i) == null) {
                 result[++face] = i;
             }

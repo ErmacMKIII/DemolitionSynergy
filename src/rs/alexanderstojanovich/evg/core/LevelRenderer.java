@@ -60,7 +60,7 @@ public class LevelRenderer {
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
 
-    private int progress = 0;
+    private float progress = 0.0f;
 
     private boolean working = false;
 
@@ -79,12 +79,12 @@ public class LevelRenderer {
     }
 
     public boolean startNewLevel() {
-        if (working || progress > 0) {
+        if (working || progress > 0.0f) {
             return false;
         }
         boolean success = false;
         working = true;
-        progress = 0;
+        progress = 0.0f;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
         solidBlocks.getBlockList().clear();
@@ -108,31 +108,34 @@ public class LevelRenderer {
 
                 solidBlocks.getBlockList().add(entity);
 
-                progress += Math.round(80.0f / 9.0f);
+                progress += 80.0f / 9.0f;
             }
         }
+
+        solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
+        fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
 
         solidBlocks.setBuffered(false);
         fluidBlocks.setBuffered(false);
 
         solidSeries = new BlocksSeries(solidBlocks);
-        progress += Math.round(0.1f * solidSeries.getProgress());
+        progress += 0.1f * solidSeries.getProgress();
         fluidSeries = new BlocksSeries(fluidBlocks);
-        progress += Math.round(0.1f * fluidSeries.getProgress());
+        progress += 0.1f * fluidSeries.getProgress();
 
-        progress = 100;
+        progress = 100.0f;
         working = false;
         success = true;
         return success;
     }
 
     public boolean generateRandomLevel(int numberOfBlocks) {
-        if (working || progress > 0) {
+        if (working || progress > 0.0f) {
             return false;
         }
         working = true;
         boolean success = false;
-        progress = 0;
+        progress = 0.0f;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(false);
         solidBlocks.getBlockList().clear();
@@ -144,17 +147,21 @@ public class LevelRenderer {
             updateFluids();
             success = true;
         }
+
+        solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
+        fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
+
         solidBlocks.setBuffered(false);
         fluidBlocks.setBuffered(false);
 
         observer.setGivenControl(true);
 
         solidSeries = new BlocksSeries(solidBlocks);
-        progress += Math.round(0.1f * solidSeries.getProgress());
+        progress += 0.1f * solidSeries.getProgress();
         fluidSeries = new BlocksSeries(fluidBlocks);
-        progress += Math.round(0.1f * fluidSeries.getProgress());
+        progress += 0.1f * fluidSeries.getProgress();
 
-        progress = 100;
+        progress = 100.0f;
         working = false;
         return success;
     }
@@ -162,10 +169,10 @@ public class LevelRenderer {
     private boolean storeLevelToBuffer() {
         working = true;
         boolean success = false;
-        if (progress > 0) {
+        if (progress > 0.0f) {
             return false;
         }
-        progress = 0;
+        progress = 0.0f;
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -210,7 +217,8 @@ public class LevelRenderer {
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
 
-            progress += Math.round(100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size()));
+            progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
+            System.err.println(progress);
         }
 
         buffer[pos++] = 'F';
@@ -236,16 +244,17 @@ public class LevelRenderer {
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
 
-            progress += Math.round(100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size()));
+            progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
+            System.err.println(progress);
         }
 
         buffer[pos++] = 'E';
         buffer[pos++] = 'N';
         buffer[pos++] = 'D';
 
-        progress = 100;
+        progress = 100.0f;
 
-        if (progress == 100) {
+        if (progress == 100.0f) {
             success = true;
         }
         working = false;
@@ -255,10 +264,10 @@ public class LevelRenderer {
     private boolean loadLevelFromBuffer() {
         working = true;
         boolean success = false;
-        if (progress > 0) {
+        if (progress > 0.0f) {
             return false;
         }
-        progress = 0;
+        progress = 0.0f;
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidBlocks.getBlockList().clear();
@@ -295,7 +304,7 @@ public class LevelRenderer {
                 solid[i] = (char) buffer[pos++];
             }
             String strSolid = String.valueOf(solid);
-            progress += 10;
+            progress += 10.0f;
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
@@ -321,10 +330,10 @@ public class LevelRenderer {
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
                 }
-
+                solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                 solidBlocks.setBuffered(false);
 
-                progress += 40;
+                progress += 40.0f;
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -355,10 +364,10 @@ public class LevelRenderer {
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
                     }
-
+                    fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                     fluidBlocks.setBuffered(false);
 
-                    progress += 40;
+                    progress += 40.0f;
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -368,21 +377,21 @@ public class LevelRenderer {
                         updateAll();
                         updateFluids();
                         solidSeries = new BlocksSeries(solidBlocks);
-                        progress += Math.round(0.1f * solidSeries.getProgress());
+                        progress += 0.1 * solidSeries.getProgress();
                         fluidSeries = new BlocksSeries(fluidBlocks);
-                        progress += Math.round(0.1f * fluidSeries.getProgress());
+                        progress += 0.1 * fluidSeries.getProgress();
                         success = true;
                     }
                 }
             }
         }
-        progress = 100;
+        progress = 100.0f;
         working = false;
         return success;
     }
 
     public boolean saveLevelToFile(String filename) {
-        if (working || progress > 0) {
+        if (working || progress > 0.0f) {
             return false;
         }
         boolean success = false;
@@ -415,7 +424,7 @@ public class LevelRenderer {
     }
 
     public boolean loadLevelFromFile(String filename) {
-        if (working || progress > 0) {
+        if (working || progress > 0.0f) {
             return false;
         }
         boolean success = false;
@@ -641,6 +650,12 @@ public class LevelRenderer {
         }
     }
 
+    public void incProgress(float increment) {
+        if (progress < 100.0f) {
+            progress += increment;
+        }
+    }
+
     public Window getMyWindow() {
         return myWindow;
     }
@@ -665,11 +680,11 @@ public class LevelRenderer {
         this.observer = observer;
     }
 
-    public int getProgress() {
+    public float getProgress() {
         return progress;
     }
 
-    public void setProgress(int progress) {
+    public void setProgress(float progress) {
         this.progress = progress;
     }
 
