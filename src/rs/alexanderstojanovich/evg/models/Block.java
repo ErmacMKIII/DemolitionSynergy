@@ -56,7 +56,7 @@ public class Block extends Model {
     // which faces we enabled for rendering and which we disabled
     private final boolean[] enabledFaces = new boolean[6];
 
-    private final Map<Integer, Block> adjacentBlockMap = new HashMap<>(); // helps locating neighbours blocks           
+    private final Map<Integer, Integer> adjacentBlockMap = new HashMap<>(); // helps locating neighbours blocks           
     private boolean verticesReversed = false;
 
     public static final List<Vector3f> FACE_NORMALS = new ArrayList<>();
@@ -427,7 +427,7 @@ public class Block extends Model {
         return enabledFaces;
     }
 
-    public Map<Integer, Block> getAdjacentBlockMap() {
+    public Map<Integer, Integer> getAdjacentBlockMap() {
         return adjacentBlockMap;
     }
 
@@ -485,6 +485,39 @@ public class Block extends Model {
                 result[++face] = i;
             }
         }
+        return result;
+    }
+
+    // assuming that blocks are the same scale
+    public Vector3f getAdjacentPos(Vector3f pos, int faceNum) {
+        Vector3f result = new Vector3f();
+        result.x = pos.x;
+        result.y = pos.y;
+        result.z = pos.z;
+
+        switch (faceNum) {
+            case Block.LEFT:
+                result.x -= 2.0f;
+                break;
+            case Block.RIGHT:
+                result.x += 2.0f;
+                break;
+            case Block.BOTTOM:
+                result.y -= 2.0f;
+                break;
+            case Block.TOP:
+                result.y += 2.0f;
+                break;
+            case Block.BACK:
+                result.z -= 2.0f;
+                break;
+            case Block.FRONT:
+                result.z += 2.0f;
+                break;
+            default:
+                break;
+        }
+
         return result;
     }
 }

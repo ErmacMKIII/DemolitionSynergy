@@ -197,7 +197,8 @@ public class Editor {
 
     private static boolean cannotPlace(LevelRenderer levelRenderer) {
         boolean cant = false;
-        boolean placeOccupied = levelRenderer.getPosMap().get(selectedNew.getPos()) != null;
+        boolean placeOccupied = levelRenderer.getPosSolidMap().get(selectedNew.getPos()) != null
+                || levelRenderer.getPosFluidMap().get(selectedNew.getPos()) != null;
         boolean intsSolid = false;
         for (int i = 0; i < levelRenderer.getSolidBlocks().getBlockList().size() && !intsSolid; i++) {
             intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().getBlockList().get(i));
@@ -228,8 +229,7 @@ public class Editor {
                 if (selectedNew.isPassable()) { // if block is solid
                     levelRenderer.getFluidBlocks().getBlockList().add(selectedNew); // add the block to the fluid blocks
                     levelRenderer.getFluidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateFluidNeighbors();
-                    levelRenderer.updateFluidToSolidNeighbors();
+                    levelRenderer.updateAll();
                     levelRenderer.updateFluids();
                     //----------------------------------------------------------
                     int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
@@ -246,11 +246,11 @@ public class Editor {
                         levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
                     }
                     levelRenderer.getFluidSeries().setBuffered(false);
+                    //----------------------------------------------------------                    
                 } else { // else if block is fluid
                     levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks
                     levelRenderer.getSolidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateSolidNeighbors();
-                    levelRenderer.updateSolidToFluidNeighbors();
+                    levelRenderer.updateAll();
                     //----------------------------------------------------------
                     int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
                             selectedNew.getPrimaryTexture(),
@@ -266,6 +266,7 @@ public class Editor {
                         levelRenderer.getSolidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
                     }
                     levelRenderer.getSolidSeries().setBuffered(false);
+                    //----------------------------------------------------------                   
                 }
                 loaded = new Block(false);
                 selectLoadedTexture();
@@ -276,19 +277,8 @@ public class Editor {
 
     public static void remove(LevelRenderer levelRenderer) {
         if (selectedCurr != null) {
-            for (int i = 0; i <= 5; i++) {
-                Block otherBlock = selectedCurr.getAdjacentBlockMap().get(i);
-                if (otherBlock != null) {
-                    if (i % 2 == 0) {
-                        otherBlock.getAdjacentBlockMap().remove(i + 1);
-                    } else {
-                        otherBlock.getAdjacentBlockMap().remove(i - 1);
-                    }
-                }
-            }
             if (selectedCurr.isPassable()) {
                 levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
-                levelRenderer.updateFluids();
                 //--------------------------------------------------------------
                 int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
                         selectedCurr.getPrimaryTexture(),
@@ -302,6 +292,10 @@ public class Editor {
                     }
                 }
                 levelRenderer.getFluidSeries().setBuffered(false);
+                levelRenderer.getPosFluidMap().remove(selectedCurr.getPos());
+                //--------------------------------------------------------------
+                levelRenderer.updateAll();
+                levelRenderer.updateFluids();
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
                 //--------------------------------------------------------------
@@ -317,8 +311,9 @@ public class Editor {
                     }
                 }
                 levelRenderer.getSolidSeries().setBuffered(false);
+                levelRenderer.getPosSolidMap().remove(selectedCurr.getPos());
+                levelRenderer.updateAll();
             }
-            levelRenderer.getPosMap().remove(selectedNew.getPos(), selectedNew);
         }
         deselect();
     }

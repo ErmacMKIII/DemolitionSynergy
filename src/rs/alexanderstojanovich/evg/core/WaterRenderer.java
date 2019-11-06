@@ -46,9 +46,9 @@ public class WaterRenderer {
         float obsHeight = levelRenderer.getObserver().getCamera().getPos().y;
         for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
             float waterHeight = fluidBlock.giveSurfacePos();
-            Block topSolidBlock = fluidBlock.getAdjacentBlockMap().get(Block.TOP);
+            Integer topSolidBlockHashCode = fluidBlock.getAdjacentBlockMap().get(Block.TOP);
             if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
-                    && topSolidBlock == null // it must be nothing on top of it
+                    && topSolidBlockHashCode == null // it must be nothing on top of it
                     && waterHeight <= obsHeight) { // and it needs to be below the observer
                 fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                 levelRenderer.getFluidSeries().setWaterTexture(frameBuffer.getTexture());

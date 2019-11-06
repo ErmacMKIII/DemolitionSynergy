@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
@@ -69,7 +70,8 @@ public class LevelRenderer {
     private final RandomLevelGenerator randomLevelGenerator;
 
     //----------------Vector3f hash, Block hash---------------------------------
-    private final Map<Vector3f, Integer> posMap = new HashMap<>();
+    private final Map<Vector3f, Integer> posSolidMap = new HashMap<>();
+    private final Map<Vector3f, Integer> posFluidMap = new HashMap<>();
 
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
@@ -95,7 +97,8 @@ public class LevelRenderer {
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
-        posMap.clear();
+        posSolidMap.clear();
+        posFluidMap.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(false, Texture.DOOM0);
@@ -105,7 +108,7 @@ public class LevelRenderer {
                 entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
 
-                posMap.put(entity.getPos(), entity.hashCode());
+                posSolidMap.put(entity.getPos(), entity.hashCode());
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
@@ -149,7 +152,8 @@ public class LevelRenderer {
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
-        posMap.clear();
+        posSolidMap.clear();
+        posSolidMap.clear();
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
@@ -280,7 +284,8 @@ public class LevelRenderer {
             solidBlocks.getBlockList().clear();
             fluidBlocks.getBlockList().clear();
             fluidBlocks.setVerticesReversed(false);
-            posMap.clear();
+            posSolidMap.clear();
+            posFluidMap.clear();
             pos += 2;
             byte[] posArr = new byte[12];
             System.arraycopy(buffer, pos, posArr, 0, posArr.length);
@@ -338,7 +343,7 @@ public class LevelRenderer {
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
 
-                    posMap.put(blockPos, block.hashCode());
+                    posSolidMap.put(blockPos, block.hashCode());
                 }
                 solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                 solidBlocks.setBuffered(false);
@@ -374,7 +379,7 @@ public class LevelRenderer {
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
 
-                        posMap.put(blockPos, block.hashCode());
+                        posFluidMap.put(blockPos, block.hashCode());
                     }
                     fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                     fluidBlocks.setBuffered(false);
@@ -470,70 +475,39 @@ public class LevelRenderer {
         return success;
     }
 
-    public void updateSolidNeighbors() {
-        for (Block solidBlockI : solidBlocks.getBlockList()) {
-            for (Block solidBlockJ : solidBlocks.getBlockList()) {
-                if (solidBlockI != solidBlockJ) {
-                    int faceNum = solidBlockI.faceAdjacentBy(solidBlockJ);
-                    if (faceNum != Block.NONE) {
-                        solidBlockI.getAdjacentBlockMap().put(faceNum, solidBlockJ);
-                    }
-                }
-            }
-        }
-    }
-
-    public void updateFluidNeighbors() {
-        for (Block fluidBlockI : fluidBlocks.getBlockList()) {
-            for (Block fluidBlockJ : fluidBlocks.getBlockList()) {
-                if (fluidBlockI != fluidBlockJ) {
-                    int faceNum = fluidBlockI.faceAdjacentBy(fluidBlockJ);
-                    if (faceNum != Block.NONE) {
-                        fluidBlockI.getAdjacentBlockMap().put(faceNum, fluidBlockJ);
-                    }
-                }
-            }
-        }
-    }
-
-    public void updateSolidToFluidNeighbors() {
-        for (Block solidBlock : solidBlocks.getBlockList()) {
-            for (Block fluidBlock : fluidBlocks.getBlockList()) {
-                int faceNum = solidBlock.faceAdjacentBy(fluidBlock);
-                if (faceNum != Block.NONE) {
-                    solidBlock.getAdjacentBlockMap().put(faceNum, fluidBlock);
-                    fluidBlock.getAdjacentBlockMap().put(faceNum % 2 == 0 ? faceNum + 1 : faceNum - 1, solidBlock);
-                }
-            }
-        }
-    }
-
-    public void updateFluidToSolidNeighbors() {
-        for (Block fluidBlock : fluidBlocks.getBlockList()) {
-            for (Block solidBlock : solidBlocks.getBlockList()) {
-                int faceNum = fluidBlock.faceAdjacentBy(solidBlock);
-                if (faceNum != Block.NONE) {
-                    fluidBlock.getAdjacentBlockMap().put(faceNum, solidBlock);
-                    solidBlock.getAdjacentBlockMap().put(faceNum % 2 == 0 ? faceNum + 1 : faceNum - 1, fluidBlock);
-                }
-            }
-        }
-    }
-
     public void updateAll() {
-        updateSolidNeighbors();
-        updateFluidNeighbors();
-        updateSolidToFluidNeighbors();
-        updateFluidToSolidNeighbors();
+        for (Block solidBlock : solidBlocks.getBlockList()) {
+            updateNeighbors(solidBlock);
+        }
+
+        for (Block fluidBlock : fluidBlocks.getBlockList()) {
+            updateNeighbors(fluidBlock);
+        }
+    }
+
+    public void updateNeighbors(Block block) {
+        for (int j = 0; j <= 5; j++) { // j - facenum
+            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
+            Integer hashCode1 = posSolidMap.get(otherBlockPos);
+            Integer hashCode2 = posFluidMap.get(otherBlockPos);
+            if (hashCode1 == null && hashCode2 == null) {
+                block.getAdjacentBlockMap().remove(j);
+            } else if (hashCode1 != null && hashCode2 == null) {
+                block.getAdjacentBlockMap().put(j, hashCode1);
+            } else if (hashCode1 == null && hashCode2 != null) {
+                block.getAdjacentBlockMap().put(j, hashCode2);
+            }
+        }
     }
 
     public void updateFluids() {
         for (Block fluidBlock : fluidBlocks.getBlockList()) {
             fluidBlock.enableAllFaces(false);
-            for (int i = 0; i <= 5; i++) {
-                Block otherFluidBlock = fluidBlock.getAdjacentBlockMap().get(i);
-                if (otherFluidBlock != null && otherFluidBlock.isPassable()) {
-                    fluidBlock.disableFace(i, false);
+            for (int j = 0; j <= 5; j++) { // j - face number
+                Integer hash1 = fluidBlock.getAdjacentBlockMap().get(j);
+                Integer hash2 = posFluidMap.get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
+                if (hash1 != null && hash1.equals(hash2)) {
+                    fluidBlock.disableFace(j, false);
                 }
             }
         }
@@ -718,8 +692,12 @@ public class LevelRenderer {
         return randomLevelGenerator;
     }
 
-    public Map<Vector3f, Integer> getPosMap() {
-        return posMap;
+    public Map<Vector3f, Integer> getPosSolidMap() {
+        return posSolidMap;
+    }
+
+    public Map<Vector3f, Integer> getPosFluidMap() {
+        return posFluidMap;
     }
 
 }
