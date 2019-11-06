@@ -232,7 +232,7 @@ public class RandomLevelGenerator {
                             levelRenderer.updateSolidToFluidNeighbors();
                             // this provides external monitoring of level generation progress                        
                             levelRenderer.incProgress(80.0f / (float) totalAmount);
-                        } else if (solidAdjBlock != null && RANDOM.nextInt(2) == 0) {
+                        } else if (solidAdjBlock != null) {
                             solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
                             if (solidAdjBlock != null) {
                                 solidBatch--;
@@ -240,6 +240,10 @@ public class RandomLevelGenerator {
                                 levelRenderer.updateSolidToFluidNeighbors();
                                 // this provides external monitoring of level generation progress                        
                                 levelRenderer.incProgress(80.0f / (float) totalAmount);
+                            }
+                            //--------------------------------------------------
+                            if (RANDOM.nextInt(2) == 0) {
+                                solidBlock = solidAdjBlock;
                             }
                         } else {
                             solidBlock = null;
@@ -261,7 +265,7 @@ public class RandomLevelGenerator {
                             levelRenderer.updateFluidToSolidNeighbors();
                             // this provides external monitoring of level generation progress                        
                             levelRenderer.incProgress(80.0f / (float) totalAmount);
-                        } else if (fluidAdjBlock != null && RANDOM.nextInt(2) == 0) {
+                        } else if (fluidAdjBlock != null) {
                             fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
                             if (fluidAdjBlock != null) {
                                 fluidBatch--;
@@ -269,6 +273,9 @@ public class RandomLevelGenerator {
                                 levelRenderer.updateFluidToSolidNeighbors();
                                 // this provides external monitoring of level generation progress                        
                                 levelRenderer.incProgress(80.0f / (float) totalAmount);
+                            } //--------------------------------------------------
+                            if (RANDOM.nextInt(2) == 0) {
+                                fluidBlock = fluidAdjBlock;
                             }
                         } else {
                             fluidBlock = null;
