@@ -121,6 +121,7 @@ public class Editor {
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                     selectedCurrIndex = minSolidBlkIndex;
+                    System.err.println(selectedCurr.getAdjacentBlockMap().size());
                 }
             } else if (minDistanceOfSolid >= minDistanceOfFluid) {
                 if (minFluid != null) {
@@ -131,6 +132,7 @@ public class Editor {
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                     selectedCurrIndex = minFluidBlkIndex;
+                    System.err.println(selectedCurr.getAdjacentBlockMap().size());
                 }
             }
         }
@@ -226,10 +228,11 @@ public class Editor {
         if (selectedNew != null) {
             if (!cannotPlace(levelRenderer) && !levelRenderer.getObserver().getCamera().intersects(selectedNew)) {
                 selectedNew.setSecondaryTexture(null);
-                if (selectedNew.isPassable()) { // if block is solid
+                if (selectedNew.isPassable()) { // if block is fluid
+                    levelRenderer.getPosFluidMap().put(selectedNew.getPos(), selectedNew.hashCode());
                     levelRenderer.getFluidBlocks().getBlockList().add(selectedNew); // add the block to the fluid blocks
                     levelRenderer.getFluidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateAll();
+                    levelRenderer.updateFluidNeighbors();
                     levelRenderer.updateFluids();
                     //----------------------------------------------------------
                     int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
@@ -247,10 +250,11 @@ public class Editor {
                     }
                     levelRenderer.getFluidSeries().setBuffered(false);
                     //----------------------------------------------------------                    
-                } else { // else if block is fluid
+                } else { // else if block is solid
+                    levelRenderer.getPosSolidMap().put(selectedNew.getPos(), selectedNew.hashCode());
                     levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks
                     levelRenderer.getSolidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateAll();
+                    levelRenderer.updateSolidNeighbors();
                     //----------------------------------------------------------
                     int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
                             selectedNew.getPrimaryTexture(),
@@ -294,7 +298,7 @@ public class Editor {
                 levelRenderer.getFluidSeries().setBuffered(false);
                 levelRenderer.getPosFluidMap().remove(selectedCurr.getPos());
                 //--------------------------------------------------------------
-                levelRenderer.updateAll();
+                levelRenderer.updateFluidNeighbors();
                 levelRenderer.updateFluids();
             } else {
                 levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
@@ -312,7 +316,7 @@ public class Editor {
                 }
                 levelRenderer.getSolidSeries().setBuffered(false);
                 levelRenderer.getPosSolidMap().remove(selectedCurr.getPos());
-                levelRenderer.updateAll();
+                levelRenderer.updateSolidNeighbors();
             }
         }
         deselect();

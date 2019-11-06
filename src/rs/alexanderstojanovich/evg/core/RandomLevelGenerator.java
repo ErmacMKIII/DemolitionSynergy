@@ -79,6 +79,7 @@ public class RandomLevelGenerator {
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 1.0f);
         Block solidBlock = new Block(false, randomSolidTexture(), pos, col, false);
+        levelRenderer.getPosSolidMap().put(solidBlock.getPos(), solidBlock.hashCode());
         levelRenderer.getSolidBlocks().getBlockList().add(solidBlock);
         return solidBlock;
     }
@@ -103,6 +104,7 @@ public class RandomLevelGenerator {
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 0.5f);
         Block fluidBlock = new Block(false, Texture.WATER, pos, col, true);
+        levelRenderer.getPosFluidMap().put(fluidBlock.getPos(), fluidBlock.hashCode());
         levelRenderer.getFluidBlocks().getBlockList().add(fluidBlock);
         return fluidBlock;
     }
@@ -153,6 +155,7 @@ public class RandomLevelGenerator {
         block.getAdjacentBlockMap().put(randFace, solidAdjBlock.hashCode());
         solidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block.hashCode());
 
+        levelRenderer.getPosSolidMap().put(solidAdjBlock.getPos(), solidAdjBlock.hashCode());
         levelRenderer.getSolidBlocks().getBlockList().add(solidAdjBlock);
         return solidAdjBlock;
     }
@@ -202,6 +205,7 @@ public class RandomLevelGenerator {
         block.getAdjacentBlockMap().put(randFace, fluidAdjBlock.hashCode());
         fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block.hashCode());
 
+        levelRenderer.getPosSolidMap().put(fluidAdjBlock.getPos(), fluidAdjBlock.hashCode());
         levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
         return fluidAdjBlock;
     }
@@ -233,7 +237,7 @@ public class RandomLevelGenerator {
                             solidAdjBlock = solidBlock;
                             solidBatch--;
                             solidBlocks--;
-                            levelRenderer.updateAll();
+                            levelRenderer.updateSolidNeighbors();
                             // this provides external monitoring of level generation progress                        
                             levelRenderer.incProgress(80.0f / (float) totalAmount);
                         } else if (solidAdjBlock != null) {
@@ -241,7 +245,7 @@ public class RandomLevelGenerator {
                             if (solidAdjBlock != null) {
                                 solidBatch--;
                                 solidBlocks--;
-                                levelRenderer.updateAll();
+                                levelRenderer.updateSolidNeighbors();
                                 // this provides external monitoring of level generation progress                        
                                 levelRenderer.incProgress(80.0f / (float) totalAmount);
                             }
@@ -266,7 +270,7 @@ public class RandomLevelGenerator {
                             fluidAdjBlock = fluidBlock;
                             fluidBatch--;
                             fluidBlocks--;
-                            levelRenderer.updateAll();
+                            levelRenderer.updateFluidNeighbors();
                             // this provides external monitoring of level generation progress                        
                             levelRenderer.incProgress(80.0f / (float) totalAmount);
                         } else if (fluidAdjBlock != null) {
@@ -274,7 +278,7 @@ public class RandomLevelGenerator {
                             if (fluidAdjBlock != null) {
                                 fluidBatch--;
                                 fluidBlocks--;
-                                levelRenderer.updateAll();
+                                levelRenderer.updateFluidNeighbors();
                                 // this provides external monitoring of level generation progress                        
                                 levelRenderer.incProgress(80.0f / (float) totalAmount);
                             } //--------------------------------------------------
@@ -288,7 +292,6 @@ public class RandomLevelGenerator {
                 }
                 //------------------------------------------------------------------                                                
             }
-            levelRenderer.updateAll();
         }
     }
 

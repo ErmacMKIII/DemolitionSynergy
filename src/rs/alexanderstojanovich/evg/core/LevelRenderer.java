@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
@@ -123,6 +122,8 @@ public class LevelRenderer {
             }
         }
 
+        updateAll();
+
         solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
         fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
 
@@ -153,7 +154,7 @@ public class LevelRenderer {
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
         posSolidMap.clear();
-        posSolidMap.clear();
+        posFluidMap.clear();
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
@@ -475,14 +476,21 @@ public class LevelRenderer {
         return success;
     }
 
-    public void updateAll() {
+    public void updateSolidNeighbors() {
         for (Block solidBlock : solidBlocks.getBlockList()) {
             updateNeighbors(solidBlock);
         }
+    }
 
+    public void updateFluidNeighbors() {
         for (Block fluidBlock : fluidBlocks.getBlockList()) {
             updateNeighbors(fluidBlock);
         }
+    }
+
+    public void updateAll() {
+        updateSolidNeighbors();
+        updateFluidNeighbors();
     }
 
     public void updateNeighbors(Block block) {
