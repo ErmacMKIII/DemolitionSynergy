@@ -37,8 +37,6 @@ public class RandomLevelGenerator {
 
     private int numberOfBlocks = 0;
 
-    private int remainingBlocks = 0;
-
     public RandomLevelGenerator(LevelRenderer levelRenderer) {
         this.levelRenderer = levelRenderer;
     }
@@ -71,8 +69,7 @@ public class RandomLevelGenerator {
             posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
-        } while (levelRenderer.isPlaceOccupiedBySolid(randPos)
-                || levelRenderer.isPlaceOccupiedByFluid(randPos)
+        } while (levelRenderer.getPosMap().get(randPos) != null
                 || levelRenderer.getObserver().getModel().contains(randPos)
                 || levelRenderer.getObserver().getCamera().getPos().equals(randPos));
         float colx = RANDOM.nextFloat();
@@ -80,7 +77,7 @@ public class RandomLevelGenerator {
         float colz = RANDOM.nextFloat();
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 1.0f);
-        Block solidBlock = new Block(false, Texture.STONE, pos, col, false);
+        Block solidBlock = new Block(false, randomSolidTexture(), pos, col, false);
         levelRenderer.getSolidBlocks().getBlockList().add(solidBlock);
         return solidBlock;
     }
@@ -95,8 +92,7 @@ public class RandomLevelGenerator {
             posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(2.0f * LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
-        } while (levelRenderer.isPlaceOccupiedBySolid(randPos)
-                || levelRenderer.isPlaceOccupiedByFluid(randPos)
+        } while (levelRenderer.getPosMap().get(randPos) != null
                 || levelRenderer.getObserver().getModel().contains(randPos)
                 || levelRenderer.getObserver().getCamera().getPos().equals(randPos));
         float colx = RANDOM.nextFloat();
@@ -141,8 +137,7 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (levelRenderer.isPlaceOccupiedBySolid(adjPos)
-                || levelRenderer.isPlaceOccupiedByFluid(adjPos)
+        } while (levelRenderer.getPosMap().get(adjPos) != null
                 || levelRenderer.getObserver().getModel().contains(adjPos)
                 || levelRenderer.getObserver().getCamera().getPos().equals(adjPos));
         float adjColx = RANDOM.nextFloat();
@@ -191,8 +186,7 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (levelRenderer.isPlaceOccupiedBySolid(adjPos)
-                || levelRenderer.isPlaceOccupiedByFluid(adjPos)
+        } while (levelRenderer.getPosMap().get(adjPos) != null
                 || levelRenderer.getObserver().getModel().contains(adjPos)
                 || levelRenderer.getObserver().getCamera().getPos().equals(adjPos));
         float adjColx = RANDOM.nextFloat();

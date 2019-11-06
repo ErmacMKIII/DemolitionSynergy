@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import rs.alexanderstojanovich.evg.core.Texture;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,6 +25,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Matrix4f;
@@ -36,6 +36,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -628,6 +629,20 @@ public class Model implements Comparable<Model> {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 23 * hash + Objects.hashCode(this.vertices);
+        hash = 23 * hash + Objects.hashCode(this.indices);
+        hash = 23 * hash + Objects.hashCode(this.primaryTexture);
+        hash = 23 * hash + Float.floatToIntBits(this.width);
+        hash = 23 * hash + Float.floatToIntBits(this.height);
+        hash = 23 * hash + Float.floatToIntBits(this.depth);
+        hash = 23 * hash + Objects.hashCode(this.pos);
+        hash = 23 * hash + Objects.hashCode(this.primaryColor);
+        return hash;
     }
 
 }

@@ -22,6 +22,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
@@ -66,6 +68,9 @@ public class LevelRenderer {
 
     private final RandomLevelGenerator randomLevelGenerator;
 
+    //----------------Vector3f hash, Block hash---------------------------------
+    private final Map<Vector3f, Integer> posMap = new HashMap<>();
+
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
@@ -90,6 +95,7 @@ public class LevelRenderer {
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
+        posMap.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(false, Texture.DOOM0);
@@ -98,6 +104,8 @@ public class LevelRenderer {
                 entity.getPos().x = 4.0f * i;
                 entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
+
+                posMap.put(entity.getPos(), entity.hashCode());
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
@@ -141,6 +149,7 @@ public class LevelRenderer {
         solidBlocks.getBlockList().clear();
         fluidBlocks.getBlockList().clear();
         fluidBlocks.setVerticesReversed(false);
+        posMap.clear();
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
@@ -271,6 +280,7 @@ public class LevelRenderer {
             solidBlocks.getBlockList().clear();
             fluidBlocks.getBlockList().clear();
             fluidBlocks.setVerticesReversed(false);
+            posMap.clear();
             pos += 2;
             byte[] posArr = new byte[12];
             System.arraycopy(buffer, pos, posArr, 0, posArr.length);
@@ -327,6 +337,8 @@ public class LevelRenderer {
 
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                     solidBlocks.getBlockList().add(block);
+
+                    posMap.put(blockPos, block.hashCode());
                 }
                 solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                 solidBlocks.setBuffered(false);
@@ -361,6 +373,8 @@ public class LevelRenderer {
 
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                         fluidBlocks.getBlockList().add(block);
+
+                        posMap.put(blockPos, block.hashCode());
                     }
                     fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
                     fluidBlocks.setBuffered(false);
@@ -525,7 +539,8 @@ public class LevelRenderer {
         }
     }
 
-    public boolean isPlaceOccupiedBySolid(Vector3f pos) {
+    @Deprecated
+    public boolean isPlaceOccupiedBySolid(Vector3f pos) { // derpecated, use posMap
         boolean occ = false;
         for (int i = 0; i < solidBlocks.getBlockList().size() && !occ; i++) {
             occ = solidBlocks.getBlockList().get(i).getPos().x == pos.x
@@ -535,7 +550,8 @@ public class LevelRenderer {
         return occ;
     }
 
-    public boolean isPlaceOccupiedByFluid(Vector3f pos) {
+    @Deprecated
+    public boolean isPlaceOccupiedByFluid(Vector3f pos) { // derpecated, use posMap
         boolean occ = false;
         for (int i = 0; i < fluidBlocks.getBlockList().size() && !occ; i++) {
             occ = fluidBlocks.getBlockList().get(i).getPos().x == pos.x
@@ -700,6 +716,10 @@ public class LevelRenderer {
 
     public RandomLevelGenerator getRandomLevelGenerator() {
         return randomLevelGenerator;
+    }
+
+    public Map<Vector3f, Integer> getPosMap() {
+        return posMap;
     }
 
 }

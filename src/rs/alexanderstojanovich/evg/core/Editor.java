@@ -197,8 +197,7 @@ public class Editor {
 
     private static boolean cannotPlace(LevelRenderer levelRenderer) {
         boolean cant = false;
-        boolean placeOccupied = levelRenderer.isPlaceOccupiedBySolid(selectedNew.getPos())
-                || levelRenderer.isPlaceOccupiedByFluid(selectedNew.getPos());
+        boolean placeOccupied = levelRenderer.getPosMap().get(selectedNew.getPos()) != null;
         boolean intsSolid = false;
         for (int i = 0; i < levelRenderer.getSolidBlocks().getBlockList().size() && !intsSolid; i++) {
             intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().getBlockList().get(i));
@@ -319,6 +318,7 @@ public class Editor {
                 }
                 levelRenderer.getSolidSeries().setBuffered(false);
             }
+            levelRenderer.getPosMap().remove(selectedNew.getPos(), selectedNew);
         }
         deselect();
     }
