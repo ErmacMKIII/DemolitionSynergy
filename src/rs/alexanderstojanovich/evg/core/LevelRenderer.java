@@ -53,7 +53,7 @@ public class LevelRenderer {
 
     private Critter observer;
 
-    private final byte[] buffer = new byte[0x100000];
+    private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
     public static final float SKYBOX_SCALE = Math.round(337.5f / Game.EPSILON); // default 3375000.0
