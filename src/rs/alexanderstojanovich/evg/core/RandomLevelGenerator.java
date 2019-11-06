@@ -205,7 +205,7 @@ public class RandomLevelGenerator {
         block.getAdjacentBlockMap().put(randFace, fluidAdjBlock.hashCode());
         fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block.hashCode());
 
-        levelRenderer.getPosSolidMap().put(fluidAdjBlock.getPos(), fluidAdjBlock.hashCode());
+        levelRenderer.getPosFluidMap().put(fluidAdjBlock.getPos(), fluidAdjBlock.hashCode());
         levelRenderer.getFluidBlocks().getBlockList().add(fluidAdjBlock);
         return fluidAdjBlock;
     }
