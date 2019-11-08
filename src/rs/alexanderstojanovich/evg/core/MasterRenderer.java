@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.core;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -27,17 +26,10 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class MasterRenderer {
 
-    private static GLCapabilities glCaps;
-    private final Window myWindow;
+    private static GLCapabilities glCaps; // GL context   
 
-    public MasterRenderer(Window window) {
-        this.myWindow = window;
-        initGL(); // load GL context into this thread  -> important!
-        ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-        PerspectiveRenderer.updatePerspective(myWindow);
-    }
-
-    private void initGL() {
+    // load GL context into this thread  -> important!
+    public static void initGL(Window myWindow) {
         // load context
         myWindow.loadContext();
         // disable vsync
@@ -54,19 +46,15 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
 
-        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black        
     }
 
-    public void render() {
+    public static void render() {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
     public static GLCapabilities getGlCaps() {
         return glCaps;
-    }
-
-    public Window getMyWindow() {
-        return myWindow;
     }
 
 }

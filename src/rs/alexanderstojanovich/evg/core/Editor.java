@@ -121,7 +121,6 @@ public class Editor {
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                     selectedCurrIndex = minSolidBlkIndex;
-                    System.err.println(selectedCurr.getAdjacentBlockMap().size());
                 }
             } else if (minDistanceOfSolid >= minDistanceOfFluid) {
                 if (minFluid != null) {
@@ -132,7 +131,6 @@ public class Editor {
                     selectedCurr.getSecondaryColor().w = 1.0f;
                     selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                     selectedCurrIndex = minFluidBlkIndex;
-                    System.err.println(selectedCurr.getAdjacentBlockMap().size());
                 }
             }
         }

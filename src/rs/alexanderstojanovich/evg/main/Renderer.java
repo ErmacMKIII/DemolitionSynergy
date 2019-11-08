@@ -17,12 +17,13 @@
 package rs.alexanderstojanovich.evg.main;
 
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -31,10 +32,9 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 public class Renderer extends Thread {
 
     private final Window myWindow;
-    private final MasterRenderer masterRenderer;
-    private final LevelRenderer levelRenderer;
-    private final WaterRenderer waterRenderer;
-    private final Intrface intrface;
+    private LevelRenderer levelRenderer;
+    private WaterRenderer waterRenderer;
+    private Intrface intrface;
 
     private final Object objMutex; // got from the Game    
 
@@ -46,14 +46,20 @@ public class Renderer extends Thread {
         super("Renderer");
         this.myWindow = myWindow;
         this.objMutex = objMutex;
-        masterRenderer = new MasterRenderer(myWindow);
-        levelRenderer = new LevelRenderer(myWindow);
-        waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-        intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
     }
 
     @Override
     public void run() {
+
+        synchronized (objMutex) {
+            MasterRenderer.initGL(myWindow); // loads myWindow context, creates OpenGL context..
+            ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
+            PerspectiveRenderer.updatePerspective(myWindow); // updates perspective for all the existing shaders
+
+            levelRenderer = new LevelRenderer(myWindow);
+            waterRenderer = new WaterRenderer(myWindow, levelRenderer);
+            intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
+        }
 
         long timer0 = System.currentTimeMillis();
         long timer1 = System.currentTimeMillis();
@@ -68,7 +74,6 @@ public class Renderer extends Thread {
         while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
             synchronized (objMutex) {
                 myWindow.loadContext();
-                GL.setCapabilities(MasterRenderer.getGlCaps());
 
                 currTime = GLFW.glfwGetTime();
                 diff = currTime - lastTime;
@@ -76,7 +81,7 @@ public class Renderer extends Thread {
                 lastTime = currTime;
 
                 if (fpsTicks >= 1.0) {
-                    masterRenderer.render();
+                    MasterRenderer.render(); // it clears color bit and depth buffer bit
 
                     if (!levelRenderer.isWorking()) {
                         levelRenderer.render();
@@ -141,7 +146,6 @@ public class Renderer extends Thread {
                     timer2 += 250;
                 }
 
-                GL.setCapabilities(null);
                 Window.unloadContext();
             }
         }
@@ -150,10 +154,6 @@ public class Renderer extends Thread {
 
     public Window getMyWindow() {
         return myWindow;
-    }
-
-    public MasterRenderer getMasterRenderer() {
-        return masterRenderer;
     }
 
     public LevelRenderer getLevelRenderer() {

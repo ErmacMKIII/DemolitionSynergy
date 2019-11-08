@@ -24,7 +24,6 @@ import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -92,8 +91,6 @@ public class Game {
         renderer = new Renderer(myWindow, objMutex);
         keys = new boolean[1024];
         initCallbacks();
-        GL.setCapabilities(null);
-        Window.unloadContext();
     }
 
     private void observerDo() {

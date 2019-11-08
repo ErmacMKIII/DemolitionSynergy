@@ -23,7 +23,6 @@ import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
-import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.main.Game;
 
 /**
@@ -34,7 +33,7 @@ public class Window {
 
     private int width;
     private int height;
-    private String title;
+    private final String title;
 
     private long windowID;
     private long monitorID;
@@ -151,7 +150,7 @@ public class Window {
 
     public Object[] giveAllResolutions() {
         Buffer buffer = GLFW.glfwGetVideoModes(monitorID);
-        ArrayList<Object> res = new ArrayList<Object>();
+        ArrayList<Object> res = new ArrayList<>();
         for (int i = 0; i < buffer.capacity(); i++) {
             GLFWVidMode vidMode = buffer.get();
             String s = vidMode.width() + "x" + vidMode.height();

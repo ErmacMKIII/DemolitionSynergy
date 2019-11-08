@@ -138,7 +138,7 @@ public class DynamicText extends Text {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv            
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                      
             for (int k = 0; k < content.length(); k++) {
                 ShaderProgram.getIntrfaceShader().bind();
                 ShaderProgram.getIntrfaceShader().updateUniform(quad.getPos(), "trans");
