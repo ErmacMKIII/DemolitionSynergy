@@ -224,7 +224,7 @@ public class RandomLevelGenerator {
             final int totalAmount = solidBlocks + fluidBlocks;
 
             while ((solidBlocks > 0 || fluidBlocks > 0)
-                    && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                    && !levelRenderer.getMyWindow().shouldClose()) {
 
                 float alpha = RANDOM.nextFloat();
 
@@ -237,7 +237,7 @@ public class RandomLevelGenerator {
                     Block solidBlock = null;
                     Block solidAdjBlock = null;
                     while (solidBatch > 0
-                            && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                            && !levelRenderer.getMyWindow().shouldClose()) {
                         if (solidBlock == null) {
                             solidBlock = generateRandomSolidBlock();
                             solidAdjBlock = solidBlock;
@@ -268,7 +268,7 @@ public class RandomLevelGenerator {
                     Block fluidBlock = null;
                     Block fluidAdjBlock = null;
                     while (fluidBatch > 0
-                            && !GLFW.glfwWindowShouldClose(levelRenderer.getMyWindow().getWindowID())) {
+                            && !levelRenderer.getMyWindow().shouldClose()) {
                         if (fluidBlock == null) {
                             fluidBlock = generateRandomFluidBlock();
                             fluidAdjBlock = fluidBlock;

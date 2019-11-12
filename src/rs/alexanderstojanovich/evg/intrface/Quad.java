@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
@@ -48,8 +49,9 @@ public class Quad {
     private boolean ignoreFactor = false;
 
     private static final Vector2f[] VERTICES = new Vector2f[4];
-    private static final Vector2f[] UVS = new Vector2f[4];
-
+    private final Vector2f[] uvs = new Vector2f[4];
+    private static final int[] INDICES = {0, 1, 2, 2, 3, 0};
+    private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
     private int vbo;
 
     public static final int VERTEX_SIZE = 4;
@@ -63,10 +65,10 @@ public class Quad {
         VERTICES[2] = new Vector2f(1.0f, 1.0f);
         VERTICES[3] = new Vector2f(-1.0f, 1.0f);
 
-        UVS[0] = new Vector2f(0.0f, 1.0f);
-        UVS[1] = new Vector2f(1.0f, 1.0f);
-        UVS[2] = new Vector2f(1.0f, 0.0f);
-        UVS[3] = new Vector2f(0.0f, 0.0f);
+        for (int i : INDICES) {
+            CONST_INT_BUFFER.put(i);
+        }
+        CONST_INT_BUFFER.flip();
     }
 
     public Quad(Window window, int width, int height, Texture texture) {
@@ -74,6 +76,7 @@ public class Quad {
         this.width = width;
         this.height = height;
         this.texture = texture;
+        initUVs();
     }
 
     public Quad(Window window, int width, int height, Texture texture, boolean ignoreFactor) {
@@ -82,6 +85,14 @@ public class Quad {
         this.height = height;
         this.texture = texture;
         this.ignoreFactor = ignoreFactor;
+        initUVs();
+    }
+
+    private void initUVs() {
+        uvs[0] = new Vector2f(0.0f, 1.0f); // (-1.0f, -1.0f)
+        uvs[1] = new Vector2f(1.0f, 1.0f); // (1.0f, -1.0f)
+        uvs[2] = new Vector2f(1.0f, 0.0f); // (1.0f, 1.0f)
+        uvs[3] = new Vector2f(0.0f, 0.0f); // (-1.0f, 1.0f)
     }
 
     public void buffer() {
@@ -89,13 +100,13 @@ public class Quad {
         for (int i = 0; i < 4; i++) {
             fb.put(VERTICES[i].x);
             fb.put(VERTICES[i].y);
-            fb.put(UVS[i].x);
-            fb.put(UVS[i].y);
+            fb.put(uvs[i].x);
+            fb.put(uvs[i].y);
         }
         fb.flip();
         vbo = GL15.glGenBuffers();
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         buffered = true;
     }
@@ -119,7 +130,7 @@ public class Quad {
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
             ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "xinc");
             ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "ydec");
-            GL11.glDrawArrays(GL11.GL_QUADS, 0, 4);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
 
             Texture.unbind(0);
             ShaderProgram.unbind();
@@ -149,7 +160,7 @@ public class Quad {
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
             ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
             ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
-            GL11.glDrawArrays(GL11.GL_QUADS, 0, 4);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
 
             Texture.unbind(0);
             ShaderProgram.unbind();
@@ -254,8 +265,8 @@ public class Quad {
         return buffered;
     }
 
-    public Vector2f[] getUVS() {
-        return UVS;
+    public Vector2f[] getUvs() {
+        return uvs;
     }
 
     public void setPos(Vector2f pos) {

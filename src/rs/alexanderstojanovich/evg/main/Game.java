@@ -350,7 +350,7 @@ public class Game {
         double currTime;
         double diff;
 
-        while (!GLFW.glfwWindowShouldClose(myWindow.getWindowID())) {
+        while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             upsTicks += diff * upsCap;

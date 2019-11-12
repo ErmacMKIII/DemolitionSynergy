@@ -162,6 +162,10 @@ public class Window {
         return res.toArray();
     }
 
+    public boolean shouldClose() {
+        return GLFW.glfwWindowShouldClose(windowID);
+    }
+
     public int getWidth() {
         return width;
     }

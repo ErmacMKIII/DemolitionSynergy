@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
