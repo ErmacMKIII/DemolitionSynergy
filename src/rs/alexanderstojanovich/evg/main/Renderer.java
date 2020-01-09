@@ -90,9 +90,9 @@ public class Renderer extends Thread {
                         }
                     } else {
                         intrface.getProgText().setContent("Loading progress: " + Math.round(levelRenderer.getProgress()) + "%");
-//                        if (!intrface.getProgText().isBuffered()) {
-//                            intrface.getProgText().buffer();
-//                        }
+                        if (!intrface.getProgText().isBuffered()) {
+                            intrface.getProgText().buffer();
+                        }
                         intrface.getProgText().render();
                     }
 

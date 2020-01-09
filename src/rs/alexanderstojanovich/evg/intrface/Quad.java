@@ -127,7 +127,7 @@ public class Quad {
             ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
             ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
+            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
             ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "xinc");
             ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "ydec");
             GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
@@ -157,7 +157,7 @@ public class Quad {
             ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
             ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
+            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
             ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
             ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
             GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);

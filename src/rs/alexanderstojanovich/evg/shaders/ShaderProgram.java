@@ -41,9 +41,8 @@ public class ShaderProgram {
     private static ShaderProgram waterBaseShader;
     private static ShaderProgram waterVoxelShader;
     private static ShaderProgram intrfaceShader;
-    private static ShaderProgram fontsShader; // new since 2019-11-09
 
-    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[6];
+    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[5];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
         // 1. Init main shader (skybox, camera)
@@ -86,14 +85,6 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         SHADER_PROGRAMS[4] = intrfaceShader;
-        // 6. Init interface shader for text, menus and fonts (new)
-        Shader fontsVertexShader = new Shader("fontsVS.glsl", Shader.VERTEX_SHADER);
-        Shader fontsFragmentShader = new Shader("fontsFS.glsl", Shader.FRAGMENT_SHADER);
-        List<Shader> fontsShaders = new ArrayList<>();
-        fontsShaders.add(fontsVertexShader);
-        fontsShaders.add(fontsFragmentShader);
-        fontsShader = new ShaderProgram(fontsShaders);
-        SHADER_PROGRAMS[5] = fontsShader;
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -207,10 +198,6 @@ public class ShaderProgram {
 
     public static ShaderProgram[] getSHADER_PROGRAMS() {
         return SHADER_PROGRAMS;
-    }
-
-    public static ShaderProgram getFontsShader() {
-        return fontsShader;
     }
 
 }

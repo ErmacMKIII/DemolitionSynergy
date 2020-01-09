@@ -70,7 +70,7 @@ public class DynamicText extends Text {
         super(window, texture, content, pos, charWidth, charHeight);
     }
 
-    public void buffer() {
+    protected void bufferVbo() {
         pairList.clear();
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(content.length() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         String[] lines = content.split("\n");
@@ -125,6 +125,10 @@ public class DynamicText extends Text {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    public void buffer() {
+        bufferVbo();
         buffered = true;
     }
 
@@ -145,7 +149,7 @@ public class DynamicText extends Text {
             ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
             ShaderProgram.getIntrfaceShader().updateUniform(quad.getScale(), "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(quad.getColor(), "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "texture0");
+            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
             for (int k = 0; k < content.length(); k++) {
                 Pair<Float, Float> pair = pairList.get(vboEntries[k] >> 2);
                 float xinc = (float) pair.getKey();

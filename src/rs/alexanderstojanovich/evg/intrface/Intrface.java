@@ -40,16 +40,16 @@ public class Intrface {
     private final Window myWindow;
 
     private Quad crosshair;
-    private Text infoText; // displays update and framerate
-    private Text collText; // collision info
-    private Text helpText; // displays the help (toggle)
-    private Text progText; // progress text;
+    private DynamicText infoText; // displays update and framerate
+    private DynamicText collText; // collision info
+    private DynamicText helpText; // displays the help (toggle)
+    private DynamicText progText; // progress text;
 
     private boolean showHelp = false;
 
-    private Dialog commandDialog;
-    private Dialog saveDialog;
-    private Dialog loadDialog;
+    private ConcurrentDialog commandDialog;
+    private ConcurrentDialog saveDialog;
+    private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
 
     private Menu mainMenu;
@@ -72,10 +72,10 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new Text(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
-        collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
-        helpText = new Text(myWindow, Texture.FONT, Text.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
-        progText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.85f));
+        infoText = new DynamicText(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
+        collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
+        helpText = new DynamicText(myWindow, Texture.FONT, DynamicText.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
+        progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.85f));
         helpText.setEnabled(false);
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -109,7 +109,7 @@ public class Intrface {
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
-        commandDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
                 "ENTER COMMAND: ", "OK", "ERROR!") {
             @Override
             protected boolean execute(String command) {
@@ -202,7 +202,7 @@ public class Intrface {
             }
         };
 
-        saveDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -212,7 +212,7 @@ public class Intrface {
             }
         };
 
-        loadDialog = new Dialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -397,17 +397,17 @@ public class Intrface {
         saveDialog.render();
         loadDialog.render();
         randLvlDialog.render();
-//        if (!infoText.isBuffered()) {
-//            infoText.buffer();
-//        }
+        if (!infoText.isBuffered()) {
+            infoText.buffer();
+        }
         infoText.render();
-//        if (!collText.isBuffered()) {
-//            collText.buffer();
-//        }
+        if (!collText.isBuffered()) {
+            collText.buffer();
+        }
         collText.render();
-//        if (!helpText.isBuffered()) {
-//            helpText.buffer();
-//        }
+        if (!helpText.isBuffered()) {
+            helpText.buffer();
+        }
         helpText.render();
         mainMenu.render();
         optionsMenu.render();
@@ -428,15 +428,15 @@ public class Intrface {
         return crosshair;
     }
 
-    public Text getInfoText() {
+    public DynamicText getInfoText() {
         return infoText;
     }
 
-    public Text getCollText() {
+    public DynamicText getCollText() {
         return collText;
     }
 
-    public Text getHelpText() {
+    public DynamicText getHelpText() {
         return helpText;
     }
 
@@ -484,7 +484,7 @@ public class Intrface {
         return randLvlDialog;
     }
 
-    public Text getProgText() {
+    public DynamicText getProgText() {
         return progText;
     }
 
