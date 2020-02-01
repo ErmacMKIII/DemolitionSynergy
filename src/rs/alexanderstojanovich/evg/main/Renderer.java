@@ -80,12 +80,12 @@ public class Renderer extends Thread {
                 fpsTicks += diff * Game.getFpsMax();
                 lastTime = currTime;
 
-                if (fpsTicks >= 1.0) {
+                if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
                     MasterRenderer.render(); // it clears color bit and depth buffer bit
 
                     if (!levelRenderer.isWorking()) {
                         levelRenderer.render();
-                        if (Game.isWaterEffects()) {
+                        if (Game.isWaterEffects() && !levelRenderer.getFluidBlocks().getBlockList().isEmpty()) {
                             waterRenderer.render();
                         }
                     } else {
