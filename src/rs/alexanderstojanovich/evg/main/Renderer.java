@@ -72,15 +72,15 @@ public class Renderer extends Thread {
         double diff;
 
         while (!myWindow.shouldClose()) {
-            synchronized (objMutex) {
-                myWindow.loadContext();
+            currTime = GLFW.glfwGetTime();
+            diff = currTime - lastTime;
+            fpsTicks += diff * Game.getFpsMax();
+            lastTime = currTime;
 
-                currTime = GLFW.glfwGetTime();
-                diff = currTime - lastTime;
-                fpsTicks += diff * Game.getFpsMax();
-                lastTime = currTime;
+            if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
+                synchronized (objMutex) {
+                    myWindow.loadContext();
 
-                if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
                     MasterRenderer.render(); // it clears color bit and depth buffer bit
 
                     if (!levelRenderer.isWorking()) {
@@ -102,51 +102,51 @@ public class Renderer extends Thread {
                     myWindow.render();
                     fps++;
                     fpsTicks--;
+
+                    if (System.currentTimeMillis() > timer0 + 1000) {
+                        intrface.getInfoText().getQuad().getColor().x = 0.0f;
+                        intrface.getInfoText().getQuad().getColor().y = 1.0f;
+                        intrface.getInfoText().getQuad().getColor().z = 0.0f;
+                        intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
+                        fps = 0;
+                        timer0 += 1000;
+                    }
+
+                    if (System.currentTimeMillis() > timer1 + 5000) {
+                        if (intrface.getCommandDialog().isDone()) {
+                            intrface.getCommandDialog().setEnabled(false);
+                        }
+                        if (intrface.getSaveDialog().isDone()) {
+                            intrface.getSaveDialog().setEnabled(false);
+                        }
+                        if (intrface.getLoadDialog().isDone()) {
+                            intrface.getLoadDialog().setEnabled(false);
+                        }
+                        if (intrface.getLoadDialog().isDone()) {
+                            intrface.getLoadDialog().setEnabled(false);
+                        }
+                        if (intrface.getRandLvlDialog().isDone()) {
+                            intrface.getRandLvlDialog().setEnabled(false);
+                        }
+                        timer1 += 5000;
+                    }
+
+                    if (System.currentTimeMillis() > timer2 + 250) {
+
+                        if (levelRenderer.getProgress() == 100) {
+                            intrface.getProgText().setEnabled(false);
+                            levelRenderer.setProgress(0);
+                        }
+
+                        if (levelRenderer.getProgress() == 0) {
+                            levelRenderer.animate();
+                        }
+
+                        timer2 += 250;
+                    }
+
+                    Window.unloadContext();
                 }
-
-                if (System.currentTimeMillis() > timer0 + 1000) {
-                    intrface.getInfoText().getQuad().getColor().x = 0.0f;
-                    intrface.getInfoText().getQuad().getColor().y = 1.0f;
-                    intrface.getInfoText().getQuad().getColor().z = 0.0f;
-                    intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
-                    fps = 0;
-                    timer0 += 1000;
-                }
-
-                if (System.currentTimeMillis() > timer1 + 5000) {
-                    if (intrface.getCommandDialog().isDone()) {
-                        intrface.getCommandDialog().setEnabled(false);
-                    }
-                    if (intrface.getSaveDialog().isDone()) {
-                        intrface.getSaveDialog().setEnabled(false);
-                    }
-                    if (intrface.getLoadDialog().isDone()) {
-                        intrface.getLoadDialog().setEnabled(false);
-                    }
-                    if (intrface.getLoadDialog().isDone()) {
-                        intrface.getLoadDialog().setEnabled(false);
-                    }
-                    if (intrface.getRandLvlDialog().isDone()) {
-                        intrface.getRandLvlDialog().setEnabled(false);
-                    }
-                    timer1 += 5000;
-                }
-
-                if (System.currentTimeMillis() > timer2 + 250) {
-
-                    if (levelRenderer.getProgress() == 100) {
-                        intrface.getProgText().setEnabled(false);
-                        levelRenderer.setProgress(0);
-                    }
-
-                    if (levelRenderer.getProgress() == 0) {
-                        levelRenderer.animate();
-                    }
-
-                    timer2 += 250;
-                }
-
-                Window.unloadContext();
             }
         }
 

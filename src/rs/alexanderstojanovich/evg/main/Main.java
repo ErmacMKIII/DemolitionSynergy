@@ -23,7 +23,7 @@ package rs.alexanderstojanovich.evg.main;
 public class Main {
 
     public static void main(String[] args) {
-        Game game = new Game(640, 480, "Demolition Synergy", 80, 100);
+        Game game = new Game(640, 480, "Demolition Synergy - v11 KOREANS", 80, 100);
         game.go();
     }
 }
