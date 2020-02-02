@@ -28,6 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
@@ -58,6 +59,7 @@ public class LevelRenderer {
 
     public static final float SKYBOX_SCALE = Math.round(337.5f / Game.EPSILON); // default 3375000.0
     public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f)); // default 150.0
+    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f);
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
@@ -77,6 +79,7 @@ public class LevelRenderer {
         this.randomLevelGenerator = new RandomLevelGenerator(this);
         // setting skybox
         skybox = new Block(true, Texture.NIGHT);
+        skybox.setPrimaryColor(SKYBOX_COLOR);
         skybox.setUVsForSkybox();
         skybox.setScale(SKYBOX_SCALE);
         // setting observer
@@ -570,6 +573,8 @@ public class LevelRenderer {
         Camera obsCamera = observer.getCamera();
         // render skybox
         obsCamera.render(ShaderProgram.getMainShader());
+        float time = (float) GLFW.glfwGetTime();
+        skybox.setrY(time / 64.0f);
         skybox.render(ShaderProgram.getMainShader());
 
         Block editorNew = Editor.getSelectedNew();

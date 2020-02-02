@@ -229,7 +229,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
                             GL11.GL_TRIANGLES,
                             Block.createIntBuffer(tuple.getE()),
                             tuple.getA().getBlockList().size(),
-                            tuple.getA().getVboEntries()[0]
+                            0
                     );
 
                     Texture.unbind(0);

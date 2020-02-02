@@ -1,6 +1,7 @@
 #version 330 core
 
 const float ambientLight = 0.25;
+const vec3 fogColor = vec3(0.25f, 0.5f, 0.75f);
 
 in vec3 normalOut;
 in vec2 uvOut;
@@ -45,6 +46,14 @@ vec2 reflUV() {
     return vec2(ndc.x, -ndc.y);
 }
 
+vec4 fog(vec3 pos, vec4 color, vec3 fogColor, float fogDensity) {
+	float distance = length(pos);
+	float fogFactor = 1.0 / exp((distance * fogDensity) * (distance * fogDensity));
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+	vec3 resultColor = mix(fogColor, color.xyz, fogFactor);
+	return vec4(resultColor.xyz, color.w);
+}
+
 void main() {
 	vec4 modelColor0 = colorOut;
     vec3 lightDir = normalize(modelLight - modelPosOut);    
@@ -59,17 +68,19 @@ void main() {
     
     float fresnel = dot(normalize(cameraPos), normalOut);
 
-	vec3 finalColor;
+	vec3 color;
 	if (selectedIndex == instanceIdOut) {
-		finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb
+		color = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb
                     + modelColor1.rgb * texture(modelTexture1, uvOut).rgb
 				    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);		
 	} else {
-		finalColor = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb                    
+		color = brightness * (modelColor0.rgb * texture(modelTexture0, uvOut).rgb                    
 				    + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);		
 	}
 	    
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     
-    gl_FragColor = vec4(finalColor.rgb, alpha);    	
+	vec4 finalColor = fog(cameraPos, vec4(color, alpha), fogColor, 0.0375);
+	
+    gl_FragColor = finalColor;    	
 }
