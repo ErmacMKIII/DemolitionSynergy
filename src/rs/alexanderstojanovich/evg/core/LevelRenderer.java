@@ -59,7 +59,7 @@ public class LevelRenderer {
 
     public static final float SKYBOX_SCALE = Math.round(337.5f / Game.EPSILON); // default 3375000.0
     public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f)); // default 150.0
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f);
+    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for skybox
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;

@@ -80,7 +80,7 @@ void main() {
 	    
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     
-	vec4 finalColor = fog(cameraPos, vec4(color, alpha), fogColor, 0.0375);
+	vec4 finalColor = fog(cameraPos, vec4(color, alpha), fogColor, 0.015);
 	
     gl_FragColor = finalColor;    	
 }
