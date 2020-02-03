@@ -61,9 +61,9 @@ public class Renderer extends Thread {
             intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
         }
 
-        long timer0 = System.currentTimeMillis();
-        long timer1 = System.currentTimeMillis();
-        long timer2 = System.currentTimeMillis();
+        double timer0 = GLFW.glfwGetTime();
+        double timer1 = GLFW.glfwGetTime();
+        double timer2 = GLFW.glfwGetTime();
 
         int fps = 0;
 
@@ -103,16 +103,18 @@ public class Renderer extends Thread {
                     fps++;
                     fpsTicks--;
 
-                    if (System.currentTimeMillis() > timer0 + 1000) {
+                    // update text which shows ups and fps every second
+                    if (GLFW.glfwGetTime() > timer0 + 1.0) {
                         intrface.getInfoText().getQuad().getColor().x = 0.0f;
                         intrface.getInfoText().getQuad().getColor().y = 1.0f;
                         intrface.getInfoText().getQuad().getColor().z = 0.0f;
                         intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
                         fps = 0;
-                        timer0 += 1000;
+                        timer0 += 1.0;
                     }
 
-                    if (System.currentTimeMillis() > timer1 + 5000) {
+                    // update text which shows dialog every 5 seconds
+                    if (GLFW.glfwGetTime() > timer1 + 5.0) {
                         if (intrface.getCommandDialog().isDone()) {
                             intrface.getCommandDialog().setEnabled(false);
                         }
@@ -128,10 +130,11 @@ public class Renderer extends Thread {
                         if (intrface.getRandLvlDialog().isDone()) {
                             intrface.getRandLvlDialog().setEnabled(false);
                         }
-                        timer1 += 5000;
+                        timer1 += 5.0;
                     }
 
-                    if (System.currentTimeMillis() > timer2 + 250) {
+                    // update text which animates water every quarter of the second
+                    if (GLFW.glfwGetTime() > timer2 + 0.25) {
 
                         if (levelRenderer.getProgress() == 100) {
                             intrface.getProgText().setEnabled(false);
@@ -142,7 +145,7 @@ public class Renderer extends Thread {
                             levelRenderer.animate();
                         }
 
-                        timer2 += 250;
+                        timer2 += 0.25;
                     }
 
                     Window.unloadContext();

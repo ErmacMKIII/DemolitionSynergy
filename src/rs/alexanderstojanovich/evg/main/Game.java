@@ -35,6 +35,10 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class Game {
 
+    public static final String TITLE = "Demolition Synergy - v11 KOREANS";
+
+    public static final int UPS_CAP = 80;
+
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
@@ -82,12 +86,23 @@ public class Game {
 
     private static double upsTicks = 0.0;
 
-    public Game(int width, int height, String title, int upsCap, int fpsMax) {
-        lastX = width / 2.0f;
-        lastY = height / 2.0f;
-        Game.upsCap = upsCap;
-        Game.fpsMax = fpsMax;
-        myWindow = new Window(width, height, title);
+    public Game(Configuration config) {
+        lastX = config.getWidth() / 2.0f;
+        lastY = config.getHeight() / 2.0f;
+        Game.upsCap = UPS_CAP;
+        Game.fpsMax = config.getFpsCap();
+        myWindow = new Window(config.getWidth(), config.getHeight(), TITLE);
+        if (config.isFullscreen()) {
+            myWindow.fullscreen();
+        } else {
+            myWindow.windowed();
+        }
+        if (config.isVsync()) {
+            myWindow.enableVSync();
+        } else {
+            myWindow.disableVSync();
+        }
+        myWindow.centerTheWindow();
         renderer = new Renderer(myWindow, objMutex);
         keys = new boolean[1024];
         initCallbacks();
@@ -342,7 +357,7 @@ public class Game {
         // start the renderer
         renderer.start();
 
-        long timer0 = System.currentTimeMillis();
+        double timer0 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -364,9 +379,10 @@ public class Game {
                 upsTicks--;
             }
 
-            if (System.currentTimeMillis() > timer0 + 1000) {
+            // update label which shows fps every second
+            if (GLFW.glfwGetTime() > timer0 + 1.0) {
                 ups = 0;
-                timer0 += 1000;
+                timer0 += 1.0;
             }
 
         }
@@ -386,6 +402,17 @@ public class Game {
             myWindow.loadContext();
             myWindow.destroy();
         }
+    }
+
+    public Configuration makeConfig() {
+        Configuration cfg = new Configuration();
+        cfg.setFpsCap(fpsMax);
+        cfg.setWidth(myWindow.getWidth());
+        cfg.setHeight(myWindow.getHeight());
+        cfg.setFullscreen(myWindow.isFullscreen());
+        cfg.setWaterEffects(waterEffects);
+        cfg.setMouseSensitivity(mouseSensitivity);
+        return cfg;
     }
 
     public static GLFWKeyCallback getDefaultKeyCallback() {

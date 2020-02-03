@@ -23,7 +23,11 @@ package rs.alexanderstojanovich.evg.main;
 public class Main {
 
     public static void main(String[] args) {
-        Game game = new Game(640, 480, "Demolition Synergy - v11 KOREANS", 80, 100);
-        game.go();
+        Configuration inCfg = new Configuration(); // makes default configuration
+        inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
+        Game game = new Game(inCfg); // init game with given config (or default one)       
+        game.go(); // starts the game (launchs the threads) 
+        Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
+        outCfg.writeConfigFile();  // writes configuration to the output file
     }
 }
