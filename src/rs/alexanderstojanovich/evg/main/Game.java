@@ -34,58 +34,58 @@ import rs.alexanderstojanovich.evg.models.Block;
  * @author Coa
  */
 public class Game {
-
+    
     public static final String TITLE = "Demolition Synergy - v11 KOREANS";
-
+    
     public static final int UPS_CAP = 80;
-
+    
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
-
+    
     public static final int FORWARD = 0;
     public static final int BACKWARD = 1;
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
-
+    
     public static final float EPSILON = 0.0001f;
-
+    
     private static int upsCap; // updates per second cap 
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap 
 
     private final Window myWindow;
     private final Renderer renderer;
-
+    
     private boolean[] keys = new boolean[1024];
-
+    
     private float lastX = 0.0f;
     private float lastY = 0.0f;
     private float xoffset = 0.0f;
     private float yoffset = 0.0f;
     private static float mouseSensitivity = 3.0f;
     private boolean moveMouse = false;
-
+    
     private int crosshairColorNum = 0;
     private int blockColorNum = 0;
-
+    
     private final boolean[] mouseButtons = new boolean[8];
-
+    
     private static GLFWKeyCallback defaultKeyCallback;
     private static GLFWCursorPosCallback defaultCursorCallback;
-
+    
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
-
+    
     public static final String FONTS_SUBDIR = "fonts/";
     public static final String INTRFACE_SUBDIR = "intrface/";
     public static final String WORLD_SUBDIR = "world/";
     public static final String EFFECTS_SUBDIR = "effects/";
-
+    
     private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
 
     private static boolean waterEffects = true;
-
+    
     private static double upsTicks = 0.0;
-
+    
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
         lastY = config.getHeight() / 2.0f;
@@ -107,7 +107,7 @@ public class Game {
         keys = new boolean[1024];
         initCallbacks();
     }
-
+    
     private void observerDo() {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
@@ -130,7 +130,7 @@ public class Game {
                 obs.moveBackward(AMOUNT);
                 renderer.setAssertCollision(false);
             }
-
+            
         }
         if (keys[GLFW.GLFW_KEY_A]) {
             Critter obs = renderer.getLevelRenderer().getObserver();
@@ -165,7 +165,7 @@ public class Game {
             moveMouse = false;
         }
     }
-
+    
     private void editorDo() {
         if (keys[GLFW.GLFW_KEY_N]) {
             Editor.selectNew(renderer.getLevelRenderer());
@@ -201,13 +201,13 @@ public class Game {
             Editor.remove(renderer.getLevelRenderer());
         }
     }
-
+    
     private void setCrosshairColor(float red, float green, float blue) {
         renderer.getIntrface().getCrosshair().getColor().x = red;
         renderer.getIntrface().getCrosshair().getColor().y = green;
         renderer.getIntrface().getCrosshair().getColor().z = blue;
     }
-
+    
     private void setNewBlockColor(float red, float green, float blue) {
         if (Editor.getSelectedNew() != null) {
             Editor.getSelectedNew().getPrimaryColor().x = red;
@@ -215,7 +215,7 @@ public class Game {
             Editor.getSelectedNew().getPrimaryColor().z = blue;
         }
     }
-
+    
     private void cycleCrosshairColor() {
         switch (crosshairColorNum) {
             case 0:
@@ -246,7 +246,7 @@ public class Game {
             crosshairColorNum = 0;
         }
     }
-
+    
     private void cycleBlockColor() {
         if (Editor.getSelectedNew() != null) {
             switch (blockColorNum) {
@@ -279,10 +279,10 @@ public class Game {
             }
         }
     }
-
+    
     private void initCallbacks() {
         GLFWErrorCallback.createPrint(System.err).set();
-
+        
         defaultKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -322,7 +322,7 @@ public class Game {
             }
         };
         GLFW.glfwSetKeyCallback(myWindow.getWindowID(), defaultKeyCallback);
-
+        
         GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
         GLFW.glfwSetCursorPos(myWindow.getWindowID(), myWindow.getWidth() / 2.0, myWindow.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
@@ -330,17 +330,17 @@ public class Game {
             public void invoke(long window, double xpos, double ypos) {
                 xoffset = ((float) xpos - lastX) / myWindow.getWidth();
                 yoffset = (lastY - (float) ypos) / myWindow.getHeight();
-
+                
                 if (xoffset != 0 || yoffset != 0) {
                     moveMouse = true;
                 }
-
+                
                 lastX = (float) xpos;
                 lastY = (float) ypos;
             }
         };
         GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), defaultCursorCallback);
-
+        
         GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
@@ -352,25 +352,25 @@ public class Game {
             }
         });
     }
-
+    
     public void go() {
         // start the renderer
         renderer.start();
-
+        
         double timer0 = GLFW.glfwGetTime();
-
+        
         ups = 0;
-
+        
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double diff;
-
+        
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             upsTicks += diff * upsCap;
             lastTime = currTime;
-
+            
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 observerDo();
@@ -384,11 +384,11 @@ public class Game {
                 ups = 0;
                 timer0 += 1.0;
             }
-
+            
         }
-
+        
         Thread randDialogThread = renderer.getIntrface().getRandLvlDialog().getDialogThread();
-
+        
         try {
             if (randDialogThread != null && randDialogThread.isAlive()) {
                 randDialogThread.join();
@@ -397,70 +397,71 @@ public class Game {
         } catch (InterruptedException ex) {
             Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
         synchronized (objMutex) {
             myWindow.loadContext();
             myWindow.destroy();
         }
     }
-
+    
     public Configuration makeConfig() {
         Configuration cfg = new Configuration();
         cfg.setFpsCap(fpsMax);
         cfg.setWidth(myWindow.getWidth());
         cfg.setHeight(myWindow.getHeight());
         cfg.setFullscreen(myWindow.isFullscreen());
+        cfg.setVsync(myWindow.isVsync());
         cfg.setWaterEffects(waterEffects);
         cfg.setMouseSensitivity(mouseSensitivity);
         return cfg;
     }
-
+    
     public static GLFWKeyCallback getDefaultKeyCallback() {
         return defaultKeyCallback;
     }
-
+    
     public static GLFWCursorPosCallback getDefaultCursorCallback() {
         return defaultCursorCallback;
     }
-
+    
     public static int getUpsCap() {
         return upsCap;
     }
-
+    
     public static int getUps() {
         return ups;
     }
-
+    
     public static int getFpsMax() {
         return fpsMax;
     }
-
+    
     public static void setFpsMax(int fpsMax) {
         Game.fpsMax = fpsMax;
     }
-
+    
     public Object getObjMutex() {
         return objMutex;
     }
-
+    
     public static float getMouseSensitivity() {
         return mouseSensitivity;
     }
-
+    
     public static void setMouseSensitivity(float mouseSensitivity) {
         Game.mouseSensitivity = mouseSensitivity;
     }
-
+    
     public static boolean isWaterEffects() {
         return waterEffects;
     }
-
+    
     public static void setWaterEffects(boolean waterEffects) {
         Game.waterEffects = waterEffects;
     }
-
+    
     public static double getUpsTicks() {
         return upsTicks;
     }
-
+    
 }
