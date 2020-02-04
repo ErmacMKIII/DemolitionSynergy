@@ -32,8 +32,13 @@ public class MasterRenderer {
     public static void initGL(Window myWindow) {
         // load context
         myWindow.loadContext();
-        // disable vsync
-        myWindow.disableVSync();
+        // enable/disable vsync
+        if (myWindow.isVsync()) {
+            myWindow.enableVSync();
+        } else {
+            myWindow.disableVSync();
+        }
+
         // create openGL context        
         glCaps = GL.createCapabilities();
 
