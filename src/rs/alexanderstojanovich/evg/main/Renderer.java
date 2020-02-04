@@ -59,6 +59,8 @@ public class Renderer extends Thread {
             levelRenderer = new LevelRenderer(myWindow);
             waterRenderer = new WaterRenderer(myWindow, levelRenderer);
             intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
+            // wake up the main thread
+            objMutex.notify();
         }
 
         double timer0 = GLFW.glfwGetTime();

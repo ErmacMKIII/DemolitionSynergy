@@ -357,6 +357,15 @@ public class Game {
         // start the renderer
         renderer.start();
 
+        // wait for renderer to initialize level renderer, water renderer and interface
+        synchronized (objMutex) {
+            try {
+                objMutex.wait();
+            } catch (InterruptedException ex) {
+                Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+
         double timer0 = GLFW.glfwGetTime();
 
         ups = 0;
