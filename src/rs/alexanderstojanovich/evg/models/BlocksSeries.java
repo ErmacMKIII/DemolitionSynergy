@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -27,6 +26,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -46,8 +46,8 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
     // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
-    //------------------------blocks-mat4Vbos-vec4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new ArrayList<>();
+    //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
+    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new GapList<>();
 
     private boolean cameraInFluid = false;
 
