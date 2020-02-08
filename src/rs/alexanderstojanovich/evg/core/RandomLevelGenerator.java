@@ -64,9 +64,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelRenderer.getPOS_SOLID_MAP().get(randPos) != null
                 || LevelRenderer.getPOS_FLUID_MAP().get(randPos) != null
@@ -78,7 +78,7 @@ public class RandomLevelGenerator {
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 1.0f);
         Block solidBlock = new Block(false, randomSolidTexture(), pos, col, false);
-        LevelRenderer.getPOS_SOLID_MAP().put(solidBlock.getPos(), solidBlock.hashCode());
+
         levelRenderer.getSolidChunks().addBlock(solidBlock);
         return solidBlock;
     }
@@ -89,9 +89,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posy = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posz = 2.0f * (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelRenderer.getPOS_SOLID_MAP().get(randPos) != null
                 || LevelRenderer.getPOS_FLUID_MAP().get(randPos) != null
@@ -103,7 +103,7 @@ public class RandomLevelGenerator {
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 0.5f);
         Block fluidBlock = new Block(false, Texture.WATER, pos, col, true);
-        LevelRenderer.getPOS_FLUID_MAP().put(fluidBlock.getPos(), fluidBlock.hashCode());
+
         levelRenderer.getFluidChunks().addBlock(fluidBlock);
         return fluidBlock;
     }
@@ -151,10 +151,6 @@ public class RandomLevelGenerator {
         Texture adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
 
-        block.getAdjacentBlockMap().put(randFace, solidAdjBlock.hashCode());
-        solidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block.hashCode());
-
-        LevelRenderer.getPOS_SOLID_MAP().put(solidAdjBlock.getPos(), solidAdjBlock.hashCode());
         levelRenderer.getSolidChunks().addBlock(solidAdjBlock);
         return solidAdjBlock;
     }
@@ -201,10 +197,7 @@ public class RandomLevelGenerator {
         Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 0.5f);
         Texture adjTexture = Texture.WATER;
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
-        block.getAdjacentBlockMap().put(randFace, fluidAdjBlock.hashCode());
-        fluidAdjBlock.getAdjacentBlockMap().put(randFace % 2 == 0 ? randFace + 1 : randFace - 1, block.hashCode());
 
-        LevelRenderer.getPOS_FLUID_MAP().put(fluidAdjBlock.getPos(), fluidAdjBlock.hashCode());
         levelRenderer.getFluidChunks().addBlock(fluidAdjBlock);
         return fluidAdjBlock;
     }
