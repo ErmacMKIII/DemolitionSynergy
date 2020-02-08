@@ -221,8 +221,7 @@ public class Editor {
         Chunk solidChunk = levelRenderer.getSolidChunks().getChunk(solidChunkId);
 
         if (solidChunk != null) {
-            Tuple<Blocks, Integer, Integer, Texture, Integer> solidTuple = solidChunk.getTuple(selectedNew.getPrimaryTexture(), selectedNew.getFaceBits());
-            if (solidTuple != null) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> solidTuple : solidChunk.getTupleList()) {
                 for (Block solidBlock : solidTuple.getA().getBlockList()) {
                     intsSolid = selectedNew.intersectsExactly(solidBlock);
                     if (intsSolid) {
@@ -234,14 +233,13 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean intsFluid = false;
         int fluidChunkId = Chunk.chunkFunc(selectedNew.getPos());
-        Chunk fluidChunk = levelRenderer.getSolidChunks().getChunk(fluidChunkId);
+        Chunk fluidChunk = levelRenderer.getFluidChunks().getChunk(fluidChunkId);
 
         if (fluidChunk != null) {
-            Tuple<Blocks, Integer, Integer, Texture, Integer> fluidTuple = fluidChunk.getTuple(selectedNew.getPrimaryTexture(), selectedNew.getFaceBits());
-            if (fluidTuple != null) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> fluidTuple : fluidChunk.getTupleList()) {
                 for (Block fluidBlock : fluidTuple.getA().getBlockList()) {
-                    intsSolid = selectedNew.intersectsExactly(fluidBlock);
-                    if (intsSolid) {
+                    intsFluid = selectedNew.intersectsExactly(fluidBlock);
+                    if (intsFluid) {
                         break;
                     }
                 }
@@ -250,7 +248,7 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean leavesSkybox = !levelRenderer.getSkybox().containsExactly(selectedNew.getPos())
                 || !levelRenderer.getSkybox().intersectsExactly(selectedNew);
-        cant = placeOccupied || intsFluid || intsFluid || leavesSkybox;
+        cant = placeOccupied || intsSolid || intsFluid || leavesSkybox;
         if (cant) {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;
