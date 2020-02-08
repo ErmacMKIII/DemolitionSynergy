@@ -97,6 +97,7 @@ public class Chunks {
         }
 
         tuple.getA().getBlockList().add(block);
+        tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
     }
 
     // for removing blocks (Editor)
@@ -146,6 +147,7 @@ public class Chunks {
                 chunk.getTupleList().add(dstTuple);
             }
             dstTuple.getA().getBlockList().add(fluidBlock);
+            dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
         }
     }
 

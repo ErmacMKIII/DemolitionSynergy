@@ -77,7 +77,7 @@ public class RandomLevelGenerator {
         float colz = RANDOM.nextFloat();
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 1.0f);
-        Block solidBlock = new Block(false, randomSolidTexture(), pos, col, false);
+        Block solidBlock = new Block(false, randomSolidTexture(), pos, col, true);
 
         levelRenderer.getSolidChunks().addBlock(solidBlock);
         return solidBlock;
@@ -102,7 +102,7 @@ public class RandomLevelGenerator {
         float colz = RANDOM.nextFloat();
         Vector3f pos = randPos;
         Vector4f col = new Vector4f(colx, coly, colz, 0.5f);
-        Block fluidBlock = new Block(false, Texture.WATER, pos, col, true);
+        Block fluidBlock = new Block(false, Texture.WATER, pos, col, false);
 
         levelRenderer.getFluidChunks().addBlock(fluidBlock);
         return fluidBlock;
@@ -149,7 +149,7 @@ public class RandomLevelGenerator {
         float adjColz = RANDOM.nextFloat();
         Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 1.0f);
         Texture adjTexture = randomSolidTexture();
-        Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
+        Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, true);
 
         levelRenderer.getSolidChunks().addBlock(solidAdjBlock);
         return solidAdjBlock;
