@@ -35,9 +35,10 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v11 KOREANS";
+    public static final String TITLE = "Demolition Synergy - v12 LATVIA";
 
     public static final int UPS_CAP = 80;
+    public static final double UPS_CLK = 1.0 / UPS_CAP;
 
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
@@ -382,6 +383,7 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
+                renderer.update();
                 observerDo();
                 editorDo();
                 ups++;

@@ -1,7 +1,8 @@
 #version 330 core
 
 const float ambientLight = 0.25;
-const vec3 fogColor = vec3(0.25f, 0.5f, 0.75f);
+const vec3 fogColor = vec3(0.25, 0.5, 0.75);
+const float fogDens = 1 / 256.0;
 
 in vec3 normalOut;
 in vec2 uvOut;
@@ -69,7 +70,7 @@ void main() {
                     + fresnel * modelColor2.rgb * texture(modelTexture2, reflUV()).rgb);
     float alpha = modelColor0.a * texture(modelTexture0, uvOut).a;    
     
-	vec4 finalColor = fog(cameraPos, vec4(color, alpha), fogColor, 0.015);
+	vec4 finalColor = fog(cameraPos, vec4(color, alpha), fogColor, fogDens);
 	
     gl_FragColor = finalColor;    
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Coa
+ * Copyright (C) 2020 Coa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -28,6 +29,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Editor;
+import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -37,69 +39,49 @@ import rs.alexanderstojanovich.evg.util.Tuple;
  *
  * @author Coa
  */
-public class BlocksSeries { // mutual class made from solid and fluid blocks with instanced rendering
+public class Chunk {
 
     public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
 
-    private boolean buffered = false;
-    // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
-    // single vec4Vbo is color shared amongst the vertices of the same instance    
+    // A, B, C are used in chunkFunc and for determining visible chunks
+    public static final int A = Math.round(LevelRenderer.SKYBOX_WIDTH); // modulator
+    public static final int B = A >> 4; // divider    
+    public static final float C = 1.5f * B; // determines visibility
+
+    // id of the chunk (signed)
+    private final int id;
+    // is a group of blocks which are prepared for instanced rendering
+    // where each tuple is considered as:                
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> blocksSeries = new GapList<>();
-
-    private boolean cameraInFluid = false;
-
-    // is initialization progress
-    private float progress = 0.0f;
+    private final List<Tuple<Blocks, Integer, Integer, Texture, Integer>> tupleList = new GapList<>();
 
     private Texture waterTexture;
 
-    public BlocksSeries(Blocks blocks) {
-        init(blocks);
+    private boolean buffered = false;
+
+    private boolean cameraInFluid = false;
+
+    private boolean visible = false; // is it visible for rendering
+
+    public Chunk(int id) {
+        this.id = id;
     }
 
-    private void init(Blocks blocks) {
-        progress = 0.0f;
-        Tuple<Blocks, Integer, Integer, Texture, Integer> currTuple = null; // current processing tuple        
-        for (Block block : blocks.getBlockList()) {
-            Texture blockTexture = block.primaryTexture;
-            Integer blockFaceBits = block.getFaceBits();
-
-            int indexOfSeries = indexOfSeries(blockTexture, blockFaceBits);
-
-            if (indexOfSeries == -1) {
-                currTuple = new Tuple<>(new Blocks(), 0, 0, blockTexture, blockFaceBits);
-                blocksSeries.add(currTuple);
-            } else {
-                currTuple = blocksSeries.get(indexOfSeries);
-            }
-
-            if (currTuple != null) {
-                currTuple.getA().getBlockList().add(block);
-            }
-
-            progress += 1.0f / blocks.getBlockList().size();
-        }
-        progress = 100.0f;
-    }
-
-    public int indexOfSeries(Texture keyTexture, Integer keyFaceBits) {
-        int serIndex = 0;
-        int keyIndex = -1;
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+    public Tuple<Blocks, Integer, Integer, Texture, Integer> getTuple(Texture keyTexture, Integer keyFaceBits) {
+        Tuple<Blocks, Integer, Integer, Texture, Integer> result = null;
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
             if (tuple.getD() != null && tuple.getD().equals(keyTexture)
                     && tuple.getE() != null && tuple.getE().equals(keyFaceBits)) {
-                keyIndex = serIndex;
+                result = tuple;
                 break;
             }
-            serIndex++;
         }
-        return keyIndex;
+        return result;
     }
 
-    public void bufferVectors(Blocks blocks, int seriesIndex) {
+    public void bufferVectors(Blocks blocks, int tupleIndex) {
         FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC4_SIZE);
         for (Block block : blocks.getBlockList()) {
             Vector4f color = block.getPrimaryColor();
@@ -113,10 +95,10 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        blocksSeries.get(seriesIndex).setB(vec4Vbo);
+        tupleList.get(tupleIndex).setB(vec4Vbo);
     }
 
-    public void bufferMatrices(Blocks blocks, int seriesIndex) {
+    public void bufferMatrices(Blocks blocks, int tupleIndex) {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * MAT4_SIZE);
         for (Block block : blocks.getBlockList()) {
             block.calcModelMatrix();
@@ -135,38 +117,38 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        blocksSeries.get(seriesIndex).setC(mat4Vbo);
+        tupleList.get(tupleIndex).setC(mat4Vbo);
     }
 
     public void bufferAll() {
-        int seriesIndex = 0;
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+        int tupleIndex = 0;
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
             Blocks blocks = tuple.getA();
             blocks.bufferVertices();
-            bufferMatrices(blocks, seriesIndex);
-            bufferVectors(blocks, seriesIndex);
-            seriesIndex++;
+            bufferMatrices(blocks, tupleIndex);
+            bufferVectors(blocks, tupleIndex);
+            tupleIndex++;
         }
         buffered = true;
     }
 
     public void animate() { // call only for fluid blocks
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
             tuple.getA().animate();
         }
     }
 
     public void prepare() { // call only for fluid blocks before rendering        
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
             Blocks blocks = tuple.getA();
             blocks.setCameraInFluid(cameraInFluid);
             blocks.prepare();
         }
     }
 
-    // it always renders all of them instanced
+    // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !blocksSeries.isEmpty()) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && visible) {
             Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
@@ -178,7 +160,7 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
 
-            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : blocksSeries) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
                 // if tuple has any blocks to be rendered and
                 // if face bits are greater than zero, i.e. tuple has something to be rendered
                 if (!tuple.getA().getBlockList().isEmpty() && tuple.getE() > 0) {
@@ -255,16 +237,90 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         }
     }
 
+    // determine chunk
+    public static int chunkFunc(Vector3f pos) {
+        float x = Math.round((pos.x % A) / B);
+        float y = Math.round((pos.y % A) / B);
+        float z = Math.round((pos.z % A) / B);
+
+        return Math.round(((x + y + z) / 3.0f));
+    }
+
+    // determine which chunks are visible by this chunk
+    public static List<Integer> determineVisible(Vector3f pos) {
+        List<Integer> result = new ArrayList<>();
+
+        int a = chunkFunc(pos.add(C, 0.0f, 0.0f));
+        if (!result.contains(a)) {
+            result.add(a);
+        }
+
+        int b = chunkFunc(pos.add(0.0f, C, 0.0f));
+        if (!result.contains(b)) {
+            result.add(b);
+        }
+
+        int c = chunkFunc(pos.add(0.0f, 0.0f, C));
+        if (!result.contains(c)) {
+            result.add(c);
+        }
+
+        int d = chunkFunc(pos.add(-C, 0.0f, 0.0f));
+        if (!result.contains(d)) {
+            result.add(d);
+        }
+
+        int e = chunkFunc(pos.add(0.0f, -C, 0.0f));
+        if (!result.contains(e)) {
+            result.add(e);
+        }
+
+        int f = chunkFunc(pos.add(0.0f, 0.0f, -C));
+        if (!result.contains(f)) {
+            result.add(f);
+        }
+
+        return result;
+    }
+
+    public int size() { // for debugging purposes
+        int size = 0;
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+            size += tuple.getA().getBlockList().size();
+        }
+        return size;
+    }
+
+    public List<Block> getList() {
+        List<Block> result = new GapList<>();
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+            result.addAll(tuple.getA().getBlockList());
+        }
+        return result;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public List<Tuple<Blocks, Integer, Integer, Texture, Integer>> getTupleList() {
+        return tupleList;
+    }
+
+    public Texture getWaterTexture() {
+        return waterTexture;
+    }
+
+    public void setWaterTexture(Texture waterTexture) {
+        this.waterTexture = waterTexture;
+    }
+
     public boolean isBuffered() {
         return buffered;
     }
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-    }
-
-    public List<Tuple<Blocks, Integer, Integer, Texture, Integer>> getBlocksSeries() {
-        return blocksSeries;
     }
 
     public boolean isCameraInFluid() {
@@ -275,16 +331,12 @@ public class BlocksSeries { // mutual class made from solid and fluid blocks wit
         this.cameraInFluid = cameraInFluid;
     }
 
-    public double getProgress() {
-        return progress;
+    public boolean isVisible() {
+        return visible;
     }
 
-    public Texture getWaterTexture() {
-        return waterTexture;
-    }
-
-    public void setWaterTexture(Texture waterTexture) {
-        this.waterTexture = waterTexture;
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
 }

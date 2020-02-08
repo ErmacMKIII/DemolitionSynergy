@@ -87,7 +87,7 @@ public class Renderer extends Thread {
 
                     if (!levelRenderer.isWorking()) {
                         levelRenderer.render();
-                        if (Game.isWaterEffects() && !levelRenderer.getFluidBlocks().getBlockList().isEmpty()) {
+                        if (Game.isWaterEffects() && !levelRenderer.getFluidChunks().getChunkList().isEmpty()) {
                             waterRenderer.render();
                         }
                     } else {
@@ -155,6 +155,10 @@ public class Renderer extends Thread {
             }
         }
 
+    }
+
+    public void update() {
+        levelRenderer.update();
     }
 
     public Window getMyWindow() {

@@ -23,18 +23,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
-import rs.alexanderstojanovich.evg.models.BlocksSeries;
+import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -46,19 +48,16 @@ public class LevelRenderer {
     private final Window myWindow;
     private final Block skybox;
 
-    private final Blocks solidBlocks = new Blocks();
-    private final Blocks fluidBlocks = new Blocks();
-
-    private BlocksSeries solidSeries = new BlocksSeries(solidBlocks);
-    private BlocksSeries fluidSeries = new BlocksSeries(fluidBlocks);
+    private final Chunks solidChunks = new Chunks();
+    private final Chunks fluidChunks = new Chunks();
 
     private Critter observer;
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float SKYBOX_SCALE = Math.round(337.5f / Game.EPSILON); // default 3375000.0
-    public static final float SKYBOX_WIDTH = Math.round(Math.pow(SKYBOX_SCALE, 1.0f / 3.0f)); // default 150.0
+    public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
+    public static final float SKYBOX_WIDTH = 256.f; // default 256
     public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for skybox
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
@@ -71,8 +70,8 @@ public class LevelRenderer {
     private final RandomLevelGenerator randomLevelGenerator;
 
     //----------------Vector3f hash, Block hash---------------------------------
-    private final Map<Vector3f, Integer> posSolidMap = new HashMap<>();
-    private final Map<Vector3f, Integer> posFluidMap = new HashMap<>();
+    private static final Map<Vector3f, Integer> POS_SOLID_MAP = new HashMap<>();
+    private static final Map<Vector3f, Integer> POS_FLUID_MAP = new HashMap<>();
 
     public LevelRenderer(Window myWindow) {
         this.myWindow = myWindow;
@@ -96,11 +95,12 @@ public class LevelRenderer {
         progress = 0.0f;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
-        solidBlocks.getBlockList().clear();
-        fluidBlocks.getBlockList().clear();
-        fluidBlocks.setVerticesReversed(false);
-        posSolidMap.clear();
-        posFluidMap.clear();
+
+        solidChunks.getChunkList().clear();
+        fluidChunks.getChunkList().clear();
+
+        POS_SOLID_MAP.clear();
+        POS_FLUID_MAP.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(false, Texture.DOOM0);
@@ -110,7 +110,7 @@ public class LevelRenderer {
                 entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
 
-                posSolidMap.put(entity.getPos(), entity.hashCode());
+                POS_SOLID_MAP.put(entity.getPos(), entity.hashCode());
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
@@ -119,24 +119,14 @@ public class LevelRenderer {
 
                 entity.setLight(observer.getModel().getPos());
 
-                solidBlocks.getBlockList().add(entity);
+                solidChunks.addBlock(entity);
 
-                progress += 80.0f / 9.0f;
+                progress += 100.0f / 9.0f;
             }
         }
 
-        updateAll();
-
-        solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-        fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-
-        solidBlocks.setBuffered(false);
-        fluidBlocks.setBuffered(false);
-
-        solidSeries = new BlocksSeries(solidBlocks);
-        progress += 0.1f * solidSeries.getProgress();
-        fluidSeries = new BlocksSeries(fluidBlocks);
-        progress += 0.1f * fluidSeries.getProgress();
+        solidChunks.setBuffered(false);
+        fluidChunks.setBuffered(false);
 
         progress = 100.0f;
         working = false;
@@ -153,30 +143,23 @@ public class LevelRenderer {
         progress = 0.0f;
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(false);
-        solidBlocks.getBlockList().clear();
-        fluidBlocks.getBlockList().clear();
-        fluidBlocks.setVerticesReversed(false);
-        posSolidMap.clear();
-        posFluidMap.clear();
+
+        solidChunks.getChunkList().clear();
+        fluidChunks.getChunkList().clear();
+
+        POS_SOLID_MAP.clear();
+        POS_FLUID_MAP.clear();
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
-            updateFluids();
             success = true;
         }
 
-        solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-        fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-
-        solidBlocks.setBuffered(false);
-        fluidBlocks.setBuffered(false);
+        solidChunks.setBuffered(false);
+        fluidChunks.updateFluids();
+        fluidChunks.setBuffered(false);
 
         observer.setGivenControl(true);
-
-        solidSeries = new BlocksSeries(solidBlocks);
-        progress += 0.1f * solidSeries.getProgress();
-        fluidSeries = new BlocksSeries(fluidBlocks);
-        progress += 0.1f * fluidSeries.getProgress();
 
         progress = 100.0f;
         working = false;
@@ -217,11 +200,15 @@ public class LevelRenderer {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        int solidNum = solidBlocks.getBlockList().size();
+        int solidNum = solidChunks.totalSize();
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
-        for (Block solidBlock : solidBlocks.getBlockList()) {
+        List<Block> solidBlocks = solidChunks.getTotalList();
+        List<Block> fluidBlocks = fluidChunks.getTotalList();
+
+        //----------------------------------------------------------------------
+        for (Block solidBlock : solidBlocks) {
             byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
             System.arraycopy(texName, 0, buffer, pos, 5);
             pos += 5;
@@ -234,7 +221,7 @@ public class LevelRenderer {
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
 
-            progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
+            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
         }
 
         buffer[pos++] = 'F';
@@ -243,11 +230,11 @@ public class LevelRenderer {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        int fluidNum = fluidBlocks.getBlockList().size();
+        int fluidNum = fluidChunks.totalSize();
         buffer[pos++] = (byte) (fluidNum);
         buffer[pos++] = (byte) (fluidNum >> 8);
 
-        for (Block fluidBlock : fluidBlocks.getBlockList()) {
+        for (Block fluidBlock : fluidBlocks) {
             byte[] texName = fluidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
             System.arraycopy(texName, 0, buffer, pos, 5);
             pos += 5;
@@ -260,7 +247,7 @@ public class LevelRenderer {
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
             pos += solidCol.length;
 
-            progress += 100.0f / (solidBlocks.getBlockList().size() + fluidBlocks.getBlockList().size());
+            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
         }
 
         buffer[pos++] = 'E';
@@ -285,11 +272,12 @@ public class LevelRenderer {
         progress = 0.0f;
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
-            solidBlocks.getBlockList().clear();
-            fluidBlocks.getBlockList().clear();
-            fluidBlocks.setVerticesReversed(false);
-            posSolidMap.clear();
-            posFluidMap.clear();
+            solidChunks.getChunkList().clear();
+            fluidChunks.getChunkList().clear();
+
+            POS_SOLID_MAP.clear();
+            POS_FLUID_MAP.clear();
+
             pos += 2;
             byte[] posArr = new byte[12];
             System.arraycopy(buffer, pos, posArr, 0, posArr.length);
@@ -344,14 +332,10 @@ public class LevelRenderer {
 
                     Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
 
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
-                    solidBlocks.getBlockList().add(block);
-
-                    posSolidMap.put(blockPos, block.hashCode());
+                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+                    solidChunks.addBlock(block);
                 }
-                solidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-                solidBlocks.setBuffered(false);
-
+                solidChunks.setBuffered(false);
                 progress += 40.0f;
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
@@ -380,14 +364,11 @@ public class LevelRenderer {
 
                         Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
 
-                        Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
-                        fluidBlocks.getBlockList().add(block);
-
-                        posFluidMap.put(blockPos, block.hashCode());
+                        Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
+                        fluidChunks.addBlock(block);
                     }
-                    fluidBlocks.getBlockList().sort(Block.Y_AXIS_COMP);
-                    fluidBlocks.setBuffered(false);
-
+                    fluidChunks.updateFluids();
+                    fluidChunks.setBuffered(false);
                     progress += 40.0f;
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
@@ -395,12 +376,7 @@ public class LevelRenderer {
                     }
                     String strEnd = String.valueOf(end);
                     if (strEnd.equals("END")) {
-                        updateAll();
-                        updateFluids();
-                        solidSeries = new BlocksSeries(solidBlocks);
-                        progress += 0.1 * solidSeries.getProgress();
-                        fluidSeries = new BlocksSeries(fluidBlocks);
-                        progress += 0.1 * fluidSeries.getProgress();
+                        progress += 20;
                         success = true;
                     }
                 }
@@ -479,82 +455,23 @@ public class LevelRenderer {
         return success;
     }
 
-    public void updateSolidNeighbors() {
-        for (Block solidBlock : solidBlocks.getBlockList()) {
-            updateNeighbors(solidBlock);
-        }
-    }
-
-    public void updateFluidNeighbors() {
-        for (Block fluidBlock : fluidBlocks.getBlockList()) {
-            updateNeighbors(fluidBlock);
-        }
-    }
-
-    public void updateAll() {
-        updateSolidNeighbors();
-        updateFluidNeighbors();
-    }
-
-    public void updateNeighbors(Block block) {
-        for (int j = 0; j <= 5; j++) { // j - facenum
-            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = posSolidMap.get(otherBlockPos);
-            Integer hashCode2 = posFluidMap.get(otherBlockPos);
-            if (hashCode1 == null && hashCode2 == null) {
-                block.getAdjacentBlockMap().remove(j);
-            } else if (hashCode1 != null && hashCode2 == null) {
-                block.getAdjacentBlockMap().put(j, hashCode1);
-            } else if (hashCode1 == null && hashCode2 != null) {
-                block.getAdjacentBlockMap().put(j, hashCode2);
-            }
-        }
-    }
-
-    public void updateFluids() {
-        for (Block fluidBlock : fluidBlocks.getBlockList()) {
-            fluidBlock.enableAllFaces(false);
-            for (int j = 0; j <= 5; j++) { // j - face number
-                Integer hash1 = fluidBlock.getAdjacentBlockMap().get(j);
-                Integer hash2 = posFluidMap.get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
-                if (hash1 != null && hash1.equals(hash2)) {
-                    fluidBlock.disableFace(j, false);
-                }
-            }
-        }
-    }
-
-    @Deprecated
-    public boolean isPlaceOccupiedBySolid(Vector3f pos) { // derpecated, use posMap
-        boolean occ = false;
-        for (int i = 0; i < solidBlocks.getBlockList().size() && !occ; i++) {
-            occ = solidBlocks.getBlockList().get(i).getPos().x == pos.x
-                    && solidBlocks.getBlockList().get(i).getPos().y == pos.y
-                    && solidBlocks.getBlockList().get(i).getPos().z == pos.z;
-        }
-        return occ;
-    }
-
-    @Deprecated
-    public boolean isPlaceOccupiedByFluid(Vector3f pos) { // derpecated, use posMap
-        boolean occ = false;
-        for (int i = 0; i < fluidBlocks.getBlockList().size() && !occ; i++) {
-            occ = fluidBlocks.getBlockList().get(i).getPos().x == pos.x
-                    && fluidBlocks.getBlockList().get(i).getPos().y == pos.y
-                    && fluidBlocks.getBlockList().get(i).getPos().z == pos.z;
-        }
-        return occ;
-    }
-
     public void animate() {
-//        fluidBlocks.animate();
-        fluidSeries.animate();
+        fluidChunks.animate();
     }
 
     public boolean isCameraInFluid() {
         boolean yea = false;
-        for (int i = 0; i < fluidBlocks.getBlockList().size() && !yea; i++) {
-            yea = fluidBlocks.getBlockList().get(i).contains(observer.getCamera().getPos());
+        Vector3f obsCamPos = observer.getCamera().getPos();
+        Chunk fluidChunk = fluidChunks.getChunk(Chunk.chunkFunc(obsCamPos));
+        if (fluidChunk != null) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : fluidChunk.getTupleList()) {
+                for (Block fluidBlock : tuple.getA().getBlockList()) {
+                    if (fluidBlock.contains(obsCamPos)) {
+                        yea = true;
+                        break;
+                    }
+                }
+            }
         }
         return yea;
     }
@@ -562,11 +479,48 @@ public class LevelRenderer {
     public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
         coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
-        for (int i = 0; i < solidBlocks.getBlockList().size() && !coll; i++) {
-            Block entity = solidBlocks.getBlockList().get(i);
-            coll = entity.contains(critter.getPredictor()) || entity.intersects(critter.getPredModel()); // relaxed (without exactly) is better restriction
+        Vector3f obsPredPos = critter.getPredictor();
+        Chunk solidChunk = solidChunks.getChunk(Chunk.chunkFunc(obsPredPos));
+        if (solidChunk != null) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : solidChunk.getTupleList()) {
+                for (Block solidBlock : tuple.getA().getBlockList()) {
+                    if (solidBlock.contains(obsPredPos) || solidBlock.intersects(critter.getPredModel())) {
+                        coll = true;
+                        break;
+                    }
+                }
+            }
         }
         return coll;
+    }
+
+    public void update() { // call it externally from the main thread       
+        Camera obsCamera = observer.getCamera();
+        int currChunkId = Chunk.chunkFunc(obsCamera.getPos());
+        List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos()); // is list of estimated visible chunks (by that chunk)
+        Chunk currSolid = solidChunks.getChunk(currChunkId);
+        if (currSolid != null) {
+            currSolid.setVisible(true);
+        }
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (visibleList.contains(solidChunk.getId())) {
+                solidChunk.setVisible(true);
+            } else {
+                solidChunk.setVisible(false);
+            }
+        }
+
+        Chunk currFluid = fluidChunks.getChunk(currChunkId);
+        if (currFluid != null) {
+            currFluid.setVisible(true);
+        }
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (visibleList.contains(fluidChunk.getId())) {
+                fluidChunk.setVisible(true);
+            } else {
+                fluidChunk.setVisible(false);
+            }
+        }
     }
 
     public void render() { // render for regular level rendering
@@ -593,23 +547,20 @@ public class LevelRenderer {
         ShaderProgram.unbind();
 
         // render solid series         
-        if (!solidSeries.isBuffered()) {
-            solidSeries.bufferAll();
+        if (!solidChunks.isBuffered()) {
+            solidChunks.bufferAll();
         }
 
-        solidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
+        solidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
 
         // render fluid blocks      
-        if (!fluidSeries.isBuffered()) {
-            fluidSeries.bufferAll();
+        if (!fluidChunks.isBuffered()) {
+            fluidChunks.bufferAll();
         }
 
-        fluidSeries.setCameraInFluid(isCameraInFluid());
-        fluidSeries.prepare();
-        fluidSeries.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
-        if (!solidBlocks.isBuffered()) {
-            solidBlocks.bufferAll();
-        }
+        fluidChunks.setCameraInFluid(isCameraInFluid());
+        fluidChunks.prepare();
+        fluidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
@@ -633,22 +584,19 @@ public class LevelRenderer {
         ShaderProgram.unbind();
 
         // render solid series     
-        if (!solidSeries.isBuffered()) {
-            solidSeries.bufferAll();
+        if (!solidChunks.isBuffered()) {
+            solidChunks.bufferAll();
         }
-        solidSeries.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
+        solidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
 
         // render fluid blocks      
-        if (!fluidSeries.isBuffered()) {
-            fluidSeries.bufferAll();
+        if (!fluidChunks.isBuffered()) {
+            fluidChunks.bufferAll();
         }
 
-        fluidSeries.setCameraInFluid(isCameraInFluid());
-        fluidSeries.prepare();
-        fluidSeries.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
-        if (!solidBlocks.isBuffered()) {
-            solidBlocks.bufferAll();
-        }
+        fluidChunks.setCameraInFluid(isCameraInFluid());
+        fluidChunks.prepare();
+        fluidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
     }
 
     public void incProgress(float increment) {
@@ -663,14 +611,6 @@ public class LevelRenderer {
 
     public Block getSkybox() {
         return skybox;
-    }
-
-    public Blocks getSolidBlocks() {
-        return solidBlocks;
-    }
-
-    public Blocks getFluidBlocks() {
-        return fluidBlocks;
     }
 
     public Critter getObserver() {
@@ -693,24 +633,32 @@ public class LevelRenderer {
         return working;
     }
 
-    public BlocksSeries getSolidSeries() {
-        return solidSeries;
+    public Chunks getSolidChunks() {
+        return solidChunks;
     }
 
-    public BlocksSeries getFluidSeries() {
-        return fluidSeries;
+    public Chunks getFluidChunks() {
+        return fluidChunks;
     }
 
     public RandomLevelGenerator getRandomLevelGenerator() {
         return randomLevelGenerator;
     }
 
-    public Map<Vector3f, Integer> getPosSolidMap() {
-        return posSolidMap;
+    public byte[] getBuffer() {
+        return buffer;
     }
 
-    public Map<Vector3f, Integer> getPosFluidMap() {
-        return posFluidMap;
+    public int getPos() {
+        return pos;
+    }
+
+    public static Map<Vector3f, Integer> getPOS_SOLID_MAP() {
+        return POS_SOLID_MAP;
+    }
+
+    public static Map<Vector3f, Integer> getPOS_FLUID_MAP() {
+        return POS_FLUID_MAP;
     }
 
 }

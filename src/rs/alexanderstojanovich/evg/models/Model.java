@@ -74,8 +74,8 @@ public class Model implements Comparable<Model> {
 
     protected Vector3f light = new Vector3f();
 
-    protected boolean passable = false; // is movement through this model possible
-    // fluid models are passable whilst solid ones aren't               
+    protected boolean solid = true; // is movement through this model possible
+    // fluid models are solid whilst solid ones aren't               
 
     protected Matrix4f modelMatrix = new Matrix4f();
 
@@ -119,7 +119,7 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(modelFileName);
@@ -131,7 +131,7 @@ public class Model implements Comparable<Model> {
         this.pos = pos;
         calcDims();
         this.primaryColor = primaryColor;
-        this.passable = passable;
+        this.solid = solid;
     }
 
     private void readFromObjFile(String fileName) {
@@ -414,7 +414,7 @@ public class Model implements Comparable<Model> {
 
     @Override
     public String toString() {
-        return "Model{" + "modelFileName=" + modelFileName + ", texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", passable=" + passable + '}';
+        return "Model{" + "modelFileName=" + modelFileName + ", texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public void animate(boolean selfBuffer) {
@@ -462,11 +462,6 @@ public class Model implements Comparable<Model> {
         return (this.pos.y - this.height / 2.0f);
     }
 
-//    public void updateSurfacePos() {
-//        float surfacePos = giveSurfacePos();
-//        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "modelSurfacePos");
-//        GL20.glUniform1f(uniformLocation, surfacePos);
-//    }
     public String getModelFileName() {
         return modelFileName;
     }
@@ -586,12 +581,12 @@ public class Model implements Comparable<Model> {
         this.light = light;
     }
 
-    public boolean isPassable() {
-        return passable;
+    public boolean isSolid() {
+        return solid;
     }
 
-    public void setPassable(boolean passable) {
-        this.passable = passable;
+    public void setSolid(boolean solid) {
+        this.solid = solid;
     }
 
     public void setPos(Vector3f pos) {

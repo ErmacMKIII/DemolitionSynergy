@@ -167,10 +167,10 @@ public class Camera { // is 3D looking camera
 
     public boolean intersects(Model model) {
         boolean coll = false;
-        if (!model.isPassable()) {
-            boolean boolX = pos.x >= model.getPos().x - model.getWidth() / 2 && pos.x <= model.getPos().x + model.getWidth() / 2;
-            boolean boolY = pos.y >= model.getPos().y - model.getHeight() / 2 && pos.y <= model.getPos().y + model.getHeight() / 2;
-            boolean boolZ = pos.z >= model.getPos().z - model.getDepth() / 2 && pos.z <= model.getPos().z + model.getDepth() / 2;
+        if (model.isSolid()) {
+            boolean boolX = pos.x >= model.getPos().x - model.getWidth() / 2.0f && pos.x <= model.getPos().x + model.getWidth() / 2.0f;
+            boolean boolY = pos.y >= model.getPos().y - model.getHeight() / 2.0f && pos.y <= model.getPos().y + model.getHeight() / 2.0f;
+            boolean boolZ = pos.z >= model.getPos().z - model.getDepth() / 2.0f && pos.z <= model.getPos().z + model.getDepth() / 2.0f;
             coll = boolX && boolY && boolZ;
         }
         return coll;

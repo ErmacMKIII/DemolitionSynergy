@@ -16,9 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
@@ -56,9 +58,9 @@ public class Editor {
         final float skyboxWidth = LevelRenderer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
         // and make it follows player camera        
-        selectedNew.getPos().x = (Math.round(8.0f * front.x) + Math.round(pos.x)) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(2.0f * skyboxWidth);
-        selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(2.0f * skyboxWidth);
+        selectedNew.getPos().x = (Math.round(8.0f * front.x) + Math.round(pos.x)) % Math.round(skyboxWidth);
+        selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(skyboxWidth);
+        selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth);
 
         if (!cannotPlace(levelRenderer)) {
             selectedNew.getSecondaryColor().x = 0.0f;
@@ -71,16 +73,28 @@ public class Editor {
 
     public static void selectCurr(LevelRenderer levelRenderer) {
         deselect(); // algorithm is select the nearest that interesects the camera ray
-        if (!levelRenderer.getSolidBlocks().getBlockList().isEmpty() || !levelRenderer.getFluidBlocks().getBlockList().isEmpty()) {
-            Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();
-            float minDistanceOfSolid = Float.POSITIVE_INFINITY;
-            float minDistanceOfFluid = Float.POSITIVE_INFINITY;
+        Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();
+        int currChunkId = Chunk.chunkFunc(cameraPos);
+        Chunk currSolidChunk = levelRenderer.getSolidChunks().getChunk(currChunkId);
+        List<Block> bigSolidList = null;
+        if (currSolidChunk != null) {
+            bigSolidList = currSolidChunk.getList();
+        }
+        Chunk currFluidChunk = levelRenderer.getFluidChunks().getChunk(currChunkId);
+        List<Block> bigFluidList = null;
+        if (currFluidChunk != null) {
+            bigFluidList = currFluidChunk.getList();
+        }
+        float minDistanceOfSolid = Float.POSITIVE_INFINITY;
+        float minDistanceOfFluid = Float.POSITIVE_INFINITY;
 
-            Block minSolid = null;
-            Block minFluid = null;
-            int minSolidBlkIndex = -1;
-            int solidBlkIndex = 0;
-            for (Block solidBlock : levelRenderer.getSolidBlocks().getBlockList()) {
+        Block minSolid = null;
+        Block minFluid = null;
+        int minSolidBlkIndex = -1;
+        int solidBlkIndex = 0;
+        //----------------------------------------------------------------------
+        if (bigSolidList != null) {
+            for (Block solidBlock : bigSolidList) {
                 Vector3f vect = solidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (solidBlock.intersectsRay(
@@ -94,10 +108,12 @@ public class Editor {
                 }
                 solidBlkIndex++;
             }
+        }
 
-            int minFluidBlkIndex = -1;
-            int fluidBlkIndex = 0;
-            for (Block fluidBlock : levelRenderer.getFluidBlocks().getBlockList()) {
+        int minFluidBlkIndex = -1;
+        int fluidBlkIndex = 0;
+        if (bigFluidList != null) {
+            for (Block fluidBlock : bigFluidList) {
                 Vector3f vect = fluidBlock.getPos();
                 float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, vect.x, vect.y, vect.z);
                 if (fluidBlock.intersectsRay(
@@ -111,27 +127,27 @@ public class Editor {
                 }
                 fluidBlkIndex++;
             }
-
-            if (minDistanceOfSolid < minDistanceOfFluid) {
-                if (minSolid != null) {
-                    selectedCurr = minSolid;
-                    selectedCurr.getSecondaryColor().x = 1.0f;
-                    selectedCurr.getSecondaryColor().y = 1.0f;
-                    selectedCurr.getSecondaryColor().z = 0.0f;
-                    selectedCurr.getSecondaryColor().w = 1.0f;
-                    selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
-                    selectedCurrIndex = minSolidBlkIndex;
-                }
-            } else if (minDistanceOfSolid >= minDistanceOfFluid) {
-                if (minFluid != null) {
-                    selectedCurr = minFluid;
-                    selectedCurr.getSecondaryColor().x = 1.0f;
-                    selectedCurr.getSecondaryColor().y = 1.0f;
-                    selectedCurr.getSecondaryColor().z = 0.0f;
-                    selectedCurr.getSecondaryColor().w = 1.0f;
-                    selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
-                    selectedCurrIndex = minFluidBlkIndex;
-                }
+        }
+        //----------------------------------------------------------------------
+        if (minDistanceOfSolid < minDistanceOfFluid) { // SOLID PREFERANCE
+            if (minSolid != null) {
+                selectedCurr = minSolid;
+                selectedCurr.getSecondaryColor().x = 1.0f;
+                selectedCurr.getSecondaryColor().y = 1.0f;
+                selectedCurr.getSecondaryColor().z = 0.0f;
+                selectedCurr.getSecondaryColor().w = 1.0f;
+                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedCurrIndex = minSolidBlkIndex;
+            }
+        } else if (minDistanceOfSolid >= minDistanceOfFluid) {
+            if (minFluid != null) {
+                selectedCurr = minFluid;
+                selectedCurr.getSecondaryColor().x = 1.0f;
+                selectedCurr.getSecondaryColor().y = 1.0f;
+                selectedCurr.getSecondaryColor().z = 0.0f;
+                selectedCurr.getSecondaryColor().w = 1.0f;
+                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedCurrIndex = minFluidBlkIndex;
             }
         }
     }
@@ -197,21 +213,44 @@ public class Editor {
 
     private static boolean cannotPlace(LevelRenderer levelRenderer) {
         boolean cant = false;
-        boolean placeOccupied = levelRenderer.getPosSolidMap().get(selectedNew.getPos()) != null
-                || levelRenderer.getPosFluidMap().get(selectedNew.getPos()) != null;
+        boolean placeOccupied = LevelRenderer.getPOS_SOLID_MAP().get(selectedNew.getPos()) != null
+                || LevelRenderer.getPOS_FLUID_MAP().get(selectedNew.getPos()) != null;
+        //----------------------------------------------------------------------
         boolean intsSolid = false;
-        for (int i = 0; i < levelRenderer.getSolidBlocks().getBlockList().size() && !intsSolid; i++) {
-            intsSolid = selectedNew.intersectsExactly(levelRenderer.getSolidBlocks().getBlockList().get(i));
-        }
+        int solidChunkId = Chunk.chunkFunc(selectedNew.getPos());
+        Chunk solidChunk = levelRenderer.getSolidChunks().getChunk(solidChunkId);
 
+        if (solidChunk != null) {
+            Tuple<Blocks, Integer, Integer, Texture, Integer> solidTuple = solidChunk.getTuple(selectedNew.getPrimaryTexture(), selectedNew.getFaceBits());
+            if (solidTuple != null) {
+                for (Block solidBlock : solidTuple.getA().getBlockList()) {
+                    intsSolid = selectedNew.intersectsExactly(solidBlock);
+                    if (intsSolid) {
+                        break;
+                    }
+                }
+            }
+        }
+        //----------------------------------------------------------------------
         boolean intsFluid = false;
-        for (int j = 0; j < levelRenderer.getFluidBlocks().getBlockList().size() && !intsFluid; j++) {
-            intsFluid = selectedNew.intersectsExactly(levelRenderer.getFluidBlocks().getBlockList().get(j));
-        }
+        int fluidChunkId = Chunk.chunkFunc(selectedNew.getPos());
+        Chunk fluidChunk = levelRenderer.getSolidChunks().getChunk(fluidChunkId);
 
+        if (fluidChunk != null) {
+            Tuple<Blocks, Integer, Integer, Texture, Integer> fluidTuple = fluidChunk.getTuple(selectedNew.getPrimaryTexture(), selectedNew.getFaceBits());
+            if (fluidTuple != null) {
+                for (Block fluidBlock : fluidTuple.getA().getBlockList()) {
+                    intsSolid = selectedNew.intersectsExactly(fluidBlock);
+                    if (intsSolid) {
+                        break;
+                    }
+                }
+            }
+        }
+        //----------------------------------------------------------------------
         boolean leavesSkybox = !levelRenderer.getSkybox().containsExactly(selectedNew.getPos())
                 || !levelRenderer.getSkybox().intersectsExactly(selectedNew);
-        cant = placeOccupied || intsSolid || intsFluid || leavesSkybox;
+        cant = placeOccupied || intsFluid || intsFluid || leavesSkybox;
         if (cant) {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;
@@ -226,48 +265,14 @@ public class Editor {
         if (selectedNew != null) {
             if (!cannotPlace(levelRenderer) && !levelRenderer.getObserver().getCamera().intersects(selectedNew)) {
                 selectedNew.setSecondaryTexture(null);
-                if (selectedNew.isPassable()) { // if block is fluid
-                    levelRenderer.getPosFluidMap().put(selectedNew.getPos(), selectedNew.hashCode());
-                    levelRenderer.getFluidBlocks().getBlockList().add(selectedNew); // add the block to the fluid blocks
-                    levelRenderer.getFluidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateFluidNeighbors();
-                    levelRenderer.updateFluids();
+                if (selectedNew.isSolid()) { // else if block is solid
+                    levelRenderer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks
+                    levelRenderer.getSolidChunks().setBuffered(false);
                     //----------------------------------------------------------
-                    int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
-                            selectedNew.getPrimaryTexture(),
-                            selectedNew.getFaceBits()
-                    );
-                    if (indexOfSeries == -1) { // make new tuple and add the block
-                        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = new Tuple<>(
-                                new Blocks(), 0, 0, selectedNew.getPrimaryTexture(), selectedNew.getFaceBits()
-                        );
-                        tuple.getA().getBlockList().add(selectedNew);
-                        levelRenderer.getFluidSeries().getBlocksSeries().add(tuple);
-                    } else { // add the block to the existing tuple
-                        levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
-                    }
-                    levelRenderer.getFluidSeries().setBuffered(false);
-                    //----------------------------------------------------------                    
-                } else { // else if block is solid
-                    levelRenderer.getPosSolidMap().put(selectedNew.getPos(), selectedNew.hashCode());
-                    levelRenderer.getSolidBlocks().getBlockList().add(selectedNew); // add the block to the solid blocks
-                    levelRenderer.getSolidBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-                    levelRenderer.updateSolidNeighbors();
-                    //----------------------------------------------------------
-                    int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
-                            selectedNew.getPrimaryTexture(),
-                            selectedNew.getFaceBits()
-                    );
-                    if (indexOfSeries == -1) { // make new tuple and add the block
-                        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = new Tuple<>(
-                                new Blocks(), 0, 0, selectedNew.getPrimaryTexture(), selectedNew.getFaceBits()
-                        );
-                        tuple.getA().getBlockList().add(selectedNew);
-                        levelRenderer.getSolidSeries().getBlocksSeries().add(tuple);
-                    } else { // add the block to the existing tuple
-                        levelRenderer.getSolidSeries().getBlocksSeries().get(indexOfSeries).getA().getBlockList().add(selectedNew);
-                    }
-                    levelRenderer.getSolidSeries().setBuffered(false);
+                } else { // if block is fluid                    
+                    levelRenderer.getFluidChunks().addBlock(selectedNew); // add the block to the fluid blocks 
+                    levelRenderer.getFluidChunks().updateFluids();
+                    levelRenderer.getFluidChunks().setBuffered(false);
                     //----------------------------------------------------------                   
                 }
                 loaded = new Block(false);
@@ -279,42 +284,14 @@ public class Editor {
 
     public static void remove(LevelRenderer levelRenderer) {
         if (selectedCurr != null) {
-            if (selectedCurr.isPassable()) {
-                levelRenderer.getFluidBlocks().getBlockList().remove(selectedCurr);
+            if (selectedCurr.isSolid()) {
                 //--------------------------------------------------------------
-                int indexOfSeries = levelRenderer.getFluidSeries().indexOfSeries(
-                        selectedCurr.getPrimaryTexture(),
-                        selectedCurr.getFaceBits()
-                );
-                if (indexOfSeries != -1) { // find the tuple and remove the block
-                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getFluidSeries().getBlocksSeries().get(indexOfSeries);
-                    tuple.getA().getBlockList().remove(selectedCurr);
-                    if (tuple.getA().getBlockList().isEmpty()) {
-                        levelRenderer.getFluidSeries().getBlocksSeries().remove(tuple);
-                    }
-                }
-                levelRenderer.getFluidSeries().setBuffered(false);
-                levelRenderer.getPosFluidMap().remove(selectedCurr.getPos());
-                //--------------------------------------------------------------
-                levelRenderer.updateFluidNeighbors();
-                levelRenderer.updateFluids();
+                levelRenderer.getSolidChunks().removeBlock(selectedCurr);
+                levelRenderer.getSolidChunks().setBuffered(false);
             } else {
-                levelRenderer.getSolidBlocks().getBlockList().remove(selectedCurr);
                 //--------------------------------------------------------------
-                int indexOfSeries = levelRenderer.getSolidSeries().indexOfSeries(
-                        selectedCurr.getPrimaryTexture(),
-                        selectedCurr.getFaceBits()
-                );
-                if (indexOfSeries != -1) { // find the tuple and remove the block
-                    Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = levelRenderer.getSolidSeries().getBlocksSeries().get(indexOfSeries);
-                    tuple.getA().getBlockList().remove(selectedCurr);
-                    if (tuple.getA().getBlockList().isEmpty()) {
-                        levelRenderer.getSolidSeries().getBlocksSeries().remove(tuple);
-                    }
-                }
-                levelRenderer.getSolidSeries().setBuffered(false);
-                levelRenderer.getPosSolidMap().remove(selectedCurr.getPos());
-                levelRenderer.updateSolidNeighbors();
+                levelRenderer.getFluidChunks().removeBlock(selectedCurr);
+                levelRenderer.getFluidChunks().setBuffered(false);
             }
         }
         deselect();
@@ -326,22 +303,22 @@ public class Editor {
             switch (value) {
                 case 0:
                     texture = Texture.CRATE;
-                    loaded.setPassable(false);
+                    loaded.setSolid(true);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 1:
                     texture = Texture.STONE;
-                    loaded.setPassable(false);
+                    loaded.setSolid(true);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 2:
                     texture = Texture.WATER;
-                    loaded.setPassable(true);
+                    loaded.setSolid(false);
                     loaded.getPrimaryColor().w = 0.5f;
                     break;
                 case 3:
                     texture = Texture.DOOM0;
-                    loaded.setPassable(false);
+                    loaded.setSolid(true);
                     loaded.getPrimaryColor().w = 1.0f;
                     break;
             }

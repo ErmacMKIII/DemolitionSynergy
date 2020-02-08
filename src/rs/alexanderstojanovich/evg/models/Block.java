@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import rs.alexanderstojanovich.evg.core.Texture;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -36,9 +35,10 @@ import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
+import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
@@ -113,13 +113,13 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean passable) {
+    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
         this.pos = pos;
         this.primaryColor = primaryColor;
-        this.passable = passable;
+        this.solid = solid;
         readFromTxtFile("cube.txt");
         if (selfBuffer) {
             bufferVertices();
@@ -231,7 +231,7 @@ public class Block extends Model {
 
     @Override
     public String toString() {
-        return "Block{" + "texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", passable=" + passable + '}';
+        return "Block{" + "texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
@@ -280,7 +280,7 @@ public class Block extends Model {
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.05f) {
+            if (Math.abs(vx.dot(vy)) >= 0.25f) {
                 counter++;
                 break;
             }
@@ -520,4 +520,5 @@ public class Block extends Model {
 
         return result;
     }
+
 }
