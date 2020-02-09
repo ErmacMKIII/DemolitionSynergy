@@ -209,6 +209,10 @@ public class LevelRenderer {
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
+            if (myWindow.shouldClose()) {
+                break;
+            }
+
             byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
             System.arraycopy(texName, 0, buffer, pos, 5);
             pos += 5;
@@ -235,6 +239,10 @@ public class LevelRenderer {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
+            if (myWindow.shouldClose()) {
+                break;
+            }
+
             byte[] texName = fluidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
             System.arraycopy(texName, 0, buffer, pos, 5);
             pos += 5;
@@ -256,7 +264,7 @@ public class LevelRenderer {
 
         progress = 100.0f;
 
-        if (progress == 100.0f) {
+        if (progress == 100.0f && !myWindow.shouldClose()) {
             success = true;
         }
         working = false;
@@ -313,7 +321,7 @@ public class LevelRenderer {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum; i++) {
+                for (int i = 0; i < solidNum && !myWindow.shouldClose(); i++) {
                     char[] texNameArr = new char[5];
                     for (int k = 0; k < texNameArr.length; k++) {
                         texNameArr[k] = (char) buffer[pos++];
@@ -334,9 +342,10 @@ public class LevelRenderer {
 
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                     solidChunks.addBlock(block);
+
+                    progress += 40.0f / solidNum;
                 }
                 solidChunks.setBuffered(false);
-                progress += 40.0f;
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -345,7 +354,7 @@ public class LevelRenderer {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum; i++) {
+                    for (int i = 0; i < fluidNum && !myWindow.shouldClose(); i++) {
                         char[] texNameArr = new char[5];
                         for (int k = 0; k < texNameArr.length; k++) {
                             texNameArr[k] = (char) buffer[pos++];
@@ -366,17 +375,18 @@ public class LevelRenderer {
 
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                         fluidChunks.addBlock(block);
+
+                        progress += 40.0f / fluidNum;
                     }
                     fluidChunks.updateFluids();
                     fluidChunks.setBuffered(false);
-                    progress += 40.0f;
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
                     }
                     String strEnd = String.valueOf(end);
                     if (strEnd.equals("END")) {
-                        progress += 20;
+                        progress += 10.0f;
                         success = true;
                     }
                 }
