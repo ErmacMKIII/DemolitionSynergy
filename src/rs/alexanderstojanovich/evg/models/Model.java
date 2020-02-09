@@ -620,7 +620,8 @@ public class Model implements Comparable<Model> {
                     && this.primaryColor.equals(that.primaryColor)
                     && this.width == that.width
                     && this.height == that.height
-                    && this.depth == that.depth);
+                    && this.depth == that.depth
+                    && this.solid == that.solid);
         } else {
             return false;
         }
@@ -629,14 +630,15 @@ public class Model implements Comparable<Model> {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 23 * hash + Objects.hashCode(this.vertices);
-        hash = 23 * hash + Objects.hashCode(this.indices);
-        hash = 23 * hash + Objects.hashCode(this.primaryTexture);
-        hash = 23 * hash + Float.floatToIntBits(this.width);
-        hash = 23 * hash + Float.floatToIntBits(this.height);
-        hash = 23 * hash + Float.floatToIntBits(this.depth);
-        hash = 23 * hash + Objects.hashCode(this.pos);
-        hash = 23 * hash + Objects.hashCode(this.primaryColor);
+        hash = 43 * hash + Objects.hashCode(this.vertices);
+        hash = 43 * hash + Objects.hashCode(this.indices);
+        hash = 43 * hash + Objects.hashCode(this.primaryTexture);
+        hash = 43 * hash + Float.floatToIntBits(this.width);
+        hash = 43 * hash + Float.floatToIntBits(this.height);
+        hash = 43 * hash + Float.floatToIntBits(this.depth);
+        hash = 43 * hash + Objects.hashCode(this.pos);
+        hash = 43 * hash + Objects.hashCode(this.primaryColor);
+        hash = 43 * hash + (this.solid ? 1 : 0);
         return hash;
     }
 

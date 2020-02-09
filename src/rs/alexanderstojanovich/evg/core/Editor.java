@@ -264,7 +264,7 @@ public class Editor {
             if (!cannotPlace(levelRenderer) && !levelRenderer.getObserver().getCamera().intersects(selectedNew)) {
                 selectedNew.setSecondaryTexture(null);
                 if (selectedNew.isSolid()) { // else if block is solid
-                    levelRenderer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks
+                    levelRenderer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks                    
                     levelRenderer.getSolidChunks().setBuffered(false);
                     //----------------------------------------------------------
                 } else { // if block is fluid                    
@@ -287,8 +287,9 @@ public class Editor {
                 levelRenderer.getSolidChunks().removeBlock(selectedCurr);
                 levelRenderer.getSolidChunks().setBuffered(false);
             } else {
-                //--------------------------------------------------------------
+                //--------------------------------------------------------------                
                 levelRenderer.getFluidChunks().removeBlock(selectedCurr);
+                levelRenderer.getFluidChunks().updateFluids();
                 levelRenderer.getFluidChunks().setBuffered(false);
             }
         }

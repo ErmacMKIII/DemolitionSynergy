@@ -64,9 +64,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posx = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posy = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posz = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelRenderer.getPOS_SOLID_MAP().get(randPos) != null
                 || LevelRenderer.getPOS_FLUID_MAP().get(randPos) != null
@@ -89,9 +89,9 @@ public class RandomLevelGenerator {
         float posz;
         Vector3f randPos;
         do {
-            posx = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posy = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
-            posz = (RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN) % Math.round(LevelRenderer.SKYBOX_WIDTH);
+            posx = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posy = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posz = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelRenderer.getPOS_SOLID_MAP().get(randPos) != null
                 || LevelRenderer.getPOS_FLUID_MAP().get(randPos) != null

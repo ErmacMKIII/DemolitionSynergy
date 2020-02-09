@@ -55,15 +55,24 @@ public class Chunks {
         }
         // updating neighbor from other blocks perspective
         Integer hashCode = block.hashCode();
+        int limit = 0;
         for (Block otherBlock : getTotalList()) {
-            for (int j = 0; j <= 5; j++) { // j - facenum
-                Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
-                Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
-                Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
-                if ((hashCode1 != null && hashCode1.equals(hashCode))
-                        || (hashCode2 != null && hashCode2.equals(hashCode))) {
-                    otherBlock.getAdjacentBlockMap().put(j, hashCode);
+            if (limit == 6) { // each block can have maximum 6 neighbors
+                break;
+            }
+            // if other block is in proximity of block
+            if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
+                for (int j = 0; j <= 5; j++) { // j - facenum
+                    Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
+                    Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
+                    Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+                    if ((hashCode1 != null && hashCode1.equals(hashCode))
+                            || (hashCode2 != null && hashCode2.equals(hashCode))) {
+                        otherBlock.getAdjacentBlockMap().put(j, hashCode); // ok we found out which at which side
+                        break; // goal reached, now leave
+                    }
                 }
+                limit++;
             }
         }
     }
