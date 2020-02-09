@@ -248,7 +248,11 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean leavesSkybox = !levelRenderer.getSkybox().containsExactly(selectedNew.getPos())
                 || !levelRenderer.getSkybox().intersectsExactly(selectedNew);
-        cant = placeOccupied || intsSolid || intsFluid || leavesSkybox;
+        if (selectedNew.isSolid()) {
+            cant = levelRenderer.maxSolidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
+        } else {
+            cant = levelRenderer.maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
+        }
         if (cant) {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;

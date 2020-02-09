@@ -609,6 +609,14 @@ public class LevelRenderer {
         fluidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
     }
 
+    public boolean maxSolidReached() {
+        return solidChunks.totalSize() == MAX_NUM_OF_SOLID_BLOCKS;
+    }
+
+    public boolean maxFluidReached() {
+        return fluidChunks.totalSize() == MAX_NUM_OF_FLUID_BLOCKS;
+    }
+
     public void incProgress(float increment) {
         if (progress < 100.0f) {
             progress += increment;
