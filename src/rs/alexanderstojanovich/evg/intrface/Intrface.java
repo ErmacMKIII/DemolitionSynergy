@@ -204,9 +204,9 @@ public class Intrface {
                         case "music":
                         case "musicVolume":
                             if (things.length == 2) {
-                                int volume = Integer.parseInt(things[1]);
-                                if (volume >= 0 && volume <= 100) {
-                                    Game.getAUDIO_PLAYER().setGain(volume / 100.0f);
+                                float volume = Float.parseFloat(things[1]);
+                                if (volume >= 0.0f && volume <= 1.0f) {
+                                    Game.getAUDIO_PLAYER().setGain(volume);
                                     success = true;
                                 }
                             }
@@ -357,14 +357,14 @@ public class Intrface {
         Object[] resolutions = myWindow.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
         Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
-        Object[] musicVolume = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
+        Object[] musicVolume = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
         optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
         optionsMenu.getOptions()[1] = new Combo(resolutions, 0);
         optionsMenu.getOptions()[2] = new Combo(swtch, 0);
         optionsMenu.getOptions()[3] = new Combo(swtch, 0);
         optionsMenu.getOptions()[4] = new Combo(swtch, 1);
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
-        optionsMenu.getOptions()[6] = new Combo(musicVolume, 9);
+        optionsMenu.getOptions()[6] = new Combo(musicVolume, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();

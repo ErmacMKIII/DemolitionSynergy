@@ -28,6 +28,11 @@ public class AudioPlayer {
     private int bufferPointer = 0;
     private int sourcePointer = 0;
 
+    public AudioPlayer() {
+        //Request a source
+        sourcePointer = AL10.alGenSources();
+    }
+
     private int load(AudioFile audioFile) {
         //Request space for the buffer
         bufferPointer = AL10.alGenBuffers();
@@ -44,8 +49,6 @@ public class AudioPlayer {
             stop();
         }
         bufferPointer = load(audioFile);
-        //Request a source
-        sourcePointer = AL10.alGenSources();
         if (loop) {
             AL10.alSourcei(sourcePointer, AL10.AL_LOOPING, AL10.AL_TRUE);
         } else {

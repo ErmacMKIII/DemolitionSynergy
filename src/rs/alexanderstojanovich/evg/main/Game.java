@@ -24,7 +24,6 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -91,7 +90,7 @@ public class Game {
 
     private static double upsTicks = 0.0;
 
-    private static final AudioPlayer AUDIO_PLAYER = new AudioPlayer();
+    private static AudioPlayer AUDIO_PLAYER;
 
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
@@ -114,7 +113,8 @@ public class Game {
         renderer = new Renderer(myWindow, objMutex);
         keys = new boolean[1024];
         initCallbacks();
-        MasterAudio.init(); // important part        
+        AUDIO_PLAYER = new AudioPlayer();
+        AUDIO_PLAYER.setGain(config.getMusicVolume());
     }
 
     private void observerDo() {
@@ -427,7 +427,6 @@ public class Game {
         }
 
         AUDIO_PLAYER.stop();
-        MasterAudio.destroy();
     }
 
     public Configuration makeConfig() {
@@ -439,6 +438,7 @@ public class Game {
         cfg.setVsync(myWindow.isVsync());
         cfg.setWaterEffects(waterEffects);
         cfg.setMouseSensitivity(mouseSensitivity);
+        cfg.setMusicVolume(AUDIO_PLAYER.getGain());
         return cfg;
     }
 

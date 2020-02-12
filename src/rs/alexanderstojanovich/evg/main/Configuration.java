@@ -38,7 +38,7 @@ public class Configuration {
     private boolean waterEffects = true;
     private float mouseSensitivity = 3.0f;
     private boolean debug = false;
-    private int musicVolume = 100;
+    private float musicVolume = 1.0f;
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     // reads configuration from the .ini file
@@ -69,17 +69,17 @@ public class Configuration {
                             case "vsync":
                                 vsync = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
-                            case "waterEffects":
-                                fullscreen = Boolean.parseBoolean(words[1].toLowerCase());
+                            case "watereffects":
+                                waterEffects = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
-                            case "mouseSensitivity":
+                            case "mousesensitivity":
                                 mouseSensitivity = Float.parseFloat(words[1]);
                                 break;
                             case "debug":
                                 debug = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
-                            case "musicVolume":
-                                musicVolume = Integer.parseInt(words[1]);
+                            case "musicvolume":
+                                musicVolume = Float.parseFloat(words[1]);
                                 break;
                         }
                     }
@@ -189,6 +189,14 @@ public class Configuration {
 
     public void setDebug(boolean debug) {
         this.debug = debug;
+    }
+
+    public float getMusicVolume() {
+        return musicVolume;
+    }
+
+    public void setMusicVolume(float musicVolume) {
+        this.musicVolume = musicVolume;
     }
 
 }
