@@ -16,11 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import rs.alexanderstojanovich.evg.texture.Texture;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -204,19 +204,20 @@ public class RandomLevelGenerator {
     }
 
     public void generate() {
-        if (levelRenderer.getProgress() == 0) {
-            int solidBlocks = 1 + RANDOM.nextInt(numberOfBlocks + 1);
-            int fluidBlocks = numberOfBlocks - solidBlocks;
+        if (levelRenderer.getProgress() == 0.0f) {
+            float alpha = RANDOM.nextFloat();
+            int solidBlocks = Math.min(Math.round((1.0f - alpha) * numberOfBlocks), LevelRenderer.MAX_NUM_OF_SOLID_BLOCKS);
+            int fluidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelRenderer.MAX_NUM_OF_FLUID_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
             while ((solidBlocks > 0 || fluidBlocks > 0)
                     && !levelRenderer.getMyWindow().shouldClose()) {
 
-                float alpha = RANDOM.nextFloat();
+                float beta = RANDOM.nextFloat();
 
-                int maxSolidBatchSize = (int) ((1.0f - alpha) * solidBlocks);
-                int maxFluidBatchSize = (int) (alpha * fluidBlocks);
+                int maxSolidBatchSize = (int) ((1.0f - beta) * solidBlocks);
+                int maxFluidBatchSize = (int) (beta * fluidBlocks);
 
                 //------------------------------------------------------------------
                 if (solidBlocks > 0) {

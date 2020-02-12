@@ -143,7 +143,7 @@ public class Renderer extends Thread {
                             levelRenderer.setProgress(0);
                         }
 
-                        if (levelRenderer.getProgress() == 0 && !levelRenderer.isWorking()) {
+                        if (levelRenderer.getProgress() == 0.0f && !levelRenderer.isWorking()) {
                             levelRenderer.animate();
                         }
 
