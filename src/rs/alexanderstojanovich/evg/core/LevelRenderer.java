@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import rs.alexanderstojanovich.evg.texture.Texture;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -29,12 +28,15 @@ import java.util.Map;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -93,6 +95,7 @@ public class LevelRenderer {
         boolean success = false;
         working = true;
         progress = 0.0f;
+        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
 
@@ -131,6 +134,7 @@ public class LevelRenderer {
         progress = 100.0f;
         working = false;
         success = true;
+        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -141,6 +145,7 @@ public class LevelRenderer {
         working = true;
         boolean success = false;
         progress = 0.0f;
+        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(false);
 
@@ -163,6 +168,7 @@ public class LevelRenderer {
 
         progress = 100.0f;
         working = false;
+        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -173,6 +179,7 @@ public class LevelRenderer {
             return false;
         }
         progress = 0.0f;
+        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -268,6 +275,7 @@ public class LevelRenderer {
             success = true;
         }
         working = false;
+        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -278,6 +286,7 @@ public class LevelRenderer {
             return false;
         }
         progress = 0.0f;
+        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
@@ -394,6 +403,7 @@ public class LevelRenderer {
         }
         progress = 100.0f;
         working = false;
+        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
         return success;
     }
 

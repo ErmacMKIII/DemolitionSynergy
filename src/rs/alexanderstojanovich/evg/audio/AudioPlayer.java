@@ -40,6 +40,9 @@ public class AudioPlayer {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!");
         }
+        if (isPlaying()) {
+            stop();
+        }
         bufferPointer = load(audioFile);
         //Request a source
         sourcePointer = AL10.alGenSources();
@@ -55,12 +58,42 @@ public class AudioPlayer {
         AL10.alSourcePlay(sourcePointer);
     }
 
+    public void play() {
+        if (sourcePointer != 0) {
+            AL10.alSourcePlay(sourcePointer);
+        }
+    }
+
     public void pause() {
-        AL10.alSourcePause(sourcePointer);
+        if (sourcePointer != 0) {
+            AL10.alSourcePause(sourcePointer);
+        }
     }
 
     public void stop() {
-        AL10.alSourceStop(sourcePointer);
+        if (sourcePointer != 0) {
+            AL10.alSourceStop(sourcePointer);
+        }
+    }
+
+    public boolean isPlaying() {
+        if (sourcePointer != 0) {
+            return AL10.alGetSourcei(sourcePointer, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING;
+        }
+        return false;
+    }
+
+    public void setGain(float gain) {
+        if (sourcePointer != 0) {
+            AL10.alSourcef(sourcePointer, AL10.AL_GAIN, gain);
+        }
+    }
+
+    public float getGain() {
+        if (sourcePointer != 0) {
+            return AL10.alGetSourcef(sourcePointer, AL10.AL_GAIN);
+        }
+        return 0.0f;
     }
 
 }

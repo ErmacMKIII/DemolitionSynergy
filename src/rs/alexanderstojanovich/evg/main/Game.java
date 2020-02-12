@@ -91,7 +91,7 @@ public class Game {
 
     private static double upsTicks = 0.0;
 
-    private final AudioPlayer audioPlayer = new AudioPlayer();
+    private static final AudioPlayer AUDIO_PLAYER = new AudioPlayer();
 
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
@@ -362,10 +362,6 @@ public class Game {
         });
     }
 
-    public void playAmbient() {
-
-    }
-
     public void go() {
         // start the renderer
         renderer.start();
@@ -381,7 +377,7 @@ public class Game {
 
         // start the music
         AudioFile audioFile = AudioFile.AMBIENT;
-        audioPlayer.play(audioFile, true);
+        AUDIO_PLAYER.play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
 
@@ -430,7 +426,7 @@ public class Game {
             myWindow.destroy();
         }
 
-        audioPlayer.stop();
+        AUDIO_PLAYER.stop();
         MasterAudio.destroy();
     }
 
@@ -494,8 +490,8 @@ public class Game {
         return upsTicks;
     }
 
-    public AudioPlayer getAudioPlayer() {
-        return audioPlayer;
+    public static AudioPlayer getAUDIO_PLAYER() {
+        return AUDIO_PLAYER;
     }
 
 }
