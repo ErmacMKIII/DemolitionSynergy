@@ -25,14 +25,16 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class Main {
 
     public static void main(String[] args) {
-        DSLogger.init(); // this is important first step, initializing Apache logger
         Configuration inCfg = new Configuration(); // makes default configuration
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
+        boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
+        DSLogger.init(debug); // this is important initializing Apache logger
         Game game = new Game(inCfg); // init game with given config (or default one)       
         DSLogger.reportInfo("Game initialized.");
         game.go(); // starts the game (launchs the threads) 
         DSLogger.reportInfo("Game finished.");
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
+        outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
     }
 }

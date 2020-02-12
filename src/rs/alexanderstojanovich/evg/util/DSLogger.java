@@ -42,19 +42,21 @@ public class DSLogger {
         return sb.toString();
     }
 
-    public static void init() { // adding console and log file to the logger
+    public static void init(boolean debug) { // adding console and log file to the logger
         ConsoleAppender conAppender = new ConsoleAppender(new TTCCLayout(), "System.err");
         MY_LOGGER.addAppender(conAppender);
         //----------------------------------------------------------------------
-        FileAppender fileAppender = null;
-        try {
-            final String logFileName = generateLogFileName();
-            fileAppender = new FileAppender(new TTCCLayout(), logFileName);
-        } catch (IOException ex) {
-            java.util.logging.Logger.getLogger(DSLogger.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        if (fileAppender != null) {
-            MY_LOGGER.addAppender(fileAppender);
+        if (debug) { // if debug it's gonna store messages in both console and the file otherwise just in the file
+            FileAppender fileAppender = null;
+            try {
+                final String logFileName = generateLogFileName();
+                fileAppender = new FileAppender(new TTCCLayout(), logFileName);
+            } catch (IOException ex) {
+                java.util.logging.Logger.getLogger(DSLogger.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if (fileAppender != null) {
+                MY_LOGGER.addAppender(fileAppender);
+            }
         }
     }
 

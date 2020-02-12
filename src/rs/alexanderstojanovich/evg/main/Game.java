@@ -37,7 +37,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v12 LATVIA";
+    public static final String TITLE = "Demolition Synergy - v13 MONGOLS";
 
     public static final int UPS_CAP = 80;
 

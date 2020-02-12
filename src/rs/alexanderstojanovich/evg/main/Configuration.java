@@ -37,6 +37,7 @@ public class Configuration {
     private boolean vsync = false;
     private boolean waterEffects = true;
     private float mouseSensitivity = 3.0f;
+    private boolean debug = false;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -74,6 +75,9 @@ public class Configuration {
                             case "mouseSensitivity":
                                 mouseSensitivity = Float.parseFloat(words[1]);
                                 break;
+                            case "debug":
+                                debug = Boolean.parseBoolean(words[1].toLowerCase());
+                                break;
                         }
                     }
                 }
@@ -109,6 +113,7 @@ public class Configuration {
             pw.println("VSync = " + vsync);
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
+            pw.println("Debug = " + debug);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage());
         } finally {
@@ -172,6 +177,14 @@ public class Configuration {
 
     public void setMouseSensitivity(float mouseSensitivity) {
         this.mouseSensitivity = mouseSensitivity;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
 }

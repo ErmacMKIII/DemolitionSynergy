@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -34,25 +32,22 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Coa
  */
 public class Image {
-    
+
     private String fileName;
     private int width;
     private int height;
     private ByteBuffer content;
-    
-    private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer for image data
-    private int length = 0;
-    
+
     public Image(int width, int height) {
         this.width = width;
         this.height = height;
     }
-    
+
     public Image(String subDir, String fileName) {
         this.fileName = fileName;
         loadImage(subDir, fileName);
     }
-    
+
     private void loadImage(String dirEntry, String fileName) {
         File file = new File(Game.DATA_ZIP);
         if (!file.exists()) {
@@ -92,33 +87,25 @@ public class Image {
             }
         }
     }
-    
+
     public String getFileName() {
         return fileName;
     }
-    
+
     public int getWidth() {
         return width;
     }
-    
+
     public int getHeight() {
         return height;
     }
-    
+
     public ByteBuffer getContent() {
         return content;
     }
-    
+
     public void setContent(ByteBuffer content) {
         this.content = content;
     }
-    
-    public byte[] getBuffer() {
-        return buffer;
-    }
-    
-    public int getLength() {
-        return length;
-    }
-    
+
 }
