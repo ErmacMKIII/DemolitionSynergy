@@ -75,11 +75,11 @@ public class Configuration {
                             case "mousesensitivity":
                                 mouseSensitivity = Float.parseFloat(words[1]);
                                 break;
-                            case "debug":
-                                debug = Boolean.parseBoolean(words[1].toLowerCase());
-                                break;
                             case "musicvolume":
                                 musicVolume = Float.parseFloat(words[1]);
+                                break;
+                            case "debug":
+                                debug = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                         }
                     }
@@ -116,8 +116,8 @@ public class Configuration {
             pw.println("VSync = " + vsync);
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
-            pw.println("Debug = " + debug);
             pw.println("MusicVolume = " + musicVolume);
+            pw.println("Debug = " + debug);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage());
         } finally {
