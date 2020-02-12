@@ -16,23 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import rs.alexanderstojanovich.evg.core.Window;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.core.Texture;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import rs.alexanderstojanovich.evg.shaders.Shader;
+import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -49,7 +42,7 @@ public abstract class Menu {
     private Quad logo; // only basic menus have logo
     protected DynamicText title;
 
-    protected String fileName;
+    protected List<Pair<String, Boolean>> itemPairs;
     protected boolean enabled = false;
 
     protected Vector2f pos = new Vector2f();
@@ -63,31 +56,31 @@ public abstract class Menu {
 
     protected float alignmentAmount = ALIGNMENT_LEFT;
 
-    public Menu(Window window, String title, String fileName, String textureFileName) {
+    public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
         this.myWindow = window;
-        this.fileName = fileName;
         this.title = new DynamicText(myWindow, Texture.FONT, title);
         this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
-        readFromFile(fileName);
+        this.itemPairs = itemPairs;
         Texture mngTexture = Texture.MINIGUN;
+        makeItems();
         iterator = new Quad(window, 24, 24, mngTexture);
         iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
         iterator.getPos().y = items.get(selected).getQuad().getPos().y;
         iterator.setColor(items.get(selected).getQuad().getColor());
     }
 
-    public Menu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
+    public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
         this.myWindow = window;
-        this.fileName = fileName;
         this.title = new DynamicText(myWindow, Texture.FONT, title);
         this.title.getQuad().setScale(scale);
         this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.itemPairs = itemPairs;
         this.enabled = false;
         this.pos = pos;
         this.itemScale = scale;
-        readFromFile(fileName);
         Texture mngTexture = Texture.MINIGUN;
         iterator = new Quad(window, 24, 24, mngTexture);
+        makeItems();
         iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
         iterator.getPos().y = items.get(selected).getQuad().getPos().y;
         iterator.getColor().x = items.get(selected).getQuad().getColor().x;
@@ -96,33 +89,22 @@ public abstract class Menu {
         iterator.setScale(scale);
     }
 
-    private void readFromFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + Game.INTRFACE_SUBDIR + fileName);
-        try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] things = line.trim().split(":");
-                DynamicText item = new DynamicText(myWindow, Texture.FONT, things[0]);
-                if (Boolean.parseBoolean(things[1].trim())) {
-                    item.getQuad().getColor().x = 0.0f;
-                    item.getQuad().getColor().y = 1.0f;
-                    item.getQuad().getColor().z = 0.0f;
-                } else {
-                    item.getQuad().getColor().x = 1.0f;
-                    item.getQuad().getColor().y = 0.0f;
-                    item.getQuad().getColor().z = 0.0f;
-                }
-                item.getQuad().getPos().x = pos.x;
-                item.getQuad().getPos().y = -DynamicText.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
-                item.getQuad().setScale(itemScale);
-                items.add(item);
+    private void makeItems() {
+        for (Pair<String, Boolean> pair : itemPairs) {
+            DynamicText item = new DynamicText(myWindow, Texture.FONT, pair.getKey());
+            if (pair.getValue()) {
+                item.getQuad().getColor().x = 0.0f;
+                item.getQuad().getColor().y = 1.0f;
+                item.getQuad().getColor().z = 0.0f;
+            } else {
+                item.getQuad().getColor().x = 1.0f;
+                item.getQuad().getColor().y = 0.0f;
+                item.getQuad().getColor().z = 0.0f;
             }
-            br.close();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Shader.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(Shader.class.getName()).log(Level.SEVERE, null, ex);
+            item.getQuad().getPos().x = pos.x;
+            item.getQuad().getPos().y = -DynamicText.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
+            item.getQuad().setScale(itemScale);
+            items.add(item);
         }
     }
 
@@ -241,8 +223,8 @@ public abstract class Menu {
         this.logo = logo;
     }
 
-    public String getFileName() {
-        return fileName;
+    public List<Pair<String, Boolean>> getItemPairs() {
+        return itemPairs;
     }
 
     public boolean isEnabled() {
@@ -259,10 +241,6 @@ public abstract class Menu {
 
     public int getSelected() {
         return selected;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 
     public void setEnabled(boolean enabled) {

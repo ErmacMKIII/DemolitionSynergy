@@ -28,7 +28,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**

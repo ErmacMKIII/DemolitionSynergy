@@ -20,7 +20,7 @@ import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
-import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
@@ -213,7 +213,9 @@ public class Chunks {
     // for each instanced rendering
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         for (Chunk chunk : chunkList) {
-            chunk.render(shaderProgram, lightSrc);
+            if (chunk.isVisible()) {
+                chunk.render(shaderProgram, lightSrc);
+            }
         }
     }
 

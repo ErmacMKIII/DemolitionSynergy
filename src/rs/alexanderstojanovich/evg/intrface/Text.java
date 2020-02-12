@@ -17,58 +17,83 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.shaders.Shader;
+import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
  * @author Coa
  */
 public class Text {
-
+    
     protected Window myWindow;
     protected Texture texture;
     protected String content;
-
+    
     protected static final int GRID_SIZE = 16;
     protected static final float CELL_SIZE = 1.0f / GRID_SIZE;
     public static final float LINE_SPACING = 1.35f;
-
+    
     protected final Quad quad;
-
+    
     protected boolean enabled;
-
+    
     public static final int STD_FONT_WIDTH = 24;
     public static final int STD_FONT_HEIGHT = 24;
-
+    
     public static String readFromFile(String fileName) {
+        File file = new File(Game.DATA_ZIP);
+        if (!file.exists()) {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
+            return null;
+        }
         StringBuilder text = new StringBuilder();
-        InputStream in = Text.class.getResourceAsStream(Game.RESOURCES_DIR + Game.INTRFACE_SUBDIR + fileName);
+        ZipFile zipFile = null;
+        BufferedReader br = null;
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            zipFile = new ZipFile(file);
+            InputStream txtInput = null;
+            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                if (zipEntry.getName().equals(Game.INTRFACE_ENTRY + fileName)) {
+                    txtInput = zipFile.getInputStream(zipEntry);
+                }
+            }
+            br = new BufferedReader(new InputStreamReader(txtInput));
             String line;
             while ((line = br.readLine()) != null) {
                 text.append(line).append("\n");
             }
             br.close();
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Shader.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         } catch (IOException ex) {
-            Logger.getLogger(Shader.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
+        } finally {
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (IOException ex) {
+                    DSLogger.reportFatalError(ex.getMessage());
+                }
+            }
         }
         return text.toString();
     }
-
+    
     public Text(Window window, Texture texture, String content) {
         this.myWindow = window;
         this.texture = texture;
@@ -76,7 +101,7 @@ public class Text {
         this.quad = new Quad(window, STD_FONT_WIDTH, STD_FONT_HEIGHT, texture);
         this.enabled = true;
     }
-
+    
     public Text(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
         this.myWindow = window;
         this.texture = texture;
@@ -86,7 +111,7 @@ public class Text {
         quad.setColor(color);
         this.enabled = true;
     }
-
+    
     public Text(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         this.myWindow = window;
         this.texture = texture;
@@ -95,7 +120,7 @@ public class Text {
         quad.setPos(pos);
         this.enabled = true;
     }
-
+    
     public void render() {
         if (enabled) {
             String[] lines = content.split("\n");
@@ -104,67 +129,67 @@ public class Text {
                     int j = i % 64;
                     int k = i / 64;
                     int asciiCode = (int) (lines[l].charAt(i));
-
+                    
                     float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
                     float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
-
+                    
                     float xinc = j;
                     float ydec = k + l * LINE_SPACING;
-
+                    
                     quad.getUvs()[0].x = cellU;
                     quad.getUvs()[0].y = cellV + CELL_SIZE;
-
+                    
                     quad.getUvs()[1].x = cellU + CELL_SIZE;
                     quad.getUvs()[1].y = cellV + CELL_SIZE;
-
+                    
                     quad.getUvs()[2].x = cellU + CELL_SIZE;
                     quad.getUvs()[2].y = cellV;
-
+                    
                     quad.getUvs()[3].x = cellU;
                     quad.getUvs()[3].y = cellV;
-
+                    
                     quad.buffer();
-
+                    
                     quad.render(xinc, ydec);
                 }
             }
         }
     }
-
+    
     public Window getMyWindow() {
         return myWindow;
     }
-
+    
     public void setMyWindow(Window myWindow) {
         this.myWindow = myWindow;
     }
-
+    
     public Texture getTexture() {
         return texture;
     }
-
+    
     public void setTexture(Texture texture) {
         this.texture = texture;
     }
-
+    
     public String getContent() {
         return content;
     }
-
+    
     public void setContent(String content) {
         this.content = content;
     }
-
+    
     public boolean isEnabled() {
         return enabled;
     }
-
+    
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-
+    
     public Quad getQuad() {
         return quad;
     }
-
+    
 }

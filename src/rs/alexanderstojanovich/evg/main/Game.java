@@ -17,17 +17,19 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
+import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.core.Critter;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -75,16 +77,21 @@ public class Game {
 
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
 
-    public static final String FONTS_SUBDIR = "fonts/";
-    public static final String INTRFACE_SUBDIR = "intrface/";
-    public static final String WORLD_SUBDIR = "world/";
-    public static final String EFFECTS_SUBDIR = "effects/";
+    public static final String DATA_ZIP = "dsynergy.zip";
+
+    public static final String FONTS_ENTRY = "fonts/";
+    public static final String INTRFACE_ENTRY = "intrface/";
+    public static final String WORLD_ENTRY = "world/";
+    public static final String EFFECTS_ENTRY = "effects/";
+    public static final String SOUND_ENTRY = "sound/";
 
     private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
 
     private static boolean waterEffects = true;
 
     private static double upsTicks = 0.0;
+
+    private final AudioPlayer audioPlayer = new AudioPlayer();
 
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
@@ -107,6 +114,7 @@ public class Game {
         renderer = new Renderer(myWindow, objMutex);
         keys = new boolean[1024];
         initCallbacks();
+        MasterAudio.init(); // important part        
     }
 
     private void observerDo() {
@@ -354,6 +362,10 @@ public class Game {
         });
     }
 
+    public void playAmbient() {
+
+    }
+
     public void go() {
         // start the renderer
         renderer.start();
@@ -363,9 +375,13 @@ public class Game {
             try {
                 objMutex.wait();
             } catch (InterruptedException ex) {
-                Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage());
             }
         }
+
+        // start the music
+        AudioFile audioFile = AudioFile.AMBIENT;
+        audioPlayer.play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
 
@@ -406,13 +422,16 @@ public class Game {
             }
             renderer.join(); // waits for the renderer to finish life         
         } catch (InterruptedException ex) {
-            Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         }
 
         synchronized (objMutex) {
             myWindow.loadContext();
             myWindow.destroy();
         }
+
+        audioPlayer.stop();
+        MasterAudio.destroy();
     }
 
     public Configuration makeConfig() {
@@ -473,6 +492,10 @@ public class Game {
 
     public static double getUpsTicks() {
         return upsTicks;
+    }
+
+    public AudioPlayer getAudioPlayer() {
+        return audioPlayer;
     }
 
 }

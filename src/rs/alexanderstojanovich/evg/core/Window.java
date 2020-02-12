@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import rs.alexanderstojanovich.evg.texture.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.lwjgl.glfw.GLFW;
@@ -73,7 +74,7 @@ public class Window {
         }
         // setting the icon
         GLFWImage image = GLFWImage.malloc();
-        Image icon = new Image(Game.INTRFACE_SUBDIR, "ds_icon.png");
+        Image icon = new Image(Game.INTRFACE_ENTRY, "ds_icon.png");
         image.set(icon.getWidth(), icon.getHeight(), icon.getContent());
         GLFWImage.Buffer buffer = GLFWImage.malloc(1);
         buffer.put(0, image);

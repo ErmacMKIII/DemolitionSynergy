@@ -22,8 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -79,15 +78,15 @@ public class Configuration {
                     }
                 }
             } catch (FileNotFoundException ex) {
-                Logger.getLogger(Configuration.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage());
             } catch (IOException ex) {
-                Logger.getLogger(Configuration.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage());
             } finally {
                 if (br != null) {
                     try {
                         br.close();
                     } catch (IOException ex) {
-                        Logger.getLogger(Configuration.class.getName()).log(Level.SEVERE, null, ex);
+                        DSLogger.reportFatalError(ex.getMessage());
                     }
                 }
             }
@@ -111,7 +110,7 @@ public class Configuration {
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Configuration.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         } finally {
             if (pw != null) {
                 pw.close();

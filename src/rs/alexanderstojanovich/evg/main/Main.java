@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import rs.alexanderstojanovich.evg.util.DSLogger;
+
 /**
  *
  * @author Coa
@@ -23,10 +25,13 @@ package rs.alexanderstojanovich.evg.main;
 public class Main {
 
     public static void main(String[] args) {
+        DSLogger.init(); // this is important first step, initializing Apache logger
         Configuration inCfg = new Configuration(); // makes default configuration
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         Game game = new Game(inCfg); // init game with given config (or default one)       
+        DSLogger.reportInfo("Game initialized.");
         game.go(); // starts the game (launchs the threads) 
+        DSLogger.reportInfo("Game finished.");
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.writeConfigFile();  // writes configuration to the output file
     }

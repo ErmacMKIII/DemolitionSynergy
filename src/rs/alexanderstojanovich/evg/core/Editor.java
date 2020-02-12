@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import rs.alexanderstojanovich.evg.texture.Texture;
 import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;

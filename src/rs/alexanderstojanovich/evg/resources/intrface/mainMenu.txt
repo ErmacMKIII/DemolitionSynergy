@@ -1,5 +1,0 @@
-SINGLE PLAYER: false
-MULTIPLAYER: false
-EDITOR: true
-OPTIONS: true
-EXIT: true

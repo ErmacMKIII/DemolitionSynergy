@@ -24,7 +24,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 

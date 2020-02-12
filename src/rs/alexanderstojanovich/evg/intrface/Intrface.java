@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
@@ -25,11 +27,12 @@ import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -79,8 +82,13 @@ public class Intrface {
         helpText.setEnabled(false);
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
-
-        mainMenu = new Menu(myWindow, "", "mainMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
+        mainMenuPairs.add(new Pair<>("SINGLE PLAYER", false));
+        mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
+        mainMenuPairs.add(new Pair<>("EDITOR", true));
+        mainMenuPairs.add(new Pair<>("OPTIONS", true));
+        mainMenuPairs.add(new Pair<>("EXIT", true));
+        mainMenu = new Menu(myWindow, "", mainMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
 
@@ -231,8 +239,14 @@ public class Intrface {
                 return levelRenderer.generateRandomLevel(Integer.valueOf(command));
             }
         };
-
-        optionsMenu = new OptionsMenu(myWindow, "OPTIONS", "optionsMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        List<Pair<String, Boolean>> optionsMenuPairs = new ArrayList<>();
+        optionsMenuPairs.add(new Pair<>("FPS CAP", true));
+        optionsMenuPairs.add(new Pair<>("RESOLUTION", true));
+        optionsMenuPairs.add(new Pair<>("FULLSCREEN", true));
+        optionsMenuPairs.add(new Pair<>("VSYNC", true));
+        optionsMenuPairs.add(new Pair<>("WATER EFFECTS", true));
+        optionsMenuPairs.add(new Pair<>("MOUSE SENSITIVITY", true));
+        optionsMenu = new OptionsMenu(myWindow, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -335,7 +349,13 @@ public class Intrface {
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
-        editorMenu = new Menu(myWindow, "EDITOR", "editorMenu.txt", FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();
+        editorMenuPairs.add(new Pair<>("START NEW LEVEL", true));
+        editorMenuPairs.add(new Pair<>("GENERATE RANDOM LEVEL", true));
+        editorMenuPairs.add(new Pair<>("SAVE LEVEL TO FILE", true));
+        editorMenuPairs.add(new Pair<>("LOAD LEVEL FROM FILE", true));
+
+        editorMenu = new Menu(myWindow, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();

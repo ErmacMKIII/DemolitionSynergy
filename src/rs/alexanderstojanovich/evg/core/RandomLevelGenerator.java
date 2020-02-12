@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import rs.alexanderstojanovich.evg.texture.Texture;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;

@@ -26,6 +26,7 @@ import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
@@ -46,40 +47,40 @@ public class ShaderProgram {
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
         // 1. Init main shader (skybox, camera)
-        Shader mainVertexShader = new Shader("mainVS.glsl", Shader.VERTEX_SHADER);
-        Shader mainFragmentShader = new Shader("mainFS.glsl", Shader.FRAGMENT_SHADER);
+        Shader mainVertexShader = new Shader(Game.EFFECTS_ENTRY, "mainVS.glsl", Shader.VERTEX_SHADER);
+        Shader mainFragmentShader = new Shader(Game.EFFECTS_ENTRY, "mainFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> mainShaders = new ArrayList<>();
         mainShaders.add(mainVertexShader);
         mainShaders.add(mainFragmentShader);
         mainShader = new ShaderProgram(mainShaders);
         SHADER_PROGRAMS[0] = mainShader;
         // 2. Init voxel shader (solid blocks and fluid blocks)
-        Shader voxelVertexShader = new Shader("voxelVS.glsl", Shader.VERTEX_SHADER);
-        Shader voxelFragmentShader = new Shader("voxelFS.glsl", Shader.FRAGMENT_SHADER);
+        Shader voxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "voxelVS.glsl", Shader.VERTEX_SHADER);
+        Shader voxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "voxelFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> voxelShaders = new ArrayList<>();
         voxelShaders.add(voxelVertexShader);
         voxelShaders.add(voxelFragmentShader);
         voxelShader = new ShaderProgram(voxelShaders);
         SHADER_PROGRAMS[1] = voxelShader;
         // 3. Init base water shader (water effects)
-        Shader waterBaseVertexShader = new Shader("waterBaseVS.glsl", Shader.VERTEX_SHADER);
-        Shader waterBaseFragmentShader = new Shader("waterBaseFS.glsl", Shader.FRAGMENT_SHADER);
+        Shader waterBaseVertexShader = new Shader(Game.EFFECTS_ENTRY, "waterBaseVS.glsl", Shader.VERTEX_SHADER);
+        Shader waterBaseFragmentShader = new Shader(Game.EFFECTS_ENTRY, "waterBaseFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> waterBaseShaders = new ArrayList<>();
         waterBaseShaders.add(waterBaseVertexShader);
         waterBaseShaders.add(waterBaseFragmentShader);
         waterBaseShader = new ShaderProgram(waterBaseShaders);
         SHADER_PROGRAMS[2] = waterBaseShader;
         // 4. Init voxel water shader (water effects)
-        Shader waterVoxelVertexShader = new Shader("waterVoxelVS.glsl", Shader.VERTEX_SHADER);
-        Shader waterVoxelFragmentShader = new Shader("waterVoxelFS.glsl", Shader.FRAGMENT_SHADER);
+        Shader waterVoxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "waterVoxelVS.glsl", Shader.VERTEX_SHADER);
+        Shader waterVoxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "waterVoxelFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> waterVoxelShaders = new ArrayList<>();
         waterVoxelShaders.add(waterVoxelVertexShader);
         waterVoxelShaders.add(waterVoxelFragmentShader);
         waterVoxelShader = new ShaderProgram(waterVoxelShaders);
         SHADER_PROGRAMS[3] = waterVoxelShader;
         // 5. Init interface shader (crosshair)
-        Shader intrfaceVertexShader = new Shader("intrfaceVS.glsl", Shader.VERTEX_SHADER);
-        Shader intrfaceFragmentShader = new Shader("intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
+        Shader intrfaceVertexShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceVS.glsl", Shader.VERTEX_SHADER);
+        Shader intrfaceFragmentShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> intrfaceShaders = new ArrayList<>();
         intrfaceShaders.add(intrfaceVertexShader);
         intrfaceShaders.add(intrfaceFragmentShader);

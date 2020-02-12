@@ -16,13 +16,15 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evg.core.Combo;
-import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -33,13 +35,13 @@ public abstract class OptionsMenu extends Menu {
     private DynamicText[] values; // correct and current values we display
     private Combo[] options; // options we can set we display
 
-    public OptionsMenu(Window window, String title, String fileName, String textureFileName) {
-        super(window, title, fileName, textureFileName);
+    public OptionsMenu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
+        super(window, title, itemPairs, textureFileName);
         init();
     }
 
-    public OptionsMenu(Window window, String title, String fileName, String textureFileName, Vector2f pos, float scale) {
-        super(window, title, fileName, textureFileName, pos, scale);
+    public OptionsMenu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
+        super(window, title, itemPairs, textureFileName, pos, scale);
         init();
     }
 

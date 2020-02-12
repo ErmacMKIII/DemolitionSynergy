@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import rs.alexanderstojanovich.evg.texture.Texture;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -25,8 +26,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -36,6 +35,7 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -416,15 +416,15 @@ public class LevelRenderer {
             fos = new FileOutputStream(file);
             fos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         } catch (IOException ex) {
-            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         }
         if (fos != null) {
             try {
                 fos.close();
             } catch (IOException ex) {
-                Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage());
             }
         }
         return success;
@@ -446,20 +446,21 @@ public class LevelRenderer {
         if (!file.exists()) {
             return false; // this prevents further fail
         }
+        Arrays.fill(buffer, (byte) 0);
         try {
             fis = new FileInputStream(file);
             fis.read(buffer);
             success = loadLevelFromBuffer();
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         } catch (IOException ex) {
-            Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         }
         if (fis != null) {
             try {
                 fis.close();
             } catch (IOException ex) {
-                Logger.getLogger(LevelRenderer.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage());
             }
         }
         return success;

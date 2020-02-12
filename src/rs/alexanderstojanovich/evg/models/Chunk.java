@@ -30,7 +30,7 @@ import org.lwjgl.opengl.GL33;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
-import rs.alexanderstojanovich.evg.core.Texture;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.Tuple;

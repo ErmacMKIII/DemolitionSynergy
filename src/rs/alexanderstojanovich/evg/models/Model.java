@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,10 +25,11 @@ import java.io.InputStreamReader;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -36,9 +38,10 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evg.core.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -135,10 +138,26 @@ public class Model implements Comparable<Model> {
     }
 
     private void readFromObjFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + Game.WORLD_SUBDIR + fileName);
+        File file = new File(Game.DATA_ZIP);
+        if (!file.exists()) {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
+            return;
+        }
+        ZipFile zipFile = null;
         BufferedReader br = null;
         try {
-            br = new BufferedReader(new InputStreamReader(in));
+            zipFile = new ZipFile(file);
+            InputStream txtInput = null;
+            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                if (zipEntry.getName().equals(Game.WORLD_ENTRY + fileName)) {
+                    txtInput = zipFile.getInputStream(zipEntry);
+                }
+            }
+            if (txtInput == null) {
+                DSLogger.reportError("Cannot find resource " + Game.WORLD_ENTRY + fileName + "!");
+                return;
+            }
+            br = new BufferedReader(new InputStreamReader(txtInput));
             String line;
             List<Vector2f> uvs = new ArrayList<>();
             List<Vector3f> normals = new ArrayList<>();
@@ -165,17 +184,17 @@ public class Model implements Comparable<Model> {
                     }
                 }
             }
-
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Model.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
         } catch (IOException ex) {
-            Logger.getLogger(Model.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException ex) {
-                Logger.getLogger(Model.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage());
+        } finally {
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (IOException ex) {
+                    DSLogger.reportFatalError(ex.getMessage());
+                }
             }
         }
     }
