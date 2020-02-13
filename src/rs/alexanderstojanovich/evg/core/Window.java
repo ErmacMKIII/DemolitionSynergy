@@ -150,16 +150,18 @@ public class Window {
     }
 
     public Object[] giveAllResolutions() {
-        Buffer buffer = GLFW.glfwGetVideoModes(monitorID);
         ArrayList<Object> res = new ArrayList<>();
-        for (int i = 0; i < buffer.capacity(); i++) {
-            GLFWVidMode vidMode = buffer.get();
-            String s = vidMode.width() + "x" + vidMode.height();
-            if (!res.contains(s)) {
-                res.add(s);
+        Buffer buffer = GLFW.glfwGetVideoModes(monitorID);
+        if (buffer != null) {
+            for (int i = 0; i < buffer.capacity(); i++) {
+                GLFWVidMode vidMode = buffer.get();
+                String s = vidMode.width() + "x" + vidMode.height();
+                if (!res.contains(s)) {
+                    res.add(s);
+                }
             }
+            buffer.flip();
         }
-        buffer.flip();
         return res.toArray();
     }
 

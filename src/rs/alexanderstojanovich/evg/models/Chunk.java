@@ -245,9 +245,9 @@ public class Chunk {
 
     // determine chunk
     public static int chunkFunc(Vector3f pos, Vector3f front) {
-        float x = Math.round(((pos.x + B * front.x) % A) / B);
-        float y = Math.round(((pos.y + B * front.y) % A) / B);
-        float z = Math.round(((pos.z + B * front.z) % A) / B);
+        float x = Math.round(((pos.x + pos.length() * front.x) % A) / B);
+        float y = Math.round(((pos.y + pos.length() * front.y) % A) / B);
+        float z = Math.round(((pos.z + pos.length() * front.z) % A) / B);
 
         return Math.round(((x + y + z) / 3.0f));
     }

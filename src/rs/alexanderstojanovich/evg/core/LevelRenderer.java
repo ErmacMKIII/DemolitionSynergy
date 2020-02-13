@@ -59,7 +59,7 @@ public class LevelRenderer {
     private int pos = 0;
 
     public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
-    public static final float SKYBOX_WIDTH = 256.f; // default 256
+    public static final float SKYBOX_WIDTH = 256.0f; // default 256
     public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for skybox
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;

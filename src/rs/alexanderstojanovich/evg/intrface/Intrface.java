@@ -200,6 +200,7 @@ public class Intrface {
                                 }
                                 success = true;
                             }
+                            break;
                         case "msens":
                         case "mouse_sensitivity":
                             if (things.length == 2) {
