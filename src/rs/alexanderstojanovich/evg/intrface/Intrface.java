@@ -22,6 +22,7 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
+import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
@@ -66,11 +67,16 @@ public class Intrface {
 
     private final Object objMutex;
 
-    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer, Object objMutex) {
+    private final AudioPlayer musicPlayer;
+    private final AudioPlayer soundFXPlayer;
+
+    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
         this.levelRenderer = levelRenderer;
         this.waterRenderer = waterRenderer;
         this.objMutex = objMutex;
+        this.musicPlayer = musicPlayer;
+        this.soundFXPlayer = soundFXPlayer;
         initIntrface();
     }
 
@@ -206,7 +212,17 @@ public class Intrface {
                             if (things.length == 2) {
                                 float volume = Float.parseFloat(things[1]);
                                 if (volume >= 0.0f && volume <= 1.0f) {
-                                    Game.getAUDIO_PLAYER().setGain(volume);
+                                    musicPlayer.setGain(volume);
+                                    success = true;
+                                }
+                            }
+                            break;
+                        case "sound":
+                        case "soundVolume":
+                            if (things.length == 2) {
+                                float volume = Float.parseFloat(things[1]);
+                                if (volume >= 0.0f && volume <= 1.0f) {
+                                    soundFXPlayer.setGain(volume);
                                     success = true;
                                 }
                             }
@@ -257,6 +273,7 @@ public class Intrface {
         optionsMenuPairs.add(new Pair<>("WATER EFFECTS", true));
         optionsMenuPairs.add(new Pair<>("MOUSE SENSITIVITY", true));
         optionsMenuPairs.add(new Pair<>("MUSIC VOLUME", true));
+        optionsMenuPairs.add(new Pair<>("SOUND VOLUME", true));
         optionsMenu = new OptionsMenu(myWindow, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
@@ -271,7 +288,8 @@ public class Intrface {
                 getValues()[3].setContent(myWindow.isVsync() ? "ON" : "OFF");
                 getValues()[4].setContent(Game.isWaterEffects() ? "ON" : "OFF");
                 getValues()[5].setContent(String.valueOf(Game.getMouseSensitivity()));
-                getValues()[6].setContent(String.valueOf(Game.getAUDIO_PLAYER().getGain()));
+                getValues()[6].setContent(String.valueOf(musicPlayer.getGain()));
+                getValues()[7].setContent(String.valueOf(soundFXPlayer.getGain()));
             }
 
             @Override
@@ -349,7 +367,11 @@ public class Intrface {
                 }
                 //--------------------------------------------------------------
                 if (getOptions()[6].giveCurrent() != null) {
-                    Game.getAUDIO_PLAYER().setGain(Float.parseFloat(getOptions()[6].giveCurrent().toString()));
+                    musicPlayer.setGain(Float.parseFloat(getOptions()[6].giveCurrent().toString()));
+                }
+                //--------------------------------------------------------------
+                if (getOptions()[7].giveCurrent() != null) {
+                    soundFXPlayer.setGain(Float.parseFloat(getOptions()[6].giveCurrent().toString()));
                 }
             }
         };
@@ -357,14 +379,15 @@ public class Intrface {
         Object[] resolutions = myWindow.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
         Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
-        Object[] musicVolume = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+        Object[] volume = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
         optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
         optionsMenu.getOptions()[1] = new Combo(resolutions, 0);
         optionsMenu.getOptions()[2] = new Combo(swtch, 0);
         optionsMenu.getOptions()[3] = new Combo(swtch, 0);
         optionsMenu.getOptions()[4] = new Combo(swtch, 1);
         optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
-        optionsMenu.getOptions()[6] = new Combo(musicVolume, 4);
+        optionsMenu.getOptions()[6] = new Combo(volume, 4);
+        optionsMenu.getOptions()[7] = new Combo(volume, 4);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();

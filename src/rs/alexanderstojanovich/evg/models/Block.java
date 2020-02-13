@@ -167,15 +167,15 @@ public class Block extends Model {
 //                }
 //            }
 //        } catch (FileNotFoundException ex) {
-//            DSLogger.reportFatalError(ex.getMessage());
+//            DSLogger.reportFatalError(ex.getMessage, ex);
 //        } catch (IOException ex) {
-//            DSLogger.reportFatalError(ex.getMessage());
+//            DSLogger.reportFatalError(ex.getMessage, ex);
 //        } finally {
 //            if (zipFile != null) {
 //                try {
 //                    zipFile.close();
 //                } catch (IOException ex) {
-//                    DSLogger.reportFatalError(ex.getMessage());
+//                    DSLogger.reportFatalError(ex.getMessage, ex);
 //                }
 //            }
 //        }

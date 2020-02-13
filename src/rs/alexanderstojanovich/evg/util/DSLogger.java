@@ -63,20 +63,20 @@ public class DSLogger {
     // used when catchin exceptions
     // as they would cause application to crash
     // replacing NetBeans default logger ones
-    public static void reportFatalError(String msg) {
-        MY_LOGGER.fatal(msg);
+    public static void reportFatalError(String msg, Throwable t) {
+        MY_LOGGER.fatal(msg, t);
     }
 
-    public static void reportError(String msg) {
-        MY_LOGGER.error(msg);
+    public static void reportError(String msg, Throwable t) {
+        MY_LOGGER.error(msg, t);
     }
 
-    public static void reportWarning(String msg) {
-        MY_LOGGER.warn(msg);
+    public static void reportWarning(String msg, Throwable t) {
+        MY_LOGGER.warn(msg, t);
     }
 
-    public static void reportInfo(String msg) {
-        MY_LOGGER.info(msg);
+    public static void reportInfo(String msg, Throwable t) {
+        MY_LOGGER.info(msg, t);
     }
 
 }

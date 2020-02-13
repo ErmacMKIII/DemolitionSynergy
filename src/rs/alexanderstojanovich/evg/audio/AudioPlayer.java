@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.audio;
 
+import org.joml.Vector3f;
 import org.lwjgl.openal.AL10;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -24,15 +25,15 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Coa
  */
 public class AudioPlayer {
-
+    
     private int bufferPointer = 0;
     private int sourcePointer = 0;
-
+    
     public AudioPlayer() {
         //Request a source
         sourcePointer = AL10.alGenSources();
     }
-
+    
     private int load(AudioFile audioFile) {
         //Request space for the buffer
         bufferPointer = AL10.alGenBuffers();
@@ -40,13 +41,16 @@ public class AudioPlayer {
         AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());
         return bufferPointer;
     }
-
+    
     public void play(AudioFile audioFile, boolean loop) {
         if (!MasterAudio.isInitialized()) {
-            DSLogger.reportError("Master Audio not initialized!");
+            DSLogger.reportError("Master Audio not initialized!", null);
         }
         if (isPlaying()) {
             stop();
+        }
+        if (bufferPointer != 0) {
+            AL10.alDeleteBuffers(bufferPointer);
         }
         bufferPointer = load(audioFile);
         if (loop) {
@@ -60,43 +64,62 @@ public class AudioPlayer {
         //Play the sound
         AL10.alSourcePlay(sourcePointer);
     }
+    
+    public void play(AudioFile audioFile, Vector3f pos) {
+        if (!MasterAudio.isInitialized()) {
+            DSLogger.reportError("Master Audio not initialized!", null);
+        }
+        if (isPlaying()) {
+            stop();
+        }
+        bufferPointer = load(audioFile);
 
+        // set position
+        AL10.alSource3f(sourcePointer, AL10.AL_POSITION, pos.x, pos.y, pos.z);
+
+        //Assign the sound we just loaded to the source
+        AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, bufferPointer);
+
+        //Play the sound
+        AL10.alSourcePlay(sourcePointer);
+    }
+    
     public void play() {
         if (sourcePointer != 0) {
             AL10.alSourcePlay(sourcePointer);
         }
     }
-
+    
     public void pause() {
         if (sourcePointer != 0) {
             AL10.alSourcePause(sourcePointer);
         }
     }
-
+    
     public void stop() {
         if (sourcePointer != 0) {
             AL10.alSourceStop(sourcePointer);
         }
     }
-
+    
     public boolean isPlaying() {
         if (sourcePointer != 0) {
             return AL10.alGetSourcei(sourcePointer, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING;
         }
         return false;
     }
-
+    
     public void setGain(float gain) {
         if (sourcePointer != 0) {
             AL10.alSourcef(sourcePointer, AL10.AL_GAIN, gain);
         }
     }
-
+    
     public float getGain() {
         if (sourcePointer != 0) {
             return AL10.alGetSourcef(sourcePointer, AL10.AL_GAIN);
         }
         return 0.0f;
     }
-
+    
 }

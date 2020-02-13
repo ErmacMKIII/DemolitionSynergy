@@ -39,6 +39,7 @@ public class Configuration {
     private float mouseSensitivity = 3.0f;
     private boolean debug = false;
     private float musicVolume = 1.0f;
+    private float soundFXVolume = 1.0f;
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     // reads configuration from the .ini file
@@ -78,6 +79,9 @@ public class Configuration {
                             case "musicvolume":
                                 musicVolume = Float.parseFloat(words[1]);
                                 break;
+                            case "soundfxvolume":
+                                soundFXVolume = Float.parseFloat(words[1]);
+                                break;
                             case "debug":
                                 debug = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
@@ -85,15 +89,15 @@ public class Configuration {
                     }
                 }
             } catch (FileNotFoundException ex) {
-                DSLogger.reportFatalError(ex.getMessage());
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage());
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             } finally {
                 if (br != null) {
                     try {
                         br.close();
                     } catch (IOException ex) {
-                        DSLogger.reportFatalError(ex.getMessage());
+                        DSLogger.reportFatalError(ex.getMessage(), ex);
                     }
                 }
             }
@@ -117,9 +121,10 @@ public class Configuration {
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
+            pw.println("SoundFXVolume = " + soundFXVolume);
             pw.println("Debug = " + debug);
         } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
             if (pw != null) {
                 pw.close();
@@ -197,6 +202,14 @@ public class Configuration {
 
     public void setMusicVolume(float musicVolume) {
         this.musicVolume = musicVolume;
+    }
+
+    public float getSoundFXVolume() {
+        return soundFXVolume;
+    }
+
+    public void setSoundFXVolume(float soundFXVolume) {
+        this.soundFXVolume = soundFXVolume;
     }
 
 }

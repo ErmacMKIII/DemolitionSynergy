@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v13 MONGOLS";
+    public static final String TITLE = "Demolition Synergy - v14 NYTROGEN";
 
     public static final int UPS_CAP = 80;
 
@@ -78,7 +78,6 @@ public class Game {
 
     public static final String DATA_ZIP = "dsynergy.zip";
 
-    public static final String FONTS_ENTRY = "fonts/";
     public static final String INTRFACE_ENTRY = "intrface/";
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
@@ -90,7 +89,8 @@ public class Game {
 
     private static double upsTicks = 0.0;
 
-    private static AudioPlayer AUDIO_PLAYER;
+    private final AudioPlayer musicPlayer = new AudioPlayer();
+    private final AudioPlayer soundFXPlayer = new AudioPlayer();
 
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
@@ -110,11 +110,11 @@ public class Game {
         }
         myWindow.centerTheWindow();
         waterEffects = config.isWaterEffects();
-        renderer = new Renderer(myWindow, objMutex);
+        renderer = new Renderer(myWindow, objMutex, musicPlayer, soundFXPlayer);
         keys = new boolean[1024];
         initCallbacks();
-        AUDIO_PLAYER = new AudioPlayer();
-        AUDIO_PLAYER.setGain(config.getMusicVolume());
+        musicPlayer.setGain(config.getMusicVolume());
+        soundFXPlayer.setGain(config.getSoundFXVolume());
     }
 
     private void observerDo() {
@@ -371,13 +371,13 @@ public class Game {
             try {
                 objMutex.wait();
             } catch (InterruptedException ex) {
-                DSLogger.reportFatalError(ex.getMessage());
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             }
         }
 
         // start the music
         AudioFile audioFile = AudioFile.AMBIENT;
-        AUDIO_PLAYER.play(audioFile, true);
+        musicPlayer.play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
 
@@ -418,7 +418,7 @@ public class Game {
             }
             renderer.join(); // waits for the renderer to finish life         
         } catch (InterruptedException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         }
 
         synchronized (objMutex) {
@@ -426,7 +426,7 @@ public class Game {
             myWindow.destroy();
         }
 
-        AUDIO_PLAYER.stop();
+        musicPlayer.stop();
     }
 
     public Configuration makeConfig() {
@@ -438,7 +438,8 @@ public class Game {
         cfg.setVsync(myWindow.isVsync());
         cfg.setWaterEffects(waterEffects);
         cfg.setMouseSensitivity(mouseSensitivity);
-        cfg.setMusicVolume(AUDIO_PLAYER.getGain());
+        cfg.setMusicVolume(musicPlayer.getGain());
+        cfg.setSoundFXVolume(soundFXPlayer.getGain());
         return cfg;
     }
 
@@ -490,8 +491,12 @@ public class Game {
         return upsTicks;
     }
 
-    public static AudioPlayer getAUDIO_PLAYER() {
-        return AUDIO_PLAYER;
+    public AudioPlayer getMusicPlayer() {
+        return musicPlayer;
+    }
+
+    public AudioPlayer getSoundFXPlayer() {
+        return soundFXPlayer;
     }
 
 }

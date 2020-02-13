@@ -49,8 +49,9 @@ public class WaterRenderer {
 
     private void refresh() {
         Vector3f obsCameraPos = levelRenderer.getObserver().getCamera().getPos();
+        Vector3f obsCameraFront = levelRenderer.getObserver().getCamera().getFront();
         float obsHeight = obsCameraPos.y;
-        int currChunkId = Chunk.chunkFunc(obsCameraPos);
+        int currChunkId = Chunk.chunkFunc(obsCameraPos, obsCameraFront);
         Chunk currChunk = levelRenderer.getFluidChunks().getChunk(currChunkId);
         if (currChunk != null) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : currChunk.getTupleList()) {

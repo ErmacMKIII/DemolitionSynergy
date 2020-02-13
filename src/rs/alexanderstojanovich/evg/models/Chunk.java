@@ -30,9 +30,9 @@ import org.lwjgl.opengl.GL33;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Editor;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
@@ -60,8 +60,6 @@ public class Chunk {
     private Texture waterTexture;
 
     private boolean buffered = false;
-
-    private boolean cameraInFluid = false;
 
     private boolean visible = false; // is it visible for rendering
 
@@ -141,7 +139,6 @@ public class Chunk {
     public void prepare() { // call only for fluid blocks before rendering        
         for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
             Blocks blocks = tuple.getA();
-            blocks.setCameraInFluid(cameraInFluid);
             blocks.prepare();
         }
     }
@@ -246,36 +243,56 @@ public class Chunk {
         return Math.round(((x + y + z) / 3.0f));
     }
 
-    // determine which chunks are visible by this chunk
-    public static List<Integer> determineVisible(Vector3f pos) {
-        List<Integer> result = new ArrayList<>();
+    // determine chunk
+    public static int chunkFunc(Vector3f pos, Vector3f front) {
+        float x = Math.round(((pos.x + B * front.x) % A) / B);
+        float y = Math.round(((pos.y + B * front.y) % A) / B);
+        float z = Math.round(((pos.z + B * front.z) % A) / B);
 
-        int a = chunkFunc(pos.add(C, 0.0f, 0.0f));
+        return Math.round(((x + y + z) / 3.0f));
+    }
+
+    // determine which chunks are visible by this chunk
+    public static List<Integer> determineVisible(Vector3f pos, Vector3f front) {
+        List<Integer> result = new ArrayList<>();
+        Vector3f va = new Vector3f();
+        pos.add(C, 0.0f, 0.0f, va);
+        int a = chunkFunc(va, front);
         if (!result.contains(a)) {
             result.add(a);
         }
 
-        int b = chunkFunc(pos.add(0.0f, C, 0.0f));
+        Vector3f vb = new Vector3f();
+        pos.add(0.0f, C, 0.0f, vb);
+        int b = chunkFunc(vb, front);
         if (!result.contains(b)) {
             result.add(b);
         }
 
-        int c = chunkFunc(pos.add(0.0f, 0.0f, C));
+        Vector3f vc = new Vector3f();
+        pos.add(0.0f, C, 0.0f, vc);
+        int c = chunkFunc(vc, front);
         if (!result.contains(c)) {
             result.add(c);
         }
 
-        int d = chunkFunc(pos.add(-C, 0.0f, 0.0f));
+        Vector3f vd = new Vector3f();
+        pos.add(-C, 0.0f, 0.0f, vd);
+        int d = chunkFunc(vd, front);
         if (!result.contains(d)) {
             result.add(d);
         }
 
-        int e = chunkFunc(pos.add(0.0f, -C, 0.0f));
+        Vector3f ve = new Vector3f();
+        pos.add(0.0f, -C, 0.0f, ve);
+        int e = chunkFunc(ve, front);
         if (!result.contains(e)) {
             result.add(e);
         }
 
-        int f = chunkFunc(pos.add(0.0f, 0.0f, -C));
+        Vector3f vf = new Vector3f();
+        pos.add(0.0f, 0.0f, -C, vf);
+        int f = chunkFunc(vf, front);
         if (!result.contains(f)) {
             result.add(f);
         }
@@ -321,14 +338,6 @@ public class Chunk {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-    }
-
-    public boolean isCameraInFluid() {
-        return cameraInFluid;
-    }
-
-    public void setCameraInFluid(boolean cameraInFluid) {
-        this.cameraInFluid = cameraInFluid;
     }
 
     public boolean isVisible() {

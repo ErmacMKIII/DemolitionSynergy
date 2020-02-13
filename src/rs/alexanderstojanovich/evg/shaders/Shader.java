@@ -51,7 +51,7 @@ public class Shader {
         if (src != null && src.length() > 0) {
             init();
         } else {
-            DSLogger.reportError("Invalid shader filename!");
+            DSLogger.reportError("Invalid shader filename!", null);
             System.exit(1);
         }
     }
@@ -59,7 +59,7 @@ public class Shader {
     private String readFromFile(String dirEntry, String fileName) {
         File file = new File(Game.DATA_ZIP);
         if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
             return null;
         }
         StringBuilder text = new StringBuilder();
@@ -74,7 +74,7 @@ public class Shader {
                 }
             }
             if (txtInput == null) {
-                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!");
+                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
                 return null;
             }
             br = new BufferedReader(new InputStreamReader(txtInput));
@@ -84,15 +84,15 @@ public class Shader {
             }
             br.close();
         } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
             if (zipFile != null) {
                 try {
                     zipFile.close();
                 } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage());
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
         }
@@ -103,7 +103,7 @@ public class Shader {
         // creating the shader
         shader = GL20.glCreateShader(type);
         if (shader == 0) {
-            DSLogger.reportError("Shader creation failed!");
+            DSLogger.reportError("Shader creation failed!", null);
             System.exit(1);
         }
         GL20.glShaderSource(shader, src);

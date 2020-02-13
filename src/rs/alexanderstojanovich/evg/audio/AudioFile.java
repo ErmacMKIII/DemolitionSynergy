@@ -44,15 +44,19 @@ public class AudioFile { // only ogg are supported
     public static AudioFile AMBIENT = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient.ogg");
     public static AudioFile INTERMISSION = new AudioFile(Game.SOUND_ENTRY, "erokia_intermission.ogg");
 
-    public AudioFile(String entryDir, String fileName) {
+    public static AudioFile BLOCK_SELECT = new AudioFile(Game.SOUND_ENTRY, "block_selection.ogg");
+    public static AudioFile BLOCK_ADD = new AudioFile(Game.SOUND_ENTRY, "block_addition.ogg");
+    public static AudioFile BLOCK_REMOVE = new AudioFile(Game.SOUND_ENTRY, "block_removal.ogg");
+
+    public AudioFile(String dirEntry, String fileName) {
         this.fileName = fileName;
-        loadAudio(entryDir, fileName);
+        loadAudio(dirEntry, fileName);
     }
 
     private void loadAudio(String dirEntry, String fileName) {
         File file = new File(Game.DATA_ZIP);
         if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
             return;
         }
         ZipFile zipFile = null;
@@ -66,19 +70,19 @@ public class AudioFile { // only ogg are supported
                 }
             }
             if (in == null) {
-                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!");
+                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
                 return;
             }
             OggDecoder decoder = new OggDecoder();
             data = decoder.getData(in);
         } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
             if (zipFile != null) {
                 try {
                     zipFile.close();
                 } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage());
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
         }

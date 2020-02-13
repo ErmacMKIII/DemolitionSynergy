@@ -29,7 +29,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
-import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -71,13 +71,18 @@ public class LevelRenderer {
 
     private final RandomLevelGenerator randomLevelGenerator;
 
+    private final AudioPlayer musicPlayer;
+    private final AudioPlayer soundFXPlayer;
+
     //----------------Vector3f hash, Block hash---------------------------------
     private static final Map<Vector3f, Integer> POS_SOLID_MAP = new HashMap<>();
     private static final Map<Vector3f, Integer> POS_FLUID_MAP = new HashMap<>();
 
-    public LevelRenderer(Window myWindow) {
+    public LevelRenderer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
+        this.musicPlayer = musicPlayer;
+        this.soundFXPlayer = soundFXPlayer;
         // setting skybox
         skybox = new Block(true, Texture.NIGHT);
         skybox.setPrimaryColor(SKYBOX_COLOR);
@@ -95,7 +100,7 @@ public class LevelRenderer {
         boolean success = false;
         working = true;
         progress = 0.0f;
-        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
+        musicPlayer.play(AudioFile.INTERMISSION, true);
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(true);
 
@@ -134,7 +139,7 @@ public class LevelRenderer {
         progress = 100.0f;
         working = false;
         success = true;
-        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
+        musicPlayer.play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -145,7 +150,7 @@ public class LevelRenderer {
         working = true;
         boolean success = false;
         progress = 0.0f;
-        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
+        musicPlayer.play(AudioFile.INTERMISSION, true);
         observer = new Critter("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.25f);
         observer.setGivenControl(false);
 
@@ -161,14 +166,14 @@ public class LevelRenderer {
         }
 
         solidChunks.setBuffered(false);
-        fluidChunks.updateFluids();
+        fluidChunks.updateFluids(true);
         fluidChunks.setBuffered(false);
 
         observer.setGivenControl(true);
 
         progress = 100.0f;
         working = false;
-        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
+        musicPlayer.play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -179,7 +184,7 @@ public class LevelRenderer {
             return false;
         }
         progress = 0.0f;
-        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
+        musicPlayer.play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -275,7 +280,7 @@ public class LevelRenderer {
             success = true;
         }
         working = false;
-        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
+        musicPlayer.play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -286,7 +291,7 @@ public class LevelRenderer {
             return false;
         }
         progress = 0.0f;
-        Game.getAUDIO_PLAYER().play(AudioFile.INTERMISSION, true);
+        musicPlayer.play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
@@ -326,7 +331,7 @@ public class LevelRenderer {
                 solid[i] = (char) buffer[pos++];
             }
             String strSolid = String.valueOf(solid);
-            progress += 10.0f;
+
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
@@ -352,7 +357,7 @@ public class LevelRenderer {
                     Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
                     solidChunks.addBlock(block);
 
-                    progress += 40.0f / solidNum;
+                    progress += 50.0f / solidNum;
                 }
                 solidChunks.setBuffered(false);
                 char[] fluid = new char[5];
@@ -385,9 +390,9 @@ public class LevelRenderer {
                         Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
                         fluidChunks.addBlock(block);
 
-                        progress += 40.0f / fluidNum;
+                        progress += 50.0f / fluidNum;
                     }
-                    fluidChunks.updateFluids();
+                    fluidChunks.updateFluids(true);
                     fluidChunks.setBuffered(false);
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
@@ -395,7 +400,6 @@ public class LevelRenderer {
                     }
                     String strEnd = String.valueOf(end);
                     if (strEnd.equals("END")) {
-                        progress += 10.0f;
                         success = true;
                     }
                 }
@@ -403,7 +407,7 @@ public class LevelRenderer {
         }
         progress = 100.0f;
         working = false;
-        Game.getAUDIO_PLAYER().play(AudioFile.AMBIENT, true);
+        musicPlayer.play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -426,15 +430,15 @@ public class LevelRenderer {
             fos = new FileOutputStream(file);
             fos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
         } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         }
         if (fos != null) {
             try {
                 fos.close();
             } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage());
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             }
         }
         return success;
@@ -462,15 +466,15 @@ public class LevelRenderer {
             fis.read(buffer);
             success = loadLevelFromBuffer();
         } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         }
         if (fis != null) {
             try {
                 fis.close();
             } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage());
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             }
         }
         return success;
@@ -501,8 +505,8 @@ public class LevelRenderer {
         boolean coll;
         coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
         Vector3f obsPredPos = critter.getPredictor();
-        Chunk solidChunk = solidChunks.getChunk(Chunk.chunkFunc(obsPredPos));
-        if (solidChunk != null) {
+        List<Chunk> visibleChunks = solidChunks.getVisibleChunks();
+        for (Chunk solidChunk : visibleChunks) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : solidChunk.getTupleList()) {
                 for (Block solidBlock : tuple.getA().getBlockList()) {
                     if (solidBlock.contains(obsPredPos) || solidBlock.intersects(critter.getPredModel())) {
@@ -515,10 +519,14 @@ public class LevelRenderer {
         return coll;
     }
 
-    public void update() { // call it externally from the main thread       
+    public void update() { // call it externally from the main thread 
+        if (working || progress > 0.0f) {
+            return; // don't update if working, it may screw up!
+        }
+
         Camera obsCamera = observer.getCamera();
-        int currChunkId = Chunk.chunkFunc(obsCamera.getPos());
-        List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos()); // is list of estimated visible chunks (by that chunk)
+        int currChunkId = Chunk.chunkFunc(obsCamera.getPos(), obsCamera.getFront());
+        List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront()); // is list of estimated visible chunks (by that chunk)
         Chunk currSolid = solidChunks.getChunk(currChunkId);
         if (currSolid != null) {
             currSolid.setVisible(true);
@@ -542,6 +550,8 @@ public class LevelRenderer {
                 fluidChunk.setVisible(false);
             }
         }
+
+        fluidChunks.setCameraInFluid(isCameraInFluid());
     }
 
     public void render() { // render for regular level rendering
@@ -579,7 +589,6 @@ public class LevelRenderer {
             fluidChunks.bufferAll();
         }
 
-        fluidChunks.setCameraInFluid(isCameraInFluid());
         fluidChunks.prepare();
         fluidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
     }
@@ -615,7 +624,6 @@ public class LevelRenderer {
             fluidChunks.bufferAll();
         }
 
-        fluidChunks.setCameraInFluid(isCameraInFluid());
         fluidChunks.prepare();
         fluidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
     }
@@ -688,6 +696,14 @@ public class LevelRenderer {
 
     public static Map<Vector3f, Integer> getPOS_FLUID_MAP() {
         return POS_FLUID_MAP;
+    }
+
+    public AudioPlayer getMusicPlayer() {
+        return musicPlayer;
+    }
+
+    public AudioPlayer getSoundFXPlayer() {
+        return soundFXPlayer;
     }
 
 }

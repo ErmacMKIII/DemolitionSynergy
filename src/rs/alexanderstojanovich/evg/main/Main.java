@@ -32,9 +32,9 @@ public class Main {
         DSLogger.init(debug); // this is important initializing Apache logger
         MasterAudio.init(); // audio init before game loading
         Game game = new Game(inCfg); // init game with given config (or default one)       
-        DSLogger.reportInfo("Game initialized.");
+        DSLogger.reportInfo("Game initialized.", null);
         game.go(); // starts the game (launchs the threads)         
-        DSLogger.reportInfo("Game finished.");
+        DSLogger.reportInfo("Game finished.", null);
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file

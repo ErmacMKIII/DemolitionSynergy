@@ -16,12 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import rs.alexanderstojanovich.evg.texture.Texture;
 import java.util.List;
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
@@ -70,12 +71,15 @@ public class Editor {
             selectedNew.getSecondaryColor().w = 1.0f;
             selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
         }
+
+        levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
     }
 
     public static void selectCurr(LevelRenderer levelRenderer) {
         deselect(); // algorithm is select the nearest that interesects the camera ray
         Vector3f cameraPos = levelRenderer.getObserver().getCamera().getPos();
-        int currChunkId = Chunk.chunkFunc(cameraPos);
+        Vector3f cameraFront = levelRenderer.getObserver().getCamera().getFront();
+        int currChunkId = Chunk.chunkFunc(cameraPos, cameraFront);
         Chunk currSolidChunk = levelRenderer.getSolidChunks().getChunk(currChunkId);
         List<Block> bigSolidList = null;
         if (currSolidChunk != null) {
@@ -139,6 +143,7 @@ public class Editor {
                 selectedCurr.getSecondaryColor().w = 1.0f;
                 selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                 selectedCurrIndex = minSolidBlkIndex;
+                levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedCurr.getPos());
             }
         } else if (minDistanceOfSolid >= minDistanceOfFluid) {
             if (minFluid != null) {
@@ -149,6 +154,7 @@ public class Editor {
                 selectedCurr.getSecondaryColor().w = 1.0f;
                 selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
                 selectedCurrIndex = minFluidBlkIndex;
+                levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedCurr.getPos());
             }
         }
     }
@@ -271,11 +277,13 @@ public class Editor {
                 if (selectedNew.isSolid()) { // else if block is solid
                     levelRenderer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks                    
                     levelRenderer.getSolidChunks().setBuffered(false);
+                    levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                     //----------------------------------------------------------
                 } else { // if block is fluid                    
                     levelRenderer.getFluidChunks().addBlock(selectedNew); // add the block to the fluid blocks 
-                    levelRenderer.getFluidChunks().updateFluids();
+                    levelRenderer.getFluidChunks().updateFluids(true);
                     levelRenderer.getFluidChunks().setBuffered(false);
+                    levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                     //----------------------------------------------------------                   
                 }
                 loaded = new Block(false);
@@ -291,11 +299,13 @@ public class Editor {
                 //--------------------------------------------------------------
                 levelRenderer.getSolidChunks().removeBlock(selectedCurr);
                 levelRenderer.getSolidChunks().setBuffered(false);
+                levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
             } else {
                 //--------------------------------------------------------------                
                 levelRenderer.getFluidChunks().removeBlock(selectedCurr);
-                levelRenderer.getFluidChunks().updateFluids();
+                levelRenderer.getFluidChunks().updateFluids(false);
                 levelRenderer.getFluidChunks().setBuffered(false);
+                levelRenderer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
             }
         }
         deselect();

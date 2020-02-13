@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.main;
 
 import org.lwjgl.glfw.GLFW;
+import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -42,10 +43,15 @@ public class Renderer extends Thread {
 
     private static double fpsTicks = 0.0;
 
-    public Renderer(Window myWindow, Object objMutex) {
+    private final AudioPlayer musicPlayer;
+    private final AudioPlayer soundFXPlayer;
+
+    public Renderer(Window myWindow, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         super("Renderer");
         this.myWindow = myWindow;
         this.objMutex = objMutex;
+        this.musicPlayer = musicPlayer;
+        this.soundFXPlayer = soundFXPlayer;
     }
 
     @Override
@@ -56,9 +62,9 @@ public class Renderer extends Thread {
             ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
             PerspectiveRenderer.updatePerspective(myWindow); // updates perspective for all the existing shaders
 
-            levelRenderer = new LevelRenderer(myWindow);
+            levelRenderer = new LevelRenderer(myWindow, musicPlayer, soundFXPlayer);
             waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-            intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex);
+            intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex, musicPlayer, soundFXPlayer);
             // wake up the main thread
             objMutex.notify();
         }
@@ -158,7 +164,9 @@ public class Renderer extends Thread {
     }
 
     public void update() {
-        levelRenderer.update();
+        synchronized (objMutex) {
+            levelRenderer.update();
+        }
     }
 
     public Window getMyWindow() {
@@ -195,6 +203,14 @@ public class Renderer extends Thread {
 
     public static void setFpsTicks(double fpsTicks) {
         Renderer.fpsTicks = fpsTicks;
+    }
+
+    public AudioPlayer getMusicPlayer() {
+        return musicPlayer;
+    }
+
+    public AudioPlayer getSoundFXPlayer() {
+        return soundFXPlayer;
     }
 
 }

@@ -43,15 +43,15 @@ public class Image {
         this.height = height;
     }
 
-    public Image(String subDir, String fileName) {
+    public Image(String dirEntry, String fileName) {
         this.fileName = fileName;
-        loadImage(subDir, fileName);
+        loadImage(dirEntry, fileName);
     }
 
     private void loadImage(String dirEntry, String fileName) {
         File file = new File(Game.DATA_ZIP);
         if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
             return;
         }
         ZipFile zipFile = null;
@@ -64,7 +64,7 @@ public class Image {
                 }
             }
             if (imgInput == null) {
-                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!");
+                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
                 return;
             }
             PNGDecoder decoder = new PNGDecoder(imgInput);
@@ -76,13 +76,13 @@ public class Image {
             decoder.decode(content, width * 4, PNGDecoder.Format.RGBA);
             content.flip();
         } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage());
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
             if (zipFile != null) {
                 try {
                     zipFile.close();
                 } catch (IOException ex) {
-                    DSLogger.reportError(ex.getMessage());
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
         }

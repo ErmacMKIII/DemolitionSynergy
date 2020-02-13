@@ -20,8 +20,8 @@ import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.LevelRenderer;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
@@ -37,9 +37,7 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    private boolean cameraInFluid = false;
-
-    private void updateNeighbors(Block block) { // called for all blocks before adding        
+    private void addNeighbors(Block block) { // called for all blocks before adding        
         // updating neighbor from adding block perspective
         for (int j = 0; j <= 5; j++) { // j - facenum
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
@@ -77,6 +75,44 @@ public class Chunks {
         }
     }
 
+    private void removeNeighbors(Block block) { // called for all blocks before removing       
+        // updating neighbor from adding block perspective
+        for (int j = 0; j <= 5; j++) { // j - facenum
+            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
+            Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
+            Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+            if (hashCode1 == null && hashCode2 == null) {
+                block.getAdjacentBlockMap().remove(j);
+            } else if (hashCode1 != null && hashCode2 == null) {
+                block.getAdjacentBlockMap().remove(j, hashCode1);
+            } else if (hashCode1 == null && hashCode2 != null) {
+                block.getAdjacentBlockMap().remove(j, hashCode2);
+            }
+        }
+        // updating neighbor from other blocks perspective
+        Integer hashCode = block.hashCode();
+        int limit = 0;
+        for (Block otherBlock : getTotalList()) {
+            if (limit == 6) { // each block can have maximum 6 neighbors
+                break;
+            }
+            // if other block is in proximity of block
+            if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
+                for (int j = 0; j <= 5; j++) { // j - facenum
+                    Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
+                    Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
+                    Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+                    if ((hashCode1 != null && hashCode1.equals(hashCode))
+                            || (hashCode2 != null && hashCode2.equals(hashCode))) {
+                        otherBlock.getAdjacentBlockMap().remove(j, hashCode); // ok we found out which at which side
+                        break; // goal reached, now leave
+                    }
+                }
+                limit++;
+            }
+        }
+    }
+
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
         if (block.solid) {
@@ -85,7 +121,7 @@ public class Chunks {
             LevelRenderer.getPOS_FLUID_MAP().put(block.pos, block.hashCode());
         }
 
-        updateNeighbors(block);
+        addNeighbors(block);
 
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -116,6 +152,8 @@ public class Chunks {
         } else {
             LevelRenderer.getPOS_FLUID_MAP().remove(block.pos);
         }
+
+        removeNeighbors(block);
 
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -160,7 +198,7 @@ public class Chunks {
         }
     }
 
-    public void updateFluids() { // call only for fluid blocks after adding
+    public void updateFluids(boolean useTransfer) { // call only for fluid blocks after adding
         for (Block fluidBlock : getTotalList()) {
             fluidBlock.enableAllFaces(false);
             int faceBitsBefore = fluidBlock.getFaceBits();
@@ -172,7 +210,7 @@ public class Chunks {
                 }
             }
             int faceBitsAfter = fluidBlock.getFaceBits();
-            if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+            if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
                 transfer(fluidBlock);
             }
         }
@@ -197,10 +235,8 @@ public class Chunks {
     }
 
     public void animate() { // call only for fluid blocks
-        for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
-                chunk.animate();
-            }
+        for (Chunk chunk : getVisibleChunks()) {
+            chunk.animate();
         }
     }
 
@@ -212,10 +248,8 @@ public class Chunks {
 
     // for each instanced rendering
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
-                chunk.render(shaderProgram, lightSrc);
-            }
+        for (Chunk chunk : getVisibleChunks()) {
+            chunk.render(shaderProgram, lightSrc);
         }
     }
 
@@ -237,6 +271,25 @@ public class Chunks {
         return result;
     }
 
+    public List<Chunk> getVisibleChunks() {
+        List<Chunk> result = new GapList<>();
+        for (Chunk chunk : chunkList) {
+            if (chunk.isVisible()) {
+                result.add(chunk);
+            }
+        }
+        return result;
+    }
+
+    // all blocks from all the chunks in one big list
+    public List<Block> getTotalVisibleList() {
+        List<Block> result = new GapList<>();
+        for (Chunk chunk : getVisibleChunks()) {
+            result.addAll(chunk.getList());
+        }
+        return result;
+    }
+
     public List<Chunk> getChunkList() {
         return chunkList;
     }
@@ -247,19 +300,16 @@ public class Chunks {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-        for (Chunk chunk : chunkList) {
+        for (Chunk chunk : getVisibleChunks()) {
             chunk.setBuffered(buffered);
         }
     }
 
-    public boolean isCameraInFluid() {
-        return cameraInFluid;
-    }
-
     public void setCameraInFluid(boolean cameraInFluid) {
-        this.cameraInFluid = cameraInFluid;
-        for (Chunk chunk : chunkList) {
-            chunk.setCameraInFluid(cameraInFluid);
+        for (Chunk chunk : getVisibleChunks()) {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : chunk.getTupleList()) {
+                tuple.getA().setCameraInFluid(cameraInFluid);
+            }
         }
     }
 
