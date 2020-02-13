@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v14 NYTROGEN";
+    public static final String TITLE = "Demolition Synergy - v14 NITROGEN";
 
     public static final int UPS_CAP = 80;
 

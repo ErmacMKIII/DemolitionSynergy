@@ -25,23 +25,17 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Coa
  */
 public class AudioPlayer {
-    
+
     private int bufferPointer = 0;
     private int sourcePointer = 0;
-    
+
     public AudioPlayer() {
+        //Request space for the buffer
+        bufferPointer = AL10.alGenBuffers();
         //Request a source
         sourcePointer = AL10.alGenSources();
     }
-    
-    private int load(AudioFile audioFile) {
-        //Request space for the buffer
-        bufferPointer = AL10.alGenBuffers();
-        //Send the data to OpenAL
-        AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());
-        return bufferPointer;
-    }
-    
+
     public void play(AudioFile audioFile, boolean loop) {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!", null);
@@ -49,10 +43,8 @@ public class AudioPlayer {
         if (isPlaying()) {
             stop();
         }
-        if (bufferPointer != 0) {
-            AL10.alDeleteBuffers(bufferPointer);
-        }
-        bufferPointer = load(audioFile);
+        AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, 0);
+        AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());
         if (loop) {
             AL10.alSourcei(sourcePointer, AL10.AL_LOOPING, AL10.AL_TRUE);
         } else {
@@ -64,7 +56,7 @@ public class AudioPlayer {
         //Play the sound
         AL10.alSourcePlay(sourcePointer);
     }
-    
+
     public void play(AudioFile audioFile, Vector3f pos) {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!", null);
@@ -72,7 +64,8 @@ public class AudioPlayer {
         if (isPlaying()) {
             stop();
         }
-        bufferPointer = load(audioFile);
+        AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, 0);
+        AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());
 
         // set position
         AL10.alSource3f(sourcePointer, AL10.AL_POSITION, pos.x, pos.y, pos.z);
@@ -83,43 +76,43 @@ public class AudioPlayer {
         //Play the sound
         AL10.alSourcePlay(sourcePointer);
     }
-    
+
     public void play() {
         if (sourcePointer != 0) {
             AL10.alSourcePlay(sourcePointer);
         }
     }
-    
+
     public void pause() {
         if (sourcePointer != 0) {
             AL10.alSourcePause(sourcePointer);
         }
     }
-    
+
     public void stop() {
         if (sourcePointer != 0) {
             AL10.alSourceStop(sourcePointer);
         }
     }
-    
+
     public boolean isPlaying() {
         if (sourcePointer != 0) {
             return AL10.alGetSourcei(sourcePointer, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING;
         }
         return false;
     }
-    
+
     public void setGain(float gain) {
         if (sourcePointer != 0) {
             AL10.alSourcef(sourcePointer, AL10.AL_GAIN, gain);
         }
     }
-    
+
     public float getGain() {
         if (sourcePointer != 0) {
             return AL10.alGetSourcef(sourcePointer, AL10.AL_GAIN);
         }
         return 0.0f;
     }
-    
+
 }

@@ -372,7 +372,7 @@ public class Intrface {
                 }
                 //--------------------------------------------------------------
                 if (getOptions()[7].giveCurrent() != null) {
-                    soundFXPlayer.setGain(Float.parseFloat(getOptions()[6].giveCurrent().toString()));
+                    soundFXPlayer.setGain(Float.parseFloat(getOptions()[7].giveCurrent().toString()));
                 }
             }
         };
@@ -380,7 +380,11 @@ public class Intrface {
         Object[] resolutions = myWindow.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
         Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
-        Object[] volume = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+        Object[] volume = new Float[21];
+        int k = 0;
+        for (float i = 0.0f; i < 1.05f; i += 0.05f) {
+            volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
+        }
         optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
         optionsMenu.getOptions()[1] = new Combo(resolutions, 0);
         optionsMenu.getOptions()[2] = new Combo(swtch, 0);
