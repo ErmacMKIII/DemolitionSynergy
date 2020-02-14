@@ -261,7 +261,7 @@ public class Model implements Comparable<Model> {
 
     public void render(ShaderProgram shaderProgram) {
         if (!buffered) {
-            return;
+            return; // this is very critical!!
         }
 
         Texture.enable();

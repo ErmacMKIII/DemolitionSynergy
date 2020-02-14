@@ -250,6 +250,7 @@ public class Block extends Model {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
+    @Override
     public void bufferAll() { // explicit call to buffer unbuffered before the rendering
         bufferVertices();
         bufferIndices();
