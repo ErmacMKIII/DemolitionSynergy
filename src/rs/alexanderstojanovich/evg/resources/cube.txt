@@ -1,7 +1,7 @@
 // My Cube - made manually by Ermac
 
 // Syntax
-// v: is a vertex def,ined by position, normal and texture(uv)
+// v: is a vertex defined by position, normal and texture(uv)
 // i: represents 3 indices drawing one triangle
 
 // Face 0 (Left)
