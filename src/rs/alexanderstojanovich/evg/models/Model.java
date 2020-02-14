@@ -84,7 +84,7 @@ public class Model implements Comparable<Model> {
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
 
-    public Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
+    protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }
 
@@ -92,17 +92,6 @@ public class Model implements Comparable<Model> {
         this.modelFileName = modelFileName;
         readFromObjFile(modelFileName);
         if (selfBuffer) {   // used for self buffering (old school), if Blocks class is being used to load blocks keep it off.
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
-        calcDims();
-    }
-
-    public Model(boolean selfBuffer, String modelFileName, ShaderProgram shaderProgram) {
-        this.modelFileName = modelFileName;
-        readFromObjFile(modelFileName);
-        if (selfBuffer) {
             bufferVertices();
             bufferIndices();
             buffered = true;

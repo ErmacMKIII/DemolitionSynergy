@@ -188,17 +188,17 @@ public class Block extends Model {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("v:")) {
-                    String[] things = line.split(" ");
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[5]), Float.parseFloat(things[6]), Float.parseFloat(things[7]));
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[9]), Float.parseFloat(things[10]));
+                    String[] things = line.replace("v:", "").trim().split(",|->", -1);
+                    Vector3f pos = new Vector3f(Float.parseFloat(things[0]), Float.parseFloat(things[1]), Float.parseFloat(things[2]));
+                    Vector3f normal = new Vector3f(Float.parseFloat(things[3]), Float.parseFloat(things[4]), Float.parseFloat(things[5]));
+                    Vector2f uv = new Vector2f(Float.parseFloat(things[6]), Float.parseFloat(things[7]));
                     Vertex v = new Vertex(pos, normal, uv);
                     vertices.add(v);
                 } else if (line.startsWith("i:")) {
-                    String[] things = line.split(" ");
+                    String[] things = line.replace("i:", "").trim().split(" ", -1);
+                    indices.add(Integer.parseInt(things[0]));
                     indices.add(Integer.parseInt(things[1]));
                     indices.add(Integer.parseInt(things[2]));
-                    indices.add(Integer.parseInt(things[3]));
                 }
             }
         } catch (FileNotFoundException ex) {
