@@ -260,6 +260,10 @@ public class Model implements Comparable<Model> {
     }
 
     public void render(ShaderProgram shaderProgram) {
+        if (!buffered) {
+            return;
+        }
+
         Texture.enable();
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);

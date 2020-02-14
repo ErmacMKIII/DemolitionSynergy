@@ -242,16 +242,18 @@ public class Block extends Model {
 
     private void bufferIndices() {
         // storing indices in the buffer
-        IntBuffer ib = BufferUtils.createIntBuffer(indices.size());
-        for (Integer index : indices) {
-            ib.put(index);
-        }
-        ib.flip();
+        IntBuffer ib = createIntBuffer(getFaceBits());
         // storing indices buffer on the graphics card
         ibo = GL15.glGenBuffers();
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
+        bufferVertices();
+        bufferIndices();
+        buffered = true;
     }
 
     private void calcDims() {
