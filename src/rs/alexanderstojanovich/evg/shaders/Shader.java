@@ -110,7 +110,7 @@ public class Shader {
         // compiling the shader
         GL20.glCompileShader(shader);
         if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
-            System.out.println(GL20.glGetShaderInfoLog(shader, 1024));
+            DSLogger.reportError(GL20.glGetShaderInfoLog(shader, 1024), null);
             System.exit(1);
         }
     }

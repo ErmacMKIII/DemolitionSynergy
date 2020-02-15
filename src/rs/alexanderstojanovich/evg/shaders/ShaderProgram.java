@@ -27,6 +27,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -101,7 +102,7 @@ public class ShaderProgram {
     public void linkProgram() {
         GL20.glLinkProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
-            System.out.println(GL20.glGetShaderInfoLog(program, 1024));
+            DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
             System.exit(1);
         }
     }
@@ -109,7 +110,7 @@ public class ShaderProgram {
     public void validateProgram() {
         GL20.glValidateProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_FALSE) {
-            System.out.println(GL20.glGetShaderInfoLog(program, 1024));
+            DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
             System.exit(1);
         }
     }
