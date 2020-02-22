@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -104,7 +102,7 @@ public class Image { // only png format is supported
                 try {
                     zipFile.close();
                 } catch (IOException ex) {
-                    Logger.getLogger(Image.class.getName()).log(Level.SEVERE, null, ex);
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
         }
