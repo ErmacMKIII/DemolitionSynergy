@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.models;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.core.LevelRenderer;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
@@ -41,8 +41,8 @@ public class Chunks {
         // updating neighbor from adding block perspective
         for (int j = 0; j <= 5; j++) { // j - facenum
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
+            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
             if (hashCode1 == null && hashCode2 == null) {
                 block.getAdjacentBlockMap().remove(j);
             } else if (hashCode1 != null && hashCode2 == null) {
@@ -62,8 +62,8 @@ public class Chunks {
             if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
                 for (int j = 0; j <= 5; j++) { // j - facenum
                     Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
-                    Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
-                    Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+                    Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
+                    Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
                     if ((hashCode1 != null && hashCode1.equals(hashCode))
                             || (hashCode2 != null && hashCode2.equals(hashCode))) {
                         otherBlock.getAdjacentBlockMap().put(j, hashCode); // ok we found out which at which side
@@ -79,8 +79,8 @@ public class Chunks {
         // updating neighbor from adding block perspective
         for (int j = 0; j <= 5; j++) { // j - facenum
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
+            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
             if (hashCode1 == null && hashCode2 == null) {
                 block.getAdjacentBlockMap().remove(j);
             } else if (hashCode1 != null && hashCode2 == null) {
@@ -100,8 +100,8 @@ public class Chunks {
             if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
                 for (int j = 0; j <= 5; j++) { // j - facenum
                     Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
-                    Integer hashCode1 = LevelRenderer.getPOS_SOLID_MAP().get(otherBlockPos);
-                    Integer hashCode2 = LevelRenderer.getPOS_FLUID_MAP().get(otherBlockPos);
+                    Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
+                    Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
                     if ((hashCode1 != null && hashCode1.equals(hashCode))
                             || (hashCode2 != null && hashCode2.equals(hashCode))) {
                         otherBlock.getAdjacentBlockMap().remove(j, hashCode); // ok we found out which at which side
@@ -116,9 +116,9 @@ public class Chunks {
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelRenderer.getPOS_SOLID_MAP().put(block.pos, block.hashCode());
+            LevelContainer.getPOS_SOLID_MAP().put(block.pos, block.hashCode());
         } else {
-            LevelRenderer.getPOS_FLUID_MAP().put(block.pos, block.hashCode());
+            LevelContainer.getPOS_FLUID_MAP().put(block.pos, block.hashCode());
         }
 
         addNeighbors(block);
@@ -148,9 +148,9 @@ public class Chunks {
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
         if (block.solid) {
-            LevelRenderer.getPOS_SOLID_MAP().remove(block.pos);
+            LevelContainer.getPOS_SOLID_MAP().remove(block.pos);
         } else {
-            LevelRenderer.getPOS_FLUID_MAP().remove(block.pos);
+            LevelContainer.getPOS_FLUID_MAP().remove(block.pos);
         }
 
         removeNeighbors(block);
@@ -204,7 +204,7 @@ public class Chunks {
             int faceBitsBefore = fluidBlock.getFaceBits();
             for (int j = 0; j <= 5; j++) { // j - face number
                 Integer hash1 = fluidBlock.getAdjacentBlockMap().get(j);
-                Integer hash2 = LevelRenderer.getPOS_FLUID_MAP().get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
+                Integer hash2 = LevelContainer.getPOS_FLUID_MAP().get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
                 if (hash1 != null && hash1.equals(hash2)) {
                     fluidBlock.disableFace(j, false);
                 }

@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +39,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -82,15 +84,40 @@ public class Model implements Comparable<Model> {
 
     protected Matrix4f modelMatrix = new Matrix4f();
 
+    protected float xMin, yMin, zMin;
+    protected float xMax, yMax, zMax;
+
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
+
+    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
+            Texture.PISTOL, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
+            Texture.SUB_MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
+            Texture.SHOTGUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
+            Texture.ASSAULT_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
+            Texture.MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
+            Texture.SNIPER_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+
+    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
+
+    static {
+        for (Model weapon : WEAPONS) {
+            weapon.scale = 6.0f;
+            weapon.rY = (float) (-Math.PI / 2.0f);
+        }
+    }
 
     protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }
 
-    public Model(boolean selfBuffer, String modelFileName) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName) {
         this.modelFileName = modelFileName;
-        readFromObjFile(modelFileName);
+        readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {   // used for self buffering (old school), if Blocks class is being used to load blocks keep it off.
             bufferVertices();
             bufferIndices();
@@ -99,10 +126,10 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
-        readFromObjFile(modelFileName);
+        readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -111,10 +138,10 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
-        readFromObjFile(modelFileName);
+        readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -126,30 +153,42 @@ public class Model implements Comparable<Model> {
         this.solid = solid;
     }
 
-    private void readFromObjFile(String fileName) {
-        File file = new File(Game.DATA_ZIP);
-        if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
+    private void readFromObjFile(String dirEntry, String fileName) {
+        File extern = new File(dirEntry + fileName);
+        File archive = new File(Game.DATA_ZIP);
+        ZipFile zipFile = null;
+        InputStream objInput = null;
+        if (extern.exists()) {
+            try {
+                objInput = new FileInputStream(extern);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else if (archive.exists()) {
+            try {
+                zipFile = new ZipFile(archive);
+                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                    if (zipEntry.getName().equals(dirEntry + fileName)) {
+                        objInput = zipFile.getInputStream(zipEntry);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
+        }
+        //----------------------------------------------------------------------
+        if (objInput == null) {
+            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return;
         }
-        ZipFile zipFile = null;
-        BufferedReader br = null;
+        BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
+        List<Vector2f> uvs = new ArrayList<>();
+        List<Vector3f> normals = new ArrayList<>();
+        String line;
         try {
-            zipFile = new ZipFile(file);
-            InputStream txtInput = null;
-            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                if (zipEntry.getName().equals(Game.WORLD_ENTRY + fileName)) {
-                    txtInput = zipFile.getInputStream(zipEntry);
-                }
-            }
-            if (txtInput == null) {
-                DSLogger.reportError("Cannot find resource " + Game.WORLD_ENTRY + fileName + "!", null);
-                return;
-            }
-            br = new BufferedReader(new InputStreamReader(txtInput));
-            String line;
-            List<Vector2f> uvs = new ArrayList<>();
-            List<Vector3f> normals = new ArrayList<>();
             while ((line = br.readLine()) != null) {
                 String[] things = line.split(" ");
                 if (things[0].equals("v")) {
@@ -164,20 +203,27 @@ public class Model implements Comparable<Model> {
                     normals.add(normal);
                 } else if (things[0].equals("f")) {
                     String[] subThings = {things[1], things[2], things[3]};
-                    for (int i = 0; i < subThings.length; i++) {
-                        String[] data = subThings[i].split("/");
+                    for (String subThing : subThings) {
+                        String[] data = subThing.split("/");
                         int index = Integer.parseInt(data[0]) - 1;
                         indices.add(index);
-                        vertices.get(index).setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                        vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
+                        if (!data[1].isEmpty()) {
+                            vertices.get(index).setUv(uvs.get(Integer.parseInt(data[1]) - 1));
+                        }
+                        if (!data[2].isEmpty()) {
+                            vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
+                        }
                     }
                 }
             }
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
+            try {
+                objInput.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
             if (zipFile != null) {
                 try {
                     zipFile.close();
@@ -340,13 +386,13 @@ public class Model implements Comparable<Model> {
 
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        float xMin = vect.x;
-        float yMin = vect.y;
-        float zMin = vect.z;
+        xMin = vect.x;
+        yMin = vect.y;
+        zMin = vect.z;
 
-        float xMax = vect.x;
-        float yMax = vect.y;
-        float zMax = vect.z;
+        xMax = vect.x;
+        yMax = vect.y;
+        zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();
@@ -445,24 +491,27 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public void adjustSize(float width, float height, float depth) {
-        float widthFactor = width / this.width;
-        float heightFactor = height / this.height;
-        float depthFactor = depth / this.depth;
-        for (Vertex vertex : vertices) {
-            vertex.getPos().x *= widthFactor;
-            vertex.getPos().y *= heightFactor;
-            vertex.getPos().z *= depthFactor;
-        }
-        bufferVertices();
-        this.width = width;
-        this.height = height;
-        this.depth = depth;
+    public float getAvgSize() {
+        float xAbs = Math.abs(xMax - xMin);
+        float yAbs = Math.abs(yMax - yMin);
+        float zAbs = Math.abs(zMax - zMin);
+
+        return (xAbs + yAbs + zAbs) / 3.0f;
+    }
+
+    public void autoSize() {
+//        float avg = getAvgSize();
+//        for (Vertex vertex : vertices) {
+//            vertex.getPos().div(avg);
+//        }
+//        scale = 1.0f;
+//        calcDims();
+//        bufferVertices();
     }
 
     @Override
     public int compareTo(Model model) {
-        return Float.compare(this.getPos().z, model.getPos().z);
+        return Float.compare(this.getPos().y, model.getPos().y);
     }
 
     public void calcDimsPub() {

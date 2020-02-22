@@ -89,6 +89,12 @@ public class Camera { // is 3D looking camera
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }
 
+    public void calcViewMatrixPub() { // public version of force calc
+        updateCameraVectors();
+        Vector3f temp = new Vector3f();
+        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
+    }
+
     public void updateCameraPosition(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(pos, "cameraPos");
     }
@@ -232,6 +238,18 @@ public class Camera { // is 3D looking camera
 
     public void setPitch(float pitch) {
         this.pitch = pitch;
+    }
+
+    public void setFront(Vector3f front) {
+        this.front = front;
+    }
+
+    public void setUp(Vector3f up) {
+        this.up = up;
+    }
+
+    public void setRight(Vector3f right) {
+        this.right = right;
     }
 
 }

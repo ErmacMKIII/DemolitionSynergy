@@ -18,10 +18,14 @@ package rs.alexanderstojanovich.evg.texture;
 
 import de.matthiasmann.twl.utils.PNGDecoder;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -31,7 +35,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  *
  * @author Coa
  */
-public class Image {
+public class Image { // only png format is supported
 
     private String fileName;
     private int width;
@@ -49,24 +53,37 @@ public class Image {
     }
 
     private void loadImage(String dirEntry, String fileName) {
-        File file = new File(Game.DATA_ZIP);
-        if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
+        File extern = new File(dirEntry + fileName);
+        File archive = new File(Game.DATA_ZIP);
+        ZipFile zipFile = null;
+        InputStream imgInput = null;
+        if (extern.exists()) {
+            try {
+                imgInput = new FileInputStream(extern);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else if (archive.exists()) {
+            try {
+                zipFile = new ZipFile(archive);
+                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                    if (zipEntry.getName().equals(dirEntry + fileName)) {
+                        imgInput = zipFile.getInputStream(zipEntry);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
+        }
+        //----------------------------------------------------------------------
+        if (imgInput == null) {
+            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return;
         }
-        ZipFile zipFile = null;
         try {
-            zipFile = new ZipFile(file);
-            InputStream imgInput = null;
-            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                if (zipEntry.getName().equals(dirEntry + fileName)) {
-                    imgInput = zipFile.getInputStream(zipEntry);
-                }
-            }
-            if (imgInput == null) {
-                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
-                return;
-            }
             PNGDecoder decoder = new PNGDecoder(imgInput);
             // Set the width and height of the image
             width = decoder.getWidth();
@@ -78,11 +95,16 @@ public class Image {
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
+            try {
+                imgInput.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
             if (zipFile != null) {
                 try {
                     zipFile.close();
                 } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage(), ex);
+                    Logger.getLogger(Image.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }

@@ -79,4 +79,8 @@ public class DSLogger {
         MY_LOGGER.info(msg, t);
     }
 
+    public static Logger getMY_LOGGER() {
+        return MY_LOGGER;
+    }
+
 }

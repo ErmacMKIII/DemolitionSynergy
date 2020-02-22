@@ -16,14 +16,15 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -33,7 +34,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class Renderer extends Thread {
 
     private final Window myWindow;
-    private LevelRenderer levelRenderer;
+    private LevelContainer levelContainer;
     private WaterRenderer waterRenderer;
     private Intrface intrface;
 
@@ -62,9 +63,9 @@ public class Renderer extends Thread {
             ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
             PerspectiveRenderer.updatePerspective(myWindow); // updates perspective for all the existing shaders
 
-            levelRenderer = new LevelRenderer(myWindow, musicPlayer, soundFXPlayer);
-            waterRenderer = new WaterRenderer(myWindow, levelRenderer);
-            intrface = new Intrface(myWindow, levelRenderer, waterRenderer, objMutex, musicPlayer, soundFXPlayer);
+            levelContainer = new LevelContainer(myWindow, musicPlayer, soundFXPlayer);
+            waterRenderer = new WaterRenderer(myWindow, levelContainer);
+            intrface = new Intrface(myWindow, levelContainer, waterRenderer, objMutex, musicPlayer, soundFXPlayer);
             // wake up the main thread
             objMutex.notify();
         }
@@ -91,21 +92,21 @@ public class Renderer extends Thread {
 
                     MasterRenderer.render(); // it clears color bit and depth buffer bit
 
-                    if (!levelRenderer.isWorking()) {
-                        levelRenderer.render();
-                        if (Game.isWaterEffects() && !levelRenderer.getFluidChunks().getChunkList().isEmpty()) {
+                    if (!levelContainer.isWorking()) {
+                        levelContainer.render();
+                        if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
                             waterRenderer.render();
                         }
                     } else {
-                        intrface.getProgText().setContent("Loading progress: " + Math.round(levelRenderer.getProgress()) + "%");
+                        intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
                         if (!intrface.getProgText().isBuffered()) {
                             intrface.getProgText().buffer();
                         }
                         intrface.getProgText().render();
                     }
-
                     intrface.setCollText(assertCollision);
-
+                    intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+                    intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
                     intrface.render();
                     myWindow.render();
                     fps++;
@@ -138,19 +139,23 @@ public class Renderer extends Thread {
                         if (intrface.getRandLvlDialog().isDone()) {
                             intrface.getRandLvlDialog().setEnabled(false);
                         }
+
+                        if (intrface.getSinglePlayerDialog().isDone()) {
+                            intrface.getSinglePlayerDialog().setEnabled(false);
+                        }
                         timer1 += 5.0;
                     }
 
                     // update text which animates water every quarter of the second
                     if (GLFW.glfwGetTime() > timer2 + 0.25) {
 
-                        if (levelRenderer.getProgress() == 100) {
+                        if (levelContainer.getProgress() == 100) {
                             intrface.getProgText().setEnabled(false);
-                            levelRenderer.setProgress(0);
+                            levelContainer.setProgress(0);
                         }
 
-                        if (levelRenderer.getProgress() == 0.0f && !levelRenderer.isWorking()) {
-                            levelRenderer.animate();
+                        if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
+                            levelContainer.animate();
                         }
 
                         timer2 += 0.25;
@@ -165,7 +170,7 @@ public class Renderer extends Thread {
 
     public void update() {
         synchronized (objMutex) {
-            levelRenderer.update();
+            levelContainer.update();
         }
     }
 
@@ -173,8 +178,8 @@ public class Renderer extends Thread {
         return myWindow;
     }
 
-    public LevelRenderer getLevelRenderer() {
-        return levelRenderer;
+    public LevelContainer getLevelContainer() {
+        return levelContainer;
     }
 
     public WaterRenderer getWaterRenderer() {

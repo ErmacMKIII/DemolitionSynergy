@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,24 +36,24 @@ import rs.alexanderstojanovich.evg.util.Tuple;
 public class WaterRenderer {
 
     private final Window myWindow;
-    private final LevelRenderer levelRenderer;
+    private final LevelContainer levelContainer;
     private final List<Float> waterHeights = new ArrayList<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
 
-    public WaterRenderer(Window window, LevelRenderer levelRenderer) {
+    public WaterRenderer(Window window, LevelContainer levelContainer) {
         this.myWindow = window;
-        this.levelRenderer = levelRenderer;
+        this.levelContainer = levelContainer;
         this.frameBuffer = new FrameBuffer(myWindow);
         this.camera = new Camera();
     }
 
     private void refresh() {
-        Vector3f obsCameraPos = levelRenderer.getObserver().getCamera().getPos();
-        Vector3f obsCameraFront = levelRenderer.getObserver().getCamera().getFront();
+        Vector3f obsCameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
+        Vector3f obsCameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
         float obsHeight = obsCameraPos.y;
         int currChunkId = Chunk.chunkFunc(obsCameraPos, obsCameraFront);
-        Chunk currChunk = levelRenderer.getFluidChunks().getChunk(currChunkId);
+        Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
         if (currChunk != null) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : currChunk.getTupleList()) {
                 for (Block fluidBlock : tuple.getA().getBlockList()) {
@@ -85,16 +86,16 @@ public class WaterRenderer {
     }
 
     private void updateCamera(float waterHeight) {
-        camera.getPos().x = levelRenderer.getObserver().getCamera().getPos().x;
-        camera.getPos().y = 2.0f * waterHeight - levelRenderer.getObserver().getCamera().getPos().y;
-        camera.getPos().z = levelRenderer.getObserver().getCamera().getPos().z;
-        camera.lookAt(levelRenderer.getObserver().getCamera().getYaw(), -levelRenderer.getObserver().getCamera().getPitch());
+        camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
+        camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
+        camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
+        camera.lookAt(levelContainer.getLevelActors().getPlayer().getCamera().getYaw(), -levelContainer.getLevelActors().getPlayer().getCamera().getPitch());
     }
 
     private void capture(float waterHeight) {
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        levelRenderer.render(camera);
+        levelContainer.render(camera);
     }
 
     public void render() {
@@ -116,8 +117,8 @@ public class WaterRenderer {
         return myWindow;
     }
 
-    public LevelRenderer getLevelRenderer() {
-        return levelRenderer;
+    public LevelContainer getLevelContainer() {
+        return levelContainer;
     }
 
     public List<Float> getWaterHeights() {

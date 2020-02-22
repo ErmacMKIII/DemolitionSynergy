@@ -16,23 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -55,44 +42,7 @@ public class Text {
     public static final int STD_FONT_WIDTH = 24;
     public static final int STD_FONT_HEIGHT = 24;
 
-    public static String readFromFile(String fileName) {
-        File file = new File(Game.DATA_ZIP);
-        if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
-            return null;
-        }
-        StringBuilder text = new StringBuilder();
-        ZipFile zipFile = null;
-        BufferedReader br = null;
-        try {
-            zipFile = new ZipFile(file);
-            InputStream txtInput = null;
-            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                if (zipEntry.getName().equals(Game.INTRFACE_ENTRY + fileName)) {
-                    txtInput = zipFile.getInputStream(zipEntry);
-                }
-            }
-            br = new BufferedReader(new InputStreamReader(txtInput));
-            String line;
-            while ((line = br.readLine()) != null) {
-                text.append(line).append("\n");
-            }
-            br.close();
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } finally {
-            if (zipFile != null) {
-                try {
-                    zipFile.close();
-                } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage(), ex);
-                }
-            }
-        }
-        return text.toString();
-    }
+    protected Vector2f offset = new Vector2f();
 
     public Text(Window window, Texture texture, String content) {
         this.myWindow = window;
@@ -133,8 +83,8 @@ public class Text {
                     float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
                     float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                    float xinc = j;
-                    float ydec = k + l * LINE_SPACING;
+                    float xinc = j + offset.x;
+                    float ydec = k + l * LINE_SPACING + offset.y;
 
                     quad.getUvs()[0].x = cellU;
                     quad.getUvs()[0].y = cellV + CELL_SIZE;
@@ -190,6 +140,14 @@ public class Text {
 
     public Quad getQuad() {
         return quad;
+    }
+
+    public Vector2f getOffset() {
+        return offset;
+    }
+
+    public void setOffset(Vector2f offset) {
+        this.offset = offset;
     }
 
 }

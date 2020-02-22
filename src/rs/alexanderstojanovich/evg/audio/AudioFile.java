@@ -19,6 +19,8 @@ package rs.alexanderstojanovich.evg.audio;
 import com.jcraft.oggdecoder.OggData;
 import com.jcraft.oggdecoder.OggDecoder;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -54,30 +56,48 @@ public class AudioFile { // only ogg are supported
     }
 
     private void loadAudio(String dirEntry, String fileName) {
-        File file = new File(Game.DATA_ZIP);
-        if (!file.exists()) {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!", null);
+        File extern = new File(dirEntry + fileName);
+        File archive = new File(Game.DATA_ZIP);
+        ZipFile zipFile = null;
+        InputStream audioIn = null;
+        OggData data = null;
+        if (extern.exists()) {
+            try {
+                audioIn = new FileInputStream(extern);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else if (archive.exists()) {
+            try {
+                zipFile = new ZipFile(archive);
+                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                    if (zipEntry.getName().equals(dirEntry + fileName)) {
+                        audioIn = zipFile.getInputStream(zipEntry);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
+        }
+        //----------------------------------------------------------------------
+        if (audioIn == null) {
+            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return;
         }
-        ZipFile zipFile = null;
-        OggData data = null;
+        OggDecoder decoder = new OggDecoder();
         try {
-            zipFile = new ZipFile(file);
-            InputStream in = null;
-            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                if (zipEntry.getName().equals(dirEntry + fileName)) {
-                    in = zipFile.getInputStream(zipEntry);
-                }
-            }
-            if (in == null) {
-                DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
-                return;
-            }
-            OggDecoder decoder = new OggDecoder();
-            data = decoder.getData(in);
+            data = decoder.getData(audioIn);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
+            try {
+                audioIn.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
             if (zipFile != null) {
                 try {
                     zipFile.close();

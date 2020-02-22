@@ -30,8 +30,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -39,6 +37,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -129,59 +128,12 @@ public class Block extends Model {
         calcDims();
     }
 
-//    private void readFromTxtFile(String fileName) {
-//        File file = new File(Game.DATA_ZIP);
-//        if (!file.exists()) {
-//            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + "!");
-//            return;
-//        }
-//        ZipFile zipFile = null;
-//        BufferedReader br = null;
-//        try {
-//            zipFile = new ZipFile(file);
-//            InputStream txtInput = null;
-//            for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-//                if (zipEntry.getName().equals(Game.WORLD_ENTRY + fileName)) {
-//                    txtInput = zipFile.getInputStream(zipEntry);
-//                }
-//            }
-//            if (txtInput == null) {
-//                DSLogger.reportError("Cannot find resource " + Game.WORLD_ENTRY + fileName + "!");
-//                return;
-//            }
-//            br = new BufferedReader(new InputStreamReader(txtInput));
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                if (line.startsWith("v:")) {
-//                    String[] things = line.split(" ");
-//                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-//                    Vector3f normal = new Vector3f(Float.parseFloat(things[5]), Float.parseFloat(things[6]), Float.parseFloat(things[7]));
-//                    Vector2f uv = new Vector2f(Float.parseFloat(things[9]), Float.parseFloat(things[10]));
-//                    Vertex v = new Vertex(pos, normal, uv);
-//                    vertices.add(v);
-//                } else if (line.startsWith("i:")) {
-//                    String[] things = line.split(" ");
-//                    indices.add(Integer.parseInt(things[1]));
-//                    indices.add(Integer.parseInt(things[2]));
-//                    indices.add(Integer.parseInt(things[3]));
-//                }
-//            }
-//        } catch (FileNotFoundException ex) {
-//            DSLogger.reportFatalError(ex.getMessage, ex);
-//        } catch (IOException ex) {
-//            DSLogger.reportFatalError(ex.getMessage, ex);
-//        } finally {
-//            if (zipFile != null) {
-//                try {
-//                    zipFile.close();
-//                } catch (IOException ex) {
-//                    DSLogger.reportFatalError(ex.getMessage, ex);
-//                }
-//            }
-//        }
-//    }
     private void readFromTxtFile(String fileName) {
         InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        if (in == null) {
+            DSLogger.reportError("Cannot find zip archive " + Game.RESOURCES_DIR + "!", null);
+            return;
+        }
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));
@@ -202,15 +154,15 @@ public class Block extends Model {
                 }
             }
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(Block.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
-            Logger.getLogger(Block.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportFatalError(ex.getMessage(), ex);
         }
         if (br != null) {
             try {
                 br.close();
             } catch (IOException ex) {
-                Logger.getLogger(Block.class.getName()).log(Level.SEVERE, null, ex);
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             }
         }
     }

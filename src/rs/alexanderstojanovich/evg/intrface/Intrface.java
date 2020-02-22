@@ -24,16 +24,18 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Combo;
-import rs.alexanderstojanovich.evg.core.Editor;
-import rs.alexanderstojanovich.evg.core.LevelRenderer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.Renderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.util.PlainTextReader;
 
 /**
  *
@@ -48,19 +50,20 @@ public class Intrface {
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
-
+    private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MUTLIPLAYER}
     private boolean showHelp = false;
 
     private ConcurrentDialog commandDialog;
     private ConcurrentDialog saveDialog;
     private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
+    private ConcurrentDialog singlePlayerDialog;
 
     private Menu mainMenu;
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
 
-    private final LevelRenderer levelRenderer;
+    private final LevelContainer levelContainer;
     private final WaterRenderer waterRenderer;
 
     public static final String FONT_IMG = "hack.png";
@@ -70,9 +73,9 @@ public class Intrface {
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
-    public Intrface(Window myWindow, LevelRenderer levelRenderer, WaterRenderer waterRenderer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
+    public Intrface(Window myWindow, LevelContainer levelContainer, WaterRenderer waterRenderer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
-        this.levelRenderer = levelRenderer;
+        this.levelContainer = levelContainer;
         this.waterRenderer = waterRenderer;
         this.objMutex = objMutex;
         this.musicPlayer = musicPlayer;
@@ -81,15 +84,21 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new DynamicText(myWindow, Texture.FONT, "Hello World!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, 0.95f));
-        collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.95f));
-        helpText = new DynamicText(myWindow, Texture.FONT, DynamicText.readFromFile("help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-0.98f, 0.85f));
-        progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-0.98f, -0.85f));
+        infoText = new DynamicText(myWindow, Texture.FONT, "Welcome to Demolition Synergy!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
+        infoText.setOffset(new Vector2f(1.0f, 1.0f));
+        collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
+        collText.setOffset(new Vector2f(1.0f, -1.0f));
+        helpText = new DynamicText(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
+        helpText.setOffset(new Vector2f(1.0f, 1.0f));
+        helpText.getQuad().setScale(0.75f);
         helpText.setEnabled(false);
+        progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
+        progText.setOffset(new Vector2f(1.0f, -1.0f));
+        gameModeText = new DynamicText(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
-        mainMenuPairs.add(new Pair<>("SINGLE PLAYER", false));
+        mainMenuPairs.add(new Pair<>("SINGLE PLAYER", true));
         mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
         mainMenuPairs.add(new Pair<>("EDITOR", true));
         mainMenuPairs.add(new Pair<>("OPTIONS", true));
@@ -104,6 +113,9 @@ public class Intrface {
             protected void execute() {
                 String s = mainMenu.getItems().get(mainMenu.getSelected()).getContent();
                 switch (s) {
+                    case "SINGLE PLAYER":
+                        singlePlayerDialog.open();
+                        break;
                     case "EDITOR":
                         editorMenu.open();
                         break;
@@ -243,7 +255,11 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                return levelRenderer.saveLevelToFile(command);
+                boolean ok = levelContainer.saveLevelToFile(command);
+                if (ok) {
+                    Game.setCurrentMode(Mode.EDITOR);
+                }
+                return ok;
             }
         };
 
@@ -253,7 +269,11 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                return (levelRenderer.loadLevelFromFile(command));
+                boolean ok = levelContainer.loadLevelFromFile(command);
+                if (ok) {
+                    Game.setCurrentMode(Mode.EDITOR);
+                }
+                return ok;
             }
         };
 
@@ -263,9 +283,26 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                return levelRenderer.generateRandomLevel(Integer.valueOf(command));
+                boolean ok = levelContainer.generateRandomLevel(Integer.valueOf(command));
+                if (ok) {
+                    Game.setCurrentMode(Mode.EDITOR);
+                }
+                return ok;
             }
         };
+
+        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+            @Override
+            protected boolean execute(String command) {
+                boolean ok = false;
+                if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                    Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                    ok = true;
+                }
+                return ok;
+            }
+        };
+
         List<Pair<String, Boolean>> optionsMenuPairs = new ArrayList<>();
         optionsMenuPairs.add(new Pair<>("FPS CAP", true));
         optionsMenuPairs.add(new Pair<>("RESOLUTION", true));
@@ -413,7 +450,8 @@ public class Intrface {
                 switch (s) {
                     case "START NEW LEVEL":
                         progText.setEnabled(true);
-                        levelRenderer.startNewLevel();
+                        levelContainer.startNewLevel();
+                        Game.setCurrentMode(Mode.EDITOR);
                         break;
                     case "GENERATE RANDOM LEVEL":
                         progText.setEnabled(true);
@@ -463,6 +501,7 @@ public class Intrface {
         saveDialog.render();
         loadDialog.render();
         randLvlDialog.render();
+        singlePlayerDialog.render();
         if (!infoText.isBuffered()) {
             infoText.buffer();
         }
@@ -475,6 +514,10 @@ public class Intrface {
             helpText.buffer();
         }
         helpText.render();
+        if (!gameModeText.isBuffered()) {
+            gameModeText.buffer();
+        }
+        gameModeText.render();
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
@@ -556,6 +599,14 @@ public class Intrface {
 
     public Object getObjMutex() {
         return objMutex;
+    }
+
+    public DynamicText getGameModeText() {
+        return gameModeText;
+    }
+
+    public ConcurrentDialog getSinglePlayerDialog() {
+        return singlePlayerDialog;
     }
 
 }

@@ -76,10 +76,10 @@ public class DynamicText extends Text {
         String[] lines = content.split("\n");
         vboEntries = new int[1024];
         int e = 0;
-        int offset = 0;
+        int entryOffset = 0;
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
-                vboEntries[e++] = offset;
+                vboEntries[e++] = entryOffset;
                 int j = i % 64;
                 int k = i / 64;
                 int asciiCode = (int) (lines[l].charAt(i));
@@ -87,8 +87,8 @@ public class DynamicText extends Text {
                 float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
                 float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j;
-                float ydec = k + l * LINE_SPACING;
+                float xinc = j + offset.x;
+                float ydec = k + l * LINE_SPACING + offset.y;
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -115,7 +115,7 @@ public class DynamicText extends Text {
                     bigFloatBuff.put(VERTICES[v].y);
                     bigFloatBuff.put(uvs[v].x);
                     bigFloatBuff.put(uvs[v].y);
-                    offset++;
+                    entryOffset++;
                 }
 
             }

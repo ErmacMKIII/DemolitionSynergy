@@ -43,8 +43,9 @@ public class ShaderProgram {
     private static ShaderProgram waterBaseShader;
     private static ShaderProgram waterVoxelShader;
     private static ShaderProgram intrfaceShader;
+    private static ShaderProgram playerShader;
 
-    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[5];
+    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[6];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
         // 1. Init main shader (skybox, camera)
@@ -87,6 +88,14 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         SHADER_PROGRAMS[4] = intrfaceShader;
+        // 6. Init player shader (weapons)
+        Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
+        Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> playerShaders = new ArrayList<>();
+        playerShaders.add(playerVertexShader);
+        playerShaders.add(playerFragmentShader);
+        playerShader = new ShaderProgram(playerShaders);
+        SHADER_PROGRAMS[5] = playerShader;
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -196,6 +205,10 @@ public class ShaderProgram {
 
     public static ShaderProgram getWaterVoxelShader() {
         return waterVoxelShader;
+    }
+
+    public static ShaderProgram getPlayerShader() {
+        return playerShader;
     }
 
     public static ShaderProgram[] getSHADER_PROGRAMS() {

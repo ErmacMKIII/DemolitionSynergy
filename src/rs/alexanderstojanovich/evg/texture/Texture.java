@@ -44,6 +44,13 @@ public class Texture {
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
     public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
 
+    public static final Texture PISTOL = new Texture(Game.PLAYER_ENTRY, "pistol.png");
+    public static final Texture ASSAULT_RIFLE = new Texture(Game.PLAYER_ENTRY, "assault_rifle.png");
+    public static final Texture SHOTGUN = new Texture(Game.PLAYER_ENTRY, "shotgun.png");
+    public static final Texture SUB_MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "sub_machine_gun.png");
+    public static final Texture MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "machine_gun.png");
+    public static final Texture SNIPER_RIFLE = new Texture(Game.PLAYER_ENTRY, "sniper_rifle.png");
+
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
     static {

@@ -28,8 +28,8 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.core.Editor;
-import rs.alexanderstojanovich.evg.core.LevelRenderer;
+import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -45,7 +45,7 @@ public class Chunk {
     public static final int MAT4_SIZE = 16;
 
     // A, B, C are used in chunkFunc and for determining visible chunks
-    public static final int A = Math.round(LevelRenderer.SKYBOX_WIDTH); // modulator
+    public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
     public static final int B = A >> 4; // divider    
     public static final float C = 1.5f * B; // determines visibility
 
