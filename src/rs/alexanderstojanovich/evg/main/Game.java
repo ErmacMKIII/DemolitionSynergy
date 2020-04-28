@@ -59,10 +59,10 @@ public class Game {
 
     private final boolean[] keys = new boolean[1024];
 
-    private float lastX = 0.0f;
-    private float lastY = 0.0f;
-    private float xoffset = 0.0f;
-    private float yoffset = 0.0f;
+    private static float lastX = 0.0f;
+    private static float lastY = 0.0f;
+    private static float xoffset = 0.0f;
+    private static float yoffset = 0.0f;
     private static float mouseSensitivity = 3.0f;
     private boolean moveMouse = false;
 
@@ -552,6 +552,22 @@ public class Game {
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
+    }
+
+    public static float getLastX() {
+        return lastX;
+    }
+
+    public static float getLastY() {
+        return lastY;
+    }
+
+    public static float getXoffset() {
+        return xoffset;
+    }
+
+    public static float getYoffset() {
+        return yoffset;
     }
 
 }

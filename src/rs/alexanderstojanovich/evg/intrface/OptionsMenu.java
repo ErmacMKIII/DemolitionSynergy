@@ -92,6 +92,7 @@ public abstract class OptionsMenu extends Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -132,6 +133,7 @@ public abstract class OptionsMenu extends Menu {
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                        GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
                         leave();
                     }
                 }
