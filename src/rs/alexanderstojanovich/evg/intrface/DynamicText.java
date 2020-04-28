@@ -27,9 +27,9 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
@@ -52,6 +52,8 @@ public class DynamicText extends Text {
 
     protected int charWidth = STD_FONT_WIDTH;
     protected int charHeight = STD_FONT_HEIGHT;
+
+    protected boolean ignoreFactor = false;
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -182,15 +184,18 @@ public class DynamicText extends Text {
     }
 
     public float getRelativeCharWidth() {
-        return charWidth / (float) myWindow.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
+        return charWidth * widthFactor / (float) myWindow.getWidth();
     }
 
     public float getRelativeCharHeight() {
-        return charHeight / (float) myWindow.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
+        return charHeight * heightFactor / (float) myWindow.getHeight();
     }
 
     public float getRelativeWidth() {
-        return charWidth * content.length() / (float) myWindow.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
+        return charWidth * widthFactor * content.length() / (float) myWindow.getWidth();
     }
 
     @Override
@@ -245,6 +250,14 @@ public class DynamicText extends Text {
 
     public int getCharHeight() {
         return charHeight;
+    }
+
+    public boolean isIgnoreFactor() {
+        return ignoreFactor;
+    }
+
+    public void setIgnoreFactor(boolean ignoreFactor) {
+        this.ignoreFactor = ignoreFactor;
     }
 
 }
