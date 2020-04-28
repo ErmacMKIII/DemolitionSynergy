@@ -211,13 +211,13 @@ public class Block extends Model {
 
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        float xMin = vect.x;
-        float yMin = vect.y;
-        float zMin = vect.z;
+        xMin = vect.x;
+        yMin = vect.y;
+        zMin = vect.z;
 
-        float xMax = vect.x;
-        float yMax = vect.y;
-        float zMax = vect.z;
+        xMax = vect.x;
+        yMax = vect.y;
+        zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();

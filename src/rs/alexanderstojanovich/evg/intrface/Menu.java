@@ -21,7 +21,9 @@ import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -56,24 +58,33 @@ public abstract class Menu {
 
     protected float alignmentAmount = ALIGNMENT_LEFT;
 
+    // coordinates of the cursor (in OpenGL) when menu is opened
+    protected float xposGL = 0.0f;
+    protected float yposGL = 0.0f;
+
+    protected float xoffsetGL = 0.0f;
+    protected float yoffsetGL = 0.0f;
+
+    protected boolean useMouse = false;
+
     public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
         this.myWindow = window;
         this.title = new DynamicText(myWindow, Texture.FONT, title);
-        this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.itemPairs = itemPairs;
         Texture mngTexture = Texture.MINIGUN;
         makeItems();
         iterator = new Quad(window, 24, 24, mngTexture);
-        iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
-        iterator.getPos().y = items.get(selected).getQuad().getPos().y;
-        iterator.setColor(items.get(selected).getQuad().getColor());
+        iterator.getPos().x = -items.get(selected).getPos().x;
+        iterator.getPos().y = items.get(selected).getPos().y;
+        iterator.setColor(items.get(selected).getColor());
     }
 
     public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
         this.myWindow = window;
         this.title = new DynamicText(myWindow, Texture.FONT, title);
-        this.title.getQuad().setScale(scale);
-        this.title.getQuad().setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.setScale(scale);
+        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
         this.itemPairs = itemPairs;
         this.enabled = false;
         this.pos = pos;
@@ -81,11 +92,11 @@ public abstract class Menu {
         Texture mngTexture = Texture.MINIGUN;
         iterator = new Quad(window, 24, 24, mngTexture);
         makeItems();
-        iterator.getPos().x = -items.get(selected).getQuad().getPos().x;
-        iterator.getPos().y = items.get(selected).getQuad().getPos().y;
-        iterator.getColor().x = items.get(selected).getQuad().getColor().x;
-        iterator.getColor().y = items.get(selected).getQuad().getColor().y;
-        iterator.setColor(items.get(selected).getQuad().getColor());
+        iterator.getPos().x = -items.get(selected).getPos().x;
+        iterator.getPos().y = items.get(selected).getPos().y;
+        iterator.getColor().x = items.get(selected).getColor().x;
+        iterator.getColor().y = items.get(selected).getColor().y;
+        iterator.setColor(items.get(selected).getColor());
         iterator.setScale(scale);
     }
 
@@ -93,17 +104,17 @@ public abstract class Menu {
         for (Pair<String, Boolean> pair : itemPairs) {
             DynamicText item = new DynamicText(myWindow, Texture.FONT, pair.getKey());
             if (pair.getValue()) {
-                item.getQuad().getColor().x = 0.0f;
-                item.getQuad().getColor().y = 1.0f;
-                item.getQuad().getColor().z = 0.0f;
+                item.getColor().x = 0.0f;
+                item.getColor().y = 1.0f;
+                item.getColor().z = 0.0f;
             } else {
-                item.getQuad().getColor().x = 1.0f;
-                item.getQuad().getColor().y = 0.0f;
-                item.getQuad().getColor().z = 0.0f;
+                item.getColor().x = 1.0f;
+                item.getColor().y = 0.0f;
+                item.getColor().z = 0.0f;
             }
-            item.getQuad().getPos().x = pos.x;
-            item.getQuad().getPos().y = -DynamicText.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
-            item.getQuad().setScale(itemScale);
+            item.getPos().x = pos.x;
+            item.getPos().y = -DynamicText.LINE_SPACING * items.size() * item.getRelativeCharHeight() + pos.y;
+            item.setScale(itemScale);
             items.add(item);
         }
     }
@@ -115,7 +126,23 @@ public abstract class Menu {
     public void open() {
         enabled = true;
         GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
+        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), new GLFWCursorPosCallback() {
+            @Override
+            public void invoke(long window, double xpos, double ypos) {
+                // get the new values
+                float new_xposGL = (float) (xpos / myWindow.getWidth() - 0.5f) * 2.0f;
+                float new_yposGL = (float) (0.5f - ypos / myWindow.getHeight()) * 2.0f;
+
+                // if new and prev values aren't the same user moved the mouse
+                if (new_xposGL != xposGL || new_yposGL != yposGL) {
+                    useMouse = true;
+                }
+
+                // assign the new values (remember them)
+                xposGL = new_xposGL;
+                yposGL = new_yposGL;
+            }
+        });
         GLFW.glfwSetCharCallback(myWindow.getWindowID(), null);
         GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
             @Override
@@ -141,6 +168,27 @@ public abstract class Menu {
                 }
             }
         });
+
+        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
+            @Override
+            public void invoke(long window, int button, int action, int mods) {
+                if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
+                    enabled = false;
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    execute();
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
+                    enabled = false;
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    leave();
+                }
+            }
+        });
     }
 
     protected int longestWord() {
@@ -156,9 +204,9 @@ public abstract class Menu {
     public void render() {
         if (enabled) {
             int longest = longestWord();
-            title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = DynamicText.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+            title.getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
+                    * title.getRelativeCharWidth() * itemScale + pos.x;
+            title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
                 title.buffer();
             }
@@ -173,10 +221,9 @@ public abstract class Menu {
             }
             int index = 0;
             for (DynamicText item : items) {
-                Quad itemQuad = item.getQuad();
                 int itemDiff = longest - item.getContent().length();
-                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
-                itemQuad.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.getRelativeCharWidth() * itemScale + pos.x;
+                item.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
 
                 if (!item.isBuffered()) {
                     item.buffer();
@@ -185,9 +232,10 @@ public abstract class Menu {
                 item.render();
                 index++;
             }
-            iterator.getPos().x = items.get(selected).getQuad().getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
-            iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            iterator.getPos().x = items.get(selected).getPos().x;
+            iterator.getPos().x -= 2.0f * items.get(selected).getRelativeCharWidth() * itemScale;
+            iterator.getPos().y = items.get(selected).getPos().y;
+            iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {
                 iterator.buffer();
             }
@@ -196,19 +244,46 @@ public abstract class Menu {
     }
 
     public void selectPrev() {
+        useMouse = false;
         selected--;
         if (selected < 0) {
             selected = items.size() - 1;
         }
-        iterator.setColor(items.get(selected).getQuad().getColor());
+        iterator.setColor(items.get(selected).getColor());
     }
 
     public void selectNext() {
+        useMouse = false;
         selected++;
         if (selected > items.size() - 1) {
             selected = 0;
         }
-        iterator.setColor(items.get(selected).getQuad().getColor());
+        iterator.setColor(items.get(selected).getColor());
+    }
+
+    // if menu is enabled; it's gonna track mouse cursor position 
+    // to determine selected item
+    public void update() {
+        if (enabled && useMouse) {
+            int index = 0;
+            for (DynamicText item : items) {
+                float xMin = item.pos.x; // it already contains pos.x
+                float xMax = xMin + itemScale * item.getRelativeWidth();
+
+                float yMin = item.pos.y; // it already contains pos.y
+                float yMax = yMin + itemScale * item.getRelativeCharHeight();
+
+                if (xposGL >= xMin
+                        && xposGL <= xMax
+                        && yposGL >= yMin
+                        && yposGL <= yMax) {
+                    selected = index;
+                    break;
+                }
+                index++;
+            }
+            useMouse = false;
+        }
     }
 
     public Window getMyWindow() {
@@ -237,6 +312,18 @@ public abstract class Menu {
 
     public List<DynamicText> getItems() {
         return items;
+    }
+
+    public float getXposGL() {
+        return xposGL;
+    }
+
+    public float getYposGL() {
+        return yposGL;
+    }
+
+    public boolean isUseMouse() {
+        return useMouse;
     }
 
     public int getSelected() {
@@ -281,6 +368,14 @@ public abstract class Menu {
 
     public float getItemScale() {
         return itemScale;
+    }
+
+    public float getXoffsetGL() {
+        return xoffsetGL;
+    }
+
+    public float getYoffsetGL() {
+        return yoffsetGL;
     }
 
 }

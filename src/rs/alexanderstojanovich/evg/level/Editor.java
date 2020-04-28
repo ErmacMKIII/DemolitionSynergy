@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import java.util.List;
 import org.joml.Vector3f;

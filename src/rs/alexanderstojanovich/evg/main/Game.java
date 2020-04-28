@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v15 OXYGEN";
+    public static final String TITLE = "Demolition Synergy - v16 PHOSPHORUS";
 
     public static final int UPS_CAP = 80;
 
@@ -57,7 +57,7 @@ public class Game {
     private final Window myWindow;
     private final Renderer renderer;
 
-    private boolean[] keys = new boolean[1024];
+    private final boolean[] keys = new boolean[1024];
 
     private float lastX = 0.0f;
     private float lastY = 0.0f;
@@ -73,6 +73,7 @@ public class Game {
 
     private static GLFWKeyCallback defaultKeyCallback;
     private static GLFWCursorPosCallback defaultCursorCallback;
+    private static GLFWMouseButtonCallback defaultMouseButtonCallback;
 
     public static final String ROOT = "/";
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
@@ -376,7 +377,7 @@ public class Game {
                 xoffset = ((float) xpos - lastX) / myWindow.getWidth();
                 yoffset = (lastY - (float) ypos) / myWindow.getHeight();
 
-                if (xoffset != 0 || yoffset != 0) {
+                if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
                 }
 
@@ -386,7 +387,7 @@ public class Game {
         };
         GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), defaultCursorCallback);
 
-        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
+        defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 if (action == GLFW.GLFW_PRESS) {
@@ -395,7 +396,8 @@ public class Game {
                     mouseButtons[button] = false;
                 }
             }
-        });
+        };
+        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), defaultMouseButtonCallback);
     }
 
     public void go() {
@@ -490,6 +492,10 @@ public class Game {
 
     public static GLFWCursorPosCallback getDefaultCursorCallback() {
         return defaultCursorCallback;
+    }
+
+    public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
+        return defaultMouseButtonCallback;
     }
 
     public static int getUpsCap() {

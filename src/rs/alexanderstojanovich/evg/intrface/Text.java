@@ -35,7 +35,7 @@ public class Text {
     protected static final float CELL_SIZE = 1.0f / GRID_SIZE;
     public static final float LINE_SPACING = 1.35f;
 
-    protected final Quad quad;
+    private final Quad quad;
 
     protected boolean enabled;
 
@@ -138,10 +138,9 @@ public class Text {
         this.enabled = enabled;
     }
 
-    public Quad getQuad() {
-        return quad;
-    }
-
+//    public Quad getQuad() {
+//        return quad;
+//    }
     public Vector2f getOffset() {
         return offset;
     }

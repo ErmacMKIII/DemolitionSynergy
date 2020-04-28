@@ -86,7 +86,7 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
+            while (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
                 synchronized (objMutex) {
                     myWindow.loadContext();
 
@@ -114,9 +114,9 @@ public class Renderer extends Thread {
 
                     // update text which shows ups and fps every second
                     if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                        intrface.getInfoText().getQuad().getColor().x = 0.0f;
-                        intrface.getInfoText().getQuad().getColor().y = 1.0f;
-                        intrface.getInfoText().getQuad().getColor().z = 0.0f;
+                        intrface.getInfoText().getColor().x = 0.0f;
+                        intrface.getInfoText().getColor().y = 1.0f;
+                        intrface.getInfoText().getColor().z = 0.0f;
                         intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
                         fps = 0;
                         timer0 += 1.0;
@@ -171,6 +171,7 @@ public class Renderer extends Thread {
     public void update() {
         synchronized (objMutex) {
             levelContainer.update();
+            intrface.update();
         }
     }
 

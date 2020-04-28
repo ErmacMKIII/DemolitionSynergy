@@ -46,6 +46,13 @@ public class DynamicText extends Text {
     protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
     protected boolean buffered = false;
 
+    protected Vector2f pos = new Vector2f();
+    protected float scale = 1.0f;
+    protected Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+
+    protected int charWidth = STD_FONT_WIDTH;
+    protected int charHeight = STD_FONT_HEIGHT;
+
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
         VERTICES[1] = new Vector2f(1.0f, -1.0f);
@@ -64,10 +71,15 @@ public class DynamicText extends Text {
 
     public DynamicText(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
         super(window, texture, content, color, pos);
+        this.color = color;
+        this.pos = pos;
     }
 
     public DynamicText(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         super(window, texture, content, pos, charWidth, charHeight);
+        this.pos = pos;
+        this.charWidth = charWidth;
+        this.charHeight = charHeight;
     }
 
     protected void bufferVbo() {
@@ -135,8 +147,8 @@ public class DynamicText extends Text {
     @Override
     public void render() {
         if (enabled && buffered && !content.isEmpty()) {
-            float relWidth = quad.giveRelativeWidth();
-            float relHeight = quad.giveRelativeHeight();
+            float relWidth = getRelativeCharWidth();
+            float relHeight = getRelativeCharHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glEnableVertexAttribArray(0);
@@ -144,11 +156,11 @@ public class DynamicText extends Text {
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
             GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv
             ShaderProgram.getIntrfaceShader().bind();
-            ShaderProgram.getIntrfaceShader().updateUniform(quad.getPos(), "trans");
+            ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
             ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
             ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
-            ShaderProgram.getIntrfaceShader().updateUniform(quad.getScale(), "scale");
-            ShaderProgram.getIntrfaceShader().updateUniform(quad.getColor(), "color");
+            ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
+            ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
             for (int k = 0; k < content.length(); k++) {
                 Pair<Float, Float> pair = pairList.get(vboEntries[k] >> 2);
@@ -167,6 +179,18 @@ public class DynamicText extends Text {
             GL20.glDisableVertexAttribArray(1);
             Texture.disable();
         }
+    }
+
+    public float getRelativeCharWidth() {
+        return charWidth / (float) myWindow.getWidth();
+    }
+
+    public float getRelativeCharHeight() {
+        return charHeight / (float) myWindow.getHeight();
+    }
+
+    public float getRelativeWidth() {
+        return charWidth * content.length() / (float) myWindow.getWidth();
     }
 
     @Override
@@ -189,6 +213,38 @@ public class DynamicText extends Text {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
+    }
+
+    public Vector2f getPos() {
+        return pos;
+    }
+
+    public void setPos(Vector2f pos) {
+        this.pos = pos;
+    }
+
+    public float getScale() {
+        return scale;
+    }
+
+    public void setScale(float scale) {
+        this.scale = scale;
+    }
+
+    public Vector3f getColor() {
+        return color;
+    }
+
+    public void setColor(Vector3f color) {
+        this.color = color;
+    }
+
+    public int getCharWidth() {
+        return charWidth;
+    }
+
+    public int getCharHeight() {
+        return charHeight;
     }
 
 }

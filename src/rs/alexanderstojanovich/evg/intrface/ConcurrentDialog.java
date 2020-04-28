@@ -36,14 +36,14 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             boolean ok = execute(input.toString());
             if (ok) {
                 dialog.setContent(success);
-                dialog.getQuad().getColor().x = 0.0f;
-                dialog.getQuad().getColor().y = 1.0f;
-                dialog.getQuad().getColor().z = 0.0f;
+                dialog.getColor().x = 0.0f;
+                dialog.getColor().y = 1.0f;
+                dialog.getColor().z = 0.0f;
             } else {
                 dialog.setContent(fail);
-                dialog.getQuad().getColor().x = 1.0f;
-                dialog.getQuad().getColor().y = 0.0f;
-                dialog.getQuad().getColor().z = 0.0f;
+                dialog.getColor().x = 1.0f;
+                dialog.getColor().y = 0.0f;
+                dialog.getColor().z = 0.0f;
             }
             input.setLength(0);
             done = true;
@@ -65,9 +65,9 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             enabled = true;
             done = false;
             dialog.setContent(question + "_");
-            dialog.getQuad().getColor().x = 1.0f;
-            dialog.getQuad().getColor().y = 1.0f;
-            dialog.getQuad().getColor().z = 1.0f;
+            dialog.getColor().x = 1.0f;
+            dialog.getColor().y = 1.0f;
+            dialog.getColor().z = 1.0f;
             GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
             GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {

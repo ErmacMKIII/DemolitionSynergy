@@ -173,12 +173,12 @@ public class Quad {
 
     public float giveRelativeWidth() {
         float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return width * widthFactor / myWindow.getWidth();
+        return width * widthFactor / (float) myWindow.getWidth();
     }
 
     public float giveRelativeHeight() {
         float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
-        return height * heightFactor / myWindow.getHeight();
+        return height * heightFactor / (float) myWindow.getHeight();
     }
 
     public Window getWindow() {

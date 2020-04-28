@@ -44,7 +44,7 @@ public abstract class Dialog {
             String question, String success, String fail) {
         this.myWindow = window;
         this.dialog = new DynamicText(myWindow, texture, "");
-        this.dialog.getQuad().setPos(pos);
+        this.dialog.setPos(pos);
         this.enabled = false;
         this.done = false;
         this.question = question;
@@ -59,9 +59,9 @@ public abstract class Dialog {
             enabled = true;
             done = false;
             dialog.setContent(question + "_");
-            dialog.getQuad().getColor().x = 1.0f;
-            dialog.getQuad().getColor().y = 1.0f;
-            dialog.getQuad().getColor().z = 1.0f;
+            dialog.getColor().x = 1.0f;
+            dialog.getColor().y = 1.0f;
+            dialog.getColor().z = 1.0f;
             GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
             GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
@@ -90,14 +90,14 @@ public abstract class Dialog {
                             boolean execStatus = execute(input.toString());
                             if (execStatus) {
                                 dialog.setContent(success);
-                                dialog.getQuad().getColor().x = 0.0f;
-                                dialog.getQuad().getColor().y = 1.0f;
-                                dialog.getQuad().getColor().z = 0.0f;
+                                dialog.getColor().x = 0.0f;
+                                dialog.getColor().y = 1.0f;
+                                dialog.getColor().z = 0.0f;
                             } else {
                                 dialog.setContent(fail);
-                                dialog.getQuad().getColor().x = 1.0f;
-                                dialog.getQuad().getColor().y = 0.0f;
-                                dialog.getQuad().getColor().z = 0.0f;
+                                dialog.getColor().x = 1.0f;
+                                dialog.getColor().y = 0.0f;
+                                dialog.getColor().z = 0.0f;
                             }
                         } else {
                             dialog.setContent("");

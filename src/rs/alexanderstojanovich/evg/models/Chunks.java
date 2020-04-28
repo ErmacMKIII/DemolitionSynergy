@@ -38,8 +38,9 @@ public class Chunks {
     private final List<Chunk> chunkList = new GapList<>();
 
     private void addNeighbors(Block block) { // called for all blocks before adding        
-        // updating neighbor from adding block perspective
+        Integer hashCode = block.hashCode();
         for (int j = 0; j <= 5; j++) { // j - facenum
+            // updating neighbor from adding block perspective 
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
             Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
             Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
@@ -50,34 +51,25 @@ public class Chunks {
             } else if (hashCode1 == null && hashCode2 != null) {
                 block.getAdjacentBlockMap().put(j, hashCode2);
             }
-        }
-        // updating neighbor from other blocks perspective
-        Integer hashCode = block.hashCode();
-        int limit = 0;
-        for (Block otherBlock : getTotalList()) {
-            if (limit == 6) { // each block can have maximum 6 neighbors
-                break;
-            }
-            // if other block is in proximity of block
-            if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
-                for (int j = 0; j <= 5; j++) { // j - facenum
-                    Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
-                    Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-                    Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-                    if ((hashCode1 != null && hashCode1.equals(hashCode))
-                            || (hashCode2 != null && hashCode2.equals(hashCode))) {
-                        otherBlock.getAdjacentBlockMap().put(j, hashCode); // ok we found out which at which side
+            // updating neighbor from other blocks perspective
+            int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
+            Chunk chunk = getChunk(otherBlockChunkId);
+            if (chunk != null) {
+                for (Block otherBlock : chunk.getList()) {
+                    if (otherBlock.pos.equals(otherBlockPos)) {
+                        // ok we found out which at which side
+                        otherBlock.getAdjacentBlockMap().put(j % 2 == 0 ? j + 1 : j - 1, hashCode);
                         break; // goal reached, now leave
                     }
                 }
-                limit++;
             }
         }
     }
 
     private void removeNeighbors(Block block) { // called for all blocks before removing       
-        // updating neighbor from adding block perspective
+        Integer hashCode = block.hashCode();
         for (int j = 0; j <= 5; j++) { // j - facenum
+            // updating neighbor from removing block perspective 
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
             Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
             Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
@@ -88,27 +80,17 @@ public class Chunks {
             } else if (hashCode1 == null && hashCode2 != null) {
                 block.getAdjacentBlockMap().remove(j, hashCode2);
             }
-        }
-        // updating neighbor from other blocks perspective
-        Integer hashCode = block.hashCode();
-        int limit = 0;
-        for (Block otherBlock : getTotalList()) {
-            if (limit == 6) { // each block can have maximum 6 neighbors
-                break;
-            }
-            // if other block is in proximity of block
-            if (otherBlock.pos.distance(block.pos) == 2.0f) { // hardcoded, no other way :(
-                for (int j = 0; j <= 5; j++) { // j - facenum
-                    Vector3f otherBlockPos = otherBlock.getAdjacentPos(otherBlock.getPos(), j);
-                    Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-                    Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-                    if ((hashCode1 != null && hashCode1.equals(hashCode))
-                            || (hashCode2 != null && hashCode2.equals(hashCode))) {
-                        otherBlock.getAdjacentBlockMap().remove(j, hashCode); // ok we found out which at which side
+            // updating neighbor from other blocks perspective
+            int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
+            Chunk chunk = getChunk(otherBlockChunkId);
+            if (chunk != null) {
+                for (Block otherBlock : chunk.getList()) {
+                    if (otherBlock.pos.equals(otherBlockPos)) {
+                        // ok we found out which at which side
+                        otherBlock.getAdjacentBlockMap().remove(j % 2 == 0 ? j + 1 : j - 1, hashCode);
                         break; // goal reached, now leave
                     }
                 }
-                limit++;
             }
         }
     }
@@ -281,7 +263,7 @@ public class Chunks {
         return result;
     }
 
-    // all blocks from all the chunks in one big list
+    // all visible blocks from all the chunks in one big list
     public List<Block> getTotalVisibleList() {
         List<Block> result = new GapList<>();
         for (Chunk chunk : getVisibleChunks()) {

@@ -25,6 +25,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -58,6 +59,7 @@ public class Window {
     private void init(int width, int height, String title) {
         // initializing GLFW
         if (!GLFW.glfwInit()) {
+            DSLogger.reportFatalError("Unable to initialize GLFW!", null);
             throw new IllegalStateException("Unable to initialize GLFW!");
         }
         // setting windowID hints
@@ -70,15 +72,22 @@ public class Window {
         // passing NULL instead of monitor to avoid full screen!
         windowID = GLFW.glfwCreateWindow(width, height, title, 0, 0);
         if (windowID == 0) {
+            DSLogger.reportFatalError("Failed to create the GLFW window!", null);
             throw new RuntimeException("Failed to create the GLFW window!");
         }
         // setting the icon
-        GLFWImage image = GLFWImage.malloc();
-        Image icon = new Image(Game.INTRFACE_ENTRY, "ds_icon.png");
-        image.set(icon.getWidth(), icon.getHeight(), icon.getContent());
+        GLFWImage icon = GLFWImage.malloc();
+        Image ds_image1 = new Image(Game.INTRFACE_ENTRY, "ds_icon.png");
+        icon.set(ds_image1.getWidth(), ds_image1.getHeight(), ds_image1.getContent());
         GLFWImage.Buffer buffer = GLFWImage.malloc(1);
-        buffer.put(0, image);
+        buffer.put(0, icon);
         GLFW.glfwSetWindowIcon(windowID, buffer);
+        // setting the cursor (arrow)
+        GLFWImage glfwArrowImage = GLFWImage.malloc();
+        Image ds_image2 = new Image(Game.INTRFACE_ENTRY, "arrow.png");
+        glfwArrowImage.set(ds_image2.getWidth(), ds_image2.getHeight(), ds_image2.getContent());
+        long arrowId = GLFW.glfwCreateCursor(glfwArrowImage, 0, 0);
+        GLFW.glfwSetCursor(windowID, arrowId);
         //calculating the monitor
         monitorID = GLFW.glfwGetPrimaryMonitor();
         GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);

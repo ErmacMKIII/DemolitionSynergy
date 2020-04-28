@@ -90,7 +90,7 @@ public class Intrface {
         collText.setOffset(new Vector2f(1.0f, -1.0f));
         helpText = new DynamicText(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
         helpText.setOffset(new Vector2f(1.0f, 1.0f));
-        helpText.getQuad().setScale(0.75f);
+        helpText.setScale(0.75f);
         helpText.setEnabled(false);
         progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
@@ -474,14 +474,14 @@ public class Intrface {
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.getQuad().getColor().x = 1.0f;
-            collText.getQuad().getColor().y = 0.0f;
-            collText.getQuad().getColor().z = 0.0f;
+            collText.getColor().x = 1.0f;
+            collText.getColor().y = 0.0f;
+            collText.getColor().z = 0.0f;
         } else {
             collText.setContent("No Collision");
-            collText.getQuad().getColor().x = 0.0f;
-            collText.getQuad().getColor().y = 1.0f;
-            collText.getQuad().getColor().z = 0.0f;
+            collText.getColor().x = 0.0f;
+            collText.getColor().y = 1.0f;
+            collText.getColor().z = 0.0f;
         }
     }
 
@@ -527,6 +527,13 @@ public class Intrface {
             }
             crosshair.render();
         }
+    }
+
+    // update menu components
+    public void update() {
+        mainMenu.update();
+        optionsMenu.update();
+        editorMenu.update();
     }
 
     public Window getMyWindow() {
