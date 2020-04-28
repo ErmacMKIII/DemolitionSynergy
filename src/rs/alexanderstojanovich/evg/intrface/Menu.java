@@ -178,6 +178,7 @@ public abstract class Menu {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
                     execute();
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
                     enabled = false;
@@ -185,6 +186,7 @@ public abstract class Menu {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
                     leave();
                 }
             }
