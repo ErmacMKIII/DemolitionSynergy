@@ -62,9 +62,6 @@ public abstract class Menu {
     protected float xposGL = 0.0f;
     protected float yposGL = 0.0f;
 
-    protected float xoffsetGL = 0.0f;
-    protected float yoffsetGL = 0.0f;
-
     protected boolean useMouse = false;
 
     public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
@@ -376,14 +373,6 @@ public abstract class Menu {
 
     public float getItemScale() {
         return itemScale;
-    }
-
-    public float getXoffsetGL() {
-        return xoffsetGL;
-    }
-
-    public float getYoffsetGL() {
-        return yoffsetGL;
     }
 
 }
