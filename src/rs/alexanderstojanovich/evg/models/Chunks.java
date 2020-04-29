@@ -39,27 +39,32 @@ public class Chunks {
 
     private void addNeighbors(Block block) { // called for all blocks before adding        
         Integer hashCode = block.hashCode();
-        for (int j = 0; j <= 5; j++) { // j - facenum
+        for (int j = 0; j <= 5; j++) { // j - facenum            
             // updating neighbor from adding block perspective 
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
             Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
             Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
+            // whether or not neighbor is found on that side
+            boolean hasNeighbor = true;
             if (hashCode1 == null && hashCode2 == null) {
+                hasNeighbor = false;
                 block.getAdjacentBlockMap().remove(j);
             } else if (hashCode1 != null && hashCode2 == null) {
                 block.getAdjacentBlockMap().put(j, hashCode1);
             } else if (hashCode1 == null && hashCode2 != null) {
                 block.getAdjacentBlockMap().put(j, hashCode2);
             }
-            // updating neighbor from other blocks perspective
-            int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
-            Chunk chunk = getChunk(otherBlockChunkId);
-            if (chunk != null) {
-                for (Block otherBlock : chunk.getList()) {
-                    if (otherBlock.pos.equals(otherBlockPos)) {
-                        // ok we found out which at which side
-                        otherBlock.getAdjacentBlockMap().put(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                        break; // goal reached, now leave
+            if (hasNeighbor) { // this is to be reasonable with heavy loop
+                // updating neighbor from other blocks perspective
+                int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
+                Chunk chunk = getChunk(otherBlockChunkId);
+                if (chunk != null) {
+                    for (Block otherBlock : chunk.getList()) {
+                        if (otherBlock.pos.equals(otherBlockPos)) {
+                            // ok we found out which at which side
+                            otherBlock.getAdjacentBlockMap().put(j % 2 == 0 ? j + 1 : j - 1, hashCode);
+                            break; // goal reached, now leave
+                        }
                     }
                 }
             }
@@ -73,7 +78,10 @@ public class Chunks {
             Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
             Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
             Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
+            // whether or not neighbor is found on that side
+            boolean hasNeighbor = true;
             if (hashCode1 == null && hashCode2 == null) {
+                hasNeighbor = false;
                 block.getAdjacentBlockMap().remove(j);
             } else if (hashCode1 != null && hashCode2 == null) {
                 block.getAdjacentBlockMap().remove(j, hashCode1);
@@ -83,12 +91,14 @@ public class Chunks {
             // updating neighbor from other blocks perspective
             int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
             Chunk chunk = getChunk(otherBlockChunkId);
-            if (chunk != null) {
-                for (Block otherBlock : chunk.getList()) {
-                    if (otherBlock.pos.equals(otherBlockPos)) {
-                        // ok we found out which at which side
-                        otherBlock.getAdjacentBlockMap().remove(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                        break; // goal reached, now leave
+            if (hasNeighbor) { // this is to be reasonable with heavy loop
+                if (chunk != null) {
+                    for (Block otherBlock : chunk.getList()) {
+                        if (otherBlock.pos.equals(otherBlockPos)) {
+                            // ok we found out which at which side
+                            otherBlock.getAdjacentBlockMap().remove(j % 2 == 0 ? j + 1 : j - 1, hashCode);
+                            break; // goal reached, now leave
+                        }
                     }
                 }
             }
