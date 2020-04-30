@@ -46,7 +46,8 @@ public class Intrface {
     private final Window myWindow;
 
     private Quad crosshair;
-    private DynamicText infoText; // displays update and framerate
+    private DynamicText updText; // displays updates
+    private DynamicText fpsText; // displays framerates
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
@@ -84,8 +85,13 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new DynamicText(myWindow, Texture.FONT, "Welcome to Demolition Synergy!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        infoText.setOffset(new Vector2f(1.0f, 1.0f));
+        updText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
+        updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        updText.setOffset(new Vector2f(1.0f, 1.0f));
+        fpsText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
+        fpsText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        fpsText.setOffset(new Vector2f(1.0f, 1.0f));
+
         collText = new DynamicText(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
         collText.setOffset(new Vector2f(1.0f, -1.0f));
         helpText = new DynamicText(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
@@ -135,7 +141,7 @@ public class Intrface {
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
-        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "ENTER COMMAND: ", "OK", "ERROR!") {
             @Override
             protected boolean execute(String command) {
@@ -249,7 +255,7 @@ public class Intrface {
             }
         };
 
-        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -263,7 +269,7 @@ public class Intrface {
             }
         };
 
-        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -277,7 +283,7 @@ public class Intrface {
             }
         };
 
-        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "ENTER NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -291,7 +297,7 @@ public class Intrface {
             }
         };
 
-        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
@@ -502,10 +508,14 @@ public class Intrface {
         loadDialog.render();
         randLvlDialog.render();
         singlePlayerDialog.render();
-        if (!infoText.isBuffered()) {
-            infoText.buffer();
+        if (!updText.isBuffered()) {
+            updText.buffer();
         }
-        infoText.render();
+        updText.render();
+        if (!fpsText.isBuffered()) {
+            fpsText.buffer();
+        }
+        fpsText.render();
         if (!collText.isBuffered()) {
             collText.buffer();
         }
@@ -544,8 +554,12 @@ public class Intrface {
         return crosshair;
     }
 
-    public DynamicText getInfoText() {
-        return infoText;
+    public DynamicText getUpdText() {
+        return updText;
+    }
+
+    public DynamicText getFpsText() {
+        return fpsText;
     }
 
     public DynamicText getCollText() {

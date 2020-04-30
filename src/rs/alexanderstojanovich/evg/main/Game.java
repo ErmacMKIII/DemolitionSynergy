@@ -24,9 +24,9 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.level.Editor;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -36,9 +36,9 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v16 PHOSPHORUS";
+    public static final String TITLE = "Demolition Synergy - v17 RELIC";
 
-    public static final int UPS_CAP = 80;
+    public static final int TPS = 80; // TICKS PER SECOND GENERATED
 
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
@@ -50,9 +50,8 @@ public class Game {
 
     public static final float EPSILON = 0.0001f;
 
-    private static int upsCap; // updates per second cap 
     private static int ups; // current update per second    
-    private static int fpsMax; // fps max or fps cap 
+    private static int fpsMax; // fps max or fps cap     
 
     private final Window myWindow;
     private final Renderer renderer;
@@ -103,7 +102,6 @@ public class Game {
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
         lastY = config.getHeight() / 2.0f;
-        Game.upsCap = UPS_CAP;
         Game.fpsMax = config.getFpsCap();
         myWindow = new Window(config.getWidth(), config.getHeight(), TITLE);
         if (config.isFullscreen()) {
@@ -428,7 +426,7 @@ public class Game {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * upsCap;
+            upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
             while (upsTicks >= 1.0) {
@@ -447,6 +445,7 @@ public class Game {
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
+                renderer.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
                 timer0 += 1.0;
             }
@@ -496,10 +495,6 @@ public class Game {
 
     public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
         return defaultMouseButtonCallback;
-    }
-
-    public static int getUpsCap() {
-        return upsCap;
     }
 
     public static int getUps() {
