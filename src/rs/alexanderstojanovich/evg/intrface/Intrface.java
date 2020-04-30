@@ -51,6 +51,7 @@ public class Intrface {
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
+    private DynamicText screenText; // screenshot information
     private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MUTLIPLAYER}
     private boolean showHelp = false;
 
@@ -100,6 +101,9 @@ public class Intrface {
         helpText.setEnabled(false);
         progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
+        screenText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
+        screenText.setOffset(new Vector2f(1.0f, 1.0f));
+        screenText.setScale(0.75f);
         gameModeText = new DynamicText(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -528,6 +532,10 @@ public class Intrface {
             gameModeText.buffer();
         }
         gameModeText.render();
+        if (!screenText.isBuffered()) {
+            screenText.buffer();
+        }
+        screenText.render();
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
@@ -568,6 +576,10 @@ public class Intrface {
 
     public DynamicText getHelpText() {
         return helpText;
+    }
+
+    public DynamicText getScreenText() {
+        return screenText;
     }
 
     public boolean isShowHelp() {

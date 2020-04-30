@@ -16,9 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import rs.alexanderstojanovich.evg.texture.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -176,6 +179,28 @@ public class Window {
 
     public boolean shouldClose() {
         return GLFW.glfwWindowShouldClose(windowID);
+    }
+
+    public BufferedImage getScreen() {
+        final int rgba = 4;
+
+        GL11.glReadBuffer(GL11.GL_FRONT);
+        ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * rgba); // RGBA -> 4
+        GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int i = (x + (width * y)) * rgba;
+                int r = buffer.get(i) & 0xFF;
+                int g = buffer.get(i + 1) & 0xFF;
+                int b = buffer.get(i + 2) & 0xFF;
+                image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
+            }
+        }
+
+        return image;
     }
 
     public int getWidth() {

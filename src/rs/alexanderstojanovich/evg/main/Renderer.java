@@ -140,6 +140,10 @@ public class Renderer extends Thread {
                 if (intrface.getSinglePlayerDialog().isDone()) {
                     intrface.getSinglePlayerDialog().setEnabled(false);
                 }
+
+                intrface.getCollText().setContent("");
+                intrface.getScreenText().setEnabled(false);
+
                 timer1 += 5.0;
             }
 
