@@ -484,6 +484,7 @@ public class Game {
                     observerDo();
                     ups++;
                     upsTicks--;
+                    updPasses++;
                 }
                 updPasses = 0;
             }
