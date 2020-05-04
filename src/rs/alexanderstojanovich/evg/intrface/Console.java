@@ -45,14 +45,15 @@ public class Console {
 
     public Console(Window myWindow, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
-        this.panel = new Quad(myWindow, myWindow.getWidth(), myWindow.getHeight() / 2, Texture.STONE);
+        this.panel = new Quad(myWindow, myWindow.getWidth(), myWindow.getHeight() / 2, Texture.CONSOLE);
         this.panel.setColor(new Vector3f(0.25f, 0.5f, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
+        this.panel.setIgnoreFactor(true);
 
         this.inText = new DynamicText(myWindow, Texture.FONT, "]_");
         this.inText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         this.inText.pos.x = -1.0f;
-        this.inText.pos.y += inText.getRelativeCharHeight() / 2.0f;
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
 
         this.inText.setOffset(new Vector2f(1.0f, 0.0f));
 
@@ -86,9 +87,9 @@ public class Console {
                         }
                     } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                         if (!input.toString().equals("")) {
-                            for (DynamicText item : history) {
-                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
-                            }
+//                            for (DynamicText item : history) {
+//                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
+//                            }
                             DynamicText text = new DynamicText(myWindow, Texture.FONT, "");
                             boolean execStatus = commands.execute(input.toString());
                             if (execStatus) {
@@ -121,21 +122,34 @@ public class Console {
 
     public void render() {
         if (enabled) {
+            panel.setWidth(myWindow.getWidth());
+            panel.setHeight(myWindow.getHeight() / 2);
             if (!panel.isBuffered()) {
                 panel.buffer();
             }
             panel.render();
-            for (DynamicText command : history) {
-                if (!command.isBuffered()) {
-                    command.buffer();
-                }
-                command.render();
-            }
-
+            inText.pos.x = -1.0f;
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
             if (!inText.isBuffered()) {
                 inText.buffer();
             }
             inText.render();
+            int index = 0;
+            DynamicText prevItem = null;
+            for (DynamicText item : history) {
+                item.pos.x = -1.0f;;
+                if (index == 0) {
+                    item.pos.y = inText.pos.y + item.getRelativeCharHeight() * Text.LINE_SPACING;
+                } else if (prevItem != null) {
+                    item.pos.y = prevItem.pos.y + item.getRelativeCharHeight() * Text.LINE_SPACING;
+                }
+                if (!item.isBuffered()) {
+                    item.buffer();
+                }
+                item.render();
+                prevItem = item;
+                index++;
+            }
         }
     }
 }

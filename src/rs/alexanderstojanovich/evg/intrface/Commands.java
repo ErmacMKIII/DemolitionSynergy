@@ -16,6 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import javax.imageio.ImageIO;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
@@ -23,6 +27,7 @@ import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -143,6 +148,42 @@ public class Commands {
                             success = true;
                         }
                     }
+                    break;
+                case "quit":
+                case "exit":
+                    myWindow.close();
+                    success = true;
+                    break;
+                case "screenshot":
+                    File screenDir = new File(Game.SCREENSHOTS);
+                    if (!screenDir.isDirectory() && !screenDir.exists()) {
+                        screenDir.mkdir();
+                    }
+                    LocalDateTime now = LocalDateTime.now();
+                    File screenshot = new File(Game.SCREENSHOTS + File.separator
+                            + "dsynergy-" + now.getYear()
+                            + "-" + now.getMonthValue()
+                            + "-" + now.getDayOfMonth()
+                            + "_" + now.getHour()
+                            + "-" + now.getMinute()
+                            + "-" + now.getSecond()
+                            + "-" + now.getNano() / 1E6 // one million
+                            + ".png");
+                    if (screenshot.exists()) {
+                        screenshot.delete();
+                    }
+                    synchronized (objMutex) {
+                        myWindow.loadContext();
+                        GL.setCapabilities(MasterRenderer.getGlCaps());
+                        try {
+                            ImageIO.write(myWindow.getScreen(), "PNG", screenshot);
+                        } catch (IOException ex) {
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        }
+                        GL.setCapabilities(null);
+                        Window.unloadContext();
+                    }
+                    success = true;
                     break;
                 default:
                     success = false;

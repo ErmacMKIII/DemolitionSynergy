@@ -51,6 +51,8 @@ public class Texture {
     public static final Texture MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "machine_gun.png");
     public static final Texture SNIPER_RIFLE = new Texture(Game.PLAYER_ENTRY, "sniper_rifle.png");
 
+    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
+
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
     static {
