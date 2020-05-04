@@ -54,7 +54,6 @@ public class Intrface {
     private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MUTLIPLAYER}
     private boolean showHelp = false;
 
-    private ConcurrentDialog commandDialog;
     private ConcurrentDialog saveDialog;
     private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
@@ -73,6 +72,8 @@ public class Intrface {
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
+
+    private Console console;
 
     public Intrface(Window myWindow, LevelContainer levelContainer, WaterRenderer waterRenderer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
@@ -143,120 +144,6 @@ public class Intrface {
         logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
-
-        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "ENTER COMMAND: ", "OK", "ERROR!") {
-            @Override
-            protected boolean execute(String command) {
-                boolean success = false;
-                String[] things = command.split(" ");
-                if (things.length > 0) {
-                    switch (things[0].toLowerCase()) {
-                        case "fps_max":
-                        case "fpsmax":
-                            if (things.length == 2) {
-                                int num = Integer.parseInt(things[1]);
-                                if (num > 0) {
-                                    Game.setFpsMax(num);
-                                    Renderer.setFpsTicks(0.0);
-                                    success = true;
-                                }
-                            }
-                            break;
-                        case "resolution":
-                        case "res":
-                            if (things.length == 3) {
-                                int width = Integer.parseInt(things[1]);
-                                int height = Integer.parseInt(things[2]);
-                                synchronized (objMutex) {
-                                    myWindow.loadContext();
-                                    GL.setCapabilities(MasterRenderer.getGlCaps());
-                                    success = myWindow.setResolution(width, height);
-                                    myWindow.centerTheWindow();
-                                    PerspectiveRenderer.updatePerspective(myWindow);
-                                    GL.setCapabilities(null);
-                                    Window.unloadContext();
-                                }
-                            }
-                            break;
-                        case "fullscreen":
-                            synchronized (objMutex) {
-                                myWindow.loadContext();
-                                myWindow.fullscreen();
-                                myWindow.centerTheWindow();
-                                Window.unloadContext();
-                            }
-                            success = true;
-                            break;
-                        case "windowed":
-                            synchronized (objMutex) {
-                                myWindow.loadContext();
-                                myWindow.windowed();
-                                myWindow.centerTheWindow();
-                                Window.unloadContext();
-                            }
-                            success = true;
-                            break;
-                        case "v_sync":
-                        case "vsync":
-                            if (things.length == 2) {
-                                synchronized (objMutex) {
-                                    myWindow.loadContext();
-                                    if (Boolean.parseBoolean(things[1])) {
-                                        myWindow.enableVSync();
-                                    } else {
-                                        myWindow.disableVSync();
-                                    }
-                                    Window.unloadContext();
-                                }
-                                success = true;
-                            }
-                            break;
-                        case "water_effects":
-                            if (things.length == 2) {
-                                if (Boolean.parseBoolean(things[1])) {
-                                    Game.setWaterEffects(true);
-                                } else {
-                                    Game.setWaterEffects(false);
-                                }
-                                success = true;
-                            }
-                            break;
-                        case "msens":
-                        case "mouse_sensitivity":
-                            if (things.length == 2) {
-                                Game.setMouseSensitivity(Float.parseFloat(things[1]));
-                                success = true;
-                            }
-                            break;
-                        case "music":
-                        case "musicVolume":
-                            if (things.length == 2) {
-                                float volume = Float.parseFloat(things[1]);
-                                if (volume >= 0.0f && volume <= 1.0f) {
-                                    musicPlayer.setGain(volume);
-                                    success = true;
-                                }
-                            }
-                            break;
-                        case "sound":
-                        case "soundVolume":
-                            if (things.length == 2) {
-                                float volume = Float.parseFloat(things[1]);
-                                if (volume >= 0.0f && volume <= 1.0f) {
-                                    soundFXPlayer.setGain(volume);
-                                    success = true;
-                                }
-                            }
-                            break;
-                        default:
-                            success = false;
-                            break;
-                    }
-                }
-                return success;
-            }
-        };
 
         saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
@@ -478,6 +365,8 @@ public class Intrface {
             }
         };
         editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
+
+        console = new Console(myWindow, objMutex, musicPlayer, soundFXPlayer);
     }
 
     public void setCollText(boolean mode) {
@@ -506,7 +395,6 @@ public class Intrface {
     }
 
     public void render() {
-        commandDialog.render();
         saveDialog.render();
         loadDialog.render();
         randLvlDialog.render();
@@ -544,6 +432,7 @@ public class Intrface {
             }
             crosshair.render();
         }
+        console.render();
     }
 
     // update menu components
@@ -583,10 +472,6 @@ public class Intrface {
 
     public boolean isShowHelp() {
         return showHelp;
-    }
-
-    public Dialog getCommandDialog() {
-        return commandDialog;
     }
 
     public Dialog getSaveDialog() {
@@ -639,6 +524,10 @@ public class Intrface {
 
     public ConcurrentDialog getSinglePlayerDialog() {
         return singlePlayerDialog;
+    }
+
+    public Console getConsole() {
+        return console;
     }
 
 }

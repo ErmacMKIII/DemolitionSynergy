@@ -27,7 +27,6 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.level.GravityEnviroment;
 
 /**
  *
@@ -137,9 +136,6 @@ public class Renderer extends Thread {
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                if (intrface.getCommandDialog().isDone()) {
-                    intrface.getCommandDialog().setEnabled(false);
-                }
                 if (intrface.getSaveDialog().isDone()) {
                     intrface.getSaveDialog().setEnabled(false);
                 }

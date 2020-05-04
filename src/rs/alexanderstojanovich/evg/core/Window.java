@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
-import rs.alexanderstojanovich.evg.texture.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.lwjgl.BufferUtils;
@@ -28,6 +27,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.texture.Image;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**

@@ -377,7 +377,7 @@ public class Game {
                     renderer.getIntrface().getMainMenu().open();
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getCommandDialog().open();
+                    renderer.getIntrface().getConsole().open();
                 } else if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     renderer.getIntrface().toggleShowHelp();
