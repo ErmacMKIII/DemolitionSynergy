@@ -22,21 +22,21 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.glfw.GLFW;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
+import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -47,20 +47,22 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  *
  * @author Coa
  */
-public class LevelContainer {
+public class LevelContainer implements GravityEnviroment {
 
     private final Window myWindow;
-    private final Block skybox = new Block(true, Texture.NIGHT);
+    public static final Block SKYBOX = new Block(true, Texture.NIGHT);
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
+
+    private List<Integer> visibleChunks = new GapList<>();
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
     public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
     public static final float SKYBOX_WIDTH = 256.0f; // default 256
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for skybox
+    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
@@ -75,19 +77,15 @@ public class LevelContainer {
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
-    //----------------Vector3f hash, Block hash---------------------------------
-    private static final Map<Vector3f, Integer> POS_SOLID_MAP = new HashMap<>();
-    private static final Map<Vector3f, Integer> POS_FLUID_MAP = new HashMap<>();
-
     public LevelContainer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
         this.musicPlayer = musicPlayer;
         this.soundFXPlayer = soundFXPlayer;
-        // setting skybox        
-        skybox.setPrimaryColor(SKYBOX_COLOR);
-        skybox.setUVsForSkybox();
-        skybox.setScale(SKYBOX_SCALE);
+        // setting SKYBOX        
+        SKYBOX.setPrimaryColor(SKYBOX_COLOR);
+        SKYBOX.setUVsForSkybox();
+        SKYBOX.setScale(SKYBOX_SCALE);
         // setting observer        
     }
 
@@ -104,8 +102,6 @@ public class LevelContainer {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        POS_SOLID_MAP.clear();
-        POS_FLUID_MAP.clear();
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(false, Texture.DOOM0);
@@ -113,8 +109,6 @@ public class LevelContainer {
                 entity.getPos().x = 4.0f * i;
                 entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
-
-                POS_SOLID_MAP.put(entity.getPos(), entity.hashCode());
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
@@ -158,8 +152,9 @@ public class LevelContainer {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        POS_SOLID_MAP.clear();
-        POS_FLUID_MAP.clear();
+        solidChunks.getPosMap().clear();
+        fluidChunks.getPosMap().clear();
+
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
@@ -300,8 +295,8 @@ public class LevelContainer {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            POS_SOLID_MAP.clear();
-            POS_FLUID_MAP.clear();
+            solidChunks.getPosMap().clear();
+            fluidChunks.getPosMap().clear();
 
             pos += 2;
             byte[] posArr = new byte[12];
@@ -499,7 +494,7 @@ public class LevelContainer {
         if (fluidChunk != null) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : fluidChunk.getTupleList()) {
                 for (Block fluidBlock : tuple.getA().getBlockList()) {
-                    if (fluidBlock.contains(obsCamPos)) {
+                    if (fluidBlock.containsInsideEqually(obsCamPos)) {
                         yea = true;
                         break;
                     }
@@ -509,64 +504,79 @@ public class LevelContainer {
         return yea;
     }
 
-    public boolean hasCollisionWithCritter(Observer critter) {
+    public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
-        coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
-        Vector3f obsPredPos = critter.getPredictor();
-        List<Chunk> visibleChunks = solidChunks.getVisibleChunks();
-        for (Chunk solidChunk : visibleChunks) {
-            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : solidChunk.getTupleList()) {
-                for (Block solidBlock : tuple.getA().getBlockList()) {
-                    if (solidBlock.contains(obsPredPos) || solidBlock.intersects(critter.getPredModel())) {
-                        coll = true;
-                        break;
-                    }
-                }
+        coll = (!SKYBOX.containsInside(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                        critter.getModel().getHeight(), critter.getModel().getDepth()));
+
+        for (Vector3f solidPos : solidChunks.getPosMap().keySet()) {
+            if (Model.containsInside(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                    || Model.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                            critter.getModel().getHeight(), critter.getModel().getDepth(), solidPos, 2.0f, 2.0f, 2.0f)) {
+                coll = true;
+                break;
             }
         }
+
         return coll;
     }
 
-    public void update() { // call it externally from the main thread 
+    // thats what gravity does, object fells down if they don't have support below it (sky or other object)
+    @Override
+    public void gravityDo(float deltaTime) {
+        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
+        for (Vector3f solidBlockPos : solidMap.keySet()) {
+            Vector3f bottom = new Vector3f(solidBlockPos);
+            bottom.y -= 1.0f;
+            boolean massBelow = false;
+            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
+                if (!solidBlockPos.equals(otherSolidBlockPos)
+                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
+                    massBelow = true;
+                    break;
+                }
+            }
+            boolean inSkybox = LevelContainer.SKYBOX.containsInside(bottom);
+            if (!massBelow && inSkybox) {
+                solidBlockPos.y -= value;
+            }
+        }
+        solidChunks.setBuffered(false);
+    }
+
+    public void update(float deltaTime) { // call it externally from the main thread 
         if (working || progress > 0.0f || levelActors.getPlayer() == null) {
             return; // don't update if working, it may screw up!
         }
+
+        SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
+
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        int currChunkId = Chunk.chunkFunc(obsCamera.getPos(), obsCamera.getFront());
-        List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront()); // is list of estimated visible chunks (by that chunk)
-        Chunk currSolid = solidChunks.getChunk(currChunkId);
-        if (currSolid != null) {
-            currSolid.setVisible(true);
-        }
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (visibleList.contains(solidChunk.getId())) {
-                solidChunk.setVisible(true);
-            } else {
-                solidChunk.setVisible(false);
+        // is list of estimated visible chunks (by the camera pos and front)        
+        visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
+        for (Integer i : visibleChunks) {
+            Chunk solidChunk = solidChunks.getChunk(i);
+            if (solidChunk != null && !visibleChunks.contains(i)) {
+                solidChunk.setBuffered(false);
+            }
+            Chunk fluidChunk = fluidChunks.getChunk(i);
+            if (fluidChunk != null) {
+                if (!visibleChunks.contains(i)) {
+                    fluidChunk.setBuffered(false);
+                }
+                fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
 
-        Chunk currFluid = fluidChunks.getChunk(currChunkId);
-        if (currFluid != null) {
-            currFluid.setVisible(true);
-        }
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (visibleList.contains(fluidChunk.getId())) {
-                fluidChunk.setVisible(true);
-            } else {
-                fluidChunk.setVisible(false);
-            }
-        }
-
-        fluidChunks.setCameraInFluid(isCameraInFluid());
+//        gravityDo(deltaTime);
     }
 
     public void render() { // render for regular level rendering
         Camera obsCamera = levelActors.getPlayer().getCamera();
         levelActors.render();
-        float time = (float) GLFW.glfwGetTime();
-        skybox.setrY(time / 64.0f);
-        skybox.render(ShaderProgram.getMainShader());
+        SKYBOX.render(ShaderProgram.getMainShader());
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -583,26 +593,31 @@ public class LevelContainer {
         obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
         ShaderProgram.unbind();
 
-        // render solid series         
-        if (!solidChunks.isBuffered()) {
-            solidChunks.bufferAll();
+        // render blocks        
+        for (Integer i : visibleChunks) {
+            Chunk solidChunk = solidChunks.getChunk(i);
+            if (solidChunk != null) {
+                if (!solidChunk.isBuffered()) {
+                    solidChunk.bufferAll();
+                }
+                solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
+            }
+            Chunk fluidChunk = fluidChunks.getChunk(i);
+            if (fluidChunk != null) {
+                if (!fluidChunk.isBuffered()) {
+                    fluidChunk.bufferAll();
+                }
+                fluidChunk.prepare();
+                fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
+            }
         }
 
-        solidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
-
-        // render fluid blocks      
-        if (!fluidChunks.isBuffered()) {
-            fluidChunks.bufferAll();
-        }
-
-        fluidChunks.prepare();
-        fluidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
-        // render skybox
+        // render SKYBOX
         camera.render(ShaderProgram.getWaterBaseShader());
-        skybox.render(ShaderProgram.getWaterBaseShader());
+        SKYBOX.render(ShaderProgram.getWaterBaseShader());
         levelActors.render();
 
         Block editorNew = Editor.getSelectedNew();
@@ -620,19 +635,25 @@ public class LevelContainer {
         camera.updateCameraFront(ShaderProgram.getWaterVoxelShader());
         ShaderProgram.unbind();
 
-        // render solid series     
-        if (!solidChunks.isBuffered()) {
-            solidChunks.bufferAll();
+        // render blocks
+        for (Integer i : visibleChunks) {
+            Chunk solidChunk = solidChunks.getChunk(i);
+            if (solidChunk != null) {
+                if (!solidChunk.isBuffered()) {
+                    solidChunk.bufferAll();
+                }
+                solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
+            }
+            Chunk fluidChunk = fluidChunks.getChunk(i);
+            if (fluidChunk != null) {
+                if (!fluidChunk.isBuffered()) {
+                    fluidChunk.bufferAll();
+                }
+                fluidChunk.prepare();
+                fluidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
+            }
         }
-        solidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
 
-        // render fluid blocks      
-        if (!fluidChunks.isBuffered()) {
-            fluidChunks.bufferAll();
-        }
-
-        fluidChunks.prepare();
-        fluidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
     }
 
     public boolean maxSolidReached() {
@@ -651,10 +672,6 @@ public class LevelContainer {
 
     public Window getMyWindow() {
         return myWindow;
-    }
-
-    public Block getSkybox() {
-        return skybox;
     }
 
     public float getProgress() {
@@ -681,20 +698,16 @@ public class LevelContainer {
         return randomLevelGenerator;
     }
 
+    public List<Integer> getVisibleChunks() {
+        return visibleChunks;
+    }
+
     public byte[] getBuffer() {
         return buffer;
     }
 
     public int getPos() {
         return pos;
-    }
-
-    public static Map<Vector3f, Integer> getPOS_SOLID_MAP() {
-        return POS_SOLID_MAP;
-    }
-
-    public static Map<Vector3f, Integer> getPOS_FLUID_MAP() {
-        return POS_FLUID_MAP;
     }
 
     public AudioPlayer getMusicPlayer() {

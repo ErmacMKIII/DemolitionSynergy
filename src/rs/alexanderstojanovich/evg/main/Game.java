@@ -42,7 +42,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v17 RELIC";
+    public static final String TITLE = "Demolition Synergy - v18 STONEWALL";
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
 
@@ -60,6 +60,8 @@ public class Game {
     private static int fpsMax; // fps max or fps cap     
     private static int updPasses = 0;
     public static final int UPD_MAX_PASSES = 10;
+    // if this is reach game will close without exception!
+    public static final double CRITICAL_TIME = 5.0;
 
     private final Window myWindow;
     private final Renderer renderer;
@@ -196,27 +198,53 @@ public class Game {
         if (keys[GLFW.GLFW_KEY_N]) {
             Editor.selectNew(renderer.getLevelContainer());
         }
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
-            Editor.selectCurr(renderer.getLevelContainer());
+        //----------------------------------------------------------------------
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectCurrSolid(renderer.getLevelContainer());
         }
-        if (keys[GLFW.GLFW_KEY_1]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.LEFT);
+
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectCurrFluid(renderer.getLevelContainer());
         }
-        if (keys[GLFW.GLFW_KEY_2]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.RIGHT);
+        //----------------------------------------------------------------------
+        if (keys[GLFW.GLFW_KEY_1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.LEFT);
         }
-        if (keys[GLFW.GLFW_KEY_3]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.BOTTOM);
+        if (keys[GLFW.GLFW_KEY_2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.RIGHT);
         }
-        if (keys[GLFW.GLFW_KEY_4]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.TOP);
+        if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.BOTTOM);
         }
-        if (keys[GLFW.GLFW_KEY_5]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.BACK);
+        if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.TOP);
         }
-        if (keys[GLFW.GLFW_KEY_6]) {
-            Editor.selectAdjacent(renderer.getLevelContainer(), Block.FRONT);
+        if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.BACK);
         }
+        if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.FRONT);
+        }
+        //----------------------------------------------------------------------
+        if (keys[GLFW.GLFW_KEY_1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.LEFT);
+        }
+        if (keys[GLFW.GLFW_KEY_2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.RIGHT);
+        }
+        if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.BOTTOM);
+        }
+        if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.TOP);
+        }
+        if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.BACK);
+        }
+        if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.FRONT);
+        }
+        //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
             Editor.deselect();
         }
@@ -471,10 +499,18 @@ public class Game {
             upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
+            // Detecting critical status
+            if (ups == 0 && diff > CRITICAL_TIME) {
+                DSLogger.reportFatalError("Game status critical!", null);
+                myWindow.close();
+                break;
+            }
+
             if (Renderer.getRenPasses() == 0) {
                 while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                     GLFW.glfwPollEvents();
-                    renderer.update();
+                    float deltaTime = (float) (upsTicks / TPS);
+                    renderer.update(deltaTime);
                     if (currentMode == Mode.SINGLE_PLAYER) {
                         playerDo();
                     } else if (currentMode == Mode.EDITOR) {

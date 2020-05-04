@@ -410,16 +410,7 @@ public class Model implements Comparable<Model> {
         depth = Math.abs(zMax - zMin) * scale;
     }
 
-    public boolean contains(Vector3f x) {
-        boolean ints = false;
-        boolean boolX = x.x >= pos.x - width / 2.0f && x.x <= pos.x + width / 2.0f;
-        boolean boolY = x.y >= pos.y - height / 2.0f && x.y <= pos.y + height / 2.0f;
-        boolean boolZ = x.z >= pos.z - depth / 2.0f && x.z <= pos.z + depth / 2.0f;
-        ints = boolX && boolY && boolZ;
-        return ints;
-    }
-
-    public boolean containsExactly(Vector3f x) {
+    public boolean containsInside(Vector3f x) {
         boolean ints = false;
         boolean boolX = x.x > pos.x - width / 2.0f && x.x < pos.x + width / 2.0f;
         boolean boolY = x.y > pos.y - height / 2.0f && x.y < pos.y + height / 2.0f;
@@ -428,16 +419,67 @@ public class Model implements Comparable<Model> {
         return ints;
     }
 
-    public boolean intersects(Model model) {
-        boolean coll = false;
-        boolean boolX = this.pos.x - this.width / 2.0f <= model.pos.x + model.width / 2.0f
-                && this.pos.x + this.width / 2.0f >= model.pos.x - model.width / 2.0f;
-        boolean boolY = this.pos.y - this.height / 2.0f <= model.pos.y + model.height / 2.0f
-                && this.pos.y + this.height / 2.0f >= model.pos.y - model.height / 2.0f;
-        boolean boolZ = this.pos.z - this.depth / 2.0f <= model.pos.z + model.depth / 2.0f
-                && this.pos.z + this.depth / 2.0f >= model.pos.z - model.depth / 2.0f;
-        coll = boolX && boolY && boolZ;
-        return coll;
+    public static boolean containsInside(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth, Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x > modelPos.x - modelWidth / 2.0f && x.x < modelPos.x + modelWidth / 2.0f;
+        boolean boolY = x.y > modelPos.y - modelHeight / 2.0f && x.y < modelPos.y + modelHeight / 2.0f;
+        boolean boolZ = x.z > modelPos.z - modelDepth / 2.0f && x.z < modelPos.z + modelDepth / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public static boolean containsInsideEqually(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth, Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x >= modelPos.x - modelWidth / 2.0f && x.x <= modelPos.x + modelWidth / 2.0f;
+        boolean boolY = x.y >= modelPos.y - modelHeight / 2.0f && x.y <= modelPos.y + modelHeight / 2.0f;
+        boolean boolZ = x.z >= modelPos.z - modelDepth / 2.0f && x.z <= modelPos.z + modelDepth / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public boolean containsInsideEqually(Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x >= pos.x - width / 2.0f && x.x <= pos.x + width / 2.0f;
+        boolean boolY = x.y >= pos.y - height / 2.0f && x.y <= pos.y + height / 2.0f;
+        boolean boolZ = x.z >= pos.z - depth / 2.0f && x.z <= pos.z + depth / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public boolean containsOnXZEqually(Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x >= pos.x - height / 2.0f && x.x <= pos.x + height / 2.0f;
+        boolean boolY = x.y >= pos.y - height / 2.0f && x.y <= pos.y + height / 2.0f;
+        boolean boolZ = x.z >= pos.z - height / 2.0f && x.z <= pos.z + height / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public boolean containsOnXZExactly(Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x > pos.x - height / 2.0f && x.x < pos.x + height / 2.0f;
+        boolean boolY = x.y > pos.y - height / 2.0f && x.y < pos.y + height / 2.0f;
+        boolean boolZ = x.z > pos.z - height / 2.0f && x.z < pos.z + height / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public static boolean containsOnXZExactly(Vector3f modelPos, float modelHeight, Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x > modelPos.x - modelHeight / 2.0f && x.x < modelPos.x + modelHeight / 2.0f;
+        boolean boolY = x.y > modelPos.y - modelHeight / 2.0f && x.y < modelPos.y + modelHeight / 2.0f;
+        boolean boolZ = x.z > modelPos.z - modelHeight / 2.0f && x.z < modelPos.z + modelHeight / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
+    }
+
+    public static boolean containsOnXZEqually(Vector3f modelPos, float modelHeight, Vector3f x) {
+        boolean ints = false;
+        boolean boolX = x.x >= modelPos.x - modelHeight / 2.0f && x.x <= modelPos.x + modelHeight / 2.0f;
+        boolean boolY = x.y >= modelPos.y - modelHeight / 2.0f && x.y <= modelPos.y + modelHeight / 2.0f;
+        boolean boolZ = x.z >= modelPos.z - modelHeight / 2.0f && x.z <= modelPos.z + modelHeight / 2.0f;
+        ints = boolX && boolY && boolZ;
+        return ints;
     }
 
     public boolean intersectsExactly(Model model) {
@@ -452,6 +494,68 @@ public class Model implements Comparable<Model> {
         return coll;
     }
 
+    public boolean intersectsExactly(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth) {
+        boolean coll = false;
+        boolean boolX = this.pos.x - this.width / 2.0f < modelPos.x + modelWidth / 2.0f
+                && this.pos.x + this.width / 2.0f > modelPos.x - modelWidth / 2.0f;
+        boolean boolY = this.pos.y - this.height / 2.0f < modelPos.y + modelHeight / 2.0f
+                && this.pos.y + this.height / 2.0f > modelPos.y - modelHeight / 2.0f;
+        boolean boolZ = this.pos.z - this.depth / 2.0f < modelPos.z + modelDepth / 2.0f
+                && this.pos.z + this.depth / 2.0f > modelPos.z - modelDepth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
+    public static boolean intersectsExactly(Vector3f modelAPos, float modelAWidth, float modelAHeight, float modelADepth,
+            Vector3f modelBPos, float modelBWidth, float modelBHeight, float modelBDepth) {
+        boolean coll = false;
+        boolean boolX = modelAPos.x - modelAWidth / 2.0f < modelBPos.x + modelBWidth / 2.0f
+                && modelAPos.x + modelAWidth / 2.0f > modelBPos.x - modelBWidth / 2.0f;
+        boolean boolY = modelAPos.y - modelAHeight / 2.0f < modelBPos.y + modelBHeight / 2.0f
+                && modelAPos.y + modelAHeight / 2.0f > modelBPos.y - modelBHeight / 2.0f;
+        boolean boolZ = modelAPos.z - modelBDepth / 2.0f < modelBPos.z + modelBDepth / 2.0f
+                && modelAPos.z + modelBDepth / 2.0f > modelBPos.z - modelBDepth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
+    public boolean intersectsEqually(Model model) {
+        boolean coll = false;
+        boolean boolX = this.pos.x - this.width / 2.0f <= model.pos.x + model.width / 2.0f
+                && this.pos.x + this.width / 2.0f >= model.pos.x - model.width / 2.0f;
+        boolean boolY = this.pos.y - this.height / 2.0f <= model.pos.y + model.height / 2.0f
+                && this.pos.y + this.height / 2.0f >= model.pos.y - model.height / 2.0f;
+        boolean boolZ = this.pos.z - this.depth / 2.0f <= model.pos.z + model.depth / 2.0f
+                && this.pos.z + this.depth / 2.0f >= model.pos.z - model.depth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
+    public boolean intersectsEqually(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth) {
+        boolean coll = false;
+        boolean boolX = this.pos.x - this.width / 2.0f <= modelPos.x + modelWidth / 2.0f
+                && this.pos.x + this.width / 2.0f >= modelPos.x - modelWidth / 2.0f;
+        boolean boolY = this.pos.y - this.height / 2.0f <= modelPos.y + modelHeight / 2.0f
+                && this.pos.y + this.height / 2.0f >= modelPos.y - modelHeight / 2.0f;
+        boolean boolZ = this.pos.z - this.depth / 2.0f <= modelPos.z + modelDepth / 2.0f
+                && this.pos.z + this.depth / 2.0f >= modelPos.z - modelDepth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
+    public static boolean intersectsEqually(Vector3f modelAPos, float modelAWidth, float modelAHeight, float modelADepth,
+            Vector3f modelBPos, float modelBWidth, float modelBHeight, float modelBDepth) {
+        boolean coll = false;
+        boolean boolX = modelAPos.x - modelAWidth / 2.0f <= modelBPos.x + modelBWidth / 2.0f
+                && modelAPos.x + modelAWidth / 2.0f >= modelBPos.x - modelBWidth / 2.0f;
+        boolean boolY = modelAPos.y - modelAHeight / 2.0f <= modelBPos.y + modelBHeight / 2.0f
+                && modelAPos.y + modelAHeight / 2.0f >= modelBPos.y - modelBHeight / 2.0f;
+        boolean boolZ = modelAPos.z - modelADepth / 2.0f <= modelBPos.z + modelBDepth / 2.0f
+                && modelAPos.z + modelADepth / 2.0f >= modelBPos.z - modelBDepth / 2.0f;
+        coll = boolX && boolY && boolZ;
+        return coll;
+    }
+
     public boolean intersectsRay(Vector3f l, Vector3f l0) {
         boolean ints = false; // l is direction and l0 is the point
         for (Vertex vertex : vertices) {
@@ -461,7 +565,7 @@ public class Model implements Comparable<Model> {
             if (l.dot(n) != 0.0f) {
                 float d = x0.sub(l0).dot(n) / l.dot(n);
                 Vector3f x = l.mul(d, temp).add(l0, temp);
-                if (contains(x)) {
+                if (containsInsideEqually(x)) {
                     ints = true;
                     break;
                 }
@@ -519,8 +623,20 @@ public class Model implements Comparable<Model> {
         calcModelMatrix();
     }
 
-    public float giveSurfacePos() {
+    public float getSurfaceY() {
+        return (this.pos.y + this.height / 2.0f);
+    }
+
+    public static float getSurfaceY(Vector3f modelPos, float modelHeight) {
+        return (modelPos.y + modelHeight / 2.0f);
+    }
+
+    public float getBottomY() {
         return (this.pos.y - this.height / 2.0f);
+    }
+
+    public static float getBottomY(Vector3f modelPos, float modelHeight) {
+        return (modelPos.y - modelHeight / 2.0f);
     }
 
     public String getModelFileName() {

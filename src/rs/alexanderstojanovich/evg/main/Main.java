@@ -38,6 +38,6 @@ public class Main {
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
-        MasterAudio.destroy(); // destroy context after writting to the ini file
+        MasterAudio.destroy(); // destroy context after writting to the ini file                
     }
 }

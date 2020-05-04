@@ -26,6 +26,8 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.level.GravityEnviroment;
 
 /**
  *
@@ -88,7 +90,14 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            if (Game.getUpdPasses() == 0 && Game.getUpsTicks() < 1.0) {
+            // Detecting critical status
+            if (fps == 0 && diff > Game.CRITICAL_TIME) {
+                DSLogger.reportFatalError("Game status critical!", null);
+                myWindow.close();
+                break;
+            }
+
+            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0) {
                 while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                     synchronized (objMutex) {
                         myWindow.loadContext();
@@ -173,9 +182,10 @@ public class Renderer extends Thread {
 
     }
 
-    public void update() {
+    public void update(float deltaTime) {
         synchronized (objMutex) {
-            levelContainer.update();
+            waterRenderer.refresh();
+            levelContainer.update(deltaTime);
             intrface.update();
         }
     }

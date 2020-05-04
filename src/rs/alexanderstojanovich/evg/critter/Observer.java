@@ -34,7 +34,6 @@ public class Observer implements Critter {
     protected final Model model;
     protected boolean givenControl = true;
     protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
-    protected final Model predModel = new Model(false, Game.WORLD_ENTRY, "icosphere.obj");
 
     public Observer(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
         this.camera = new Camera(pos);
@@ -53,9 +52,7 @@ public class Observer implements Critter {
     }
 
     private void initModelPos() {
-        model.getPos().x = camera.getPos().x;
-        model.getPos().y = camera.getPos().y;
-        model.getPos().z = camera.getPos().z;
+        model.setPos(new Vector3f(camera.getPos()));
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         Vector3f temp3 = new Vector3f();
@@ -63,13 +60,10 @@ public class Observer implements Critter {
         model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
         model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
         predictor = new Vector3f(camera.getPos().x, camera.getPos().y, camera.getPos().z);
-        predModel.setScale(model.getScale());
     }
 
     public void updateModelPos() {
-        model.getPos().x = camera.getPos().x;
-        model.getPos().y = camera.getPos().y;
-        model.getPos().z = camera.getPos().z;
+        model.setPos(new Vector3f(camera.getPos()));
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         Vector3f temp3 = new Vector3f();
@@ -77,7 +71,6 @@ public class Observer implements Critter {
         model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
         model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
         predictor = new Vector3f(camera.getPos().x, camera.getPos().y, camera.getPos().z);
-        predModel.setScale(model.getScale());
     }
 
     @Override
@@ -120,33 +113,25 @@ public class Observer implements Critter {
     @Override
     public void movePredictorForward(float amount) {
         Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().add(camera.getFront().mul(amount, temp1), temp1);
-        predModel.setPos(model.getPos().add(camera.getFront().mul(amount, temp2), temp2));
     }
 
     @Override
     public void movePredictorBackward(float amount) {
         Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().sub(camera.getFront().mul(amount, temp1), temp1);
-        predModel.setPos(model.getPos().sub(camera.getFront().mul(amount, temp2), temp2));
     }
 
     @Override
     public void movePredictorLeft(float amount) {
         Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().sub(camera.getRight().mul(amount, temp1), temp1);
-        predModel.setPos(model.getPos().sub(camera.getRight().mul(amount, temp2), temp2));
     }
 
     @Override
     public void movePredictorRight(float amount) {
         Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
         predictor = camera.getPos().add(camera.getRight().mul(amount, temp1), temp1);
-        predModel.setPos(model.getPos().add(camera.getRight().mul(amount, temp2), temp2));
     }
 
     //--------------------------------------------------------------------------
@@ -195,7 +180,7 @@ public class Observer implements Critter {
 
     @Override
     public String toString() {
-        return "Observer{" + "camera=" + camera + ", model=" + model + ", givenControl=" + givenControl + ", predictor=" + predictor + ", predModel=" + predModel + '}';
+        return "Observer{" + "camera=" + camera + ", model=" + model + ", givenControl=" + givenControl + ", predictor=" + predictor + '}';
     }
 
     @Override
@@ -221,11 +206,6 @@ public class Observer implements Critter {
     @Override
     public Vector3f getPredictor() {
         return predictor;
-    }
-
-    @Override
-    public Model getPredModel() {
-        return predModel;
     }
 
 }

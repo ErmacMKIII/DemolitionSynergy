@@ -181,6 +181,11 @@ public class Window {
         return GLFW.glfwWindowShouldClose(windowID);
     }
 
+    public void close() {
+        GLFW.glfwSetWindowShouldClose(windowID, true);
+    }
+
+    // save screenshot in the memory (BufferedImage)
     public BufferedImage getScreen() {
         final int rgba = 4;
 

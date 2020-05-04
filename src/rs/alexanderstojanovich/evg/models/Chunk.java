@@ -61,8 +61,6 @@ public class Chunk {
 
     private boolean buffered = false;
 
-    private boolean visible = false; // is it visible for rendering
-
     public Chunk(int id) {
         this.id = id;
     }
@@ -143,9 +141,16 @@ public class Chunk {
         }
     }
 
+    // set camera in fluid for underwater effects (call only for fluid)
+    public void setCameraInFluid(boolean cameraInFluid) {
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+            tuple.getA().setCameraInFluid(cameraInFluid);
+        }
+    }
+
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty() && visible) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty()) {
             Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
@@ -338,14 +343,6 @@ public class Chunk {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-    }
-
-    public boolean isVisible() {
-        return visible;
-    }
-
-    public void setVisible(boolean visible) {
-        this.visible = visible;
     }
 
 }

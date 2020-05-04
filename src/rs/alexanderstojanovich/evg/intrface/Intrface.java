@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Combo;
@@ -97,13 +96,13 @@ public class Intrface {
         collText.setOffset(new Vector2f(1.0f, -1.0f));
         helpText = new DynamicText(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
         helpText.setOffset(new Vector2f(1.0f, 1.0f));
-        helpText.setScale(0.75f);
+        helpText.setScale(0.625f);
         helpText.setEnabled(false);
         progText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
         screenText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
         screenText.setOffset(new Vector2f(1.0f, 1.0f));
-        screenText.setScale(0.75f);
+        screenText.setScale(0.625f);
         gameModeText = new DynamicText(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -133,7 +132,7 @@ public class Intrface {
                         optionsMenu.open();
                         break;
                     case "EXIT":
-                        GLFW.glfwSetWindowShouldClose(myWindow.getWindowID(), true);
+                        myWindow.close();
                         break;
                 }
             }

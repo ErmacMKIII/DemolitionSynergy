@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.joml.GeometryUtils;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -55,15 +55,12 @@ public class Block extends Model {
     // which faces we enabled for rendering and which we disabled
     private final boolean[] enabledFaces = new boolean[6];
 
-    private final Map<Integer, Integer> adjacentBlockMap = new HashMap<>(); // helps locating neighbours blocks           
     private boolean verticesReversed = false;
 
     public static final List<Vector3f> FACE_NORMALS = new ArrayList<>();
 
     public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
-
-    public static final Block CONST = new Block(true);
 
     public static final Comparator<Block> Y_AXIS_COMP = new Comparator<Block>() {
         @Override
@@ -274,10 +271,6 @@ public class Block extends Model {
         return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
-    public static List<Integer> getConstFaceIndices(int faceNum) {
-        return CONST.indices.subList(6 * faceNum, 6 * (faceNum + 1));
-    }
-
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
         boolean bool = false;
         int counter = 0;
@@ -433,10 +426,6 @@ public class Block extends Model {
         return enabledFaces;
     }
 
-    public Map<Integer, Integer> getAdjacentBlockMap() {
-        return adjacentBlockMap;
-    }
-
     public boolean isVerticesReversed() {
         return verticesReversed;
     }
@@ -483,19 +472,19 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
-    public int[] getAdjacentFreeFaceNumbers() {
-        int[] result = new int[6 - adjacentBlockMap.size()];
-        int face = -1;
-        for (int i = 0; i <= 5; i++) {
-            if (adjacentBlockMap.get(i) == null) {
-                result[++face] = i;
+    public List<Integer> getAdjacentFreeFaceNumbers(Map<Vector3f, Integer> solidMap, Map<Vector3f, Integer> fluidMap) {
+        List<Integer> result = new ArrayList<>();
+        for (int j = 0; j <= 5; j++) {
+            Vector3f adjPos = getAdjacentPos(j);
+            if (solidMap.get(adjPos) == null && fluidMap.get(adjPos) == null) {
+                result.add(j);
             }
         }
         return result;
     }
 
     // assuming that blocks are the same scale
-    public Vector3f getAdjacentPos(Vector3f pos, int faceNum) {
+    public Vector3f getAdjacentPos(int faceNum) {
         Vector3f result = new Vector3f();
         result.x = pos.x;
         result.y = pos.y;
@@ -527,4 +516,93 @@ public class Block extends Model {
         return result;
     }
 
+    // assuming that blocks are the same scale
+    public static Vector3f getAdjacentPos(Vector3f pos, int faceNum) {
+        Vector3f result = new Vector3f();
+        result.x = pos.x;
+        result.y = pos.y;
+        result.z = pos.z;
+
+        switch (faceNum) {
+            case Block.LEFT:
+                result.x -= 2.0f;
+                break;
+            case Block.RIGHT:
+                result.x += 2.0f;
+                break;
+            case Block.BOTTOM:
+                result.y -= 2.0f;
+                break;
+            case Block.TOP:
+                result.y += 2.0f;
+                break;
+            case Block.BACK:
+                result.z -= 2.0f;
+                break;
+            case Block.FRONT:
+                result.z += 2.0f;
+                break;
+            default:
+                break;
+        }
+
+        return result;
+    }
+
+    public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
+        boolean ints = false;
+        Vector3f[] vertices = {
+            // front
+            new Vector3f(-1.0f, -1.0f, 1.0f),
+            new Vector3f(1.0f, -1.0f, 1.0f),
+            new Vector3f(1.0f, 1.0f, 1.0f),
+            new Vector3f(-1.0f, 1.0f, 1.0f),
+            // back
+            new Vector3f(-1.0f, -1.0f, -1.0f),
+            new Vector3f(1.0f, -1.0f, -1.0f),
+            new Vector3f(1.0f, 1.0f, -1.0f),
+            new Vector3f(-1.0f, 1.0f, -1.0f)
+        };
+        int indices[] = {
+            // front
+            0, 1, 2,
+            2, 3, 0,
+            // right
+            1, 5, 6,
+            6, 2, 1,
+            // back
+            7, 6, 5,
+            5, 4, 7,
+            // left
+            4, 0, 3,
+            3, 7, 4,
+            // bottom
+            4, 5, 1,
+            1, 0, 4,
+            // top
+            3, 2, 6,
+            6, 7, 3
+        };
+        for (int i = 0; i < indices.length; i += 3) {
+            Vector3f a = vertices[indices[i]];
+            Vector3f b = vertices[indices[i + 1]];
+            Vector3f c = vertices[indices[i + 2]];
+
+            Vector3f n = new Vector3f(); // normal of the plane
+            GeometryUtils.normal(a, b, c, n);
+
+            Vector3f temp = new Vector3f();
+            // we choose to use point a (we could used b or c too)
+            Vector3f x0 = a.add(blockPos, temp); // point on the plane translated
+            if (l.dot(n) != 0.0f) {
+                float d = x0.sub(l0).dot(n) / l.dot(n);
+                Vector3f x = l.mul(d, temp).add(l0, temp);
+                if (containsInsideEqually(blockPos, 2.0f, 2.0f, 2.0f, x)) {
+                    ints = true;
+                    break;
+                }
+            }
+        }
+        return ints;
+    }
 }

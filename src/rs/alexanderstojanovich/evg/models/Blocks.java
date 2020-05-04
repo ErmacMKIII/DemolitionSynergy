@@ -43,17 +43,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    private final int[] vboEntries = new int[65536];
-    private final int[] ibos = new int[65536];
-    public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
+    private final List<Integer> vboEntries = new GapList<>();
+    private final List<Integer> ibos = new GapList<>();
     private boolean buffered = false;
 
     public void bufferVertices() { // call it before any rendering        
         FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
-        int blkIndex = 0;
         int offset = 0;
         for (Block block : blockList) {
-            vboEntries[blkIndex] = offset;
+            vboEntries.add(offset);
             for (int faceNum = 0; faceNum <= 5; faceNum++) {
                 if (block.getEnabledFaces()[faceNum]) {
                     for (Vertex vertex : block.getFaceVertices(faceNum)) { // for each vertex
@@ -69,7 +67,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     }
                 }
             }
-            blkIndex++;
         }
         bigFloatBuff.flip();
         bigVbo = GL15.glGenBuffers();
@@ -79,7 +76,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     public void bufferIndices() { // call it before any rendering
-        int blkIndex = 0;
         for (Block block : blockList) {
             List<Integer> indices = new ArrayList<>();
             for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
@@ -103,8 +99,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             // finally assigning it to the array element
-            ibos[blkIndex] = ibo;
-            blkIndex++;
+            ibos.add(ibo);
         }
     }
 
@@ -112,15 +107,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         bufferVertices();
         bufferIndices();
         buffered = true;
-    }
-
-    public static IntBuffer getConstIntBuffer() {
-        IntBuffer intBuff = BufferUtils.createIntBuffer(Block.INDICES_COUNT);
-        for (Integer index : Block.CONST.indices) {
-            intBuff.put(index);
-        }
-        intBuff.flip();
-        return intBuff;
     }
 
     public void animate() { // call only for fluid blocks
@@ -174,13 +160,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
                 }
 
-                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos[blkIndex]);
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,
                         Block.INDICES_COUNT,
                         GL11.GL_UNSIGNED_INT,
                         0,
-                        vboEntries[blkIndex]
+                        vboEntries.get(blkIndex)
                 );
 
                 Texture.unbind(0);
@@ -237,13 +223,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
-                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos[blkIndex]);
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
                     GL32.glDrawElementsBaseVertex(
                             GL11.GL_TRIANGLES,
                             Block.INDICES_COUNT,
                             GL11.GL_UNSIGNED_INT,
                             0,
-                            vboEntries[blkIndex]
+                            vboEntries.get(blkIndex)
                     );
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
                     Texture.unbind(0);
@@ -289,11 +275,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         this.cameraInFluid = cameraInFluid;
     }
 
-    public int[] getVboEntries() {
+    public List<Integer> getVboEntries() {
         return vboEntries;
     }
 
-    public int[] getIbos() {
+    public List<Integer> getIbos() {
         return ibos;
     }
 

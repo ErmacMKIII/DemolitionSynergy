@@ -48,7 +48,7 @@ public class WaterRenderer {
         this.camera = new Camera();
     }
 
-    private void refresh() {
+    public void refresh() { // call this in update (renderer)
         Vector3f obsCameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f obsCameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
         float obsHeight = obsCameraPos.y;
@@ -57,8 +57,9 @@ public class WaterRenderer {
         if (currChunk != null) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : currChunk.getTupleList()) {
                 for (Block fluidBlock : tuple.getA().getBlockList()) {
-                    float waterHeight = fluidBlock.giveSurfacePos();
-                    Integer topSolidBlockHashCode = fluidBlock.getAdjacentBlockMap().get(Block.TOP);
+                    float waterHeight = fluidBlock.getSurfaceY();
+                    Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
+                    Integer topSolidBlockHashCode = levelContainer.getSolidChunks().getPosMap().get(topPos);
                     if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                             && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
                             && topSolidBlockHashCode == null // it must be nothing on top of it
@@ -103,7 +104,7 @@ public class WaterRenderer {
         frameBuffer.bind();
 
         prepare();
-        refresh();
+        // refresh is called from the update (renderer)
 
         for (float height : waterHeights) {
             capture(height);

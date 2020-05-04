@@ -16,10 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
@@ -37,83 +38,12 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    private void addNeighbors(Block block) { // called for all blocks before adding        
-        Integer hashCode = block.hashCode();
-        for (int j = 0; j <= 5; j++) { // j - facenum            
-            // updating neighbor from adding block perspective 
-            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-            // whether or not neighbor is found on that side
-            boolean hasNeighbor = true;
-            if (hashCode1 == null && hashCode2 == null) {
-                hasNeighbor = false;
-                block.getAdjacentBlockMap().remove(j);
-            } else if (hashCode1 != null && hashCode2 == null) {
-                block.getAdjacentBlockMap().put(j, hashCode1);
-            } else if (hashCode1 == null && hashCode2 != null) {
-                block.getAdjacentBlockMap().put(j, hashCode2);
-            }
-            if (hasNeighbor) { // this is to be reasonable with heavy loop
-                // updating neighbor from other blocks perspective
-                int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
-                Chunk chunk = getChunk(otherBlockChunkId);
-                if (chunk != null) {
-                    for (Block otherBlock : chunk.getList()) {
-                        if (otherBlock.pos.equals(otherBlockPos)) {
-                            // ok we found out which at which side
-                            otherBlock.getAdjacentBlockMap().put(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                            break; // goal reached, now leave
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void removeNeighbors(Block block) { // called for all blocks before removing       
-        Integer hashCode = block.hashCode();
-        for (int j = 0; j <= 5; j++) { // j - facenum
-            // updating neighbor from removing block perspective 
-            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-            // whether or not neighbor is found on that side
-            boolean hasNeighbor = true;
-            if (hashCode1 == null && hashCode2 == null) {
-                hasNeighbor = false;
-                block.getAdjacentBlockMap().remove(j);
-            } else if (hashCode1 != null && hashCode2 == null) {
-                block.getAdjacentBlockMap().remove(j, hashCode1);
-            } else if (hashCode1 == null && hashCode2 != null) {
-                block.getAdjacentBlockMap().remove(j, hashCode2);
-            }
-            // updating neighbor from other blocks perspective
-            int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
-            Chunk chunk = getChunk(otherBlockChunkId);
-            if (hasNeighbor) { // this is to be reasonable with heavy loop
-                if (chunk != null) {
-                    for (Block otherBlock : chunk.getList()) {
-                        if (otherBlock.pos.equals(otherBlockPos)) {
-                            // ok we found out which at which side
-                            otherBlock.getAdjacentBlockMap().remove(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                            break; // goal reached, now leave
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //----------------Vector3f hash, Block hash---------------------------------
+    private final Map<Vector3f, Integer> posMap = new HashMap<>();
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.getPOS_SOLID_MAP().put(block.pos, block.hashCode());
-        } else {
-            LevelContainer.getPOS_FLUID_MAP().put(block.pos, block.hashCode());
-        }
-
-        addNeighbors(block);
+        posMap.put(block.pos, block.hashCode());
 
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -139,13 +69,7 @@ public class Chunks {
 
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.getPOS_SOLID_MAP().remove(block.pos);
-        } else {
-            LevelContainer.getPOS_FLUID_MAP().remove(block.pos);
-        }
-
-        removeNeighbors(block);
+        posMap.remove(block.pos);
 
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -195,9 +119,8 @@ public class Chunks {
             fluidBlock.enableAllFaces(false);
             int faceBitsBefore = fluidBlock.getFaceBits();
             for (int j = 0; j <= 5; j++) { // j - face number
-                Integer hash1 = fluidBlock.getAdjacentBlockMap().get(j);
-                Integer hash2 = LevelContainer.getPOS_FLUID_MAP().get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
-                if (hash1 != null && hash1.equals(hash2)) {
+                Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
+                if (hash != null) {
                     fluidBlock.disableFace(j, false);
                 }
             }
@@ -219,15 +142,8 @@ public class Chunks {
         return result;
     }
 
-    public void bufferAll() {
-        for (Chunk chunk : chunkList) {
-            chunk.bufferAll();
-        }
-        buffered = true;
-    }
-
     public void animate() { // call only for fluid blocks
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : getChunkList()) {
             chunk.animate();
         }
     }
@@ -239,8 +155,9 @@ public class Chunks {
     }
 
     // for each instanced rendering
+    @Deprecated
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : chunkList) {
             chunk.render(shaderProgram, lightSrc);
         }
     }
@@ -263,25 +180,6 @@ public class Chunks {
         return result;
     }
 
-    public List<Chunk> getVisibleChunks() {
-        List<Chunk> result = new GapList<>();
-        for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
-                result.add(chunk);
-            }
-        }
-        return result;
-    }
-
-    // all visible blocks from all the chunks in one big list
-    public List<Block> getTotalVisibleList() {
-        List<Block> result = new GapList<>();
-        for (Chunk chunk : getVisibleChunks()) {
-            result.addAll(chunk.getList());
-        }
-        return result;
-    }
-
     public List<Chunk> getChunkList() {
         return chunkList;
     }
@@ -292,17 +190,22 @@ public class Chunks {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : getChunkList()) {
             chunk.setBuffered(buffered);
         }
     }
 
+    @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : getChunkList()) {
             for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : chunk.getTupleList()) {
                 tuple.getA().setCameraInFluid(cameraInFluid);
             }
         }
+    }
+
+    public Map<Vector3f, Integer> getPosMap() {
+        return posMap;
     }
 
 }

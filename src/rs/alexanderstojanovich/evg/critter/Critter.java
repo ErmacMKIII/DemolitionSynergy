@@ -71,6 +71,4 @@ public interface Critter { // interface for Observer, Player and NPC
 
     public Vector3f getPredictor();
 
-    public Model getPredModel();
-
 }
