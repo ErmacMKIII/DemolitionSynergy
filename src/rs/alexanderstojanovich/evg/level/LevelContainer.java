@@ -506,12 +506,12 @@ public class LevelContainer implements GravityEnviroment {
 
     public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
-        coll = (!SKYBOX.containsInside(critter.getPredictor())
+        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
 
         for (Vector3f solidPos : solidChunks.getPosMap().keySet()) {
-            if (Model.containsInside(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+            if (Model.containsInsideExactly(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
                     || Model.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
                             critter.getModel().getHeight(), critter.getModel().getDepth(), solidPos, 2.0f, 2.0f, 2.0f)) {
                 coll = true;
@@ -538,7 +538,7 @@ public class LevelContainer implements GravityEnviroment {
                     break;
                 }
             }
-            boolean inSkybox = LevelContainer.SKYBOX.containsInside(bottom);
+            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
             if (!massBelow && inSkybox) {
                 solidBlockPos.y -= value;
             }

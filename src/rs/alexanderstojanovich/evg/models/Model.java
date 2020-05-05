@@ -410,7 +410,7 @@ public class Model implements Comparable<Model> {
         depth = Math.abs(zMax - zMin) * scale;
     }
 
-    public boolean containsInside(Vector3f x) {
+    public boolean containsInsideExactly(Vector3f x) {
         boolean ints = false;
         boolean boolX = x.x > pos.x - width / 2.0f && x.x < pos.x + width / 2.0f;
         boolean boolY = x.y > pos.y - height / 2.0f && x.y < pos.y + height / 2.0f;
@@ -419,7 +419,7 @@ public class Model implements Comparable<Model> {
         return ints;
     }
 
-    public static boolean containsInside(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth, Vector3f x) {
+    public static boolean containsInsideExactly(Vector3f modelPos, float modelWidth, float modelHeight, float modelDepth, Vector3f x) {
         boolean ints = false;
         boolean boolX = x.x > modelPos.x - modelWidth / 2.0f && x.x < modelPos.x + modelWidth / 2.0f;
         boolean boolY = x.y > modelPos.y - modelHeight / 2.0f && x.y < modelPos.y + modelHeight / 2.0f;
