@@ -251,6 +251,16 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
+    public void release() {
+        if (buffered) {
+            GL15.glDeleteBuffers(bigVbo);
+            for (Integer ibo : ibos) {
+                GL15.glDeleteBuffers(ibo);
+            }
+        }
+        buffered = false;
+    }
+
     public boolean isBuffered() {
         return buffered;
     }

@@ -61,6 +61,8 @@ public class Chunk {
 
     private boolean buffered = false;
 
+    private boolean visible = false;
+
     public Chunk(int id) {
         this.id = id;
     }
@@ -150,7 +152,7 @@ public class Chunk {
 
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty()) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && visible) {
             Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
@@ -237,6 +239,18 @@ public class Chunk {
 
             Texture.disable();
         }
+    }
+
+    // deallocates Chunk from graphic card
+    public void release() {
+        //--------------------------A--------B--------C-------D--------E-----------------------------
+        //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
+        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+            GL15.glDeleteBuffers(tuple.getA().getBigVbo());
+            GL15.glDeleteBuffers(tuple.getB());
+            GL15.glDeleteBuffers(tuple.getC());
+        }
+        buffered = false;
     }
 
     // determine chunk
@@ -343,6 +357,14 @@ public class Chunk {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
 }

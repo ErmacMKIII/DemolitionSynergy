@@ -354,6 +354,14 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
+    public void release() {
+        if (buffered) {
+            GL15.glDeleteBuffers(vbo);
+            GL15.glDeleteBuffers(ibo);
+        }
+        buffered = false;
+    }
+
     public void calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos);
         Matrix4f rotationMatrix = new Matrix4f().setRotationXYZ(rX, rY, rZ);

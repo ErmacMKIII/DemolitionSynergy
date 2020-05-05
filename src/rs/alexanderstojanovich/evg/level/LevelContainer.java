@@ -121,9 +121,6 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        solidChunks.setBuffered(false);
-        fluidChunks.setBuffered(false);
-
         levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
         levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
@@ -558,14 +555,12 @@ public class LevelContainer implements GravityEnviroment {
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
         for (Integer i : visibleChunks) {
             Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null && !visibleChunks.contains(i)) {
-                solidChunk.setBuffered(false);
+            if (solidChunk != null) {
+                solidChunk.setVisible(visibleChunks.contains(i));
             }
             Chunk fluidChunk = fluidChunks.getChunk(i);
             if (fluidChunk != null) {
-                if (!visibleChunks.contains(i)) {
-                    fluidChunk.setBuffered(false);
-                }
+                fluidChunk.setVisible(visibleChunks.contains(i));
                 fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
@@ -593,20 +588,22 @@ public class LevelContainer implements GravityEnviroment {
         obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
         ShaderProgram.unbind();
 
-        // render blocks        
-        for (Integer i : visibleChunks) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                if (!solidChunk.isBuffered()) {
-                    solidChunk.bufferAll();
-                }
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
+                solidChunk.bufferAll();
+            } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
+                solidChunk.release();
+            } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
                 solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
             }
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                if (!fluidChunk.isBuffered()) {
-                    fluidChunk.bufferAll();
-                }
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
+                fluidChunk.bufferAll();
+            } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
+                fluidChunk.release();
+            } else if (fluidChunk.isVisible() && fluidChunk.isVisible()) {
                 fluidChunk.prepare();
                 fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
             }
@@ -636,19 +633,22 @@ public class LevelContainer implements GravityEnviroment {
         ShaderProgram.unbind();
 
         // render blocks
-        for (Integer i : visibleChunks) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                if (!solidChunk.isBuffered()) {
-                    solidChunk.bufferAll();
-                }
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
+                solidChunk.bufferAll();
+            } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
+                solidChunk.release();
+            } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
                 solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
             }
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                if (!fluidChunk.isBuffered()) {
-                    fluidChunk.bufferAll();
-                }
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
+                fluidChunk.bufferAll();
+            } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
+                fluidChunk.release();
+            } else if (fluidChunk.isVisible() && fluidChunk.isVisible()) {
                 fluidChunk.prepare();
                 fluidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
             }

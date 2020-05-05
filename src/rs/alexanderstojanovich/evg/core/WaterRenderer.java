@@ -17,17 +17,14 @@
 package rs.alexanderstojanovich.evg.core;
 
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
  *
@@ -55,24 +52,22 @@ public class WaterRenderer {
         int currChunkId = Chunk.chunkFunc(obsCameraPos, obsCameraFront);
         Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
         if (currChunk != null) {
-            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : currChunk.getTupleList()) {
-                for (Block fluidBlock : tuple.getA().getBlockList()) {
-                    float waterHeight = fluidBlock.getSurfaceY();
-                    Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
-                    Integer topSolidBlockHashCode = levelContainer.getSolidChunks().getPosMap().get(topPos);
-                    if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
-                            && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
-                            && topSolidBlockHashCode == null // it must be nothing on top of it
-                            && waterHeight <= obsHeight) { // and it needs to be below the observer
-                        fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
-                        currChunk.setWaterTexture(frameBuffer.getTexture());
-                        if (!waterHeights.contains(waterHeight)) {
-                            waterHeights.add(waterHeight);
-                        }
-                    } else {
-                        waterHeights.remove(waterHeight);
-                        fluidBlock.setTertiaryTexture(null);
+            for (Block fluidBlock : currChunk.getList()) {
+                float waterHeight = fluidBlock.getSurfaceY();
+                Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
+                Integer topSolidBlockHashCode = levelContainer.getSolidChunks().getPosMap().get(topPos);
+                if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
+                        && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
+                        && topSolidBlockHashCode == null // it must be nothing on top of it
+                        && waterHeight <= obsHeight) { // and it needs to be below the observer
+                    fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
+                    currChunk.setWaterTexture(frameBuffer.getTexture());
+                    if (!waterHeights.contains(waterHeight)) {
+                        waterHeights.add(waterHeight);
                     }
+                } else {
+                    waterHeights.remove(waterHeight);
+                    fluidBlock.setTertiaryTexture(null);
                 }
             }
         }
