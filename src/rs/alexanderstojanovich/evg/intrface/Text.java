@@ -138,9 +138,10 @@ public class Text {
         this.enabled = enabled;
     }
 
-//    public Quad getQuad() {
-//        return quad;
-//    }
+    public Quad getQuad() {
+        return quad;
+    }
+
     public Vector2f getOffset() {
         return offset;
     }
