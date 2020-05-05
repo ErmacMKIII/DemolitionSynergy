@@ -112,6 +112,7 @@ public class Commands {
                         success = true;
                     }
                     break;
+                case "waterEffects":
                 case "water_effects":
                     if (things.length == 2) {
                         if (Boolean.parseBoolean(things[1])) {

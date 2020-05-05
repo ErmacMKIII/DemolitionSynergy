@@ -43,8 +43,13 @@ public class Console {
 
     private final Commands commands;
 
+    public static final int HISTORY_CAPACITY = 12;
+
+    private final Object objMutex;
+
     public Console(Window myWindow, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
+        this.objMutex = objMutex;
         this.panel = new Quad(myWindow, myWindow.getWidth(), myWindow.getHeight() / 2, Texture.CONSOLE);
         this.panel.setColor(new Vector3f(0.25f, 0.5f, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
@@ -102,7 +107,14 @@ public class Console {
                             text.pos = new Vector2f(inText.pos);
                             text.pos.y += text.getRelativeCharHeight() * Text.LINE_SPACING;
                             text.setOffset(new Vector2f(1.0f, 0.0f));
-                            history.add(text);
+                            history.add(0, text);
+
+                            synchronized (objMutex) {
+                                if (history.size() == HISTORY_CAPACITY) {
+                                    history.remove(history.size() - 1);
+                                }
+                            }
+
                             input.setLength(0);
                             inText.setContent("]_");
                         }
@@ -137,7 +149,7 @@ public class Console {
             int index = 0;
             DynamicText prevItem = null;
             for (DynamicText item : history) {
-                item.pos.x = -1.0f;;
+                item.pos.x = -1.0f;
                 if (index == 0) {
                     item.pos.y = inText.pos.y + item.getRelativeCharHeight() * Text.LINE_SPACING;
                 } else if (prevItem != null) {
@@ -152,4 +164,37 @@ public class Console {
             }
         }
     }
+
+    public Window getMyWindow() {
+        return myWindow;
+    }
+
+    public Quad getPanel() {
+        return panel;
+    }
+
+    public StringBuilder getInput() {
+        return input;
+    }
+
+    public DynamicText getInText() {
+        return inText;
+    }
+
+    public List<DynamicText> getHistory() {
+        return history;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public Commands getCommands() {
+        return commands;
+    }
+
+    public Object getObjMutex() {
+        return objMutex;
+    }
+
 }

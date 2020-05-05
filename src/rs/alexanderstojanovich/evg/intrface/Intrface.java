@@ -138,7 +138,7 @@ public class Intrface {
                 }
             }
         };
-        Quad logo = new Quad(myWindow, 180, 100, Texture.LOGO);
+        Quad logo = new Quad(myWindow, 232, 100, Texture.LOGO);
         logo.getColor().x = 1.0f;
         logo.getColor().y = 0.7f;
         logo.getColor().z = 0.1f;
