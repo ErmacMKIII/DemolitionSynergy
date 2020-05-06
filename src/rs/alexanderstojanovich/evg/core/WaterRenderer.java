@@ -16,9 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.ArrayDeque;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -34,7 +35,7 @@ public class WaterRenderer {
 
     private final Window myWindow;
     private final LevelContainer levelContainer;
-    private final List<Float> waterHeights = new ArrayList<>();
+    private final Queue<Float> waterHeights = new ArrayDeque<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
 
@@ -46,6 +47,12 @@ public class WaterRenderer {
     }
 
     public void refresh() { // call this in update (renderer)
+        if (levelContainer.isWorking()
+                || levelContainer.getProgress() > 0.0f
+                || levelContainer.getLevelActors().getPlayer() == null) {
+            return; // don't update if working, it may screw up!
+        }
+
         Vector3f obsCameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f obsCameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
         float obsHeight = obsCameraPos.y;
@@ -98,11 +105,14 @@ public class WaterRenderer {
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         frameBuffer.bind();
 
-        prepare();
+        if (!waterHeights.isEmpty()) {
+            prepare();
+        }
         // refresh is called from the update (renderer)
 
-        for (float height : waterHeights) {
-            capture(height);
+        Float waterHeight;
+        while ((waterHeight = waterHeights.poll()) != null) {
+            capture(waterHeight);
         }
 
         frameBuffer.unbind();
@@ -117,7 +127,7 @@ public class WaterRenderer {
         return levelContainer;
     }
 
-    public List<Float> getWaterHeights() {
+    public Queue<Float> getWaterHeights() {
         return waterHeights;
     }
 
