@@ -96,10 +96,10 @@ public class Renderer extends Thread {
                 break;
             }
 
-            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0) {
-                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                    synchronized (objMutex) {
-                        myWindow.loadContext();
+            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0 && fpsTicks > 1.0) {
+                synchronized (objMutex) {
+                    myWindow.loadContext();
+                    while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                         MasterRenderer.render(); // it clears color bit and depth buffer bit
                         if (!levelContainer.isWorking()) {
                             levelContainer.render();
@@ -121,10 +121,10 @@ public class Renderer extends Thread {
                         fps++;
                         fpsTicks--;
                         renPasses++;
-                        Window.unloadContext();
                     }
+                    renPasses = 0;
+                    Window.unloadContext();
                 }
-                renPasses = 0;
             }
 
             // update text which shows ups and fps every second

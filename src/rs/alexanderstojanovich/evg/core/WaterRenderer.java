@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.util.ArrayDeque;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import java.util.List;
 import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
