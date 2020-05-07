@@ -29,8 +29,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class RandomLevelGenerator {
 
-    private final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f);
-    private final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f);
+    private final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f - 2.0f);
+    private final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f + 2.0f);
 
     private final Random random = new Random(0x123456789L);
 

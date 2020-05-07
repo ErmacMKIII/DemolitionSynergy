@@ -46,7 +46,7 @@ public class Chunk {
 
     // A, B, C are used in chunkFunc and for determining visible chunks
     public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
-    public static final int B = A >> 4; // divider    
+    public static final int B = 16; // divider (number of chunks is calculated as 2 * B + 1)   
     public static final float C = 1.5f * B; // determines visibility
 
     // id of the chunk (signed)
@@ -255,18 +255,18 @@ public class Chunk {
 
     // determine chunk
     public static int chunkFunc(Vector3f pos) {
-        float x = Math.round((pos.x % A) / B);
-        float y = Math.round((pos.y % A) / B);
-        float z = Math.round((pos.z % A) / B);
+        float x = Math.round((pos.x % (A + 1)) / B);
+        float y = Math.round((pos.y % (A + 1)) / B);
+        float z = Math.round((pos.z % (A + 1)) / B);
 
         return Math.round(((x + y + z) / 3.0f));
     }
 
     // determine chunk
     public static int chunkFunc(Vector3f pos, Vector3f front) {
-        float x = Math.round(((pos.x + pos.length() * front.x) % A) / B);
-        float y = Math.round(((pos.y + pos.length() * front.y) % A) / B);
-        float z = Math.round(((pos.z + pos.length() * front.z) % A) / B);
+        float x = Math.round(((pos.x + Math.signum(pos.x) * B * front.x) % (A + 1)) / B);
+        float y = Math.round(((pos.y + Math.signum(pos.y) * B * front.y) % (A + 1)) / B);
+        float z = Math.round(((pos.z + Math.signum(pos.z) * B * front.z) % (A + 1)) / B);
 
         return Math.round(((x + y + z) / 3.0f));
     }

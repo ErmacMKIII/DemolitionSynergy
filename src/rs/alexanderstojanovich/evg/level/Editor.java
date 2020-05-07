@@ -58,9 +58,9 @@ public class Editor {
         final float skyboxWidth = LevelContainer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
         // and make it follows player camera        
-        selectedNew.getPos().x = (Math.round(8.0f * front.x) + Math.round(pos.x)) % Math.round(skyboxWidth);
-        selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(skyboxWidth);
-        selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth);
+        selectedNew.getPos().x = (Math.round(8.0f * front.x) + Math.round(pos.x)) % Math.round(skyboxWidth + 1);
+        selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(skyboxWidth + 1);
+        selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(levelContainer)) {
             selectedNew.getSecondaryColor().x = 0.0f;
@@ -77,39 +77,36 @@ public class Editor {
         deselect();
         Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
-        float minDistanceOfSolid = Float.POSITIVE_INFINITY;
-        Vector3f targetSolidPos = null;
-        for (Vector3f solidPos : levelContainer.getSolidChunks().getPosMap().keySet()) {
-            if (Block.intersectsRay(solidPos, cameraFront, cameraPos)) {
-                float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, solidPos.x, solidPos.y, solidPos.z);
-                if (distance < minDistanceOfSolid) {
-                    minDistanceOfSolid = distance;
-                    targetSolidPos = solidPos;
-                }
-            }
-        }
-        if (targetSolidPos == null) {
-            return;
-        }
-        int chunkId = Chunk.chunkFunc(targetSolidPos);
-        Chunk solidChunk = levelContainer.getSolidChunks().getChunk(chunkId);
-        if (solidChunk != null) {
+        float minDistanceOfSolid = Chunk.C;
+        int currChunkId = Chunk.chunkFunc(cameraPos, cameraFront);
+        Chunk currSolidChunk = levelContainer.getSolidChunks().getChunk(currChunkId);
+
+        int solidTargetIndex = -1;
+        if (currSolidChunk != null) {
             int solidBlkIndex = 0;
-            for (Block solidBlock : solidChunk.getList()) {
-                if (solidBlock.getPos().equals(targetSolidPos)) {
-                    selectedCurr = solidBlock;
-
-                    selectedCurr.getSecondaryColor().x = 1.0f;
-                    selectedCurr.getSecondaryColor().y = 1.0f;
-                    selectedCurr.getSecondaryColor().z = 0.0f;
-                    selectedCurr.getSecondaryColor().w = 1.0f;
-
-                    selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
-
-                    selectedCurrIndex = solidBlkIndex;
-                    break;
+            for (Block solidBlock : currSolidChunk.getList()) {
+                if (Block.intersectsRay(solidBlock.getPos(), cameraFront, cameraPos)) {
+                    float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
+                            solidBlock.getPos().x, solidBlock.getPos().y, solidBlock.getPos().z);
+                    if (distance < minDistanceOfSolid) {
+                        minDistanceOfSolid = distance;
+                        solidTargetIndex = solidBlkIndex;
+                    }
                 }
                 solidBlkIndex++;
+            }
+
+            if (solidTargetIndex != -1) {
+                selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
+
+                selectedCurr.getSecondaryColor().x = 1.0f;
+                selectedCurr.getSecondaryColor().y = 1.0f;
+                selectedCurr.getSecondaryColor().z = 0.0f;
+                selectedCurr.getSecondaryColor().w = 1.0f;
+
+                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+
+                selectedCurrIndex = solidBlkIndex;
             }
         }
     }
@@ -118,41 +115,36 @@ public class Editor {
         deselect();
         Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
-        float minDistanceOfFluid = Float.POSITIVE_INFINITY;
-        Vector3f targetFluidPos = null;
-        for (Vector3f fluidPos : levelContainer.getFluidChunks().getPosMap().keySet()) {
-            if (Block.intersectsRay(fluidPos, cameraFront, cameraPos)) {
-                float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z, fluidPos.x, fluidPos.y, fluidPos.z);
-                if (distance < minDistanceOfFluid) {
-                    minDistanceOfFluid = distance;
-                    targetFluidPos = fluidPos;
+        float minDistanceOfFluid = Chunk.C;
+        int currChunkId = Chunk.chunkFunc(cameraPos, cameraFront);
+        Chunk currFluidChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+
+        int fluidTargetIndex = -1;
+        if (currFluidChunk != null) {
+            int fluidBlkIndex = 0;
+            for (Block fluidBlock : currFluidChunk.getList()) {
+                if (Block.intersectsRay(fluidBlock.getPos(), cameraFront, cameraPos)) {
+                    float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
+                            fluidBlock.getPos().x, fluidBlock.getPos().y, fluidBlock.getPos().z);
+                    if (distance < minDistanceOfFluid) {
+                        minDistanceOfFluid = distance;
+                        fluidTargetIndex = fluidBlkIndex;
+                    }
                 }
+                fluidBlkIndex++;
             }
-        }
-        if (targetFluidPos == null) {
-            return;
-        }
-        int chunkId = Chunk.chunkFunc(targetFluidPos);
-        Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(chunkId);
-        if (fluidChunk != null) {
-            int solidBlkIndex = 0;
-            for (Block fluidBLock : fluidChunk.getList()) {
-                if (fluidBLock.getPos().equals(targetFluidPos)) {
-                    selectedCurr = fluidBLock;
 
-                    selectedCurr.getSecondaryColor().x = 1.0f;
-                    selectedCurr.getSecondaryColor().y = 1.0f;
-                    selectedCurr.getSecondaryColor().z = 0.0f;
-                    selectedCurr.getSecondaryColor().w = 1.0f;
+            if (fluidTargetIndex != -1) {
+                selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
 
-                    selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedCurr.getSecondaryColor().x = 1.0f;
+                selectedCurr.getSecondaryColor().y = 1.0f;
+                selectedCurr.getSecondaryColor().z = 0.0f;
+                selectedCurr.getSecondaryColor().w = 1.0f;
 
-                    selectedCurrIndex = solidBlkIndex;
+                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
 
-                    selectedCurr.enableAllFaces(false);
-                    break;
-                }
-                solidBlkIndex++;
+                selectedCurrIndex = fluidBlkIndex;
             }
         }
     }
@@ -269,20 +261,26 @@ public class Editor {
                 || levelContainer.getFluidChunks().getPosMap().get(selectedNew.getPos()) != null;
         //----------------------------------------------------------------------
         boolean intsSolid = false;
-        for (Vector3f solidPos : levelContainer.getSolidChunks().getPosMap().keySet()) {
-            intsSolid = selectedNew.intersectsExactly(solidPos, 2.0f, 2.0f, 2.0f);
-            if (intsSolid) {
-                break;
+        int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
+        Chunk currSolidChunk = levelContainer.getSolidChunks().getChunk(currChunkId);
+        if (currSolidChunk != null) {
+            for (Block solidBlock : currSolidChunk.getList()) {
+                intsSolid = selectedNew.intersectsExactly(solidBlock);
+                if (intsSolid) {
+                    break;
+                }
             }
         }
-
         //----------------------------------------------------------------------
         boolean intsFluid = false;
         if (!intsSolid) {
-            for (Vector3f fluidPos : levelContainer.getFluidChunks().getPosMap().keySet()) {
-                intsFluid = selectedNew.intersectsExactly(fluidPos, 2.0f, 2.0f, 2.0f);
-                if (intsFluid) {
-                    break;
+            Chunk currFluidChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+            if (currFluidChunk != null) {
+                for (Block fluidBlock : currFluidChunk.getList()) {
+                    intsSolid = selectedNew.intersectsExactly(fluidBlock);
+                    if (intsFluid) {
+                        break;
+                    }
                 }
             }
         }

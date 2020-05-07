@@ -33,14 +33,11 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Blocks;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
-import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -60,8 +57,9 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
-    public static final float SKYBOX_WIDTH = 256.0f; // default 256
+    public static final float BASE = 11.0f;
+    public static final float SKYBOX_SCALE = BASE * BASE * BASE;
+    public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
@@ -77,16 +75,18 @@ public class LevelContainer implements GravityEnviroment {
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
+    static {
+        // setting SKYBOX     
+        SKYBOX.setPrimaryColor(SKYBOX_COLOR);
+        SKYBOX.setUVsForSkybox();
+        SKYBOX.setScale(SKYBOX_SCALE);
+    }
+
     public LevelContainer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
         this.musicPlayer = musicPlayer;
         this.soundFXPlayer = soundFXPlayer;
-        // setting SKYBOX        
-        SKYBOX.setPrimaryColor(SKYBOX_COLOR);
-        SKYBOX.setUVsForSkybox();
-        SKYBOX.setScale(SKYBOX_SCALE);
-        // setting observer        
     }
 
     public boolean startNewLevel() {
@@ -487,17 +487,18 @@ public class LevelContainer implements GravityEnviroment {
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
-        Chunk fluidChunk = fluidChunks.getChunk(Chunk.chunkFunc(obsCamPos));
-        if (fluidChunk != null) {
-            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : fluidChunk.getTupleList()) {
-                for (Block fluidBlock : tuple.getA().getBlockList()) {
-                    if (fluidBlock.containsInsideEqually(obsCamPos)) {
-                        yea = true;
-                        break;
-                    }
+
+        int currChunkId = Chunk.chunkFunc(obsCamPos);
+        Chunk currFluidChunk = fluidChunks.getChunk(currChunkId);
+        if (currFluidChunk != null) {
+            for (Block fluidBLock : currFluidChunk.getList()) {
+                if (fluidBLock.containsInsideEqually(obsCamPos)) {
+                    yea = true;
+                    break;
                 }
             }
         }
+
         return yea;
     }
 
@@ -507,12 +508,16 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
 
-        for (Vector3f solidPos : solidChunks.getPosMap().keySet()) {
-            if (Model.containsInsideExactly(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                    || Model.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                            critter.getModel().getHeight(), critter.getModel().getDepth(), solidPos, 2.0f, 2.0f, 2.0f)) {
-                coll = true;
-                break;
+        int currChunkId = Chunk.chunkFunc(critter.getPredictor());
+        Chunk currSolidChunk = solidChunks.getChunk(currChunkId);
+        if (currSolidChunk != null) {
+            for (Block solidBlock : currSolidChunk.getList()) {
+                if (solidBlock.containsInsideEqually(critter.getPredictor())
+                        || solidBlock.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                                critter.getModel().getHeight(), critter.getModel().getDepth())) {
+                    coll = true;
+                    break;
+                }
             }
         }
 
@@ -553,18 +558,15 @@ public class LevelContainer implements GravityEnviroment {
         Camera obsCamera = levelActors.getPlayer().getCamera();
         // is list of estimated visible chunks (by the camera pos and front)        
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-        for (Integer i : visibleChunks) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                solidChunk.setVisible(visibleChunks.contains(i));
-            }
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                fluidChunk.setVisible(visibleChunks.contains(i));
-                fluidChunk.setCameraInFluid(isCameraInFluid());
-            }
+
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
         }
 
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
+            fluidChunk.setCameraInFluid(isCameraInFluid());
+        }
 //        gravityDo(deltaTime);
     }
 

@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
@@ -40,6 +42,19 @@ public class Chunks {
 
     //----------------Vector3f hash, Block hash---------------------------------
     private final Map<Vector3f, Integer> posMap = new HashMap<>();
+
+    private static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
+        @Override
+        public int compare(Chunk o1, Chunk o2) {
+            if (o1.getId() > o2.getId()) {
+                return 1;
+            } else if (o1.getId() == o2.getId()) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    };
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
@@ -65,6 +80,8 @@ public class Chunks {
 
         tuple.getA().getBlockList().add(block);
         tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+
+        chunkList.sort(COMPARATOR);
     }
 
     // for removing blocks (Editor)
@@ -178,6 +195,21 @@ public class Chunks {
             result.addAll(chunk.getList());
         }
         return result;
+    }
+
+    public void printInfo() { // for debugging purposes
+        StringBuilder sb = new StringBuilder();
+        sb.append("CHUNKS\n");
+        sb.append("CHUNKS TOTAL SIZE = ").append(totalSize()).append("\n");
+        sb.append("NUMBER OF CHUNKS = ").append(chunkList.size()).append("\n");
+        sb.append("DETAILED INFO\n");
+        for (Chunk chunk : chunkList) {
+            sb.append("id = ").append(chunk.getId()).append(" size = ").append(chunk.size()).
+                    append(" visible = ").append(chunk.isVisible()).append(" buffered = ").append(chunk.isBuffered())
+                    .append("\n");
+        }
+        sb.append("------------------------------------------------------------");
+        DSLogger.reportInfo(sb.toString(), null);
     }
 
     public List<Chunk> getChunkList() {

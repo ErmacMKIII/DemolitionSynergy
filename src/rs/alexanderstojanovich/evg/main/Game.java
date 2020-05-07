@@ -66,7 +66,7 @@ public class Game {
     private final Window myWindow;
     private final Renderer renderer;
 
-    private final boolean[] keys = new boolean[1024];
+    private final boolean[] keys = new boolean[512];
 
     private static float lastX = 0.0f;
     private static float lastY = 0.0f;
@@ -387,7 +387,12 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_F3 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     renderer.getIntrface().getLoadDialog().open();
+                } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    renderer.getLevelContainer().getSolidChunks().printInfo();
+                    renderer.getLevelContainer().getFluidChunks().printInfo();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
                     File screenDir = new File(SCREENSHOTS);
                     if (!screenDir.isDirectory() && !screenDir.exists()) {
                         screenDir.mkdir();
@@ -496,7 +501,7 @@ public class Game {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * Game.TPS;
+            upsTicks += -Math.expm1(-diff * Game.TPS);
             lastTime = currTime;
 
             // Detecting critical status

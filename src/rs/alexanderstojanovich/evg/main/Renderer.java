@@ -47,7 +47,7 @@ public class Renderer extends Thread {
     private int fps = 0;
 
     private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 3;
+    public static final int REN_MAX_PASSES = 5;
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
@@ -86,7 +86,7 @@ public class Renderer extends Thread {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += diff * Game.getFpsMax();
+            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
             lastTime = currTime;
 
             // Detecting critical status
@@ -96,7 +96,7 @@ public class Renderer extends Thread {
                 break;
             }
 
-            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0 && fpsTicks > 1.0) {
+            if (Game.getUpdPasses() == 0 && fpsTicks >= 1.0) {
                 synchronized (objMutex) {
                     myWindow.loadContext();
                     while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
