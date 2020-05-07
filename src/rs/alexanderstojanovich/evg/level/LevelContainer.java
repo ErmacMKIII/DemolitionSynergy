@@ -217,7 +217,6 @@ public class LevelContainer implements GravityEnviroment {
             if (myWindow.shouldClose()) {
                 break;
             }
-
             byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
             System.arraycopy(texName, 0, buffer, pos, 5);
             pos += 5;
@@ -510,7 +509,7 @@ public class LevelContainer implements GravityEnviroment {
 
         int currChunkId = Chunk.chunkFunc(critter.getPredictor());
         Chunk currSolidChunk = solidChunks.getChunk(currChunkId);
-        if (currSolidChunk != null) {
+        if (currSolidChunk != null && !coll) {
             for (Block solidBlock : currSolidChunk.getList()) {
                 if (solidBlock.containsInsideEqually(critter.getPredictor())
                         || solidBlock.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),

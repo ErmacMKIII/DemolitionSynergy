@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Tuple;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -77,6 +78,33 @@ public class Chunk {
             }
         }
         return result;
+    }
+
+    public void addBlock(Block block) {
+        Texture blockTexture = block.primaryTexture;
+        int blockFaceBits = block.getFaceBits();
+        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = getTuple(blockTexture, blockFaceBits);
+
+        if (tuple == null) {
+            tuple = new Tuple<>(new Blocks(), 0, 0, blockTexture, blockFaceBits);
+            tupleList.add(tuple);
+        }
+
+        tuple.getA().getBlockList().add(block);
+        tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+    }
+
+    public void removeBlock(Block block) {
+        Texture blockTexture = block.primaryTexture;
+        int blockFaceBits = block.getFaceBits();
+        Tuple<Blocks, Integer, Integer, Texture, Integer> target = getTuple(blockTexture, blockFaceBits);
+        if (target != null) {
+            target.getA().getBlockList().remove(block);
+            // if tuple has no blocks -> remove it
+            if (target.getA().getBlockList().isEmpty()) {
+                tupleList.remove(target);
+            }
+        }
     }
 
     public void bufferVectors(Blocks blocks, int tupleIndex) {
@@ -333,6 +361,29 @@ public class Chunk {
             result.addAll(tuple.getA().getBlockList());
         }
         return result;
+    }
+
+    public byte[] toByteArray() {
+        List<Block> blocks = getList();
+        byte[] buffer = new byte[3 + blocks.size() * 29];
+        int pos = 0;
+        buffer[pos++] = (byte) id;
+        buffer[pos++] = (byte) blocks.size();
+        buffer[pos++] = (byte) (blocks.size() >> 8);
+        for (Block block : blocks) {
+            byte[] texName = block.getPrimaryTexture().getImage().getFileName().getBytes();
+            System.arraycopy(texName, 0, buffer, pos, 5);
+            pos += 5;
+            byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
+            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
+            pos += solidPos.length;
+            Vector4f primCol = block.getPrimaryColor();
+            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
+            pos += solidCol.length;
+        }
+        return buffer;
     }
 
     public int getId() {

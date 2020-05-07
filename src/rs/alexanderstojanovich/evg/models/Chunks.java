@@ -69,17 +69,7 @@ public class Chunks {
             chunkList.add(chunk);
         }
 
-        Texture blockTexture = block.primaryTexture;
-        int blockFaceBits = block.getFaceBits();
-        Tuple<Blocks, Integer, Integer, Texture, Integer> tuple = chunk.getTuple(blockTexture, blockFaceBits);
-
-        if (tuple == null) {
-            tuple = new Tuple<>(new Blocks(), 0, 0, blockTexture, blockFaceBits);
-            chunk.getTupleList().add(tuple);
-        }
-
-        tuple.getA().getBlockList().add(block);
-        tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+        chunk.addBlock(block);
 
         chunkList.sort(COMPARATOR);
     }
@@ -92,16 +82,7 @@ public class Chunks {
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
-            Texture blockTexture = block.primaryTexture;
-            int blockFaceBits = block.getFaceBits();
-            Tuple<Blocks, Integer, Integer, Texture, Integer> target = chunk.getTuple(blockTexture, blockFaceBits);
-            if (target != null) {
-                target.getA().getBlockList().remove(block);
-                // if tuple has no blocks -> remove it
-                if (target.getA().getBlockList().isEmpty()) {
-                    chunk.getTupleList().remove(target);
-                }
-            }
+            chunk.removeBlock(block);
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleList().isEmpty()) {
                 chunkList.remove(chunk);
