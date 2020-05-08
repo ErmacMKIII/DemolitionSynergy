@@ -331,6 +331,7 @@ public class Model implements Comparable<Model> {
                 secondaryTexture.bind(1, shaderProgram, "modelTexture1");
             }
             if (tertiaryTexture != null) { // this is reflective texture
+                    
                 tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
             }
         }
@@ -379,6 +380,10 @@ public class Model implements Comparable<Model> {
         shaderProgram.updateUniform(secondaryColor, "modelColor1");
     }
 
+    protected void tertiaryColor(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
+    }
+    
     protected void useLight(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(light, "modelLight");
     }

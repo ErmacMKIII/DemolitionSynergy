@@ -245,6 +245,7 @@ public class Chunk {
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
 
                     if (waterTexture != null && Game.isWaterEffects()) {
+                        shaderProgram.updateUniform(new Vector3f(1.0f , 1.0f, 1.0f), "modelColor2");
                         waterTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
