@@ -299,9 +299,12 @@ public class Chunk {
 
     // determine chunk
     public static int chunkFunc(Vector3f pos, Vector3f front) {
-        float x = Math.round(((pos.x + Math.signum(pos.x) * B * front.x) % (A + 1)) / B);
-        float y = Math.round(((pos.y + Math.signum(pos.y) * B * front.y) % (A + 1)) / B);
-        float z = Math.round(((pos.z + Math.signum(pos.z) * B * front.z) % (A + 1)) / B);
+        Vector3f temp = new Vector3f();
+        float product = pos.normalize(temp).dot(front);
+        
+        float x = Math.round(((pos.x * product) % (A + 1)) / B);
+        float y = Math.round(((pos.y * product) % (A + 1)) / B);
+        float z = Math.round(((pos.z * product) % (A + 1)) / B);
 
         return Math.round(((x + y + z) / 3.0f));
     }

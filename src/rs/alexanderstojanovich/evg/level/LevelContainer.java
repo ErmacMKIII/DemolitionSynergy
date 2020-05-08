@@ -58,7 +58,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 7.0f;
+    public static final float BASE = 6.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
