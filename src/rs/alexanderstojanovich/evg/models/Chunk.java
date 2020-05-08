@@ -48,7 +48,7 @@ public class Chunk {
     // A, B, C are used in chunkFunc and for determining visible chunks
     public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
     public static final int B = 24; // divider (number of chunks is calculated as 2 * B + 1)   
-    public static final float C = 50.0f; // determines visibility
+    public static final float C = 100.0f; // determines visibility
 
     // id of the chunk (signed)
     private final int id;

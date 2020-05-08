@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.joml.Vector3f;
@@ -561,22 +560,23 @@ public class LevelContainer implements GravityEnviroment {
 
         Camera obsCamera = levelActors.getPlayer().getCamera();
         // is list of estimated visible chunks (by the camera pos and front)        
+        
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-
-        for (int i = -Chunk.B; i <= Chunk.B; i++) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                solidChunk.setVisible(visibleChunks.contains(i));
+                
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk != null) {                
+                solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
                 if (solidChunk.isVisible() && solidChunk.isCached()) {
                     solidChunk.loadFromMemory();
                 } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
                     solidChunk.saveToMemory();
                 }
             }
-
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                fluidChunk.setVisible(visibleChunks.contains(i));
+        }
+        
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk != null) {                
+                fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
                 if (fluidChunk.isVisible() && fluidChunk.isCached()) {
                     fluidChunk.loadFromMemory();
                     fluidChunks.updateFluids(fluidChunk, true);
@@ -586,6 +586,7 @@ public class LevelContainer implements GravityEnviroment {
                 fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
+        
     }
 
     public void render() { // render for regular level rendering
