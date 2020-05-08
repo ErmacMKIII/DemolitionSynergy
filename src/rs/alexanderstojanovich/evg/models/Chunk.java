@@ -47,11 +47,13 @@ public class Chunk {
 
     // A, B, C are used in chunkFunc and for determining visible chunks
     public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
-    public static final int B = 16; // divider (number of chunks is calculated as 2 * B + 1)   
-    public static final float C = 1.5f * B; // determines visibility
+    public static final int B = 24; // divider (number of chunks is calculated as 2 * B + 1)   
+    public static final float C = 50.0f; // determines visibility
 
     // id of the chunk (signed)
     private final int id;
+    private final boolean solid;
+
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
     //--------------------------A--------B--------C-------D--------E-----------------------------
@@ -64,12 +66,13 @@ public class Chunk {
 
     private boolean visible = false;
 
-    private final byte[] memory = new byte[16384];
+    private final byte[] memory = new byte[0x100000];
     private int pos = 0;
     private boolean cached = false;
 
-    public Chunk(int id) {
+    public Chunk(int id, boolean solid) {
         this.id = id;
+        this.solid = solid;
     }
 
     public Tuple<Blocks, Integer, Integer, Texture, Integer> getTuple(Texture keyTexture, Integer keyFaceBits) {
@@ -411,7 +414,7 @@ public class Chunk {
             Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
             pos += blockPosCol.length;
 
-            Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
+            Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
 
             Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
             addBlock(block);
@@ -457,7 +460,7 @@ public class Chunk {
     }
 
     public void loadFromMemory() {
-        byte[] byteArray = new byte[16384];
+        byte[] byteArray = new byte[0x100000];
         System.arraycopy(memory, 0, byteArray, 0, pos);
         fromByteArray(byteArray);
         pos = 0;
@@ -466,6 +469,10 @@ public class Chunk {
 
     public int getId() {
         return id;
+    }
+
+    public boolean isSolid() {
+        return solid;
     }
 
     public List<Tuple<Blocks, Integer, Integer, Texture, Integer>> getTupleList() {

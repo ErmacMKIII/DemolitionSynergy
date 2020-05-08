@@ -65,7 +65,7 @@ public class Chunks {
         Chunk chunk = getChunk(chunkId);
 
         if (chunk == null) {
-            chunk = new Chunk(chunkId);
+            chunk = new Chunk(chunkId, block.solid);
             chunkList.add(chunk);
         }
 
@@ -90,41 +90,40 @@ public class Chunks {
         }
     }
 
-    private void transfer(Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
-        Chunk chunk = getChunk(Chunk.chunkFunc(fluidBlock.pos));
-        if (chunk != null) {
-            Texture fluidTexture = fluidBlock.primaryTexture;
-            int fluidFaceBits = fluidBlock.getFaceBits();
+    private void transfer(Chunk chunk, Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
+        Texture fluidTexture = fluidBlock.primaryTexture;
+        int fluidFaceBits = fluidBlock.getFaceBits();
 
-            Tuple<Blocks, Integer, Integer, Texture, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
-            srcTuple.getA().getBlockList().remove(fluidBlock);
-            if (srcTuple.getA().getBlockList().isEmpty()) {
-                chunk.getTupleList().remove(srcTuple);
-            }
-
-            Tuple<Blocks, Integer, Integer, Texture, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
-            if (dstTuple == null) {
-                dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
-                chunk.getTupleList().add(dstTuple);
-            }
-            dstTuple.getA().getBlockList().add(fluidBlock);
-            dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+        Tuple<Blocks, Integer, Integer, Texture, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
+        srcTuple.getA().getBlockList().remove(fluidBlock);
+        if (srcTuple.getA().getBlockList().isEmpty()) {
+            chunk.getTupleList().remove(srcTuple);
         }
+
+        Tuple<Blocks, Integer, Integer, Texture, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
+        if (dstTuple == null) {
+            dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
+            chunk.getTupleList().add(dstTuple);
+        }
+        dstTuple.getA().getBlockList().add(fluidBlock);
+        dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
     }
 
-    public void updateFluids(boolean useTransfer) { // call only for fluid blocks after adding
-        for (Block fluidBlock : getTotalList()) {
-            fluidBlock.enableAllFaces(false);
-            int faceBitsBefore = fluidBlock.getFaceBits();
-            for (int j = 0; j <= 5; j++) { // j - face number
-                Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
-                if (hash != null) {
-                    fluidBlock.disableFace(j, false);
+    public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
+        if (!fluidChunk.isSolid()) {
+            for (Block fluidBlock : fluidChunk.getList()) {
+                fluidBlock.enableAllFaces(false);
+                int faceBitsBefore = fluidBlock.getFaceBits();
+                for (int j = 0; j <= 5; j++) { // j - face number
+                    Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
+                    if (hash != null) {
+                        fluidBlock.disableFace(j, false);
+                    }
                 }
-            }
-            int faceBitsAfter = fluidBlock.getFaceBits();
-            if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                transfer(fluidBlock);
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    transfer(fluidChunk, fluidBlock);
+                }
             }
         }
     }
@@ -160,6 +159,20 @@ public class Chunks {
         }
     }
 
+    // very useful -> it should be like this initially
+    public void saveAllToMemory() {
+        for (Chunk chunk : chunkList) {
+            chunk.saveToMemory();
+        }
+    }
+
+    // useful when saving and wanna load everything into memory
+    public void loadAllFromMemory() {
+        for (Chunk chunk : chunkList) {
+            chunk.loadFromMemory();
+        }
+    }
+
     // total size
     public int totalSize() {
         int result = 0;
@@ -186,7 +199,9 @@ public class Chunks {
         sb.append("DETAILED INFO\n");
         for (Chunk chunk : chunkList) {
             sb.append("id = ").append(chunk.getId()).append(" size = ").append(chunk.size()).
-                    append(" visible = ").append(chunk.isVisible()).append(" buffered = ").append(chunk.isBuffered())
+                    append(" visible = ").append(chunk.isVisible()).
+                    append(" buffered = ").append(chunk.isBuffered()).
+                    append(" cached = ").append(chunk.isCached())
                     .append("\n");
         }
         sb.append("------------------------------------------------------------");

@@ -303,41 +303,41 @@ public class Editor {
 
     public static void add(LevelContainer levelContainer) {
         if (selectedNew != null) {
-            if (!cannotPlace(levelContainer) && !levelContainer.getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
-                selectedNew.setSecondaryTexture(null);
-                if (selectedNew.isSolid()) { // else if block is solid
-                    levelContainer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks                    
-                    levelContainer.getSolidChunks().setBuffered(false);
-                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                    //----------------------------------------------------------
-                } else { // if block is fluid                    
-                    levelContainer.getFluidChunks().addBlock(selectedNew); // add the block to the fluid blocks 
-                    levelContainer.getFluidChunks().updateFluids(true);
-                    levelContainer.getFluidChunks().setBuffered(false);
-                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                    //----------------------------------------------------------                   
-                }
-                loaded = new Block(false);
-                selectLoadedTexture();
-            }
+//            if (!cannotPlace(levelContainer) && !levelContainer.getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
+//                selectedNew.setSecondaryTexture(null);
+//                if (selectedNew.isSolid()) { // else if block is solid
+//                    levelContainer.getSolidChunks().addBlock(selectedNew); // add the block to the solid blocks                    
+//                    levelContainer.getSolidChunks().setBuffered(false);
+//                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
+//                    //----------------------------------------------------------
+//                } else { // if block is fluid                    
+//                    levelContainer.getFluidChunks().addBlock(selectedNew); // add the block to the fluid blocks 
+//                    levelContainer.getFluidChunks().updateFluids(true);
+//                    levelContainer.getFluidChunks().setBuffered(false);
+//                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
+//                    //----------------------------------------------------------                   
+//                }
+//                loaded = new Block(false);
+//                selectLoadedTexture();
+//            }
         }
         deselect();
     }
 
     public static void remove(LevelContainer levelContainer) {
         if (selectedCurr != null) {
-            if (selectedCurr.isSolid()) {
-                //--------------------------------------------------------------
-                levelContainer.getSolidChunks().removeBlock(selectedCurr);
-                levelContainer.getSolidChunks().setBuffered(false);
-                levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
-            } else {
-                //--------------------------------------------------------------                
-                levelContainer.getFluidChunks().removeBlock(selectedCurr);
-                levelContainer.getFluidChunks().updateFluids(false);
-                levelContainer.getFluidChunks().setBuffered(false);
-                levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
-            }
+//            if (selectedCurr.isSolid()) {
+//                //--------------------------------------------------------------
+//                levelContainer.getSolidChunks().removeBlock(selectedCurr);
+//                levelContainer.getSolidChunks().setBuffered(false);
+//                levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
+//            } else {
+//                //--------------------------------------------------------------                
+//                levelContainer.getFluidChunks().removeBlock(selectedCurr);
+//                levelContainer.getFluidChunks().updateFluids(false);
+//                levelContainer.getFluidChunks().setBuffered(false);
+//                levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
+//            }
         }
         deselect();
     }
