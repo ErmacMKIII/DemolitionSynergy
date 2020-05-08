@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -35,7 +34,7 @@ public class Player extends Observer {
     private final Model[] weapons = Model.WEAPONS;
     private final Matrix4f viewMatrix = new Matrix4f();
 
-    public Player(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
+    public Player(String modelFileName, Texture texture, Vector3f pos, Vector3f color, float scale) {
         super(modelFileName, texture, pos, color, scale);
     }
 

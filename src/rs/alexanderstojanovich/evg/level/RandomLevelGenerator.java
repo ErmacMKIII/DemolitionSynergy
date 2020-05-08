@@ -74,11 +74,11 @@ public class RandomLevelGenerator {
                 || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
-        float colx = random.nextFloat();
-        float coly = random.nextFloat();
-        float colz = random.nextFloat();
+        float colr = random.nextFloat();
+        float colg = random.nextFloat();
+        float colb = random.nextFloat();
         Vector3f pos = randPos;
-        Vector4f col = new Vector4f(colx, coly, colz, 1.0f);
+        Vector3f col = new Vector3f(colr, colg, colb);
         Block solidBlock = new Block(false, randomSolidTexture(), pos, col, true);
 
         levelContainer.getSolidChunks().addBlock(solidBlock);
@@ -99,11 +99,11 @@ public class RandomLevelGenerator {
                 || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
-        float colx = random.nextFloat();
-        float coly = random.nextFloat();
-        float colz = random.nextFloat();
+        float colr = random.nextFloat();
+        float colg = random.nextFloat();
+        float colb = random.nextFloat();
         Vector3f pos = randPos;
-        Vector4f col = new Vector4f(colx, coly, colz, 0.5f);
+        Vector3f col = new Vector3f(colr, colg, colb);
         Block fluidBlock = new Block(false, Texture.WATER, pos, col, false);
 
         levelContainer.getFluidChunks().addBlock(fluidBlock);
@@ -149,10 +149,10 @@ public class RandomLevelGenerator {
                 || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
-        float adjColx = random.nextFloat();
-        float adjColy = random.nextFloat();
-        float adjColz = random.nextFloat();
-        Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 1.0f);
+        float adjColr = random.nextFloat();
+        float adjColg = random.nextFloat();
+        float adjColb = random.nextFloat();
+        Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
         Texture adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, true);
 
@@ -199,10 +199,10 @@ public class RandomLevelGenerator {
                 || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
-        float adjColx = random.nextFloat();
-        float adjColy = random.nextFloat();
-        float adjColz = random.nextFloat();
-        Vector4f adjCol = new Vector4f(adjColx, adjColy, adjColz, 0.5f);
+        float adjColr = random.nextFloat();
+        float adjColg = random.nextFloat();
+        float adjColb = random.nextFloat();
+        Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
         Texture adjTexture = Texture.WATER;
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
 

@@ -156,7 +156,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     block.secondaryTexture.bind(1, shaderProgram, "modelTexture1");
                 }
                 if (block.tertiaryTexture != null) { // this is reflective texture
-                    block.tertiaryColor(shaderProgram);
                     block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
                 }
 
@@ -219,7 +218,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         block.secondaryTexture.bind(1, shaderProgram, "modelTexture1");
                     }
                     if (block.tertiaryTexture != null) { // this is reflective texture
-                        block.tertiaryColor(shaderProgram);
                         block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 

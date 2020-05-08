@@ -66,7 +66,6 @@ public class Editor {
             selectedNew.getSecondaryColor().x = 0.0f;
             selectedNew.getSecondaryColor().y = 1.0f;
             selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.getSecondaryColor().w = 1.0f;
             selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
         }
 
@@ -102,7 +101,6 @@ public class Editor {
                 selectedCurr.getSecondaryColor().x = 1.0f;
                 selectedCurr.getSecondaryColor().y = 1.0f;
                 selectedCurr.getSecondaryColor().z = 0.0f;
-                selectedCurr.getSecondaryColor().w = 1.0f;
 
                 selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
 
@@ -140,7 +138,6 @@ public class Editor {
                 selectedCurr.getSecondaryColor().x = 1.0f;
                 selectedCurr.getSecondaryColor().y = 1.0f;
                 selectedCurr.getSecondaryColor().z = 0.0f;
-                selectedCurr.getSecondaryColor().w = 1.0f;
 
                 selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
 
@@ -155,7 +152,6 @@ public class Editor {
             selectedCurr.getSecondaryColor().x = 1.0f;
             selectedCurr.getSecondaryColor().y = 1.0f;
             selectedCurr.getSecondaryColor().z = 1.0f;
-            selectedCurr.getSecondaryColor().w = 1.0f;
         }
         selectedNew = selectedCurr = null;
         selectedCurrIndex = -1;
@@ -202,7 +198,6 @@ public class Editor {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
-                selectedNew.getSecondaryColor().w = 1.0f;
                 selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
             }
         }
@@ -249,7 +244,6 @@ public class Editor {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
-                selectedNew.getSecondaryColor().w = 1.0f;
                 selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
             }
         }
@@ -295,7 +289,6 @@ public class Editor {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;
             selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.getSecondaryColor().w = 1.0f;
             selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
         }
         return cant;
@@ -349,22 +342,18 @@ public class Editor {
                 case 0:
                     texture = Texture.CRATE;
                     loaded.setSolid(true);
-                    loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 1:
                     texture = Texture.STONE;
                     loaded.setSolid(true);
-                    loaded.getPrimaryColor().w = 1.0f;
                     break;
                 case 2:
                     texture = Texture.WATER;
                     loaded.setSolid(false);
-                    loaded.getPrimaryColor().w = 0.5f;
                     break;
                 case 3:
                     texture = Texture.DOOM0;
                     loaded.setSolid(true);
-                    loaded.getPrimaryColor().w = 1.0f;
                     break;
             }
             loaded.setPrimaryTexture(texture);

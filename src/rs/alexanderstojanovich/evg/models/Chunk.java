@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
@@ -42,7 +43,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class Chunk {
 
-    public static final int VEC4_SIZE = 4;
+    public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
 
     // A, B, C are used in chunkFunc and for determining visible chunks
@@ -115,18 +116,17 @@ public class Chunk {
     }
 
     public void bufferVectors(Blocks blocks, int tupleIndex) {
-        FloatBuffer vec4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC4_SIZE);
+        FloatBuffer vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC3_SIZE);
         for (Block block : blocks.getBlockList()) {
-            Vector4f color = block.getPrimaryColor();
-            vec4FloatBuff.put(color.x);
-            vec4FloatBuff.put(color.y);
-            vec4FloatBuff.put(color.z);
-            vec4FloatBuff.put(color.w);
+            Vector3f color = block.getPrimaryColor();
+            vec3FloatBuff.put(color.x);
+            vec3FloatBuff.put(color.y);
+            vec3FloatBuff.put(color.z);
         }
-        vec4FloatBuff.flip();
+        vec3FloatBuff.flip();
         int vec4Vbo = GL15.glGenBuffers();
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatBuff, GL15.GL_STATIC_DRAW);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec3FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         tupleList.get(tupleIndex).setB(vec4Vbo);
     }
@@ -138,7 +138,8 @@ public class Chunk {
             Vector4f[] vectArr = new Vector4f[4];
             for (int i = 0; i < 4; i++) {
                 vectArr[i] = new Vector4f();
-                block.modelMatrix.getColumn(i, vectArr[i]);
+                Matrix4f modelMatrix = block.calcModelMatrix();
+                modelMatrix.getColumn(i, vectArr[i]);
                 mat4FloatBuff.put(vectArr[i].x);
                 mat4FloatBuff.put(vectArr[i].y);
                 mat4FloatBuff.put(vectArr[i].z);
@@ -209,7 +210,7 @@ public class Chunk {
                     GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
 
                     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getB());
-                    GL20.glVertexAttribPointer(3, 4, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
+                    GL20.glVertexAttribPointer(3, 3, GL11.GL_FLOAT, false, VEC3_SIZE * 4, 0); // this is for color
                     GL33.glVertexAttribDivisor(3, 1);
 
                     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, tuple.getC());
@@ -227,6 +228,8 @@ public class Chunk {
 
                     shaderProgram.updateUniform(lightSrc, "modelLight");
 
+                    shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
+
                     Texture blocksTexture = tuple.getD();
                     if (blocksTexture != null) {
                         blocksTexture.bind(0, shaderProgram, "modelTexture0");
@@ -242,7 +245,6 @@ public class Chunk {
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
 
                     if (waterTexture != null && Game.isWaterEffects()) {
-                        shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                         waterTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
@@ -391,9 +393,8 @@ public class Chunk {
             byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
             System.arraycopy(solidPos, 0, chunkArray, pos, solidPos.length);
             pos += solidPos.length;
-            Vector4f primCol = block.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            Vector3f primCol = block.getPrimaryColor();
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(primCol);
             System.arraycopy(solidCol, 0, chunkArray, pos, solidCol.length);
             pos += solidCol.length;
         }
@@ -422,9 +423,7 @@ public class Chunk {
             Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
             pos += blockPosCol.length;
 
-            Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
-
-            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, solid);
+            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
             chunk.addBlock(block);
         }
         return chunk;
@@ -443,9 +442,8 @@ public class Chunk {
             byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
             System.arraycopy(solidPos, 0, memory, pos, solidPos.length);
             pos += solidPos.length;
-            Vector4f primCol = block.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            Vector3f primCol = block.getPrimaryColor();
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(primCol);
             System.arraycopy(solidCol, 0, memory, pos, solidCol.length);
             pos += solidCol.length;
         }
@@ -474,9 +472,7 @@ public class Chunk {
             Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
             pos += blockPosCol.length;
 
-            Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
-
-            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, solid);
+            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
             addBlock(block);
         }
         cached = false;

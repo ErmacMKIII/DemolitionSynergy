@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
@@ -35,7 +34,7 @@ public class Observer implements Critter {
     protected boolean givenControl = true;
     protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
 
-    public Observer(String modelFileName, Texture texture, Vector3f pos, Vector4f color, float scale) {
+    public Observer(String modelFileName, Texture texture, Vector3f pos, Vector3f color, float scale) {
         this.camera = new Camera(pos);
         this.model = new Model(true, Game.WORLD_ENTRY, modelFileName, texture);
         this.model.setPrimaryColor(color);

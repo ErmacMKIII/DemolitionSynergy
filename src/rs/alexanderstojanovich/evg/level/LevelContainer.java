@@ -24,9 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import org.joml.Random;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -61,7 +59,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final float BASE = 6.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
+    public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
@@ -75,9 +73,6 @@ public class LevelContainer implements GravityEnviroment {
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
-
-    // used to choose random chunk to update
-    private final Random random = new Random(0x123456789L);
 
     static {
         // setting SKYBOX     
@@ -117,7 +112,6 @@ public class LevelContainer implements GravityEnviroment {
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
                 entity.getPrimaryColor().z = 0.0f;
-                entity.getPrimaryColor().w = 1.0f;
 
                 solidChunks.addBlock(entity);
 
@@ -231,7 +225,7 @@ public class LevelContainer implements GravityEnviroment {
             byte[] solidPos = Vector3fUtils.vec3fToByteArray(solidBlock.getPos());
             System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
             pos += solidPos.length;
-            Vector4f primCol = solidBlock.getPrimaryColor();
+            Vector3f primCol = solidBlock.getPrimaryColor();
             Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
             byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
@@ -261,7 +255,7 @@ public class LevelContainer implements GravityEnviroment {
             byte[] solidPos = Vector3fUtils.vec3fToByteArray(fluidBlock.getPos());
             System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
             pos += solidPos.length;
-            Vector4f primCol = fluidBlock.getPrimaryColor();
+            Vector3f primCol = fluidBlock.getPrimaryColor();
             Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
             byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
             System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
@@ -356,9 +350,7 @@ public class LevelContainer implements GravityEnviroment {
                     Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                     pos += blockPosCol.length;
 
-                    Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, true);
                     solidChunks.addBlock(block);
 
                     progress += 50.0f / solidNum;
@@ -392,9 +384,7 @@ public class LevelContainer implements GravityEnviroment {
                     Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                     pos += blockPosCol.length;
 
-                    Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
+                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, false);
                     fluidChunks.addBlock(block);
 
                     progress += 50.0f / fluidNum;
@@ -566,9 +556,9 @@ public class LevelContainer implements GravityEnviroment {
         // is list of estimated visible chunks (by the camera pos and front)        
 
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-                
+
         for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (solidChunk != null) {                
+            if (solidChunk != null) {
                 solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
                 if (solidChunk.isVisible() && solidChunk.isCached()) {
                     solidChunk.loadFromMemory();
@@ -579,7 +569,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (fluidChunk != null) {                
+            if (fluidChunk != null) {
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
                 if (fluidChunk.isVisible() && fluidChunk.isCached()) {
                     fluidChunk.loadFromMemory();

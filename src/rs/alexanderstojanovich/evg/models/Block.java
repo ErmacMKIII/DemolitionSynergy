@@ -109,7 +109,7 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
+    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super();
         this.primaryTexture = primaryTexture;
         Arrays.fill(enabledFaces, true);
@@ -208,13 +208,13 @@ public class Block extends Model {
 
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        xMin = vect.x;
-        yMin = vect.y;
-        zMin = vect.z;
+        float xMin = vect.x;
+        float yMin = vect.y;
+        float zMin = vect.z;
 
-        xMax = vect.x;
-        yMax = vect.y;
-        zMax = vect.z;
+        float xMax = vect.x;
+        float yMax = vect.y;
+        float zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();

@@ -73,19 +73,13 @@ public class Model implements Comparable<Model> {
     protected float rY = 0.0f;
     protected float rZ = 0.0f;
 
-    protected Vector4f primaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    protected Vector4f secondaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    protected Vector4f tertiaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    protected Vector3f primaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    protected Vector3f secondaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     protected Vector3f light = new Vector3f();
 
     protected boolean solid = true; // is movement through this model possible
     // fluid models are solid whilst solid ones aren't               
-
-    protected Matrix4f modelMatrix = new Matrix4f();
-
-    protected float xMin, yMin, zMin;
-    protected float xMax, yMax, zMax;
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
 
@@ -138,7 +132,7 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture, Vector3f pos, Vector3f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
         this.primaryTexture = primaryTexture;
         readFromObjFile(dirEntry, modelFileName);
@@ -327,6 +321,7 @@ public class Model implements Comparable<Model> {
             shaderProgram.bind();
             transform(shaderProgram);
             useLight(shaderProgram);
+            setAlpha(shaderProgram);
             if (primaryTexture != null) { // this is primary texture
                 primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -336,7 +331,6 @@ public class Model implements Comparable<Model> {
                 secondaryTexture.bind(1, shaderProgram, "modelTexture1");
             }
             if (tertiaryTexture != null) { // this is reflective texture
-                tertiaryColor(shaderProgram);
                 tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
             }
         }
@@ -362,17 +356,18 @@ public class Model implements Comparable<Model> {
         buffered = false;
     }
 
-    public void calcModelMatrix() {
+    public Matrix4f calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos);
         Matrix4f rotationMatrix = new Matrix4f().setRotationXYZ(rX, rY, rZ);
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
         Matrix4f temp = new Matrix4f();
-        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
     }
 
     protected void transform(ShaderProgram shaderProgram) {
-        calcModelMatrix();
+        Matrix4f modelMatrix = calcModelMatrix();
         shaderProgram.updateUniform(modelMatrix, "modelMatrix");
     }
 
@@ -384,23 +379,23 @@ public class Model implements Comparable<Model> {
         shaderProgram.updateUniform(secondaryColor, "modelColor1");
     }
 
-    protected void tertiaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(tertiaryColor, "modelColor2");
-    }
-
     protected void useLight(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(light, "modelLight");
     }
 
+    protected void setAlpha(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
+    }
+
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        xMin = vect.x;
-        yMin = vect.y;
-        zMin = vect.z;
+        float xMin = vect.x;
+        float yMin = vect.y;
+        float zMin = vect.z;
 
-        xMax = vect.x;
-        yMax = vect.y;
-        zMax = vect.z;
+        float xMax = vect.x;
+        float yMax = vect.y;
+        float zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();
@@ -603,24 +598,6 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public float getAvgSize() {
-        float xAbs = Math.abs(xMax - xMin);
-        float yAbs = Math.abs(yMax - yMin);
-        float zAbs = Math.abs(zMax - zMin);
-
-        return (xAbs + yAbs + zAbs) / 3.0f;
-    }
-
-    public void autoSize() {
-//        float avg = getAvgSize();
-//        for (Vertex vertex : vertices) {
-//            vertex.getPos().div(avg);
-//        }
-//        scale = 1.0f;
-//        calcDims();
-//        bufferVertices();
-    }
-
     @Override
     public int compareTo(Model model) {
         return Float.compare(this.getPos().y, model.getPos().y);
@@ -695,10 +672,6 @@ public class Model implements Comparable<Model> {
         return pos;
     }
 
-    public Matrix4f getModelMatrix() {
-        return modelMatrix;
-    }
-
     public float getScale() {
         return scale;
     }
@@ -734,28 +707,20 @@ public class Model implements Comparable<Model> {
         this.rZ = rZ;
     }
 
-    public Vector4f getPrimaryColor() {
+    public Vector3f getPrimaryColor() {
         return primaryColor;
     }
 
-    public void setPrimaryColor(Vector4f primaryColor) {
+    public void setPrimaryColor(Vector3f primaryColor) {
         this.primaryColor = primaryColor;
     }
 
-    public Vector4f getSecondaryColor() {
+    public Vector3f getSecondaryColor() {
         return secondaryColor;
     }
 
-    public void setSecondaryColor(Vector4f secondaryColor) {
+    public void setSecondaryColor(Vector3f secondaryColor) {
         this.secondaryColor = secondaryColor;
-    }
-
-    public Vector4f getTertiaryColor() {
-        return tertiaryColor;
-    }
-
-    public void setTertiaryColor(Vector4f tertiaryColor) {
-        this.tertiaryColor = tertiaryColor;
     }
 
     public Vector3f getLight() {
