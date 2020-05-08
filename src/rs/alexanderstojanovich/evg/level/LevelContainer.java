@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
@@ -74,6 +75,9 @@ public class LevelContainer implements GravityEnviroment {
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
+
+    // used to choose random chunk to update
+    private final Random random = new Random(0x123456789L);
 
     static {
         // setting SKYBOX     
@@ -560,7 +564,7 @@ public class LevelContainer implements GravityEnviroment {
 
         Camera obsCamera = levelActors.getPlayer().getCamera();
         // is list of estimated visible chunks (by the camera pos and front)        
-        
+
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
                 
         for (Chunk solidChunk : solidChunks.getChunkList()) {
@@ -573,7 +577,7 @@ public class LevelContainer implements GravityEnviroment {
                 }
             }
         }
-        
+
         for (Chunk fluidChunk : fluidChunks.getChunkList()) {
             if (fluidChunk != null) {                
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
@@ -586,7 +590,6 @@ public class LevelContainer implements GravityEnviroment {
                 fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
-        
     }
 
     public void render() { // render for regular level rendering

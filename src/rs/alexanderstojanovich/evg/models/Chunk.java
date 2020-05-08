@@ -301,7 +301,7 @@ public class Chunk {
     public static int chunkFunc(Vector3f pos, Vector3f front) {
         Vector3f temp = new Vector3f();
         float product = pos.normalize(temp).dot(front);
-        
+
         float x = Math.round(((pos.x * product) % (A + 1)) / B);
         float y = Math.round(((pos.y * product) % (A + 1)) / B);
         float z = Math.round(((pos.z * product) % (A + 1)) / B);
@@ -359,8 +359,12 @@ public class Chunk {
 
     public int size() { // for debugging purposes
         int size = 0;
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
-            size += tuple.getA().getBlockList().size();
+        if (cached) {
+            size = (pos + 1 - 3) / 29;
+        } else {
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+                size += tuple.getA().getBlockList().size();
+            }
         }
         return size;
     }
@@ -420,7 +424,7 @@ public class Chunk {
 
             Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
 
-            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, solid);
             chunk.addBlock(block);
         }
         return chunk;
@@ -472,7 +476,7 @@ public class Chunk {
 
             Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
 
-            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, solid);
             addBlock(block);
         }
         cached = false;

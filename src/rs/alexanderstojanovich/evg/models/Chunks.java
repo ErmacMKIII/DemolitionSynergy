@@ -198,10 +198,10 @@ public class Chunks {
         sb.append("NUMBER OF CHUNKS = ").append(chunkList.size()).append("\n");
         sb.append("DETAILED INFO\n");
         for (Chunk chunk : chunkList) {
-            sb.append("id = ").append(chunk.getId()).append(" size = ").append(chunk.size()).
-                    append(" visible = ").append(chunk.isVisible()).
-                    append(" buffered = ").append(chunk.isBuffered()).
-                    append(" cached = ").append(chunk.isCached())
+            sb.append("id = ").append(chunk.getId()).append(" | size = ").append(chunk.size()).
+                    append(" | visible = ").append(chunk.isVisible()).
+                    append(" | buffered = ").append(chunk.isBuffered()).
+                    append(" | cached = ").append(chunk.isCached())
                     .append("\n");
         }
         sb.append("------------------------------------------------------------");
