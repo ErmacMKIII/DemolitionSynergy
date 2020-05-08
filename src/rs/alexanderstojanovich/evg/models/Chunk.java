@@ -396,7 +396,8 @@ public class Chunk {
         return chunkArray;
     }
 
-    public void fromByteArray(byte[] chunkArray) {
+    public static Chunk fromByteArray(byte[] chunkArray, boolean solid) {
+        Chunk chunk = new Chunk(chunkArray[0], solid);
         int pos = 1;
         int len = ((chunkArray[pos + 1] & 0xFF) << 8) | (chunkArray[pos] & 0xFF);
         pos += 2;
@@ -420,53 +421,60 @@ public class Chunk {
             Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
 
             Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
-            addBlock(block);
+            chunk.addBlock(block);
         }
+        return chunk;
     }
 
-//    public static Chunk fromByteArray(byte[] chunkArray) {
-//        int id = chunkArray[0];
-//        Chunk chunk = new Chunk(id);
-//        int pos = 1;
-//        int len = ((chunkArray[pos + 1] & 0xFF) << 8) | (chunkArray[pos] & 0xFF);
-//        pos += 2;
-//        for (int i = 0; i < len; i++) {
-//            char[] texNameArr = new char[5];
-//            for (int k = 0; k < texNameArr.length; k++) {
-//                texNameArr[k] = (char) chunkArray[pos++];
-//            }
-//            String texName = String.valueOf(texNameArr);
-//
-//            byte[] blockPosArr = new byte[12];
-//            System.arraycopy(chunkArray, pos, blockPosArr, 0, blockPosArr.length);
-//            Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-//            pos += blockPosArr.length;
-//
-//            byte[] blockPosCol = new byte[12];
-//            System.arraycopy(chunkArray, pos, blockPosCol, 0, blockPosCol.length);
-//            Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-//            pos += blockPosCol.length;
-//
-//            Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
-//
-//            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
-//            chunk.addBlock(block);
-//        }
-//        return chunk;
-//    }
     public void saveToMemory() {
-        byte[] temp = toByteArray();
-        System.arraycopy(temp, 0, memory, 0, temp.length);
-        pos += temp.length;
+        List<Block> blocks = getList();
+        pos = 0;
+        memory[pos++] = (byte) id;
+        memory[pos++] = (byte) blocks.size();
+        memory[pos++] = (byte) (blocks.size() >> 8);
+        for (Block block : blocks) {
+            byte[] texName = block.getPrimaryTexture().getImage().getFileName().getBytes();
+            System.arraycopy(texName, 0, memory, pos, 5);
+            pos += 5;
+            byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
+            System.arraycopy(solidPos, 0, memory, pos, solidPos.length);
+            pos += solidPos.length;
+            Vector4f primCol = block.getPrimaryColor();
+            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
+            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
+            System.arraycopy(solidCol, 0, memory, pos, solidCol.length);
+            pos += solidCol.length;
+        }
         tupleList.clear();
         cached = true;
     }
 
     public void loadFromMemory() {
-        byte[] byteArray = new byte[0x100000];
-        System.arraycopy(memory, 0, byteArray, 0, pos);
-        fromByteArray(byteArray);
-        pos = 0;
+        pos = 1;
+        int len = ((memory[pos + 1] & 0xFF) << 8) | (memory[pos] & 0xFF);
+        pos += 2;
+        for (int i = 0; i < len; i++) {
+            char[] texNameArr = new char[5];
+            for (int k = 0; k < texNameArr.length; k++) {
+                texNameArr[k] = (char) memory[pos++];
+            }
+            String texName = String.valueOf(texNameArr);
+
+            byte[] blockPosArr = new byte[12];
+            System.arraycopy(memory, pos, blockPosArr, 0, blockPosArr.length);
+            Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+            pos += blockPosArr.length;
+
+            byte[] blockPosCol = new byte[12];
+            System.arraycopy(memory, pos, blockPosCol, 0, blockPosCol.length);
+            Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+            pos += blockPosCol.length;
+
+            Vector4f primaryColor = new Vector4f(blockCol, solid ? 1.0f : 0.5f);
+
+            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
+            addBlock(block);
+        }
         cached = false;
     }
 
