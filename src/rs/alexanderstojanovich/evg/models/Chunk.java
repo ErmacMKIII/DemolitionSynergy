@@ -102,20 +102,6 @@ public class Chunk {
         tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
     }
 
-    // useful for loading levels without creating objects immediately
-//    public void addBlock(byte[] byteArray) {
-//        if (pos == 0) {
-//            memory[pos++] = (byte) id;
-//            memory[pos++] = (byte) 0;
-//            memory[pos++] = (byte) 1;
-//        } else {
-//            memory[1] = (byte) (size() + 1);
-//            memory[2] = (byte) ((size() + 1) >> 8);
-//        }
-//        System.arraycopy(byteArray, 0, memory, pos, 29);
-//        pos += 29;
-//        cached = true;
-//    }
     public void removeBlock(Block block) {
         Texture blockTexture = block.primaryTexture;
         int blockFaceBits = block.getFaceBits();
@@ -169,15 +155,17 @@ public class Chunk {
     }
 
     public void bufferAll() {
-        int tupleIndex = 0;
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
-            Blocks blocks = tuple.getA();
-            blocks.bufferVertices();
-            bufferMatrices(blocks, tupleIndex);
-            bufferVectors(blocks, tupleIndex);
-            tupleIndex++;
+        if (!cached) {
+            int tupleIndex = 0;
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+                Blocks blocks = tuple.getA();
+                blocks.bufferVertices();
+                bufferMatrices(blocks, tupleIndex);
+                bufferVectors(blocks, tupleIndex);
+                tupleIndex++;
+            }
+            buffered = true;
         }
-        buffered = true;
     }
 
     public void animate() { // call only for fluid blocks
@@ -295,14 +283,16 @@ public class Chunk {
 
     // deallocates Chunk from graphic card
     public void release() {
-        //--------------------------A--------B--------C-------D--------E-----------------------------
-        //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-        for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
-            GL15.glDeleteBuffers(tuple.getA().getBigVbo());
-            GL15.glDeleteBuffers(tuple.getB());
-            GL15.glDeleteBuffers(tuple.getC());
+        if (buffered && !cached) {
+            //--------------------------A--------B--------C-------D--------E-----------------------------
+            //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
+            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : tupleList) {
+                GL15.glDeleteBuffers(tuple.getA().getBigVbo());
+                GL15.glDeleteBuffers(tuple.getB());
+                GL15.glDeleteBuffers(tuple.getC());
+            }
+            buffered = false;
         }
-        buffered = false;
     }
 
     // determine chunk
@@ -395,52 +385,56 @@ public class Chunk {
     }
 
     public void saveToMemory() {
-        List<Block> blocks = getList();
-        pos = 0;
-        memory[pos++] = (byte) id;
-        memory[pos++] = (byte) blocks.size();
-        memory[pos++] = (byte) (blocks.size() >> 8);
-        for (Block block : blocks) {
-            byte[] texName = block.getPrimaryTexture().getImage().getFileName().getBytes();
-            System.arraycopy(texName, 0, memory, pos, 5);
-            pos += 5;
-            byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
-            System.arraycopy(solidPos, 0, memory, pos, solidPos.length);
-            pos += solidPos.length;
-            Vector3f primCol = block.getPrimaryColor();
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(primCol);
-            System.arraycopy(solidCol, 0, memory, pos, solidCol.length);
-            pos += solidCol.length;
+        if (!buffered && !cached) {
+            List<Block> blocks = getList();
+            pos = 0;
+            memory[pos++] = (byte) id;
+            memory[pos++] = (byte) blocks.size();
+            memory[pos++] = (byte) (blocks.size() >> 8);
+            for (Block block : blocks) {
+                byte[] texName = block.getPrimaryTexture().getImage().getFileName().getBytes();
+                System.arraycopy(texName, 0, memory, pos, 5);
+                pos += 5;
+                byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
+                System.arraycopy(solidPos, 0, memory, pos, solidPos.length);
+                pos += solidPos.length;
+                Vector3f primCol = block.getPrimaryColor();
+                byte[] solidCol = Vector3fUtils.vec3fToByteArray(primCol);
+                System.arraycopy(solidCol, 0, memory, pos, solidCol.length);
+                pos += solidCol.length;
+            }
+            tupleList.clear();
+            cached = true;
         }
-        tupleList.clear();
-        cached = true;
     }
 
     public void loadFromMemory() {
-        pos = 1;
-        int len = ((memory[pos + 1] & 0xFF) << 8) | (memory[pos] & 0xFF);
-        pos += 2;
-        for (int i = 0; i < len; i++) {
-            char[] texNameArr = new char[5];
-            for (int k = 0; k < texNameArr.length; k++) {
-                texNameArr[k] = (char) memory[pos++];
+        if (!buffered && cached) {
+            pos = 1;
+            int len = ((memory[pos + 1] & 0xFF) << 8) | (memory[pos] & 0xFF);
+            pos += 2;
+            for (int i = 0; i < len; i++) {
+                char[] texNameArr = new char[5];
+                for (int k = 0; k < texNameArr.length; k++) {
+                    texNameArr[k] = (char) memory[pos++];
+                }
+                String texName = String.valueOf(texNameArr);
+
+                byte[] blockPosArr = new byte[12];
+                System.arraycopy(memory, pos, blockPosArr, 0, blockPosArr.length);
+                Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+                pos += blockPosArr.length;
+
+                byte[] blockPosCol = new byte[12];
+                System.arraycopy(memory, pos, blockPosCol, 0, blockPosCol.length);
+                Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+                pos += blockPosCol.length;
+
+                Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
+                addBlock(block);
             }
-            String texName = String.valueOf(texNameArr);
-
-            byte[] blockPosArr = new byte[12];
-            System.arraycopy(memory, pos, blockPosArr, 0, blockPosArr.length);
-            Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-            pos += blockPosArr.length;
-
-            byte[] blockPosCol = new byte[12];
-            System.arraycopy(memory, pos, blockPosCol, 0, blockPosCol.length);
-            Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-            pos += blockPosCol.length;
-
-            Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
-            addBlock(block);
+            cached = false;
         }
-        cached = false;
     }
 
     public int getId() {

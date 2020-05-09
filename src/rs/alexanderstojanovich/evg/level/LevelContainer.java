@@ -519,23 +519,23 @@ public class LevelContainer implements GravityEnviroment {
         for (Chunk solidChunk : solidChunks.getChunkList()) {
             if (solidChunk != null) {
                 solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
-//                if (solidChunk.isVisible() && solidChunk.isCached()) {
-//                    solidChunk.loadFromMemory();
-//                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
-//                    solidChunk.saveToMemory();
-//                }
+                if (solidChunk.isVisible() && solidChunk.isCached()) {
+                    solidChunk.loadFromMemory();
+                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
+                    solidChunk.saveToMemory();
+                }
             }
         }
 
         for (Chunk fluidChunk : fluidChunks.getChunkList()) {
             if (fluidChunk != null) {
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
-//                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
-//                    fluidChunk.loadFromMemory();
-//                    fluidChunks.updateFluids(fluidChunk, true);
-//                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
-//                    fluidChunk.saveToMemory();
-//                }
+                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
+                    fluidChunk.loadFromMemory();
+                    fluidChunks.updateFluids(fluidChunk, true);
+                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
+                    fluidChunk.saveToMemory();
+                }
                 fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
