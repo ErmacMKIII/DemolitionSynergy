@@ -25,7 +25,6 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -86,7 +85,7 @@ public class Chunks {
 //            LevelContainer.ALL_FLUID_POS.add(vector);
 //        }
 //
-//        int chunkId = Chunk.chunkFunc(vector);
+//        int chunkId = Chunk.chunkCheck(vector);
 //        System.out.println("chunkId = " + chunkId);
 //        Chunk chunk = getChunk(chunkId);
 //
@@ -188,9 +187,9 @@ public class Chunks {
 
     // very useful -> it should be like this initially
     public void saveAllToMemory() {
-//        for (Chunk chunk : chunkList) {
-//            chunk.saveToMemory();
-//        }
+        for (Chunk chunk : chunkList) {
+            chunk.saveToMemory();
+        }
     }
 
     // useful when saving and wanna load everything into memory

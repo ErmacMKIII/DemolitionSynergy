@@ -46,10 +46,10 @@ public class Chunk {
     public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
 
-    // A, B, C are used in chunkFunc and for determining visible chunks
+    // A, B, C are used in chunkCheck and for determining visible chunks
     public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
-    public static final int B = 24; // divider (number of chunks is calculated as 2 * B + 1)   
-    public static final float C = 100.0f; // determines visibility
+    public static final int B = 8; // divider (number of chunks is calculated as 2 * B + 1)   
+    public static final float C = 50.0f; // determines visibility
 
     // id of the chunk (signed)
     private final int id;
@@ -295,69 +295,80 @@ public class Chunk {
         }
     }
 
-    // determine chunk
+    // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
-        float x = Math.round((pos.x % (A + 1)) / B);
-        float y = Math.round((pos.y % (A + 1)) / B);
-        float z = Math.round((pos.z % (A + 1)) / B);
+        float x = Math.round((pos.x % (A + 1)));
+        float y = Math.round((pos.y % (A + 1)));
+        float z = Math.round((pos.z % (A + 1)));
 
-        return Math.round(((x + y + z) / 3.0f));
+        return Math.round(((x + y + z) / (3.0f * B)));
     }
 
-    // determine chunk
-    public static int chunkFunc(Vector3f pos, Vector3f front) {
+    // determine if chunk is visible
+    public static boolean chunkCheck(Vector3f pos, Vector3f front) {
+        boolean result = false;
+
+        float x = Math.round((pos.x % (A + 1)));
+        float y = Math.round((pos.y % (A + 1)));
+        float z = Math.round((pos.z % (A + 1)));
+
+        Vector3f chunkVect = new Vector3f(x, y, z).div(B);
         Vector3f temp = new Vector3f();
-        float product = pos.normalize(temp).dot(front);
-
-        float x = Math.round(((pos.x * front.x) % (A + 1)) / B);
-        float y = Math.round(((pos.y * front.y) % (A + 1)) / B);
-        float z = Math.round(((pos.z * front.z) % (A + 1)) / B);
-
-        return Math.round((product * (x + y + z) / 3.0f));
+        float product = chunkVect.sub(pos, temp).normalize(temp).dot(front.mul(C, temp).normalize());
+        if (product >= 0.1f) {
+            result = true;
+        }
+        return result;
     }
 
     // determine which chunks are visible by this chunk
     public static List<Integer> determineVisible(Vector3f pos, Vector3f front) {
         List<Integer> result = new ArrayList<>();
+
+        int x = chunkFunc(pos);
+        if (!result.contains(x) && chunkCheck(pos, front)) {
+            result.add(x);
+        }
+
         Vector3f va = new Vector3f();
         pos.add(C, 0.0f, 0.0f, va);
-        int a = chunkFunc(va, front);
-        if (!result.contains(a)) {
+        int a = chunkFunc(va);
+        if (!result.contains(a) && Chunk.chunkCheck(va, front)) {
             result.add(a);
         }
 
         Vector3f vb = new Vector3f();
         pos.add(0.0f, C, 0.0f, vb);
-        int b = chunkFunc(vb, front);
-        if (!result.contains(b)) {
+        int b = chunkFunc(vb);
+        if (!result.contains(b) && Chunk.chunkCheck(vb, front)) {
             result.add(b);
         }
 
         Vector3f vc = new Vector3f();
         pos.add(0.0f, C, 0.0f, vc);
-        int c = chunkFunc(vc, front);
-        if (!result.contains(c)) {
+        int c = Chunk.chunkFunc(vc);
+        if (!result.contains(c) && Chunk.chunkCheck(vc, front)) {
             result.add(c);
         }
 
         Vector3f vd = new Vector3f();
         pos.add(-C, 0.0f, 0.0f, vd);
-        int d = chunkFunc(vd, front);
-        if (!result.contains(d)) {
+        int d = Chunk.chunkFunc(vd);
+        if (!result.contains(d) && Chunk.chunkCheck(vd, front)) {
             result.add(d);
         }
 
         Vector3f ve = new Vector3f();
         pos.add(0.0f, -C, 0.0f, ve);
-        int e = chunkFunc(ve, front);
-        if (!result.contains(e)) {
+        int e = Chunk.chunkFunc(ve);
+        if (!result.contains(e) && Chunk.chunkCheck(ve, front)) {
             result.add(e);
         }
 
         Vector3f vf = new Vector3f();
         pos.add(0.0f, 0.0f, -C, vf);
-        int f = chunkFunc(vf, front);
-        if (!result.contains(f)) {
+        int f = Chunk.chunkFunc(vf);
+        if (!result.contains(f) && Chunk.chunkCheck(vf, front)) {
             result.add(f);
         }
 

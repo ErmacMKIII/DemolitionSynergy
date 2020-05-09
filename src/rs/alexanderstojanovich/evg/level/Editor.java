@@ -77,7 +77,7 @@ public class Editor {
         Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
         float minDistanceOfSolid = Chunk.C;
-        int currChunkId = Chunk.chunkFunc(cameraPos, cameraFront);
+        int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currSolidChunk = levelContainer.getSolidChunks().getChunk(currChunkId);
 
         int solidTargetIndex = -1;
@@ -114,7 +114,7 @@ public class Editor {
         Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
         float minDistanceOfFluid = Chunk.C;
-        int currChunkId = Chunk.chunkFunc(cameraPos, cameraFront);
+        int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currFluidChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
 
         int fluidTargetIndex = -1;
