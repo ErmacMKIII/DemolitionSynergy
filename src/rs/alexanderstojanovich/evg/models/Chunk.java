@@ -19,7 +19,10 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.joml.AABBf;
+import org.joml.Intersectionf;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
@@ -48,8 +51,8 @@ public class Chunk {
 
     // A, B, C are used in chunkCheck and for determining visible chunks
     public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
-    public static final int B = 8; // divider (number of chunks is calculated as 2 * B + 1)   
-    public static final float C = 50.0f; // determines visibility
+    public static final int B = 16; // divider (number of chunks is calculated as 2 * B + 1)   
+    public static final float C = 100.0f; // determines visibility
 
     // id of the chunk (signed)
     private final int id;
@@ -306,40 +309,40 @@ public class Chunk {
 
     // determine if chunk is visible
     public static boolean chunkCheck(Vector3f pos, Vector3f front) {
-        boolean result = false;
+        boolean yea = false;
 
-        float x = Math.round((pos.x % (A + 1)));
-        float y = Math.round((pos.y % (A + 1)));
-        float z = Math.round((pos.z % (A + 1)));
-
-        Vector3f chunkVect = new Vector3f(x, y, z).div(B);
-        Vector3f temp = new Vector3f();
-        float product = chunkVect.sub(pos, temp).normalize(temp).dot(front.mul(C, temp).normalize());
-        if (product >= 0.1f) {
-            result = true;
+        float d = C / 2.0f;
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = pos.sub(d, d, d, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = pos.add(d, d, d, temp2);
+        Vector2f result = new Vector2f();
+        boolean ints = Intersectionf.intersectRayAab(pos, front, min, max, result);
+        if (ints && result.x <= C) {
+            yea = true;
         }
-        return result;
+        return yea;
     }
 
     // determine which chunks are visible by this chunk
     public static List<Integer> determineVisible(Vector3f pos, Vector3f front) {
         List<Integer> result = new ArrayList<>();
 
-        int x = chunkFunc(pos);
+        int x = Chunk.chunkFunc(pos);
         if (!result.contains(x) && chunkCheck(pos, front)) {
             result.add(x);
         }
 
         Vector3f va = new Vector3f();
         pos.add(C, 0.0f, 0.0f, va);
-        int a = chunkFunc(va);
+        int a = Chunk.chunkFunc(va);
         if (!result.contains(a) && Chunk.chunkCheck(va, front)) {
             result.add(a);
         }
 
         Vector3f vb = new Vector3f();
         pos.add(0.0f, C, 0.0f, vb);
-        int b = chunkFunc(vb);
+        int b = Chunk.chunkFunc(vb);
         if (!result.contains(b) && Chunk.chunkCheck(vb, front)) {
             result.add(b);
         }

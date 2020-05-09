@@ -28,8 +28,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import org.joml.GeometryUtils;
+import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
@@ -551,58 +551,12 @@ public class Block extends Model {
 
     public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
         boolean ints = false;
-        Vector3f[] vertices = {
-            // front
-            new Vector3f(-1.0f, -1.0f, 1.0f),
-            new Vector3f(1.0f, -1.0f, 1.0f),
-            new Vector3f(1.0f, 1.0f, 1.0f),
-            new Vector3f(-1.0f, 1.0f, 1.0f),
-            // back
-            new Vector3f(-1.0f, -1.0f, -1.0f),
-            new Vector3f(1.0f, -1.0f, -1.0f),
-            new Vector3f(1.0f, 1.0f, -1.0f),
-            new Vector3f(-1.0f, 1.0f, -1.0f)
-        };
-        int indices[] = {
-            // front
-            0, 1, 2,
-            2, 3, 0,
-            // right
-            1, 5, 6,
-            6, 2, 1,
-            // back
-            7, 6, 5,
-            5, 4, 7,
-            // left
-            4, 0, 3,
-            3, 7, 4,
-            // bottom
-            4, 5, 1,
-            1, 0, 4,
-            // top
-            3, 2, 6,
-            6, 7, 3
-        };
-        for (int i = 0; i < indices.length; i += 3) {
-            Vector3f a = vertices[indices[i]];
-            Vector3f b = vertices[indices[i + 1]];
-            Vector3f c = vertices[indices[i + 2]];
-
-            Vector3f n = new Vector3f(); // normal of the plane
-            GeometryUtils.normal(a, b, c, n);
-
-            Vector3f temp = new Vector3f();
-            // we choose to use point a (we could used b or c too)
-            Vector3f x0 = a.add(blockPos, temp); // point on the plane translated
-            if (l.dot(n) != 0.0f) {
-                float d = x0.sub(l0).dot(n) / l.dot(n);
-                Vector3f x = l.mul(d, temp).add(l0, temp);
-                if (containsInsideEqually(blockPos, 2.0f, 2.0f, 2.0f, x)) {
-                    ints = true;
-                    break;
-                }
-            }
-        }
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = blockPos.sub(1.0f, 1.0f, 1.0f, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = blockPos.add(1.0f, 1.0f, 1.0f, temp2);
+        Vector2f result = new Vector2f();
+        ints = Intersectionf.intersectRayAab(l0, l, min, max, result);
         return ints;
     }
 
