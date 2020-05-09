@@ -245,7 +245,7 @@ public class Chunk {
                     Editor.getSELECTED_TEXTURE().bind(1, shaderProgram, "modelTexture1");
 
                     if (waterTexture != null && Game.isWaterEffects()) {
-                        shaderProgram.updateUniform(new Vector3f(1.0f , 1.0f, 1.0f), "modelColor2");
+                        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
                         waterTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
@@ -305,11 +305,11 @@ public class Chunk {
         Vector3f temp = new Vector3f();
         float product = pos.normalize(temp).dot(front);
 
-        float x = Math.round(((pos.x * product) % (A + 1)) / B);
-        float y = Math.round(((pos.y * product) % (A + 1)) / B);
-        float z = Math.round(((pos.z * product) % (A + 1)) / B);
+        float x = Math.round(((pos.x * front.x) % (A + 1)) / B);
+        float y = Math.round(((pos.y * front.y) % (A + 1)) / B);
+        float z = Math.round(((pos.z * front.z) % (A + 1)) / B);
 
-        return Math.round(((x + y + z) / 3.0f));
+        return Math.round((product * (x + y + z) / 3.0f));
     }
 
     // determine which chunks are visible by this chunk
