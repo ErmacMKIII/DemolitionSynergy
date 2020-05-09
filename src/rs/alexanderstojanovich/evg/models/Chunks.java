@@ -17,15 +17,15 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -39,9 +39,6 @@ public class Chunks {
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
-
-    //----------------Vector3f hash, Block hash---------------------------------
-    private final Map<Vector3f, Integer> posMap = new HashMap<>();
 
     private static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override
@@ -58,7 +55,11 @@ public class Chunks {
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
-        posMap.put(block.pos, block.hashCode());
+        if (block.solid) {
+            LevelContainer.ALL_SOLID_POS.add(block.pos);
+        } else {
+            LevelContainer.ALL_FLUID_POS.add(block.pos);
+        }
 
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -74,9 +75,35 @@ public class Chunks {
         chunkList.sort(COMPARATOR);
     }
 
+//    public void addBlock(byte[] byteArray, boolean solid) {
+//        byte[] posBytes = new byte[12];
+//        System.arraycopy(byteArray, 6, posBytes, 0, 12);
+//        Vector3f vector = Vector3fUtils.vec3fFromByteArray(posBytes);
+//
+//        if (solid) {
+//            LevelContainer.ALL_SOLID_POS.add(vector);
+//        } else {
+//            LevelContainer.ALL_FLUID_POS.add(vector);
+//        }
+//
+//        int chunkId = Chunk.chunkFunc(vector);
+//        System.out.println("chunkId = " + chunkId);
+//        Chunk chunk = getChunk(chunkId);
+//
+//        if (chunk == null) {
+//            chunk = new Chunk(chunkId, solid);
+//            chunkList.add(chunk);
+//        }
+//
+//        chunk.addBlock(byteArray);
+//    }
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
-        posMap.remove(block.pos);
+        if (block.solid) {
+            LevelContainer.ALL_SOLID_POS.add(block.pos);
+        } else {
+            LevelContainer.ALL_FLUID_POS.add(block.pos);
+        }
 
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -115,8 +142,7 @@ public class Chunks {
                 fluidBlock.enableAllFaces(false);
                 int faceBitsBefore = fluidBlock.getFaceBits();
                 for (int j = 0; j <= 5; j++) { // j - face number
-                    Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
-                    if (hash != null) {
+                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
                         fluidBlock.disableFace(j, false);
                     }
                 }
@@ -131,7 +157,8 @@ public class Chunks {
     public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
         Chunk result = null;
         for (Chunk chunk : chunkList) {
-            if (chunk.getId() == chunkId) {
+            if (chunk.isCached() && chunk.getMemory()[0] == chunkId
+                    || !chunk.isCached() && chunk.getId() == chunkId) {
                 result = chunk;
                 break;
             }
@@ -161,9 +188,9 @@ public class Chunks {
 
     // very useful -> it should be like this initially
     public void saveAllToMemory() {
-        for (Chunk chunk : chunkList) {
-            chunk.saveToMemory();
-        }
+//        for (Chunk chunk : chunkList) {
+//            chunk.saveToMemory();
+//        }
     }
 
     // useful when saving and wanna load everything into memory
@@ -198,10 +225,12 @@ public class Chunks {
         sb.append("NUMBER OF CHUNKS = ").append(chunkList.size()).append("\n");
         sb.append("DETAILED INFO\n");
         for (Chunk chunk : chunkList) {
-            sb.append("id = ").append(chunk.getId()).append(" | size = ").append(chunk.size()).
-                    append(" | visible = ").append(chunk.isVisible()).
-                    append(" | buffered = ").append(chunk.isBuffered()).
-                    append(" | cached = ").append(chunk.isCached())
+            sb.append("id = ").append(chunk.getId())
+                    .append(" | solid = ").append(chunk.isSolid())
+                    .append(" | size = ").append(chunk.size())
+                    .append(" | visible = ").append(chunk.isVisible())
+                    .append(" | buffered = ").append(chunk.isBuffered())
+                    .append(" | cached = ").append(chunk.isCached())
                     .append("\n");
         }
         sb.append("------------------------------------------------------------");
@@ -230,10 +259,6 @@ public class Chunks {
                 tuple.getA().setCameraInFluid(cameraInFluid);
             }
         }
-    }
-
-    public Map<Vector3f, Integer> getPosMap() {
-        return posMap;
     }
 
 }

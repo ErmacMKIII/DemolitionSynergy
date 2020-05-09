@@ -23,7 +23,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -73,6 +72,11 @@ public class LevelContainer implements GravityEnviroment {
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
+
+    // position of all the solid blocks
+    public static final List<Vector3f> ALL_SOLID_POS = new GapList<>();
+    // position of all the fluid blocks
+    public static final List<Vector3f> ALL_FLUID_POS = new GapList<>();
 
     static {
         // setting SKYBOX     
@@ -149,8 +153,8 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        solidChunks.getPosMap().clear();
-        fluidChunks.getPosMap().clear();
+        ALL_SOLID_POS.clear();
+        ALL_FLUID_POS.clear();
 
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
@@ -219,18 +223,9 @@ public class LevelContainer implements GravityEnviroment {
             if (myWindow.shouldClose()) {
                 break;
             }
-            byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
-            System.arraycopy(texName, 0, buffer, pos, 5);
-            pos += 5;
-            byte[] solidPos = Vector3fUtils.vec3fToByteArray(solidBlock.getPos());
-            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
-            pos += solidPos.length;
-            Vector3f primCol = solidBlock.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
-            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
-            pos += solidCol.length;
-
+            byte[] byteArraySolid = solidBlock.toByteArray();
+            System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
+            pos += 29;
             progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
         }
 
@@ -248,19 +243,9 @@ public class LevelContainer implements GravityEnviroment {
             if (myWindow.shouldClose()) {
                 break;
             }
-
-            byte[] texName = fluidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
-            System.arraycopy(texName, 0, buffer, pos, 5);
-            pos += 5;
-            byte[] solidPos = Vector3fUtils.vec3fToByteArray(fluidBlock.getPos());
-            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
-            pos += solidPos.length;
-            Vector3f primCol = fluidBlock.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
-            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
-            pos += solidCol.length;
-
+            byte[] byteArrayFluid = fluidBlock.toByteArray();
+            System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
+            pos += 29;
             progress += 100.0f / (fluidBlocks.size() + fluidBlocks.size());
         }
 
@@ -293,8 +278,8 @@ public class LevelContainer implements GravityEnviroment {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            solidChunks.getPosMap().clear();
-            fluidChunks.getPosMap().clear();
+            ALL_SOLID_POS.clear();
+            ALL_FLUID_POS.clear();
 
             pos += 2;
             byte[] posArr = new byte[12];
@@ -334,72 +319,46 @@ public class LevelContainer implements GravityEnviroment {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
                 for (int i = 0; i < solidNum && !myWindow.shouldClose(); i++) {
-                    char[] texNameArr = new char[5];
-                    for (int k = 0; k < texNameArr.length; k++) {
-                        texNameArr[k] = (char) buffer[pos++];
-                    }
-                    String texName = String.valueOf(texNameArr);
-
-                    byte[] blockPosArr = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
-                    Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                    pos += blockPosArr.length;
-
-                    byte[] blockPosCol = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
-                    Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                    pos += blockPosCol.length;
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, true);
-                    solidChunks.addBlock(block);
-
+                    byte[] byteArraySolid = new byte[29];
+                    System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
+                    Block solidBlock = Block.fromByteArray(byteArraySolid, true);
+                    solidChunks.addBlock(solidBlock);
+                    pos += 29;
                     progress += 50.0f / solidNum;
                 }
                 solidChunks.saveAllToMemory();
-            }
 
-            char[] fluid = new char[5];
-            for (int i = 0; i < fluid.length; i++) {
-                fluid[i] = (char) buffer[pos++];
-            }
-            String strFluid = String.valueOf(fluid);
+                char[] fluid = new char[5];
+                for (int i = 0; i < fluid.length; i++) {
+                    fluid[i] = (char) buffer[pos++];
+                }
+                String strFluid = String.valueOf(fluid);
 
-            if (strFluid.equals("FLUID")) {
-                int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-                pos += 2;
-                for (int i = 0; i < fluidNum && !myWindow.shouldClose(); i++) {
-                    char[] texNameArr = new char[5];
-                    for (int k = 0; k < texNameArr.length; k++) {
-                        texNameArr[k] = (char) buffer[pos++];
+                if (strFluid.equals("FLUID")) {
+                    int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                    pos += 2;
+                    for (int i = 0; i < fluidNum && !myWindow.shouldClose(); i++) {
+                        byte[] byteArrayFluid = new byte[29];
+                        System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
+                        Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
+                        fluidChunks.addBlock(fluidBlock);
+                        pos += 29;
+                        progress += 50.0f / fluidNum;
                     }
-                    String texName = String.valueOf(texNameArr);
+                    fluidChunks.saveAllToMemory();
 
-                    byte[] blockPosArr = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
-                    Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                    pos += blockPosArr.length;
-
-                    byte[] blockPosCol = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
-                    Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                    pos += blockPosCol.length;
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, false);
-                    fluidChunks.addBlock(block);
-
-                    progress += 50.0f / fluidNum;
+                    char[] end = new char[3];
+                    for (int i = 0; i < end.length; i++) {
+                        end[i] = (char) buffer[pos++];
+                    }
+                    String strEnd = String.valueOf(end);
+                    if (strEnd.equals("END")) {
+                        success = true;
+                    }
                 }
-                fluidChunks.saveAllToMemory();
 
-                char[] end = new char[3];
-                for (int i = 0; i < end.length; i++) {
-                    end[i] = (char) buffer[pos++];
-                }
-                String strEnd = String.valueOf(end);
-                if (strEnd.equals("END")) {
-                    success = true;
-                }
             }
+
         }
         levelActors.unfreeze();
         progress = 100.0f;
@@ -524,25 +483,25 @@ public class LevelContainer implements GravityEnviroment {
     // thats what gravity does, object fells down if they don't have support below it (sky or other object)
     @Override
     public void gravityDo(float deltaTime) {
-        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
-        for (Vector3f solidBlockPos : solidMap.keySet()) {
-            Vector3f bottom = new Vector3f(solidBlockPos);
-            bottom.y -= 1.0f;
-            boolean massBelow = false;
-            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
-                if (!solidBlockPos.equals(otherSolidBlockPos)
-                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
-                    massBelow = true;
-                    break;
-                }
-            }
-            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
-            if (!massBelow && inSkybox) {
-                solidBlockPos.y -= value;
-            }
-        }
-        solidChunks.setBuffered(false);
+//        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+//        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
+//        for (Vector3f solidBlockPos : solidMap.keySet()) {
+//            Vector3f bottom = new Vector3f(solidBlockPos);
+//            bottom.y -= 1.0f;
+//            boolean massBelow = false;
+//            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
+//                if (!solidBlockPos.equals(otherSolidBlockPos)
+//                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
+//                    massBelow = true;
+//                    break;
+//                }
+//            }
+//            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
+//            if (!massBelow && inSkybox) {
+//                solidBlockPos.y -= value;
+//            }
+//        }
+//        solidChunks.setBuffered(false);
     }
 
     public void update(float deltaTime) { // call it externally from the main thread 
@@ -560,23 +519,23 @@ public class LevelContainer implements GravityEnviroment {
         for (Chunk solidChunk : solidChunks.getChunkList()) {
             if (solidChunk != null) {
                 solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
-                if (solidChunk.isVisible() && solidChunk.isCached()) {
-                    solidChunk.loadFromMemory();
-                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
-                    solidChunk.saveToMemory();
-                }
+//                if (solidChunk.isVisible() && solidChunk.isCached()) {
+//                    solidChunk.loadFromMemory();
+//                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
+//                    solidChunk.saveToMemory();
+//                }
             }
         }
 
         for (Chunk fluidChunk : fluidChunks.getChunkList()) {
             if (fluidChunk != null) {
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
-                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
-                    fluidChunk.loadFromMemory();
-                    fluidChunks.updateFluids(fluidChunk, true);
-                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
-                    fluidChunk.saveToMemory();
-                }
+//                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
+//                    fluidChunk.loadFromMemory();
+//                    fluidChunks.updateFluids(fluidChunk, true);
+//                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
+//                    fluidChunk.saveToMemory();
+//                }
                 fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }

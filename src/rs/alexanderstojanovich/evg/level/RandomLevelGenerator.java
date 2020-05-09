@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.level;
 import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -70,8 +69,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (levelContainer.getSolidChunks().getPosMap().get(randPos) != null
-                || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
+        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
+                || LevelContainer.ALL_FLUID_POS.contains(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -95,8 +94,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (levelContainer.getSolidChunks().getPosMap().get(randPos) != null
-                || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
+        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
+                || LevelContainer.ALL_FLUID_POS.contains(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -112,8 +111,8 @@ public class RandomLevelGenerator {
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
         List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
-                levelContainer.getSolidChunks().getPosMap(),
-                levelContainer.getFluidChunks().getPosMap()
+                LevelContainer.ALL_SOLID_POS,
+                LevelContainer.ALL_FLUID_POS
         );
         if (possibleFaces.isEmpty()) {
             return null;
@@ -145,8 +144,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (levelContainer.getSolidChunks().getPosMap().get(adjPos) != null
-                || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
+        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
+                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
@@ -162,8 +161,8 @@ public class RandomLevelGenerator {
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
         List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
-                levelContainer.getSolidChunks().getPosMap(),
-                levelContainer.getFluidChunks().getPosMap()
+                LevelContainer.ALL_SOLID_POS,
+                LevelContainer.ALL_FLUID_POS
         );
         if (possibleFaces.isEmpty()) {
             return null;
@@ -195,8 +194,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (levelContainer.getSolidChunks().getPosMap().get(adjPos) != null
-                || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
+        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
+                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();

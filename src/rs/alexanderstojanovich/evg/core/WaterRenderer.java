@@ -61,10 +61,9 @@ public class WaterRenderer {
             for (Block fluidBlock : currChunk.getList()) {
                 float waterHeight = fluidBlock.getSurfaceY();
                 Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
-                Integer topSolidBlockHashCode = levelContainer.getSolidChunks().getPosMap().get(topPos);
                 if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                         && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
-                        && topSolidBlockHashCode == null // it must be nothing on top of it
+                        && !LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
                         && waterHeight <= obsHeight) { // and it needs to be below the observer
                     fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                     currChunk.setWaterTexture(frameBuffer.getTexture());

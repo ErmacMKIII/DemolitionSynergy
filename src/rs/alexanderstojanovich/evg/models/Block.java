@@ -32,12 +32,12 @@ import java.util.Map;
 import org.joml.GeometryUtils;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -472,11 +472,11 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
-    public List<Integer> getAdjacentFreeFaceNumbers(Map<Vector3f, Integer> solidMap, Map<Vector3f, Integer> fluidMap) {
+    public List<Integer> getAdjacentFreeFaceNumbers(List<Vector3f> solidList, List<Vector3f> fluidList) {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (solidMap.get(adjPos) == null && fluidMap.get(adjPos) == null) {
+            if (!solidList.contains(adjPos) && !fluidList.contains(adjPos)) {
                 result.add(j);
             }
         }
@@ -605,4 +605,43 @@ public class Block extends Model {
         }
         return ints;
     }
+
+    public byte[] toByteArray() {
+        byte[] byteArray = new byte[29];
+        int offset = 0;
+        byte[] texName = primaryTexture.getImage().getFileName().getBytes();
+        System.arraycopy(texName, 0, byteArray, offset, 5);
+        offset += 5;
+        byte[] solidPos = Vector3fUtils.vec3fToByteArray(pos);
+        System.arraycopy(solidPos, 0, byteArray, offset, solidPos.length); // 12 B
+        offset += solidPos.length;
+        byte[] solidCol = Vector3fUtils.vec3fToByteArray(primaryColor);
+        System.arraycopy(solidCol, 0, byteArray, offset, solidCol.length); // 12 B
+        offset += solidCol.length;
+        return byteArray;
+    }
+
+    public static Block fromByteArray(byte[] byteArray, boolean solid) {
+        int offset = 0;
+        char[] texNameArr = new char[5];
+        for (int k = 0; k < texNameArr.length; k++) {
+            texNameArr[k] = (char) byteArray[offset++];
+        }
+        String texName = String.valueOf(texNameArr);
+
+        byte[] blockPosArr = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
+        Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+        offset += blockPosArr.length;
+
+        byte[] blockPosCol = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
+        Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+        offset += blockPosCol.length;
+
+        Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
+
+        return block;
+    }
+
 }
