@@ -249,8 +249,8 @@ public class Editor {
 
     private static boolean cannotPlace(LevelContainer levelContainer) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_SOLID_POS.contains(selectedNew.getPos())
-                || LevelContainer.ALL_FLUID_POS.contains(selectedNew.getPos());
+        boolean placeOccupied = LevelContainer.ALL_SOLID_POS.containsKey(selectedNew.getPos())
+                || LevelContainer.ALL_FLUID_POS.containsKey(selectedNew.getPos());
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());

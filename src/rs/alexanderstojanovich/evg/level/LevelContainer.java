@@ -23,9 +23,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -74,9 +75,9 @@ public class LevelContainer implements GravityEnviroment {
     private final AudioPlayer soundFXPlayer;
 
     // position of all the solid blocks
-    public static final List<Vector3f> ALL_SOLID_POS = new GapList<>();
+    public static final Map<Vector3f, Integer> ALL_SOLID_POS = new HashMap<>();
     // position of all the fluid blocks
-    public static final List<Vector3f> ALL_FLUID_POS = new GapList<>();
+    public static final Map<Vector3f, Integer> ALL_FLUID_POS = new HashMap<>();
 
     static {
         // setting SKYBOX     
@@ -464,16 +465,12 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
 
-        int currChunkId = Chunk.chunkFunc(critter.getPredictor());
-        Chunk currSolidChunk = solidChunks.getChunk(currChunkId);
-        if (currSolidChunk != null && !coll) {
-            for (Block solidBlock : currSolidChunk.getList()) {
-                if (solidBlock.containsInsideEqually(critter.getPredictor())
-                        || solidBlock.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                                critter.getModel().getHeight(), critter.getModel().getDepth())) {
-                    coll = true;
-                    break;
-                }
+        for (Vector3f posKey : ALL_SOLID_POS.keySet()) {
+            if (Block.containsInsideEqually(posKey, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                    || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                            critter.getModel().getHeight(), critter.getModel().getDepth(), posKey, 2.0f, 2.0f, 2.0f)) {
+                coll = true;
+                break;
             }
         }
 
@@ -548,7 +545,7 @@ public class LevelContainer implements GravityEnviroment {
             // is list of estimated visible chunks (by the camera pos and front)
             visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
             patch();
-        } 
+        }
     }
 
     public void render() { // render for regular level rendering

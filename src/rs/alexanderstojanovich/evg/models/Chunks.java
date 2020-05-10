@@ -54,9 +54,9 @@ public class Chunks {
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(block.pos);
+            LevelContainer.ALL_SOLID_POS.put(block.pos, block.hashCode());
         } else {
-            LevelContainer.ALL_FLUID_POS.add(block.pos);
+            LevelContainer.ALL_FLUID_POS.put(block.pos, block.hashCode());
         }
 
         //----------------------------------------------------------------------
@@ -73,34 +73,12 @@ public class Chunks {
         chunkList.sort(COMPARATOR);
     }
 
-//    public void addBlock(byte[] byteArray, boolean solid) {
-//        byte[] posBytes = new byte[12];
-//        System.arraycopy(byteArray, 6, posBytes, 0, 12);
-//        Vector3f vector = Vector3fUtils.vec3fFromByteArray(posBytes);
-//
-//        if (solid) {
-//            LevelContainer.ALL_SOLID_POS.add(vector);
-//        } else {
-//            LevelContainer.ALL_FLUID_POS.add(vector);
-//        }
-//
-//        int chunkId = Chunk.chunkCheck(vector);
-//        System.out.println("chunkId = " + chunkId);
-//        Chunk chunk = getChunk(chunkId);
-//
-//        if (chunk == null) {
-//            chunk = new Chunk(chunkId, solid);
-//            chunkList.add(chunk);
-//        }
-//
-//        chunk.addBlock(byteArray);
-//    }
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
         if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(block.pos);
+            LevelContainer.ALL_SOLID_POS.remove(block.pos);
         } else {
-            LevelContainer.ALL_FLUID_POS.add(block.pos);
+            LevelContainer.ALL_FLUID_POS.remove(block.pos);
         }
 
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -140,7 +118,7 @@ public class Chunks {
                 fluidBlock.enableAllFaces(false);
                 int faceBitsBefore = fluidBlock.getFaceBits();
                 for (int j = 0; j <= 5; j++) { // j - face number
-                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                    if (LevelContainer.ALL_FLUID_POS.containsKey(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
                         fluidBlock.disableFace(j, false);
                     }
                 }

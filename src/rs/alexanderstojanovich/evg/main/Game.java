@@ -61,7 +61,7 @@ public class Game {
     private static int updPasses = 0;
     public static final int UPD_MAX_PASSES = 10;
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 1000.0;
+    public static final double CRITICAL_TIME = 5.0;
 
     private final Window myWindow;
     private final Renderer renderer;

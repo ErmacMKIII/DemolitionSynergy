@@ -165,12 +165,13 @@ public class Renderer extends Thread {
                     intrface.getProgText().setEnabled(false);
                     levelContainer.setProgress(0);
                 }
-                synchronized (objMutex) {
-                    myWindow.loadContext();
-                    if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
+
+                if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
+                    synchronized (objMutex) {
+                        myWindow.loadContext();
                         levelContainer.animate();
+                        Window.unloadContext();
                     }
-                    Window.unloadContext();
                 }
                 timer2 += 0.25;
             }
