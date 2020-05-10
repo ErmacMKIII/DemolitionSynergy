@@ -86,7 +86,7 @@ public class Renderer extends Thread {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
+            fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
@@ -96,7 +96,7 @@ public class Renderer extends Thread {
                 break;
             }
 
-            if (Game.getUpdPasses() == 0 && fpsTicks >= 1.0) {
+            if (Game.getUpsTicks() < 1.0 && fpsTicks >= 1.0) {
                 synchronized (objMutex) {
                     myWindow.loadContext();
                     while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {

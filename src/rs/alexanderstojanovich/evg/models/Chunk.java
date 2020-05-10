@@ -18,7 +18,9 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -61,7 +63,7 @@ public class Chunk {
     // where each tuple is considered as:                
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple<Blocks, Integer, Integer, String, Integer>> tupleList = new GapList<>();
+    private final Set<Tuple<Blocks, Integer, Integer, String, Integer>> tupleSet = new HashSet<>();
 
     private Texture waterTexture;
 
@@ -80,7 +82,7 @@ public class Chunk {
 
     public Tuple<Blocks, Integer, Integer, String, Integer> getTuple(String keyTexture, Integer keyFaceBits) {
         Tuple<Blocks, Integer, Integer, String, Integer> result = null;
-        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             if (tuple.getD() != null && tuple.getD().equals(keyTexture)
                     && tuple.getE() != null && tuple.getE().equals(keyFaceBits)) {
                 result = tuple;
@@ -97,7 +99,7 @@ public class Chunk {
 
         if (tuple == null) {
             tuple = new Tuple<>(new Blocks(), 0, 0, blockTexture, blockFaceBits);
-            tupleList.add(tuple);
+            tupleSet.add(tuple);
         }
 
         tuple.getA().getBlockList().add(block);
@@ -112,12 +114,12 @@ public class Chunk {
             target.getA().getBlockList().remove(block);
             // if tuple has no blocks -> remove it
             if (target.getA().getBlockList().isEmpty()) {
-                tupleList.remove(target);
+                tupleSet.remove(target);
             }
         }
     }
 
-    public void bufferVectors(Blocks blocks, int tupleIndex) {
+    public void bufferVectors(Blocks blocks,  Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
         FloatBuffer vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC3_SIZE);
         for (Block block : blocks.getBlockList()) {
             Vector3f color = block.getPrimaryColor();
@@ -130,10 +132,10 @@ public class Chunk {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec3FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        tupleList.get(tupleIndex).setB(vec4Vbo);
+        tuple.setB(vec4Vbo);
     }
 
-    public void bufferMatrices(Blocks blocks, int tupleIndex) {
+    public void bufferMatrices(Blocks blocks,  Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * MAT4_SIZE);
         for (Block block : blocks.getBlockList()) {
             block.calcModelMatrix();
@@ -153,31 +155,29 @@ public class Chunk {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        tupleList.get(tupleIndex).setC(mat4Vbo);
+        tuple.setC(mat4Vbo);
     }
 
     public void bufferAll() {
         if (!cached) {
-            int tupleIndex = 0;
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 Blocks blocks = tuple.getA();
                 blocks.bufferVertices();
-                bufferMatrices(blocks, tupleIndex);
-                bufferVectors(blocks, tupleIndex);
-                tupleIndex++;
+                bufferMatrices(blocks, tuple);
+                bufferVectors(blocks, tuple);
             }
             buffered = true;
         }
     }
 
     public void animate() { // call only for fluid blocks
-        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             tuple.getA().animate();
         }
     }
 
     public void prepare() { // call only for fluid blocks before rendering        
-        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             Blocks blocks = tuple.getA();
             blocks.prepare();
         }
@@ -185,14 +185,14 @@ public class Chunk {
 
     // set camera in fluid for underwater effects (call only for fluid)
     public void setCameraInFluid(boolean cameraInFluid) {
-        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             tuple.getA().setCameraInFluid(cameraInFluid);
         }
     }
 
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty() && visible) {
+        if (buffered && shaderProgram != null && !tupleSet.isEmpty() && visible) {
             Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
@@ -204,7 +204,7 @@ public class Chunk {
             GL20.glEnableVertexAttribArray(6);
             GL20.glEnableVertexAttribArray(7);
 
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 // if tuple has any blocks to be rendered and
                 // if face bits are greater than zero, i.e. tuple has something to be rendered
                 if (!tuple.getA().getBlockList().isEmpty() && tuple.getE() > 0) {
@@ -288,7 +288,7 @@ public class Chunk {
         if (buffered && !cached) {
             //--------------------------A--------B--------C-------D--------E-----------------------------
             //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 GL15.glDeleteBuffers(tuple.getA().getBigVbo());
                 GL15.glDeleteBuffers(tuple.getB());
                 GL15.glDeleteBuffers(tuple.getC());
@@ -382,7 +382,7 @@ public class Chunk {
         if (cached) {
             size = (pos + 1 - 3) / 29;
         } else {
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 size += tuple.getA().getBlockList().size();
             }
         }
@@ -391,7 +391,7 @@ public class Chunk {
 
     public List<Block> getList() {
         List<Block> result = new GapList<>();
-        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleList) {
+        for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             result.addAll(tuple.getA().getBlockList());
         }
         return result;
@@ -416,7 +416,7 @@ public class Chunk {
                 System.arraycopy(solidCol, 0, memory, pos, solidCol.length);
                 pos += solidCol.length;
             }
-            tupleList.clear();
+            tupleSet.clear();
             cached = true;
         }
     }
@@ -458,8 +458,8 @@ public class Chunk {
         return solid;
     }
 
-    public List<Tuple<Blocks, Integer, Integer, String, Integer>> getTupleList() {
-        return tupleList;
+    public Set<Tuple<Blocks, Integer, Integer, String, Integer>> getTupleList() {
+        return tupleSet;
     }
 
     public Texture getWaterTexture() {

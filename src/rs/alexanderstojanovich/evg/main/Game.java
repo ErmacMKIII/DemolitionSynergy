@@ -501,7 +501,7 @@ public class Game {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += -Math.expm1(-diff * Game.TPS);
+            upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
@@ -511,24 +511,24 @@ public class Game {
                 break;
             }
 
-            if (Renderer.getRenPasses() == 0) {
-                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
-                    GLFW.glfwPollEvents();
+            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                GLFW.glfwPollEvents();
+                if (Renderer.getRenPasses() == 0) {
                     float deltaTime = (float) (upsTicks / TPS);
                     renderer.update(deltaTime);
-                    if (currentMode == Mode.SINGLE_PLAYER) {
-                        playerDo();
-                    } else if (currentMode == Mode.EDITOR) {
-                        renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                        editorDo();
-                    }
-                    observerDo();
-                    ups++;
-                    upsTicks--;
-                    updPasses++;
                 }
-                updPasses = 0;
+                if (currentMode == Mode.SINGLE_PLAYER) {
+                    playerDo();
+                } else if (currentMode == Mode.EDITOR) {
+                    renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                    editorDo();
+                }
+                observerDo();
+                ups++;
+                upsTicks--;
+                updPasses++;
             }
+            updPasses = 0;
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
