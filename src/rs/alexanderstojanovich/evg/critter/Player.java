@@ -31,19 +31,21 @@ public class Player extends Observer {
 
     private double hitPoints = 100.0;
     private Model currWeapon;
-    private final Model[] weapons = Model.WEAPONS;
+//    private final Model[] weapons = Model.WEAPONS;
     private final Matrix4f viewMatrix = new Matrix4f();
 
-    public Player(String modelFileName, Texture texture, Vector3f pos, Vector3f color, float scale) {
-        super(modelFileName, texture, pos, color, scale);
+    public Player(Model currWeapon, String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
+        super(modelFileName, texName, pos, color, scale);
+        this.currWeapon = currWeapon;
     }
 
-    public Player(Camera camera, Model model) {
+    public Player(Model currWeapon, Camera camera, Model model) {
         super(camera, model);
+        this.currWeapon = currWeapon;
     }
 
     public void switchWeapon(int num) {
-        currWeapon = weapons[num - 1];
+//        currWeapon = weapons[num - 1];
     }
 
     @Override
@@ -61,10 +63,9 @@ public class Player extends Observer {
         return hitPoints;
     }
 
-    public Model[] getWeapons() {
-        return weapons;
-    }
-
+//    public Model[] getWeapons() {
+//        return weapons;
+//    }
     public Model getCurrWeapon() {
         return currWeapon;
     }

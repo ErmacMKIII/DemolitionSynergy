@@ -147,17 +147,20 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                 block.light = lightSrc;
                 block.transform(shaderProgram);
                 block.useLight(shaderProgram);
-                if (block.primaryTexture != null) { // this is primary texture
+                Texture primaryTexture = Texture.TEX_MAP.getOrDefault(block.texName, Texture.QMARK);
+                if (primaryTexture != null) { // this is primary texture
                     block.primaryColor(shaderProgram);
-                    block.primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
-                if (block.secondaryTexture != null) { // this is editor overlay texture
+
+                if (block.decal) { // this is editor overlay texture
                     block.secondaryColor(shaderProgram);
-                    block.secondaryTexture.bind(1, shaderProgram, "modelTexture1");
+                    Texture secondaryTexture = Texture.MINIGUN;
+                    secondaryTexture.bind(1, shaderProgram, "modelTexture1");
                 }
-                if (block.tertiaryTexture != null) { // this is reflective texture
+                if (block.waterTexture != null) { // this is reflective texture
                     block.tertiaryColor(shaderProgram);
-                    block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
+                    block.waterTexture.bind(2, shaderProgram, "modelTexture2");
                 }
 
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
@@ -210,16 +213,20 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
                     block.useLight(shaderProgram);
-                    if (block.primaryTexture != null) { // this is primary texture
+                    Texture primaryTexture = Texture.TEX_MAP.getOrDefault(block.texName, Texture.QMARK);
+                    if (primaryTexture != null) { // this is primary texture
                         block.primaryColor(shaderProgram);
-                        block.primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                        primaryTexture.bind(0, shaderProgram, "modelTexture0");
                     }
-                    if (block.secondaryTexture != null) { // this is editor overlay texture
+
+                    if (block.decal) { // this is editor overlay texture
                         block.secondaryColor(shaderProgram);
-                        block.secondaryTexture.bind(1, shaderProgram, "modelTexture1");
+                        Texture secondaryTexture = Texture.MINIGUN;
+                        secondaryTexture.bind(1, shaderProgram, "modelTexture1");
                     }
-                    if (block.tertiaryTexture != null) { // this is reflective texture
-                        block.tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
+                    if (block.waterTexture != null) { // this is reflective texture
+                        block.tertiaryColor(shaderProgram);
+                        block.waterTexture.bind(2, shaderProgram, "modelTexture2");
                     }
 
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));

@@ -38,7 +38,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -54,9 +53,9 @@ public class Model implements Comparable<Model> {
 
     protected List<Vertex> vertices = new ArrayList<>();
     protected List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
-    protected Texture primaryTexture;
-    protected Texture secondaryTexture;
-    protected Texture tertiaryTexture;
+    protected String texName;
+    protected boolean decal = false;
+    protected Texture waterTexture;
 
     protected float width; // X axis dimension
     protected float height; // Y axis dimension
@@ -82,28 +81,25 @@ public class Model implements Comparable<Model> {
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
 
-    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
-            Texture.PISTOL, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
-            Texture.SUB_MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
-            Texture.SHOTGUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
-            Texture.ASSAULT_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
-            Texture.MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
-            Texture.SNIPER_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-
-    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-
-    static {
-        for (Model weapon : WEAPONS) {
-            weapon.scale = 6.0f;
-            weapon.rY = (float) (-Math.PI / 2.0f);
-        }
-    }
-
+//    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
+//            Texture.PISTOL, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
+//            Texture.SUB_MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
+//            Texture.SHOTGUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
+//            Texture.ASSAULT_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
+//            Texture.MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
+//            Texture.SNIPER_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+//    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
+//    static {
+//        for (Model weapon : WEAPONS) {
+//            weapon.scale = 6.0f;
+//            weapon.rY = (float) (-Math.PI / 2.0f);
+//        }
+//    }
     protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }
@@ -119,9 +115,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
@@ -131,9 +127,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
@@ -321,17 +317,21 @@ public class Model implements Comparable<Model> {
             transform(shaderProgram);
             useLight(shaderProgram);
             setAlpha(shaderProgram);
+
+            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
             if (primaryTexture != null) { // this is primary texture
                 primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
-            if (secondaryTexture != null) { // this is editor overlay texture
+
+            if (decal) { // this is editor overlay texture
                 secondaryColor(shaderProgram);
+                Texture secondaryTexture = Texture.MINIGUN;
                 secondaryTexture.bind(1, shaderProgram, "modelTexture1");
             }
-            if (tertiaryTexture != null) { // this is reflective texture
-
-                tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
+            if (waterTexture != null) { // this is reflective texture
+                tertiaryColor(shaderProgram);
+                waterTexture.bind(2, shaderProgram, "modelTexture2");
             }
         }
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.size(), GL11.GL_UNSIGNED_INT, 0);
@@ -583,7 +583,7 @@ public class Model implements Comparable<Model> {
 
     @Override
     public String toString() {
-        return "Model{" + "modelFileName=" + modelFileName + ", texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
+        return "Model{" + "modelFileName=" + modelFileName + ", texName = " + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public void animate(boolean selfBuffer) {
@@ -640,16 +640,8 @@ public class Model implements Comparable<Model> {
         return indices;
     }
 
-    public Texture getPrimaryTexture() {
-        return primaryTexture;
-    }
-
-    public Texture getSecondaryTexture() {
-        return secondaryTexture;
-    }
-
-    public Texture getTertiaryTexture() {
-        return tertiaryTexture;
+    public Texture getWaterTexture() {
+        return waterTexture;
     }
 
     public float getWidth() {
@@ -747,16 +739,24 @@ public class Model implements Comparable<Model> {
         this.pos = pos;
     }
 
-    public void setPrimaryTexture(Texture primaryTexture) {
-        this.primaryTexture = primaryTexture;
+    public String getTexName() {
+        return texName;
     }
 
-    public void setSecondaryTexture(Texture secondaryTexture) {
-        this.secondaryTexture = secondaryTexture;
+    public void setTexName(String texName) {
+        this.texName = texName;
     }
 
-    public void setTertiaryTexture(Texture tertiaryTexture) {
-        this.tertiaryTexture = tertiaryTexture;
+    public boolean isDecal() {
+        return decal;
+    }
+
+    public void setDecal(boolean decal) {
+        this.decal = decal;
+    }
+
+    public void setWaterTexture(Texture waterTexture) {
+        this.waterTexture = waterTexture;
     }
 
     public boolean isBuffered() {
@@ -770,7 +770,7 @@ public class Model implements Comparable<Model> {
             return (this.vertices.equals(that.vertices)
                     && this.indices.equals(that.indices)
                     && this.pos.equals(that.pos)
-                    && this.primaryTexture.equals(that.primaryTexture)
+                    && this.texName.equals(that.texName)
                     && this.primaryColor.equals(that.primaryColor)
                     && this.width == that.width
                     && this.height == that.height
@@ -786,7 +786,7 @@ public class Model implements Comparable<Model> {
         int hash = 7;
         hash = 43 * hash + Objects.hashCode(this.vertices);
         hash = 43 * hash + Objects.hashCode(this.indices);
-        hash = 43 * hash + Objects.hashCode(this.primaryTexture);
+        hash = 43 * hash + Objects.hashCode(this.texName);
         hash = 43 * hash + Float.floatToIntBits(this.width);
         hash = 43 * hash + Float.floatToIntBits(this.height);
         hash = 43 * hash + Float.floatToIntBits(this.depth);

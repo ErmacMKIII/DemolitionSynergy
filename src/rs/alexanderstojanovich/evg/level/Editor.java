@@ -36,8 +36,6 @@ public class Editor {
     private static Block selectedCurr = null;
     private static int selectedCurrIndex = -1;
 
-    private static final Texture SELECTED_TEXTURE = Texture.MINIGUN;
-
     private static int value = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
@@ -66,7 +64,7 @@ public class Editor {
             selectedNew.getSecondaryColor().x = 0.0f;
             selectedNew.getSecondaryColor().y = 1.0f;
             selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
+            selectedNew.setDecal(true);
         }
 
         levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -102,7 +100,7 @@ public class Editor {
                 selectedCurr.getSecondaryColor().y = 1.0f;
                 selectedCurr.getSecondaryColor().z = 0.0f;
 
-                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedNew.setDecal(true);
 
                 selectedCurrIndex = solidBlkIndex;
             }
@@ -139,7 +137,7 @@ public class Editor {
                 selectedCurr.getSecondaryColor().y = 1.0f;
                 selectedCurr.getSecondaryColor().z = 0.0f;
 
-                selectedCurr.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedNew.setDecal(true);
 
                 selectedCurrIndex = fluidBlkIndex;
             }
@@ -148,7 +146,7 @@ public class Editor {
 
     public static void deselect() {
         if (selectedCurr != null) {
-            selectedCurr.setSecondaryTexture(null);
+            selectedCurr.setDecal(false);
             selectedCurr.getSecondaryColor().x = 1.0f;
             selectedCurr.getSecondaryColor().y = 1.0f;
             selectedCurr.getSecondaryColor().z = 1.0f;
@@ -198,7 +196,7 @@ public class Editor {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
-                selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedNew.setDecal(true);
             }
         }
     }
@@ -244,7 +242,7 @@ public class Editor {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
-                selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
+                selectedNew.setDecal(true);
             }
         }
     }
@@ -289,7 +287,7 @@ public class Editor {
             selectedNew.getSecondaryColor().x = 1.0f;
             selectedNew.getSecondaryColor().y = 0.0f;
             selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.setSecondaryTexture(SELECTED_TEXTURE);
+            selectedNew.setDecal(true);
         }
         return cant;
     }
@@ -336,27 +334,27 @@ public class Editor {
     }
 
     private static void selectLoadedTexture() {
-        Texture texture = null;
+        String texName = null;
         if (loaded != null) {
             switch (value) {
                 case 0:
-                    texture = Texture.CRATE;
+                    texName = "crate";
                     loaded.setSolid(true);
                     break;
                 case 1:
-                    texture = Texture.STONE;
+                    texName = "stone";
                     loaded.setSolid(true);
                     break;
                 case 2:
-                    texture = Texture.WATER;
+                    texName = "water";
                     loaded.setSolid(false);
                     break;
                 case 3:
-                    texture = Texture.DOOM0;
+                    texName = "doom0";
                     loaded.setSolid(true);
                     break;
             }
-            loaded.setPrimaryTexture(texture);
+            loaded.setTexName(texName);
         }
     }
 
@@ -388,10 +386,6 @@ public class Editor {
 
     public static int getSelectedCurrIndex() {
         return selectedCurrIndex;
-    }
-
-    public static Texture getSELECTED_TEXTURE() {
-        return SELECTED_TEXTURE;
     }
 
 }

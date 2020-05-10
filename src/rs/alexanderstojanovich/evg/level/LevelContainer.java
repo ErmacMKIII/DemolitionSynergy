@@ -45,7 +45,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class LevelContainer implements GravityEnviroment {
 
     private final Window myWindow;
-    public static final Block SKYBOX = new Block(true, Texture.NIGHT);
+    public static final Block SKYBOX = new Block(true, "night");
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
@@ -107,7 +107,7 @@ public class LevelContainer implements GravityEnviroment {
 
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block(false, Texture.DOOM0);
+                Block entity = new Block(false, "doom0");
 
                 entity.getPos().x = 4.0f * i;
                 entity.getPos().y = 4.0f * j;

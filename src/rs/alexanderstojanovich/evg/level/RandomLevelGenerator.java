@@ -46,15 +46,15 @@ public class RandomLevelGenerator {
         this.numberOfBlocks = numberOfBlocks;
     }
 
-    private Texture randomSolidTexture() {
+    private String randomSolidTexture() {
         int randTexture = random.nextInt(3);
         switch (randTexture) {
             case 0:
-                return Texture.STONE;
+                return "stone";
             case 1:
-                return Texture.CRATE;
+                return "crate";
             case 2:
-                return Texture.DOOM0;
+                return "doom0";
         }
         return null;
     }
@@ -103,7 +103,7 @@ public class RandomLevelGenerator {
         float colb = random.nextFloat();
         Vector3f pos = randPos;
         Vector3f col = new Vector3f(colr, colg, colb);
-        Block fluidBlock = new Block(false, Texture.WATER, pos, col, false);
+        Block fluidBlock = new Block(false, "water", pos, col, false);
 
         levelContainer.getFluidChunks().addBlock(fluidBlock);
         return fluidBlock;
@@ -152,7 +152,7 @@ public class RandomLevelGenerator {
         float adjColg = random.nextFloat();
         float adjColb = random.nextFloat();
         Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
-        Texture adjTexture = randomSolidTexture();
+        String adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, true);
 
         levelContainer.getSolidChunks().addBlock(solidAdjBlock);
@@ -202,7 +202,7 @@ public class RandomLevelGenerator {
         float adjColg = random.nextFloat();
         float adjColb = random.nextFloat();
         Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
-        Texture adjTexture = Texture.WATER;
+        String adjTexture = "water";
         Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
 
         levelContainer.getFluidChunks().addBlock(fluidAdjBlock);

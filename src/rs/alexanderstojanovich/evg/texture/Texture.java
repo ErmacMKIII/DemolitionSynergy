@@ -36,13 +36,14 @@ public class Texture {
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png");
     public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png");
     public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
-    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "hack.png");
+    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
     public static final Texture DOOM0 = new Texture(Game.WORLD_ENTRY, "doom0.png");
     public static final Texture CRATE = new Texture(Game.WORLD_ENTRY, "crate.png");
     public static final Texture STONE = new Texture(Game.WORLD_ENTRY, "stone.png");
     public static final Texture WATER = new Texture(Game.WORLD_ENTRY, "water.png");
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
     public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
+    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
 
     public static final Texture PISTOL = new Texture(Game.PLAYER_ENTRY, "pistol.png");
     public static final Texture ASSAULT_RIFLE = new Texture(Game.PLAYER_ENTRY, "assault_rifle.png");

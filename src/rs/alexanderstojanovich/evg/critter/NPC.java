@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.critter;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.models.Model;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -27,8 +26,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class NPC extends Observer {
 
-    public NPC(String modelFileName, Texture texture, Vector3f pos, Vector3f color, float scale) {
-        super(modelFileName, texture, pos, color, scale);
+    public NPC(String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
+        super(modelFileName, texName, pos, color, scale);
     }
 
     public NPC(Camera camera, Model model) {

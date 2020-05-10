@@ -117,16 +117,16 @@ public class Chunks {
     }
 
     private void transfer(Chunk chunk, Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
-        Texture fluidTexture = fluidBlock.primaryTexture;
+        String fluidTexture = fluidBlock.texName;
         int fluidFaceBits = fluidBlock.getFaceBits();
 
-        Tuple<Blocks, Integer, Integer, Texture, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
+        Tuple<Blocks, Integer, Integer, String, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
         srcTuple.getA().getBlockList().remove(fluidBlock);
         if (srcTuple.getA().getBlockList().isEmpty()) {
             chunk.getTupleList().remove(srcTuple);
         }
 
-        Tuple<Blocks, Integer, Integer, Texture, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
+        Tuple<Blocks, Integer, Integer, String, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
         if (dstTuple == null) {
             dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
             chunk.getTupleList().add(dstTuple);
@@ -254,7 +254,7 @@ public class Chunks {
     @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Chunk chunk : getChunkList()) {
-            for (Tuple<Blocks, Integer, Integer, Texture, Integer> tuple : chunk.getTupleList()) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : chunk.getTupleList()) {
                 tuple.getA().setCameraInFluid(cameraInFluid);
             }
         }

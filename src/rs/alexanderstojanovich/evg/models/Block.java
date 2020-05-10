@@ -28,14 +28,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import org.joml.GeometryUtils;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -96,9 +94,9 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture) {
+    public Block(boolean selfBuffer, String texName) {
         super();
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         Arrays.fill(enabledFaces, true);
         readFromTxtFile("cube.txt");
         if (selfBuffer) {
@@ -109,9 +107,9 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    public Block(boolean selfBuffer, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super();
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         Arrays.fill(enabledFaces, true);
         this.pos = pos;
         this.primaryColor = primaryColor;
@@ -234,7 +232,7 @@ public class Block extends Model {
 
     @Override
     public String toString() {
-        return "Block{" + "texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
+        return "Block{" + "texture=" + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
@@ -563,8 +561,8 @@ public class Block extends Model {
     public byte[] toByteArray() {
         byte[] byteArray = new byte[29];
         int offset = 0;
-        byte[] texName = primaryTexture.getImage().getFileName().getBytes();
-        System.arraycopy(texName, 0, byteArray, offset, 5);
+        byte[] texNameArr = texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5);
         offset += 5;
         byte[] solidPos = Vector3fUtils.vec3fToByteArray(pos);
         System.arraycopy(solidPos, 0, byteArray, offset, solidPos.length); // 12 B
@@ -593,7 +591,7 @@ public class Block extends Model {
         Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
         offset += blockPosCol.length;
 
-        Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, blockCol, solid);
+        Block block = new Block(false, texName, blockPos, blockCol, solid);
 
         return block;
     }

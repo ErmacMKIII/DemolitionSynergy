@@ -66,7 +66,7 @@ public class Intrface {
     private final LevelContainer levelContainer;
     private final WaterRenderer waterRenderer;
 
-    public static final String FONT_IMG = "hack.png";
+    public static final String FONT_IMG = "font.png"; // modified Hack font
 
     private final Object objMutex;
 

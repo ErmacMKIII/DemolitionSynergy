@@ -29,7 +29,7 @@ public class FrameBuffer {
 
     private final Window myWindow;
     private static int fbo;
-    private final Texture texture = new Texture(512, 512);
+    private final Texture texture = new Texture(256, 256);
 
     public FrameBuffer(Window window) {
         this.myWindow = window;

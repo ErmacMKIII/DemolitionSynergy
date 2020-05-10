@@ -64,14 +64,14 @@ public class WaterRenderer {
                         && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
                         && !LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
                         && waterHeight <= obsHeight) { // and it needs to be below the observer
-                    fluidBlock.setTertiaryTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
+                    fluidBlock.setWaterTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                     currChunk.setWaterTexture(frameBuffer.getTexture());
                     if (!waterHeights.contains(waterHeight)) {
                         waterHeights.add(waterHeight);
                     }
                 } else {
                     waterHeights.remove(waterHeight);
-                    fluidBlock.setTertiaryTexture(null);
+                    fluidBlock.setWaterTexture(null);
                 }
             }
         }
