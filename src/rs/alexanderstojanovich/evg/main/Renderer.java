@@ -47,7 +47,7 @@ public class Renderer extends Thread {
     private int fps = 0;
 
     private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 5;
+    public static final int REN_MAX_PASSES = 10;
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
@@ -181,7 +181,9 @@ public class Renderer extends Thread {
 
     public void update(float deltaTime) {
         synchronized (objMutex) {
-            waterRenderer.refresh();
+            if (Game.isWaterEffects()) {
+                waterRenderer.refresh();
+            }
             levelContainer.update(deltaTime);
             intrface.update();
         }

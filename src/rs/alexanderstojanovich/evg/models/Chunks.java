@@ -53,12 +53,6 @@ public class Chunks {
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.put(block.pos, block.hashCode());
-        } else {
-            LevelContainer.ALL_FLUID_POS.put(block.pos, block.hashCode());
-        }
-
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -66,28 +60,21 @@ public class Chunks {
         if (chunk == null) {
             chunk = new Chunk(chunkId, block.solid);
             chunkList.add(chunk);
+            chunkList.sort(COMPARATOR);
         }
 
         chunk.addBlock(block);
-
-        chunkList.sort(COMPARATOR);
     }
 
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.remove(block.pos);
-        } else {
-            LevelContainer.ALL_FLUID_POS.remove(block.pos);
-        }
-
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block);
             // if chunk is empty (with no tuples) -> remove it
-            if (chunk.getTupleList().isEmpty()) {
+            if (chunk.getTupleSet().isEmpty()) {
                 chunkList.remove(chunk);
             }
         }
@@ -100,13 +87,13 @@ public class Chunks {
         Tuple<Blocks, Integer, Integer, String, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
         srcTuple.getA().getBlockList().remove(fluidBlock);
         if (srcTuple.getA().getBlockList().isEmpty()) {
-            chunk.getTupleList().remove(srcTuple);
+            chunk.getTupleSet().remove(srcTuple);
         }
 
         Tuple<Blocks, Integer, Integer, String, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
         if (dstTuple == null) {
             dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
-            chunk.getTupleList().add(dstTuple);
+            chunk.getTupleSet().add(dstTuple);
         }
         dstTuple.getA().getBlockList().add(fluidBlock);
         dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
@@ -118,7 +105,7 @@ public class Chunks {
                 fluidBlock.enableAllFaces(false);
                 int faceBitsBefore = fluidBlock.getFaceBits();
                 for (int j = 0; j <= 5; j++) { // j - face number
-                    if (LevelContainer.ALL_FLUID_POS.containsKey(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
                         fluidBlock.disableFace(j, false);
                     }
                 }
@@ -249,7 +236,7 @@ public class Chunks {
     @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Chunk chunk : getChunkList()) {
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : chunk.getTupleList()) {
+            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : chunk.getTupleSet()) {
                 tuple.getA().setCameraInFluid(cameraInFluid);
             }
         }

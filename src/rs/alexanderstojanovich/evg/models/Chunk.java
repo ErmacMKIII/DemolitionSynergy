@@ -93,6 +93,11 @@ public class Chunk {
     }
 
     public void addBlock(Block block) {
+        if (block.solid) {
+            LevelContainer.ALL_SOLID_POS.add(block.pos);
+        } else {
+            LevelContainer.ALL_FLUID_POS.add(block.pos);
+        }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> tuple = getTuple(blockTexture, blockFaceBits);
@@ -107,6 +112,11 @@ public class Chunk {
     }
 
     public void removeBlock(Block block) {
+        if (block.solid) {
+            LevelContainer.ALL_SOLID_POS.remove(block.pos);
+        } else {
+            LevelContainer.ALL_FLUID_POS.remove(block.pos);
+        }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);
@@ -119,7 +129,7 @@ public class Chunk {
         }
     }
 
-    public void bufferVectors(Blocks blocks,  Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
+    public void bufferVectors(Blocks blocks, Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
         FloatBuffer vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * VEC3_SIZE);
         for (Block block : blocks.getBlockList()) {
             Vector3f color = block.getPrimaryColor();
@@ -135,7 +145,7 @@ public class Chunk {
         tuple.setB(vec4Vbo);
     }
 
-    public void bufferMatrices(Blocks blocks,  Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
+    public void bufferMatrices(Blocks blocks, Tuple<Blocks, Integer, Integer, String, Integer> tuple) {
         FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getBlockList().size() * MAT4_SIZE);
         for (Block block : blocks.getBlockList()) {
             block.calcModelMatrix();
@@ -246,7 +256,10 @@ public class Chunk {
 
                     shaderProgram.updateUniform(selectedIndex, "selectedIndex");
 
-                    Texture.MINIGUN.bind(1, shaderProgram, "modelTexture1");
+                    if (Editor.getSelectedCurr() != null) {
+                        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 0.0f), "modelColor1");
+                        Texture.MINIGUN.bind(1, shaderProgram, "modelTexture1");
+                    }
 
                     if (waterTexture != null && Game.isWaterEffects()) {
                         shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
@@ -458,7 +471,7 @@ public class Chunk {
         return solid;
     }
 
-    public Set<Tuple<Blocks, Integer, Integer, String, Integer>> getTupleList() {
+    public Set<Tuple<Blocks, Integer, Integer, String, Integer>> getTupleSet() {
         return tupleSet;
     }
 

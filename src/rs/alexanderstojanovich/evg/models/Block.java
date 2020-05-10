@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -487,11 +488,11 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
-    public List<Integer> getAdjacentFreeFaceNumbers(Map<Vector3f, Integer> solidMap, Map<Vector3f, Integer> fluidMap) {
+    public List<Integer> getAdjacentFreeFaceNumbers(Set<Vector3f> solidSet, Set<Vector3f> fluidSet) {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!solidMap.containsKey(adjPos) && !fluidMap.containsKey(adjPos)) {
+            if (!solidSet.contains(adjPos) && !fluidSet.contains(adjPos)) {
                 result.add(j);
             }
         }
