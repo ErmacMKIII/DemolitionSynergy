@@ -21,12 +21,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -53,8 +50,7 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
 
-    private final Queue<Integer> visibleChunks = new ArrayDeque<>();
-    public static final int QUEUE_CAPACITY = 5;
+    private List<Integer> visibleChunks = new ArrayList<>();
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
@@ -508,6 +504,32 @@ public class LevelContainer implements GravityEnviroment {
 //        solidChunks.setBuffered(false);
     }
 
+    private void patch() {
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk != null) {
+                solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
+                if (solidChunk.isVisible() && solidChunk.isCached()) {
+                    solidChunk.loadFromMemory();
+                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
+                    solidChunk.saveToMemory();
+                }
+            }
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk != null) {
+                fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
+                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
+                    fluidChunk.loadFromMemory();
+                    fluidChunks.updateFluids(fluidChunk, true);
+                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
+                    fluidChunk.saveToMemory();
+                }
+                fluidChunk.setCameraInFluid(isCameraInFluid());
+            }
+        }
+    }
+
     public void update(float deltaTime) { // call it externally from the main thread 
         if (working || progress > 0.0f || levelActors.getPlayer() == null) {
             return; // don't update if working, it may screw up!
@@ -516,42 +538,17 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
 
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        // is list of estimated visible chunks (by the camera pos and front)  
-        List<Integer> local = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-        for (Integer l : local) {
-            if (!visibleChunks.contains(l) && visibleChunks.size() < QUEUE_CAPACITY) {
-                visibleChunks.add(l);
-            }
-        }
-    }
-
-    public void patch() {
-        if (working || progress > 0.0f || levelActors.getPlayer() == null) {
-            return; // don't update if working, it may screw up!
-        }
-        Integer i;
-        if ((i = visibleChunks.poll()) != null) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                solidChunk.setVisible(true);
-                if (solidChunk.isCached()) {
-                    solidChunk.loadFromMemory();
-                }
-            }
-
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                fluidChunk.setVisible(true);
-                if (fluidChunk.isCached()) {
-                    fluidChunk.loadFromMemory();
-                    fluidChunks.updateFluids(fluidChunk, true);
-                }
-                fluidChunk.setCameraInFluid(isCameraInFluid());
-            }
-        }
-
-        solidChunks.saveInvisibleToMemory();
-        fluidChunks.saveInvisibleToMemory();
+        // determine current chunks where player is
+        int chunkId = Chunk.chunkFunc(obsCamera.getPos());
+        Chunk solidChunk = solidChunks.getChunk(chunkId);
+        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
+        // if they are not visible call patch
+        if (solidChunk != null && !solidChunk.isVisible()
+                || fluidChunk != null && !fluidChunk.isVisible()) {
+            // is list of estimated visible chunks (by the camera pos and front)
+            visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
+            patch();
+        } 
     }
 
     public void render() { // render for regular level rendering
@@ -684,7 +681,7 @@ public class LevelContainer implements GravityEnviroment {
         return randomLevelGenerator;
     }
 
-    public Queue<Integer> getVisibleChunks() {
+    public List<Integer> getVisibleChunks() {
         return visibleChunks;
     }
 

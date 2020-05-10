@@ -491,7 +491,6 @@ public class Game {
         musicPlayer.play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
-        double timer1 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -532,16 +531,10 @@ public class Game {
             }
 
             // update label which shows fps every second
-            if (GLFW.glfwGetTime() > timer0 + 0.25) {
-                renderer.patch();
-                timer0 += 0.25;
-            }
-
-            // update label which shows fps every second
-            if (GLFW.glfwGetTime() > timer1 + 1.0) {
+            if (GLFW.glfwGetTime() > timer0 + 1.0) {
                 renderer.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
-                timer1 += 1.0;
+                timer0 += 1.0;
             }
 
         }
