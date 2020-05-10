@@ -33,6 +33,7 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -60,6 +61,9 @@ public class Block extends Model {
     public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
 
+    public static final List<Vertex> VERTICES = new GapList<>();
+    public static final List<Integer> INDICES = new ArrayList<>();
+
     public static final Comparator<Block> Y_AXIS_COMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
@@ -80,12 +84,15 @@ public class Block extends Model {
         FACE_NORMALS.add(new Vector3f(0.0f, 1.0f, 0.0f));
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, -1.0f));
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
+
+        readFromTxtFile("cube.txt");
     }
 
     public Block(boolean selfBuffer) {
         super();
         Arrays.fill(enabledFaces, true);
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -98,7 +105,8 @@ public class Block extends Model {
         super();
         this.texName = texName;
         Arrays.fill(enabledFaces, true);
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -114,7 +122,8 @@ public class Block extends Model {
         this.pos = pos;
         this.primaryColor = primaryColor;
         this.solid = solid;
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -123,10 +132,17 @@ public class Block extends Model {
         calcDims();
     }
 
-    private void readFromTxtFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+    // cuz regular shallow copy doesn't work, for List of integers is applicable
+    private static void deepCopyTo(List<Vertex> vertices) {
+        for (Vertex v : VERTICES) {
+            vertices.add(new Vertex(new Vector3f(v.getPos()), new Vector3f(v.getNormal()), new Vector2f(v.getUv())));
+        }
+    }
+
+    private static void readFromTxtFile(String fileName) {
+        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
         if (in == null) {
-            DSLogger.reportError("Cannot find zip archive " + Game.RESOURCES_DIR + "!", null);
+            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
             return;
         }
         BufferedReader br = null;
@@ -140,12 +156,12 @@ public class Block extends Model {
                     Vector3f normal = new Vector3f(Float.parseFloat(things[3]), Float.parseFloat(things[4]), Float.parseFloat(things[5]));
                     Vector2f uv = new Vector2f(Float.parseFloat(things[6]), Float.parseFloat(things[7]));
                     Vertex v = new Vertex(pos, normal, uv);
-                    vertices.add(v);
+                    VERTICES.add(v);
                 } else if (line.startsWith("i:")) {
                     String[] things = line.replace("i:", "").trim().split(" ", -1);
-                    indices.add(Integer.parseInt(things[0]));
-                    indices.add(Integer.parseInt(things[1]));
-                    indices.add(Integer.parseInt(things[2]));
+                    INDICES.add(Integer.parseInt(things[0]));
+                    INDICES.add(Integer.parseInt(things[1]));
+                    INDICES.add(Integer.parseInt(things[2]));
                 }
             }
         } catch (FileNotFoundException ex) {

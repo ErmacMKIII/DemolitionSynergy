@@ -443,9 +443,7 @@ public class Chunk {
                 Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                 pos += blockPosCol.length;
 
-                long time = System.nanoTime();
                 Block block = new Block(false, texName, blockPos, blockCol, solid);
-                System.out.println((System.nanoTime() - time) / 1E6);
                 addBlock(block);
             }
             cached = false;

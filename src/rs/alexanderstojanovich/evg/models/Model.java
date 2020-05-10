@@ -38,6 +38,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -51,7 +52,7 @@ public class Model implements Comparable<Model> {
 
     private String modelFileName;
 
-    protected List<Vertex> vertices = new ArrayList<>();
+    protected List<Vertex> vertices = new GapList<>();
     protected List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
     protected String texName;
     protected boolean decal = false;
