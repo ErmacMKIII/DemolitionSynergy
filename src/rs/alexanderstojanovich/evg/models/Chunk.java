@@ -19,8 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import jdk.nashorn.internal.ir.debug.ObjectSizeCalculator;
-import org.joml.AABBf;
 import org.joml.Intersectionf;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -445,9 +443,9 @@ public class Chunk {
                 Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                 pos += blockPosCol.length;
 
+                long time = System.nanoTime();
                 Block block = new Block(false, texName, blockPos, blockCol, solid);
-                System.out.println(ObjectSizeCalculator.getObjectSize(block));
-
+                System.out.println((System.nanoTime() - time) / 1E6);
                 addBlock(block);
             }
             cached = false;

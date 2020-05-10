@@ -22,7 +22,6 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
 
@@ -192,10 +191,28 @@ public class Chunks {
         }
     }
 
+    // variation on the topic
+    public void saveInvisibleToMemory() {
+        for (Chunk chunk : chunkList) {
+            if (!chunk.isVisible()) {
+                chunk.saveToMemory();
+            }
+        }
+    }
+
     // useful when saving and wanna load everything into memory
     public void loadAllFromMemory() {
         for (Chunk chunk : chunkList) {
             chunk.loadFromMemory();
+        }
+    }
+
+    // variation on the topic
+    public void loadVisibleToMemory() {
+        for (Chunk chunk : chunkList) {
+            if (chunk.isVisible()) {
+                chunk.loadFromMemory();
+            }
         }
     }
 

@@ -186,6 +186,12 @@ public class Renderer extends Thread {
         }
     }
 
+    public void patch() {
+        synchronized (objMutex) {
+            levelContainer.patch();
+        }
+    }
+
     public Window getMyWindow() {
         return myWindow;
     }

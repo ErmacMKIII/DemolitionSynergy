@@ -61,6 +61,7 @@ public class Texture {
         TEX_MAP.put("crate", CRATE);
         TEX_MAP.put("stone", STONE);
         TEX_MAP.put("water", WATER);
+        TEX_MAP.put("night", NIGHT);
     }
 
     public Texture(int width, int height) {

@@ -61,7 +61,7 @@ public class Game {
     private static int updPasses = 0;
     public static final int UPD_MAX_PASSES = 10;
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 5.0;
+    public static final double CRITICAL_TIME = 1000.0;
 
     private final Window myWindow;
     private final Renderer renderer;
@@ -491,6 +491,7 @@ public class Game {
         musicPlayer.play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
+        double timer1 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -531,10 +532,16 @@ public class Game {
             }
 
             // update label which shows fps every second
-            if (GLFW.glfwGetTime() > timer0 + 1.0) {
+            if (GLFW.glfwGetTime() > timer0 + 0.25) {
+                renderer.patch();
+                timer0 += 0.25;
+            }
+
+            // update label which shows fps every second
+            if (GLFW.glfwGetTime() > timer1 + 1.0) {
                 renderer.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
-                timer0 += 1.0;
+                timer1 += 1.0;
             }
 
         }
