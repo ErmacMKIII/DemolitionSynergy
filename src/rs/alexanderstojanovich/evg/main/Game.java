@@ -392,7 +392,7 @@ public class Game {
                     Arrays.fill(keys, false);
                     renderer.getLevelContainer().getSolidChunks().printInfo();
                     renderer.getLevelContainer().getFluidChunks().printInfo();
-                }else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
+                } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     LevelContainer.printPositionSets();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
@@ -507,7 +507,7 @@ public class Game {
             diff = currTime - lastTime;
             upsTicks += diff * Game.TPS;
             lastTime = currTime;
-                        
+
             // Detecting critical status
             if (ups == 0 && diff > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);

@@ -95,7 +95,7 @@ public class Chunks {
             dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
             chunk.getTupleSet().add(dstTuple);
         }
-        dstTuple.getA().getBlockList().add(fluidBlock);        
+        dstTuple.getA().getBlockList().add(fluidBlock);
         dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
     }
 

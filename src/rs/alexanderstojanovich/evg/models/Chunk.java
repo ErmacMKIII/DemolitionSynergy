@@ -95,9 +95,9 @@ public class Chunk {
 
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(new Pair<>(block.pos, Block.getFaceBits(block.pos, LevelContainer.ALL_SOLID_POS)));                        
+            LevelContainer.addSolidPos(block.pos);
         } else {
-            LevelContainer.ALL_FLUID_POS.add(new Pair<>(block.pos, Block.getFaceBits(block.pos, LevelContainer.ALL_FLUID_POS)));            
+            LevelContainer.addFluidPos(block.pos);
         }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();

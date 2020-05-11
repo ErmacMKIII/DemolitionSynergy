@@ -461,21 +461,21 @@ public class Block extends Model {
     }
 
     // used in static Level container to get compressed positioned sets
-    public static int getFaceBits(Vector3f pos, Set<Pair<Vector3f, Integer>> pairSet) {
+    public static int getFaceBits(Vector3f pos, List<Pair<Vector3f, Integer>> pairSet) {
         int bits = 0;
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = Block.getAdjacentPos(pos, j);
             for (Pair<Vector3f, Integer> pair : pairSet) {
-                if (pair.getKey().equals(adjPos)) {                
+                if (pair.getKey().equals(adjPos)) {
                     int mask = 1 << j;
-                    bits |= mask;                    
+                    bits |= mask;
                     break;
                 }
-            }            
+            }
         }
         return bits;
     }
-    
+
     // set faces based on faceBits representation
     public void setFaceBits(int faceBits, boolean selfBuffer) {
         boolean[] faces = faceBitsToBoolArray(faceBits);
@@ -487,7 +487,7 @@ public class Block extends Model {
             }
         }
     }
-    
+
     // returns bool array of faces based on facebits representation
     public static boolean[] faceBitsToBoolArray(int faceBits) {
         boolean[] result = new boolean[6];
@@ -500,7 +500,7 @@ public class Block extends Model {
         }
         return result;
     }
-    
+
     // make int buffer base on bits form of faces
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
@@ -535,7 +535,7 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!LevelContainer.containsSolidPos(adjPos) && ! LevelContainer.containsFluidPos(adjPos)) {
+            if (!LevelContainer.containsSolidPos(adjPos) && !LevelContainer.containsFluidPos(adjPos)) {
                 result.add(j);
             }
         }
