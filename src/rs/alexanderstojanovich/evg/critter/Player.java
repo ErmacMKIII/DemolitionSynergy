@@ -19,9 +19,10 @@ package rs.alexanderstojanovich.evg.critter;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -31,9 +32,29 @@ public class Player extends Observer {
 
     private double hitPoints = 100.0;
     private Model currWeapon;
-//    private final Model[] weapons = Model.WEAPONS;
     private final Matrix4f viewMatrix = new Matrix4f();
 
+    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
+            "pistol", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
+            "smg", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
+            "shotgun", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
+            "assrifle", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
+            "machgun", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
+            "sniper", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
+    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
+    
+    static {
+        for (Model weapon : WEAPONS) {
+            weapon.setScale(6.0f);
+            weapon.setrY((float) (-Math.PI / 2.0f));
+        }
+    }
+    
     public Player(Model currWeapon, String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
         super(modelFileName, texName, pos, color, scale);
         this.currWeapon = currWeapon;
@@ -45,7 +66,7 @@ public class Player extends Observer {
     }
 
     public void switchWeapon(int num) {
-//        currWeapon = weapons[num - 1];
+        currWeapon = WEAPONS[num - 1];
     }
 
     @Override
@@ -62,10 +83,7 @@ public class Player extends Observer {
     public double getHitPoints() {
         return hitPoints;
     }
-
-//    public Model[] getWeapons() {
-//        return weapons;
-//    }
+    
     public Model getCurrWeapon() {
         return currWeapon;
     }

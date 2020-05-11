@@ -55,13 +55,20 @@ public class Texture {
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
 
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
-
+    
     static {
         TEX_MAP.put("doom0", DOOM0);
         TEX_MAP.put("crate", CRATE);
         TEX_MAP.put("stone", STONE);
         TEX_MAP.put("water", WATER);
         TEX_MAP.put("night", NIGHT);
+        
+        TEX_MAP.put("pistol", Texture.PISTOL);
+        TEX_MAP.put("assrifle", Texture.ASSAULT_RIFLE);
+        TEX_MAP.put("shotgun", Texture.SHOTGUN);
+        TEX_MAP.put("smg", Texture.SUB_MACHINE_GUN);
+        TEX_MAP.put("machgun", Texture.MACHINE_GUN);
+        TEX_MAP.put("sniper", Texture.SNIPER_RIFLE);
     }
 
     public Texture(int width, int height) {

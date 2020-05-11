@@ -26,9 +26,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -39,7 +37,6 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -618,7 +615,6 @@ public class LevelContainer implements GravityEnviroment {
                 fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
             }
         }
-
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        

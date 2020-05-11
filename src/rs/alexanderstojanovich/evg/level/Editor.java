@@ -136,7 +136,7 @@ public class Editor {
                 selectedCurr.getSecondaryColor().y = 1.0f;
                 selectedCurr.getSecondaryColor().z = 0.0f;
 
-                selectedNew.setDecal(true);
+                selectedCurr.setDecal(true);
 
                 selectedCurrIndex = fluidBlkIndex;
             }

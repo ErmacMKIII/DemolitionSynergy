@@ -192,6 +192,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 boolean ok = false;
                 if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                    Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
                 }

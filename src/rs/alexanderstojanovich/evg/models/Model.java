@@ -39,6 +39,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -81,26 +82,7 @@ public class Model implements Comparable<Model> {
     // fluid models are solid whilst solid ones aren't               
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
-
-//    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
-//            Texture.PISTOL, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
-//            Texture.SUB_MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
-//            Texture.SHOTGUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
-//            Texture.ASSAULT_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
-//            Texture.MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
-//            Texture.SNIPER_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-//    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-//    static {
-//        for (Model weapon : WEAPONS) {
-//            weapon.scale = 6.0f;
-//            weapon.rY = (float) (-Math.PI / 2.0f);
-//        }
-//    }
+   
     protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }
