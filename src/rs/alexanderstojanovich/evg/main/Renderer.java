@@ -39,7 +39,8 @@ public class Renderer extends Thread {
     private WaterRenderer waterRenderer;
     private Intrface intrface;
 
-    private final Object objMutex; // got from the Game    
+    private final Object winMutex; // got from the Game (used for locking Window context)    
+    private final Object chunkMutex; // got this from the Game
 
     private boolean assertCollision = false;
 
@@ -52,10 +53,11 @@ public class Renderer extends Thread {
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
-    public Renderer(Window myWindow, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
+    public Renderer(Window myWindow, Object objMutex, Object lockMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         super("Renderer");
         this.myWindow = myWindow;
-        this.objMutex = objMutex;
+        this.winMutex = objMutex;
+        this.chunkMutex = lockMutex;
         this.musicPlayer = musicPlayer;
         this.soundFXPlayer = soundFXPlayer;
     }
@@ -63,16 +65,16 @@ public class Renderer extends Thread {
     @Override
     public void run() {
 
-        synchronized (objMutex) {
+        synchronized (winMutex) {
             MasterRenderer.initGL(myWindow); // loads myWindow context, creates OpenGL context..
             ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
             PerspectiveRenderer.updatePerspective(myWindow); // updates perspective for all the existing shaders
 
             levelContainer = new LevelContainer(myWindow, musicPlayer, soundFXPlayer);
             waterRenderer = new WaterRenderer(myWindow, levelContainer);
-            intrface = new Intrface(myWindow, levelContainer, waterRenderer, objMutex, musicPlayer, soundFXPlayer);
+            intrface = new Intrface(myWindow, levelContainer, waterRenderer, winMutex, musicPlayer, soundFXPlayer);
             // wake up the main thread
-            objMutex.notify();
+            winMutex.notify();
         }
 
         double timer0 = GLFW.glfwGetTime();
@@ -96,15 +98,17 @@ public class Renderer extends Thread {
                 break;
             }
 
-            if (Game.getUpsTicks() < 1.0 && fpsTicks >= 1.0) {
-                synchronized (objMutex) {
+            if (fpsTicks >= 1.0) {
+                synchronized (winMutex) {
                     myWindow.loadContext();
                     while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                         MasterRenderer.render(); // it clears color bit and depth buffer bit
                         if (!levelContainer.isWorking()) {
-                            levelContainer.render();
-                            if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
-                                waterRenderer.render();
+                            synchronized (chunkMutex) {
+                                levelContainer.render();
+                                if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
+                                    waterRenderer.render();
+                                }
                             }
                         } else {
                             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
@@ -167,9 +171,11 @@ public class Renderer extends Thread {
                 }
 
                 if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
-                    synchronized (objMutex) {
+                    synchronized (winMutex) {
                         myWindow.loadContext();
-                        levelContainer.animate();
+                        synchronized (chunkMutex) {
+                            levelContainer.animate();
+                        }
                         Window.unloadContext();
                     }
                 }
@@ -180,7 +186,7 @@ public class Renderer extends Thread {
     }
 
     public void update(float deltaTime) {
-        synchronized (objMutex) {
+        synchronized (chunkMutex) {
             if (Game.isWaterEffects()) {
                 waterRenderer.refresh();
             }
@@ -205,8 +211,8 @@ public class Renderer extends Thread {
         return intrface;
     }
 
-    public Object getObjMutex() {
-        return objMutex;
+    public Object getWinMutex() {
+        return winMutex;
     }
 
     public boolean isAssertCollision() {
@@ -239,6 +245,10 @@ public class Renderer extends Thread {
 
     public AudioPlayer getSoundFXPlayer() {
         return soundFXPlayer;
+    }
+
+    public Object getChunkMutex() {
+        return chunkMutex;
     }
 
 }

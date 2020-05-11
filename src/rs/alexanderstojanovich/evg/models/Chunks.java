@@ -102,9 +102,14 @@ public class Chunks {
     public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
         if (!fluidChunk.isSolid()) {
             for (Block fluidBlock : fluidChunk.getList()) {
-                int facebits = Block.getFaceBits(fluidBlock.pos, LevelContainer.ALL_FLUID_POS);
-                fluidBlock.setFaceBits(~facebits & 63, false);
-                if (useTransfer) { // if bits changed, i.e. some face(s) got disabled
+                int faceBitsBefore = fluidBlock.getFaceBits();
+                for (int j = 0; j <= 5; j++) { // j - face number
+                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                        fluidBlock.disableFace(j, false);
+                    }
+                }
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
                     transfer(fluidChunk, fluidBlock);
                 }
             }

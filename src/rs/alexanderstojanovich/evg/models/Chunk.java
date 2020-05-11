@@ -38,7 +38,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -95,9 +94,9 @@ public class Chunk {
 
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(block.pos);
+            LevelContainer.ALL_SOLID_POS.add(new Vector3f(block.pos));
         } else {
-            LevelContainer.ALL_FLUID_POS.add(block.pos);
+            LevelContainer.ALL_FLUID_POS.add(new Vector3f(block.pos));
         }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();

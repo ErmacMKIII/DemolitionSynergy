@@ -99,7 +99,8 @@ public class Game {
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
 
-    private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
+    private final Object winMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
+    private final Object chunkMutex = new Object();
 
     private static boolean waterEffects = true;
 
@@ -130,7 +131,7 @@ public class Game {
         }
         myWindow.centerTheWindow();
         waterEffects = config.isWaterEffects();
-        renderer = new Renderer(myWindow, objMutex, musicPlayer, soundFXPlayer);
+        renderer = new Renderer(myWindow, winMutex, chunkMutex, musicPlayer, soundFXPlayer);
         Arrays.fill(keys, false);
         initCallbacks();
         musicPlayer.setGain(config.getMusicVolume());
@@ -414,7 +415,7 @@ public class Game {
                     if (screenshot.exists()) {
                         screenshot.delete();
                     }
-                    synchronized (objMutex) {
+                    synchronized (winMutex) {
                         myWindow.loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         try {
@@ -482,9 +483,9 @@ public class Game {
         renderer.start();
 
         // wait for renderer to initialize level renderer, water renderer and interface
-        synchronized (objMutex) {
+        synchronized (winMutex) {
             try {
-                objMutex.wait();
+                winMutex.wait();
             } catch (InterruptedException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
@@ -515,24 +516,26 @@ public class Game {
                 break;
             }
 
-            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
-                GLFW.glfwPollEvents();
-                if (Renderer.getRenPasses() == 0) {
-                    float deltaTime = (float) (upsTicks / TPS);
-                    renderer.update(deltaTime);
+            if (upsTicks > 1.0) {
+                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                    GLFW.glfwPollEvents();
+                    if (Renderer.getRenPasses() == 0) {
+                        float deltaTime = (float) (upsTicks / TPS);
+                        renderer.update(deltaTime);
+                    }
+                    if (currentMode == Mode.SINGLE_PLAYER) {
+                        playerDo();
+                    } else if (currentMode == Mode.EDITOR) {
+                        renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                        editorDo();
+                    }
+                    observerDo();
+                    ups++;
+                    upsTicks--;
+                    updPasses++;
                 }
-                if (currentMode == Mode.SINGLE_PLAYER) {
-                    playerDo();
-                } else if (currentMode == Mode.EDITOR) {
-                    renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                    editorDo();
-                }
-                observerDo();
-                ups++;
-                upsTicks--;
-                updPasses++;
+                updPasses = 0;
             }
-            updPasses = 0;
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
@@ -554,7 +557,7 @@ public class Game {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         }
 
-        synchronized (objMutex) {
+        synchronized (winMutex) {
             myWindow.loadContext();
             myWindow.destroy();
         }
@@ -600,8 +603,8 @@ public class Game {
         Game.fpsMax = fpsMax;
     }
 
-    public Object getObjMutex() {
-        return objMutex;
+    public Object getWinMutex() {
+        return winMutex;
     }
 
     public static float getMouseSensitivity() {

@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class Commands {
 
     private final Window myWindow;
-    private final Object objMutex;
+    private final Object objMutex; // it's window related
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
