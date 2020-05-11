@@ -95,22 +95,16 @@ public class Chunks {
             dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
             chunk.getTupleSet().add(dstTuple);
         }
-        dstTuple.getA().getBlockList().add(fluidBlock);
+        dstTuple.getA().getBlockList().add(fluidBlock);        
         dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
     }
 
     public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
         if (!fluidChunk.isSolid()) {
             for (Block fluidBlock : fluidChunk.getList()) {
-                fluidBlock.enableAllFaces(false);
-                int faceBitsBefore = fluidBlock.getFaceBits();
-                for (int j = 0; j <= 5; j++) { // j - face number
-                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
-                        fluidBlock.disableFace(j, false);
-                    }
-                }
-                int faceBitsAfter = fluidBlock.getFaceBits();
-                if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                int facebits = Block.getFaceBits(fluidBlock.pos, LevelContainer.ALL_FLUID_POS);
+                fluidBlock.setFaceBits(~facebits & 63, false);
+                if (useTransfer) { // if bits changed, i.e. some face(s) got disabled
                     transfer(fluidChunk, fluidBlock);
                 }
             }

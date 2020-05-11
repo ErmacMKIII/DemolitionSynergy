@@ -26,7 +26,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -37,6 +39,7 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -75,9 +78,9 @@ public class LevelContainer implements GravityEnviroment {
     private final AudioPlayer soundFXPlayer;
 
     // position of all the solid blocks
-    public static final Set<Vector3f> ALL_SOLID_POS = new HashSet<>();
+    public static final Set<Pair<Vector3f, Integer>> ALL_SOLID_POS = new HashSet<>();
     // position of all the fluid blocks
-    public static final Set<Vector3f> ALL_FLUID_POS = new HashSet<>();
+    public static final Set<Pair<Vector3f, Integer>> ALL_FLUID_POS = new HashSet<>();
     
     static {
         // setting SKYBOX     
@@ -93,6 +96,95 @@ public class LevelContainer implements GravityEnviroment {
         this.soundFXPlayer = soundFXPlayer;
     }
     
+    public static void compressSolidPos() {        
+//        ALL_SOLID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
+//            @Override
+//            public boolean test(Pair<Vector3f, Integer> t) {               
+//                return (ALL_SOLID_POS.contains(t) && t.getValue() > 0);
+//            }
+//        });
+    }
+    
+    public static void compressFluidPos() {        
+//        ALL_FLUID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
+//            @Override
+//            public boolean test(Pair<Vector3f, Integer> t) {
+//                return (t.getValue() > 0);
+//            }
+//        });
+    }
+    
+    public static boolean containsSolidPos(Vector3f posTarget) {
+        boolean result = false;
+        OUTER:
+        for (Pair<Vector3f, Integer> pair : ALL_SOLID_POS) {            
+            Vector3f pos = pair.getKey();
+            if (pos.equals(posTarget)) {
+                 result = true;
+                 break;
+            } else {
+                Integer num = pair.getValue();
+                if (num > 0) {
+                    for (int j = 0; j <= 5; j++) {
+                        Vector3f adjPos = Block.getAdjacentPos(pos, j);
+                        if (adjPos.equals(posTarget)) {
+                            result = true;
+                            break OUTER;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    public static boolean containsFluidPos(Vector3f posTarget) {
+        boolean result = false;
+        OUTER:
+        for (Pair<Vector3f, Integer> pair : ALL_FLUID_POS) {            
+            Vector3f pos = pair.getKey();
+            if (pos.equals(posTarget)) {
+                 result = true;
+                 break;
+            } else {
+                Integer num = pair.getValue();
+                if (num > 0) {
+                    for (int j = 0; j <= 5; j++) {
+                        Vector3f adjPos = Block.getAdjacentPos(pos, j);
+                        if (adjPos.equals(posTarget)) {
+                            result = true;
+                            break OUTER;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    public static void printPositionSets() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        sb.append("SOLID POSITION SET");
+        sb.append("(size = ").append(sb.append(ALL_SOLID_POS.size()).append(")\n"));
+        for (Pair<Vector3f, Integer> solidPair : ALL_SOLID_POS) {      
+            sb.append(solidPair.getKey());
+            sb.append(" ");
+            sb.append(solidPair.getValue());
+            sb.append("\n");
+        }
+        sb.append("FLUID POSITION SET");
+        sb.append("(size = ").append(sb.append(ALL_FLUID_POS.size()).append(")\n"));
+        for (Pair<Vector3f, Integer> fluidPair : ALL_FLUID_POS) {      
+            sb.append(fluidPair.getKey());
+            sb.append(" ");
+            sb.append(fluidPair.getValue());
+            sb.append("\n");
+        }
+        sb.append("------------------");
+        DSLogger.reportInfo(sb.toString(), null);
+    }
+    
     public boolean startNewLevel() {
         if (working || progress > 0.0f) {
             return false;
@@ -105,6 +197,9 @@ public class LevelContainer implements GravityEnviroment {
         
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
+        
+        ALL_SOLID_POS.clear();
+        ALL_FLUID_POS.clear();
         
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
@@ -125,6 +220,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         
         solidChunks.saveAllToMemory();
+        compressSolidPos();
         
         levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
@@ -165,6 +261,8 @@ public class LevelContainer implements GravityEnviroment {
         
         solidChunks.saveAllToMemory();
         fluidChunks.saveAllToMemory();
+        compressSolidPos();
+        compressFluidPos();
         
         progress = 100.0f;
         working = false;
@@ -328,7 +426,7 @@ public class LevelContainer implements GravityEnviroment {
                     progress += 50.0f / solidNum;
                 }
                 solidChunks.saveAllToMemory();
-                
+                compressSolidPos();
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -347,7 +445,7 @@ public class LevelContainer implements GravityEnviroment {
                         progress += 50.0f / fluidNum;
                     }
                     fluidChunks.saveAllToMemory();
-                    
+                    compressFluidPos();
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -464,16 +562,30 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
-        
-        for (Vector3f posKey : ALL_SOLID_POS) {
-            if (Block.containsInsideEqually(posKey, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                    || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                            critter.getModel().getHeight(), critter.getModel().getDepth(), posKey, 2.0f, 2.0f, 2.0f)) {
-                coll = true;
-                break;
+        if (!coll) {
+            OUTER:
+            for (Pair<Vector3f, Integer> pair : ALL_SOLID_POS) {
+                if (Block.containsInsideEqually(pair.getKey(), 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                        || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                                critter.getModel().getHeight(), critter.getModel().getDepth(), pair.getKey(), 2.0f, 2.0f, 2.0f)) {
+                    coll = true;
+                    break;
+                } else if (pair.getValue() > 0) {
+                    boolean[] faces = Block.faceBitsToBoolArray(pair.getValue());
+                    for (int j = 0; j < faces.length; j++) {
+                        if (faces[j]) {
+                            Vector3f adjPos = Block.getAdjacentPos(pair.getKey(), j);
+                            if (Block.containsInsideEqually(adjPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                                || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                                    critter.getModel().getHeight(), critter.getModel().getDepth(), adjPos, 2.0f, 2.0f, 2.0f)) {
+                                coll = true;
+                                break OUTER;
+                            }
+                        }
+                    }
+                }
             }
         }
-        
         return coll;
     }
 
@@ -529,7 +641,7 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (working || progress > 0.0f || levelActors.getPlayer() == null) {
             return; // don't update if working, it may screw up!
-        }
+        }        
         
         SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
         
@@ -542,7 +654,7 @@ public class LevelContainer implements GravityEnviroment {
         if (fluidChunk != null) {
             fluidChunk.setCameraInFluid(isCameraInFluid());
         }
-
+        
         // if they are not visible call patch
         if (solidChunk != null && !solidChunk.isVisible()
                 || fluidChunk != null && !fluidChunk.isVisible()) {

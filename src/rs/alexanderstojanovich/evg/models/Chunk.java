@@ -38,6 +38,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Tuple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -94,9 +95,9 @@ public class Chunk {
 
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(block.pos);
+            LevelContainer.ALL_SOLID_POS.add(new Pair<>(block.pos, Block.getFaceBits(block.pos, LevelContainer.ALL_SOLID_POS)));                        
         } else {
-            LevelContainer.ALL_FLUID_POS.add(block.pos);
+            LevelContainer.ALL_FLUID_POS.add(new Pair<>(block.pos, Block.getFaceBits(block.pos, LevelContainer.ALL_FLUID_POS)));            
         }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -112,11 +113,11 @@ public class Chunk {
     }
 
     public void removeBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.remove(block.pos);
-        } else {
-            LevelContainer.ALL_FLUID_POS.remove(block.pos);
-        }
+//        if (block.solid) {
+//            LevelContainer.ALL_SOLID_POS.remove(block.pos);
+//        } else {
+//            LevelContainer.ALL_FLUID_POS.remove(block.pos);
+//        }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);

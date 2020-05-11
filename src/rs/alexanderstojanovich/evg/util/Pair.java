@@ -16,14 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
+import java.util.Objects;
+
 /**
  *
  * @author Coa
  */
 public class Pair<Key, Value> {
 
-    private final Key key;
-    private final Value value;
+    private Key key;
+    private Value value;
 
     public Pair(Key key, Value value) {
         this.key = key;
@@ -38,4 +40,42 @@ public class Pair<Key, Value> {
         return value;
     }
 
+    public void setKey(Key key) {
+        this.key = key;
+    }
+
+    public void setValue(Value value) {
+        this.value = value;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.key);
+        hash = 97 * hash + Objects.hashCode(this.value);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Pair<?, ?> other = (Pair<?, ?>) obj;
+        if (!Objects.equals(this.key, other.key)) {
+            return false;
+        }
+        if (!Objects.equals(this.value, other.value)) {
+            return false;
+        }
+        return true;
+    }
+
+    
 }

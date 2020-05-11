@@ -36,8 +36,10 @@ import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -458,6 +460,47 @@ public class Block extends Model {
         return bits;
     }
 
+    // used in static Level container to get compressed positioned sets
+    public static int getFaceBits(Vector3f pos, Set<Pair<Vector3f, Integer>> pairSet) {
+        int bits = 0;
+        for (int j = 0; j <= 5; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(pos, j);
+            for (Pair<Vector3f, Integer> pair : pairSet) {
+                if (pair.getKey().equals(adjPos)) {                
+                    int mask = 1 << j;
+                    bits |= mask;                    
+                    break;
+                }
+            }            
+        }
+        return bits;
+    }
+    
+    // set faces based on faceBits representation
+    public void setFaceBits(int faceBits, boolean selfBuffer) {
+        boolean[] faces = faceBitsToBoolArray(faceBits);
+        for (int j = 0; j <= 5; j++) {
+            if (faces[j]) {
+                enableFace(j, selfBuffer);
+            } else {
+                disableFace(j, selfBuffer);
+            }
+        }
+    }
+    
+    // returns bool array of faces based on facebits representation
+    public static boolean[] faceBitsToBoolArray(int faceBits) {
+        boolean[] result = new boolean[6];
+        int j = 0;
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            result[j] = (bit == 1);
+            faceBits >>= 1; // move bits to the right so they are compared again            
+            j++;
+        }
+        return result;
+    }
+    
     // make int buffer base on bits form of faces
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
@@ -488,11 +531,11 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
-    public List<Integer> getAdjacentFreeFaceNumbers(Set<Vector3f> solidSet, Set<Vector3f> fluidSet) {
+    public List<Integer> getAdjacentFreeFaceNumbers() {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!solidSet.contains(adjPos) && !fluidSet.contains(adjPos)) {
+            if (!LevelContainer.containsSolidPos(adjPos) && ! LevelContainer.containsFluidPos(adjPos)) {
                 result.add(j);
             }
         }

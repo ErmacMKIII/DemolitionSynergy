@@ -68,8 +68,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
-                || LevelContainer.ALL_FLUID_POS.contains(randPos)
+        } while (LevelContainer.containsSolidPos(randPos)
+                || LevelContainer.containsFluidPos(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -93,8 +93,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
-                || LevelContainer.ALL_FLUID_POS.contains(randPos)
+        } while (LevelContainer.containsSolidPos(randPos)
+                || LevelContainer.containsFluidPos(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -109,10 +109,7 @@ public class RandomLevelGenerator {
     }
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
-        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
-                LevelContainer.ALL_SOLID_POS,
-                LevelContainer.ALL_FLUID_POS
-        );
+        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
         if (possibleFaces.isEmpty()) {
             return null;
         }
@@ -143,8 +140,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
-                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
+        } while (LevelContainer.containsSolidPos(adjPos)
+                || LevelContainer.containsFluidPos(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
@@ -159,10 +156,7 @@ public class RandomLevelGenerator {
     }
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
-        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
-                LevelContainer.ALL_SOLID_POS,
-                LevelContainer.ALL_FLUID_POS
-        );
+        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
         if (possibleFaces.isEmpty()) {
             return null;
         }
@@ -193,8 +187,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
-                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
+        } while (LevelContainer.containsSolidPos(adjPos)
+                || LevelContainer.containsFluidPos(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();

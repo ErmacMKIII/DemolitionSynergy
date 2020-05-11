@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -391,6 +392,9 @@ public class Game {
                     Arrays.fill(keys, false);
                     renderer.getLevelContainer().getSolidChunks().printInfo();
                     renderer.getLevelContainer().getFluidChunks().printInfo();
+                }else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    LevelContainer.printPositionSets();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     File screenDir = new File(SCREENSHOTS);
@@ -503,7 +507,7 @@ public class Game {
             diff = currTime - lastTime;
             upsTicks += diff * Game.TPS;
             lastTime = currTime;
-
+                        
             // Detecting critical status
             if (ups == 0 && diff > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
