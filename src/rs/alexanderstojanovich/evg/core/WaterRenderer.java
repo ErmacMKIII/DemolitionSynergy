@@ -17,11 +17,11 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.ArrayDeque;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -62,7 +62,7 @@ public class WaterRenderer {
                 Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
                 if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
                         && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
-                        && !LevelContainer.containsSolidPos(topPos) // it must be nothing on top of it
+                        && LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
                         && waterHeight <= obsHeight) { // and it needs to be below the observer
                     fluidBlock.setWaterTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                     currChunk.setWaterTexture(frameBuffer.getTexture());

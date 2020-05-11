@@ -23,7 +23,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -76,9 +78,9 @@ public class LevelContainer implements GravityEnviroment {
     private final AudioPlayer soundFXPlayer;
 
     // position of all the solid blocks
-    public static final List<Pair<Vector3f, Integer>> ALL_SOLID_POS = new GapList<>();
+    public static final Set<Vector3f> ALL_SOLID_POS = new HashSet<>(MAX_NUM_OF_SOLID_BLOCKS);
     // position of all the fluid blocks
-    public static final List<Pair<Vector3f, Integer>> ALL_FLUID_POS = new GapList<>();
+    public static final Set<Vector3f> ALL_FLUID_POS = new HashSet<>(MAX_NUM_OF_FLUID_BLOCKS);
 
     static {
         // setting SKYBOX     
@@ -94,160 +96,20 @@ public class LevelContainer implements GravityEnviroment {
         this.soundFXPlayer = soundFXPlayer;
     }
 
-    public static void addSolidPos(Vector3f pos) {
-        boolean exists = false;
-        for (Pair<Vector3f, Integer> pair : ALL_SOLID_POS) {
-            if (pair.getKey().equals(pos)) {
-                exists = true;
-                break;
-            }
-        }
-        if (!exists) {
-            ALL_SOLID_POS.add(new Pair<>(pos, Block.getFaceBits(pos, ALL_SOLID_POS)));
-        }
-    }
-
-    public static void removeSolidPos(Vector3f pos) {
-        ALL_SOLID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
-            @Override
-            public boolean test(Pair<Vector3f, Integer> t) {
-                return (t.getKey().equals(pos));
-            }
-        });
-    }
-
-    public static void addFluidPos(Vector3f pos) {
-        boolean exists = false;
-        for (Pair<Vector3f, Integer> pair : ALL_FLUID_POS) {
-            if (pair.getKey().equals(pos)) {
-                exists = true;
-                break;
-            }
-        }
-        if (!exists) {
-            ALL_FLUID_POS.add(new Pair<>(new Vector3f(pos), Block.getFaceBits(pos, ALL_FLUID_POS)));
-        }
-    }
-
-    public static void removeFluidPos(Vector3f pos) {
-        ALL_FLUID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
-            @Override
-            public boolean test(Pair<Vector3f, Integer> t) {
-                return (t.getKey().equals(pos));
-            }
-        });
-    }
-
-    public static void compressSolidPos() {
-        for (Pair<Vector3f, Integer> pairI : ALL_SOLID_POS) {
-            if ((pairI.getKey().x + pairI.getKey().y + pairI.getKey().z) % 3.0f == 0.0f && pairI.getValue() > 0) {
-                for (int j = 0; j <= 5; j++) {
-                    Vector3f adjPos = Block.getAdjacentPos(pairI.getKey(), j);
-                    for (Pair<Vector3f, Integer> pairJ : ALL_SOLID_POS) {
-                        if (pairJ.getKey().equals(adjPos)) {
-                            pairJ.setValue(-1);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        ALL_SOLID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
-            @Override
-            public boolean test(Pair<Vector3f, Integer> t) {
-                return (t.getValue() == -1);
-            }
-        });
-    }
-
-    public static void compressFluidPos() {
-        for (Pair<Vector3f, Integer> pairI : ALL_FLUID_POS) {
-            if ((pairI.getKey().x + pairI.getKey().y + pairI.getKey().z) % 3.0f == 0.0f && pairI.getValue() > 0) {
-                for (int j = 0; j <= 5; j++) {
-                    Vector3f adjPos = Block.getAdjacentPos(pairI.getKey(), j);
-                    for (Pair<Vector3f, Integer> pairJ : ALL_FLUID_POS) {
-                        if (pairJ.getKey().equals(adjPos)) {
-                            pairJ.setValue(-1);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        ALL_FLUID_POS.removeIf(new Predicate<Pair<Vector3f, Integer>>() {
-            @Override
-            public boolean test(Pair<Vector3f, Integer> t) {
-                return (t.getValue() == -1);
-            }
-        });
-    }
-
-    public static boolean containsSolidPos(Vector3f posTarget) {
-        boolean result = false;
-        OUTER:
-        for (Pair<Vector3f, Integer> pair : ALL_SOLID_POS) {
-            Vector3f pos = pair.getKey();
-            if (pos.equals(posTarget)) {
-                result = true;
-                break;
-            } else {
-                Integer num = pair.getValue();
-                if (num > 0) {
-                    for (int j = 0; j <= 5; j++) {
-                        Vector3f adjPos = Block.getAdjacentPos(pos, j);
-                        if (adjPos.equals(posTarget)) {
-                            result = true;
-                            break OUTER;
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    public static boolean containsFluidPos(Vector3f posTarget) {
-        boolean result = false;
-        OUTER:
-        for (Pair<Vector3f, Integer> pair : ALL_FLUID_POS) {
-            Vector3f pos = pair.getKey();
-            if (pos.equals(posTarget)) {
-                result = true;
-                break;
-            } else {
-                Integer num = pair.getValue();
-                if (num > 0) {
-                    for (int j = 0; j <= 5; j++) {
-                        Vector3f adjPos = Block.getAdjacentPos(pos, j);
-                        if (adjPos.equals(posTarget)) {
-                            result = true;
-                            break OUTER;
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
     public static void printPositionSets() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("SOLID POSITION SET");
         sb.append("(size = ").append(ALL_SOLID_POS.size()).append(")\n");
-        for (Pair<Vector3f, Integer> solidPair : ALL_SOLID_POS) {
-            sb.append(solidPair.getKey());
-            sb.append(" ");
-            sb.append(solidPair.getValue());
+        for (Vector3f solidPos : ALL_SOLID_POS) {
+            sb.append(solidPos);
             sb.append("\n");
         }
         sb.append("---------------------------");
         sb.append("FLUID POSITION SET");
         sb.append("(size = ").append(ALL_FLUID_POS.size()).append(")\n");
-        for (Pair<Vector3f, Integer> fluidPair : ALL_FLUID_POS) {
-            sb.append(fluidPair.getKey());
-            sb.append(" ");
-            sb.append(fluidPair.getValue());
+        for (Vector3f fluidPos : ALL_FLUID_POS) {
+            sb.append(fluidPos);
             sb.append("\n");
         }
         sb.append("---------------------------");
@@ -289,7 +151,6 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         solidChunks.saveAllToMemory();
-        compressSolidPos();
 
         levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
@@ -330,8 +191,6 @@ public class LevelContainer implements GravityEnviroment {
 
         solidChunks.saveAllToMemory();
         fluidChunks.saveAllToMemory();
-        compressSolidPos();
-        compressFluidPos();
 
         progress = 100.0f;
         working = false;
@@ -495,7 +354,7 @@ public class LevelContainer implements GravityEnviroment {
                     progress += 50.0f / solidNum;
                 }
                 solidChunks.saveAllToMemory();
-                compressSolidPos();
+
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -514,7 +373,7 @@ public class LevelContainer implements GravityEnviroment {
                         progress += 50.0f / fluidNum;
                     }
                     fluidChunks.saveAllToMemory();
-                    compressFluidPos();
+
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -632,26 +491,12 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-            OUTER:
-            for (Pair<Vector3f, Integer> pair : ALL_SOLID_POS) {
-                if (Block.containsInsideEqually(pair.getKey(), 2.0f, 2.0f, 2.0f, critter.getPredictor())
+            for (Vector3f vector : ALL_SOLID_POS) {
+                if (Block.containsInsideEqually(vector, 2.0f, 2.0f, 2.0f, critter.getPredictor())
                         || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                                critter.getModel().getHeight(), critter.getModel().getDepth(), pair.getKey(), 2.0f, 2.0f, 2.0f)) {
+                                critter.getModel().getHeight(), critter.getModel().getDepth(), vector, 2.0f, 2.0f, 2.0f)) {
                     coll = true;
                     break;
-                } else if (pair.getValue() > 0) {
-                    boolean[] faces = Block.faceBitsToBoolArray(pair.getValue());
-                    for (int j = 0; j < faces.length; j++) {
-                        if (faces[j]) {
-                            Vector3f adjPos = Block.getAdjacentPos(pair.getKey(), j);
-                            if (Block.containsInsideEqually(adjPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                                    || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                                            critter.getModel().getHeight(), critter.getModel().getDepth(), adjPos, 2.0f, 2.0f, 2.0f)) {
-                                coll = true;
-                                break OUTER;
-                            }
-                        }
-                    }
                 }
             }
         }

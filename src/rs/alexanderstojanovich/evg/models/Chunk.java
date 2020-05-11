@@ -95,9 +95,9 @@ public class Chunk {
 
     public void addBlock(Block block) {
         if (block.solid) {
-            LevelContainer.addSolidPos(block.pos);
+            LevelContainer.ALL_SOLID_POS.add(block.pos);
         } else {
-            LevelContainer.addFluidPos(block.pos);
+            LevelContainer.ALL_FLUID_POS.add(block.pos);
         }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -113,11 +113,11 @@ public class Chunk {
     }
 
     public void removeBlock(Block block) {
-//        if (block.solid) {
-//            LevelContainer.ALL_SOLID_POS.remove(block.pos);
-//        } else {
-//            LevelContainer.ALL_FLUID_POS.remove(block.pos);
-//        }
+        if (block.solid) {
+            LevelContainer.ALL_SOLID_POS.remove(block.pos);
+        } else {
+            LevelContainer.ALL_FLUID_POS.remove(block.pos);
+        }
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);

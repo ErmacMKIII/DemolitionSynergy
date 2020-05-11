@@ -68,8 +68,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.containsSolidPos(randPos)
-                || LevelContainer.containsFluidPos(randPos)
+        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
+                || LevelContainer.ALL_FLUID_POS.contains(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -93,8 +93,8 @@ public class RandomLevelGenerator {
             posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.containsSolidPos(randPos)
-                || LevelContainer.containsFluidPos(randPos)
+        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
+                || LevelContainer.ALL_FLUID_POS.contains(randPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -140,8 +140,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.containsSolidPos(adjPos)
-                || LevelContainer.containsFluidPos(adjPos)
+        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
+                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
@@ -187,8 +187,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.containsSolidPos(adjPos)
-                || LevelContainer.containsFluidPos(adjPos)
+        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
+                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();

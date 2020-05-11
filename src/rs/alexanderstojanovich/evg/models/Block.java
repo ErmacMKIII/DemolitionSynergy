@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -39,7 +38,6 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -461,12 +459,12 @@ public class Block extends Model {
     }
 
     // used in static Level container to get compressed positioned sets
-    public static int getFaceBits(Vector3f pos, List<Pair<Vector3f, Integer>> pairSet) {
+    public static int getFaceBits(Vector3f pos, Set<Vector3f> vectorSet) {
         int bits = 0;
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = Block.getAdjacentPos(pos, j);
-            for (Pair<Vector3f, Integer> pair : pairSet) {
-                if (pair.getKey().equals(adjPos)) {
+            for (Vector3f vector : vectorSet) {
+                if (vector.equals(adjPos)) {
                     int mask = 1 << j;
                     bits |= mask;
                     break;
@@ -535,7 +533,7 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!LevelContainer.containsSolidPos(adjPos) && !LevelContainer.containsFluidPos(adjPos)) {
+            if (!LevelContainer.ALL_SOLID_POS.contains(adjPos) && !LevelContainer.ALL_FLUID_POS.contains(adjPos)) {
                 result.add(j);
             }
         }
