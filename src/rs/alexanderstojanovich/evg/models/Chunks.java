@@ -130,7 +130,9 @@ public class Chunks {
 
     public void animate() { // call only for fluid blocks
         for (Chunk chunk : getChunkList()) {
-            chunk.animate();
+            if (!chunk.isCached()) {
+                chunk.animate();
+            }
         }
     }
 

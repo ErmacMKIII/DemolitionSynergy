@@ -53,8 +53,10 @@ public class Main {
             @Override
             public void run() {
                 renderer.start();
+                DSLogger.reportInfo("Renderer started.", null);
             }
         });
+        DSLogger.reportInfo("Game will start soon.", null);
         game.go();
         try {
             renderer.join(); // and it's blocked here until it finishes

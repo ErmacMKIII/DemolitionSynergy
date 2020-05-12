@@ -52,6 +52,7 @@ public class Renderer extends Thread {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(gameObject.getMyWindow()); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
+        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context
 
         double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();

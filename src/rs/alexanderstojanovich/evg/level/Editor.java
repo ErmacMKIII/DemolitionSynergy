@@ -166,8 +166,7 @@ public class Editor {
                     currSolidChunk.setBuffered(false);
                 }
             } else {
-                int facebits = Block.getFaceBits(selectedCurr.getPos(),
-                        selectedCurr.isSolid() ? LevelContainer.ALL_SOLID_POS : LevelContainer.ALL_FLUID_POS);
+                int facebits = Block.getFaceBits(selectedCurr.getPos(), LevelContainer.ALL_FLUID_POS);
                 selectedCurr.setFaceBits(~facebits & 63, false);
                 Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
                 if (currFluidChunk != null) {
