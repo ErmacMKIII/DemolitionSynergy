@@ -356,7 +356,7 @@ public class Block extends Model {
         }
     }
 
-    public void setUVsForSkybox() {
+    public void setUVsForSkybox(boolean selfBuffer) {
         revertGroupsOfVertices();
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
@@ -395,7 +395,10 @@ public class Block extends Model {
             vertices.get(4 * BOTTOM + i).getUv().x = vertices.get(4 * LEFT + i).getUv().x;
             vertices.get(4 * BOTTOM + i).getUv().y = vertices.get(4 * LEFT + i).getUv().y + 1.0f / 3.0f;
         }
-        bufferVertices();
+
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
     private void revertGroupsOfVertices() {

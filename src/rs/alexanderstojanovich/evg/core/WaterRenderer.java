@@ -22,6 +22,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -32,20 +33,19 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class WaterRenderer {
 
-    private final Window myWindow;
-    private final LevelContainer levelContainer;
+    private final GameObject gameObject;
     private final Queue<Float> waterHeights = new ArrayDeque<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
 
-    public WaterRenderer(Window window, LevelContainer levelContainer) {
-        this.myWindow = window;
-        this.levelContainer = levelContainer;
-        this.frameBuffer = new FrameBuffer(myWindow);
+    public WaterRenderer(GameObject gameObject) {
+        this.gameObject = gameObject;
+        this.frameBuffer = new FrameBuffer(gameObject.getMyWindow());
         this.camera = new Camera();
     }
 
     public void refresh() { // call this in update (renderer)
+        LevelContainer levelContainer = gameObject.getLevelContainer();
         if (levelContainer.isWorking()
                 || levelContainer.getProgress() > 0.0f
                 || levelContainer.getLevelActors().getPlayer() == null) {
@@ -86,6 +86,7 @@ public class WaterRenderer {
     }
 
     private void updateCamera(float waterHeight) {
+        LevelContainer levelContainer = gameObject.getLevelContainer();
         camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
         camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
         camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
@@ -95,7 +96,7 @@ public class WaterRenderer {
     private void capture(float waterHeight) {
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        levelContainer.render(camera);
+        gameObject.getLevelContainer().render(camera);
     }
 
     public void render() {
@@ -114,14 +115,6 @@ public class WaterRenderer {
 
         frameBuffer.unbind();
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
-    }
-
-    public Window getMyWindow() {
-        return myWindow;
-    }
-
-    public LevelContainer getLevelContainer() {
-        return levelContainer;
     }
 
     public Queue<Float> getWaterHeights() {

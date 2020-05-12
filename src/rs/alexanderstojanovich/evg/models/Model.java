@@ -82,7 +82,7 @@ public class Model implements Comparable<Model> {
     // fluid models are solid whilst solid ones aren't               
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
-   
+
     protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
     }

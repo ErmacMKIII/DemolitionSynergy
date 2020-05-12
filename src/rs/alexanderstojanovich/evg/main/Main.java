@@ -16,7 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
+import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -25,19 +30,48 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Main {
 
+    public static final String TITLE = "Demolition Synergy - v18 STONEWALL";
+
+    public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
+
+    public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
+
     public static void main(String[] args) {
         Configuration inCfg = new Configuration(); // makes default configuration
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
         DSLogger.init(debug); // this is important initializing Apache logger
-        MasterAudio.init(); // audio init before game loading
-        Game game = new Game(inCfg); // init game with given config (or default one)       
+        MasterAudio.init(); // audio init before game loading        
+        //----------------------------------------------------------------------
+        Window myWindow = new Window(inCfg.getWidth(), inCfg.getHeight(), TITLE); // creating the window
+        GameObject gameObject = new GameObject(myWindow);
+        Game game = new Game(gameObject, inCfg); // init game with given config (or default one)               
+        Renderer renderer = new Renderer(gameObject);
         DSLogger.reportInfo("Game initialized.", null);
-        game.go(); // starts the game (launchs the threads)         
-        DSLogger.reportInfo("Game finished.", null);
+        //----------------------------------------------------------------------        
+        SERVICE.execute(new Runnable() {
+            @Override
+            public void run() {
+                renderer.start();
+            }
+        });
+        game.go();
+        try {
+            renderer.join(); // and it's blocked here until it finishes
+        } catch (InterruptedException ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
-        MasterAudio.destroy(); // destroy context after writting to the ini file                
+        MasterAudio.destroy(); // destroy context after writting to the ini file                                
+        //----------------------------------------------------------------------
+        synchronized (Main.OBJ_MUTEX) {
+            gameObject.getMyWindow().loadContext();
+            gameObject.getMyWindow().destroy();
+        }
+        SERVICE.shutdown();
+        DSLogger.reportInfo("Game finished.", null);
     }
 }

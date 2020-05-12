@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
@@ -45,8 +46,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    private final Window myWindow;
-    public static final Block SKYBOX = new Block(true, "night");
+    private final GameObject gameObject;
+
+    public static final Block SKYBOX = new Block(false, "night");
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
@@ -71,9 +73,6 @@ public class LevelContainer implements GravityEnviroment {
     private final LevelActors levelActors = new LevelActors();
     private final RandomLevelGenerator randomLevelGenerator;
 
-    private final AudioPlayer musicPlayer;
-    private final AudioPlayer soundFXPlayer;
-
     // position of all the solid blocks
     public static final Set<Vector3f> ALL_SOLID_POS = new HashSet<>(MAX_NUM_OF_SOLID_BLOCKS);
     // position of all the fluid blocks
@@ -82,15 +81,13 @@ public class LevelContainer implements GravityEnviroment {
     static {
         // setting SKYBOX     
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);
-        SKYBOX.setUVsForSkybox();
+        SKYBOX.setUVsForSkybox(false);
         SKYBOX.setScale(SKYBOX_SCALE);
     }
 
-    public LevelContainer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
-        this.myWindow = myWindow;
+    public LevelContainer(GameObject gameObject) {
+        this.gameObject = gameObject;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
-        this.musicPlayer = musicPlayer;
-        this.soundFXPlayer = soundFXPlayer;
     }
 
     public static void printPositionSets() {
@@ -121,7 +118,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -160,7 +157,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -172,7 +169,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.freeze();
         boolean success = false;
         progress = 0.0f;
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -192,7 +189,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         levelActors.unfreeze();
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -204,7 +201,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -244,7 +241,7 @@ public class LevelContainer implements GravityEnviroment {
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
-            if (myWindow.shouldClose()) {
+            if (gameObject.getMyWindow().shouldClose()) {
                 break;
             }
             byte[] byteArraySolid = solidBlock.toByteArray();
@@ -264,7 +261,7 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
-            if (myWindow.shouldClose()) {
+            if (gameObject.getMyWindow().shouldClose()) {
                 break;
             }
             byte[] byteArrayFluid = fluidBlock.toByteArray();
@@ -280,11 +277,11 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
 
-        if (progress == 100.0f && !myWindow.shouldClose()) {
+        if (progress == 100.0f && !gameObject.getMyWindow().shouldClose()) {
             success = true;
         }
         working = false;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -296,7 +293,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
@@ -342,7 +339,7 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !myWindow.shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !gameObject.getMyWindow().shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[29];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
@@ -361,7 +358,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum && !myWindow.shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !gameObject.getMyWindow().shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[29];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
@@ -387,7 +384,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -578,6 +575,9 @@ public class LevelContainer implements GravityEnviroment {
     public void render() { // render for regular level rendering
         Camera obsCamera = levelActors.getPlayer().getCamera();
         levelActors.render();
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
+        }
         SKYBOX.render(ShaderProgram.getMainShader());
 
         Block editorNew = Editor.getSelectedNew();
@@ -620,6 +620,9 @@ public class LevelContainer implements GravityEnviroment {
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         // render SKYBOX
         camera.render(ShaderProgram.getWaterBaseShader());
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
+        }
         SKYBOX.render(ShaderProgram.getWaterBaseShader());
         levelActors.render();
 
@@ -677,7 +680,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return myWindow;
+        return gameObject.getMyWindow();
     }
 
     public float getProgress() {
@@ -717,11 +720,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public AudioPlayer getMusicPlayer() {
-        return musicPlayer;
-    }
-
-    public AudioPlayer getSoundFXPlayer() {
-        return soundFXPlayer;
+        return gameObject.getMusicPlayer();
     }
 
     public LevelActors getLevelActors() {

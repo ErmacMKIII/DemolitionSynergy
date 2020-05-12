@@ -16,16 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
-import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -34,13 +31,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Renderer extends Thread {
 
-    private final Window myWindow;
-    private LevelContainer levelContainer;
-    private WaterRenderer waterRenderer;
-    private Intrface intrface;
-
-    private final Object winMutex; // got from the Game (used for locking Window context)    
-    private final Object chunkMutex; // got this from the Game
+    private final GameObject gameObject;
 
     private boolean assertCollision = false;
 
@@ -50,32 +41,17 @@ public class Renderer extends Thread {
     private static int renPasses = 0;
     public static final int REN_MAX_PASSES = 10;
 
-    private final AudioPlayer musicPlayer;
-    private final AudioPlayer soundFXPlayer;
-
-    public Renderer(Window myWindow, Object objMutex, Object lockMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
+    public Renderer(GameObject gameObject) {
         super("Renderer");
-        this.myWindow = myWindow;
-        this.winMutex = objMutex;
-        this.chunkMutex = lockMutex;
-        this.musicPlayer = musicPlayer;
-        this.soundFXPlayer = soundFXPlayer;
+        this.gameObject = gameObject;
     }
 
     @Override
     public void run() {
-
-        synchronized (winMutex) {
-            MasterRenderer.initGL(myWindow); // loads myWindow context, creates OpenGL context..
-            ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-            PerspectiveRenderer.updatePerspective(myWindow); // updates perspective for all the existing shaders
-
-            levelContainer = new LevelContainer(myWindow, musicPlayer, soundFXPlayer);
-            waterRenderer = new WaterRenderer(myWindow, levelContainer);
-            intrface = new Intrface(myWindow, levelContainer, waterRenderer, winMutex, musicPlayer, soundFXPlayer);
-            // wake up the main thread
-            winMutex.notify();
-        }
+        MasterRenderer.initGL(gameObject.getMyWindow()); // loads myWindow context, creates OpenGL context..
+        ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
+        PerspectiveRenderer.updatePerspective(gameObject.getMyWindow()); // updates perspective for all the existing shaders
+        Texture.bufferAllTextures();
 
         double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();
@@ -85,7 +61,7 @@ public class Renderer extends Thread {
         double currTime;
         double diff;
 
-        while (!myWindow.shouldClose()) {
+        while (!gameObject.getMyWindow().shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             fpsTicks += diff * Game.getFpsMax();
@@ -94,34 +70,15 @@ public class Renderer extends Thread {
             // Detecting critical status
             if (fps == 0 && diff > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                myWindow.close();
+                gameObject.getMyWindow().close();
                 break;
             }
 
             if (fpsTicks >= 1.0) {
-                synchronized (winMutex) {
-                    myWindow.loadContext();
+                synchronized (Main.OBJ_MUTEX) {
+                    gameObject.getMyWindow().loadContext();
                     while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                        MasterRenderer.render(); // it clears color bit and depth buffer bit
-                        if (!levelContainer.isWorking()) {
-                            synchronized (chunkMutex) {
-                                levelContainer.render();
-                                if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
-                                    waterRenderer.render();
-                                }
-                            }
-                        } else {
-                            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
-                            if (!intrface.getProgText().isBuffered()) {
-                                intrface.getProgText().buffer();
-                            }
-                            intrface.getProgText().render();
-                        }
-                        intrface.setCollText(assertCollision);
-                        intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-                        intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
-                        intrface.render();
-                        myWindow.render();
+                        gameObject.render();
                         fps++;
                         fpsTicks--;
                         renPasses++;
@@ -133,49 +90,47 @@ public class Renderer extends Thread {
 
             // update text which shows ups and fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                intrface.getFpsText().setContent("fps: " + fps);
+                gameObject.getIntrface().getFpsText().setContent("fps: " + fps);
                 fps = 0;
                 timer0 += 1.0;
             }
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                if (intrface.getSaveDialog().isDone()) {
-                    intrface.getSaveDialog().setEnabled(false);
+                if (gameObject.getIntrface().getSaveDialog().isDone()) {
+                    gameObject.getIntrface().getSaveDialog().setEnabled(false);
                 }
-                if (intrface.getLoadDialog().isDone()) {
-                    intrface.getLoadDialog().setEnabled(false);
+                if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
                 }
-                if (intrface.getLoadDialog().isDone()) {
-                    intrface.getLoadDialog().setEnabled(false);
+                if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
                 }
-                if (intrface.getRandLvlDialog().isDone()) {
-                    intrface.getRandLvlDialog().setEnabled(false);
-                }
-
-                if (intrface.getSinglePlayerDialog().isDone()) {
-                    intrface.getSinglePlayerDialog().setEnabled(false);
+                if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
+                    gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
                 }
 
-                intrface.getCollText().setContent("");
-                intrface.getScreenText().setEnabled(false);
+                if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
+                    gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
+                }
+
+                gameObject.getIntrface().getCollText().setContent("");
+                gameObject.getIntrface().getScreenText().setEnabled(false);
 
                 timer1 += 5.0;
             }
 
             // update text which animates water every quarter of the second
             if (GLFW.glfwGetTime() > timer2 + 0.25) {
-                if (levelContainer.getProgress() == 100) {
-                    intrface.getProgText().setEnabled(false);
-                    levelContainer.setProgress(0);
+                if (gameObject.getLevelContainer().getProgress() == 100) {
+                    gameObject.getIntrface().getProgText().setEnabled(false);
+                    gameObject.getLevelContainer().setProgress(0);
                 }
 
-                if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
-                    synchronized (winMutex) {
-                        myWindow.loadContext();
-                        synchronized (chunkMutex) {
-                            levelContainer.animate();
-                        }
+                if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
+                    synchronized (Main.OBJ_MUTEX) {
+                        gameObject.getMyWindow().loadContext();
+                        gameObject.animate();
                         Window.unloadContext();
                     }
                 }
@@ -185,34 +140,8 @@ public class Renderer extends Thread {
 
     }
 
-    public void update(float deltaTime) {
-        synchronized (chunkMutex) {
-            if (Game.isWaterEffects()) {
-                waterRenderer.refresh();
-            }
-            levelContainer.update(deltaTime);
-            intrface.update();
-        }
-    }
-
-    public Window getMyWindow() {
-        return myWindow;
-    }
-
     public LevelContainer getLevelContainer() {
-        return levelContainer;
-    }
-
-    public WaterRenderer getWaterRenderer() {
-        return waterRenderer;
-    }
-
-    public Intrface getIntrface() {
-        return intrface;
-    }
-
-    public Object getWinMutex() {
-        return winMutex;
+        return gameObject.getLevelContainer();
     }
 
     public boolean isAssertCollision() {
@@ -237,18 +166,6 @@ public class Renderer extends Thread {
 
     public static int getRenPasses() {
         return renPasses;
-    }
-
-    public AudioPlayer getMusicPlayer() {
-        return musicPlayer;
-    }
-
-    public AudioPlayer getSoundFXPlayer() {
-        return soundFXPlayer;
-    }
-
-    public Object getChunkMutex() {
-        return chunkMutex;
     }
 
 }

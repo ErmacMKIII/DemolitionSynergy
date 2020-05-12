@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.level;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 
@@ -39,8 +40,8 @@ public class Editor {
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
 
-    public static void selectNew(LevelContainer levelContainer) {
-        deselect();
+    public static void selectNew(GameObject gameObject) {
+        deselect(gameObject);
         if (loaded == null) // first time it's null
         {
             loaded = new Block(false);
@@ -49,7 +50,7 @@ public class Editor {
         selectedNew = loaded;
 
         // fetching..
-        Observer obs = levelContainer.getLevelActors().getPlayer();
+        Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
         Vector3f pos = obs.getCamera().getPos();
         Vector3f front = obs.getCamera().getFront();
         final float skyboxWidth = LevelContainer.SKYBOX_WIDTH;
@@ -59,23 +60,23 @@ public class Editor {
         selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y)) % Math.round(skyboxWidth + 1);
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth + 1);
 
-        if (!cannotPlace(levelContainer)) {
+        if (!cannotPlace(gameObject)) {
             selectedNew.getSecondaryColor().x = 0.0f;
             selectedNew.getSecondaryColor().y = 1.0f;
             selectedNew.getSecondaryColor().z = 0.0f;
             selectedNew.setDecal(true);
         }
 
-        levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
+        gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
     }
 
-    public static void selectCurrSolid(LevelContainer levelContainer) {
-        deselect();
-        Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
+    public static void selectCurrSolid(GameObject gameObject) {
+        deselect(gameObject);
+        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
         float minDistanceOfSolid = Chunk.C;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currSolidChunk = levelContainer.getSolidChunks().getChunk(currChunkId);
+        Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
 
         int solidTargetIndex = -1;
         if (currSolidChunk != null) {
@@ -101,18 +102,21 @@ public class Editor {
 
                 selectedCurr.setDecal(true);
 
+                selectedCurr.enableAllFaces(false);
+                currSolidChunk.setBuffered(false);
+
                 selectedCurrIndex = solidBlkIndex;
             }
         }
     }
 
-    public static void selectCurrFluid(LevelContainer levelContainer) {
-        deselect();
-        Vector3f cameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = levelContainer.getLevelActors().getPlayer().getCamera().getFront();
+    public static void selectCurrFluid(GameObject gameObject) {
+        deselect(gameObject);
+        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
         float minDistanceOfFluid = Chunk.C;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currFluidChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+        Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
 
         int fluidTargetIndex = -1;
         if (currFluidChunk != null) {
@@ -138,25 +142,47 @@ public class Editor {
 
                 selectedCurr.setDecal(true);
 
+                selectedCurr.enableAllFaces(false);
+                currFluidChunk.setCameraInFluid(false);
+                currFluidChunk.setBuffered(false);
+
                 selectedCurrIndex = fluidBlkIndex;
             }
         }
     }
 
-    public static void deselect() {
+    public static void deselect(GameObject gameObject) {
         if (selectedCurr != null) {
             selectedCurr.setDecal(false);
             selectedCurr.getSecondaryColor().x = 1.0f;
             selectedCurr.getSecondaryColor().y = 1.0f;
             selectedCurr.getSecondaryColor().z = 1.0f;
+
+            Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
+            int currChunkId = Chunk.chunkFunc(cameraPos);
+            if (selectedCurr.isSolid()) {
+                Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
+                if (currSolidChunk != null) {
+                    currSolidChunk.setBuffered(false);
+                }
+            } else {
+                int facebits = Block.getFaceBits(selectedCurr.getPos(),
+                        selectedCurr.isSolid() ? LevelContainer.ALL_SOLID_POS : LevelContainer.ALL_FLUID_POS);
+                selectedCurr.setFaceBits(~facebits & 63, false);
+                Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
+                if (currFluidChunk != null) {
+                    currFluidChunk.setCameraInFluid(gameObject.getLevelContainer().isCameraInFluid());
+                    currFluidChunk.setBuffered(false);
+                }
+            }
         }
         selectedNew = selectedCurr = null;
         selectedCurrIndex = -1;
     }
 
-    public static void selectAdjacentSolid(LevelContainer levelContainer, int position) {
-        deselect();
-        selectCurrSolid(levelContainer);
+    public static void selectAdjacentSolid(GameObject gameObject, int position) {
+        deselect(gameObject);
+        selectCurrSolid(gameObject);
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
@@ -191,18 +217,21 @@ public class Editor {
                     break;
             }
 
-            if (!cannotPlace(levelContainer)) {
+            if (!cannotPlace(gameObject)) {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
+
                 selectedNew.setDecal(true);
+
+                selectedNew.enableAllFaces(true);
             }
         }
     }
 
-    public static void selectAdjacentFluid(LevelContainer levelContainer, int position) {
-        deselect();
-        selectCurrFluid(levelContainer);
+    public static void selectAdjacentFluid(GameObject gameObject, int position) {
+        deselect(gameObject);
+        selectCurrFluid(gameObject);
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
@@ -237,23 +266,25 @@ public class Editor {
                     break;
             }
 
-            if (!cannotPlace(levelContainer)) {
+            if (!cannotPlace(gameObject)) {
                 selectedNew.getSecondaryColor().x = 0.0f;
                 selectedNew.getSecondaryColor().y = 0.0f;
                 selectedNew.getSecondaryColor().z = 1.0f;
                 selectedNew.setDecal(true);
+
+                selectedCurr.enableAllFaces(true);
             }
         }
     }
 
-    private static boolean cannotPlace(LevelContainer levelContainer) {
+    private static boolean cannotPlace(GameObject gameObject) {
         boolean cant = false;
         boolean placeOccupied = LevelContainer.ALL_SOLID_POS.contains(selectedNew.getPos())
                 || LevelContainer.ALL_FLUID_POS.contains(selectedNew.getPos());
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
-        Chunk currSolidChunk = levelContainer.getSolidChunks().getChunk(currChunkId);
+        Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
         if (currSolidChunk != null) {
             for (Block solidBlock : currSolidChunk.getList()) {
                 intsSolid = selectedNew.intersectsExactly(solidBlock);
@@ -265,7 +296,7 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean intsFluid = false;
         if (!intsSolid) {
-            Chunk currFluidChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+            Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
             if (currFluidChunk != null) {
                 for (Block fluidBlock : currFluidChunk.getList()) {
                     intsSolid = selectedNew.intersectsExactly(fluidBlock);
@@ -278,9 +309,9 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean leavesSkybox = !LevelContainer.SKYBOX.intersectsEqually(selectedNew);
         if (selectedNew.isSolid()) {
-            cant = levelContainer.maxSolidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
+            cant = gameObject.getLevelContainer().maxSolidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         } else {
-            cant = levelContainer.maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
+            cant = gameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         }
         if (cant) {
             selectedNew.getSecondaryColor().x = 1.0f;
@@ -291,26 +322,26 @@ public class Editor {
         return cant;
     }
 
-    public static void add(LevelContainer levelContainer) {
+    public static void add(GameObject gameObject) {
         if (selectedNew != null) {
-            if (!cannotPlace(levelContainer) && !levelContainer.getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
+            if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
                 selectedNew.setDecal(false);
                 int currentChunkId = Chunk.chunkFunc(selectedNew.getPos());
                 if (selectedNew.isSolid()) { // else if block is solid
-                    Chunk solidChunk = levelContainer.getSolidChunks().getChunk(currentChunkId);
+                    Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currentChunkId);
                     if (solidChunk != null && !solidChunk.isCached()) {
                         solidChunk.addBlock(selectedNew);
                         solidChunk.setBuffered(false);
-                        levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
+                        gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                     }
                     //----------------------------------------------------------
                 } else { // if block is fluid                    
-                    Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(currentChunkId);
+                    Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currentChunkId);
                     if (fluidChunk != null && !fluidChunk.isCached()) {
                         fluidChunk.addBlock(selectedNew);
-                        levelContainer.getFluidChunks().updateFluids(fluidChunk, true);
+                        gameObject.getLevelContainer().getFluidChunks().updateFluids(fluidChunk, true);
                         fluidChunk.setBuffered(false);
-                        levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
+                        gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                     }
                     //----------------------------------------------------------                   
                 }
@@ -318,31 +349,31 @@ public class Editor {
                 selectLoadedTexture();
             }
         }
-        deselect();
+        deselect(gameObject);
     }
 
-    public static void remove(LevelContainer levelContainer) {
+    public static void remove(GameObject gameObject) {
         if (selectedCurr != null) {
             int currentChunkId = Chunk.chunkFunc(selectedCurr.getPos());
             if (selectedCurr.isSolid()) {
                 //--------------------------------------------------------------
-                Chunk solidChunk = levelContainer.getSolidChunks().getChunk(currentChunkId);
+                Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currentChunkId);
                 if (solidChunk != null && !solidChunk.isCached()) {
                     solidChunk.removeBlock(selectedCurr);
                     solidChunk.setBuffered(false);
-                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
+                    gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
                 }
             } else {
-                Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(currentChunkId);
+                Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currentChunkId);
                 if (fluidChunk != null && !fluidChunk.isCached()) {
                     fluidChunk.removeBlock(selectedCurr);
-                    levelContainer.getFluidChunks().updateFluids(fluidChunk, true);
+                    gameObject.getLevelContainer().getFluidChunks().updateFluids(fluidChunk, true);
                     fluidChunk.setBuffered(false);
-                    levelContainer.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
+                    gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
                 }
             }
         }
-        deselect();
+        deselect(gameObject);
     }
 
     private static void selectLoadedTexture() {
@@ -370,7 +401,7 @@ public class Editor {
         }
     }
 
-    public static void selectPrevTexture(LevelContainer levelContainer) {
+    public static void selectPrevTexture(GameObject gameObject) {
         if (loaded != null) {
             if (value > MIN_VAL) {
                 value--;
@@ -379,7 +410,7 @@ public class Editor {
         }
     }
 
-    public static void selectNextTexture(LevelContainer levelContainer) {
+    public static void selectNextTexture(GameObject gameObject) {
         if (loaded != null) {
             if (value < MAX_VAL) {
                 value++;

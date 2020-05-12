@@ -33,6 +33,10 @@ public class FrameBuffer {
 
     public FrameBuffer(Window window) {
         this.myWindow = window;
+    }
+
+    // requires OpenGL context
+    public void tune() {
         createFrameBuffer();
         createDepthBuffer();
         configureFrameBuffer();

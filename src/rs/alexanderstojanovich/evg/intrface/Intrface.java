@@ -25,12 +25,13 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Combo;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
+import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.Main;
 import rs.alexanderstojanovich.evg.main.Renderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -42,7 +43,7 @@ import rs.alexanderstojanovich.evg.util.PlainTextReader;
  */
 public class Intrface {
 
-    private final Window myWindow;
+    private final GameObject gameObject;
 
     private Quad crosshair;
     private DynamicText updText; // displays updates
@@ -63,29 +64,21 @@ public class Intrface {
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
 
-    private final LevelContainer levelContainer;
-    private final WaterRenderer waterRenderer;
-
     public static final String FONT_IMG = "font.png"; // modified Hack font
-
-    private final Object objMutex;
-
-    private final AudioPlayer musicPlayer;
-    private final AudioPlayer soundFXPlayer;
 
     private Console console;
 
-    public Intrface(Window myWindow, LevelContainer levelContainer, WaterRenderer waterRenderer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
-        this.myWindow = myWindow;
-        this.levelContainer = levelContainer;
-        this.waterRenderer = waterRenderer;
-        this.objMutex = objMutex;
-        this.musicPlayer = musicPlayer;
-        this.soundFXPlayer = soundFXPlayer;
+    public Intrface(GameObject gameObject) {
+        this.gameObject = gameObject;
         initIntrface();
     }
 
     private void initIntrface() {
+        Window myWindow = gameObject.getMyWindow();
+        LevelContainer levelContainer = gameObject.getLevelContainer();
+        AudioPlayer musicPlayer = gameObject.getMusicPlayer();
+        AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
+
         updText = new DynamicText(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
         updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         updText.setOffset(new Vector2f(1.0f, 1.0f));
@@ -149,7 +142,7 @@ public class Intrface {
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect();
+                Editor.deselect(gameObject);
                 progText.enabled = true;
                 boolean ok = levelContainer.saveLevelToFile(command);
                 if (ok) {
@@ -163,7 +156,7 @@ public class Intrface {
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect();
+                Editor.deselect(gameObject);
                 progText.enabled = true;
                 boolean ok = levelContainer.loadLevelFromFile(command);
                 if (ok) {
@@ -177,7 +170,7 @@ public class Intrface {
                 "ENTER NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect();
+                Editor.deselect(gameObject);
                 progText.enabled = true;
                 boolean ok = levelContainer.generateRandomLevel(Integer.valueOf(command));
                 if (ok) {
@@ -192,7 +185,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 boolean ok = false;
                 if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
-                    Editor.deselect();
+                    Editor.deselect(gameObject);
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
                 }
@@ -236,7 +229,7 @@ public class Intrface {
                 //--------------------------------------------------------------
                 if (getOptions()[1].giveCurrent() != null) {
                     String[] things = getOptions()[1].giveCurrent().toString().split("x");
-                    synchronized (objMutex) {
+                    synchronized (Main.OBJ_MUTEX) {
                         myWindow.loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
@@ -249,7 +242,7 @@ public class Intrface {
                 if (getOptions()[2].giveCurrent() != null) {
                     switch (getOptions()[2].giveCurrent().toString()) {
                         case "OFF":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.windowed();
                                 myWindow.centerTheWindow();
@@ -257,7 +250,7 @@ public class Intrface {
                             }
                             break;
                         case "ON":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.fullscreen();
                                 myWindow.centerTheWindow();
@@ -270,14 +263,14 @@ public class Intrface {
                 if (getOptions()[3].giveCurrent() != null) {
                     switch (getOptions()[3].giveCurrent().toString()) {
                         case "OFF":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.disableVSync();
                                 Window.unloadContext();
                             }
                             break;
                         case "ON":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.enableVSync();
                                 Window.unloadContext();
@@ -367,7 +360,7 @@ public class Intrface {
         };
         editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
-        console = new Console(myWindow, objMutex, musicPlayer, soundFXPlayer);
+        console = new Console(myWindow, Main.OBJ_MUTEX, musicPlayer, soundFXPlayer);
     }
 
     public void setCollText(boolean mode) {
@@ -443,8 +436,8 @@ public class Intrface {
         editorMenu.update();
     }
 
-    public Window getMyWindow() {
-        return myWindow;
+    public GameObject getGameObject() {
+        return gameObject;
     }
 
     public Quad getCrosshair() {
@@ -503,20 +496,12 @@ public class Intrface {
         this.showHelp = showHelp;
     }
 
-    public WaterRenderer getWaterRenderer() {
-        return waterRenderer;
-    }
-
     public ConcurrentDialog getRandLvlDialog() {
         return randLvlDialog;
     }
 
     public DynamicText getProgText() {
         return progText;
-    }
-
-    public Object getObjMutex() {
-        return objMutex;
     }
 
     public DynamicText getGameModeText() {

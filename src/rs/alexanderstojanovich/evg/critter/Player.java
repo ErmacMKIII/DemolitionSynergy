@@ -34,27 +34,27 @@ public class Player extends Observer {
     private Model currWeapon;
     private final Matrix4f viewMatrix = new Matrix4f();
 
-    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
+    public static final Model PISTOL = new Model(false, Game.PLAYER_ENTRY, "pistol.obj",
             "pistol", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
+    public static final Model SUB_MACHINE_GUN = new Model(false, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
             "smg", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
+    public static final Model SHOTGUN = new Model(false, Game.PLAYER_ENTRY, "shotgun.obj",
             "shotgun", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
+    public static final Model ASSAULT_RIFLE = new Model(false, Game.PLAYER_ENTRY, "assault_rifle.obj",
             "assrifle", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
+    public static final Model MACHINE_GUN = new Model(false, Game.PLAYER_ENTRY, "machine_gun.obj",
             "machgun", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
+    public static final Model SNIPER_RIFLE = new Model(false, Game.PLAYER_ENTRY, "sniper_rifle.obj",
             "sniper", new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
     public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-    
+
     static {
         for (Model weapon : WEAPONS) {
             weapon.setScale(6.0f);
             weapon.setrY((float) (-Math.PI / 2.0f));
         }
     }
-    
+
     public Player(Model currWeapon, String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
         super(modelFileName, texName, pos, color, scale);
         this.currWeapon = currWeapon;
@@ -76,6 +76,9 @@ public class Player extends Observer {
         ShaderProgram.getPlayerShader().updateUniform(viewMatrix, "viewMatrix");
         ShaderProgram.unbind();
         if (currWeapon != null) {
+            if (!currWeapon.isBuffered()) {
+                currWeapon.bufferAll();
+            }
             currWeapon.render(ShaderProgram.getPlayerShader());
         }
     }
@@ -83,7 +86,7 @@ public class Player extends Observer {
     public double getHitPoints() {
         return hitPoints;
     }
-    
+
     public Model getCurrWeapon() {
         return currWeapon;
     }
