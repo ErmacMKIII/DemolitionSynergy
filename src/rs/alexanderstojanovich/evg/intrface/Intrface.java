@@ -142,7 +142,7 @@ public class Intrface {
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect(gameObject);
+                Editor.deselect();
                 progText.enabled = true;
                 boolean ok = levelContainer.saveLevelToFile(command);
                 if (ok) {
@@ -156,7 +156,7 @@ public class Intrface {
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect(gameObject);
+                Editor.deselect();
                 progText.enabled = true;
                 boolean ok = levelContainer.loadLevelFromFile(command);
                 if (ok) {
@@ -170,7 +170,7 @@ public class Intrface {
                 "ENTER NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect(gameObject);
+                Editor.deselect();
                 progText.enabled = true;
                 boolean ok = levelContainer.generateRandomLevel(Integer.valueOf(command));
                 if (ok) {
@@ -185,7 +185,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 boolean ok = false;
                 if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
-                    Editor.deselect(gameObject);
+                    Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
                 }

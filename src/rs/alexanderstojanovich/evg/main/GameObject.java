@@ -78,10 +78,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         myWindow.render();
     }
 
-    public void animate() {
+    // hint to the render that objects should be buffered
+    public synchronized void unbuffer() {
+        levelContainer.getSolidChunks().setBuffered(false);
+        levelContainer.getFluidChunks().setBuffered(false);
+    }
+
+    // animation for water
+    public synchronized void animate() {
         levelContainer.animate();
     }
 
+    // collision detection - critter against solid obstacles
     public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithCritter(critter);
     }

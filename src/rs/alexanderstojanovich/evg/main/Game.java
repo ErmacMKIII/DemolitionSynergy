@@ -235,7 +235,7 @@ public class Game {
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
-            Editor.deselect(gameObject);
+            Editor.deselect();
         }
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
             Editor.add(gameObject);
@@ -470,6 +470,7 @@ public class Game {
         gameObject.getMusicPlayer().play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
+        double timer1 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -516,6 +517,12 @@ public class Game {
                 gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
                 timer0 += 1.0;
+            }
+
+            // hint to the renderer that objects should be buffered again
+            if (GLFW.glfwGetTime() > timer1 + 0.25) {
+                gameObject.unbuffer();
+                timer1 += 0.25;
             }
 
         }

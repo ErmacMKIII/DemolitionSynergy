@@ -135,7 +135,7 @@ public class Block extends Model {
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
-    private static void deepCopyTo(List<Vertex> vertices) {
+    public static void deepCopyTo(List<Vertex> vertices) {
         for (Vertex v : VERTICES) {
             vertices.add(new Vertex(new Vector3f(v.getPos()), new Vector3f(v.getNormal()), new Vector2f(v.getUv())));
         }

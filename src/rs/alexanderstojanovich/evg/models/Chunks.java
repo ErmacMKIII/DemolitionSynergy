@@ -85,9 +85,11 @@ public class Chunks {
         int fluidFaceBits = fluidBlock.getFaceBits();
 
         Tuple<Blocks, Integer, Integer, String, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
-        srcTuple.getA().getBlockList().remove(fluidBlock);
-        if (srcTuple.getA().getBlockList().isEmpty()) {
-            chunk.getTupleSet().remove(srcTuple);
+        if (srcTuple != null) { // lazy aaah!
+            srcTuple.getA().getBlockList().remove(fluidBlock);
+            if (srcTuple.getA().getBlockList().isEmpty()) {
+                chunk.getTupleSet().remove(srcTuple);
+            }
         }
 
         Tuple<Blocks, Integer, Integer, String, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
@@ -130,7 +132,7 @@ public class Chunks {
 
     public void animate() { // call only for fluid blocks
         for (Chunk chunk : getChunkList()) {
-            if (!chunk.isCached()) {
+            if (!chunk.isCached() && chunk.isBuffered()) {
                 chunk.animate();
             }
         }

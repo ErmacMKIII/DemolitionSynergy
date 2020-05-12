@@ -20,6 +20,7 @@ import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -129,10 +130,12 @@ public class Renderer extends Thread {
                 }
 
                 if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
-                    synchronized (Main.OBJ_MUTEX) {
-                        gameObject.getMyWindow().loadContext();
-                        gameObject.animate();
-                        Window.unloadContext();
+                    if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
+                        synchronized (Main.OBJ_MUTEX) {
+                            gameObject.getMyWindow().loadContext();
+                            gameObject.animate();
+                            Window.unloadContext();
+                        }
                     }
                 }
                 timer2 += 0.25;
