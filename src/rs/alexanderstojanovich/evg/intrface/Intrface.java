@@ -413,6 +413,10 @@ public class Intrface {
             gameModeText.buffer();
         }
         gameModeText.render();
+        if (!progText.isBuffered()) {
+            progText.buffer();
+        }
+        progText.render();
         if (!screenText.isBuffered()) {
             screenText.buffer();
         }

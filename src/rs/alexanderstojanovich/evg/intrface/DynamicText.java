@@ -44,16 +44,6 @@ public class DynamicText extends Text {
     protected static final Vector2f[] VERTICES = new Vector2f[4]; //            
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
-    protected boolean buffered = false;
-
-    protected Vector2f pos = new Vector2f();
-    protected float scale = 1.0f;
-    protected Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-
-    protected int charWidth = STD_FONT_WIDTH;
-    protected int charHeight = STD_FONT_HEIGHT;
-
-    protected boolean ignoreFactor = false;
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -183,21 +173,6 @@ public class DynamicText extends Text {
         }
     }
 
-    public float getRelativeCharWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return charWidth * widthFactor / (float) myWindow.getWidth();
-    }
-
-    public float getRelativeCharHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
-        return charHeight * heightFactor / (float) myWindow.getHeight();
-    }
-
-    public float getRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return charWidth * widthFactor * content.length() / (float) myWindow.getWidth();
-    }
-
     @Override
     public void setContent(String content) {
         super.setContent(content);
@@ -206,58 +181,6 @@ public class DynamicText extends Text {
 
     public int getBigVbo() {
         return bigVbo;
-    }
-
-    public List<Pair<Float, Float>> getPairList() {
-        return pairList;
-    }
-
-    public boolean isBuffered() {
-        return buffered;
-    }
-
-    public void setBuffered(boolean buffered) {
-        this.buffered = buffered;
-    }
-
-    public Vector2f getPos() {
-        return pos;
-    }
-
-    public void setPos(Vector2f pos) {
-        this.pos = pos;
-    }
-
-    public float getScale() {
-        return scale;
-    }
-
-    public void setScale(float scale) {
-        this.scale = scale;
-    }
-
-    public Vector3f getColor() {
-        return color;
-    }
-
-    public void setColor(Vector3f color) {
-        this.color = color;
-    }
-
-    public int getCharWidth() {
-        return charWidth;
-    }
-
-    public int getCharHeight() {
-        return charHeight;
-    }
-
-    public boolean isIgnoreFactor() {
-        return ignoreFactor;
-    }
-
-    public void setIgnoreFactor(boolean ignoreFactor) {
-        this.ignoreFactor = ignoreFactor;
     }
 
 }
