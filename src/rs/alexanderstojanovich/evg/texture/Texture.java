@@ -46,6 +46,7 @@ public class Texture {
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
     public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
     public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
+    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
 
     public static final Texture PISTOL = new Texture(Game.PLAYER_ENTRY, "pistol.png");
     public static final Texture ASSAULT_RIFLE = new Texture(Game.PLAYER_ENTRY, "assault_rifle.png");
@@ -73,6 +74,7 @@ public class Texture {
         TEX_MAP.put("night", NIGHT);
         TEX_MAP.put("marble", MARBLE);
         TEX_MAP.put("qmark", QMARK);
+        TEX_MAP.put("decal", DECAL);
         // player stuff
         TEX_MAP.put("pistol", Texture.PISTOL);
         TEX_MAP.put("assrifle", Texture.ASSAULT_RIFLE);

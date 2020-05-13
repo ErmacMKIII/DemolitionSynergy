@@ -61,8 +61,8 @@ public class WaterRenderer {
                 float waterHeight = fluidBlock.getSurfaceY();
                 Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
                 if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
-                        && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.B
-                        && LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
+                        && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.C
+                        && !LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
                         && waterHeight <= obsHeight) { // and it needs to be below the observer
                     fluidBlock.setWaterTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                     currChunk.setWaterTexture(frameBuffer.getTexture());
@@ -100,21 +100,18 @@ public class WaterRenderer {
     }
 
     public void render() {
-        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
-        frameBuffer.bind();
-
         if (!waterHeights.isEmpty()) {
+            GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
+            frameBuffer.bind();
             prepare();
+            // refresh is called from the update (renderer)
+            Float waterHeight;
+            while ((waterHeight = waterHeights.poll()) != null) {
+                capture(waterHeight);
+            }
+            frameBuffer.unbind();
+            GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
         }
-        // refresh is called from the update (renderer)
-
-        Float waterHeight;
-        while ((waterHeight = waterHeights.poll()) != null) {
-            capture(waterHeight);
-        }
-
-        frameBuffer.unbind();
-        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     public Queue<Float> getWaterHeights() {

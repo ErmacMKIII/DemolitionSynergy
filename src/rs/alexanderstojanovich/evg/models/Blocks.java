@@ -153,14 +153,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
 
-                if (block.decal) { // this is editor overlay texture
-                    block.secondaryColor(shaderProgram);
-                    Texture secondaryTexture = Texture.MINIGUN;
-                    secondaryTexture.bind(1, shaderProgram, "modelTexture1");
-                }
                 if (block.waterTexture != null) { // this is reflective texture
-                    block.tertiaryColor(shaderProgram);
-                    block.waterTexture.bind(2, shaderProgram, "modelTexture2");
+                    block.secondaryColor(shaderProgram);
+                    block.waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
 
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
@@ -174,7 +169,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
                 Texture.unbind(0);
                 Texture.unbind(1);
-                Texture.unbind(2);
 
                 blkIndex++;
             }
@@ -219,14 +213,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         primaryTexture.bind(0, shaderProgram, "modelTexture0");
                     }
 
-                    if (block.decal) { // this is editor overlay texture
-                        block.secondaryColor(shaderProgram);
-                        Texture secondaryTexture = Texture.MINIGUN;
-                        secondaryTexture.bind(1, shaderProgram, "modelTexture1");
-                    }
                     if (block.waterTexture != null) { // this is reflective texture
-                        block.tertiaryColor(shaderProgram);
-                        block.waterTexture.bind(2, shaderProgram, "modelTexture2");
+                        block.secondaryColor(shaderProgram);
+                        block.waterTexture.bind(1, shaderProgram, "modelTexture1");
                     }
 
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
@@ -240,7 +229,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
                     Texture.unbind(0);
                     Texture.unbind(1);
-                    Texture.unbind(2);
                 }
                 blkIndex++;
             }

@@ -80,7 +80,7 @@ public class Chunks {
         }
     }
 
-    private void transfer(Chunk chunk, Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
+    public void transfer(Chunk chunk, Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
         String fluidTexture = fluidBlock.texName;
         int fluidFaceBits = fluidBlock.getFaceBits();
 
@@ -99,6 +99,8 @@ public class Chunks {
         }
         dstTuple.getA().getBlockList().add(fluidBlock);
         dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+
+        chunk.setBuffered(false);
     }
 
     public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
@@ -115,6 +117,7 @@ public class Chunks {
                     transfer(fluidChunk, fluidBlock);
                 }
             }
+            fluidChunk.setBuffered(false);
         }
     }
 

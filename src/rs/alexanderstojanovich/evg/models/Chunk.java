@@ -109,6 +109,7 @@ public class Chunk {
 
         tuple.getA().getBlockList().add(block);
         tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+        buffered = false;
     }
 
     public void removeBlock(Block block) {
@@ -122,6 +123,7 @@ public class Chunk {
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {
             target.getA().getBlockList().remove(block);
+            buffered = false;
             // if tuple has no blocks -> remove it
             if (target.getA().getBlockList().isEmpty()) {
                 tupleSet.remove(target);
@@ -249,21 +251,9 @@ public class Chunk {
                         blocksTexture.bind(0, shaderProgram, "modelTexture0");
                     }
 
-                    shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 0.0f, 1.0f), "modelColor1");
-
-                    Block selected = Editor.getSelectedCurr();
-                    int selectedIndex = tuple.getA().getBlockList().indexOf(selected);
-
-                    shaderProgram.updateUniform(selectedIndex, "selectedIndex");
-
-                    if (Editor.getSelectedCurr() != null) {
-                        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 0.0f), "modelColor1");
-                        Texture.MINIGUN.bind(1, shaderProgram, "modelTexture1");
-                    }
-
                     if (waterTexture != null && Game.isWaterEffects()) {
-                        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
-                        waterTexture.bind(2, shaderProgram, "modelTexture2");
+                        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+                        waterTexture.bind(1, shaderProgram, "modelTexture1");
                     }
 
                     GL32.glDrawElementsInstancedBaseVertex(
@@ -275,7 +265,6 @@ public class Chunk {
 
                     Texture.unbind(0);
                     Texture.unbind(1);
-                    Texture.unbind(2);
 
                     ShaderProgram.unbind();
                     GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);

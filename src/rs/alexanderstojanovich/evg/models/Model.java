@@ -39,7 +39,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -56,7 +55,6 @@ public class Model implements Comparable<Model> {
     protected List<Vertex> vertices = new GapList<>();
     protected List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
     protected String texName;
-    protected boolean decal = false;
     protected Texture waterTexture;
 
     protected float width; // X axis dimension
@@ -74,7 +72,6 @@ public class Model implements Comparable<Model> {
     protected float rZ = 0.0f;
 
     protected Vector3f primaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
-    protected Vector3f secondaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     protected Vector3f light = new Vector3f();
 
@@ -307,20 +304,14 @@ public class Model implements Comparable<Model> {
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (decal) { // this is editor overlay texture
-                secondaryColor(shaderProgram);
-                Texture secondaryTexture = Texture.MINIGUN;
-                secondaryTexture.bind(1, shaderProgram, "modelTexture1");
-            }
             if (waterTexture != null) { // this is reflective texture
-                tertiaryColor(shaderProgram);
-                waterTexture.bind(2, shaderProgram, "modelTexture2");
+                secondaryColor(shaderProgram);
+                waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
         }
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.size(), GL11.GL_UNSIGNED_INT, 0);
         Texture.unbind(0);
         Texture.unbind(1);
-        Texture.unbind(2);
         ShaderProgram.unbind();
 
         GL20.glDisableVertexAttribArray(0);
@@ -359,10 +350,6 @@ public class Model implements Comparable<Model> {
     }
 
     protected void secondaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(secondaryColor, "modelColor1");
-    }
-
-    protected void tertiaryColor(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
     }
 
@@ -694,14 +681,6 @@ public class Model implements Comparable<Model> {
         this.primaryColor = primaryColor;
     }
 
-    public Vector3f getSecondaryColor() {
-        return secondaryColor;
-    }
-
-    public void setSecondaryColor(Vector3f secondaryColor) {
-        this.secondaryColor = secondaryColor;
-    }
-
     public Vector3f getLight() {
         return light;
     }
@@ -728,14 +707,6 @@ public class Model implements Comparable<Model> {
 
     public void setTexName(String texName) {
         this.texName = texName;
-    }
-
-    public boolean isDecal() {
-        return decal;
-    }
-
-    public void setDecal(boolean decal) {
-        this.decal = decal;
     }
 
     public void setWaterTexture(Texture waterTexture) {

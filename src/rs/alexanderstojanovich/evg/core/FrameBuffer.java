@@ -37,6 +37,7 @@ public class FrameBuffer {
 
     // requires OpenGL context
     public void tune() {
+        texture.bufferAll(); // loads empty texture to graphics card
         createFrameBuffer();
         createDepthBuffer();
         configureFrameBuffer();

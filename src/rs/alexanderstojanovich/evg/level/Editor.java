@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.models.Model;
 
 /**
  *
@@ -39,6 +40,9 @@ public class Editor {
     private static int value = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
+
+    private static Block selectedNewWireFrame = null;
+    private static Block selectedCurrWireFrame = null;
 
     public static void selectNew(GameObject gameObject) {
         deselect();
@@ -61,10 +65,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(gameObject)) {
-            selectedNew.getSecondaryColor().x = 0.0f;
-            selectedNew.getSecondaryColor().y = 1.0f;
-            selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.setDecal(true);
+            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 1.0f, 0.0f), false);
         }
 
         gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -85,7 +86,8 @@ public class Editor {
                 if (Block.intersectsRay(solidBlock.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
                             solidBlock.getPos().x, solidBlock.getPos().y, solidBlock.getPos().z);
-                    if (distance < minDistanceOfSolid) {
+                    if (distance < minDistanceOfSolid
+                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, solidBlock.getPos(), 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfSolid = distance;
                         solidTargetIndex = solidBlkIndex;
                     }
@@ -95,14 +97,8 @@ public class Editor {
 
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
-
-                selectedCurr.getSecondaryColor().x = 1.0f;
-                selectedCurr.getSecondaryColor().y = 1.0f;
-                selectedCurr.getSecondaryColor().z = 0.0f;
-
-                selectedCurr.setDecal(true);
-
                 selectedCurrIndex = solidBlkIndex;
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
             }
         }
     }
@@ -122,7 +118,8 @@ public class Editor {
                 if (Block.intersectsRay(fluidBlock.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
                             fluidBlock.getPos().x, fluidBlock.getPos().y, fluidBlock.getPos().z);
-                    if (distance < minDistanceOfFluid) {
+                    if (distance < minDistanceOfFluid
+                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, fluidBlock.getPos(), 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfFluid = distance;
                         fluidTargetIndex = fluidBlkIndex;
                     }
@@ -132,29 +129,17 @@ public class Editor {
 
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
-
-                selectedCurr.getSecondaryColor().x = 1.0f;
-                selectedCurr.getSecondaryColor().y = 1.0f;
-                selectedCurr.getSecondaryColor().z = 0.0f;
-
-                selectedCurr.setDecal(true);
-
-                Block.deepCopyTo(selectedCurr.getVertices());
-
                 selectedCurrIndex = fluidBlkIndex;
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
             }
         }
     }
 
     public static void deselect() {
-        if (selectedCurr != null) {
-            selectedCurr.setDecal(false);
-            selectedCurr.getSecondaryColor().x = 1.0f;
-            selectedCurr.getSecondaryColor().y = 1.0f;
-            selectedCurr.getSecondaryColor().z = 1.0f;
-        }
         selectedNew = selectedCurr = null;
         selectedCurrIndex = -1;
+        selectedNewWireFrame = null;
+        selectedCurrWireFrame = null;
     }
 
     public static void selectAdjacentSolid(GameObject gameObject, int position) {
@@ -195,11 +180,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNew.getSecondaryColor().x = 0.0f;
-                selectedNew.getSecondaryColor().y = 0.0f;
-                selectedNew.getSecondaryColor().z = 1.0f;
-
-                selectedNew.setDecal(true);
+                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 0.0f, 1.0f), false);
             }
         }
     }
@@ -242,12 +223,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNew.getSecondaryColor().x = 0.0f;
-                selectedNew.getSecondaryColor().y = 0.0f;
-                selectedNew.getSecondaryColor().z = 1.0f;
-                selectedNew.setDecal(true);
-
-                selectedNew.enableAllFaces(false);
+                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 0.0f, 1.0f), false);
             }
         }
     }
@@ -274,7 +250,7 @@ public class Editor {
             Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
             if (currFluidChunk != null) {
                 for (Block fluidBlock : currFluidChunk.getList()) {
-                    intsSolid = selectedNew.intersectsExactly(fluidBlock);
+                    intsFluid = selectedNew.intersectsExactly(fluidBlock);
                     if (intsFluid) {
                         break;
                     }
@@ -289,10 +265,7 @@ public class Editor {
             cant = gameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         }
         if (cant) {
-            selectedNew.getSecondaryColor().x = 1.0f;
-            selectedNew.getSecondaryColor().y = 0.0f;
-            selectedNew.getSecondaryColor().z = 0.0f;
-            selectedNew.setDecal(true);
+            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(1.0f, 0.0f, 0.0f), false);
         }
         return cant;
     }
@@ -300,7 +273,6 @@ public class Editor {
     public static void add(GameObject gameObject) {
         if (selectedNew != null) {
             if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
-                selectedNew.setDecal(false);
                 int currentChunkId = Chunk.chunkFunc(selectedNew.getPos());
                 if (selectedNew.isSolid()) { // else if block is solid
                     Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currentChunkId);
@@ -400,6 +372,14 @@ public class Editor {
 
     public static int getSelectedCurrIndex() {
         return selectedCurrIndex;
+    }
+
+    public static Block getSelectedNewWireFrame() {
+        return selectedNewWireFrame;
+    }
+
+    public static Block getSelectedCurrWireFrame() {
+        return selectedCurrWireFrame;
     }
 
 }

@@ -580,14 +580,6 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(ShaderProgram.getMainShader());
 
-        Block editorNew = Editor.getSelectedNew();
-        if (editorNew != null) {
-            editorNew.setLight(obsCamera.getPos());
-            if (!editorNew.isBuffered()) {
-                editorNew.bufferAll();
-            }
-            editorNew.render(ShaderProgram.getMainShader());
-        }
         // copy uniforms from main shader to voxel shader
         ShaderProgram.getVoxelShader().bind();
         obsCamera.updateViewMatrix(ShaderProgram.getVoxelShader());
@@ -615,6 +607,33 @@ public class LevelContainer implements GravityEnviroment {
                 fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
             }
         }
+
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(obsCamera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(ShaderProgram.getMainShader());
+        }
+
+        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
+        if (selectedNewWireFrame != null) {
+            selectedNewWireFrame.setLight(obsCamera.getPos());
+            if (!selectedNewWireFrame.isBuffered()) {
+                selectedNewWireFrame.bufferAll();
+            }
+            selectedNewWireFrame.render(ShaderProgram.getMainShader());
+        }
+
+        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
+        if (selectedCurrFrame != null) {
+            selectedCurrFrame.setLight(obsCamera.getPos());
+            if (!selectedCurrFrame.isBuffered()) {
+                selectedCurrFrame.bufferAll();
+            }
+            selectedCurrFrame.render(ShaderProgram.getMainShader());
+        }
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
@@ -626,14 +645,6 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.render(ShaderProgram.getWaterBaseShader());
         levelActors.render();
 
-        Block editorNew = Editor.getSelectedNew();
-        if (editorNew != null) {
-            editorNew.setLight(camera.getPos());
-            if (!editorNew.isBuffered()) {
-                editorNew.bufferAll();
-            }
-            editorNew.render(ShaderProgram.getWaterBaseShader());
-        }
         // copy uniforms from main shader to voxel shader
         ShaderProgram.getWaterVoxelShader().bind();
         camera.updateViewMatrix(ShaderProgram.getWaterVoxelShader());
@@ -663,6 +674,32 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(camera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(ShaderProgram.getWaterBaseShader());
+        }
+
+        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
+        if (selectedNewWireFrame != null) {
+            selectedNewWireFrame.setLight(camera.getPos());
+            if (!selectedNewWireFrame.isBuffered()) {
+                selectedNewWireFrame.bufferAll();
+            }
+            selectedNewWireFrame.render(ShaderProgram.getWaterBaseShader());
+        }
+
+        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
+        if (selectedCurrFrame != null) {
+            selectedCurrFrame.setLight(camera.getPos());
+            if (!selectedCurrFrame.isBuffered()) {
+                selectedCurrFrame.bufferAll();
+            }
+            selectedCurrFrame.render(ShaderProgram.getWaterBaseShader());
+        }
     }
 
     public boolean maxSolidReached() {
