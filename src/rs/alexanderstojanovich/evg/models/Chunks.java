@@ -77,7 +77,7 @@ public class Chunks {
                 chunkList.remove(chunk);
             }
         }
-    }        
+    }
 
     public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
         Chunk result = null;

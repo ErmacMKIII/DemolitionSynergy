@@ -113,7 +113,7 @@ public class Chunk {
 
         buffered = false;
     }
-    
+
     private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding
         int faceBitsBefore = fluidBlock.getFaceBits();
         for (int j = 0; j <= 5; j++) { // j - face number
@@ -126,7 +126,7 @@ public class Chunk {
             transfer(fluidBlock);
         }
     }
-    
+
     public void addBlock(Block block) {
         if (block.solid) {
             LevelContainer.ALL_SOLID_POS.add(new Vector3f(block.pos));
@@ -142,7 +142,7 @@ public class Chunk {
             tupleSet.add(tuple);
         }
 
-        tuple.getA().getBlockList().add(block);        
+        tuple.getA().getBlockList().add(block);
         tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
         if (!block.solid) {
             updateFluids(block);
@@ -161,7 +161,9 @@ public class Chunk {
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {
             target.getA().getBlockList().remove(block);
-            updateFluids(block);
+            if (!block.solid) {
+                updateFluids(block);
+            }
             buffered = false;
             // if tuple has no blocks -> remove it
             if (target.getA().getBlockList().isEmpty()) {
