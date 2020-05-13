@@ -273,23 +273,12 @@ public class Editor {
     public static void add(GameObject gameObject) {
         if (selectedNew != null) {
             if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
-                int currentChunkId = Chunk.chunkFunc(selectedNew.getPos());
                 if (selectedNew.isSolid()) { // else if block is solid
-                    Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currentChunkId);
-                    if (solidChunk != null && !solidChunk.isCached()) {
-                        solidChunk.addBlock(selectedNew);
-                        gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                    }
-                    //----------------------------------------------------------
+                    gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew);
                 } else { // if block is fluid                    
-                    Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currentChunkId);
-                    if (fluidChunk != null && !fluidChunk.isCached()) {
-                        fluidChunk.addBlock(selectedNew);
-                        gameObject.getLevelContainer().getFluidChunks().updateFluids(fluidChunk, true);
-                        gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                    }
-                    //----------------------------------------------------------                   
+                    gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew);
                 }
+                gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block(false);
                 selectLoadedTexture();
             }
@@ -299,22 +288,12 @@ public class Editor {
 
     public static void remove(GameObject gameObject) {
         if (selectedCurr != null) {
-            int currentChunkId = Chunk.chunkFunc(selectedCurr.getPos());
             if (selectedCurr.isSolid()) {
-                //--------------------------------------------------------------
-                Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currentChunkId);
-                if (solidChunk != null && !solidChunk.isCached()) {
-                    solidChunk.removeBlock(selectedCurr);
-                    gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
-                }
+                gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr);
             } else {
-                Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currentChunkId);
-                if (fluidChunk != null && !fluidChunk.isCached()) {
-                    fluidChunk.removeBlock(selectedCurr);
-                    gameObject.getLevelContainer().getFluidChunks().updateFluids(fluidChunk, true);
-                    gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
-                }
+                gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr);
             }
+            gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
     }

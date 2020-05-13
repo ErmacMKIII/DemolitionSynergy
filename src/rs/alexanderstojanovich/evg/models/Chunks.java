@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Tuple;
@@ -78,48 +77,7 @@ public class Chunks {
                 chunkList.remove(chunk);
             }
         }
-    }
-
-    public void transfer(Chunk chunk, Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
-        String fluidTexture = fluidBlock.texName;
-        int fluidFaceBits = fluidBlock.getFaceBits();
-
-        Tuple<Blocks, Integer, Integer, String, Integer> srcTuple = chunk.getTuple(fluidTexture, 63);
-        if (srcTuple != null) { // lazy aaah!
-            srcTuple.getA().getBlockList().remove(fluidBlock);
-            if (srcTuple.getA().getBlockList().isEmpty()) {
-                chunk.getTupleSet().remove(srcTuple);
-            }
-        }
-
-        Tuple<Blocks, Integer, Integer, String, Integer> dstTuple = chunk.getTuple(fluidTexture, fluidFaceBits);
-        if (dstTuple == null) {
-            dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
-            chunk.getTupleSet().add(dstTuple);
-        }
-        dstTuple.getA().getBlockList().add(fluidBlock);
-        dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
-
-        chunk.setBuffered(false);
-    }
-
-    public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
-        if (!fluidChunk.isSolid()) {
-            for (Block fluidBlock : fluidChunk.getList()) {
-                int faceBitsBefore = fluidBlock.getFaceBits();
-                for (int j = 0; j <= 5; j++) { // j - face number
-                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
-                        fluidBlock.disableFace(j, false);
-                    }
-                }
-                int faceBitsAfter = fluidBlock.getFaceBits();
-                if (useTransfer && faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    transfer(fluidChunk, fluidBlock);
-                }
-            }
-            fluidChunk.setBuffered(false);
-        }
-    }
+    }        
 
     public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
         Chunk result = null;

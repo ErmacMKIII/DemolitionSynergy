@@ -538,7 +538,6 @@ public class LevelContainer implements GravityEnviroment {
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
                 if (fluidChunk.isVisible() && fluidChunk.isCached()) {
                     fluidChunk.loadFromMemory();
-                    fluidChunks.updateFluids(fluidChunk, true);
                 } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
                     fluidChunk.saveToMemory();
                 }

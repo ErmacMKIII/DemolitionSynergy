@@ -61,7 +61,7 @@ public class Main {
         try {
             renderer.join(); // and it's blocked here until it finishes
         } catch (InterruptedException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+            DSLogger.reportError(ex.getMessage(), ex);
         }
         //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings

@@ -33,7 +33,6 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -92,6 +91,42 @@ public class Chunk {
         return result;
     }
 
+    private void transfer(Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
+        String fluidTexture = fluidBlock.texName;
+        int fluidFaceBits = fluidBlock.getFaceBits();
+
+        Tuple<Blocks, Integer, Integer, String, Integer> srcTuple = getTuple(fluidTexture, 63);
+        if (srcTuple != null) { // lazy aaah!
+            srcTuple.getA().getBlockList().remove(fluidBlock);
+            if (srcTuple.getA().getBlockList().isEmpty()) {
+                tupleSet.remove(srcTuple);
+            }
+        }
+
+        Tuple<Blocks, Integer, Integer, String, Integer> dstTuple = getTuple(fluidTexture, fluidFaceBits);
+        if (dstTuple == null) {
+            dstTuple = new Tuple<>(new Blocks(), 0, 0, fluidTexture, fluidFaceBits);
+            tupleSet.add(dstTuple);
+        }
+        dstTuple.getA().getBlockList().add(fluidBlock);
+        dstTuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+
+        buffered = false;
+    }
+    
+    private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding
+        int faceBitsBefore = fluidBlock.getFaceBits();
+        for (int j = 0; j <= 5; j++) { // j - face number
+            if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                fluidBlock.disableFace(j, false);
+            }
+        }
+        int faceBitsAfter = fluidBlock.getFaceBits();
+        if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+            transfer(fluidBlock);
+        }
+    }
+    
     public void addBlock(Block block) {
         if (block.solid) {
             LevelContainer.ALL_SOLID_POS.add(new Vector3f(block.pos));
@@ -107,8 +142,11 @@ public class Chunk {
             tupleSet.add(tuple);
         }
 
-        tuple.getA().getBlockList().add(block);
+        tuple.getA().getBlockList().add(block);        
         tuple.getA().getBlockList().sort(Block.Y_AXIS_COMP);
+        if (!block.solid) {
+            updateFluids(block);
+        }
         buffered = false;
     }
 
@@ -123,6 +161,7 @@ public class Chunk {
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {
             target.getA().getBlockList().remove(block);
+            updateFluids(block);
             buffered = false;
             // if tuple has no blocks -> remove it
             if (target.getA().getBlockList().isEmpty()) {
