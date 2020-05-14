@@ -437,15 +437,18 @@ public class Game {
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                xoffset = (float) ((xpos - lastX) * upsTicks) / gameObject.getMyWindow().getWidth();
-                yoffset = (float) ((lastY - ypos) * upsTicks) / gameObject.getMyWindow().getHeight();
+                float xposGL = (float) (xpos / gameObject.getMyWindow().getWidth() - 0.5f) * 2.0f;
+                float yposGL = (float) (0.5f - ypos / gameObject.getMyWindow().getHeight()) * 2.0f;
+
+                xoffset = xposGL - lastX;
+                yoffset = yposGL - lastY;
 
                 if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
                 }
 
-                lastX = (float) xpos;
-                lastY = (float) ypos;
+                lastX = (float) xposGL;
+                lastY = (float) yposGL;
             }
         };
         GLFW.glfwSetCursorPosCallback(gameObject.getMyWindow().getWindowID(), defaultCursorCallback);
