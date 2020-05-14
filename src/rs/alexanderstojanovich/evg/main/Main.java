@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.util.DSLogger;
