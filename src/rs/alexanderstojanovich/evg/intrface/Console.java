@@ -77,7 +77,7 @@ public class Console {
             GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
                 @Override
                 public void invoke(long window, int key, int scancode, int action, int mods) {
-                    if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
                         GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
                         GLFW.glfwSetCharCallback(window, null);
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
