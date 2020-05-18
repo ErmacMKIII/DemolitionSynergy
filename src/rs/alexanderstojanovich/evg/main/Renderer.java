@@ -16,22 +16,27 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.intrface.Command;
+import rs.alexanderstojanovich.evg.intrface.Console;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
  * @author Coa
  */
-public class Renderer extends Thread {
+public class Renderer extends Thread implements Executor {
 
     private final GameObject gameObject;
 
@@ -42,20 +47,27 @@ public class Renderer extends Thread {
 
     private static int renPasses = 0;
     public static final int REN_MAX_PASSES = 5;
-
+    
     public Renderer(GameObject gameObject) {
         super("Renderer");
         this.gameObject = gameObject;
-    }
-
+    }        
+    
+    private static Command command = Command.NOP;        
+    
     @Override
     public void run() {
-        MasterRenderer.initGL(gameObject.getMyWindow()); // loads myWindow context, creates OpenGL context..
+        MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
+        boolean ok = GameObject.MY_WINDOW.setResolution(Main.CONFIG.getWidth(), Main.CONFIG.getHeight());
+        if (!ok) {
+            DSLogger.reportError("Game unable to set resolution!", null);
+        }
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-        PerspectiveRenderer.updatePerspective(gameObject.getMyWindow()); // updates perspective for all the existing shaders
+        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context
-
+        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context        
+        
+        
         double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();
         double timer2 = GLFW.glfwGetTime();
@@ -64,7 +76,7 @@ public class Renderer extends Thread {
         double currTime;
         double diff;
 
-        while (!gameObject.getMyWindow().shouldClose()) {
+        while (!GameObject.MY_WINDOW.shouldClose()) {            
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
@@ -73,22 +85,18 @@ public class Renderer extends Thread {
             // Detecting critical status
             if (fps == 0 && diff > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.getMyWindow().close();
+                GameObject.MY_WINDOW.close();
                 break;
             }
 
             if (fpsTicks >= 1.0) {
-                synchronized (Main.OBJ_MUTEX) {
-                    gameObject.getMyWindow().loadContext();
-                    while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                        gameObject.render();
-                        fps++;
-                        fpsTicks--;
-                        renPasses++;
-                    }
-                    renPasses = 0;
-                    Window.unloadContext();
+                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                    gameObject.render();
+                    fps++;
+                    fpsTicks--;
+                    renPasses++;
                 }
+                renPasses = 0;
             }
 
             // update text which shows ups and fps every second
@@ -132,19 +140,23 @@ public class Renderer extends Thread {
 
                 if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
                     if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
-                        synchronized (Main.OBJ_MUTEX) {
-                            gameObject.getMyWindow().loadContext();
-                            gameObject.animate();
-                            Window.unloadContext();
-                        }
+                        gameObject.animate();
                     }
                 }
                 timer2 += 0.25;
             }
+            
+            // lastly it executes the console task           
+            execute(gameObject.getIntrface().getConsole().getTask());
         }
 
-    }
+    }        
 
+    @Override
+    public void execute(Runnable command) {
+        command.run();
+    }
+    
     public LevelContainer getLevelContainer() {
         return gameObject.getLevelContainer();
     }
@@ -176,5 +188,13 @@ public class Renderer extends Thread {
     public static int getRenPasses() {
         return renPasses;
     }    
+
+    public static Command getCommand() {
+        return command;
+    }
+
+    public static void setCommand(Command command) {
+        Renderer.command = command;
+    }
 
 }

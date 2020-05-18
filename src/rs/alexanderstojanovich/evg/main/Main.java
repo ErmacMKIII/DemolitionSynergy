@@ -26,25 +26,22 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  *
  * @author Coa
  */
-public class Main {
-
-    public static final String TITLE = "Demolition Synergy - v19 TITANIUM";
-
-    public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
+public class Main {    
 
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
-    public static void main(String[] args) {
-        Configuration inCfg = new Configuration(); // makes default configuration
-        inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
-        boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
+    // makes default configuration
+    public static final Configuration CONFIG = new Configuration();           
+    
+    public static void main(String[] args) {         
+        CONFIG.readConfigFile(); // this line reads if input file exists otherwise uses defaults
+        boolean debug = CONFIG.isDebug(); // determine debug flag (write in a log file or not)
         DSLogger.init(debug); // this is important initializing Apache logger
-        MasterAudio.init(); // audio init before game loading        
-        //----------------------------------------------------------------------
-        Window myWindow = new Window(inCfg.getWidth(), inCfg.getHeight(), TITLE); // creating the window
-        GameObject gameObject = new GameObject(myWindow);
-        Game game = new Game(gameObject, inCfg); // init game with given config (or default one)               
-        Renderer renderer = new Renderer(gameObject);
+        MasterAudio.init(); // audio init before game loading            
+        //----------------------------------------------------------------------                
+        GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
+        Game game = new Game(gameObject); // init game with given game object
+        Renderer renderer = new Renderer(gameObject); // init renderer with given game object
         DSLogger.reportInfo("Game initialized.", null);
         //---------------------------------------------------------------------- 
         SERVICE.execute(new Runnable() {
@@ -66,12 +63,9 @@ public class Main {
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
         MasterAudio.destroy(); // destroy context after writting to the ini file                                
-        //----------------------------------------------------------------------
-        synchronized (Main.OBJ_MUTEX) {
-            gameObject.getMyWindow().loadContext();
-            gameObject.getMyWindow().destroy();
-        }
+        //----------------------------------------------------------------------        
         SERVICE.shutdown();
         DSLogger.reportInfo("Game finished.", null);
-    }
+    }    
+    
 }

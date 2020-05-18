@@ -56,7 +56,8 @@ public class Texture {
     public static final Texture SNIPER_RIFLE = new Texture(Game.PLAYER_ENTRY, "sniper_rifle.png");
 
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
-
+    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
+    
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
     static {
@@ -66,6 +67,7 @@ public class Texture {
         TEX_MAP.put("minigun", MINIGUN);
         TEX_MAP.put("font", FONT);
         TEX_MAP.put("console", CONSOLE);
+        TEX_MAP.put("lbulb", LIGHT_BULB);
         // world stuff
         TEX_MAP.put("doom0", DOOM0);
         TEX_MAP.put("crate", CRATE);

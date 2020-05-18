@@ -57,18 +57,18 @@ public class DynamicText extends Text {
         CONST_INT_BUFFER.flip();
     }
 
-    public DynamicText(Window window, Texture texture, String content) {
-        super(window, texture, content);
+    public DynamicText(Texture texture, String content) {
+        super(texture, content);
     }
 
-    public DynamicText(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
-        super(window, texture, content, color, pos);
+    public DynamicText(Texture texture, String content, Vector3f color, Vector2f pos) {
+        super(texture, content, color, pos);
         this.color = color;
         this.pos = pos;
     }
 
-    public DynamicText(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
-        super(window, texture, content, pos, charWidth, charHeight);
+    public DynamicText(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
+        super(texture, content, pos, charWidth, charHeight);
         this.pos = pos;
         this.charWidth = charWidth;
         this.charHeight = charHeight;

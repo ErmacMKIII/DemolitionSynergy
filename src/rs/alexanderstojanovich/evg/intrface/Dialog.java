@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
@@ -30,7 +31,6 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public abstract class Dialog {
 
-    protected final Window myWindow;
     protected final DynamicText dialog;
     protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
     protected boolean enabled;
@@ -40,10 +40,9 @@ public abstract class Dialog {
     protected final String success; // message if succesful execution
     protected final String fail; // message if failure
 
-    public Dialog(Window window, Texture texture, Vector2f pos,
+    public Dialog(Texture texture, Vector2f pos,
             String question, String success, String fail) {
-        this.myWindow = window;
-        this.dialog = new DynamicText(myWindow, texture, "");
+        this.dialog = new DynamicText(texture, "");
         this.dialog.setPos(pos);
         this.enabled = false;
         this.done = false;
@@ -62,9 +61,9 @@ public abstract class Dialog {
             dialog.getColor().x = 1.0f;
             dialog.getColor().y = 1.0f;
             dialog.getColor().z = 1.0f;
-            GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
+            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
                 @Override
                 public void invoke(long window, int key, int scancode, int action, int mods) {
                     if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
@@ -112,7 +111,7 @@ public abstract class Dialog {
                 }
             });
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(myWindow.getWindowID(), new GLFWCharCallback() {
+            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
                 @Override
                 public void invoke(long window, int codepoint) {
                     input.append((char) codepoint);
@@ -132,7 +131,7 @@ public abstract class Dialog {
     }
 
     public Window getMyWindow() {
-        return myWindow;
+        return GameObject.MY_WINDOW;
     }
 
     public DynamicText getDialog() {

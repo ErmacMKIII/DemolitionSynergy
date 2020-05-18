@@ -41,7 +41,7 @@ public class WaterRenderer {
 
     public WaterRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
-        this.frameBuffer = new FrameBuffer(gameObject.getMyWindow());
+        this.frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
         this.camera = new Camera();
     }
 

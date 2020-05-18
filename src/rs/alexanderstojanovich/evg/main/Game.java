@@ -104,26 +104,24 @@ public class Game {
     };
     private static Mode currentMode = Mode.FREE;
 
-    public Game(GameObject gameObject, Configuration config) {
+    public Game(GameObject gameObject) {
         this.gameObject = gameObject;
-        lastX = config.getWidth() / 2.0f;
-        lastY = config.getHeight() / 2.0f;
-        Game.fpsMax = config.getFpsCap();
-        if (config.isFullscreen()) {
-            gameObject.getMyWindow().fullscreen();
+        Game.fpsMax = Main.CONFIG.getFpsCap();
+        if (Main.CONFIG.isFullscreen()) {
+            GameObject.MY_WINDOW.fullscreen();
         } else {
-            gameObject.getMyWindow().windowed();
+            GameObject.MY_WINDOW.windowed();
         }
-        if (config.isVsync()) {
-            gameObject.getMyWindow().enableVSync();
+        if (Main.CONFIG.isVsync()) {
+            GameObject.MY_WINDOW.enableVSync();
         } else {
-            gameObject.getMyWindow().disableVSync();
+            GameObject.MY_WINDOW.disableVSync();
         }
-        gameObject.getMyWindow().centerTheWindow();
-        waterEffects = config.isWaterEffects();
+        GameObject.MY_WINDOW.centerTheWindow();
+        waterEffects = Main.CONFIG.isWaterEffects();
         Arrays.fill(keys, false);
-        gameObject.getMusicPlayer().setGain(config.getMusicVolume());
-        gameObject.getSoundFXPlayer().setGain(config.getSoundFXVolume());
+        gameObject.getMusicPlayer().setGain(Main.CONFIG.getMusicVolume());
+        gameObject.getSoundFXPlayer().setGain(Main.CONFIG.getSoundFXVolume());
         initCallbacks();
     }
 
@@ -403,11 +401,11 @@ public class Game {
                     if (screenshot.exists()) {
                         screenshot.delete();
                     }
-                    synchronized (Main.OBJ_MUTEX) {
-                        gameObject.getMyWindow().loadContext();
+                    synchronized (GameObject.OBJ_MUTEX) {
+                        GameObject.MY_WINDOW.loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         try {
-                            ImageIO.write(gameObject.getMyWindow().getScreen(), "PNG", screenshot);
+                            ImageIO.write(GameObject.MY_WINDOW.getScreen(), "PNG", screenshot);
                         } catch (IOException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
@@ -433,15 +431,15 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetKeyCallback(gameObject.getMyWindow().getWindowID(), defaultKeyCallback);
+        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), defaultKeyCallback);
 
-        GLFW.glfwSetInputMode(gameObject.getMyWindow().getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPos(gameObject.getMyWindow().getWindowID(), gameObject.getMyWindow().getWidth() / 2.0, gameObject.getMyWindow().getHeight() / 2.0);
+        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                float xposGL = (float) (xpos / gameObject.getMyWindow().getWidth() - 0.5f) * 2.0f;
-                float yposGL = (float) (0.5f - ypos / gameObject.getMyWindow().getHeight()) * 2.0f;
+                float xposGL = (float) (xpos / GameObject.MY_WINDOW.getWidth() - 0.5f) * 2.0f;
+                float yposGL = (float) (0.5f - ypos / GameObject.MY_WINDOW.getHeight()) * 2.0f;
 
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
@@ -454,7 +452,7 @@ public class Game {
                 lastY = (float) yposGL;
             }
         };
-        GLFW.glfwSetCursorPosCallback(gameObject.getMyWindow().getWindowID(), defaultCursorCallback);
+        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), defaultCursorCallback);
 
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
@@ -466,7 +464,7 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetMouseButtonCallback(gameObject.getMyWindow().getWindowID(), defaultMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), defaultMouseButtonCallback);
     }
 
     public void go() {
@@ -483,7 +481,7 @@ public class Game {
         double currTime;
         double diff;
 
-        while (!gameObject.getMyWindow().shouldClose()) {
+        while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             upsTicks += -Math.expm1(-diff * Game.TPS);
@@ -492,7 +490,7 @@ public class Game {
             // Detecting critical status
             if (ups == 0 && diff > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.getMyWindow().close();
+                GameObject.MY_WINDOW.close();
                 break;
             }
 
@@ -535,10 +533,10 @@ public class Game {
     public Configuration makeConfig() {
         Configuration cfg = new Configuration();
         cfg.setFpsCap(fpsMax);
-        cfg.setWidth(gameObject.getMyWindow().getWidth());
-        cfg.setHeight(gameObject.getMyWindow().getHeight());
-        cfg.setFullscreen(gameObject.getMyWindow().isFullscreen());
-        cfg.setVsync(gameObject.getMyWindow().isVsync());
+        cfg.setWidth(GameObject.MY_WINDOW.getWidth());
+        cfg.setHeight(GameObject.MY_WINDOW.getHeight());
+        cfg.setFullscreen(GameObject.MY_WINDOW.isFullscreen());
+        cfg.setVsync(GameObject.MY_WINDOW.isVsync());
         cfg.setWaterEffects(waterEffects);
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());

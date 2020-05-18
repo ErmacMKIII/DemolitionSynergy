@@ -284,7 +284,7 @@ public class LevelContainer implements GravityEnviroment {
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
-            if (gameObject.getMyWindow().shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArraySolid = solidBlock.toByteArray();
@@ -304,7 +304,7 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
-            if (gameObject.getMyWindow().shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArrayFluid = fluidBlock.toByteArray();
@@ -320,7 +320,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
 
-        if (progress == 100.0f && !gameObject.getMyWindow().shouldClose()) {
+        if (progress == 100.0f && !GameObject.MY_WINDOW.shouldClose()) {
             success = true;
         }
         working = false;
@@ -382,7 +382,7 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[29];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
@@ -401,7 +401,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[29];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
@@ -752,7 +752,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return gameObject.getMyWindow();
+        return GameObject.MY_WINDOW;
     }
 
     public float getProgress() {

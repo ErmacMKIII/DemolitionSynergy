@@ -21,6 +21,7 @@ import org.joml.Random;
 import org.joml.SimplexNoise;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -73,8 +74,8 @@ public class RandomLevelGenerator {
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_MAP.containsKey(randPos)
-                && LevelContainer.ALL_FLUID_MAP.containsKey(randPos)
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
+                && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -98,8 +99,8 @@ public class RandomLevelGenerator {
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_MAP.containsKey(randPos)
-                && LevelContainer.ALL_FLUID_MAP.containsKey(randPos)
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
+                && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
@@ -145,8 +146,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_MAP.containsKey(adjPos)
-                && LevelContainer.ALL_FLUID_MAP.containsKey(adjPos)
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
+                && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
                 && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
@@ -192,8 +193,8 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_MAP.containsKey(adjPos)
-                && LevelContainer.ALL_FLUID_MAP.containsKey(adjPos)
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
+                && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
                 && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();

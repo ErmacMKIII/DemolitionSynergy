@@ -26,6 +26,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -33,8 +34,6 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * @author Coa
  */
 public class Quad {
-
-    private Window myWindow;
 
     private int width;
     private int height;
@@ -71,16 +70,14 @@ public class Quad {
         CONST_INT_BUFFER.flip();
     }
 
-    public Quad(Window window, int width, int height, Texture texture) {
-        this.myWindow = window;
+    public Quad(int width, int height, Texture texture) {
         this.width = width;
         this.height = height;
         this.texture = texture;
         initUVs();
     }
 
-    public Quad(Window window, int width, int height, Texture texture, boolean ignoreFactor) {
-        this.myWindow = window;
+    public Quad(int width, int height, Texture texture, boolean ignoreFactor) {
         this.width = width;
         this.height = height;
         this.texture = texture;
@@ -172,22 +169,18 @@ public class Quad {
     }
 
     public float giveRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return width * widthFactor / (float) myWindow.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        return width * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
     }
 
     public float giveRelativeHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
-        return height * heightFactor / (float) myWindow.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / Window.MIN_HEIGHT;
+        return height * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
     public Window getWindow() {
-        return myWindow;
-    }
-
-    public void setWindow(Window window) {
-        this.myWindow = window;
-    }
+        return GameObject.MY_WINDOW;
+    }   
 
     public int getWidth() {
         return width;
@@ -222,7 +215,7 @@ public class Quad {
     }
 
     public Window getMyWindow() {
-        return myWindow;
+        return GameObject.MY_WINDOW;
     }
 
     public float getScale() {

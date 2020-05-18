@@ -389,7 +389,7 @@ public final class Chunk { // some operations are mutually exclusive
         return size;
     }
 
-    public List<Block> getList() {
+    public synchronized List<Block> getList() {
         List<Block> result = new GapList<>();
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             result.addAll(tuple.getA().getBlockList());

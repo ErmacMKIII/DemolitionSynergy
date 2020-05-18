@@ -23,6 +23,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
 
 /**
  *
@@ -52,8 +53,8 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
 
     private Thread dialogThread; // thread which executes command     
 
-    public ConcurrentDialog(Window window, Texture texture, Vector2f pos, String question, String success, String fail) {
-        super(window, texture, pos, question, success, fail);
+    public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) {
+        super(texture, pos, question, success, fail);
     }
 
     @Override
@@ -68,9 +69,9 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             dialog.getColor().x = 1.0f;
             dialog.getColor().y = 1.0f;
             dialog.getColor().z = 1.0f;
-            GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
+            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
                 @Override
                 public void invoke(long window, int key, int scancode, int action, int mods) {
                     if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
@@ -107,7 +108,7 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
                 }
             });
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(myWindow.getWindowID(), new GLFWCharCallback() {
+            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
                 @Override
                 public void invoke(long window, int codepoint) {
                     input.append((char) codepoint);
