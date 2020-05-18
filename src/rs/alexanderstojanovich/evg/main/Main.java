@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Main {
 
-    public static final String TITLE = "Demolition Synergy - v18 STONEWALL";
+    public static final String TITLE = "Demolition Synergy - v19 TITANIUM";
 
     public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
 
@@ -46,7 +46,7 @@ public class Main {
         Game game = new Game(gameObject, inCfg); // init game with given config (or default one)               
         Renderer renderer = new Renderer(gameObject);
         DSLogger.reportInfo("Game initialized.", null);
-        //----------------------------------------------------------------------        
+        //---------------------------------------------------------------------- 
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {

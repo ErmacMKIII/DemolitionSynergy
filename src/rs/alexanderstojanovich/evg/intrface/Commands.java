@@ -58,6 +58,7 @@ public class Commands {
                         int num = Integer.parseInt(things[1]);
                         if (num > 0) {
                             Game.setFpsMax(num);
+                            Renderer.setFps(0);
                             Renderer.setFpsTicks(0.0);
                             success = true;
                         }

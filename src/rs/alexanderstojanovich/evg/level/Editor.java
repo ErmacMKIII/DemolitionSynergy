@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Coa
+ * Copyright (VISION) 2019 Coa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR MODULATOR PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -75,7 +76,7 @@ public class Editor {
         deselect();
         Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
-        float minDistanceOfSolid = Chunk.C;
+        float minDistanceOfSolid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
 
@@ -98,16 +99,17 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);                
             }
         }
+                
     }
 
     public static void selectCurrFluid(GameObject gameObject) {
         deselect();
         Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
         Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
-        float minDistanceOfFluid = Chunk.C;
+        float minDistanceOfFluid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
 
@@ -130,7 +132,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);                                
             }
         }
     }
@@ -230,8 +232,8 @@ public class Editor {
 
     private static boolean cannotPlace(GameObject gameObject) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_SOLID_POS.contains(selectedNew.getPos())
-                || LevelContainer.ALL_FLUID_POS.contains(selectedNew.getPos());
+        boolean placeOccupied = LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(selectedNew.getPos()))
+                || LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(selectedNew.getPos()));
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());

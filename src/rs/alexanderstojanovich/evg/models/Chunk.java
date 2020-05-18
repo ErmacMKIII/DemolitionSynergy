@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Coa
+ * Copyright (VISION) 2020 Coa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR MODULATOR PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -17,13 +17,10 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.joml.Intersectionf;
 import org.joml.Matrix4f;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
@@ -44,15 +41,19 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  *
  * @author Coa
  */
-public class Chunk {
+public final class Chunk { // some operations are mutually exclusive
 
     public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
 
-    // A, B, C are used in chunkCheck and for determining visible chunks
-    public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
-    public static final int B = 16; // divider (number of chunks is calculated as 2 * B + 1)   
-    public static final float C = 100.0f; // determines visibility
+    // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
+    public static final int MODULATOR = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
+    public static final int DIVIDER = 16; // divider -> number of chunks is calculated as (2 * MODULATOR + 1) / DIVIDER
+    public static final int CHUNKS_NUM = 2 * Math.round(MODULATOR / (float) DIVIDER) + 1;
+
+    public static final float VISION = 100.0f; // determines visibility
+
+    public static final float HALF_DIAGONAL = (float) (Math.sqrt(3.0) / 2.0);
 
     // id of the chunk (signed)
     private final int id;
@@ -60,7 +61,7 @@ public class Chunk {
 
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
-    //--------------------------A--------B--------C-------D--------E-----------------------------
+    //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final Set<Tuple<Blocks, Integer, Integer, String, Integer>> tupleSet = new HashSet<>();
 
@@ -114,13 +115,10 @@ public class Chunk {
         buffered = false;
     }
 
-    private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding
+    private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding        
         int faceBitsBefore = fluidBlock.getFaceBits();
-        for (int j = 0; j <= 5; j++) { // j - face number
-            if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
-                fluidBlock.disableFace(j, false);
-            }
-        }
+        byte neighborBits = LevelContainer.ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(fluidBlock.pos), (byte) 0);
+        fluidBlock.setFaceBits(~neighborBits & 63, false);
         int faceBitsAfter = fluidBlock.getFaceBits();
         if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
             transfer(fluidBlock);
@@ -128,11 +126,8 @@ public class Chunk {
     }
 
     public void addBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.add(new Vector3f(block.pos));
-        } else {
-            LevelContainer.ALL_FLUID_POS.add(new Vector3f(block.pos));
-        }
+        LevelContainer.putBlock(block);
+        
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> tuple = getTuple(blockTexture, blockFaceBits);
@@ -150,12 +145,9 @@ public class Chunk {
         buffered = false;
     }
 
-    public void removeBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.ALL_SOLID_POS.remove(block.pos);
-        } else {
-            LevelContainer.ALL_FLUID_POS.remove(block.pos);
-        }
+    public synchronized void removeBlock(Block block) {
+        LevelContainer.removeBlock(block);
+        
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);
@@ -211,7 +203,7 @@ public class Chunk {
         tuple.setC(mat4Vbo);
     }
 
-    public void bufferAll() {
+    public synchronized void bufferAll() {
         if (!cached) {
             for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 Blocks blocks = tuple.getA();
@@ -223,13 +215,13 @@ public class Chunk {
         }
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             tuple.getA().animate();
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering        
+    public synchronized void prepare() { // call only for fluid blocks before rendering        
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             Blocks blocks = tuple.getA();
             blocks.prepare();
@@ -244,7 +236,7 @@ public class Chunk {
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleSet.isEmpty() && visible) {
             Texture.enable();
 
@@ -327,9 +319,9 @@ public class Chunk {
     }
 
     // deallocates Chunk from graphic card
-    public void release() {
+    public synchronized void release() {
         if (buffered && !cached) {
-            //--------------------------A--------B--------C-------D--------E-----------------------------
+            //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
             //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
             for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 GL15.glDeleteBuffers(tuple.getA().getBigVbo());
@@ -342,82 +334,47 @@ public class Chunk {
 
     // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
-        float x = Math.round((pos.x % (A + 1)));
-        float y = Math.round((pos.y % (A + 1)));
-        float z = Math.round((pos.z % (A + 1)));
+        float x = pos.x % (MODULATOR + 1);
+        float y = pos.y % (MODULATOR + 1);
+        float z = pos.z % (MODULATOR + 1);
 
-        return Math.round(((x + y + z) / (3.0f * B)));
+        return Math.round(((x + y + z) / (3.0f * DIVIDER)));
     }
 
     // determine if chunk is visible
-    public static boolean chunkCheck(Vector3f pos, Vector3f front) {
-        boolean yea = false;
+    public static int chunkFunc(Vector3f actorPos, Vector3f actorFront) {
+        float x = (VISION * actorFront.x + actorPos.x) % (MODULATOR + 1);
+        float y = (VISION * actorFront.y + actorPos.y) % (MODULATOR + 1);
+        float z = (VISION * actorFront.z + actorPos.z) % (MODULATOR + 1);
 
-        float d = C / 2.0f;
-        Vector3f temp1 = new Vector3f();
-        Vector3f min = pos.sub(d, d, d, temp1);
-        Vector3f temp2 = new Vector3f();
-        Vector3f max = pos.add(d, d, d, temp2);
-        Vector2f result = new Vector2f();
-        boolean ints = Intersectionf.intersectRayAab(pos, front, min, max, result);
-        if (ints && result.x <= C) {
-            yea = true;
-        }
-        return yea;
+        return Math.round(((x + y + z) / (3.0f * DIVIDER)));
+    }
+
+    // determine where chunk position might be based on the chunkId
+    public static Vector3f chunkInverFunc(int chunkId) {
+        float component = chunkId * DIVIDER;
+        return new Vector3f(component, component, component);
     }
 
     // determine which chunks are visible by this chunk
-    public static List<Integer> determineVisible(Vector3f pos, Vector3f front) {
-        List<Integer> result = new ArrayList<>();
-
-        int x = Chunk.chunkFunc(pos);
-        if (!result.contains(x) && chunkCheck(pos, front)) {
-            result.add(x);
+    public static Set<Integer> determineVisible(Set<Integer> visibleSet, Vector3f actorPos, Vector3f actorFront) {
+        final int val = CHUNKS_NUM / 2 - 1;
+        // current chunk where player is
+        int cid = chunkFunc(actorPos);
+        Vector3f temp = new Vector3f();
+        // this is for other chunks
+        for (int id = -val; id <= val; id++) {
+            Vector3f chunkPos = chunkInverFunc(id);
+            float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
+            float distance = chunkPos.distance(actorPos);
+            if (id == cid && distance <= VISION
+                    || id != cid && distance <= VISION && product >= 0.5f) {
+                visibleSet.add(id);
+            } else {
+                visibleSet.remove(id);
+            }
         }
-
-        Vector3f va = new Vector3f();
-        pos.add(C, 0.0f, 0.0f, va);
-        int a = Chunk.chunkFunc(va);
-        if (!result.contains(a) && Chunk.chunkCheck(va, front)) {
-            result.add(a);
-        }
-
-        Vector3f vb = new Vector3f();
-        pos.add(0.0f, C, 0.0f, vb);
-        int b = Chunk.chunkFunc(vb);
-        if (!result.contains(b) && Chunk.chunkCheck(vb, front)) {
-            result.add(b);
-        }
-
-        Vector3f vc = new Vector3f();
-        pos.add(0.0f, C, 0.0f, vc);
-        int c = Chunk.chunkFunc(vc);
-        if (!result.contains(c) && Chunk.chunkCheck(vc, front)) {
-            result.add(c);
-        }
-
-        Vector3f vd = new Vector3f();
-        pos.add(-C, 0.0f, 0.0f, vd);
-        int d = Chunk.chunkFunc(vd);
-        if (!result.contains(d) && Chunk.chunkCheck(vd, front)) {
-            result.add(d);
-        }
-
-        Vector3f ve = new Vector3f();
-        pos.add(0.0f, -C, 0.0f, ve);
-        int e = Chunk.chunkFunc(ve);
-        if (!result.contains(e) && Chunk.chunkCheck(ve, front)) {
-            result.add(e);
-        }
-
-        Vector3f vf = new Vector3f();
-        pos.add(0.0f, 0.0f, -C, vf);
-        int f = Chunk.chunkFunc(vf);
-        if (!result.contains(f) && Chunk.chunkCheck(vf, front)) {
-            result.add(f);
-        }
-
-        return result;
+        return visibleSet;
     }
 
     public int size() { // for debugging purposes
@@ -440,7 +397,7 @@ public class Chunk {
         return result;
     }
 
-    public void saveToMemory() {
+    public synchronized void saveToMemory() {
         if (!buffered && !cached) {
             List<Block> blocks = getList();
             pos = 0;
@@ -464,7 +421,7 @@ public class Chunk {
         }
     }
 
-    public void loadFromMemory() {
+    public synchronized void loadFromMemory() {
         if (!buffered && cached) {
             pos = 1;
             int len = ((memory[pos + 1] & 0xFF) << 8) | (memory[pos] & 0xFF);

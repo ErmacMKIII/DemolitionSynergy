@@ -22,11 +22,10 @@ import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -39,10 +38,10 @@ public class Renderer extends Thread {
     private boolean assertCollision = false;
 
     private static double fpsTicks = 0.0;
-    private int fps = 0;
+    private static int fps = 0;
 
     private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 10;
+    public static final int REN_MAX_PASSES = 5;
 
     public Renderer(GameObject gameObject) {
         super("Renderer");
@@ -68,7 +67,7 @@ public class Renderer extends Thread {
         while (!gameObject.getMyWindow().shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += diff * Game.getFpsMax();
+            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
             lastTime = currTime;
 
             // Detecting critical status
@@ -126,9 +125,9 @@ public class Renderer extends Thread {
 
             // update text which animates water every quarter of the second
             if (GLFW.glfwGetTime() > timer2 + 0.25) {
-                if (gameObject.getLevelContainer().getProgress() == 100) {
+                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
                     gameObject.getIntrface().getProgText().setEnabled(false);
-                    gameObject.getLevelContainer().setProgress(0);
+                    gameObject.getLevelContainer().setProgress(0.0f);
                 }
 
                 if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
@@ -166,12 +165,16 @@ public class Renderer extends Thread {
         Renderer.fpsTicks = fpsTicks;
     }
 
-    public int getFps() {
+    public static int getFps() {
         return fps;
+    }
+
+    public static void setFps(int fps) {
+        Renderer.fps = fps;
     }
 
     public static int getRenPasses() {
         return renPasses;
-    }
+    }    
 
 }

@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -462,45 +464,30 @@ public class Block extends Model {
     }
 
     // used in static Level container to get compressed positioned sets
-    public static int getFaceBits(Vector3f pos, Set<Vector3f> vectorSet) {
+    public static int getNeighborBits(Vector3f pos, Set<Vector3f> vectorSet) {
         int bits = 0;
-        for (int j = 0; j <= 5; j++) {
+        for (int j = 0; j <= 5; j++) { // j - face number
             Vector3f adjPos = Block.getAdjacentPos(pos, j);
-            for (Vector3f vector : vectorSet) {
-                if (vector.equals(adjPos)) {
-                    int mask = 1 << j;
-                    bits |= mask;
-                    break;
-                }
+            if (vectorSet.contains(adjPos)) {
+                int mask = 1 << j;
+                bits |= mask;
             }
         }
         return bits;
-    }
-
+    }    
+    
     // set faces based on faceBits representation
     public void setFaceBits(int faceBits, boolean selfBuffer) {
-        boolean[] faces = faceBitsToBoolArray(faceBits);
         for (int j = 0; j <= 5; j++) {
-            if (faces[j]) {
+            int mask = 1 << j;
+            int bit = (faceBits & mask) >> j;
+            if (bit == 1) {
                 enableFace(j, selfBuffer);
             } else {
                 disableFace(j, selfBuffer);
             }
         }
-    }
-
-    // returns bool array of faces based on facebits representation
-    public static boolean[] faceBitsToBoolArray(int faceBits) {
-        boolean[] result = new boolean[6];
-        int j = 0;
-        while (faceBits > 0) {
-            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
-            result[j] = (bit == 1);
-            faceBits >>= 1; // move bits to the right so they are compared again            
-            j++;
-        }
-        return result;
-    }
+    }   
 
     // make int buffer base on bits form of faces
     public static IntBuffer createIntBuffer(int faceBits) {
@@ -532,11 +519,13 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
+    // used by Random Level Generator
     public List<Integer> getAdjacentFreeFaceNumbers() {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!LevelContainer.ALL_SOLID_POS.contains(adjPos) && !LevelContainer.ALL_FLUID_POS.contains(adjPos)) {
+            if (!LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos)) 
+                    && !LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
                 result.add(j);
             }
         }
@@ -608,7 +597,37 @@ public class Block extends Model {
 
         return result;
     }
-
+    
+    public static int faceAdjacentBy(Vector3f blkPosA, Vector3f blkPosB) { // which face of blk "A" is adjacent to compared blk "B"
+        int faceNum = -1;
+        if (Math.abs((blkPosA.x - 1.0f) - (blkPosB.x + 1.0f)) == 0.0f
+                && Math.abs(blkPosA.y - blkPosB.y) <= 0.0f
+                && Math.abs(blkPosA.z - blkPosB.z) <= 0.0f) {
+            faceNum = LEFT;
+        } else if (Math.abs((blkPosA.x + 1.0f) - (blkPosB.x - 1.0f)) == 0.0f
+                && Math.abs(blkPosA.y - blkPosB.y) == 0.0f
+                && Math.abs(blkPosA.z - blkPosB.z) == 0.0f) {
+            faceNum = RIGHT;
+        } else if (Math.abs((blkPosA.y - 1.0f) - (blkPosB.y + 1.0f)) == 0.0f
+                && Math.abs(blkPosA.z - blkPosB.z) == 0.0f
+                && Math.abs(blkPosA.x - blkPosB.x) == 0.0f) {
+            faceNum = BOTTOM;
+        } else if (Math.abs((blkPosA.y + 1.0f) - (blkPosB.y - 1.0f)) == 0.0f
+                && Math.abs(blkPosA.z - blkPosB.z) == 0.0f
+                && Math.abs(blkPosA.x - blkPosB.x) == 0.0f) {
+            faceNum = TOP;
+        } else if (Math.abs((blkPosA.z - 1.0f) - (blkPosB.z + 1.0f)) == 0.0f
+                && Math.abs(blkPosA.x - blkPosB.x) == 0.0f
+                && Math.abs(blkPosA.y - blkPosB.y) == 0.0f) {
+            faceNum = BACK;
+        } else if (Math.abs((blkPosA.z + 1.0f) - (blkPosB.z - 1.0f)) == 0.0f
+                && Math.abs(blkPosA.x - blkPosB.x) == 0.0f
+                && Math.abs(blkPosA.y - blkPosB.y) == 0.0f) {
+            faceNum = FRONT;
+        }
+        return faceNum;
+    }
+    
     public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
         boolean ints = false;
         Vector3f temp1 = new Vector3f();

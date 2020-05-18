@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -51,12 +52,12 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    public static final float EPSILON = 0.0001f;
+    public static final float EPSILON = 0.001f;
 
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap     
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 10;
+    public static final int UPD_MAX_PASSES = 5;
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
@@ -68,7 +69,7 @@ public class Game {
     private static float lastY = 0.0f;
     private static float xoffset = 0.0f;
     private static float yoffset = 0.0f;
-    private static float mouseSensitivity = 3.0f;
+    private static float mouseSensitivity = 1.5f;
     private boolean moveMouse = false;
 
     private int crosshairColorNum = 0;
@@ -121,6 +122,8 @@ public class Game {
         gameObject.getMyWindow().centerTheWindow();
         waterEffects = config.isWaterEffects();
         Arrays.fill(keys, false);
+        gameObject.getMusicPlayer().setGain(config.getMusicVolume());
+        gameObject.getSoundFXPlayer().setGain(config.getSoundFXVolume());
         initCallbacks();
     }
 
@@ -380,7 +383,7 @@ public class Game {
                     gameObject.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-//                    LevelContainer.printPositionSets();
+                    LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     File screenDir = new File(SCREENSHOTS);
@@ -472,6 +475,7 @@ public class Game {
         gameObject.getMusicPlayer().play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
+        double timer1 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -482,7 +486,7 @@ public class Game {
         while (!gameObject.getMyWindow().shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * Game.TPS;
+            upsTicks += -Math.expm1(-diff * Game.TPS);
             lastTime = currTime;
 
             // Detecting critical status
@@ -492,27 +496,23 @@ public class Game {
                 break;
             }
 
-            if (upsTicks > 1.0) {
-                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
-                    GLFW.glfwPollEvents();
-                    if (Renderer.getRenPasses() == 0) {
-                        float deltaTime = (float) (upsTicks / TPS);
-                        gameObject.update(deltaTime);
-                    }
-                    if (currentMode == Mode.SINGLE_PLAYER) {
-                        playerDo();
-                    } else if (currentMode == Mode.EDITOR) {
-                        gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                        editorDo();
-                    }
-                    observerDo();
-                    ups++;
-                    upsTicks--;
-                    updPasses++;
+            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                GLFW.glfwPollEvents();
+                float deltaTime = (float) (upsTicks / TPS);
+                gameObject.update(deltaTime);
+                if (currentMode == Mode.SINGLE_PLAYER) {
+                    playerDo();
+                } else if (currentMode == Mode.EDITOR) {
+                    gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                    editorDo();
                 }
-                updPasses = 0;
+                observerDo();
+                ups++;
+                upsTicks--;
+                updPasses++;
             }
-
+            updPasses = 0;
+                
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
                 gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
@@ -520,6 +520,13 @@ public class Game {
                 timer0 += 1.0;
             }
 
+            if (GLFW.glfwGetTime() > timer1 + 0.25) {
+                if (waterEffects) {
+                    gameObject.refresh();
+                }
+                gameObject.patch();
+                timer1 += 0.25;
+            }
         }
         // stops the music
         gameObject.getMusicPlayer().stop();

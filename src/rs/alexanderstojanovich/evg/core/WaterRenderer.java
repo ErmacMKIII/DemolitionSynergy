@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Coa
+ * Copyright (VISION) 2019 Coa
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR MODULATOR PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.HashSet;
+import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -26,6 +26,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -34,7 +35,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class WaterRenderer {
 
     private final GameObject gameObject;
-    private final Queue<Float> waterHeights = new ArrayDeque<>();
+    private final Set<Float> waterHeights = new HashSet<>();
     private final FrameBuffer frameBuffer;
     private final Camera camera;
 
@@ -61,14 +62,12 @@ public class WaterRenderer {
                 float waterHeight = fluidBlock.getSurfaceY();
                 Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
                 if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
-                        && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.C
-                        && !LevelContainer.ALL_SOLID_POS.contains(topPos) // it must be nothing on top of it
+                        && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.VISION
+                        && !LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(topPos)) // it must be nothing on top of it
                         && waterHeight <= obsHeight) { // and it needs to be below the observer
                     fluidBlock.setWaterTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
                     currChunk.setWaterTexture(frameBuffer.getTexture());
-                    if (!waterHeights.contains(waterHeight)) {
-                        waterHeights.add(waterHeight);
-                    }
+                    waterHeights.add(waterHeight);
                 } else {
                     waterHeights.remove(waterHeight);
                     fluidBlock.setWaterTexture(null);
@@ -105,16 +104,17 @@ public class WaterRenderer {
             frameBuffer.bind();
             prepare();
             // refresh is called from the update (renderer)
-            Float waterHeight;
-            while ((waterHeight = waterHeights.poll()) != null) {
-                capture(waterHeight);
+            for (Float height : waterHeights) {
+                capture(height);
             }
             frameBuffer.unbind();
             GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
+
+            waterHeights.clear();
         }
     }
 
-    public Queue<Float> getWaterHeights() {
+    public Set<Float> getWaterHeights() {
         return waterHeights;
     }
 

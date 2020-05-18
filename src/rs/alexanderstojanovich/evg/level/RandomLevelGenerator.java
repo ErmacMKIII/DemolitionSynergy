@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.List;
 import org.joml.Random;
+import org.joml.SimplexNoise;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
 
@@ -27,8 +28,12 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class RandomLevelGenerator {
 
-    private final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f - 2.0f);
-    private final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f + 2.0f);
+    public static final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f - 2.0f);
+    public static final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f + 2.0f);
+
+    public static final float ONE_OVER_POS_MAX = 1.0f / POS_MAX;
+    public static final float ONE_OVER_POS_MIN = 1.0f / POS_MIN;
+    public static final int POS_VAL = Math.round((POS_MAX - POS_MIN) / 2.0f);
 
     private final Random random = new Random(0x123456789L);
 
@@ -65,13 +70,13 @@ public class RandomLevelGenerator {
         Vector3f randPos;
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
-                || LevelContainer.ALL_FLUID_POS.contains(randPos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(randPos)
+                && LevelContainer.ALL_FLUID_MAP.containsKey(randPos)
+                && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
+                && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
         float colg = random.nextFloat();
         float colb = random.nextFloat();
@@ -90,13 +95,13 @@ public class RandomLevelGenerator {
         Vector3f randPos;
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
+            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.ALL_SOLID_POS.contains(randPos)
-                || LevelContainer.ALL_FLUID_POS.contains(randPos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(randPos)
+                && LevelContainer.ALL_FLUID_MAP.containsKey(randPos)
+                && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
+                && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colr = random.nextFloat();
         float colg = random.nextFloat();
         float colb = random.nextFloat();
@@ -140,10 +145,10 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
-                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(adjPos)
+                && LevelContainer.ALL_FLUID_MAP.containsKey(adjPos)
+                && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
+                && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
         float adjColg = random.nextFloat();
         float adjColb = random.nextFloat();
@@ -187,10 +192,10 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.ALL_SOLID_POS.contains(adjPos)
-                || LevelContainer.ALL_FLUID_POS.contains(adjPos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
+        } while (LevelContainer.ALL_SOLID_MAP.containsKey(adjPos)
+                && LevelContainer.ALL_FLUID_MAP.containsKey(adjPos)
+                && levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
+                && levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColr = random.nextFloat();
         float adjColg = random.nextFloat();
         float adjColb = random.nextFloat();

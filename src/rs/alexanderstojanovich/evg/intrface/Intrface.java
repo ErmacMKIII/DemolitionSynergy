@@ -224,6 +224,7 @@ public class Intrface {
             protected void execute() {
                 if (getOptions()[0].giveCurrent() != null) {
                     Game.setFpsMax((int) getOptions()[0].giveCurrent());
+                    Renderer.setFps(0);
                     Renderer.setFpsTicks(0.0);
                 }
                 //--------------------------------------------------------------
@@ -317,9 +318,9 @@ public class Intrface {
         optionsMenu.getOptions()[2] = new Combo(swtch, 0);
         optionsMenu.getOptions()[3] = new Combo(swtch, 0);
         optionsMenu.getOptions()[4] = new Combo(swtch, 1);
-        optionsMenu.getOptions()[5] = new Combo(mouseSens, 4);
-        optionsMenu.getOptions()[6] = new Combo(volume, 4);
-        optionsMenu.getOptions()[7] = new Combo(volume, 4);
+        optionsMenu.getOptions()[5] = new Combo(mouseSens, 1);
+        optionsMenu.getOptions()[6] = new Combo(volume, 10);
+        optionsMenu.getOptions()[7] = new Combo(volume, 10);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();

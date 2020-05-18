@@ -52,7 +52,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // update Game Object stuff (call only from main)
     public synchronized void update(float deltaTime) {
         levelContainer.update(deltaTime);
-        waterRenderer.refresh();
         intrface.update();
         intrface.setCollText(assertCollision);
     }
@@ -65,7 +64,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
                 waterRenderer.render();
             }
+            intrface.getProgText().setEnabled(false);
         } else {
+            intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
@@ -78,6 +79,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public synchronized void unbuffer() {
         levelContainer.getSolidChunks().setBuffered(false);
         levelContainer.getFluidChunks().setBuffered(false);
+    }
+
+    // refresh water heights
+    public synchronized void refresh() {
+        waterRenderer.refresh();
+    }
+
+    // patch chunks
+    public synchronized void patch() {
+        levelContainer.patch();
     }
 
     // animation for water
