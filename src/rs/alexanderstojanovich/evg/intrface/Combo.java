@@ -27,14 +27,14 @@ public class Combo { // customizable list of items (objects) which also has sele
 
     private final List<Object> values = new ArrayList<>();
     private int selected = -1;
-    
+
     public void fetchFromArray(Object[] valueArray, int selected) {
         this.selected = selected;
         for (Object object : valueArray) {
             values.add(object);
         }
     }
-    
+
     public Object giveCurrent() {
         Object obj = null;
         if (!values.isEmpty() && selected != -1) {
@@ -59,7 +59,7 @@ public class Combo { // customizable list of items (objects) which also has sele
                 selected = 0;
             }
         }
-    }    
+    }
 
     public List<Object> getValues() {
         return values;

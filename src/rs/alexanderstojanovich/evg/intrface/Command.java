@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
@@ -45,33 +44,31 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
     SOUND_VOLUME,
     EXIT,
     SCREENSHOT,
-    NOP;
-    
+    NOP,
+    ERROR;
+
+    // commands differ in arugment length and type, therefore list is used
     private final List<Object> args = new ArrayList<>();
-    
+
+    // constructs command from given string input
     public static Command getCommand(String input) {
-        Command command = Command.NOP;
+        Command command = ERROR;
         String[] things = input.split(" ");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "fps_max":
                 case "fpsmax":
                     if (things.length == 2) {
-                        int num = Integer.parseInt(things[1]);
-                        if (num > 0) {
-                           command = FPS_MAX;
-                           command.args.add(num);
-                        }
+                        command = FPS_MAX;
+                        command.args.add(Integer.parseInt(things[1]));
                     }
                     break;
                 case "resolution":
                 case "res":
                     if (things.length == 3) {
-                        int width = Integer.parseInt(things[1]);
-                        int height = Integer.parseInt(things[2]);
                         command = RESOLUTION;
-                        command.args.add(width);
-                        command.args.add(height);
+                        command.args.add(Integer.parseInt(things[1]));
+                        command.args.add(Integer.parseInt(things[2]));
                     }
                     break;
                 case "fullscreen":
@@ -104,21 +101,15 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 case "music":
                 case "musicVolume":
                     if (things.length == 2) {
-                        float volume = Float.parseFloat(things[1]);
-                        if (volume >= 0.0f && volume <= 1.0f) {
-                            command = MUSIC_VOLUME;
-                            command.args.add(volume);
-                        }
+                        command = MUSIC_VOLUME;
+                        command.args.add(Float.parseFloat(things[1]));
                     }
                     break;
                 case "sound":
                 case "soundVolume":
                     if (things.length == 2) {
-                        float volume = Float.parseFloat(things[1]);
-                        if (volume >= 0.0f && volume <= 1.0f) {
-                            command = SOUND_VOLUME;
-                            command.args.add(volume);
-                        }
+                        command = SOUND_VOLUME;
+                        command.args.add(Float.parseFloat(things[1]));
                     }
                     break;
                 case "quit":
@@ -129,14 +120,17 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                     command = SCREENSHOT;
                     break;
                 default:
-                    command = NOP;
+                    command = ERROR;
                     break;
             }
         }
-        
+
         return command;
     }
-    
+
+    // executes command which modifies game, renderer or game object
+    // Rule is that commands which directly affect window or OpenGL 
+    // are being called from the Renderer, whilst other can be called from the main method
     public static boolean execute(Command command) {
         boolean success = false;
         switch (command) {
@@ -144,10 +138,9 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 Game.setFpsMax((int) command.args.get(0));
                 Renderer.setFpsTicks(0.0);
                 success = true;
-                break;                
+                break;
             case RESOLUTION:
                 success = GameObject.MY_WINDOW.setResolution((int) command.args.get(0), (int) command.args.get(1));
-                PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
                 GameObject.MY_WINDOW.centerTheWindow();
                 break;
             case FULLSCREEN:
@@ -160,12 +153,13 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 GameObject.MY_WINDOW.centerTheWindow();
                 success = true;
                 break;
-            case VSYNC:
+            case VSYNC: // OpenGL
                 boolean bool = (boolean) command.args.get(0);
-                if (bool)
+                if (bool) {
                     GameObject.MY_WINDOW.enableVSync();
-                else
+                } else {
                     GameObject.MY_WINDOW.disableVSync();
+                }
                 success = true;
                 break;
             case WATER_EFFECTS:
@@ -173,35 +167,44 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 success = true;
                 break;
             case MOUSE_SENSITIVITY:
-                Game.setMouseSensitivity((float) command.args.get(0));
-                success = true;
+                float msens = (float) command.args.get(0);
+                if (msens >= 0.0f && msens <= 100.0f) {
+                    Game.setMouseSensitivity(msens);
+                    success = true;
+                }
                 break;
             case MUSIC_VOLUME:
-                GameObject.getInstance().getMusicPlayer().setGain((float) command.args.get(0));
-                success = true;
+                float music = (float) command.args.get(0);
+                if (music >= 0.0f && music <= 1.0f) {
+                    GameObject.getInstance().getMusicPlayer().setGain(music);
+                    success = true;
+                }
                 break;
             case SOUND_VOLUME:
-                GameObject.getInstance().getSoundFXPlayer().setGain((float) command.args.get(0));
-                success = true;
-                break;  
-            case SCREENSHOT:
+                float sound = (float) command.args.get(0);
+                if (sound >= 0.0f && sound <= 1.0f) {
+                    GameObject.getInstance().getSoundFXPlayer().setGain(sound);
+                    success = true;
+                }
+                break;
+            case SCREENSHOT: // OpenGL
                 File screenDir = new File(Game.SCREENSHOTS);
-                    if (!screenDir.isDirectory() && !screenDir.exists()) {
-                        screenDir.mkdir();
-                    }
-                    LocalDateTime now = LocalDateTime.now();
-                    File screenshot = new File(Game.SCREENSHOTS + File.separator
-                            + "dsynergy-" + now.getYear()
-                            + "-" + now.getMonthValue()
-                            + "-" + now.getDayOfMonth()
-                            + "_" + now.getHour()
-                            + "-" + now.getMinute()
-                            + "-" + now.getSecond()
-                            + "-" + now.getNano() / 1E6 // one million
-                            + ".png");
-                    if (screenshot.exists()) {
-                        screenshot.delete();
-                    }                    
+                if (!screenDir.isDirectory() && !screenDir.exists()) {
+                    screenDir.mkdir();
+                }
+                LocalDateTime now = LocalDateTime.now();
+                File screenshot = new File(Game.SCREENSHOTS + File.separator
+                        + "dsynergy-" + now.getYear()
+                        + "-" + now.getMonthValue()
+                        + "-" + now.getDayOfMonth()
+                        + "_" + now.getHour()
+                        + "-" + now.getMinute()
+                        + "-" + now.getSecond()
+                        + "-" + now.getNano() / 1E6 // one million
+                        + ".png");
+                if (screenshot.exists()) {
+                    screenshot.delete();
+                }
                 try {
                     ImageIO.write(GameObject.MY_WINDOW.getScreen(), "PNG", screenshot);
                 } catch (IOException ex) {
@@ -218,7 +221,7 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 success = true;
                 break;
         }
-        
+        command.args.clear();
         return success;
     }
 
@@ -226,29 +229,29 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
     public Boolean call() throws Exception {
         return Command.execute(this);
     }
-   
+
     public List<Object> getArgs() {
         return args;
     }
-    
+
+    // renderer commands need OpenGL whilst other doesn't
     public boolean isRendererCommand() {
-        if (this == RESOLUTION 
-                || this == VSYNC
+        if (this == VSYNC
                 || this == SCREENSHOT) {
             return true;
         } else {
             return false;
         }
     }
-    
+
+    // renderer commands need OpenGL whilst other doesn't
     public static boolean isRendererCommand(Command command) {
-        if (command == RESOLUTION 
-                || command == VSYNC
+        if (command == VSYNC
                 || command == SCREENSHOT) {
             return true;
         } else {
             return false;
         }
-    }    
+    }
 
 }

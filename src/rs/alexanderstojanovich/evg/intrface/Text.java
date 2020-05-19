@@ -160,7 +160,7 @@ public class Text {
     public Window getMyWindow() {
         return GameObject.MY_WINDOW;
     }
-    
+
     public Texture getTexture() {
         return texture;
     }

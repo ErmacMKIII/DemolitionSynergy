@@ -145,11 +145,10 @@ public class Window {
     public boolean setResolution(int width, int height) {
         boolean success = false;
         if (width >= MIN_WIDTH && width <= monitorWidth && height >= MIN_HEIGHT && height <= monitorHeight) {
-            if (Arrays.binarySearch(giveAllResolutions(), width + "x" + height) != -1) {                
-                GLFW.glfwSetWindowSize(windowID, width, height);
+            if (Arrays.binarySearch(giveAllResolutions(), width + "x" + height) != -1) {
                 this.width = width;
                 this.height = height;
-                GL11.glViewport(0, 0, width, height);                
+                GLFW.glfwSetWindowSize(windowID, width, height);
                 success = true;
             }
         }

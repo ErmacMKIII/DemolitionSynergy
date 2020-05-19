@@ -99,10 +99,10 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);                
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
             }
         }
-                
+
     }
 
     public static void selectCurrFluid(GameObject gameObject) {
@@ -132,7 +132,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);                                
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
             }
         }
     }

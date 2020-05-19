@@ -474,8 +474,8 @@ public class Block extends Model {
             }
         }
         return bits;
-    }    
-    
+    }
+
     // set faces based on faceBits representation
     public void setFaceBits(int faceBits, boolean selfBuffer) {
         for (int j = 0; j <= 5; j++) {
@@ -487,7 +487,7 @@ public class Block extends Model {
                 disableFace(j, selfBuffer);
             }
         }
-    }   
+    }
 
     // make int buffer base on bits form of faces
     public static IntBuffer createIntBuffer(int faceBits) {
@@ -524,7 +524,7 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (!LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos)) 
+            if (!LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
                     && !LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
                 result.add(j);
             }
@@ -597,7 +597,7 @@ public class Block extends Model {
 
         return result;
     }
-    
+
     public static int faceAdjacentBy(Vector3f blkPosA, Vector3f blkPosB) { // which face of blk "A" is adjacent to compared blk "B"
         int faceNum = -1;
         if (Math.abs((blkPosA.x - 1.0f) - (blkPosB.x + 1.0f)) == 0.0f
@@ -627,7 +627,7 @@ public class Block extends Model {
         }
         return faceNum;
     }
-    
+
     public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
         boolean ints = false;
         Vector3f temp1 = new Vector3f();

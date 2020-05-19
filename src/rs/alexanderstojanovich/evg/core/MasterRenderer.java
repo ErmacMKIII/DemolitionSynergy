@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.core;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
+import rs.alexanderstojanovich.evg.main.GameObject;
 
 /**
  *
@@ -52,6 +53,10 @@ public class MasterRenderer {
         GL11.glCullFace(GL11.GL_BACK);
 
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black        
+    }
+
+    public static void setResolution(int width, int height) {
+        GL11.glViewport(0, 0, width, height);
     }
 
     public static void render() {

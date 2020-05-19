@@ -76,10 +76,10 @@ public class LevelContainer implements GravityEnviroment {
 
     // position of all the solid blocks to neighbors
     public static final Map<Integer, Byte> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
-    
+
     // position of all the fluid blocks to neighbors
     public static final Map<Integer, Byte> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
-    
+
     private static void determineSolid(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -92,7 +92,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
     }
-    
+
     private static void determineFluid(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -105,20 +105,20 @@ public class LevelContainer implements GravityEnviroment {
         }
         ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
     }
-    
+
     public static void putBlock(Block block) {
-        Vector3f pos = block.getPos();        
+        Vector3f pos = block.getPos();
         if (block.isSolid()) {
-            ALL_SOLID_MAP.put(Vector3fUtils.hashCode(pos), (byte)-1);
+            ALL_SOLID_MAP.put(Vector3fUtils.hashCode(pos), (byte) -1);
             determineSolid(pos);
         } else {
-            ALL_FLUID_MAP.put(Vector3fUtils.hashCode(pos), (byte)-1);
+            ALL_FLUID_MAP.put(Vector3fUtils.hashCode(pos), (byte) -1);
             determineFluid(pos);
         }
     }
-    
+
     public static void removeBlock(Block block) {
-        Vector3f pos = block.getPos();        
+        Vector3f pos = block.getPos();
         if (block.isSolid()) {
             ALL_SOLID_MAP.remove(Vector3fUtils.hashCode(pos));
             determineSolid(pos);
@@ -127,7 +127,7 @@ public class LevelContainer implements GravityEnviroment {
             determineFluid(pos);
         }
     }
-    
+
     static {
         // setting SKYBOX     
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);

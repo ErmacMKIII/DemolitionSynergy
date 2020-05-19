@@ -16,15 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.FutureTask;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.intrface.Console;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
@@ -47,18 +44,21 @@ public class Renderer extends Thread implements Executor {
 
     private static int renPasses = 0;
     public static final int REN_MAX_PASSES = 5;
-    
+
+    private int widthGL = Window.MIN_WIDTH;
+    private int heightGL = Window.MIN_HEIGHT;
+
     public Renderer(GameObject gameObject) {
         super("Renderer");
         this.gameObject = gameObject;
-    }        
-    
-    private static Command command = Command.NOP;        
-    
+    }
+
     @Override
     public void run() {
         MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
         boolean ok = GameObject.MY_WINDOW.setResolution(Main.CONFIG.getWidth(), Main.CONFIG.getHeight());
+        MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
+        GameObject.MY_WINDOW.centerTheWindow();
         if (!ok) {
             DSLogger.reportError("Game unable to set resolution!", null);
         }
@@ -66,8 +66,7 @@ public class Renderer extends Thread implements Executor {
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
         gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context        
-        
-        
+
         double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();
         double timer2 = GLFW.glfwGetTime();
@@ -76,7 +75,18 @@ public class Renderer extends Thread implements Executor {
         double currTime;
         double diff;
 
-        while (!GameObject.MY_WINDOW.shouldClose()) {            
+        while (!GameObject.MY_WINDOW.shouldClose()) {
+            // changing resolution if necessary
+            int width = GameObject.MY_WINDOW.getWidth();
+            int height = GameObject.MY_WINDOW.getHeight();
+            if (width != widthGL
+                    || height != heightGL) {
+                MasterRenderer.setResolution(width, height);
+                PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+                widthGL = width;
+                heightGL = height;
+            }
+
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
             fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
@@ -145,18 +155,21 @@ public class Renderer extends Thread implements Executor {
                 }
                 timer2 += 0.25;
             }
-            
-            // lastly it executes the console task           
-            execute(gameObject.getIntrface().getConsole().getTask());
+
+            // lastly it executes the console tasks
+            FutureTask<Boolean> task;
+            while ((task = Console.TASK_QUEUE.poll()) != null) {
+                execute(task);
+            }
         }
 
-    }        
+    }
 
     @Override
     public void execute(Runnable command) {
         command.run();
     }
-    
+
     public LevelContainer getLevelContainer() {
         return gameObject.getLevelContainer();
     }
@@ -187,14 +200,6 @@ public class Renderer extends Thread implements Executor {
 
     public static int getRenPasses() {
         return renPasses;
-    }    
-
-    public static Command getCommand() {
-        return command;
-    }
-
-    public static void setCommand(Command command) {
-        Renderer.command = command;
     }
 
 }

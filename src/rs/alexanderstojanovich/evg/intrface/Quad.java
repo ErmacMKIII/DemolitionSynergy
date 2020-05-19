@@ -180,7 +180,7 @@ public class Quad {
 
     public Window getWindow() {
         return GameObject.MY_WINDOW;
-    }   
+    }
 
     public int getWidth() {
         return width;

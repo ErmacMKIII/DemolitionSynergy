@@ -510,7 +510,7 @@ public class Game {
                 updPasses++;
             }
             updPasses = 0;
-                
+
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
                 gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());

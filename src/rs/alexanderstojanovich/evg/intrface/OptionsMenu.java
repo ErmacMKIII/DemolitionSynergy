@@ -59,7 +59,7 @@ public abstract class OptionsMenu extends Menu {
     }
 
     protected abstract void getValues();
-    
+
     @Override
     public void open() {
         enabled = true;

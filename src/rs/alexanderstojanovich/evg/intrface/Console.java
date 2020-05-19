@@ -16,10 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.joml.Vector2f;
@@ -31,6 +35,7 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
@@ -47,10 +52,10 @@ public final class Console {
 
     public static final int HISTORY_CAPACITY = 12;
 
-    private FutureTask<Boolean> task = new FutureTask<>(Command.NOP);
-    
+    public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
+
     public Console() {
-        this.panel = new Quad(GameObject.MY_WINDOW.getWidth(), 
+        this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
                 GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
         this.panel.setColor(new Vector3f(0.25f, 0.5f, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
@@ -95,40 +100,38 @@ public final class Console {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }
                             DynamicText text = new DynamicText(Texture.FONT, "");
-                            Quad quad = new Quad(16, 16, Texture.LIGHT_BULB); 
+                            Quad quad = new Quad(16, 16, Texture.LIGHT_BULB);
                             Command command = Command.getCommand(input.toString());
                             // if command is invalid it's null
-                            if (command == Command.NOP) {
+                            if (command == Command.ERROR) {
                                 text.setContent("Invalid Command!");
                                 text.setColor(new Vector3f(1.0f, 0.0f, 0.0f));
-                            } else if (command.isRendererCommand()) { 
-                                // sets the new task
-                                task = new FutureTask<Boolean>(command);
+                            } else if (command.isRendererCommand()) {
                                 boolean result = false;
-                                if (!task.isDone()) {
-                                    try {                             
-                                        // waits for renderer to execute the task                       
-                                        result = task.get();
-                                    } catch (InterruptedException | ExecutionException ex) {
-                                        Logger.getLogger(Console.class.getName()).log(Level.SEVERE, null, ex);
-                                    }
+                                FutureTask<Boolean> consoleTask = new FutureTask<Boolean>(command);
+                                TASK_QUEUE.add(consoleTask);
+                                try {
+                                    // waits for renderer to execute the task                       
+                                    result = consoleTask.get();
+                                } catch (InterruptedException | ExecutionException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
                                 }
                                 quad.setColor(result ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
                                 text.setContent(input.toString());
                             } else {
-                                boolean ok = Command.execute(command);                                
+                                boolean ok = Command.execute(command);
                                 quad.setColor(ok ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
                                 text.setContent(input.toString());
                             }
-                                                                                   
+
                             text.pos = new Vector2f(inText.pos);
                             text.pos.y += (0.5f - text.getRelativeCharHeight()) * Text.LINE_SPACING;
-                            
+
                             quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1);
                             quad.getPos().y = text.pos.y;
-                            
+
                             text.setOffset(new Vector2f(1.0f, 0.0f));
-                            
+
                             history.add(0, new Pair<>(text, quad));
 
                             if (history.size() == HISTORY_CAPACITY) {
@@ -169,7 +172,7 @@ public final class Console {
             int index = 0;
             for (Pair<DynamicText, Quad> item : history) {
                 DynamicText text = item.getKey();
-                Quad quad = item.getValue();                
+                Quad quad = item.getValue();
                 text.pos.x = -1.0f;
                 quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 2) - 1.0f;
                 text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * Text.LINE_SPACING;
@@ -209,10 +212,6 @@ public final class Console {
 
     public boolean isEnabled() {
         return enabled;
-    }             
-
-    public FutureTask<Boolean> getTask() {
-        return task;
     }
 
 }

@@ -230,7 +230,7 @@ public class Intrface {
                     case 6:
                         command = Command.MUSIC_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
-                        break;                        
+                        break;
                     case 7:
                         command = Command.SOUND_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
@@ -247,9 +247,9 @@ public class Intrface {
         int k = 0;
         for (float i = 0.0f; i < 1.05f; i += 0.05f) {
             volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
-        }                
-        
-        optionsMenu.options.get(0).getValue().fetchFromArray(fpsCaps, 3); 
+        }
+
+        optionsMenu.options.get(0).getValue().fetchFromArray(fpsCaps, 3);
         optionsMenu.options.get(1).getValue().fetchFromArray(resolutions, 0);
         optionsMenu.options.get(2).getValue().fetchFromArray(swtch, 0);
         optionsMenu.options.get(3).getValue().fetchFromArray(swtch, 0);

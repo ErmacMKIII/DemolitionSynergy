@@ -19,21 +19,20 @@ package rs.alexanderstojanovich.evg.main;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
  * @author Coa
  */
-public class Main {    
+public class Main {
 
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
     // makes default configuration
-    public static final Configuration CONFIG = new Configuration();           
-    
-    public static void main(String[] args) {         
+    public static final Configuration CONFIG = new Configuration();
+
+    public static void main(String[] args) {
         CONFIG.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         boolean debug = CONFIG.isDebug(); // determine debug flag (write in a log file or not)
         DSLogger.init(debug); // this is important initializing Apache logger
@@ -66,6 +65,6 @@ public class Main {
         //----------------------------------------------------------------------        
         SERVICE.shutdown();
         DSLogger.reportInfo("Game finished.", null);
-    }    
-    
+    }
+
 }

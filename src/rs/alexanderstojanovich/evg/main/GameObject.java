@@ -30,14 +30,14 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
  * @author Coa
  */
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
-    
+
     public static final String TITLE = "Demolition Synergy - v19 TITANIUM";
 
     public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
-    
-     // makes default window -> Renderer sets resolution from config
+
+    // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
-    
+
     private final LevelContainer levelContainer;
     private final WaterRenderer waterRenderer;
 
@@ -48,22 +48,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private boolean assertCollision = false;
 
-    private static GameObject instance;       
-    
+    // everyone can access only one instance of the game object
+    private static GameObject instance;
+
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
         this.waterRenderer = new WaterRenderer(this);
         this.intrface = new Intrface(this);
     }
 
+    // lazy initialization allowing only one instance
     public static GameObject getInstance() {
         if (instance == null) {
             instance = new GameObject();
         }
         return instance;
     }
-    
-    
+
     // update Game Object stuff (call only from main)
     public synchronized void update(float deltaTime) {
         levelContainer.update(deltaTime);
@@ -110,24 +111,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public synchronized void animate() {
         levelContainer.animate();
     }
-    
+
+    // destroys the window
     public void destroy() {
         synchronized (GameObject.OBJ_MUTEX) {
             GameObject.MY_WINDOW.loadContext();
             GameObject.MY_WINDOW.destroy();
         }
     }
-    
+
     // collision detection - critter against solid obstacles
     public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithCritter(critter);
     }
 
+    // prints general and detailed information about solid and fluid chunks
     public void printInfo() {
         levelContainer.getSolidChunks().printInfo();
         levelContainer.getFluidChunks().printInfo();
     }
-    
+
     public LevelContainer getLevelContainer() {
         return levelContainer;
     }

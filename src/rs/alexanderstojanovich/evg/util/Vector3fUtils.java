@@ -33,7 +33,7 @@ public class Vector3fUtils {
         final int xh3 = ~(xh1 * 103) ^ (~xh2 * 107) ^ (xh1 * 109);
         return xh3;
     }
-    
+
     public static byte[] vec3fToByteArray(Vector3f vector) {
         byte[] buffer = new byte[12];
         int x = Float.floatToIntBits(vector.x);

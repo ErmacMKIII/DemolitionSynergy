@@ -127,7 +127,7 @@ public final class Chunk { // some operations are mutually exclusive
 
     public void addBlock(Block block) {
         LevelContainer.putBlock(block);
-        
+
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> tuple = getTuple(blockTexture, blockFaceBits);
@@ -147,7 +147,7 @@ public final class Chunk { // some operations are mutually exclusive
 
     public synchronized void removeBlock(Block block) {
         LevelContainer.removeBlock(block);
-        
+
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple<Blocks, Integer, Integer, String, Integer> target = getTuple(blockTexture, blockFaceBits);

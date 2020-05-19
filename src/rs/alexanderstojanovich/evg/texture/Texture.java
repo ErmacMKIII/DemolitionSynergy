@@ -57,7 +57,7 @@ public class Texture {
 
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
-    
+
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
     static {
