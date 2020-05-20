@@ -16,13 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.intrface.Console;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -47,6 +48,8 @@ public class Renderer extends Thread implements Executor {
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
+
+    public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
 
     public Renderer(GameObject gameObject) {
         super("Renderer");
@@ -158,7 +161,7 @@ public class Renderer extends Thread implements Executor {
 
             // lastly it executes the console tasks
             FutureTask<Boolean> task;
-            while ((task = Console.TASK_QUEUE.poll()) != null) {
+            while ((task = TASK_QUEUE.poll()) != null) {
                 execute(task);
             }
         }

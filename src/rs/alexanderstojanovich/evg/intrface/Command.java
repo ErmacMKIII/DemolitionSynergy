@@ -210,6 +210,9 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
+                GameObject gameObject = GameObject.getInstance();
+                gameObject.getIntrface().getScreenText().setEnabled(true);
+                gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 success = true;
                 break;
             case EXIT:

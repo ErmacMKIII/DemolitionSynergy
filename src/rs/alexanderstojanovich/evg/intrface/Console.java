@@ -16,16 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
@@ -34,6 +28,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.Renderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -51,8 +46,6 @@ public final class Console {
     private boolean enabled = false;
 
     public static final int HISTORY_CAPACITY = 12;
-
-    public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
 
     public Console() {
         this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
@@ -109,7 +102,7 @@ public final class Console {
                             } else if (command.isRendererCommand()) {
                                 boolean result = false;
                                 FutureTask<Boolean> consoleTask = new FutureTask<Boolean>(command);
-                                TASK_QUEUE.add(consoleTask);
+                                Renderer.TASK_QUEUE.add(consoleTask);
                                 try {
                                     // waits for renderer to execute the task                       
                                     result = consoleTask.get();

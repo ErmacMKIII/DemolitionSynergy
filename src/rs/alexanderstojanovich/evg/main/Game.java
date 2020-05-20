@@ -16,21 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Arrays;
-import javax.imageio.ImageIO;
+import java.util.concurrent.FutureTask;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -384,36 +379,8 @@ public class Game {
                     LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    File screenDir = new File(SCREENSHOTS);
-                    if (!screenDir.isDirectory() && !screenDir.exists()) {
-                        screenDir.mkdir();
-                    }
-                    LocalDateTime now = LocalDateTime.now();
-                    File screenshot = new File(SCREENSHOTS + File.separator
-                            + "dsynergy-" + now.getYear()
-                            + "-" + now.getMonthValue()
-                            + "-" + now.getDayOfMonth()
-                            + "_" + now.getHour()
-                            + "-" + now.getMinute()
-                            + "-" + now.getSecond()
-                            + "-" + now.getNano() / 1E6 // one million
-                            + ".png");
-                    if (screenshot.exists()) {
-                        screenshot.delete();
-                    }
-                    synchronized (GameObject.OBJ_MUTEX) {
-                        GameObject.MY_WINDOW.loadContext();
-                        GL.setCapabilities(MasterRenderer.getGlCaps());
-                        try {
-                            ImageIO.write(GameObject.MY_WINDOW.getScreen(), "PNG", screenshot);
-                        } catch (IOException ex) {
-                            DSLogger.reportError(ex.getMessage(), ex);
-                        }
-                        GL.setCapabilities(null);
-                        Window.unloadContext();
-                    }
-                    gameObject.getIntrface().getScreenText().setEnabled(true);
-                    gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
+                    FutureTask<Boolean> task = new FutureTask<Boolean>(Command.SCREENSHOT);
+                    Renderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {

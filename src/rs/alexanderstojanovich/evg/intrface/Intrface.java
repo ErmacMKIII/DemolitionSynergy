@@ -18,13 +18,10 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -224,19 +221,72 @@ public class Intrface {
                     case 0:
                         command = Command.FPS_MAX;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
                         break;
                     case 1:
+                        command = Command.RESOLUTION;
+                        String giveCurrent = (String) options.get(selected).getValue().giveCurrent();
+                        String things[] = giveCurrent.split("x");
+                        command.getArgs().add(Integer.parseInt(things[0]));
+                        command.getArgs().add(Integer.parseInt(things[1]));
+                        Command.execute(command);
+                        break;
+                    case 2:
+                        String fullscreen = (String) options.get(selected).getValue().giveCurrent();
+                        switch (fullscreen) {
+                            case "ON":
+                                command = Command.FULLSCREEN;
+                                break;
+                            case "OFF":
+                                command = Command.WINDOWED;
+                                break;
+                        }
+                        Command.execute(command);
+                        break;
+                    case 3:
+                        String vsync = (String) options.get(selected).getValue().giveCurrent();
+                        command = Command.VSYNC;
+                        switch (vsync) {
+                            case "ON":
+                                command.getArgs().add(true);
+                                break;
+                            case "OFF":
+                                command.getArgs().add(false);
+                                break;
+                        }
+                        FutureTask<Boolean> task = new FutureTask<Boolean>(command);
+                        Renderer.TASK_QUEUE.add(task);
+                        break;
+                    case 4:
+                        String waterEffects = (String) options.get(selected).getValue().giveCurrent();
+                        command = Command.WATER_EFFECTS;
+                        switch (waterEffects) {
+                            case "ON":
+                                command.getArgs().add(true);
+                                break;
+                            case "OFF":
+                                command.getArgs().add(false);
+                                break;
+                        }
+                        Command.execute(command);
+                        break;
+                    case 5:
+                        float msens = (float) options.get(selected).getValue().giveCurrent();
+                        command = Command.MOUSE_SENSITIVITY;
+                        command.getArgs().add(msens);
+                        Command.execute(command);
                         break;
                     case 6:
                         command = Command.MUSIC_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
                         break;
                     case 7:
                         command = Command.SOUND_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
                         break;
                 }
-                Command.execute(command);
             }
         };
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
