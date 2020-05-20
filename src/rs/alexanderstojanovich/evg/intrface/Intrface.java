@@ -69,7 +69,6 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        LevelContainer levelContainer = gameObject.getLevelContainer();
         AudioPlayer musicPlayer = gameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
@@ -138,7 +137,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.saveLevelToFile(command);
+                boolean ok = gameObject.saveLevelToFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -152,7 +151,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.loadLevelFromFile(command);
+                boolean ok = gameObject.loadLevelFromFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -166,7 +165,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.generateRandomLevel(Integer.valueOf(command));
+                boolean ok = gameObject.generateRandomLevel(Integer.valueOf(command));
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -178,7 +177,7 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
-                if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
@@ -327,7 +326,7 @@ public class Intrface {
                 switch (s) {
                     case "START NEW LEVEL":
                         progText.setEnabled(true);
-                        levelContainer.startNewLevel();
+                        gameObject.startNewLevel();
                         Game.setCurrentMode(Mode.EDITOR);
                         break;
                     case "GENERATE RANDOM LEVEL":

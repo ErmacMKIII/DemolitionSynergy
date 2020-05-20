@@ -24,12 +24,14 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 
 /**
  *
  * @author Coa
  */
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
+    // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
     public static final String TITLE = "Demolition Synergy - v19 TITANIUM";
 
@@ -40,6 +42,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final LevelContainer levelContainer;
     private final WaterRenderer waterRenderer;
+    private final RandomLevelGenerator randomLevelGenerator;
 
     private final Intrface intrface;
 
@@ -53,7 +56,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
-        this.waterRenderer = new WaterRenderer(this);
+        this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
+        this.waterRenderer = new WaterRenderer(levelContainer);
         this.intrface = new Intrface(this);
     }
 
@@ -65,9 +69,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return instance;
     }
 
+    // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
     public synchronized void update(float deltaTime) {
-        levelContainer.update(deltaTime);
+        if (!levelContainer.isWorking()) {
+            levelContainer.update(deltaTime);
+        }
         intrface.update();
         intrface.setCollText(assertCollision);
     }
@@ -75,15 +82,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // requires context to be set in the proper thread (call only from renderer)
     public synchronized void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
-        if (!levelContainer.isWorking()) {
+        if (levelContainer.isWorking()) {
+            intrface.getProgText().setEnabled(true);
+            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
+        } else {
             levelContainer.render();
             if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
                 waterRenderer.render();
             }
             intrface.getProgText().setEnabled(false);
-        } else {
-            intrface.getProgText().setEnabled(true);
-            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
         intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
@@ -91,6 +98,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         MY_WINDOW.render();
     }
 
+    // -------------------------------------------------------------------------
     // hint to the render that objects should be buffered
     public synchronized void unbuffer() {
         levelContainer.getSolidChunks().setBuffered(false);
@@ -111,6 +119,32 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public synchronized void animate() {
         levelContainer.animate();
     }
+
+    // -------------------------------------------------------------------------
+    // Called from concurrent thread
+    public void startNewLevel() {
+        levelContainer.startNewLevel();
+    }
+
+    // Called from concurrent thread
+    public boolean loadLevelFromFile(String fileName) {
+        return levelContainer.loadLevelFromFile(fileName);
+    }
+
+    // Called from concurrent thread
+    public boolean saveLevelToFile(String fileName) {
+        return levelContainer.saveLevelToFile(fileName);
+    }
+
+    // Called from concurrent thread
+    public boolean generateRandomLevel(int numberOfBlocks) {
+        return levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+    }
+
+    public boolean isWorking() {
+        return levelContainer.isWorking();
+    }
+    // -------------------------------------------------------------------------
 
     // destroys the window
     public void destroy() {

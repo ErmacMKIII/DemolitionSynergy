@@ -41,7 +41,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  *
  * @author Coa
  */
-public final class Chunk { // some operations are mutually exclusive
+public class Chunk { // some operations are mutually exclusive
 
     public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
@@ -145,7 +145,7 @@ public final class Chunk { // some operations are mutually exclusive
         buffered = false;
     }
 
-    public synchronized void removeBlock(Block block) {
+    public void removeBlock(Block block) {
         LevelContainer.removeBlock(block);
 
         String blockTexture = block.texName;
@@ -203,7 +203,7 @@ public final class Chunk { // some operations are mutually exclusive
         tuple.setC(mat4Vbo);
     }
 
-    public synchronized void bufferAll() {
+    public void bufferAll() {
         if (!cached) {
             for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
                 Blocks blocks = tuple.getA();
@@ -215,13 +215,13 @@ public final class Chunk { // some operations are mutually exclusive
         }
     }
 
-    public synchronized void animate() { // call only for fluid blocks
+    public void animate() { // call only for fluid blocks
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             tuple.getA().animate();
         }
     }
 
-    public synchronized void prepare() { // call only for fluid blocks before rendering        
+    public void prepare() { // call only for fluid blocks before rendering        
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             Blocks blocks = tuple.getA();
             blocks.prepare();
@@ -236,7 +236,7 @@ public final class Chunk { // some operations are mutually exclusive
     }
 
     // it renders all of them instanced if they're visible
-    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleSet.isEmpty() && visible) {
             Texture.enable();
 
@@ -319,7 +319,7 @@ public final class Chunk { // some operations are mutually exclusive
     }
 
     // deallocates Chunk from graphic card
-    public synchronized void release() {
+    public void release() {
         if (buffered && !cached) {
             //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
             //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
@@ -389,7 +389,7 @@ public final class Chunk { // some operations are mutually exclusive
         return size;
     }
 
-    public synchronized List<Block> getList() {
+    public List<Block> getList() {
         List<Block> result = new GapList<>();
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             result.addAll(tuple.getA().getBlockList());
@@ -397,7 +397,7 @@ public final class Chunk { // some operations are mutually exclusive
         return result;
     }
 
-    public synchronized void saveToMemory() {
+    public void saveToMemory() {
         if (!buffered && !cached) {
             List<Block> blocks = getList();
             pos = 0;
@@ -421,7 +421,7 @@ public final class Chunk { // some operations are mutually exclusive
         }
     }
 
-    public synchronized void loadFromMemory() {
+    public void loadFromMemory() {
         if (!buffered && cached) {
             pos = 1;
             int len = ((memory[pos + 1] & 0xFF) << 8) | (memory[pos] & 0xFF);

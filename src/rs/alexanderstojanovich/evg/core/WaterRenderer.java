@@ -34,19 +34,16 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class WaterRenderer {
 
-    private final GameObject gameObject;
+    private final LevelContainer levelContainer;
     private final Set<Float> waterHeights = new HashSet<>();
-    private final FrameBuffer frameBuffer;
-    private final Camera camera;
+    private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
+    private final Camera camera = new Camera();
 
-    public WaterRenderer(GameObject gameObject) {
-        this.gameObject = gameObject;
-        this.frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
-        this.camera = new Camera();
+    public WaterRenderer(LevelContainer levelContainer) {
+        this.levelContainer = levelContainer;
     }
 
-    public void refresh() { // call this in update (renderer)
-        LevelContainer levelContainer = gameObject.getLevelContainer();
+    public void refresh() { // call this in update (renderer)        
         if (levelContainer.isWorking()
                 || levelContainer.getProgress() > 0.0f
                 || levelContainer.getLevelActors().getPlayer() == null) {
@@ -85,7 +82,6 @@ public class WaterRenderer {
     }
 
     private void updateCamera(float waterHeight) {
-        LevelContainer levelContainer = gameObject.getLevelContainer();
         camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
         camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
         camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
@@ -95,7 +91,7 @@ public class WaterRenderer {
     private void capture(float waterHeight) {
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        gameObject.getLevelContainer().render(camera);
+        levelContainer.render(camera);
     }
 
     public void render() {
@@ -124,6 +120,10 @@ public class WaterRenderer {
 
     public Camera getCamera() {
         return camera;
+    }
+
+    public LevelContainer getLevelContainer() {
+        return levelContainer;
     }
 
 }

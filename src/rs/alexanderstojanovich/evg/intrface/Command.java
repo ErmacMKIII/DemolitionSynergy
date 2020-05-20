@@ -135,9 +135,12 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
         boolean success = false;
         switch (command) {
             case FPS_MAX:
-                Game.setFpsMax((int) command.args.get(0));
-                Renderer.setFpsTicks(0.0);
-                success = true;
+                int fpsMax = (int) command.args.get(0);
+                if (fpsMax > 0 && fpsMax <= 1E6) {
+                    Game.setFpsMax(fpsMax);
+                    Renderer.setFpsTicks(0.0);
+                    success = true;
+                }
                 break;
             case RESOLUTION:
                 success = GameObject.MY_WINDOW.setResolution((int) command.args.get(0), (int) command.args.get(1));
