@@ -486,10 +486,12 @@ public class Game {
             }
 
             if (GLFW.glfwGetTime() > timer1 + 0.25) {
-                if (waterEffects) {
-                    gameObject.refresh();
+                if (!gameObject.isWorking()) { // this prevents locking monitor unnecessarily
+                    if (waterEffects) {
+                        gameObject.refresh();
+                    }
+                    gameObject.patch();
                 }
-                gameObject.patch();
                 timer1 += 0.25;
             }
         }

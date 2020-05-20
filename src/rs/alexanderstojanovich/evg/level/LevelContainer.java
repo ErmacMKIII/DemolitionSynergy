@@ -45,7 +45,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  *
  * @author Coa
  */
-public final class LevelContainer implements GravityEnviroment {
+public class LevelContainer implements GravityEnviroment {
 
     private final GameObject gameObject;
 
@@ -500,13 +500,13 @@ public final class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public synchronized void animate() {
+    public void animate() {
         if (!working) {
             fluidChunks.animate();
         }
     }
 
-    public synchronized boolean isCameraInFluid() {
+    public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
 
@@ -524,7 +524,7 @@ public final class LevelContainer implements GravityEnviroment {
         return yea;
     }
 
-    public synchronized boolean hasCollisionWithCritter(Critter critter) {
+    public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
@@ -572,7 +572,7 @@ public final class LevelContainer implements GravityEnviroment {
 //        solidChunks.setBuffered(false);
     }
 
-    public synchronized void patch() {
+    public void patch() {
         if (!working) {
             Camera obsCamera = levelActors.getPlayer().getCamera();
             Chunk.determineVisible(visibleChunks, obsCamera.getPos(), obsCamera.getFront());
@@ -597,7 +597,7 @@ public final class LevelContainer implements GravityEnviroment {
         }
     }
 
-    public synchronized void update(float deltaTime) { // call it externally from the main thread 
+    public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
             Camera obsCamera = levelActors.getPlayer().getCamera();
@@ -610,7 +610,7 @@ public final class LevelContainer implements GravityEnviroment {
         }
     }
 
-    public synchronized void render() { // render for regular level rendering
+    public void render() { // render for regular level rendering
         if (working) {
             return;
         }
@@ -677,7 +677,7 @@ public final class LevelContainer implements GravityEnviroment {
         }
     }
 
-    public synchronized void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -774,8 +774,8 @@ public final class LevelContainer implements GravityEnviroment {
         this.progress = progress;
     }
 
-    public boolean isWorking() {
-        return working;
+    public boolean isWorking() { // damn this one!
+        return working || progress > 0.0f;
     }
 
     public Chunks getSolidChunks() {

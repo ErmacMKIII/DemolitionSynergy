@@ -23,7 +23,6 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.level.Editor;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;

@@ -54,6 +54,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // everyone can access only one instance of the game object
     private static GameObject instance;
 
+    public enum State {
+        LOCKED, UNLOCKED
+    }
+
+    // private purpose (to know if object is locked or not)
+    private State access = State.UNLOCKED;
+
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
         this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
@@ -71,24 +78,28 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
-    public synchronized void update(float deltaTime) {
-        if (!levelContainer.isWorking()) {
-            levelContainer.update(deltaTime);
+    public void update(float deltaTime) {
+        if (!levelContainer.isWorking() && access != State.LOCKED) { // working check avoids locking the monitor
+            synchronized (this) {
+                levelContainer.update(deltaTime);
+            }
         }
         intrface.update();
         intrface.setCollText(assertCollision);
     }
 
     // requires context to be set in the proper thread (call only from renderer)
-    public synchronized void render() {
+    public void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
-        if (levelContainer.isWorking()) {
+        if (levelContainer.isWorking() || access == State.LOCKED) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else {
-            levelContainer.render();
-            if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
-                waterRenderer.render();
+            synchronized (this) {
+                levelContainer.render();
+                if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
+                    waterRenderer.render();
+                }
             }
             intrface.getProgText().setEnabled(false);
         }
@@ -122,23 +133,32 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // Called from concurrent thread
-    public void startNewLevel() {
+    public synchronized void startNewLevel() {
         levelContainer.startNewLevel();
     }
 
     // Called from concurrent thread
-    public boolean loadLevelFromFile(String fileName) {
-        return levelContainer.loadLevelFromFile(fileName);
+    public synchronized boolean loadLevelFromFile(String fileName) {
+        access = State.LOCKED;
+        boolean ok = levelContainer.loadLevelFromFile(fileName);
+        access = State.UNLOCKED;
+        return ok;
     }
 
     // Called from concurrent thread
-    public boolean saveLevelToFile(String fileName) {
-        return levelContainer.saveLevelToFile(fileName);
+    public synchronized boolean saveLevelToFile(String fileName) {
+        access = State.LOCKED;
+        boolean ok = levelContainer.saveLevelToFile(fileName);
+        access = State.UNLOCKED;
+        return ok;
     }
 
     // Called from concurrent thread
-    public boolean generateRandomLevel(int numberOfBlocks) {
-        return levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+    public synchronized boolean generateRandomLevel(int numberOfBlocks) {
+        access = State.LOCKED;
+        boolean ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        access = State.UNLOCKED;
+        return ok;
     }
 
     public boolean isWorking() {
@@ -155,7 +175,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // collision detection - critter against solid obstacles
-    public boolean hasCollisionWithCritter(Critter critter) {
+    public synchronized boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithCritter(critter);
     }
 
@@ -191,6 +211,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public Intrface getIntrface() {
         return intrface;
+    }
+
+    public RandomLevelGenerator getRandomLevelGenerator() {
+        return randomLevelGenerator;
     }
 
 }

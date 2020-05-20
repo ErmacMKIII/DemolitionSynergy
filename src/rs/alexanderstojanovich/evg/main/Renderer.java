@@ -29,7 +29,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -152,7 +151,7 @@ public class Renderer extends Thread implements Executor {
                     gameObject.getLevelContainer().setProgress(0.0f);
                 }
 
-                if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
+                if (!gameObject.isWorking()) {
                     if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
                         gameObject.animate();
                     }
@@ -167,6 +166,8 @@ public class Renderer extends Thread implements Executor {
             }
         }
 
+        // renderer is reaching end of life!
+        Window.unloadContext();
     }
 
     @Override

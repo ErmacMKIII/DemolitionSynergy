@@ -80,7 +80,7 @@ public class Chunk { // some operations are mutually exclusive
         this.solid = solid;
     }
 
-    public Tuple<Blocks, Integer, Integer, String, Integer> getTuple(String keyTexture, Integer keyFaceBits) {
+    private Tuple<Blocks, Integer, Integer, String, Integer> getTuple(String keyTexture, Integer keyFaceBits) {
         Tuple<Blocks, Integer, Integer, String, Integer> result = null;
         for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : tupleSet) {
             if (tuple.getD() != null && tuple.getD().equals(keyTexture)

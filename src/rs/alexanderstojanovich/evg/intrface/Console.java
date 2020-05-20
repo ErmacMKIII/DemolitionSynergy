@@ -37,7 +37,7 @@ import rs.alexanderstojanovich.evg.util.Pair;
  *
  * @author Coa
  */
-public final class Console {
+public class Console {
 
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
@@ -62,7 +62,7 @@ public final class Console {
         this.inText.setOffset(new Vector2f(1.0f, 0.0f));
     }
 
-    public synchronized void open() {
+    public void open() {
         if (input.length() == 0) {
             enabled = true;
 
