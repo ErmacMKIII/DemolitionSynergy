@@ -467,11 +467,12 @@ public class Game {
                 gameObject.update(deltaTime);
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
+                    observerDo();
                 } else if (currentMode == Mode.EDITOR) {
                     gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
                     editorDo();
+                    observerDo();
                 }
-                observerDo();
                 ups++;
                 upsTicks--;
                 updPasses++;

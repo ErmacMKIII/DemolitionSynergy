@@ -455,11 +455,11 @@ public class Intrface {
         return showHelp;
     }
 
-    public Dialog getSaveDialog() {
+    public ConcurrentDialog getSaveDialog() {
         return saveDialog;
     }
 
-    public Dialog getLoadDialog() {
+    public ConcurrentDialog getLoadDialog() {
         return loadDialog;
     }
 

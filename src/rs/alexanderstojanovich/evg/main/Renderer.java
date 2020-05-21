@@ -102,15 +102,13 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            if (fpsTicks >= 1.0) {
-                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                    gameObject.render();
-                    fps++;
-                    fpsTicks--;
-                    renPasses++;
-                }
-                renPasses = 0;
+            while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                gameObject.render();
+                fps++;
+                fpsTicks--;
+                renPasses++;
             }
+            renPasses = 0;
 
             // update text which shows ups and fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
