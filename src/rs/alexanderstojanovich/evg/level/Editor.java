@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -34,6 +35,7 @@ public class Editor {
     private static Block loaded = null;
 
     private static Block selectedNew = null;
+    private static int blockColorNum = 0;
 
     private static Block selectedCurr = null;
     private static int selectedCurrIndex = -1;
@@ -66,7 +68,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(gameObject)) {
-            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 1.0f, 0.0f), false);
+            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, false);
         }
 
         gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -99,7 +101,7 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
         }
 
@@ -132,7 +134,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), new Vector3f(1.0f, 1.0f, 0.0f), false);
+                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
         }
     }
@@ -182,7 +184,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 0.0f, 1.0f), false);
+                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
             }
         }
     }
@@ -225,7 +227,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(0.0f, 0.0f, 1.0f), false);
+                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
             }
         }
     }
@@ -267,7 +269,7 @@ public class Editor {
             cant = gameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         }
         if (cant) {
-            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), new Vector3f(1.0f, 0.0f, 0.0f), false);
+            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, false);
         }
         return cant;
     }
@@ -343,12 +345,49 @@ public class Editor {
         }
     }
 
+    public static void cycleBlockColor() {
+        if (selectedNew != null) {
+            switch (blockColorNum) {
+                case 0:
+                    selectedNew.setPrimaryColor(Vector3fColors.RED); // RED                
+                    break;
+                case 1:
+                    selectedNew.setPrimaryColor(Vector3fColors.GREEN); // GREEN
+                    break;
+                case 2:
+                    selectedNew.setPrimaryColor(Vector3fColors.BLUE); // BLUE
+                    break;
+                case 3:
+                    selectedNew.setPrimaryColor(Vector3fColors.CYAN); // CYAN
+                    break;
+                case 4:
+                    selectedNew.setPrimaryColor(Vector3fColors.MAGENTA); // MAGENTA
+                    break;
+                case 5:
+                    selectedNew.setPrimaryColor(Vector3fColors.YELLOW); // YELLOW
+                    break;
+                case 6:
+                    selectedNew.setPrimaryColor(Vector3fColors.WHITE); // WHITE
+                    break;
+            }
+            if (blockColorNum < 6) {
+                blockColorNum++;
+            } else {
+                blockColorNum = 0;
+            }
+        }
+    }
+
     public static Block getSelectedNew() {
         return selectedNew;
     }
 
     public static Block getSelectedCurr() {
         return selectedCurr;
+    }
+
+    public static int getBlockColorNum() {
+        return blockColorNum;
     }
 
     public static int getSelectedCurrIndex() {

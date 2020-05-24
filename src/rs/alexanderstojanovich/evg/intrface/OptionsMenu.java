@@ -47,14 +47,11 @@ public abstract class OptionsMenu extends Menu {
     }
 
     private void init() {
-        int index = 0;
         for (DynamicText item : items) {
             Pair<DynamicText, Combo> option = new Pair<>(new DynamicText(Texture.FONT, ""), new Combo());
             option.getKey().getPos().x = item.getPos().x;
-            option.getKey().getPos().x += (item.getContent().length() + 1) * items.get(index).getRelativeCharWidth();
             option.getKey().getPos().y = item.getPos().y;
             options.add(option);
-            index++;
         }
     }
 
@@ -146,8 +143,8 @@ public abstract class OptionsMenu extends Menu {
         if (enabled) {
             getValues();
             int longest = longestWord();
-            title.getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getRelativeCharWidth() * itemScale + pos.x;
+            title.setAlignment(alignmentAmount);
+            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
                 title.buffer();
@@ -155,16 +152,15 @@ public abstract class OptionsMenu extends Menu {
             title.render();
             int index = 0;
             for (DynamicText item : items) {
-                int itemDiff = longest - item.getContent().length();
-                item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.getRelativeCharWidth() * itemScale + pos.x;
+                item.setAlignment(alignmentAmount);
+                item.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.getRelativeCharWidth()) + pos.x;
                 item.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
 
                 if (!item.isBuffered()) {
                     item.buffer();
                 }
                 item.render();
-                options.get(index).getKey().getPos().x = item.getPos().x;
-                options.get(index).getKey().getPos().x += (item.getContent().length() + 1) * item.getRelativeCharWidth() * itemScale;
+                options.get(index).getKey().getPos().x = item.getPos().x + itemScale * (item.getRelativeWidth() + item.getRelativeCharWidth()) * (1.0f - alignmentAmount);
                 options.get(index).getKey().getPos().y = item.getPos().y;
                 if (!options.get(index).getKey().isBuffered()) {
                     options.get(index).getKey().buffer();
@@ -173,7 +169,8 @@ public abstract class OptionsMenu extends Menu {
                 index++;
             }
             iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getRelativeCharWidth() * itemScale;
+            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
+            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
             iterator.getPos().y = items.get(selected).getPos().y;
             iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {

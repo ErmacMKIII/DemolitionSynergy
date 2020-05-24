@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.core;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
-import rs.alexanderstojanovich.evg.main.GameObject;
 
 /**
  *

@@ -28,6 +28,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -39,7 +40,7 @@ public class Quad {
     private int height;
     private Texture texture;
 
-    private Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+    private Vector3f color = Vector3fColors.WHITE;
     private float scale = 1.0f;
 
     private Vector2f pos = new Vector2f();

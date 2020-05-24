@@ -62,15 +62,10 @@ public class DynamicText extends Text {
 
     public DynamicText(Texture texture, String content, Vector3f color, Vector2f pos) {
         super(texture, content, color, pos);
-        this.color = color;
-        this.pos = pos;
     }
 
     public DynamicText(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         super(texture, content, pos, charWidth, charHeight);
-        this.pos = pos;
-        this.charWidth = charWidth;
-        this.charHeight = charHeight;
     }
 
     protected void bufferVbo() {
@@ -87,11 +82,11 @@ public class DynamicText extends Text {
                 int k = i / 64;
                 int asciiCode = (int) (lines[l].charAt(i));
 
-                float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
-                float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
+                float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
+                float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j + offset.x;
-                float ydec = k + l * LINE_SPACING + offset.y;
+                float xinc = j - content.length() * alignment;
+                float ydec = k + l * LINE_SPACING;
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -130,6 +125,7 @@ public class DynamicText extends Text {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
+    @Override
     public void buffer() {
         bufferVbo();
         buffered = true;

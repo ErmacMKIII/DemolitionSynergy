@@ -30,6 +30,7 @@ import rs.alexanderstojanovich.evg.main.Renderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -71,27 +72,21 @@ public class Intrface {
         AudioPlayer musicPlayer = gameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-        updText = new DynamicText(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        updText.setOffset(new Vector2f(1.0f, 1.0f));
-        fpsText = new DynamicText(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
-        fpsText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        fpsText.setOffset(new Vector2f(1.0f, 1.0f));
+        updText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 1.0f));
+        fpsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
 
-        collText = new DynamicText(Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
-        collText.setOffset(new Vector2f(1.0f, -1.0f));
-        helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
-        helpText.setOffset(new Vector2f(1.0f, 1.0f));
+        collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
+        helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), Vector3fColors.WHITE, new Vector2f(-1.0f, 0.9f));
         helpText.setScale(0.625f);
         helpText.setEnabled(false);
-        progText = new DynamicText(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
-        progText.setOffset(new Vector2f(1.0f, -1.0f));
-        screenText = new DynamicText(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
-        screenText.setOffset(new Vector2f(1.0f, 1.0f));
+        progText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(-1.0f, -0.9f));
+        screenText = new DynamicText(Texture.FONT, "", Vector3fColors.WHITE, new Vector2f(-1.0f, -0.7f));
         screenText.setScale(0.625f);
-        gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
+        gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
+        gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+        crosshair.setColor(Vector3fColors.WHITE);
         List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
         mainMenuPairs.add(new Pair<>("SINGLE PLAYER", true));
         mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
@@ -124,11 +119,9 @@ public class Intrface {
             }
         };
         Quad logo = new Quad(232, 100, Texture.LOGO);
-        logo.getColor().x = 1.0f;
-        logo.getColor().y = 0.7f;
-        logo.getColor().z = 0.1f;
+        logo.setColor(new Vector3f(1.0f, 0.7f, 0.1f));
         mainMenu.setLogo(logo);
-        mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
+        mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
         saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
@@ -305,7 +298,7 @@ public class Intrface {
         optionsMenu.options.get(5).getValue().fetchFromArray(mouseSens, 1);
         optionsMenu.options.get(6).getValue().fetchFromArray(volume, 10);
         optionsMenu.options.get(7).getValue().fetchFromArray(volume, 10);
-        optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
+        optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();
         editorMenuPairs.add(new Pair<>("START NEW LEVEL", true));
@@ -343,20 +336,16 @@ public class Intrface {
                 }
             }
         };
-        editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
+        editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
     }
 
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.getColor().x = 1.0f;
-            collText.getColor().y = 0.0f;
-            collText.getColor().z = 0.0f;
+            collText.setColor(Vector3fColors.RED);
         } else {
             collText.setContent("No Collision");
-            collText.getColor().x = 0.0f;
-            collText.getColor().y = 1.0f;
-            collText.getColor().z = 0.0f;
+            collText.setColor(Vector3fColors.GREEN);
         }
     }
 

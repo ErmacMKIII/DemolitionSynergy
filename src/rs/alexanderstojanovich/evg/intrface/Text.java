@@ -25,12 +25,17 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
  * @author Coa
  */
 public class Text {
+
+    public static final float ALIGNMENT_LEFT = 0.0f;
+    public static final float ALIGNMENT_CENTER = 0.5f;
+    public static final float ALIGNMENT_RIGHT = 1.0f;
 
     protected Texture texture;
     protected String content;
@@ -47,13 +52,13 @@ public class Text {
     public static final int STD_FONT_WIDTH = 24;
     public static final int STD_FONT_HEIGHT = 24;
 
-    protected Vector2f offset = new Vector2f();
+    protected float alignment = ALIGNMENT_LEFT; // per character alignment
 
     protected boolean buffered = false;
 
     protected Vector2f pos = new Vector2f();
     protected float scale = 1.0f;
-    protected Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+    protected Vector3f color = Vector3fColors.WHITE;
 
     protected int charWidth = STD_FONT_WIDTH;
     protected int charHeight = STD_FONT_HEIGHT;
@@ -64,6 +69,7 @@ public class Text {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
+        alignToChar();
     }
 
     public Text(Texture texture, String content, Vector3f color, Vector2f pos) {
@@ -72,6 +78,7 @@ public class Text {
         this.color = color;
         this.pos = pos;
         this.enabled = true;
+        alignToChar();
     }
 
     public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
@@ -80,6 +87,7 @@ public class Text {
         this.enabled = true;
         this.charWidth = charWidth;
         this.charHeight = charHeight;
+        alignToChar();
     }
 
     private void init() {
@@ -92,11 +100,11 @@ public class Text {
                 int k = i / 64;
                 int asciiCode = (int) (lines[l].charAt(i));
 
-                float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
-                float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
+                float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
+                float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j + offset.x;
-                float ydec = k + l * LINE_SPACING + offset.y;
+                float xinc = j - content.length() * alignment;
+                float ydec = k + l * LINE_SPACING;
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -157,6 +165,23 @@ public class Text {
         return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
+    // it aligns position to edges so drawn characters are not cut out
+    private void alignToChar() {
+        float srw = scale * getRelativeCharWidth(); // scaled relative width
+        float srh = scale * getRelativeCharHeight(); // scaled relative height                                                                 
+
+        float xrem = pos.x % srw;
+        if (xrem != 0.0f) {
+            pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
+        }
+
+        float yrem = pos.y % srh;
+        if (yrem != 0.0f) {
+            pos.y -= yrem;
+        }
+
+    }
+
     public Window getMyWindow() {
         return GameObject.MY_WINDOW;
     }
@@ -194,12 +219,12 @@ public class Text {
         return pairList;
     }
 
-    public Vector2f getOffset() {
-        return offset;
+    public float getAlignment() {
+        return alignment;
     }
 
-    public void setOffset(Vector2f offset) {
-        this.offset = offset;
+    public void setAlignment(float alignment) {
+        this.alignment = alignment;
     }
 
     public boolean isBuffered() {

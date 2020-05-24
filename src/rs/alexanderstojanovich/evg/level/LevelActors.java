@@ -21,6 +21,7 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -28,7 +29,7 @@ import rs.alexanderstojanovich.evg.critter.Player;
  */
 public class LevelActors {
 
-    private final Player player = new Player(null, "icosphere.obj", "marble.png", new Vector3f(10.5f, 0.0f, -3.0f), new Vector3f(1.0f, 1.0f, 1.0f), 0.25f);
+    private final Player player = new Player(null, "icosphere.obj", "marble.png", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 0.25f);
     private final List<NPC> npcList = new GapList<>();
 
     public void freeze() {

@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -42,9 +43,6 @@ public class Renderer extends Thread implements Executor {
 
     private static double fpsTicks = 0.0;
     private static int fps = 0;
-
-    private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 5;
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
@@ -92,7 +90,7 @@ public class Renderer extends Thread implements Executor {
 
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
+            fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
@@ -102,13 +100,11 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+            if (fpsTicks >= 1.0) {
                 gameObject.render();
                 fps++;
                 fpsTicks--;
-                renPasses++;
             }
-            renPasses = 0;
 
             // update text which shows ups and fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
@@ -199,10 +195,6 @@ public class Renderer extends Thread implements Executor {
 
     public static void setFps(int fps) {
         Renderer.fps = fps;
-    }
-
-    public static int getRenPasses() {
-        return renPasses;
     }
 
 }

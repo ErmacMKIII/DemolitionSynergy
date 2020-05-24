@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -30,6 +31,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -50,9 +52,8 @@ public class Game {
     public static final float EPSILON = 0.001f;
 
     private static int ups; // current update per second    
-    private static int fpsMax; // fps max or fps cap     
-    private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 5;
+    private static int fpsMax; // fps max or fps cap  
+
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
@@ -68,7 +69,6 @@ public class Game {
     private boolean moveMouse = false;
 
     private int crosshairColorNum = 0;
-    private int blockColorNum = 0;
 
     private final boolean[] mouseButtons = new boolean[8];
 
@@ -269,81 +269,38 @@ public class Game {
         }
     }
 
-    private void setCrosshairColor(float red, float green, float blue) {
-        gameObject.getIntrface().getCrosshair().getColor().x = red;
-        gameObject.getIntrface().getCrosshair().getColor().y = green;
-        gameObject.getIntrface().getCrosshair().getColor().z = blue;
-    }
-
-    private void setNewBlockColor(float red, float green, float blue) {
-        if (Editor.getSelectedNew() != null) {
-            Editor.getSelectedNew().getPrimaryColor().x = red;
-            Editor.getSelectedNew().getPrimaryColor().y = green;
-            Editor.getSelectedNew().getPrimaryColor().z = blue;
-        }
+    private void setCrosshairColor(Vector3f color) {
+        gameObject.getIntrface().getCrosshair().setColor(color);
     }
 
     private void cycleCrosshairColor() {
         switch (crosshairColorNum) {
             case 0:
-                setCrosshairColor(1.0f, 0.0f, 0.0f); // RED                
+                setCrosshairColor(Vector3fColors.RED); // RED                
                 break;
             case 1:
-                setCrosshairColor(0.0f, 1.0f, 0.0f); // GREEN
+                setCrosshairColor(Vector3fColors.GREEN); // GREEN
                 break;
             case 2:
-                setCrosshairColor(0.0f, 0.0f, 1.0f); // BLUE
+                setCrosshairColor(Vector3fColors.BLUE); // BLUE
                 break;
             case 3:
-                setCrosshairColor(0.0f, 1.0f, 1.0f); // CYAN
+                setCrosshairColor(Vector3fColors.CYAN); // CYAN
                 break;
             case 4:
-                setCrosshairColor(1.0f, 0.0f, 1.0f); // MAGENTA
+                setCrosshairColor(Vector3fColors.MAGENTA); // MAGENTA
                 break;
             case 5:
-                setCrosshairColor(1.0f, 1.0f, 0.0f); // YELLOW
+                setCrosshairColor(Vector3fColors.YELLOW); // YELLOW
                 break;
             case 6:
-                setCrosshairColor(1.0f, 1.0f, 1.0f); // WHITE
+                setCrosshairColor(Vector3fColors.WHITE); // WHITE
                 break;
         }
         if (crosshairColorNum < 6) {
             crosshairColorNum++;
         } else {
             crosshairColorNum = 0;
-        }
-    }
-
-    private void cycleBlockColor() {
-        if (Editor.getSelectedNew() != null) {
-            switch (blockColorNum) {
-                case 0:
-                    setNewBlockColor(1.0f, 0.0f, 0.0f); // RED                
-                    break;
-                case 1:
-                    setNewBlockColor(0.0f, 1.0f, 0.0f); // GREEN
-                    break;
-                case 2:
-                    setNewBlockColor(0.0f, 0.0f, 1.0f); // BLUE
-                    break;
-                case 3:
-                    setNewBlockColor(0.0f, 1.0f, 1.0f); // CYAN
-                    break;
-                case 4:
-                    setNewBlockColor(1.0f, 0.0f, 1.0f); // MAGENTA
-                    break;
-                case 5:
-                    setNewBlockColor(1.0f, 1.0f, 0.0f); // YELLOW
-                    break;
-                case 6:
-                    setNewBlockColor(1.0f, 1.0f, 1.0f); // WHITE
-                    break;
-            }
-            if (blockColorNum < 6) {
-                blockColorNum++;
-            } else {
-                blockColorNum = 0;
-            }
         }
     }
 
@@ -384,7 +341,7 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    cycleBlockColor();
+                    Editor.cycleBlockColor();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Editor.selectPrevTexture(gameObject);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -461,7 +418,7 @@ public class Game {
                 break;
             }
 
-            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+            while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.update(deltaTime);
@@ -475,9 +432,7 @@ public class Game {
                 }
                 ups++;
                 upsTicks--;
-                updPasses++;
             }
-            updPasses = 0;
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
@@ -580,10 +535,6 @@ public class Game {
 
     public static float getYoffset() {
         return yoffset;
-    }
-
-    public static int getUpdPasses() {
-        return updPasses;
     }
 
 }

@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import org.joml.Vector2f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
@@ -33,7 +32,7 @@ import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
-    public static final String TITLE = "Demolition Synergy - v19 TITANIUM";
+    public static final String TITLE = "Demolition Synergy - v20 URANIUM";
 
     public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
 
@@ -95,7 +94,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(false);
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-        intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
         intrface.render();
         MY_WINDOW.render();
     }
