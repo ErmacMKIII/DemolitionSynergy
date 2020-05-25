@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Console {
 
@@ -58,9 +58,10 @@ public class Console {
         this.inText = new DynamicText(Texture.FONT, "]_");
         this.inText.setColor(Vector3fColors.GREEN);
         this.inText.pos.x = -1.0f;
-        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
 
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
+        this.inText.alignToNextChar();
     }
 
     public void open() {
@@ -68,7 +69,6 @@ public class Console {
             enabled = true;
 
             inText.setContent("]_");
-            inText.setColor(Vector3fColors.GREEN);
 
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
@@ -158,7 +158,9 @@ public class Console {
             }
             panel.render();
             inText.pos.x = -1.0f;
-            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
+            inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
+
             if (!inText.isBuffered()) {
                 inText.buffer();
             }
@@ -167,9 +169,9 @@ public class Console {
             for (Pair<DynamicText, Quad> item : history) {
                 DynamicText text = item.getKey();
                 Quad quad = item.getValue();
-                text.pos.x = -1.0f;
-                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 2) - 1.0f;
-                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * Text.LINE_SPACING;
+                text.pos.x = inText.pos.x;
+                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * 2.0f;
+                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1) - 1.0f;
                 quad.getPos().y = text.pos.y;
                 if (!text.isBuffered()) {
                     text.buffer();

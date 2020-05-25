@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Text {
 
@@ -69,7 +69,6 @@ public class Text {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
-        alignToChar();
     }
 
     public Text(Texture texture, String content, Vector3f color, Vector2f pos) {
@@ -78,7 +77,6 @@ public class Text {
         this.color = color;
         this.pos = pos;
         this.enabled = true;
-        alignToChar();
     }
 
     public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
@@ -87,7 +85,6 @@ public class Text {
         this.enabled = true;
         this.charWidth = charWidth;
         this.charHeight = charHeight;
-        alignToChar();
     }
 
     private void init() {
@@ -165,21 +162,17 @@ public class Text {
         return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
-    // it aligns position to edges so drawn characters are not cut out
-    private void alignToChar() {
+    // it aligns position to next char position (useful if characters are cut out or so)
+    // call this method only once!
+    public void alignToNextChar() {
         float srw = scale * getRelativeCharWidth(); // scaled relative width
         float srh = scale * getRelativeCharHeight(); // scaled relative height                                                                 
 
         float xrem = pos.x % srw;
-        if (xrem != 0.0f) {
-            pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
-        }
+        pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
 
         float yrem = pos.y % srh;
-        if (yrem != 0.0f) {
-            pos.y -= yrem;
-        }
-
+        pos.y -= yrem;
     }
 
     public Window getMyWindow() {

@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Intrface {
 
@@ -73,17 +73,24 @@ public class Intrface {
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
         updText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 1.0f));
+        updText.alignToNextChar();
         fpsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
+        fpsText.alignToNextChar();
 
         collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
+        collText.alignToNextChar();
         helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), Vector3fColors.WHITE, new Vector2f(-1.0f, 0.9f));
         helpText.setScale(0.625f);
+        helpText.alignToNextChar();
         helpText.setEnabled(false);
         progText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(-1.0f, -0.9f));
+        progText.alignToNextChar();
         screenText = new DynamicText(Texture.FONT, "", Vector3fColors.WHITE, new Vector2f(-1.0f, -0.7f));
         screenText.setScale(0.625f);
+        screenText.alignToNextChar();
         gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
         gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
+        gameModeText.alignToNextChar();
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         crosshair.setColor(Vector3fColors.WHITE);

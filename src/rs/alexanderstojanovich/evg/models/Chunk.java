@@ -1,5 +1,5 @@
-/*
- * Copyright (VISION) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR MODULATOR PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -39,7 +39,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Chunk { // some operations are mutually exclusive
 
@@ -52,8 +52,6 @@ public class Chunk { // some operations are mutually exclusive
     public static final int CHUNKS_NUM = 2 * Math.round(MODULATOR / (float) DIVIDER) + 1;
 
     public static final float VISION = 100.0f; // determines visibility
-
-    public static final float HALF_DIAGONAL = (float) (Math.sqrt(3.0) / 2.0);
 
     // id of the chunk (signed)
     private final int id;
