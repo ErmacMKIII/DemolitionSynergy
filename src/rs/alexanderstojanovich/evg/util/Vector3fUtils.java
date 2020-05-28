@@ -30,8 +30,7 @@ public class Vector3fUtils {
         final int h3 = Float.floatToIntBits(vector.z);
         final int xh1 = ~(h1 ^ ((h2 >>> 16) | (h2 << 16))) ^ ((h3 >>> 16) | (h3 << 16));
         final int xh2 = ((h1 >>> 24) | (h1 << 24)) ^ ((h2 >>> 16) | (h2 << 16)) ^ ~((h3 >>> 8) | (h3 << 8));
-        final int xh3 = ~(xh1 * 103) ^ (~xh2 * 107) ^ (xh1 * 109);
-        return xh3;
+        return ~(xh1 * 103) ^ (~xh2 * 107);
     }
 
     public static byte[] vec3fToByteArray(Vector3f vector) {

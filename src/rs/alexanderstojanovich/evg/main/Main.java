@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -29,17 +30,20 @@ public class Main {
 
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
-    // makes default configuration
-    public static final Configuration CONFIG = new Configuration();
-
     public static void main(String[] args) {
-        CONFIG.readConfigFile(); // this line reads if input file exists otherwise uses defaults
-        boolean debug = CONFIG.isDebug(); // determine debug flag (write in a log file or not)
+        Configuration inCfg = new Configuration();
+        inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
+        boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
         DSLogger.init(debug); // this is important initializing Apache logger
         MasterAudio.init(); // audio init before game loading            
         //----------------------------------------------------------------------                
+        boolean ok = GameObject.MY_WINDOW.setResolution(inCfg.getWidth(), inCfg.getHeight());
+        if (!ok) {
+            DSLogger.reportError("Game unable to set resolution!", null);
+        }
+        GameObject.MY_WINDOW.centerTheWindow();
         GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
-        Game game = new Game(gameObject); // init game with given game object
+        Game game = new Game(inCfg, gameObject); // init game with given configuration and game object
         Renderer renderer = new Renderer(gameObject); // init renderer with given game object
         DSLogger.reportInfo("Game initialized.", null);
         //---------------------------------------------------------------------- 
@@ -50,6 +54,7 @@ public class Main {
                 DSLogger.reportInfo("Renderer started.", null);
             }
         });
+        SERVICE.shutdown();
         DSLogger.reportInfo("Game will start soon.", null);
         game.go();
         try {
@@ -62,8 +67,8 @@ public class Main {
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
         MasterAudio.destroy(); // destroy context after writting to the ini file                                
-        //----------------------------------------------------------------------        
-        SERVICE.shutdown();
+        //---------------------------------------------------------------------- 
+        Chunk.deleteCache();
         DSLogger.reportInfo("Game finished.", null);
     }
 

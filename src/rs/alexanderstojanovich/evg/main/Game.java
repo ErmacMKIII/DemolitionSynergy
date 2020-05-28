@@ -54,6 +54,9 @@ public class Game {
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap  
 
+    private static int updPasses = 0;
+    public static final int UPD_MAX_PASSES = 5;
+
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
@@ -83,6 +86,7 @@ public class Game {
     public static final String DATA_ZIP = "dsynergy.zip";
 
     public static final String SCREENSHOTS = "screenshots";
+    public static final String CACHE = "cache";
 
     public static final String INTRFACE_ENTRY = "intrface/";
     public static final String PLAYER_ENTRY = "player/";
@@ -99,24 +103,24 @@ public class Game {
     };
     private static Mode currentMode = Mode.FREE;
 
-    public Game(GameObject gameObject) {
+    public Game(Configuration inCfg, GameObject gameObject) {
         this.gameObject = gameObject;
-        Game.fpsMax = Main.CONFIG.getFpsCap();
-        if (Main.CONFIG.isFullscreen()) {
+        Game.fpsMax = inCfg.getFpsCap();
+        if (inCfg.isFullscreen()) {
             GameObject.MY_WINDOW.fullscreen();
         } else {
             GameObject.MY_WINDOW.windowed();
         }
-        if (Main.CONFIG.isVsync()) {
+        if (inCfg.isVsync()) {
             GameObject.MY_WINDOW.enableVSync();
         } else {
             GameObject.MY_WINDOW.disableVSync();
         }
         GameObject.MY_WINDOW.centerTheWindow();
-        waterEffects = Main.CONFIG.isWaterEffects();
+        waterEffects = inCfg.isWaterEffects();
         Arrays.fill(keys, false);
-        gameObject.getMusicPlayer().setGain(Main.CONFIG.getMusicVolume());
-        gameObject.getSoundFXPlayer().setGain(Main.CONFIG.getSoundFXVolume());
+        gameObject.getMusicPlayer().setGain(inCfg.getMusicVolume());
+        gameObject.getSoundFXPlayer().setGain(inCfg.getSoundFXVolume());
         initCallbacks();
     }
 
@@ -397,7 +401,6 @@ public class Game {
         gameObject.getMusicPlayer().play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
-        double timer1 = GLFW.glfwGetTime();
 
         ups = 0;
 
@@ -408,7 +411,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += -Math.expm1(-diff * Game.TPS);
+            upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
@@ -418,7 +421,7 @@ public class Game {
                 break;
             }
 
-            while (upsTicks >= 1.0) {
+            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                 GLFW.glfwPollEvents();
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.update(deltaTime);
@@ -432,7 +435,9 @@ public class Game {
                 }
                 ups++;
                 upsTicks--;
+                updPasses++;
             }
+            updPasses = 0;
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
@@ -441,15 +446,6 @@ public class Game {
                 timer0 += 1.0;
             }
 
-            if (GLFW.glfwGetTime() > timer1 + 0.25) {
-                if (!gameObject.isWorking()) { // this prevents locking monitor unnecessarily
-                    if (waterEffects) {
-                        gameObject.refresh();
-                    }
-                    gameObject.patch();
-                }
-                timer1 += 0.25;
-            }
         }
         // stops the music
         gameObject.getMusicPlayer().stop();
@@ -535,6 +531,10 @@ public class Game {
 
     public static float getYoffset() {
         return yoffset;
+    }
+
+    public static int getUpdPasses() {
+        return updPasses;
     }
 
 }

@@ -49,10 +49,12 @@ public class Quad {
     private boolean ignoreFactor = false;
 
     private static final Vector2f[] VERTICES = new Vector2f[4];
+    private final FloatBuffer fb = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
+
     private final Vector2f[] uvs = new Vector2f[4];
     private static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
-    private int vbo;
+    private int vbo = 0;
 
     public static final int VERTEX_SIZE = 4;
     public static final int VERTEX_COUNT = 4;
@@ -94,7 +96,7 @@ public class Quad {
     }
 
     public void buffer() {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
+        fb.clear();
         for (int i = 0; i < 4; i++) {
             fb.put(VERTICES[i].x);
             fb.put(VERTICES[i].y);
@@ -102,7 +104,9 @@ public class Quad {
             fb.put(uvs[i].y);
         }
         fb.flip();
-        vbo = GL15.glGenBuffers();
+        if (vbo == 0) {
+            vbo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);

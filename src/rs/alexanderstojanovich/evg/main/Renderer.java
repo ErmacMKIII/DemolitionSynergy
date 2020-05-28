@@ -38,10 +38,11 @@ public class Renderer extends Thread implements Executor {
 
     private final GameObject gameObject;
 
-    private boolean assertCollision = false;
-
     private static double fpsTicks = 0.0;
     private static int fps = 0;
+
+    private static int renPasses = 0;
+    public static final int REN_MAX_PASSES = 5;
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
@@ -56,12 +57,7 @@ public class Renderer extends Thread implements Executor {
     @Override
     public void run() {
         MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
-        boolean ok = GameObject.MY_WINDOW.setResolution(Main.CONFIG.getWidth(), Main.CONFIG.getHeight());
         MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
-        GameObject.MY_WINDOW.centerTheWindow();
-        if (!ok) {
-            DSLogger.reportError("Game unable to set resolution!", null);
-        }
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
@@ -99,10 +95,14 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            if (fpsTicks >= 1.0) {
-                gameObject.render();
-                fps++;
-                fpsTicks--;
+            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0) {
+                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                    gameObject.render();
+                    fps++;
+                    fpsTicks--;
+                    renPasses++;
+                }
+                renPasses = 0;
             }
 
             // update text which shows ups and fps every second
@@ -172,14 +172,6 @@ public class Renderer extends Thread implements Executor {
         return gameObject.getLevelContainer();
     }
 
-    public boolean isAssertCollision() {
-        return assertCollision;
-    }
-
-    public void setAssertCollision(boolean assertCollision) {
-        this.assertCollision = assertCollision;
-    }
-
     public static double getFpsTicks() {
         return fpsTicks;
     }
@@ -194,6 +186,10 @@ public class Renderer extends Thread implements Executor {
 
     public static void setFps(int fps) {
         Renderer.fps = fps;
+    }
+
+    public static int getRenPasses() {
+        return renPasses;
     }
 
 }

@@ -27,9 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -92,34 +90,24 @@ public class Block extends Model {
         readFromTxtFile("cube.txt");
     }
 
-    public Block(boolean selfBuffer) {
+    public Block() {
         super();
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
-    public Block(boolean selfBuffer, String texName) {
+    public Block(String texName) {
         super();
         this.texName = texName;
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
-    public Block(boolean selfBuffer, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super();
         this.texName = texName;
         Arrays.fill(enabledFaces, true);
@@ -128,11 +116,6 @@ public class Block extends Model {
         this.solid = solid;
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
@@ -201,7 +184,9 @@ public class Block extends Model {
         }
         fb.flip();
         // storing vertices and FACE_NORMALS buffer on the graphics card
-        vbo = GL15.glGenBuffers();
+        if (vbo == 0) {
+            vbo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -211,7 +196,9 @@ public class Block extends Model {
         // storing indices in the buffer
         IntBuffer ib = createIntBuffer(getFaceBits());
         // storing indices buffer on the graphics card
-        ibo = GL15.glGenBuffers();
+        if (ibo == 0) {
+            ibo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -225,29 +212,12 @@ public class Block extends Model {
     }
 
     private void calcDims() {
-        Vector3f vect = vertices.get(0).getPos();
-        float xMin = vect.x;
-        float yMin = vect.y;
-        float zMin = vect.z;
+        final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
+        final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
 
-        float xMax = vect.x;
-        float yMax = vect.y;
-        float zMax = vect.z;
-
-        for (int i = 1; i < vertices.size(); i++) {
-            vect = vertices.get(i).getPos();
-            xMin = Math.min(xMin, vect.x);
-            yMin = Math.min(yMin, vect.y);
-            zMin = Math.min(zMin, vect.z);
-
-            xMax = Math.max(xMax, vect.x);
-            yMax = Math.max(yMax, vect.y);
-            zMax = Math.max(zMax, vect.z);
-        }
-
-        width = Math.abs(xMax - xMin) * scale;
-        height = Math.abs(yMax - yMin) * scale;
-        depth = Math.abs(zMax - zMin) * scale;
+        width = Math.abs(maxv.x - minv.x) * scale;
+        height = Math.abs(maxv.y - minv.y) * scale;
+        depth = Math.abs(maxv.z - minv.z) * scale;
     }
 
     @Override
@@ -308,57 +278,42 @@ public class Block extends Model {
         return bool;
     }
 
-    public void disableFace(int faceNum, boolean selfBuffer) {
+    public void disableFace(int faceNum) {
         for (Vertex vertex : getFaceVertices(faceNum)) {
             vertex.setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void enableFace(int faceNum, boolean selfBuffer) {
+    public void enableFace(int faceNum) {
         for (Vertex vertex : getFaceVertices(faceNum)) {
             vertex.setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void enableAllFaces(boolean selfBuffer) {
+    public void enableAllFaces() {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(true);
         }
         Arrays.fill(enabledFaces, true);
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void disableAllFaces(boolean selfBuffer) {
+    public void disableAllFaces() {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(false);
         }
         Arrays.fill(enabledFaces, false);
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void reverseFaceVertexOrder(boolean selfBuffer) {
+    public void reverseFaceVertexOrder() {
         for (int j = 0; j <= 5; j++) {
             Collections.reverse(getFaceVertices(j));
         }
         verticesReversed = !verticesReversed;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void setUVsForSkybox(boolean selfBuffer) {
+    public void setUVsForSkybox() {
         revertGroupsOfVertices();
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
@@ -398,9 +353,6 @@ public class Block extends Model {
             vertices.get(4 * BOTTOM + i).getUv().y = vertices.get(4 * LEFT + i).getUv().y + 1.0f / 3.0f;
         }
 
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
     private void revertGroupsOfVertices() {
@@ -482,9 +434,9 @@ public class Block extends Model {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
             if (bit == 1) {
-                enableFace(j, selfBuffer);
+                enableFace(j);
             } else {
-                disableFace(j, selfBuffer);
+                disableFace(j);
             }
         }
     }
@@ -672,7 +624,7 @@ public class Block extends Model {
         Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
         offset += blockPosCol.length;
 
-        Block block = new Block(false, texName, blockPos, blockCol, solid);
+        Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;
     }

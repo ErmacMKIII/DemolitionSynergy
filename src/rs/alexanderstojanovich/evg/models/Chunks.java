@@ -22,7 +22,6 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Tuple;
 
 /**
  *
@@ -105,6 +104,15 @@ public class Chunks {
         }
     }
 
+    // buffer all -> deprecated cuz it's not good use!
+    @Deprecated
+    public void bufferAll() {
+        for (Chunk chunk : chunkList) {
+            chunk.bufferAll();
+        }
+        buffered = true;
+    }
+
     // for each instanced rendering
     @Deprecated
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
@@ -114,33 +122,33 @@ public class Chunks {
     }
 
     // very useful -> it should be like this initially
-    public void saveAllToMemory() {
+    public void saveAllToDisk() {
         for (Chunk chunk : chunkList) {
-            chunk.saveToMemory();
+            chunk.saveToDisk();
         }
     }
 
     // variation on the topic
-    public void saveInvisibleToMemory() {
+    public void saveInvisibleToDisk() {
         for (Chunk chunk : chunkList) {
             if (!chunk.isVisible()) {
-                chunk.saveToMemory();
+                chunk.saveToDisk();
             }
         }
     }
 
     // useful when saving and wanna load everything into memory
-    public void loadAllFromMemory() {
+    public void loadAllFromDisk() {
         for (Chunk chunk : chunkList) {
-            chunk.loadFromMemory();
+            chunk.loadFromDisk();
         }
     }
 
     // variation on the topic
-    public void loadVisibleToMemory() {
+    public void loadVisibleFromDisk() {
         for (Chunk chunk : chunkList) {
             if (chunk.isVisible()) {
-                chunk.loadFromMemory();
+                chunk.loadFromDisk();
             }
         }
     }
@@ -200,8 +208,8 @@ public class Chunks {
     @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Chunk chunk : getChunkList()) {
-            for (Tuple<Blocks, Integer, Integer, String, Integer> tuple : chunk.getTupleSet()) {
-                tuple.getA().setCameraInFluid(cameraInFluid);
+            for (Tuple tuple : chunk.getTupleSet()) {
+                tuple.getBlocks().setCameraInFluid(cameraInFluid);
             }
         }
     }

@@ -215,6 +215,14 @@ public class Window {
         return height;
     }
 
+    public float getAspectRatio() {
+        return width / height;
+    }
+
+    public static float getMinAspectRatio() {
+        return 4.0f / 3.0f;
+    }
+
     public String getTitle() {
         return title;
     }

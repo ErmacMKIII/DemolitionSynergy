@@ -51,7 +51,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block(false);
+            loaded = new Block();
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -68,7 +68,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z)) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(gameObject)) {
-            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, false);
+            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, false);
         }
 
         gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -101,7 +101,7 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
+                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
         }
 
@@ -134,7 +134,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block(false, "decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
+                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
         }
     }
@@ -152,7 +152,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(false);
+                loaded = new Block();
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -184,7 +184,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
+                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
             }
         }
     }
@@ -195,7 +195,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(false);
+                loaded = new Block();
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -227,7 +227,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
+                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
             }
         }
     }
@@ -269,7 +269,7 @@ public class Editor {
             cant = gameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         }
         if (cant) {
-            selectedNewWireFrame = new Block(false, "decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, false);
+            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, false);
         }
         return cant;
     }
@@ -283,7 +283,7 @@ public class Editor {
                     gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew);
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                loaded = new Block(false);
+                loaded = new Block();
                 selectLoadedTexture();
             }
         }

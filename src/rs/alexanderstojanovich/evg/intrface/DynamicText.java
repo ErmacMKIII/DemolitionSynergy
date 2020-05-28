@@ -37,12 +37,14 @@ import rs.alexanderstojanovich.evg.util.Pair;
  */
 public class DynamicText extends Text {
 
-    protected int bigVbo; // vbo containing all the quads (characters)
-    protected int[] vboEntries;
+    protected int dynamicSize = 100;
+    protected int bigVbo = 0; // vbo containing all the quads (characters)
+    protected int[] vboEntries = new int[1024];
     protected final List<Pair<Float, Float>> pairList = new ArrayList<>(); // pairs xinc, ydec
     protected static final Vector2f[] VERTICES = new Vector2f[4]; //            
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
+    protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -69,15 +71,19 @@ public class DynamicText extends Text {
     }
 
     protected void bufferVbo() {
+        // auto adjust dynamic size of float buff and do it on every 1024 element
+        if (content.length() >= dynamicSize) {
+            dynamicSize = content.length() + 100;
+            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        }
+        bigFloatBuff.clear();
         pairList.clear();
-        FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(content.length() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         String[] lines = content.split("\n");
-        vboEntries = new int[1024];
         int e = 0;
-        int entryOffset = 0;
+        int offset = 0;
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
-                vboEntries[e++] = entryOffset;
+                vboEntries[e++] = offset;
                 int j = i % 64;
                 int k = i / 64;
                 int asciiCode = (int) (lines[l].charAt(i));
@@ -113,13 +119,17 @@ public class DynamicText extends Text {
                     bigFloatBuff.put(VERTICES[v].y);
                     bigFloatBuff.put(uvs[v].x);
                     bigFloatBuff.put(uvs[v].y);
-                    entryOffset++;
+                    offset++;
                 }
 
             }
         }
+
         bigFloatBuff.flip();
-        bigVbo = GL15.glGenBuffers();
+        if (bigVbo == 0) {
+            bigVbo = GL15.glGenBuffers();
+        }
+
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -176,6 +186,10 @@ public class DynamicText extends Text {
 
     public int getBigVbo() {
         return bigVbo;
+    }
+
+    public int getDynamicSize() {
+        return dynamicSize;
     }
 
 }

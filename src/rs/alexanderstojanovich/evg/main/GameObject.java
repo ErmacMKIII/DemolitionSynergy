@@ -105,16 +105,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.getFluidChunks().setBuffered(false);
     }
 
-    // refresh water heights
-    public synchronized void refresh() {
-        waterRenderer.refresh();
-    }
-
-    // patch chunks
-    public synchronized void patch() {
-        levelContainer.patch();
-    }
-
     // animation for water
     public synchronized void animate() {
         levelContainer.animate();

@@ -61,8 +61,8 @@ public class Model implements Comparable<Model> {
     protected float height; // Y axis dimension
     protected float depth; // Z axis dimension
 
-    protected int vbo; // vertex buffer object
-    protected int ibo; // index buffer object        
+    protected int vbo = 0; // vertex buffer object
+    protected int ibo = 0; // index buffer object        
 
     protected Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
@@ -84,26 +84,16 @@ public class Model implements Comparable<Model> {
 
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName) {
+    public Model(String dirEntry, String modelFileName) {
         this.modelFileName = modelFileName;
         readFromObjFile(dirEntry, modelFileName);
-        if (selfBuffer) {   // used for self buffering (old school), if Blocks class is being used to load blocks keep it off.
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName) {
+    public Model(String dirEntry, String modelFileName, String texName) {
         this.modelFileName = modelFileName;
         this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
@@ -111,11 +101,6 @@ public class Model implements Comparable<Model> {
         this.modelFileName = modelFileName;
         this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         this.pos = pos;
         calcDims();
         this.primaryColor = primaryColor;
@@ -222,7 +207,9 @@ public class Model implements Comparable<Model> {
         }
         fb.flip();
         // storing vertices and normals buffer on the graphics card
-        vbo = GL15.glGenBuffers();
+        if (vbo == 0) {
+            vbo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -236,7 +223,9 @@ public class Model implements Comparable<Model> {
         }
         ib.flip();
         // storing indices buffer on the graphics card
-        ibo = GL15.glGenBuffers();
+        if (ibo == 0) {
+            ibo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -556,7 +545,7 @@ public class Model implements Comparable<Model> {
         return "Model{" + "modelFileName=" + modelFileName + ", texName = " + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
-    public void animate(boolean selfBuffer) {
+    public void animate() {
         for (int i = 0; i < indices.size(); i += 3) {
             Vertex a = vertices.get(indices.get(i));
             Vertex b = vertices.get(indices.get(i + 1));
@@ -565,10 +554,6 @@ public class Model implements Comparable<Model> {
             c.setUv(b.getUv());
             b.setUv(a.getUv());
             a.setUv(temp);
-        }
-
-        if (selfBuffer) {
-            bufferVertices();
         }
     }
 

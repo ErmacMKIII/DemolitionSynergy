@@ -43,7 +43,7 @@ public class WaterRenderer {
         this.levelContainer = levelContainer;
     }
 
-    public void refresh() { // call this in update (renderer)        
+    private void refresh() { // call this in update (renderer)        
         if (!levelContainer.isWorking()) {
             Vector3f obsCameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
             float obsHeight = obsCameraPos.y;
@@ -91,6 +91,7 @@ public class WaterRenderer {
     }
 
     public void render() {
+        refresh();
         if (!waterHeights.isEmpty() && !levelContainer.isWorking()) {
             GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
             frameBuffer.bind();

@@ -19,7 +19,9 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
@@ -38,20 +40,30 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
     private final List<Block> blockList = new GapList<>();
-    private int bigVbo;
+    private int bigVbo = 0;
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    private final List<Integer> vboEntries = new GapList<>();
-    private final List<Integer> ibos = new GapList<>();
+    private final Map<Integer, Integer> vboEntries = new HashMap<>();
+    // --------------blkIndex---ibo-----------------------------
+    private final Map<Integer, Integer> iboMap = new HashMap<>();
     private boolean buffered = false;
 
-    public void bufferVertices() { // call it before any rendering        
-        FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
+    private int dynamicSize = 1000;
+    private FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
+
+    public void bufferVertices() { // call it before any rendering
+        // auto adjust dynamic size of float buff and do it on every 1000th element
+        if (blockList.size() > dynamicSize) {
+            dynamicSize = blockList.size() + 1000;
+            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
+        }
+        bigFloatBuff.clear();
         int offset = 0;
+        int blkIndex = 0;
         for (Block block : blockList) {
-            vboEntries.add(offset);
+            vboEntries.put(blkIndex, offset);
             for (int faceNum = 0; faceNum <= 5; faceNum++) {
                 if (block.getEnabledFaces()[faceNum]) {
                     for (Vertex vertex : block.getFaceVertices(faceNum)) { // for each vertex
@@ -67,15 +79,49 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     }
                 }
             }
+            blkIndex++;
         }
         bigFloatBuff.flip();
-        bigVbo = GL15.glGenBuffers();
+        if (bigVbo == 0) {
+            bigVbo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
+    public void updateVertices() { // call it before any rendering        
+        bigFloatBuff.clear();
+        int offset = 0;
+        int blkIndex = 0;
+        for (Block block : blockList) {
+            vboEntries.put(blkIndex, offset);
+            for (int faceNum = 0; faceNum <= 5; faceNum++) {
+                if (block.getEnabledFaces()[faceNum]) {
+                    for (Vertex vertex : block.getFaceVertices(faceNum)) { // for each vertex
+                        bigFloatBuff.put(vertex.getPos().x);
+                        bigFloatBuff.put(vertex.getPos().y);
+                        bigFloatBuff.put(vertex.getPos().z);
+                        bigFloatBuff.put(vertex.getNormal().x);
+                        bigFloatBuff.put(vertex.getNormal().y);
+                        bigFloatBuff.put(vertex.getNormal().z);
+                        bigFloatBuff.put(vertex.getUv().x);
+                        bigFloatBuff.put(vertex.getUv().y);
+                        offset++;
+                    }
+                }
+            }
+            blkIndex++;
+        }
+        bigFloatBuff.flip();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
     public void bufferIndices() { // call it before any rendering
+        int blkIndex = 0;
         for (Block block : blockList) {
             List<Integer> indices = new ArrayList<>();
             for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
@@ -94,12 +140,16 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             }
             intBuff.flip();
             // storing indices buffer on the graphics card
-            int ibo = GL15.glGenBuffers();
+            int ibo = iboMap.getOrDefault(blkIndex, 0);
+            if (ibo == 0) {
+                ibo = GL15.glGenBuffers();
+            }
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             // finally assigning it to the array element
-            ibos.add(ibo);
+            iboMap.put(blkIndex, ibo);
+            blkIndex++;
         }
     }
 
@@ -111,18 +161,18 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public void animate() { // call only for fluid blocks
         for (Block block : blockList) {
-            block.animate(false);
+            block.animate();
         }
-        bufferVertices();
+        updateVertices();
     }
 
     public void prepare() { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
-                block.reverseFaceVertexOrder(false);
+                block.reverseFaceVertexOrder();
             }
             verticesReversed = !verticesReversed;
-            bufferVertices();
+            updateVertices();
         }
     }
 
@@ -158,7 +208,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     block.waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
 
-                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, iboMap.get(blkIndex));
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,
                         Block.INDICES_COUNT,
@@ -218,7 +268,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         block.waterTexture.bind(1, shaderProgram, "modelTexture1");
                     }
 
-                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibos.get(blkIndex));
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, iboMap.get(blkIndex));
                     GL32.glDrawElementsBaseVertex(
                             GL11.GL_TRIANGLES,
                             Block.INDICES_COUNT,
@@ -248,7 +298,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void release() {
         if (buffered) {
             GL15.glDeleteBuffers(bigVbo);
-            for (Integer ibo : ibos) {
+            for (Integer ibo : iboMap.values()) {
                 GL15.glDeleteBuffers(ibo);
             }
         }
@@ -279,20 +329,16 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         this.cameraInFluid = cameraInFluid;
     }
 
-    public List<Integer> getVboEntries() {
-        return vboEntries;
-    }
-
-    public List<Integer> getIbos() {
-        return ibos;
-    }
-
     public void setVerticesReversed(boolean verticesReversed) {
         this.verticesReversed = verticesReversed;
     }
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
+    }
+
+    public int getDynamicSize() {
+        return dynamicSize;
     }
 
 }
