@@ -50,7 +50,7 @@ public class Chunks {
     };
 
     // for both internal (Init) and external use (Editor)
-    public void addBlock(Block block) {
+    public void addBlock(Block block, boolean useLevelContainer) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -61,16 +61,16 @@ public class Chunks {
             chunkList.sort(COMPARATOR);
         }
 
-        chunk.addBlock(block);
+        chunk.addBlock(block, useLevelContainer);
     }
 
     // for removing blocks (Editor)
-    public void removeBlock(Block block) {
+    public void removeBlock(Block block, boolean useLevelContainer) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
-            chunk.removeBlock(block);
+            chunk.removeBlock(block, useLevelContainer);
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleSet().isEmpty()) {
                 chunkList.remove(chunk);

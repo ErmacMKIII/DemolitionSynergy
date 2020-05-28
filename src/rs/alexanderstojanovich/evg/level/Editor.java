@@ -278,9 +278,9 @@ public class Editor {
         if (selectedNew != null) {
             if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
                 if (selectedNew.isSolid()) { // else if block is solid
-                    gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew);
+                    gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
                 } else { // if block is fluid                    
-                    gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew);
+                    gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew, true);
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block();
@@ -293,9 +293,9 @@ public class Editor {
     public static void remove(GameObject gameObject) {
         if (selectedCurr != null) {
             if (selectedCurr.isSolid()) {
-                gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr);
+                gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr, true);
             } else {
-                gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr);
+                gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr, true);
             }
             gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }

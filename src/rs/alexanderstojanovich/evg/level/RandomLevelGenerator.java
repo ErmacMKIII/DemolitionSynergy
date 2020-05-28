@@ -85,7 +85,7 @@ public class RandomLevelGenerator {
         Vector3f col = new Vector3f(colr, colg, colb);
         Block solidBlock = new Block(randomSolidTexture(), pos, col, true);
 
-        levelContainer.getSolidChunks().addBlock(solidBlock);
+        levelContainer.getSolidChunks().addBlock(solidBlock, true);
         return solidBlock;
     }
 
@@ -110,7 +110,7 @@ public class RandomLevelGenerator {
         Vector3f col = new Vector3f(colr, colg, colb);
         Block fluidBlock = new Block("water", pos, col, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidBlock);
+        levelContainer.getFluidChunks().addBlock(fluidBlock, true);
         return fluidBlock;
     }
 
@@ -157,7 +157,7 @@ public class RandomLevelGenerator {
         String adjTexture = randomSolidTexture();
         Block solidAdjBlock = new Block(adjTexture, adjPos, adjCol, true);
 
-        levelContainer.getSolidChunks().addBlock(solidAdjBlock);
+        levelContainer.getSolidChunks().addBlock(solidAdjBlock, true);
         return solidAdjBlock;
     }
 
@@ -204,7 +204,7 @@ public class RandomLevelGenerator {
         String adjTexture = "water";
         Block fluidAdjBlock = new Block(adjTexture, adjPos, adjCol, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidAdjBlock);
+        levelContainer.getFluidChunks().addBlock(fluidAdjBlock, true);
         return fluidAdjBlock;
     }
 

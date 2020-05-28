@@ -117,8 +117,10 @@ public class Chunk { // some operations are mutually exclusive
         }
     }
 
-    public void addBlock(Block block) {
-        LevelContainer.putBlock(block);
+    public void addBlock(Block block, boolean useLevelContainer) {
+        if (useLevelContainer) {
+            LevelContainer.putBlock(block);
+        }
 
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -137,8 +139,10 @@ public class Chunk { // some operations are mutually exclusive
         buffered = false;
     }
 
-    public void removeBlock(Block block) {
-        LevelContainer.removeBlock(block);
+    public void removeBlock(Block block, boolean useLevelContainer) {
+        if (useLevelContainer) {
+            LevelContainer.removeBlock(block);
+        }
 
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -400,7 +404,7 @@ public class Chunk { // some operations are mutually exclusive
                 pos += blockPosCol.length;
 
                 Block block = new Block(texName, blockPos, blockCol, solid);
-                addBlock(block);
+                addBlock(block, false); // do not touch Level Container just add Block
             }
             cached = false;
         }

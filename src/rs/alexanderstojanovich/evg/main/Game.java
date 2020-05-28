@@ -55,10 +55,10 @@ public class Game {
     private static int fpsMax; // fps max or fps cap  
 
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 5;
+    public static final int UPD_MAX_PASSES = 10;
 
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 5.0;
+    public static final double CRITICAL_TIME = 15.0;
 
     private final GameObject gameObject;
 
@@ -411,7 +411,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * Game.TPS;
+            upsTicks += -Math.expm1(-diff * Game.TPS);
             lastTime = currTime;
 
             // Detecting critical status
@@ -425,6 +425,7 @@ public class Game {
                 GLFW.glfwPollEvents();
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.update(deltaTime);
+                gameObject.autoSaveLoad();
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
