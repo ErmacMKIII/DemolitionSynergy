@@ -38,6 +38,7 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -255,8 +256,8 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public List<Vertex> getFaceVertices(int faceNum) {
-        return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
+    public Pair<Integer, Integer> getFaceVertices(int faceNum) {
+        return new Pair<>(4 * faceNum, 4 * (faceNum + 1));
     }
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
@@ -279,15 +280,17 @@ public class Block extends Model {
     }
 
     public void disableFace(int faceNum) {
-        for (Vertex vertex : getFaceVertices(faceNum)) {
-            vertex.setEnabled(false);
+        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
+        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
+            vertices.get(i).setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
     }
 
     public void enableFace(int faceNum) {
-        for (Vertex vertex : getFaceVertices(faceNum)) {
-            vertex.setEnabled(true);
+        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
+        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
+            vertices.get(i).setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
     }
@@ -308,7 +311,8 @@ public class Block extends Model {
 
     public void reverseFaceVertexOrder() {
         for (int j = 0; j <= 5; j++) {
-            Collections.reverse(getFaceVertices(j));
+            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
+            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
         }
         verticesReversed = !verticesReversed;
     }

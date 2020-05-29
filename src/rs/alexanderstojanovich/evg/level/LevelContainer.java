@@ -16,12 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -120,21 +121,11 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            byte value = ALL_SOLID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (value == -1) {
-                ALL_SOLID_MAP.put(hashCode, (byte) -1);
-            }
-            if (value < 63) {
-                determineSolid(pos);
-            }
+            ALL_SOLID_MAP.put(hashCode, (byte) -1);
+            determineSolid(pos);
         } else {
-            byte value = ALL_FLUID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (value == -1) {
-                ALL_FLUID_MAP.put(hashCode, (byte) -1);
-            }
-            if (value < 63) {
-                determineFluid(pos);
-            }
+            ALL_FLUID_MAP.put(hashCode, (byte) -1);
+            determineFluid(pos);
         }
     }
 
@@ -464,24 +455,23 @@ public class LevelContainer implements GravityEnviroment {
         if (!filename.endsWith(".dat")) {
             filename += ".dat";
         }
-        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;
         File file = new File(filename);
         if (file.exists()) {
             file.delete();
         }
-        Arrays.fill(buffer, (byte) 0);
         success = storeLevelToBuffer(); // saves level to bufferVertices first
         try {
-            fos = new FileOutputStream(file);
-            fos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
+            bos = new BufferedOutputStream(new FileOutputStream(file));
+            bos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         }
-        if (fos != null) {
+        if (bos != null) {
             try {
-                fos.close();
+                bos.close();
             } catch (IOException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
@@ -501,23 +491,22 @@ public class LevelContainer implements GravityEnviroment {
             filename += ".dat";
         }
         File file = new File(filename);
-        FileInputStream fis = null;
+        BufferedInputStream bis = null;
         if (!file.exists()) {
             return false; // this prevents further fail
         }
-        Arrays.fill(buffer, (byte) 0);
         try {
-            fis = new FileInputStream(file);
-            fis.read(buffer);
+            bis = new BufferedInputStream(new FileInputStream(file));
+            bis.read(buffer);
             success = loadLevelFromBuffer();
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         }
-        if (fis != null) {
+        if (bis != null) {
             try {
-                fis.close();
+                bis.close();
             } catch (IOException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
@@ -675,7 +664,7 @@ public class LevelContainer implements GravityEnviroment {
                     solidChunk.bufferAll();
                 } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
                     solidChunk.release();
-                } else if (solidChunk.isVisible() && solidChunk.isVisible()) {
+                } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
                     solidChunk.prepare();
                     solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
                 }
@@ -688,7 +677,7 @@ public class LevelContainer implements GravityEnviroment {
                     fluidChunk.bufferAll();
                 } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
                     fluidChunk.release();
-                } else if (fluidChunk.isVisible() && fluidChunk.isVisible()) {
+                } else if (fluidChunk.isVisible() && fluidChunk.isBuffered()) {
                     fluidChunk.prepare();
                     fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
                 }

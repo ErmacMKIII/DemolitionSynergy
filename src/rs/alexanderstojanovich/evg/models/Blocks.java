@@ -64,19 +64,17 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         int blkIndex = 0;
         for (Block block : blockList) {
             vboEntries.put(blkIndex, offset);
-            for (int faceNum = 0; faceNum <= 5; faceNum++) {
-                if (block.getEnabledFaces()[faceNum]) {
-                    for (Vertex vertex : block.getFaceVertices(faceNum)) { // for each vertex
-                        bigFloatBuff.put(vertex.getPos().x);
-                        bigFloatBuff.put(vertex.getPos().y);
-                        bigFloatBuff.put(vertex.getPos().z);
-                        bigFloatBuff.put(vertex.getNormal().x);
-                        bigFloatBuff.put(vertex.getNormal().y);
-                        bigFloatBuff.put(vertex.getNormal().z);
-                        bigFloatBuff.put(vertex.getUv().x);
-                        bigFloatBuff.put(vertex.getUv().y);
-                        offset++;
-                    }
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                    offset++;
                 }
             }
             blkIndex++;
@@ -96,19 +94,17 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         int blkIndex = 0;
         for (Block block : blockList) {
             vboEntries.put(blkIndex, offset);
-            for (int faceNum = 0; faceNum <= 5; faceNum++) {
-                if (block.getEnabledFaces()[faceNum]) {
-                    for (Vertex vertex : block.getFaceVertices(faceNum)) { // for each vertex
-                        bigFloatBuff.put(vertex.getPos().x);
-                        bigFloatBuff.put(vertex.getPos().y);
-                        bigFloatBuff.put(vertex.getPos().z);
-                        bigFloatBuff.put(vertex.getNormal().x);
-                        bigFloatBuff.put(vertex.getNormal().y);
-                        bigFloatBuff.put(vertex.getNormal().z);
-                        bigFloatBuff.put(vertex.getUv().x);
-                        bigFloatBuff.put(vertex.getUv().y);
-                        offset++;
-                    }
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                    offset++;
                 }
             }
             blkIndex++;

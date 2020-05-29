@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -84,11 +86,10 @@ public class Chunk { // some operations are mutually exclusive
         return result;
     }
 
-    private void transfer(Block fluidBlock) { // update fluids use this to transfer fluid blocks between tuples
+    private void transfer(Block fluidBlock, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         String fluidTexture = fluidBlock.texName;
-        int fluidFaceBits = fluidBlock.getFaceBits();
 
-        Tuple srcTuple = getTuple(fluidTexture, 63);
+        Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
             srcTuple.getBlocks().getBlockList().remove(fluidBlock);
             if (srcTuple.getBlocks().getBlockList().isEmpty()) {
@@ -96,9 +97,9 @@ public class Chunk { // some operations are mutually exclusive
             }
         }
 
-        Tuple dstTuple = getTuple(fluidTexture, fluidFaceBits);
+        Tuple dstTuple = getTuple(fluidTexture, currFaceBits);
         if (dstTuple == null) {
-            dstTuple = new Tuple(fluidTexture, fluidFaceBits);
+            dstTuple = new Tuple(fluidTexture, currFaceBits);
             tupleSet.add(dstTuple);
         }
         dstTuple.getBlocks().getBlockList().add(fluidBlock);
@@ -113,7 +114,7 @@ public class Chunk { // some operations are mutually exclusive
         fluidBlock.setFaceBits(~neighborBits & 63, false);
         int faceBitsAfter = fluidBlock.getFaceBits();
         if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-            transfer(fluidBlock);
+            transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
         }
     }
 
@@ -231,7 +232,7 @@ public class Chunk { // some operations are mutually exclusive
     // deallocates Chunk from graphic card
     @Deprecated
     public void release() {
-        if (buffered && !cached) {
+        if (!cached) {
             //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
             //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
             for (Tuple tuple : tupleSet) {
@@ -302,22 +303,22 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     private void saveMemToDisk(String filename) {
-        FileOutputStream fos = null;
+        BufferedOutputStream bos = null;
         File file = new File(filename);
         if (file.exists()) {
             file.delete();
         }
         try {
-            fos = new FileOutputStream(file);
-            fos.write(MEMORY, 0, pos);
+            bos = new BufferedOutputStream(new FileOutputStream(file));
+            bos.write(MEMORY, 0, pos);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         }
-        if (fos != null) {
+        if (bos != null) {
             try {
-                fos.close();
+                bos.close();
             } catch (IOException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
@@ -326,18 +327,18 @@ public class Chunk { // some operations are mutually exclusive
 
     private void loadDiskToMem(String filename) {
         File file = new File(filename);
-        FileInputStream fis = null;
+        BufferedInputStream bis = null;
         try {
-            fis = new FileInputStream(file);
-            fis.read(MEMORY);
+            bis = new BufferedInputStream(new FileInputStream(file));
+            bis.read(MEMORY);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         }
-        if (fis != null) {
+        if (bis != null) {
             try {
-                fis.close();
+                bis.close();
             } catch (IOException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
@@ -350,7 +351,7 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     public void saveToDisk() {
-        if (!buffered && !cached) {
+        if (!cached) {
             List<Block> blocks = getList();
             pos = 0;
             MEMORY[pos++] = (byte) id;
@@ -368,7 +369,11 @@ public class Chunk { // some operations are mutually exclusive
                 System.arraycopy(solidCol, 0, MEMORY, pos, solidCol.length);
                 pos += solidCol.length;
             }
-            tupleSet.clear();
+
+            // better than tuples clear (otherwise much slower to load)
+            for (Tuple tuple : tupleSet) {
+                tuple.getBlocks().getBlockList().clear();
+            }
 
             File cacheDir = new File(Game.CACHE);
             if (!cacheDir.exists()) {
@@ -381,7 +386,8 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     public void loadFromDisk() {
-        if (!buffered && cached) {
+        if (cached) {
+            long time0 = System.nanoTime();
             loadDiskToMem(getFileName());
             pos = 1;
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
@@ -407,6 +413,8 @@ public class Chunk { // some operations are mutually exclusive
                 addBlock(block, false); // do not touch Level Container just add Block
             }
             cached = false;
+            long time1 = System.nanoTime();
+            System.out.println("Chunk " + id + " solid = " + solid + " time = " + (time1 - time0) / 1E6D);
         }
     }
 
