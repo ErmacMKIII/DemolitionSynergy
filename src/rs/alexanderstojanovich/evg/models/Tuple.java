@@ -44,10 +44,10 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
     private final Blocks blocks = new Blocks();
 
     private int vec3Vbo = 0;
-    private FloatBuffer vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * VEC3_SIZE);
+    private FloatBuffer vec3FloatBuff;
 
     private int mat4Vbo = 0;
-    private FloatBuffer mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * MAT4_SIZE);
+    private FloatBuffer mat4FloatBuff;
 
     private final String texName;
     private final int faceEnBits;
@@ -59,7 +59,7 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
     // buffering colors
     public void bufferVectors() {
-        if (vec3FloatBuff.capacity() / VEC3_SIZE <= blocks.getDynamicSize()) {
+        if (vec3FloatBuff == null || vec3FloatBuff.capacity() / VEC3_SIZE <= blocks.getDynamicSize()) {
             vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * VEC3_SIZE);
         }
         vec3FloatBuff.clear();
@@ -80,25 +80,9 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    // updating colors
-//    public void updateVectors() {
-//        vec3FloatBuff.clear();
-//
-//        for (Block block : blocks.getBlockList()) {
-//            Vector3f color = block.getPrimaryColor();
-//            vec3FloatBuff.put(color.x);
-//            vec3FloatBuff.put(color.y);
-//            vec3FloatBuff.put(color.z);
-//        }
-//        vec3FloatBuff.flip();
-//
-//        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec3Vbo);
-//        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, vec3FloatBuff);
-//        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-//    }
     // buffering model matrices
     public void bufferMatrices() {
-        if (mat4FloatBuff.capacity() / MAT4_SIZE <= blocks.getDynamicSize()) {
+        if (mat4FloatBuff == null || mat4FloatBuff.capacity() / MAT4_SIZE <= blocks.getDynamicSize()) {
             mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * MAT4_SIZE);
         }
         mat4FloatBuff.clear();
@@ -126,29 +110,6 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    // updating model matrices
-//    public void updateMatrices() {
-//        mat4FloatBuff.clear();
-//
-//        for (Block block : blocks.getBlockList()) {
-//            block.calcModelMatrix();
-//            Vector4f[] vectArr = new Vector4f[4];
-//            for (int i = 0; i < 4; i++) {
-//                vectArr[i] = new Vector4f();
-//                Matrix4f modelMatrix = block.calcModelMatrix();
-//                modelMatrix.getColumn(i, vectArr[i]);
-//                mat4FloatBuff.put(vectArr[i].x);
-//                mat4FloatBuff.put(vectArr[i].y);
-//                mat4FloatBuff.put(vectArr[i].z);
-//                mat4FloatBuff.put(vectArr[i].w);
-//            }
-//        }
-//        mat4FloatBuff.flip();
-//
-//        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
-//        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, mat4FloatBuff);
-//        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-//    }
     // renderer does this stuff prior to any rendering
     public void buffer() {
         blocks.bufferVertices();

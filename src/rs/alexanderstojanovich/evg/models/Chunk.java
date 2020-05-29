@@ -108,12 +108,12 @@ public class Chunk { // some operations are mutually exclusive
         buffered = false;
     }
 
-    private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding        
+    private void updateFluids(Block fluidBlock, boolean useTransfer) { // call only for fluid blocks after adding        
         int faceBitsBefore = fluidBlock.getFaceBits();
         byte neighborBits = LevelContainer.ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(fluidBlock.pos), (byte) 0);
         fluidBlock.setFaceBits(~neighborBits & 63, false);
         int faceBitsAfter = fluidBlock.getFaceBits();
-        if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+        if (faceBitsBefore != faceBitsAfter && useTransfer) { // if bits changed, i.e. some face(s) got disabled
             transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
         }
     }
@@ -135,7 +135,7 @@ public class Chunk { // some operations are mutually exclusive
         tuple.getBlocks().getBlockList().add(block);
         tuple.getBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
         if (!block.solid) {
-            updateFluids(block);
+            updateFluids(block, !useLevelContainer);
         }
         buffered = false;
     }
@@ -151,7 +151,7 @@ public class Chunk { // some operations are mutually exclusive
         if (target != null) {
             target.getBlocks().getBlockList().remove(block);
             if (!block.solid) {
-                updateFluids(block);
+                updateFluids(block, useLevelContainer);
             }
             buffered = false;
             // if tuple has no blocks -> remove it
@@ -371,6 +371,7 @@ public class Chunk { // some operations are mutually exclusive
             }
 
             // better than tuples clear (otherwise much slower to load)
+            // this indicates that add with no transfer on fluid blocks will be used!
             for (Tuple tuple : tupleSet) {
                 tuple.getBlocks().getBlockList().clear();
             }

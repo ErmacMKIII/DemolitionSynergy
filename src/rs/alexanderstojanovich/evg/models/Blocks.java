@@ -50,12 +50,12 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     private final Map<Integer, Integer> iboMap = new HashMap<>();
     private boolean buffered = false;
 
-    private int dynamicSize = 1000;
-    private FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
+    private int dynamicSize = 0;
+    private FloatBuffer bigFloatBuff;
 
     public void bufferVertices() { // call it before any rendering
         // auto adjust dynamic size of float buff and do it on every 1000th element
-        if (blockList.size() > dynamicSize) {
+        if (bigFloatBuff == null || blockList.size() > dynamicSize) {
             dynamicSize = blockList.size() + 1000;
             bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
         }
