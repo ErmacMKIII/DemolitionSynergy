@@ -75,6 +75,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public synchronized void update(float deltaTime) {
         if (!levelContainer.isWorking() && !concurrent) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
+            waterRenderer.refresh();
         }
         intrface.update();
         intrface.setCollText(assertCollision);

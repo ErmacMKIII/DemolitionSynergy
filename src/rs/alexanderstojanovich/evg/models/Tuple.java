@@ -119,9 +119,9 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
     @Deprecated
     public void release() {
-//        GL15.glDeleteBuffers(blocks.getBigVbo());
-//        GL15.glDeleteBuffers(vec3Vbo);
-//        GL15.glDeleteBuffers(mat4Vbo);
+        GL15.glDeleteBuffers(blocks.getBigVbo());
+        GL15.glDeleteBuffers(vec3Vbo);
+        GL15.glDeleteBuffers(mat4Vbo);
     }
 
     public void render(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {

@@ -90,12 +90,12 @@ public class LevelContainer implements GravityEnviroment {
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             if (ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
                 bits |= mask;
+                byte adjBits = ALL_SOLID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
+                int k = (j % 2 == 0 ? j + 1 : j - 1);
+                int maskAdj = 1 << k;
+                adjBits |= maskAdj;
+                ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
             }
-            byte adjBits = ALL_SOLID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
-            int k = (j % 2 == 0 ? j + 1 : j - 1);
-            int maskAdj = 1 << k;
-            adjBits |= maskAdj;
-            ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
         }
         ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
     }
@@ -107,12 +107,12 @@ public class LevelContainer implements GravityEnviroment {
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             if (ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
                 bits |= mask;
+                byte adjBits = ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
+                int k = (j % 2 == 0 ? j + 1 : j - 1);
+                int maskAdj = 1 << k;
+                adjBits |= maskAdj;
+                ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
             }
-            byte adjBits = ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
-            int k = (j % 2 == 0 ? j + 1 : j - 1);
-            int maskAdj = 1 << k;
-            adjBits |= maskAdj;
-            ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
         }
         ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
     }
@@ -121,22 +121,43 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            ALL_SOLID_MAP.put(hashCode, (byte) -1);
-            determineSolid(pos);
+            int byteValue = ALL_SOLID_MAP.getOrDefault(hashCode, (byte) -1);
+            if (byteValue == -1) {
+                ALL_SOLID_MAP.put(hashCode, (byte) -1);
+            }
+            if (byteValue < 63) {
+                determineSolid(pos);
+            }
         } else {
-            ALL_FLUID_MAP.put(hashCode, (byte) -1);
-            determineFluid(pos);
+            int byteValue = ALL_FLUID_MAP.getOrDefault(hashCode, (byte) -1);
+            if (byteValue == -1) {
+                ALL_FLUID_MAP.put(hashCode, (byte) -1);
+            }
+            if (byteValue < 63) {
+                determineFluid(pos);
+            }
         }
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
+        int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            ALL_SOLID_MAP.remove(Vector3fUtils.hashCode(pos));
-            determineSolid(pos);
+            int byteValue = ALL_SOLID_MAP.getOrDefault(hashCode, (byte) -1);
+            if (byteValue != -1) {
+                ALL_SOLID_MAP.remove(hashCode, (byte) -1);
+            }
+            if (byteValue > 0) {
+                determineSolid(pos);
+            }
         } else {
-            ALL_FLUID_MAP.remove(Vector3fUtils.hashCode(pos));
-            determineFluid(pos);
+            int byteValue = ALL_FLUID_MAP.getOrDefault(hashCode, (byte) -1);
+            if (byteValue != -1) {
+                ALL_FLUID_MAP.remove(hashCode, (byte) -1);
+            }
+            if (byteValue > 0) {
+                determineFluid(pos);
+            }
         }
     }
 
@@ -663,7 +684,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
                     solidChunk.bufferAll();
                 } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
-                    solidChunk.release();
+                    solidChunk.unbuffer();
                 } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
                     solidChunk.prepare();
                     solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
@@ -676,7 +697,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
                     fluidChunk.bufferAll();
                 } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
-                    fluidChunk.release();
+                    fluidChunk.unbuffer();
                 } else if (fluidChunk.isVisible() && fluidChunk.isBuffered()) {
                     fluidChunk.prepare();
                     fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
@@ -732,26 +753,32 @@ public class LevelContainer implements GravityEnviroment {
         ShaderProgram.unbind();
 
         // render blocks
-//        for (Chunk solidChunk : solidChunks.getChunkList()) {
-//            if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
-//                solidChunk.bufferAll();
-//            } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
-////                solidChunk.release();
-//            } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
-//                solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
-//            }
-//        }
-//        
-//        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-//            if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
-//                fluidChunk.bufferAll();
-//            } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
-////                fluidChunk.release();
-//            } else if (fluidChunk.isVisible() && fluidChunk.isVisible()) {
-//                fluidChunk.prepare();
-//                fluidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
-//            }
-//        }
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (!solidChunk.isCached()) {
+                if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
+                    solidChunk.bufferAll();
+                } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
+                    solidChunk.unbuffer();
+                } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
+                    solidChunk.prepare();
+                    solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
+                }
+            }
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (!fluidChunk.isCached()) {
+                if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
+                    fluidChunk.bufferAll();
+                } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
+                    fluidChunk.unbuffer();
+                } else if (fluidChunk.isVisible() && fluidChunk.isBuffered()) {
+                    fluidChunk.prepare();
+                    fluidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
+                }
+            }
+        }
+
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
             editorNew.setLight(camera.getPos());
