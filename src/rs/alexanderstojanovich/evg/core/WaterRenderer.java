@@ -21,12 +21,12 @@ import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -38,31 +38,29 @@ public class WaterRenderer {
     private final Set<Float> waterHeights = new HashSet<>();
     private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
     private final Camera camera = new Camera();
+    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
 
     public WaterRenderer(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
+        this.debugQuad.setScale(0.25f);
     }
 
-    public void refresh() { // call this in update (renderer)        
+    public void refresh() { // call this in update (renderer) 
+        waterHeights.clear();
         if (!levelContainer.isWorking()) {
-            Vector3f obsCameraPos = levelContainer.getLevelActors().getPlayer().getCamera().getPos();
-            float obsHeight = obsCameraPos.y;
-            int currChunkId = Chunk.chunkFunc(obsCameraPos);
-            Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
-            if (currChunk != null) {
-                for (Block fluidBlock : currChunk.getList()) {
-                    float waterHeight = fluidBlock.getSurfaceY();
-                    Vector3f topPos = fluidBlock.getAdjacentPos(Block.TOP);
-                    if (fluidBlock.getEnabledFaces()[Block.TOP] // it needs to have enabled top
-                            && obsCameraPos.distance(fluidBlock.getPos()) <= Chunk.VISION
-                            && !LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(topPos)) // it must be nothing on top of it
-                            && waterHeight <= obsHeight) { // and it needs to be below the observer
-                        fluidBlock.setWaterTexture(frameBuffer.getTexture()); // it's passed to level Renderer 
-                        currChunk.setWaterTexture(frameBuffer.getTexture());
-                        waterHeights.add(waterHeight);
-                    } else {
-                        waterHeights.remove(waterHeight);
-                        fluidBlock.setWaterTexture(null);
+            Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
+            float obsHeight = obsCamera.getPos().y;
+            Vector3f obsUp = obsCamera.getUp();
+            for (Integer i : levelContainer.getVisibleChunks()) {
+                Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(i);
+                if (fluidChunk != null) {
+                    for (Block fluidBlock : fluidChunk.getList()) {
+                        float waterHeight = fluidBlock.getSurfaceY();
+                        if (fluidBlock.getEnabledFaces()[Block.TOP]
+                                && waterHeight <= obsHeight
+                                && fluidBlock.intersectsRay(obsCamera.getPos(), obsUp)) {
+                            waterHeights.add(waterHeight);
+                        }
                     }
                 }
             }
@@ -85,13 +83,14 @@ public class WaterRenderer {
     }
 
     private void capture(float waterHeight) {
+        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
         levelContainer.render(camera);
+        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     public void render() {
-        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         frameBuffer.bind();
         prepare();
         if (!waterHeights.isEmpty() && !levelContainer.isWorking()) {
@@ -99,9 +98,18 @@ public class WaterRenderer {
             for (Float height : waterHeights) {
                 capture(height);
             }
+            int currChunkId = Chunk.chunkFunc(camera.getPos());
+            Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+            if (currChunk != null) {
+                currChunk.setWaterTexture(frameBuffer.getTexture());
+            }
         }
         frameBuffer.unbind();
-        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
+
+        if (!debugQuad.isBuffered()) {
+            debugQuad.buffer();
+        }
+        debugQuad.render();
     }
 
     public Set<Float> getWaterHeights() {
