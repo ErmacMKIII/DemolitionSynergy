@@ -18,10 +18,13 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -48,6 +51,20 @@ public class Chunks {
             }
         }
     };
+
+    public void updateFluids() {
+        for (Block fluidBlock : getTotalList()) {
+            int faceBitsBefore = fluidBlock.getFaceBits();
+            byte neighborBits = LevelContainer.ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(fluidBlock.pos), (byte) 0);
+            fluidBlock.setFaceBits(~neighborBits & 63, false);
+            int faceBitsAfter = fluidBlock.getFaceBits();
+            if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
+                Chunk fluidChunk = getChunk(chunkId);
+                fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+            }
+        }
+    }
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block, boolean useLevelContainer) {
@@ -122,6 +139,7 @@ public class Chunks {
     }
 
     // very useful -> it should be like this initially
+    @Deprecated
     public void saveAllToDisk() {
         for (Chunk chunk : chunkList) {
             chunk.saveToDisk();
@@ -129,15 +147,16 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void saveInvisibleToDisk() {
+    public void saveInvisibleToDisk(Set<Integer> visibleChunks) {
         for (Chunk chunk : chunkList) {
-            if (!chunk.isVisible()) {
+            if (!visibleChunks.contains(chunk.getId())) {
                 chunk.saveToDisk();
             }
         }
     }
 
     // useful when saving and wanna load everything into memory
+    @Deprecated
     public void loadAllFromDisk() {
         for (Chunk chunk : chunkList) {
             chunk.loadFromDisk();
@@ -145,9 +164,10 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void loadVisibleFromDisk() {
+    public void loadInvisibleFromDisk(Set<Integer> visibleChunks) {
         for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
+            if (!visibleChunks.contains(chunk.getId())
+                    && !chunk.isAlive()) {
                 chunk.loadFromDisk();
             }
         }
@@ -181,7 +201,7 @@ public class Chunks {
             sb.append("id = ").append(chunk.getId())
                     .append(" | solid = ").append(chunk.isSolid())
                     .append(" | size = ").append(chunk.size())
-                    .append(" | visible = ").append(chunk.isVisible())
+                    .append(" | timeToLive = ").append(chunk.getTimeToLive())
                     .append(" | buffered = ").append(chunk.isBuffered())
                     .append(" | cached = ").append(chunk.isCached())
                     .append("\n");

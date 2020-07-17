@@ -38,11 +38,11 @@ public class WaterRenderer {
     private final Set<Float> waterHeights = new HashSet<>();
     private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
     private final Camera camera = new Camera();
-    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+//    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
 
     public WaterRenderer(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
-        this.debugQuad.setScale(0.25f);
+//        this.debugQuad.setScale(0.25f);
     }
 
     public void refresh() { // call this in update (renderer) 
@@ -106,10 +106,10 @@ public class WaterRenderer {
         }
         frameBuffer.unbind();
 
-        if (!debugQuad.isBuffered()) {
-            debugQuad.buffer();
-        }
-        debugQuad.render();
+//        if (!debugQuad.isBuffered()) {
+//            debugQuad.buffer();
+//        }
+//        debugQuad.render();
     }
 
     public Set<Float> getWaterHeights() {

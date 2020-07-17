@@ -63,11 +63,11 @@ public class Chunk { // some operations are mutually exclusive
 
     private boolean buffered = false;
 
-    private boolean visible = false;
-
     private static final byte[] MEMORY = new byte[0x100000];
     private static int pos = 0;
     private boolean cached = false;
+
+    private double timeToLive = 0.0;
 
     public Chunk(int id, boolean solid) {
         this.id = id;
@@ -86,7 +86,7 @@ public class Chunk { // some operations are mutually exclusive
         return result;
     }
 
-    private void transfer(Block fluidBlock, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
+    public void transfer(Block fluidBlock, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         String fluidTexture = fluidBlock.texName;
 
         Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
@@ -108,14 +108,21 @@ public class Chunk { // some operations are mutually exclusive
         buffered = false;
     }
 
-    private void updateFluids(Block fluidBlock, boolean useTransfer) { // call only for fluid blocks after adding        
-        int faceBitsBefore = fluidBlock.getFaceBits();
-        byte neighborBits = LevelContainer.ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(fluidBlock.pos), (byte) 0);
-        fluidBlock.setFaceBits(~neighborBits & 63, false);
-        int faceBitsAfter = fluidBlock.getFaceBits();
-        if (faceBitsBefore != faceBitsAfter && useTransfer) { // if bits changed, i.e. some face(s) got disabled
-            transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+    // for internal use, for load disk method (does not add to LevelContainer)
+    private void addBlock(Block block) {
+        String blockTexture = block.texName;
+        int blockFaceBits = block.getFaceBits();
+        Tuple tuple = getTuple(blockTexture, blockFaceBits);
+
+        if (tuple == null) {
+            tuple = new Tuple(blockTexture, blockFaceBits);
+            tupleSet.add(tuple);
         }
+
+        tuple.getBlocks().getBlockList().add(block);
+        tuple.getBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
+
+        buffered = false;
     }
 
     public void addBlock(Block block, boolean useLevelContainer) {
@@ -134,9 +141,7 @@ public class Chunk { // some operations are mutually exclusive
 
         tuple.getBlocks().getBlockList().add(block);
         tuple.getBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
-        if (!block.solid) {
-            updateFluids(block, !useLevelContainer);
-        }
+
         buffered = false;
     }
 
@@ -150,9 +155,6 @@ public class Chunk { // some operations are mutually exclusive
         Tuple target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {
             target.getBlocks().getBlockList().remove(block);
-            if (!block.solid) {
-                updateFluids(block, useLevelContainer);
-            }
             buffered = false;
             // if tuple has no blocks -> remove it
             if (target.getBlocks().getBlockList().isEmpty()) {
@@ -200,7 +202,7 @@ public class Chunk { // some operations are mutually exclusive
 
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !tupleSet.isEmpty() && visible) {
+        if (buffered && shaderProgram != null && !tupleSet.isEmpty() && timeToLive > 0.0) {
             Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
@@ -302,7 +304,7 @@ public class Chunk { // some operations are mutually exclusive
         return result;
     }
 
-    private void saveMemToDisk(String filename) {
+    private synchronized void saveMemToDisk(String filename) {
         BufferedOutputStream bos = null;
         File file = new File(filename);
         if (file.exists()) {
@@ -325,25 +327,27 @@ public class Chunk { // some operations are mutually exclusive
         }
     }
 
-    private void loadDiskToMem(String filename) {
+    private synchronized void loadDiskToMem(String filename) {
         File file = new File(filename);
-        BufferedInputStream bis = null;
-        try {
-            bis = new BufferedInputStream(new FileInputStream(file));
-            bis.read(MEMORY);
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (bis != null) {
+        if (file.exists()) {
+            BufferedInputStream bis = null;
             try {
-                bis.close();
+                bis = new BufferedInputStream(new FileInputStream(file));
+                bis.read(MEMORY);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
             } catch (IOException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             }
+            if (bis != null) {
+                try {
+                    bis.close();
+                } catch (IOException ex) {
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
+                }
+            }
+            file.delete();
         }
-        file.delete();
     }
 
     private String getFileName() {
@@ -382,6 +386,9 @@ public class Chunk { // some operations are mutually exclusive
             }
 
             saveMemToDisk(getFileName());
+
+            tupleSet.clear();
+
             cached = true;
         }
     }
@@ -411,7 +418,7 @@ public class Chunk { // some operations are mutually exclusive
                 pos += blockPosCol.length;
 
                 Block block = new Block(texName, blockPos, blockCol, solid);
-                addBlock(block, false); // do not touch Level Container just add Block
+                addBlock(block);
             }
             cached = false;
             long time1 = System.nanoTime();
@@ -458,14 +465,6 @@ public class Chunk { // some operations are mutually exclusive
         this.buffered = buffered;
     }
 
-    public boolean isVisible() {
-        return visible;
-    }
-
-    public void setVisible(boolean visible) {
-        this.visible = visible;
-    }
-
     public byte[] getMemory() {
         return MEMORY;
     }
@@ -476,6 +475,26 @@ public class Chunk { // some operations are mutually exclusive
 
     public boolean isCached() {
         return cached;
+    }
+
+    public double getTimeToLive() {
+        return timeToLive;
+    }
+
+    public void setTimeToLive(double timeToLive) {
+        this.timeToLive = timeToLive;
+    }
+
+    public void decTimeToLive() {
+        if (timeToLive > 0.0) {
+            timeToLive--;
+        } else {
+            timeToLive = 0.0;
+        }
+    }
+
+    public boolean isAlive() {
+        return timeToLive > 0.0;
     }
 
 }

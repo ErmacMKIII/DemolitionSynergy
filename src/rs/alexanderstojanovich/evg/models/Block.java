@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -601,12 +603,12 @@ public class Block extends Model {
         byte[] texNameArr = texName.getBytes();
         System.arraycopy(texNameArr, 0, byteArray, offset, 5);
         offset += 5;
-        byte[] solidPos = Vector3fUtils.vec3fToByteArray(pos);
-        System.arraycopy(solidPos, 0, byteArray, offset, solidPos.length); // 12 B
-        offset += solidPos.length;
-        byte[] solidCol = Vector3fUtils.vec3fToByteArray(primaryColor);
-        System.arraycopy(solidCol, 0, byteArray, offset, solidCol.length); // 12 B
-        offset += solidCol.length;
+        byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        byte[] colArr = Vector3fUtils.vec3fToByteArray(primaryColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
         return byteArray;
     }
 
@@ -626,7 +628,6 @@ public class Block extends Model {
         byte[] blockPosCol = new byte[12];
         System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
         Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-        offset += blockPosCol.length;
 
         Block block = new Block(texName, blockPos, blockCol, solid);
 

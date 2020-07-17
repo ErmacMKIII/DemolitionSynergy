@@ -281,6 +281,7 @@ public class Editor {
                     gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
                 } else { // if block is fluid                    
                     gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew, true);
+                    gameObject.getLevelContainer().getFluidChunks().updateFluids();
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block();
@@ -296,6 +297,7 @@ public class Editor {
                 gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr, true);
             } else {
                 gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr, true);
+                gameObject.getLevelContainer().getFluidChunks().updateFluids();
             }
             gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }

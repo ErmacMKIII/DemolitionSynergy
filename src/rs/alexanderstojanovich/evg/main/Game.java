@@ -58,7 +58,7 @@ public class Game {
     public static final int UPD_MAX_PASSES = 10;
 
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 15.0;
+    public static final double CRITICAL_TIME = 5.0;
 
     private final GameObject gameObject;
 
@@ -424,8 +424,10 @@ public class Game {
             while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                 GLFW.glfwPollEvents();
                 float deltaTime = (float) (upsTicks / TPS);
+                gameObject.determineVisibleChunks();
                 gameObject.update(deltaTime);
-                gameObject.autoSaveLoad();
+                gameObject.autoLoadChunks();
+                gameObject.autoSaveChunks();
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
