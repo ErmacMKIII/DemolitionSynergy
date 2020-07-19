@@ -111,14 +111,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.determineVisible();
     }
 
-    // auto load level container chunks
-    public synchronized void autoLoadChunks() {
-        levelContainer.autoLoadVisibleChunks();
-    }
-
-    // auto load level container chunks
-    public synchronized void autoSaveChunks() {
-        levelContainer.autoSaveInvisibleChunks();
+    // auto load/save level container chunks
+    public synchronized void autoDoChunks() {
+        levelContainer.autoDoChunks();
     }
 
     // animation for water

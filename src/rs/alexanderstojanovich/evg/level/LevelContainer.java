@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -80,6 +81,13 @@ public class LevelContainer implements GravityEnviroment {
 
     // position of all the fluid blocks to neighbors
     public static final Map<Integer, Byte> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
+
+    public static final Predicate<Chunk> CACHED_PREDICATE = new Predicate<Chunk>() {
+        @Override
+        public boolean test(Chunk t) {
+            return t.isCached();
+        }
+    };
 
     private static void determineSolid(Vector3f vector) {
         byte bits = 0;
@@ -562,20 +570,20 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-//            OUTER:
-//            for (Integer i : visibleChunks) {
-//                Chunk solidChunk = solidChunks.getChunk(i);
-//                if (solidChunk != null) {
-//                    for (Block solidBlock : solidChunk.getList()) {
-//                        if (solidBlock.containsInsideEqually(critter.getPredictor())
-//                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-//                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
-//                            coll = true;
-//                            break OUTER;
-//                        }
-//                    }
-//                }
-//            }
+            OUTER:
+            for (Integer i : visibleChunks) {
+                Chunk solidChunk = solidChunks.getChunk(i);
+                if (solidChunk != null) {
+                    for (Block solidBlock : solidChunk.getList()) {
+                        if (solidBlock.containsInsideEqually(critter.getPredictor())
+                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
+                            coll = true;
+                            break OUTER;
+                        }
+                    }
+                }
+            }
         }
         return coll;
     }
@@ -610,46 +618,17 @@ public class LevelContainer implements GravityEnviroment {
         Chunk.determineVisible(visibleChunks, obsCamera.getPos(), obsCamera.getFront());
     }
 
-    // method for loading visible chunks
-    public void autoLoadVisibleChunks() {
-        if (!working) {
-            boolean singlFldChnkLd = false;
-            //------------------------------------------------------------------
-            for (int chunkId : visibleChunks) {
-                Chunk solidChunk = solidChunks.getChunk(chunkId);
-                if (solidChunk != null) {
-                    if (solidChunk.isCached()) {
-                        solidChunk.loadFromDisk();
-                    }
-                    if (!solidChunk.isAlive()) {
-                        solidChunk.setTimeToLive(Game.TPS << 2);
-                    }
-                }
-
-                Chunk fluidChunk = fluidChunks.getChunk(chunkId);
-                if (fluidChunk != null) {
-                    if (fluidChunk.isCached()) {
-                        fluidChunk.loadFromDisk();
-                        singlFldChnkLd = true;
-                    }
-                    if (!fluidChunk.isAlive()) {
-                        fluidChunk.setTimeToLive(Game.TPS << 2);
-                    }
-                }
-            }
-
-            if (singlFldChnkLd) {
-                fluidChunks.updateFluids();
-            }
-        }
-    }
-
     // method for saving invisible chunks
-    public void autoSaveInvisibleChunks() {
+    public void autoDoChunks() {
         if (!working) {
+            boolean singleLdFldChnk = false;
+
             for (Chunk solidChunk : solidChunks.getChunkList()) {
-                if (solidChunk.isAlive()
-                        && !visibleChunks.contains((Integer) solidChunk.getId())) {
+                boolean contains = visibleChunks.contains((Integer) solidChunk.getId());
+                if (solidChunk.isCached() && !solidChunk.isAlive() && contains) {
+                    solidChunk.loadFromDisk();
+                    solidChunk.setTimeToLive(Game.TPS << 2);
+                } else if (solidChunk.isAlive() && !contains) {
                     solidChunk.decTimeToLive();
                 } else if (!solidChunk.isAlive() && !solidChunk.isBuffered()) {
                     solidChunk.saveToDisk();
@@ -657,13 +636,22 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (fluidChunk.isAlive()
-                        && !visibleChunks.contains((Integer) fluidChunk.getId())) {
+                boolean contains = visibleChunks.contains((Integer) fluidChunk.getId());
+                if (fluidChunk.isCached() && !fluidChunk.isAlive() && contains) {
+                    fluidChunk.loadFromDisk();
+                    fluidChunk.setTimeToLive(Game.TPS << 2);
+                    singleLdFldChnk = true;
+                } else if (fluidChunk.isAlive() && !contains) {
                     fluidChunk.decTimeToLive();
                 } else if (!fluidChunk.isAlive() && !fluidChunk.isBuffered()) {
                     fluidChunk.saveToDisk();
                 }
             }
+
+            if (singleLdFldChnk) {
+                fluidChunks.updateFluids();
+            }
+
         }
     }
 

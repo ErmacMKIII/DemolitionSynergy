@@ -426,8 +426,7 @@ public class Game {
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.determineVisibleChunks();
                 gameObject.update(deltaTime);
-                gameObject.autoLoadChunks();
-                gameObject.autoSaveChunks();
+                gameObject.autoDoChunks();
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();

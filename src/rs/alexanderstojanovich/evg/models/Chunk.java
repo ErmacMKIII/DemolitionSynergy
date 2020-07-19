@@ -23,10 +23,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
@@ -69,7 +67,7 @@ public class Chunk { // some operations are mutually exclusive
     private static int pos = 0;
     private boolean cached = false;
 
-    private double timeToLive = 0.0;
+    private int timeToLive = 0;
 
     private int cachedSize = 0;
 
@@ -358,6 +356,10 @@ public class Chunk { // some operations are mutually exclusive
         return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
     }
 
+    private static String getFileName(int id, boolean solid) {
+        return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
+    }
+
     public void saveToDisk() {
         if (!cached) {
             List<Block> blocks = getList();
@@ -435,6 +437,12 @@ public class Chunk { // some operations are mutually exclusive
         }
     }
 
+    public static Chunk loadFromDisk(int chunkId, boolean solid) {
+        Chunk chunk = new Chunk(pos, solid);
+        chunk.loadFromDisk();
+        return chunk;
+    }
+
     public static void deleteCache() {
         // deleting cache
         File cache = new File(Game.CACHE);
@@ -444,6 +452,11 @@ public class Chunk { // some operations are mutually exclusive
             }
             cache.delete();
         }
+    }
+
+    public static boolean isCached(int chunkId, boolean solid) {
+        File file = new File(getFileName(chunkId, solid));
+        return file.exists();
     }
 
     public int getId() {
@@ -486,24 +499,32 @@ public class Chunk { // some operations are mutually exclusive
         return cached;
     }
 
-    public double getTimeToLive() {
+    public int getTimeToLive() {
         return timeToLive;
     }
 
-    public void setTimeToLive(double timeToLive) {
+    public void setTimeToLive(int timeToLive) {
         this.timeToLive = timeToLive;
     }
 
+    public int getCachedSize() {
+        return cachedSize;
+    }
+
+    public void setCachedSize(int cachedSize) {
+        this.cachedSize = cachedSize;
+    }
+
     public void decTimeToLive() {
-        if (timeToLive > 0.0) {
+        if (timeToLive > 0) {
             timeToLive--;
         } else {
-            timeToLive = 0.0;
+            timeToLive = 0;
         }
     }
 
     public boolean isAlive() {
-        return timeToLive > 0.0;
+        return timeToLive > 0;
     }
 
 }
