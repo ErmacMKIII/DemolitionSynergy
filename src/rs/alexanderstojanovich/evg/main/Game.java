@@ -55,7 +55,7 @@ public class Game {
     private static int fpsMax; // fps max or fps cap  
 
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 10;
+    public static final int UPD_MAX_PASSES = 5;
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;

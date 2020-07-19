@@ -23,8 +23,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
@@ -68,6 +70,8 @@ public class Chunk { // some operations are mutually exclusive
     private boolean cached = false;
 
     private double timeToLive = 0.0;
+
+    private int cachedSize = 0;
 
     public Chunk(int id, boolean solid) {
         this.id = id;
@@ -287,7 +291,7 @@ public class Chunk { // some operations are mutually exclusive
     public int size() { // for debugging purposes
         int size = 0;
         if (cached) {
-            size = (pos + 1 - 3) / 29;
+            size = cachedSize;
         } else {
             for (Tuple tuple : tupleSet) {
                 size += tuple.getBlocks().getBlockList().size();
@@ -389,6 +393,8 @@ public class Chunk { // some operations are mutually exclusive
 
             tupleSet.clear();
 
+            cachedSize = blocks.size();
+
             cached = true;
         }
     }
@@ -421,6 +427,9 @@ public class Chunk { // some operations are mutually exclusive
                 addBlock(block);
             }
             cached = false;
+
+            cachedSize = 0;
+
             long time1 = System.nanoTime();
             System.out.println("Chunk " + id + " solid = " + solid + " time = " + (time1 - time0) / 1E6D);
         }
@@ -465,7 +474,7 @@ public class Chunk { // some operations are mutually exclusive
         this.buffered = buffered;
     }
 
-    public byte[] getMemory() {
+    public static byte[] getMEMORY() {
         return MEMORY;
     }
 

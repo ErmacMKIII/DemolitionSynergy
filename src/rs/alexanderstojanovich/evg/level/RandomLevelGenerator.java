@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.level;
 import java.util.List;
 import org.joml.Random;
 import org.joml.SimplexNoise;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -72,7 +73,12 @@ public class RandomLevelGenerator {
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
+
+            Vector2f posXZ = new Vector2f(posx, posz);
+            posXZ.normalize();
+
+            posy = SimplexNoise.noise(posXZ.x, posXZ.y) * POS_VAL;
+
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
@@ -97,7 +103,12 @@ public class RandomLevelGenerator {
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
+
+            Vector2f posXZ = new Vector2f(posx, posz);
+            posXZ.normalize();
+
+            posy = SimplexNoise.noise(posXZ.x, posXZ.y) * POS_VAL;
+
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))

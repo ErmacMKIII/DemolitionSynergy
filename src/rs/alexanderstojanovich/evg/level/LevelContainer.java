@@ -61,7 +61,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 8.0f;
+    public static final float BASE = 7.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
@@ -562,20 +562,20 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-            OUTER:
-            for (Integer i : visibleChunks) {
-                Chunk solidChunk = solidChunks.getChunk(i);
-                if (solidChunk != null) {
-                    for (Block solidBlock : solidChunk.getList()) {
-                        if (solidBlock.containsInsideEqually(critter.getPredictor())
-                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
-                            coll = true;
-                            break OUTER;
-                        }
-                    }
-                }
-            }
+//            OUTER:
+//            for (Integer i : visibleChunks) {
+//                Chunk solidChunk = solidChunks.getChunk(i);
+//                if (solidChunk != null) {
+//                    for (Block solidBlock : solidChunk.getList()) {
+//                        if (solidBlock.containsInsideEqually(critter.getPredictor())
+//                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+//                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
+//                            coll = true;
+//                            break OUTER;
+//                        }
+//                    }
+//                }
+//            }
         }
         return coll;
     }
@@ -613,6 +613,7 @@ public class LevelContainer implements GravityEnviroment {
     // method for loading visible chunks
     public void autoLoadVisibleChunks() {
         if (!working) {
+            boolean singlFldChnkLd = false;
             //------------------------------------------------------------------
             for (int chunkId : visibleChunks) {
                 Chunk solidChunk = solidChunks.getChunk(chunkId);
@@ -629,13 +630,17 @@ public class LevelContainer implements GravityEnviroment {
                 if (fluidChunk != null) {
                     if (fluidChunk.isCached()) {
                         fluidChunk.loadFromDisk();
+                        singlFldChnkLd = true;
                     }
                     if (!fluidChunk.isAlive()) {
                         fluidChunk.setTimeToLive(Game.TPS << 2);
                     }
                 }
             }
-            fluidChunks.updateFluids();
+
+            if (singlFldChnkLd) {
+                fluidChunks.updateFluids();
+            }
         }
     }
 

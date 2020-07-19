@@ -98,8 +98,7 @@ public class Chunks {
     public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
         Chunk result = null;
         for (Chunk chunk : chunkList) {
-            if (chunk.isCached() && chunk.getMemory()[0] == chunkId
-                    || !chunk.isCached() && chunk.getId() == chunkId) {
+            if (chunk.getId() == chunkId) {
                 result = chunk;
                 break;
             }
