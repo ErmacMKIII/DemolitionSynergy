@@ -34,7 +34,6 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -607,8 +606,12 @@ public class LevelContainer implements GravityEnviroment {
 
     // method for determining visible chunks
     public void determineVisible() {
-        Camera obsCamera = levelActors.getPlayer().getCamera();
-        Chunk.determineVisible(visibleQueue, invisibleQueue, obsCamera.getPos(), obsCamera.getFront());
+        if (visibleQueue.isEmpty() && invisibleQueue.isEmpty()) {
+            Camera obsCamera = levelActors.getPlayer().getCamera();
+            Chunk.determineVisible(visibleQueue, invisibleQueue, obsCamera.getPos(), obsCamera.getFront());
+//            DSLogger.reportInfo("V " + visibleQueue.toString(), null);
+//            DSLogger.reportInfo("I " + invisibleQueue.toString(), null);
+        }
     }
 
     // method for saving invisible chunks
@@ -622,8 +625,9 @@ public class LevelContainer implements GravityEnviroment {
                 if (solidChunk != null) {
                     if (solidChunk.isCached()) {
                         solidChunk.loadFromDisk();
-                    } else if (!solidChunk.isAlive()) {
-                        solidChunk.setTimeToLive(Game.TPS << 2);
+                    }
+                    if (!solidChunk.isAlive()) {
+                        solidChunk.setTimeToLive(5);
                     }
                 }
 
@@ -633,7 +637,7 @@ public class LevelContainer implements GravityEnviroment {
                         fluidChunk.loadFromDisk();
                         singleLdFldChnk = true;
                     } else if (!fluidChunk.isAlive()) {
-                        fluidChunk.setTimeToLive(Game.TPS << 2);
+                        fluidChunk.setTimeToLive(5);
                     }
                 }
             }
@@ -644,7 +648,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (solidChunk != null) {
                     if (solidChunk.isAlive()) {
                         solidChunk.decTimeToLive();
-                    } else if (!solidChunk.isBuffered()) {
+                    } else if (!solidChunk.isAlive() && !solidChunk.isBuffered()) {
                         solidChunk.saveToDisk();
                     }
                 }
