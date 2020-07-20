@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
@@ -267,7 +268,9 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     // determine which chunks are visible by this chunk
-    public static void determineVisible(Set<Integer> visibleSet, Vector3f actorPos, Vector3f actorFront) {
+    public static void determineVisible(Queue<Integer> visibleQueue, Queue<Integer> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
+        visibleQueue.clear();
+        invisibleQueue.clear();
         final int val = CHUNKS_NUM / 2 - 1;
         // current chunk where player is
         int cid = chunkFunc(actorPos);
@@ -279,9 +282,9 @@ public class Chunk { // some operations are mutually exclusive
             float distance = chunkPos.distance(actorPos);
             if (id == cid && distance <= VISION
                     || id != cid && distance <= VISION && product >= 0.5f) {
-                visibleSet.add(id);
+                visibleQueue.add(id);
             } else {
-                visibleSet.remove(id);
+                invisibleQueue.add(id);
             }
         }
     }

@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -146,9 +147,9 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void saveInvisibleToDisk(Set<Integer> visibleChunks) {
+    public void saveInvisibleToDisk(Queue<Integer> invisibleChunks) {
         for (Chunk chunk : chunkList) {
-            if (!visibleChunks.contains(chunk.getId())) {
+            if (!invisibleChunks.contains(chunk.getId())) {
                 chunk.saveToDisk();
             }
         }
@@ -163,9 +164,9 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void loadInvisibleFromDisk(Set<Integer> visibleChunks) {
+    public void loadInvisibleFromDisk(Queue<Integer> invisibleChunks) {
         for (Chunk chunk : chunkList) {
-            if (!visibleChunks.contains(chunk.getId())
+            if (!invisibleChunks.contains(chunk.getId())
                     && !chunk.isAlive()) {
                 chunk.loadFromDisk();
             }

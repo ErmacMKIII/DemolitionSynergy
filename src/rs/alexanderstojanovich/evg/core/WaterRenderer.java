@@ -51,7 +51,7 @@ public class WaterRenderer {
             Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
             float obsHeight = obsCamera.getPos().y;
             Vector3f obsUp = obsCamera.getUp();
-            for (Integer i : levelContainer.getVisibleChunks()) {
+            for (Integer i : levelContainer.getVisibleQueue()) {
                 Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(i);
                 if (fluidChunk != null) {
                     for (Block fluidBlock : fluidChunk.getList()) {
