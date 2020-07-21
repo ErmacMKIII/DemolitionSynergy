@@ -112,7 +112,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // auto load/save level container chunks
-    public synchronized void autoDoChunks() {
+    public void autoDoChunks() {
         levelContainer.autoDoChunks();
     }
 

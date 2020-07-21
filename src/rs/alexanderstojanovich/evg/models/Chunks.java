@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;

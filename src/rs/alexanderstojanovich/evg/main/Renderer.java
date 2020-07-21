@@ -95,7 +95,7 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            while (Game.getUpsTicks() < 1.0 && fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+            while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                 gameObject.render();
                 fps++;
                 fpsTicks--;

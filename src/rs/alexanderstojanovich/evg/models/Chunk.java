@@ -45,8 +45,8 @@ public class Chunk { // some operations are mutually exclusive
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int ABS_BOUND = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f); // modulator
-    public static final int DIVIDER = 16; // divider -> number of chunks is calculated as (2 * MODULATOR + 1) / DIVIDER
-    public static final int CHUNKS_NUM = 2 * (ABS_BOUND / DIVIDER) + 1;
+    public static final int DIVIDER = 16; // divider -> number of chunks
+    public static final int VAL = DIVIDER / 2 - 1; // for iterations of determine visible
 
     public static final float VISION = 100.0f; // determines visibility
 
@@ -271,12 +271,12 @@ public class Chunk { // some operations are mutually exclusive
     public static void determineVisible(Queue<Integer> visibleQueue, Queue<Integer> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
         visibleQueue.clear();
         invisibleQueue.clear();
-        final int val = CHUNKS_NUM / 2 - 1;
+
         // current chunk where player is
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
-        for (int id = -val; id <= val; id++) {
+        for (int id = -VAL; id <= VAL; id++) {
             Vector3f chunkPos = chunkInverFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
