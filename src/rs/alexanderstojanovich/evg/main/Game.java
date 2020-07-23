@@ -55,7 +55,7 @@ public class Game {
     private static int fpsMax; // fps max or fps cap  
 
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 5;
+    public static final int UPD_MAX_PASSES = 10;
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
@@ -411,7 +411,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += -Math.expm1(-diff * Game.TPS);
+            upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
@@ -421,23 +421,26 @@ public class Game {
                 break;
             }
 
-            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
-                GLFW.glfwPollEvents();
-                float deltaTime = (float) (upsTicks / TPS);
-                gameObject.determineVisibleChunks();
-                gameObject.update(deltaTime);
-                gameObject.autoDoChunks();
-                if (currentMode == Mode.SINGLE_PLAYER) {
-                    playerDo();
-                    observerDo();
-                } else if (currentMode == Mode.EDITOR) {
-                    gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                    editorDo();
-                    observerDo();
+            synchronized (GameObject.OBJ_MUTEX) {
+                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                    GLFW.glfwPollEvents();
+                    float deltaTime = (float) (upsTicks / TPS);
+                    gameObject.determineVisibleChunks();
+                    gameObject.update(deltaTime);
+                    gameObject.autoDoChunks();
+                    if (currentMode == Mode.SINGLE_PLAYER) {
+                        playerDo();
+                        observerDo();
+                    } else if (currentMode == Mode.EDITOR) {
+                        gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                        editorDo();
+                        observerDo();
+                    }
+                    ups++;
+                    upsTicks--;
+                    updPasses++;
                 }
-                ups++;
-                upsTicks--;
-                updPasses++;
+                GameObject.OBJ_MUTEX.notify();
             }
             updPasses = 0;
 

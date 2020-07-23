@@ -50,8 +50,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private boolean assertCollision = false;
 
-    private boolean concurrent = false;
-
     // everyone can access only one instance of the game object
     private static GameObject instance;
 
@@ -72,19 +70,21 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
-    public synchronized void update(float deltaTime) {
-        if (!levelContainer.isWorking() && !concurrent) { // working check avoids locking the monitor
+    public void update(float deltaTime) {
+        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
-            waterRenderer.refresh();
+            if (Game.isWaterEffects()) {
+                waterRenderer.refresh();
+            }
         }
         intrface.update();
         intrface.setCollText(assertCollision);
     }
 
     // requires context to be set in the proper thread (call only from renderer)
-    public synchronized void render() {
+    public void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
-        if (levelContainer.isWorking() || concurrent) { // working check avoids locking the monitor
+        if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else {
@@ -101,7 +101,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // hint to the render that objects should be buffered
-    public synchronized void unbuffer() {
+    public void unbuffer() {
         levelContainer.getSolidChunks().setBuffered(false);
         levelContainer.getFluidChunks().setBuffered(false);
     }
@@ -117,39 +117,31 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // animation for water
-    public synchronized void animate() {
+    public void animate() {
         levelContainer.animate();
     }
 
     // -------------------------------------------------------------------------
     // Called from concurrent thread
     public void startNewLevel() {
-        concurrent = true;
         levelContainer.startNewLevel();
-        concurrent = false;
     }
 
     // Called from concurrent thread
     public boolean loadLevelFromFile(String fileName) {
-        concurrent = true;
         boolean ok = levelContainer.loadLevelFromFile(fileName);
-        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
     public boolean saveLevelToFile(String fileName) {
-        concurrent = true;
         boolean ok = levelContainer.saveLevelToFile(fileName);
-        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
     public boolean generateRandomLevel(int numberOfBlocks) {
-        concurrent = true;
         boolean ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-        concurrent = false;
         return ok;
     }
 
@@ -160,13 +152,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
 
     // destroys the window
-    public synchronized void destroy() {
+    public void destroy() {
         GameObject.MY_WINDOW.loadContext();
         GameObject.MY_WINDOW.destroy();
     }
 
     // collision detection - critter against solid obstacles
-    public synchronized boolean hasCollisionWithCritter(Critter critter) {
+    public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithCritter(critter);
     }
 

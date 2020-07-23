@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -444,7 +445,7 @@ public class LevelContainer implements GravityEnviroment {
                     }
 
                     fluidChunks.updateFluids();
-                    
+
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -538,6 +539,7 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
+    @Deprecated
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
@@ -562,18 +564,12 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-            OUTER:
-            for (Integer i : visibleQueue) {
-                Chunk solidChunk = solidChunks.getChunk(i);
-                if (solidChunk != null) {
-                    for (Block solidBlock : solidChunk.getList()) {
-                        if (solidBlock.containsInsideEqually(critter.getPredictor())
-                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
-                            coll = true;
-                            break OUTER;
-                        }
-                    }
+            for (Block solidBlock : solidChunks.getTotalList()) {
+                if (solidBlock.containsInsideEqually(critter.getPredictor())
+                        || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                                critter.getModel().getHeight(), critter.getModel().getDepth())) {
+                    coll = true;
+                    break;
                 }
             }
         }
@@ -615,7 +611,7 @@ public class LevelContainer implements GravityEnviroment {
     // method for saving invisible chunks
     public void autoDoChunks() {
         if (!working) {
-            boolean singleLdFldChnk = false;
+            boolean singleLdSvFldChnk = false;
             Integer visibleId, invisibleId;
             switch (operation) {
                 case 0:
@@ -625,8 +621,7 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidChunk != null) {
                             if (solidChunk.isCached()) {
                                 solidChunk.loadFromDisk();
-                            }
-                            if (!solidChunk.isAlive()) {
+                            } else if (!solidChunk.isAlive()) {
                                 solidChunk.setTimeToLive(5);
                             }
                         }
@@ -639,7 +634,7 @@ public class LevelContainer implements GravityEnviroment {
                         if (fluidChunk != null) {
                             if (fluidChunk.isCached()) {
                                 fluidChunk.loadFromDisk();
-                                singleLdFldChnk = true;
+                                singleLdSvFldChnk = true;
                             } else if (!fluidChunk.isAlive()) {
                                 fluidChunk.setTimeToLive(5);
                             }
@@ -668,7 +663,7 @@ public class LevelContainer implements GravityEnviroment {
                                 fluidChunk.decTimeToLive();
                             } else if (!fluidChunk.isBuffered()) {
                                 fluidChunk.saveToDisk();
-                                singleLdFldChnk = true;
+                                singleLdSvFldChnk = true;
                             }
                         }
                     }
@@ -682,7 +677,7 @@ public class LevelContainer implements GravityEnviroment {
                 operation = 0;
             }
 
-            if (singleLdFldChnk) {
+            if (singleLdSvFldChnk) {
                 fluidChunks.updateFluids();
             }
         }
@@ -691,6 +686,10 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
+            Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
+            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+                fluidChunk.tstCameraInFluid(camPos);
+            }
         }
     }
 

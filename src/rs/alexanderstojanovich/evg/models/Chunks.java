@@ -61,7 +61,9 @@ public class Chunks {
             if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
                 int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
                 Chunk fluidChunk = getChunk(chunkId);
-                fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                if (fluidChunk != null) {
+                    fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                }
             }
         }
     }

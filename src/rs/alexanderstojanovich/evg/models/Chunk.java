@@ -281,7 +281,7 @@ public class Chunk { // some operations are mutually exclusive
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
             if (id == cid && distance <= VISION
-                    || id != cid && distance <= VISION && product >= 0.5f) {
+                    || id != cid && distance <= VISION && product >= 0.25f) {
                 visibleQueue.add(id);
             } else {
                 invisibleQueue.add(id);
@@ -463,6 +463,28 @@ public class Chunk { // some operations are mutually exclusive
     public static boolean isCached(int chunkId, boolean solid) {
         File file = new File(getFileName(chunkId, solid));
         return file.exists();
+    }
+
+    public boolean isCameraInFluid(Vector3f camPos) {
+        boolean yea = false;
+        for (Block fluidBLock : getList()) {
+            if (fluidBLock.containsInsideEqually(camPos)) {
+                yea = true;
+                break;
+            }
+        }
+        return yea;
+    }
+
+    public void tstCameraInFluid(Vector3f camPos) {
+        boolean yea = false;
+        for (Block fluidBLock : getList()) {
+            if (fluidBLock.containsInsideEqually(camPos)) {
+                yea = true;
+                break;
+            }
+        }
+        setCameraInFluid(yea);
     }
 
     public int getId() {

@@ -21,7 +21,6 @@ import java.util.Set;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -51,17 +50,18 @@ public class WaterRenderer {
             Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
             float obsHeight = obsCamera.getPos().y;
             Vector3f obsUp = obsCamera.getUp();
-            for (Integer i : levelContainer.getVisibleQueue()) {
-                Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(i);
-                if (fluidChunk != null) {
-                    for (Block fluidBlock : fluidChunk.getList()) {
-                        float waterHeight = fluidBlock.getSurfaceY();
-                        if (fluidBlock.getEnabledFaces()[Block.TOP]
-                                && waterHeight <= obsHeight
-                                && fluidBlock.intersectsRay(obsCamera.getPos(), obsUp)) {
-                            waterHeights.add(waterHeight);
-                        }
-                    }
+            for (Block fluidBlock : levelContainer.getFluidChunks().getTotalList()) {
+                float waterHeight = fluidBlock.getSurfaceY();
+                if (fluidBlock.getEnabledFaces()[Block.TOP]
+                        && waterHeight <= obsHeight
+                        && fluidBlock.intersectsRay(obsCamera.getPos(), obsUp)) {
+                    waterHeights.add(waterHeight);
+                }
+
+                int currChunkId = Chunk.chunkFunc(camera.getPos());
+                Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
+                if (currChunk != null) {
+                    currChunk.setWaterTexture(frameBuffer.getTexture());
                 }
             }
         }
@@ -97,11 +97,6 @@ public class WaterRenderer {
             // refresh is called from the update (renderer)
             for (Float height : waterHeights) {
                 capture(height);
-            }
-            int currChunkId = Chunk.chunkFunc(camera.getPos());
-            Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
-            if (currChunk != null) {
-                currChunk.setWaterTexture(frameBuffer.getTexture());
             }
         }
         frameBuffer.unbind();

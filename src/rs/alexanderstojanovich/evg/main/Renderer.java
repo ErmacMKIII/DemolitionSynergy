@@ -20,6 +20,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -42,7 +44,7 @@ public class Renderer extends Thread implements Executor {
     private static int fps = 0;
 
     private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 5;
+    public static final int REN_MAX_PASSES = 10;
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
@@ -95,13 +97,20 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                gameObject.render();
-                fps++;
-                fpsTicks--;
-                renPasses++;
+            synchronized (GameObject.OBJ_MUTEX) {
+                try {
+                    GameObject.OBJ_MUTEX.wait();
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Renderer.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                    gameObject.render();
+                    fps++;
+                    fpsTicks--;
+                    renPasses++;
+                }
+                renPasses = 0;
             }
-            renPasses = 0;
 
             // update text which shows ups and fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
