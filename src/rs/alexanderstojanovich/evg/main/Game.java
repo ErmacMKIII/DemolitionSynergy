@@ -55,7 +55,7 @@ public class Game {
     private static int fpsMax; // fps max or fps cap  
 
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 10;
+    public static final int UPD_MAX_PASSES = 5;
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
@@ -411,7 +411,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * Game.TPS;
+            upsTicks += -Math.expm1(-diff * Game.TPS);
             lastTime = currTime;
 
             // Detecting critical status
@@ -421,28 +421,30 @@ public class Game {
                 break;
             }
 
-            synchronized (GameObject.OBJ_MUTEX) {
-                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
-                    GLFW.glfwPollEvents();
-                    float deltaTime = (float) (upsTicks / TPS);
-                    gameObject.determineVisibleChunks();
-                    gameObject.update(deltaTime);
-                    gameObject.autoDoChunks();
-                    if (currentMode == Mode.SINGLE_PLAYER) {
-                        playerDo();
-                        observerDo();
-                    } else if (currentMode == Mode.EDITOR) {
-                        gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                        editorDo();
-                        observerDo();
-                    }
-                    ups++;
-                    upsTicks--;
-                    updPasses++;
+            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                GLFW.glfwPollEvents();
+                float deltaTime = (float) (upsTicks / TPS);
+                gameObject.determineVisibleChunks();
+                gameObject.update(deltaTime);
+                gameObject.autoDoChunks();
+                if (currentMode == Mode.SINGLE_PLAYER) {
+                    playerDo();
+                    observerDo();
+                } else if (currentMode == Mode.EDITOR) {
+                    gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                    editorDo();
+                    observerDo();
                 }
-                GameObject.OBJ_MUTEX.notify();
+                ups++;
+                upsTicks--;
+                updPasses++;
+
             }
             updPasses = 0;
+
+            synchronized (GameObject.OBJ_MUTEX) {
+                GameObject.OBJ_MUTEX.notify();
+            }
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
@@ -452,8 +454,12 @@ public class Game {
             }
 
         }
-        // stops the music
+        // stops the music        
         gameObject.getMusicPlayer().stop();
+        // wakes up the sleepers!
+        synchronized (GameObject.OBJ_MUTEX) {
+            GameObject.OBJ_MUTEX.notify();
+        }
     }
 
     public Configuration makeConfig() {

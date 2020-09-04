@@ -34,7 +34,6 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -60,6 +59,10 @@ public class LevelContainer implements GravityEnviroment {
     private final Queue<Integer> invisibleQueue = new ArrayDeque<>();
 
     private int operation = 0;
+    private static final int SOLID_CHUNK_LD = 0;
+    private static final int FLUID_CHUNK_LD = 1;
+    private static final int SOLID_CHUNK_SV = 2;
+    private static final int FLUID_CHUNK_SV = 3;
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
@@ -612,10 +615,15 @@ public class LevelContainer implements GravityEnviroment {
     public void autoDoChunks() {
         if (!working) {
             boolean singleLdSvFldChnk = false;
-            Integer visibleId, invisibleId;
+            Integer visibleId = null, invisibleId = null;
+            if (operation == SOLID_CHUNK_LD || operation == FLUID_CHUNK_LD) {
+                visibleId = visibleQueue.poll();
+            } else if (operation == FLUID_CHUNK_LD || operation == FLUID_CHUNK_SV) {
+                invisibleId = invisibleQueue.poll();
+            }
+
             switch (operation) {
-                case 0:
-                    visibleId = visibleQueue.poll();
+                case SOLID_CHUNK_LD:
                     if (visibleId != null) {
                         Chunk solidChunk = solidChunks.getChunk(visibleId);
                         if (solidChunk != null) {
@@ -627,8 +635,7 @@ public class LevelContainer implements GravityEnviroment {
                         }
                     }
                     break;
-                case 1:
-                    visibleId = visibleQueue.poll();
+                case FLUID_CHUNK_LD:
                     if (visibleId != null) {
                         Chunk fluidChunk = fluidChunks.getChunk(visibleId);
                         if (fluidChunk != null) {
@@ -641,8 +648,7 @@ public class LevelContainer implements GravityEnviroment {
                         }
                     }
                     break;
-                case 2:
-                    invisibleId = invisibleQueue.poll();
+                case SOLID_CHUNK_SV:
                     if (invisibleId != null) {
                         Chunk solidChunk = solidChunks.getChunk(invisibleId);
                         if (solidChunk != null) {
@@ -654,8 +660,7 @@ public class LevelContainer implements GravityEnviroment {
                         }
                     }
                     break;
-                case 3:
-                    invisibleId = invisibleQueue.poll();
+                case FLUID_CHUNK_SV:
                     if (invisibleId != null) {
                         Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
                         if (fluidChunk != null) {
