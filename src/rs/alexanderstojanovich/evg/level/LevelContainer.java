@@ -65,7 +65,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 7.0f;
+    public static final float BASE = 8.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
@@ -548,7 +548,7 @@ public class LevelContainer implements GravityEnviroment {
         int currChunkId = Chunk.chunkFunc(obsCamPos);
         Chunk currFluidChunk = fluidChunks.getChunk(currChunkId);
         if (currFluidChunk != null) {
-            for (Block fluidBLock : currFluidChunk.getList()) {
+            for (Block fluidBLock : currFluidChunk.getBlockList()) {
                 if (fluidBLock.containsInsideEqually(obsCamPos)) {
                     yea = true;
                     break;
@@ -565,12 +565,17 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-            for (Block solidBlock : solidChunks.getTotalList()) {
-                if (solidBlock.containsInsideEqually(critter.getPredictor())
-                        || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-                                critter.getModel().getHeight(), critter.getModel().getDepth())) {
-                    coll = true;
-                    break;
+            OUTER:
+            for (Chunk solidChunk : solidChunks.getChunkList()) {
+                if (Chunk.chunkInverFunc(solidChunk.getId()).distance(critter.getPredictor()) <= 50.0f) {
+                    for (Block solidBlock : solidChunk.getBlockList()) {
+                        if (solidBlock.containsInsideEqually(critter.getPredictor())
+                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
+                            coll = true;
+                            break OUTER;
+                        }
+                    }
                 }
             }
         }

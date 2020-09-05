@@ -204,7 +204,7 @@ public class Chunks {
     public List<Block> getTotalList() {
         List<Block> result = new GapList<>();
         for (Chunk chunk : chunkList) {
-            result.addAll(chunk.getList());
+            result.addAll(chunk.getBlockList());
         }
         return result;
     }

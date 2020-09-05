@@ -44,25 +44,25 @@ public class WaterRenderer {
 //        this.debugQuad.setScale(0.25f);
     }
 
-    public void refresh() { // call this in update (renderer) 
+    public synchronized void refresh() { // call this in update (renderer) 
         waterHeights.clear();
+        Vector3f playerPredictor = levelContainer.getLevelActors().getPlayer().getPredictor();
         if (!levelContainer.isWorking()) {
             Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
             float obsHeight = obsCamera.getPos().y;
             Vector3f obsUp = obsCamera.getUp();
-            for (Block fluidBlock : levelContainer.getFluidChunks().getTotalList()) {
-                float waterHeight = fluidBlock.getSurfaceY();
-                if (fluidBlock.getEnabledFaces()[Block.TOP]
-                        && waterHeight <= obsHeight
-                        && fluidBlock.intersectsRay(obsCamera.getPos(), obsUp)) {
-                    waterHeights.add(waterHeight);
+            for (Chunk fluidChunk : levelContainer.getFluidChunks().getChunkList()) {
+                if (Chunk.chunkInverFunc(fluidChunk.getId()).distance(playerPredictor) <= 50.0f) {
+                    for (Block fluidBlock : fluidChunk.getBlockList()) {
+                        float waterHeight = fluidBlock.getSurfaceY();
+                        if (fluidBlock.getEnabledFaces()[Block.TOP]
+                                && waterHeight <= obsHeight
+                                && fluidBlock.intersectsRay(obsCamera.getPos(), obsUp)) {
+                            waterHeights.add(waterHeight);
+                        }
+                    }
                 }
-
-                int currChunkId = Chunk.chunkFunc(camera.getPos());
-                Chunk currChunk = levelContainer.getFluidChunks().getChunk(currChunkId);
-                if (currChunk != null) {
-                    currChunk.setWaterTexture(frameBuffer.getTexture());
-                }
+                fluidChunk.setWaterTexture(frameBuffer.getTexture());
             }
         }
     }
@@ -90,7 +90,7 @@ public class WaterRenderer {
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
-    public void render() {
+    public synchronized void render() {
         frameBuffer.bind();
         prepare();
         if (!waterHeights.isEmpty() && !levelContainer.isWorking()) {

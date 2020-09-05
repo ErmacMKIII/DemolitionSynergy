@@ -85,7 +85,7 @@ public class Editor {
         int solidTargetIndex = -1;
         if (currSolidChunk != null) {
             int solidBlkIndex = 0;
-            for (Block solidBlock : currSolidChunk.getList()) {
+            for (Block solidBlock : currSolidChunk.getBlockList()) {
                 if (Block.intersectsRay(solidBlock.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
                             solidBlock.getPos().x, solidBlock.getPos().y, solidBlock.getPos().z);
@@ -99,7 +99,7 @@ public class Editor {
             }
 
             if (solidTargetIndex != -1) {
-                selectedCurr = currSolidChunk.getList().get(solidTargetIndex);
+                selectedCurr = currSolidChunk.getBlockList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
                 selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
@@ -118,7 +118,7 @@ public class Editor {
         int fluidTargetIndex = -1;
         if (currFluidChunk != null) {
             int fluidBlkIndex = 0;
-            for (Block fluidBlock : currFluidChunk.getList()) {
+            for (Block fluidBlock : currFluidChunk.getBlockList()) {
                 if (Block.intersectsRay(fluidBlock.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
                             fluidBlock.getPos().x, fluidBlock.getPos().y, fluidBlock.getPos().z);
@@ -132,7 +132,7 @@ public class Editor {
             }
 
             if (fluidTargetIndex != -1) {
-                selectedCurr = currFluidChunk.getList().get(fluidTargetIndex);
+                selectedCurr = currFluidChunk.getBlockList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
                 selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
             }
@@ -241,7 +241,7 @@ public class Editor {
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
         Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
         if (currSolidChunk != null) {
-            for (Block solidBlock : currSolidChunk.getList()) {
+            for (Block solidBlock : currSolidChunk.getBlockList()) {
                 intsSolid = selectedNew.intersectsExactly(solidBlock);
                 if (intsSolid) {
                     break;
@@ -253,7 +253,7 @@ public class Editor {
         if (!intsSolid) {
             Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
             if (currFluidChunk != null) {
-                for (Block fluidBlock : currFluidChunk.getList()) {
+                for (Block fluidBlock : currFluidChunk.getBlockList()) {
                     intsFluid = selectedNew.intersectsExactly(fluidBlock);
                     if (intsFluid) {
                         break;

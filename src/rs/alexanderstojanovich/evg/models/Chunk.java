@@ -306,7 +306,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return size;
     }
 
-    public List<Block> getList() {
+    public List<Block> getBlockList() {
         List<Block> result = new GapList<>();
         for (Tuple tuple : tupleSet) {
             result.addAll(tuple.getBlocks().getBlockList());
@@ -370,7 +370,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void saveToDisk() {
         if (!cached) {
-            List<Block> blocks = getList();
+            List<Block> blocks = getBlockList();
             pos = 0;
             MEMORY[pos++] = (byte) id;
             MEMORY[pos++] = (byte) blocks.size();
@@ -465,7 +465,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public boolean isCameraInFluid(Vector3f camPos) {
         boolean yea = false;
-        for (Block fluidBLock : getList()) {
+        for (Block fluidBLock : getBlockList()) {
             if (fluidBLock.containsInsideEqually(camPos)) {
                 yea = true;
                 break;
@@ -476,7 +476,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void tstCameraInFluid(Vector3f camPos) {
         boolean yea = false;
-        for (Block fluidBLock : getList()) {
+        for (Block fluidBLock : getBlockList()) {
             if (fluidBLock.containsInsideEqually(camPos)) {
                 yea = true;
                 break;
