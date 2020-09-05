@@ -41,7 +41,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Chunk { // some operations are mutually exclusive    
+public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int ABS_BOUND = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f); // modulator
@@ -75,6 +75,11 @@ public class Chunk { // some operations are mutually exclusive
     public Chunk(int id, boolean solid) {
         this.id = id;
         this.solid = solid;
+    }
+
+    @Override
+    public int compareTo(Chunk o) {
+        return Chunks.COMPARATOR.compare(this, o);
     }
 
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
@@ -406,7 +411,6 @@ public class Chunk { // some operations are mutually exclusive
 
     public void loadFromDisk() {
         if (cached) {
-            long time0 = System.nanoTime();
             loadDiskToMem(getFileName());
             pos = 1;
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
@@ -428,18 +432,12 @@ public class Chunk { // some operations are mutually exclusive
                 Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                 pos += blockPosCol.length;
 
-//                long timex0 = System.nanoTime();
                 Block block = new Block(texName, blockPos, blockCol, solid);
                 addBlock(block);
-//                long timex1 = System.nanoTime();
-//                System.out.println("Block 4 time = " + (timex1 - timex0) / 1E6D);
             }
             cached = false;
 
             cachedSize = 0;
-
-            long time1 = System.nanoTime();
-            System.out.println("Chunk " + id + " solid = " + solid + " time = " + (time1 - time0) / 1E6D);
         }
     }
 

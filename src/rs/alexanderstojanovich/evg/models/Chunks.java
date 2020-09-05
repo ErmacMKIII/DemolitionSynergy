@@ -39,7 +39,7 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    private static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
+    public static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override
         public int compare(Chunk o1, Chunk o2) {
             if (o1.getId() > o2.getId()) {
@@ -97,15 +97,32 @@ public class Chunks {
         }
     }
 
-    public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
-        Chunk result = null;
-        for (Chunk chunk : chunkList) {
-            if (chunk.getId() == chunkId) {
-                result = chunk;
-                break;
+//    public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
+//        Chunk result = null;
+//        for (Chunk chunk : chunkList) {
+//            if (chunk.getId() == chunkId) {
+//                result = chunk;
+//                break;
+//            }
+//        }
+//        return result;
+//    }
+    // (logaritmic) binary search through sorted chunkList to get the chunk
+    public Chunk getChunk(int chunkId) {
+        int left = 0;
+        int right = chunkList.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Chunk candidate = chunkList.get(mid);
+            if (candidate.getId() == chunkId) {
+                return candidate;
+            } else if (candidate.getId() < chunkId) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
             }
         }
-        return result;
+        return null;
     }
 
     public void animate() { // call only for fluid blocks
