@@ -24,6 +24,7 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -165,10 +166,12 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void saveInvisibleToDisk(Queue<Integer> invisibleChunks) {
+    public void saveInvisibleToDisk(Queue<Pair<Integer, Float>> invisibleChunks) {
         for (Chunk chunk : chunkList) {
-            if (!invisibleChunks.contains(chunk.getId())) {
-                chunk.saveToDisk();
+            for (Pair<Integer, Float> pair : invisibleChunks) {
+                if (!invisibleChunks.contains(chunk.getId())) {
+                    chunk.saveToDisk();
+                }
             }
         }
     }
@@ -182,7 +185,7 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void loadInvisibleFromDisk(Queue<Integer> invisibleChunks) {
+    public void loadInvisibleFromDisk(Queue<Pair<Integer, Float>> invisibleChunks) {
         for (Chunk chunk : chunkList) {
             if (!invisibleChunks.contains(chunk.getId())
                     && !chunk.isAlive()) {

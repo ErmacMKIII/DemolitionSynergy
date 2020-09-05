@@ -35,6 +35,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -273,10 +274,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // determine which chunks are visible by this chunk
-    public static void determineVisible(Queue<Integer> visibleQueue, Queue<Integer> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
-        visibleQueue.clear();
-        invisibleQueue.clear();
-
+    public static void determineVisible(Queue<Pair<Integer, Float>> visibleQueue,
+            Queue<Pair<Integer, Float>> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
         // current chunk where player is
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
@@ -285,11 +284,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             Vector3f chunkPos = chunkInverFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
-            if (id == cid && distance <= VISION
-                    || id != cid && distance <= VISION && product >= 0.25f) {
-                visibleQueue.add(id);
-            } else {
-                invisibleQueue.add(id);
+            Pair<Integer, Float> pair = new Pair<>(id, distance);
+            if ((id == cid && distance <= VISION
+                    || id != cid && distance <= VISION && product >= 0.25f) && !visibleQueue.contains(pair)) {
+                visibleQueue.offer(new Pair<>(id, distance));
+            } else if (!invisibleQueue.contains(pair)) {
+                invisibleQueue.offer(new Pair<>(id, distance));
             }
         }
     }

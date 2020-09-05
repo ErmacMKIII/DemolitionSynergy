@@ -23,10 +23,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -40,6 +41,7 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -55,8 +57,22 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
 
-    private final Queue<Integer> visibleQueue = new ArrayDeque<>();
-    private final Queue<Integer> invisibleQueue = new ArrayDeque<>();
+    public static final int VIPAIR_QUEUE_CAPACITY = 5;
+    public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
+        @Override
+        public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
+            if (o1.getValue() > o2.getValue()) {
+                return 1;
+            } else if (o1.getValue() == o2.getValue()) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    };
+
+    private final Queue<Pair<Integer, Float>> visibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
+    private final Queue<Pair<Integer, Float>> invisibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
 
     private int operation = 0;
     private static final int LD = 0;
@@ -183,6 +199,19 @@ public class LevelContainer implements GravityEnviroment {
         sb.append("\n");
         sb.append("FLUID POSITION MAP");
         sb.append("(size = ").append(ALL_FLUID_MAP.size()).append(")\n");
+        sb.append("---------------------------");
+        DSLogger.reportInfo(sb.toString(), null);
+    }
+
+    public void printPriorityQueues() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        sb.append("VISIBLE QUEUE\n");
+        sb.append(visibleQueue);
+        sb.append("---------------------------");
+        sb.append("\n");
+        sb.append("INVISIBLE QUEUE\n");
+        sb.append(invisibleQueue);
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
     }
@@ -621,8 +650,10 @@ public class LevelContainer implements GravityEnviroment {
 
             switch (operation) {
                 case LD:
-                    Integer visibleId = visibleQueue.poll();
-                    if (visibleId != null) {
+                    Pair<Integer, Float> vPair = visibleQueue.poll();
+                    if (vPair != null) {
+                        Integer visibleId = vPair.getKey();
+
                         Chunk solidChunk = solidChunks.getChunk(visibleId);
                         if (solidChunk != null) {
                             if (solidChunk.isCached()) {
@@ -643,8 +674,10 @@ public class LevelContainer implements GravityEnviroment {
                     }
                     break;
                 case SV:
-                    Integer invisibleId = invisibleQueue.poll();
-                    if (invisibleId != null) {
+                    Pair<Integer, Float> iPair = invisibleQueue.poll();
+                    if (iPair != null) {
+                        Integer invisibleId = iPair.getKey();
+
                         Chunk solidChunk = solidChunks.getChunk(invisibleId);
                         if (solidChunk != null) {
                             if (solidChunk.isAlive()) {
@@ -879,11 +912,11 @@ public class LevelContainer implements GravityEnviroment {
         return gameObject;
     }
 
-    public Queue<Integer> getVisibleQueue() {
+    public Queue<Pair<Integer, Float>> getVisibleQueue() {
         return visibleQueue;
     }
 
-    public Queue<Integer> getInvisibleQueue() {
+    public Queue<Pair<Integer, Float>> getInvisibleQueue() {
         return invisibleQueue;
     }
 

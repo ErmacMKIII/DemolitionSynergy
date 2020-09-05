@@ -338,6 +338,9 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     LevelContainer.printPositionMaps();
+                } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    gameObject.getLevelContainer().printPriorityQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Boolean> task = new FutureTask<Boolean>(Command.SCREENSHOT);
@@ -426,7 +429,7 @@ public class Game {
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.determineVisibleChunks();
                 gameObject.update(deltaTime);
-                gameObject.autoDoChunks();
+                gameObject.chunkOperations();
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
