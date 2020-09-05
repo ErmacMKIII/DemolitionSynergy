@@ -208,10 +208,12 @@ public class LevelContainer implements GravityEnviroment {
         sb.append("\n");
         sb.append("VISIBLE QUEUE\n");
         sb.append(visibleQueue);
+        sb.append("\n");
         sb.append("---------------------------");
         sb.append("\n");
         sb.append("INVISIBLE QUEUE\n");
         sb.append(invisibleQueue);
+        sb.append("\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
     }
