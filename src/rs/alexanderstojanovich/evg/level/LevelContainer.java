@@ -42,6 +42,7 @@ import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.util.Triple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -95,65 +96,63 @@ public class LevelContainer implements GravityEnviroment {
 
     private final LevelActors levelActors = new LevelActors();
 
-    // position of all the solid blocks to neighbors
-    public static final Map<Integer, Byte> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
+    // position of all the solid blocks to texture name & neighbors
+    public static final Map<Integer, Triple<String, Byte, Integer>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
 
-    // position of all the fluid blocks to neighbors
-    public static final Map<Integer, Byte> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
+    // position of all the fluid blocks to texture name & neighbors
+    public static final Map<Integer, Triple<String, Byte, Integer>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
-    private static void determineSolid(Vector3f vector) {
+    private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            if (ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
+            int hashCodeY = Vector3fUtils.hashCode(adjPos);
+            Triple<String, Byte, Integer> tripleY = ALL_SOLID_MAP.get(hashCodeY);
+            if (tripleY != null) {
                 bits |= mask;
-                byte adjBits = ALL_SOLID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
+                byte adjBits = tripleY.getB();
                 int k = (j % 2 == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
+                tripleY.setB(adjBits);
             }
         }
-        ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
+        return bits;
     }
 
-    private static void determineFluid(Vector3f vector) {
+    private static byte updateFluidNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            if (ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
+            int hashCodeY = Vector3fUtils.hashCode(adjPos);
+            Triple<String, Byte, Integer> tripleY = ALL_FLUID_MAP.get(hashCodeY);
+            if (tripleY != null) {
                 bits |= mask;
-                byte adjBits = ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(adjPos), (byte) 0);
+                byte adjBits = tripleY.getB();
                 int k = (j % 2 == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(adjPos), adjBits);
+                tripleY.setB(adjBits);
             }
         }
-        ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
+        return bits;
     }
 
-    public static void putBlock(Block block) {
+    public static void putBlock(Block block, int index) {
         Vector3f pos = block.getPos();
-        int hashCode = Vector3fUtils.hashCode(pos);
+        String str = block.getTexName();
         if (block.isSolid()) {
-            int byteValue = ALL_SOLID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (byteValue == -1) {
-                ALL_SOLID_MAP.put(hashCode, (byte) -1);
-            }
-            if (byteValue < 63) {
-                determineSolid(pos);
-            }
+            byte bits = updateSolidNeighbors(pos);
+            int hashCodeX = Vector3fUtils.hashCode(pos);
+            Triple<String, Byte, Integer> tripleX = new Triple<>(str, bits, index);
+            ALL_SOLID_MAP.put(hashCodeX, tripleX);
         } else {
-            int byteValue = ALL_FLUID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (byteValue == -1) {
-                ALL_FLUID_MAP.put(hashCode, (byte) -1);
-            }
-            if (byteValue < 63) {
-                determineFluid(pos);
-            }
+            byte bits = updateFluidNeighbors(pos);
+            int hashCodeX = Vector3fUtils.hashCode(pos);
+            Triple<String, Byte, Integer> tripleX = new Triple<>(str, bits, index);
+            ALL_FLUID_MAP.put(hashCodeX, tripleX);
         }
     }
 
@@ -161,20 +160,14 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            int byteValue = ALL_SOLID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (byteValue != -1) {
-                ALL_SOLID_MAP.remove(hashCode, (byte) -1);
-            }
-            if (byteValue > 0) {
-                determineSolid(pos);
+            Triple<String, Byte, Integer> triple = ALL_SOLID_MAP.remove(hashCode);
+            if (triple.getB() > 0) {
+                updateSolidNeighbors(pos);
             }
         } else {
-            int byteValue = ALL_FLUID_MAP.getOrDefault(hashCode, (byte) -1);
-            if (byteValue != -1) {
-                ALL_FLUID_MAP.remove(hashCode, (byte) -1);
-            }
-            if (byteValue > 0) {
-                determineFluid(pos);
+            Triple<String, Byte, Integer> triple = ALL_FLUID_MAP.remove(hashCode);
+            if (triple.getB() > 0) {
+                updateFluidNeighbors(pos);
             }
         }
     }
@@ -719,7 +712,9 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                fluidChunk.tstCameraInFluid(camPos);
+                if (Chunk.chunkInverFunc(fluidChunk.getId()).distance(camPos) <= 50.0f) {
+                    fluidChunk.tstCameraInFluid(camPos);
+                }
             }
         }
     }

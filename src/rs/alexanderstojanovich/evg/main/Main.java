@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
@@ -45,8 +47,22 @@ public class Main {
         GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
         Game game = new Game(inCfg, gameObject); // init game with given configuration and game object
         Renderer renderer = new Renderer(gameObject); // init renderer with given game object
+        Operations operations = new Operations(gameObject); // init operations thread
         DSLogger.reportInfo("Game initialized.", null);
-        //---------------------------------------------------------------------- 
+        //----------------------------------------------------------------------
+        Timer timer = new Timer("Timer Utils");
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
+                Game.setUps(0);
+                gameObject.getIntrface().getFpsText().setContent("fps: " + Renderer.getFps());
+                Renderer.setFps(0);
+                gameObject.getIntrface().getOpsText().setContent("ops: " + Operations.getOps());
+                Operations.setOps(0);
+            }
+        };
+        timer.schedule(task, 1000L, 1000L);
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {
@@ -54,14 +70,23 @@ public class Main {
                 DSLogger.reportInfo("Renderer started.", null);
             }
         });
+        SERVICE.execute(new Runnable() {
+            @Override
+            public void run() {
+                operations.start();
+                DSLogger.reportInfo("Operations started.", null);
+            }
+        });
         SERVICE.shutdown();
         DSLogger.reportInfo("Game will start soon.", null);
         game.go();
         try {
+            operations.join();
             renderer.join(); // and it's blocked here until it finishes
         } catch (InterruptedException ex) {
             DSLogger.reportError(ex.getMessage(), ex);
         }
+        timer.cancel();
         //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output

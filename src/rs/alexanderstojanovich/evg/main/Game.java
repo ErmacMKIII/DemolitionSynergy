@@ -55,7 +55,7 @@ public class Game {
     private static int fpsMax; // fps max or fps cap  
 
     private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 5;
+    public static final int UPD_MAX_PASSES = 20;
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
@@ -403,8 +403,6 @@ public class Game {
         AudioFile audioFile = AudioFile.AMBIENT;
         gameObject.getMusicPlayer().play(audioFile, true);
 
-        double timer0 = GLFW.glfwGetTime();
-
         ups = 0;
 
         double lastTime = GLFW.glfwGetTime();
@@ -427,9 +425,7 @@ public class Game {
             while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                 GLFW.glfwPollEvents();
                 float deltaTime = (float) (upsTicks / TPS);
-                gameObject.determineVisibleChunks();
                 gameObject.update(deltaTime);
-                gameObject.chunkOperations();
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
@@ -445,23 +441,16 @@ public class Game {
             }
             updPasses = 0;
 
-            synchronized (GameObject.OBJ_MUTEX) {
-                GameObject.OBJ_MUTEX.notify();
-            }
-
-            // update label which shows fps every second
-            if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
-                ups = 0;
-                timer0 += 1.0;
+            synchronized (GameObject.OBJ_SYNC) {
+                GameObject.OBJ_SYNC.notify();
             }
 
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
         // wakes up the sleepers!
-        synchronized (GameObject.OBJ_MUTEX) {
-            GameObject.OBJ_MUTEX.notify();
+        synchronized (GameObject.OBJ_SYNC) {
+            GameObject.OBJ_SYNC.notify();
         }
     }
 
@@ -493,6 +482,10 @@ public class Game {
 
     public static int getUps() {
         return ups;
+    }
+
+    public static void setUps(int ups) {
+        Game.ups = ups;
     }
 
     public static int getFpsMax() {

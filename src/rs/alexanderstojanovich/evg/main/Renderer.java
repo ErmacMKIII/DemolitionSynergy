@@ -63,9 +63,10 @@ public class Renderer extends Thread implements Executor {
         Texture.bufferAllTextures();
         gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context        
 
-        double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();
         double timer2 = GLFW.glfwGetTime();
+
+        fps = 0;
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
@@ -96,9 +97,9 @@ public class Renderer extends Thread implements Executor {
             }
 
             // don't render before update
-            synchronized (GameObject.OBJ_MUTEX) {
+            synchronized (GameObject.OBJ_SYNC) {
                 try {
-                    GameObject.OBJ_MUTEX.wait();
+                    GameObject.OBJ_SYNC.wait();
                 } catch (InterruptedException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
@@ -111,13 +112,6 @@ public class Renderer extends Thread implements Executor {
                 renPasses++;
             }
             renPasses = 0;
-
-            // update text which shows ups and fps every second
-            if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                gameObject.getIntrface().getFpsText().setContent("fps: " + fps);
-                fps = 0;
-                timer0 += 1.0;
-            }
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {

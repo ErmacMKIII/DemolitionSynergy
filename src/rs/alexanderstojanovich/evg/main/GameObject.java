@@ -34,7 +34,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static final String TITLE = "Demolition Synergy - v20 URANIUM";
 
-    public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
+    public static final Object OBJ_SYNC = new Object(); // mutex for window, used for game and renderer
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
@@ -70,19 +70,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
-    public void update(float deltaTime) {
+    public synchronized void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
-            if (Game.isWaterEffects()) {
-                waterRenderer.refresh();
-            }
         }
         intrface.update();
         intrface.setCollText(assertCollision);
     }
 
     // requires context to be set in the proper thread (call only from renderer)
-    public void render() {
+    public synchronized void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
         if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
@@ -112,7 +109,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // auto load/save level container chunks
-    public void chunkOperations() {
+    public synchronized void chunkOperations() {
         levelContainer.chunkOperations();
     }
 

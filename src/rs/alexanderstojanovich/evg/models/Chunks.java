@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.util.Triple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -56,14 +57,17 @@ public class Chunks {
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
-            byte neighborBits = LevelContainer.ALL_FLUID_MAP.getOrDefault(Vector3fUtils.hashCode(fluidBlock.pos), (byte) 0);
-            fluidBlock.setFaceBits(~neighborBits & 63, false);
-            int faceBitsAfter = fluidBlock.getFaceBits();
-            if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
-                Chunk fluidChunk = getChunk(chunkId);
-                if (fluidChunk != null) {
-                    fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+            Triple<String, Byte, Integer> triple = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            if (triple != null) {
+                byte neighborBits = triple.getB();
+                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
+                    Chunk fluidChunk = getChunk(chunkId);
+                    if (fluidChunk != null) {
+                        fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                    }
                 }
             }
         }
@@ -92,13 +96,14 @@ public class Chunks {
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block, useLevelContainer);
             // if chunk is empty (with no tuples) -> remove it
-            if (chunk.getTupleSet().isEmpty()) {
+            if (chunk.getTupleList().isEmpty()) {
                 chunkList.remove(chunk);
             }
         }
     }
 
-//    public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
+// linear search through chunkList to get the chunk
+//    public Chunk getChunk(int chunkId) { 
 //        Chunk result = null;
 //        for (Chunk chunk : chunkList) {
 //            if (chunk.getId() == chunkId) {
@@ -249,7 +254,7 @@ public class Chunks {
     @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Chunk chunk : getChunkList()) {
-            for (Tuple tuple : chunk.getTupleSet()) {
+            for (Tuple tuple : chunk.getTupleList()) {
                 tuple.getBlocks().setCameraInFluid(cameraInFluid);
             }
         }
