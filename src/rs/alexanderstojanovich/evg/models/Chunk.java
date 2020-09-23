@@ -115,10 +115,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         blockList.sort(Block.Y_AXIS_COMP);
 
         buffered = false;
-
-        int index = blockList.indexOf(fluidBlock);
-        Triple<String, Byte, Integer> triple = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
-        triple.setC(index);
     }
 
     public void addBlock(Block block, boolean useLevelContainer) {

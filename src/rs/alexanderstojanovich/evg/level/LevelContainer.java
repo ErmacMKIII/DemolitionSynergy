@@ -97,10 +97,10 @@ public class LevelContainer implements GravityEnviroment {
     private final LevelActors levelActors = new LevelActors();
 
     // position of all the solid blocks to texture name & neighbors
-    public static final Map<Integer, Triple<String, Byte, Integer>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
+    public static final Map<Integer, Pair<String, Byte>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
 
     // position of all the fluid blocks to texture name & neighbors
-    public static final Map<Integer, Triple<String, Byte, Integer>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
+    public static final Map<Integer, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -108,14 +108,14 @@ public class LevelContainer implements GravityEnviroment {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Triple<String, Byte, Integer> tripleY = ALL_SOLID_MAP.get(hashCodeY);
-            if (tripleY != null) {
+            Pair<String, Byte> pair = ALL_SOLID_MAP.get(hashCodeY);
+            if (pair != null) {
                 bits |= mask;
-                byte adjBits = tripleY.getB();
+                byte adjBits = pair.getValue();
                 int k = (j % 2 == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                tripleY.setB(adjBits);
+                pair.setValue(adjBits);
             }
         }
         return bits;
@@ -127,14 +127,14 @@ public class LevelContainer implements GravityEnviroment {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Triple<String, Byte, Integer> tripleY = ALL_FLUID_MAP.get(hashCodeY);
-            if (tripleY != null) {
+            Pair<String, Byte> pair = ALL_FLUID_MAP.get(hashCodeY);
+            if (pair != null) {
                 bits |= mask;
-                byte adjBits = tripleY.getB();
+                byte adjBits = pair.getValue();
                 int k = (j % 2 == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                tripleY.setB(adjBits);
+                pair.setValue(adjBits);
             }
         }
         return bits;
@@ -146,12 +146,12 @@ public class LevelContainer implements GravityEnviroment {
         if (block.isSolid()) {
             byte bits = updateSolidNeighbors(pos);
             int hashCodeX = Vector3fUtils.hashCode(pos);
-            Triple<String, Byte, Integer> tripleX = new Triple<>(str, bits, index);
+            Pair<String, Byte> tripleX = new Pair<>(str, bits);
             ALL_SOLID_MAP.put(hashCodeX, tripleX);
         } else {
             byte bits = updateFluidNeighbors(pos);
             int hashCodeX = Vector3fUtils.hashCode(pos);
-            Triple<String, Byte, Integer> tripleX = new Triple<>(str, bits, index);
+            Pair<String, Byte> tripleX = new Pair<>(str, bits);
             ALL_FLUID_MAP.put(hashCodeX, tripleX);
         }
     }
@@ -160,13 +160,13 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            Triple<String, Byte, Integer> triple = ALL_SOLID_MAP.remove(hashCode);
-            if (triple.getB() > 0) {
+            Pair<String, Byte> pair = ALL_SOLID_MAP.remove(hashCode);
+            if (pair.getValue() > 0) {
                 updateSolidNeighbors(pos);
             }
         } else {
-            Triple<String, Byte, Integer> triple = ALL_FLUID_MAP.remove(hashCode);
-            if (triple.getB() > 0) {
+            Pair<String, Byte> triple = ALL_FLUID_MAP.remove(hashCode);
+            if (triple.getValue() > 0) {
                 updateFluidNeighbors(pos);
             }
         }
@@ -335,10 +335,10 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
-        solidChunks.loadInvisibleFromDisk(invisibleQueue);
+        solidChunks.loadVisibleFromDisk(invisibleQueue);
         List<Block> solidBlocks = solidChunks.getTotalList();
 
-        fluidChunks.loadInvisibleFromDisk(invisibleQueue);
+        fluidChunks.loadVisibleFromDisk(invisibleQueue);
         List<Block> fluidBlocks = fluidChunks.getTotalList();
 
         //----------------------------------------------------------------------
@@ -702,7 +702,7 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             if (singleLdSvFldChnk) {
-                fluidChunks.updateFluids();
+//                fluidChunks.updateFluids();
             }
         }
     }
