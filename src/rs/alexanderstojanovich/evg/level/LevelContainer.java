@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,7 +43,6 @@ import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
-import rs.alexanderstojanovich.evg.util.Triple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -702,7 +702,7 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             if (singleLdSvFldChnk) {
-//                fluidChunks.updateFluids();
+                fluidChunks.updateFluids();
             }
         }
     }
@@ -711,8 +711,10 @@ public class LevelContainer implements GravityEnviroment {
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
-            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (Chunk.chunkInverFunc(fluidChunk.getId()).distance(camPos) <= 50.0f) {
+            Pair<Integer, Float> pair = visibleQueue.peek();
+            if (pair != null) {
+                Chunk fluidChunk = fluidChunks.getChunk(pair.getKey());
+                if (fluidChunk != null && Chunk.chunkInverFunc(fluidChunk.getId()).distance(camPos) <= 50.0f) {
                     fluidChunk.tstCameraInFluid(camPos);
                 }
             }
@@ -810,7 +812,7 @@ public class LevelContainer implements GravityEnviroment {
         camera.updateCameraFront(ShaderProgram.getWaterVoxelShader());
         ShaderProgram.unbind();
 
-        // render blocks
+        // render blocks                      
         for (Chunk solidChunk : solidChunks.getChunkList()) {
             if (!solidChunk.isCached()) {
                 if (solidChunk.isAlive() && !solidChunk.isBuffered()) {

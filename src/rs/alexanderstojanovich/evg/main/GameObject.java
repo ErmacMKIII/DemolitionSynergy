@@ -34,7 +34,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static final String TITLE = "Demolition Synergy - v20 URANIUM";
 
-    public static final Object OBJ_SYNC = new Object(); // mutex for window, used for game and renderer
+    public static final Object OBJ_SYNC = new Object(); // sync for window, used for game and renderer
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window

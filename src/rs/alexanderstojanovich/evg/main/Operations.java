@@ -30,6 +30,8 @@ public class Operations extends Thread {
     public static final int OPS_MAX = 20;
     private static int ops = 0;
     private static double opsTicks = 0.0;
+    private static final int OPS_MAX_PASSES = 5;
+    private static int operPasses = 0;
 
     public Operations(GameObject gameObject) {
         super("Operations");
@@ -57,15 +59,16 @@ public class Operations extends Thread {
                 break;
             }
 
-            while (opsTicks >= 1.0) {
-                gameObject.determineVisibleChunks();
+            while (opsTicks >= 1.0 && operPasses <= OPS_MAX_PASSES) {
                 gameObject.chunkOperations();
                 if (Game.isWaterEffects()) {
                     gameObject.getWaterRenderer().refresh();
                 }
                 ops++;
                 opsTicks--;
+                operPasses++;
             }
+            operPasses = 0;
 
         }
     }

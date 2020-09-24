@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -86,7 +87,7 @@ public class Renderer extends Thread implements Executor {
 
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += diff * Game.getFpsMax();
+            fpsTicks += diff * MathUtils.lerp(Game.getFpsMax(), fps, fps / Game.getFpsMax());
             lastTime = currTime;
 
             // Detecting critical status
