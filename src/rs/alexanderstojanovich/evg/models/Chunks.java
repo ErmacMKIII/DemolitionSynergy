@@ -170,8 +170,8 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void saveInvisibleToDisk(Queue<Pair<Integer, Float>> invisibleChunks) {
-        for (Pair<Integer, Float> pair : invisibleChunks) {
+    public void saveToDisk(Queue<Pair<Integer, Float>> chunkQueue) {
+        for (Pair<Integer, Float> pair : chunkQueue) {
             int chunkId = pair.getKey();
             Chunk chunk = getChunk(chunkId);
             if (chunk != null) {
@@ -189,8 +189,8 @@ public class Chunks {
     }
 
     // variation on the topic
-    public void loadVisibleFromDisk(Queue<Pair<Integer, Float>> visibleChunks) {
-        for (Pair<Integer, Float> pair : visibleChunks) {
+    public void loadFromDisk(Queue<Pair<Integer, Float>> chunkQueue) {
+        for (Pair<Integer, Float> pair : chunkQueue) {
             int chunkId = pair.getKey();
             Chunk chunk = getChunk(chunkId);
             if (chunk != null) {

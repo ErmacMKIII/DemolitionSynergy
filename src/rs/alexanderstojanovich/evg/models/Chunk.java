@@ -34,7 +34,6 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
-import rs.alexanderstojanovich.evg.util.Triple;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -115,6 +114,22 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         blockList.sort(Block.Y_AXIS_COMP);
 
         buffered = false;
+    }
+
+    public void updateFluids() {
+        DSLogger.reportInfo(id + " TST!!!", null);
+        for (Block fluidBlock : getBlockList()) {
+            int faceBitsBefore = fluidBlock.getFaceBits();
+            Pair<String, Byte> triple = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            if (triple != null) {
+                byte neighborBits = triple.getValue();
+                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                }
+            }
+        }
     }
 
     public void addBlock(Block block, boolean useLevelContainer) {

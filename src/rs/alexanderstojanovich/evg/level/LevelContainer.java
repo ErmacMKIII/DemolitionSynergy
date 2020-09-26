@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -335,10 +334,8 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
-        solidChunks.loadVisibleFromDisk(invisibleQueue);
         List<Block> solidBlocks = solidChunks.getTotalList();
 
-        fluidChunks.loadVisibleFromDisk(invisibleQueue);
         List<Block> fluidBlocks = fluidChunks.getTotalList();
 
         //----------------------------------------------------------------------
@@ -641,8 +638,6 @@ public class LevelContainer implements GravityEnviroment {
     // method for saving invisible chunks
     public void chunkOperations() {
         if (!working) {
-            boolean singleLdSvFldChnk = false;
-
             switch (operation) {
                 case LD:
                     Pair<Integer, Float> vPair = visibleQueue.poll();
@@ -657,11 +652,12 @@ public class LevelContainer implements GravityEnviroment {
                                 solidChunk.setTimeToLive(60);
                             }
                         }
+
                         Chunk fluidChunk = fluidChunks.getChunk(visibleId);
                         if (fluidChunk != null) {
                             if (fluidChunk.isCached()) {
                                 fluidChunk.loadFromDisk();
-                                singleLdSvFldChnk = true;
+                                fluidChunk.updateFluids();
                             } else if (!fluidChunk.isAlive()) {
                                 fluidChunk.setTimeToLive(60);
                             }
@@ -677,7 +673,7 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidChunk != null) {
                             if (solidChunk.isAlive()) {
                                 solidChunk.decTimeToLive();
-                            } else if (!solidChunk.isBuffered()) {
+                            } else if (!solidChunk.isBuffered() && !solidChunk.isCached()) {
                                 solidChunk.saveToDisk();
                             }
                         }
@@ -685,14 +681,11 @@ public class LevelContainer implements GravityEnviroment {
                         if (fluidChunk != null) {
                             if (fluidChunk.isAlive()) {
                                 fluidChunk.decTimeToLive();
-                            } else if (!fluidChunk.isBuffered()) {
+                            } else if (!fluidChunk.isBuffered() && !fluidChunk.isCached()) {
                                 fluidChunk.saveToDisk();
-                                singleLdSvFldChnk = true;
                             }
                         }
                     }
-                    break;
-                default:
                     break;
             }
 
@@ -701,9 +694,6 @@ public class LevelContainer implements GravityEnviroment {
                 operation = 0;
             }
 
-            if (singleLdSvFldChnk) {
-                fluidChunks.updateFluids();
-            }
         }
     }
 
