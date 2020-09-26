@@ -646,21 +646,19 @@ public class LevelContainer implements GravityEnviroment {
 
                         Chunk solidChunk = solidChunks.getChunk(visibleId);
                         if (solidChunk != null) {
-                            if (solidChunk.isCached()) {
-                                solidChunk.loadFromDisk();
-                            } else if (!solidChunk.isAlive()) {
-                                solidChunk.setTimeToLive(60);
-                            }
+                            solidChunk.setTimeToLive(60);
+                        } else if (Chunk.isCached(visibleId, true)) {
+                            solidChunk = Chunk.loadFromDisk(visibleId, true);
+                            solidChunks.getChunkList().add(solidChunk);
                         }
 
                         Chunk fluidChunk = fluidChunks.getChunk(visibleId);
                         if (fluidChunk != null) {
-                            if (fluidChunk.isCached()) {
-                                fluidChunk.loadFromDisk();
-                                fluidChunk.updateFluids();
-                            } else if (!fluidChunk.isAlive()) {
-                                fluidChunk.setTimeToLive(60);
-                            }
+                            fluidChunk.setTimeToLive(60);
+                        } else if (Chunk.isCached(visibleId, false)) {
+                            fluidChunk = Chunk.loadFromDisk(visibleId, false);
+                            fluidChunk.updateFluids();
+                            fluidChunks.getChunkList().add(fluidChunk);
                         }
                     }
                     break;
@@ -675,6 +673,7 @@ public class LevelContainer implements GravityEnviroment {
                                 solidChunk.decTimeToLive();
                             } else if (!solidChunk.isBuffered() && !solidChunk.isCached()) {
                                 solidChunk.saveToDisk();
+                                solidChunks.getChunkList().remove(solidChunk);
                             }
                         }
                         Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
@@ -683,6 +682,7 @@ public class LevelContainer implements GravityEnviroment {
                                 fluidChunk.decTimeToLive();
                             } else if (!fluidChunk.isBuffered() && !fluidChunk.isCached()) {
                                 fluidChunk.saveToDisk();
+                                fluidChunks.getChunkList().remove(fluidChunk);
                             }
                         }
                     }

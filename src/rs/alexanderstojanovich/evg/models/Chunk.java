@@ -117,7 +117,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public void updateFluids() {
-        DSLogger.reportInfo(id + " TST!!!", null);
         for (Block fluidBlock : getBlockList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
             Pair<String, Byte> triple = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));

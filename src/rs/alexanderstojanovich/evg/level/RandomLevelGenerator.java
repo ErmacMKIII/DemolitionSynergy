@@ -30,8 +30,8 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class RandomLevelGenerator {
 
-    public static final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f - 2.0f);
-    public static final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f + 2.0f);
+    public static final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 8.0f);
+    public static final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 8.0f);
 
     public static final float ONE_OVER_POS_MAX = 1.0f / POS_MAX;
     public static final float ONE_OVER_POS_MIN = 1.0f / POS_MIN;
