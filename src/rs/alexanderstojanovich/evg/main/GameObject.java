@@ -114,7 +114,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // animation for water
-    public void animate() {
+    public synchronized void animate() {
         levelContainer.animate();
     }
 

@@ -56,9 +56,9 @@ public class Chunks {
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> triple = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
-            if (triple != null) {
-                byte neighborBits = triple.getValue();
+            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            if (pair != null) {
+                byte neighborBits = pair.getValue();
                 fluidBlock.setFaceBits(~neighborBits & 63, false);
                 int faceBitsAfter = fluidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
