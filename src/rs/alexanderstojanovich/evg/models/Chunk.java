@@ -292,13 +292,28 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public int size() { // for debugging purposes
+    public int loadedSize() { // for debugging purposes
         int size = 0;
-        if (cached) {
-            size = cachedSize;
-        } else {
+        if (!cached) {
             for (Tuple tuple : tupleList) {
                 size += tuple.getBlocks().getBlockList().size();
+            }
+        }
+        return size;
+    }
+
+    public static int cachedSize(int id, boolean solid) { // for debugging purposes
+        int size = 0;
+        if (Chunk.isCached(id, solid)) {
+            try {
+                FileInputStream fos = new FileInputStream(getFileName(id, solid));
+                byte[] bytes = new byte[3];
+                fos.read(bytes, 0, 3);
+                size = ((bytes[2] & 0xFF) << 8) | (bytes[1] & 0xFF);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            } catch (IOException ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
             }
         }
         return size;
@@ -440,7 +455,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public static Chunk loadFromDisk(int chunkId, boolean solid) {
-        Chunk chunk = new Chunk(pos, solid);
+        Chunk chunk = new Chunk(chunkId, solid);
+        chunk.cached = true;
         chunk.loadFromDisk();
         return chunk;
     }

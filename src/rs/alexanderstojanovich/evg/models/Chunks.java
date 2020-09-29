@@ -33,12 +33,17 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class Chunks {
 
+    private final boolean solid;
     private boolean buffered = false;
     // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
+
+    public Chunks(boolean solid) {
+        this.solid = solid;
+    }
 
     public static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override
@@ -199,11 +204,19 @@ public class Chunks {
         }
     }
 
-    // total size
+    // total loaded + cached size
     public int totalSize() {
         int result = 0;
-        for (Chunk chunk : chunkList) {
-            result += chunk.size();
+        for (int id = -Chunk.VAL; id <= Chunk.VAL; id++) {
+            Chunk chunk;
+            if (Chunk.isCached(id, solid)) {
+                result += Chunk.cachedSize(id, solid);
+            } else {
+                chunk = getChunk(id);
+                if (chunk != null) {
+                    result += chunk.loadedSize();
+                }
+            }
         }
         return result;
     }
@@ -211,8 +224,18 @@ public class Chunks {
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
         List<Block> result = new GapList<>();
-        for (Chunk chunk : chunkList) {
-            result.addAll(chunk.getBlockList());
+        for (int id = -Chunk.VAL; id <= Chunk.VAL; id++) {
+            Chunk chunk;
+            if (Chunk.isCached(id, solid)) {
+                chunk = Chunk.loadFromDisk(id, solid);
+                result.addAll(chunk.getBlockList());
+                chunk.saveToDisk();
+            } else {
+                chunk = getChunk(id);
+                if (chunk != null) {
+                    result.addAll(chunk.getBlockList());
+                }
+            }
         }
         return result;
     }
@@ -226,7 +249,7 @@ public class Chunks {
         for (Chunk chunk : chunkList) {
             sb.append("id = ").append(chunk.getId())
                     .append(" | solid = ").append(chunk.isSolid())
-                    .append(" | size = ").append(chunk.size())
+                    .append(" | size = ").append(chunk.loadedSize())
                     .append(" | timeToLive = ").append(chunk.getTimeToLive())
                     .append(" | buffered = ").append(chunk.isBuffered())
                     .append(" | cached = ").append(chunk.isCached())

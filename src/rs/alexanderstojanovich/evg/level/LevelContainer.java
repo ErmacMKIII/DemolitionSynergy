@@ -54,8 +54,8 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final Block SKYBOX = new Block("night");
 
-    private final Chunks solidChunks = new Chunks();
-    private final Chunks fluidChunks = new Chunks();
+    private final Chunks solidChunks = new Chunks(true);
+    private final Chunks fluidChunks = new Chunks(false);
 
     public static final int VIPAIR_QUEUE_CAPACITY = 5;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
@@ -330,13 +330,12 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
+        List<Block> solidBlocks = solidChunks.getTotalList();
+        List<Block> fluidBlocks = fluidChunks.getTotalList();
+
         int solidNum = solidChunks.totalSize();
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
-
-        List<Block> solidBlocks = solidChunks.getTotalList();
-
-        List<Block> fluidBlocks = fluidChunks.getTotalList();
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
@@ -366,7 +365,7 @@ public class LevelContainer implements GravityEnviroment {
             byte[] byteArrayFluid = fluidBlock.toByteArray();
             System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
             pos += 29;
-            progress += 100.0f / (fluidBlocks.size() + fluidBlocks.size());
+            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
         }
 
         buffer[pos++] = 'E';
