@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -52,9 +53,12 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
     private final String texName;
     private final int faceEnBits;
 
+    private final IntBuffer intBuff;
+
     public Tuple(String texName, int faceEnBits) {
         this.texName = texName;
         this.faceEnBits = faceEnBits;
+        this.intBuff = Block.createIntBuffer(faceEnBits);
     }
 
     // buffering colors
@@ -166,7 +170,7 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
-                    Block.createIntBuffer(faceEnBits),
+                    intBuff,
                     blocks.getBlockList().size(),
                     0
             );
@@ -198,6 +202,18 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
     public int getFaceEnBits() {
         return faceEnBits;
+    }
+
+    public FloatBuffer getVec3FloatBuff() {
+        return vec3FloatBuff;
+    }
+
+    public FloatBuffer getMat4FloatBuff() {
+        return mat4FloatBuff;
+    }
+
+    public IntBuffer getIntBuff() {
+        return intBuff;
     }
 
 }

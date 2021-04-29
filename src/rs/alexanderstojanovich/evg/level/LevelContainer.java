@@ -160,12 +160,12 @@ public class LevelContainer implements GravityEnviroment {
         int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
             Pair<String, Byte> pair = ALL_SOLID_MAP.remove(hashCode);
-            if (pair.getValue() > 0) {
+            if (pair != null && pair.getValue() > 0) {
                 updateSolidNeighbors(pos);
             }
         } else {
-            Pair<String, Byte> triple = ALL_FLUID_MAP.remove(hashCode);
-            if (triple.getValue() > 0) {
+            Pair<String, Byte> pair = ALL_FLUID_MAP.remove(hashCode);
+            if (pair != null && pair.getValue() > 0) {
                 updateFluidNeighbors(pos);
             }
         }

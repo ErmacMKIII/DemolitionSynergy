@@ -632,33 +632,4 @@ public class Block extends Model {
         return block;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 29 * hash + Arrays.hashCode(this.enabledFaces);
-        hash = 29 * hash + (this.verticesReversed ? 1 : 0);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final Block other = (Block) obj;
-        if (this.verticesReversed != other.verticesReversed) {
-            return false;
-        }
-        if (!Arrays.equals(this.enabledFaces, other.enabledFaces)) {
-            return false;
-        }
-        return true;
-    }
-
 }
