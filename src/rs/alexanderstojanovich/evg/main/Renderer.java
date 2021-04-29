@@ -98,7 +98,7 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            if (fpsTicks >= 1.0) {
+            if (fpsTicks >= 1.0 && Game.upsTicks < 1.0) {
                 gameObject.render();
                 fps++;
                 fpsTicks--;

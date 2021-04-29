@@ -93,7 +93,7 @@ public class Game {
 
     private static boolean waterEffects = true;
 
-    private static double upsTicks = 0.0;
+    protected static double upsTicks = 0.0;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR

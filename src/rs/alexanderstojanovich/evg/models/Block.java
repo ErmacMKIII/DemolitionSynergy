@@ -206,7 +206,7 @@ public class Block extends Model {
     }
 
     @Override
-    public synchronized void bufferAll() { // explicit call to buffer unbuffered before the rendering
+    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
         bufferVertices();
         bufferIndices();
         buffered = true;

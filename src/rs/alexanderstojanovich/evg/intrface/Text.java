@@ -129,12 +129,12 @@ public class Text {
         }
     }
 
-    public synchronized void buffer() {
+    public void buffer() {
         init();
         buffered = true;
     }
 
-    public synchronized void render() {
+    public void render() {
         if (enabled && buffered) {
             int index = 0;
             for (Quad quad : quadList) {

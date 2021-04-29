@@ -44,7 +44,7 @@ public class WaterRenderer {
 //        this.debugQuad.setScale(0.25f);
     }
 
-    public synchronized void refresh() { // call this in update (renderer) 
+    public void refresh() { // call this in update (renderer) 
         waterHeights.clear();
         Vector3f playerPredictor = levelContainer.getLevelActors().getPlayer().getPredictor();
         if (!levelContainer.isWorking()) {
@@ -90,7 +90,7 @@ public class WaterRenderer {
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
-    public synchronized void render() {
+    public void render() {
         frameBuffer.bind();
         prepare();
         if (!waterHeights.isEmpty() && !levelContainer.isWorking()) {

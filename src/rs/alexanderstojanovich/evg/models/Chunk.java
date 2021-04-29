@@ -178,7 +178,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // renderer does this stuff prior to any rendering
-    public synchronized void bufferAll() {
+    public void bufferAll() {
         if (!cached) {
             for (Tuple tuple : tupleList) {
                 tuple.buffer();
@@ -187,13 +187,13 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public synchronized void animate() { // call only for fluid blocks
+    public void animate() { // call only for fluid blocks
         for (Tuple tuple : tupleList) {
             tuple.getBlocks().animate();
         }
     }
 
-    public synchronized void prepare() { // call only for fluid blocks before rendering        
+    public void prepare() { // call only for fluid blocks before rendering        
         for (Tuple tuple : tupleList) {
             Blocks blocks = tuple.getBlocks();
             blocks.prepare();
@@ -208,7 +208,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
             Texture.enable();
 
@@ -327,7 +327,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return result;
     }
 
-    private synchronized void saveMemToDisk(String filename) {
+    private void saveMemToDisk(String filename) {
         BufferedOutputStream bos = null;
         File file = new File(filename);
         if (file.exists()) {
@@ -350,7 +350,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    private synchronized void loadDiskToMem(String filename) {
+    private void loadDiskToMem(String filename) {
         File file = new File(filename);
         if (file.exists()) {
             BufferedInputStream bis = null;

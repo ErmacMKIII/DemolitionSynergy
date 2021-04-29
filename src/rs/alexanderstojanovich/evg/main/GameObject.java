@@ -77,7 +77,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public void update(float deltaTime) {
+    public synchronized void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }
@@ -89,7 +89,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Renderer method. Requires context to be set in the proper thread (call
      * only from renderer)
      */
-    public void render() {
+    public synchronized void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
         if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
@@ -125,7 +125,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Auto load/save level container chunks
      */
-    public void chunkOperations() {
+    public synchronized void chunkOperations() {
         levelContainer.chunkOperations();
     }
 
@@ -133,7 +133,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Animation for water (and other fluids)
      *
      */
-    public void animate() {
+    public synchronized void animate() {
         levelContainer.animate();
     }
 
