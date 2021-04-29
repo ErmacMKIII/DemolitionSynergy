@@ -42,11 +42,9 @@ public class Renderer extends Thread implements Executor {
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 
-    private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 5;
-
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
+    protected static double alpha = 0.0;
 
     public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
 
@@ -71,7 +69,8 @@ public class Renderer extends Thread implements Executor {
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
-        double diff;
+        double deltaTime1 = 0.0;
+        double deltaTime2 = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             // changing resolution if necessary
@@ -86,33 +85,24 @@ public class Renderer extends Thread implements Executor {
             }
 
             currTime = GLFW.glfwGetTime();
-            diff = currTime - lastTime;
-            fpsTicks += diff * MathUtils.lerp(Game.getFpsMax(), fps, fps / Game.getFpsMax());
+            deltaTime1 = deltaTime2;
+            deltaTime2 = currTime - lastTime;
+
+            fpsTicks += MathUtils.lerp(deltaTime2, deltaTime1, 0.5) * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
-            if (fps == 0 && diff > Game.CRITICAL_TIME) {
+            if (fps == 0 && deltaTime2 > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
                 GameObject.MY_WINDOW.close();
                 break;
             }
 
-            // don't render before update
-            synchronized (GameObject.OBJ_SYNC) {
-                try {
-                    GameObject.OBJ_SYNC.wait();
-                } catch (InterruptedException ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-            }
-
-            while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+            if (fpsTicks >= 1.0) {
                 gameObject.render();
                 fps++;
                 fpsTicks--;
-                renPasses++;
             }
-            renPasses = 0;
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {
@@ -190,8 +180,8 @@ public class Renderer extends Thread implements Executor {
         Renderer.fps = fps;
     }
 
-    public static int getRenPasses() {
-        return renPasses;
+    public static double getAlpha() {
+        return alpha;
     }
 
 }

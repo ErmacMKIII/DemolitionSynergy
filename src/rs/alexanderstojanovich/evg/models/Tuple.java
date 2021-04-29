@@ -111,20 +111,20 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
     }
 
     // renderer does this stuff prior to any rendering
-    public void buffer() {
+    public synchronized void buffer() {
         blocks.bufferVertices();
         bufferVectors();
         bufferMatrices();
     }
 
     @Deprecated
-    public void release() {
+    public synchronized void release() {
         GL15.glDeleteBuffers(blocks.getBigVbo());
         GL15.glDeleteBuffers(vec3Vbo);
         GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void render(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {
+    public synchronized void render(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         if (!blocks.getBlockList().isEmpty() && faceEnBits > 0) {

@@ -137,6 +137,7 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
             case FPS_MAX:
                 int fpsMax = (int) command.args.get(0);
                 if (fpsMax > 0 && fpsMax <= 1E6) {
+                    Renderer.setFps(0);
                     Renderer.setFpsTicks(0.0);
                     Game.setFpsMax(fpsMax);
                     success = true;

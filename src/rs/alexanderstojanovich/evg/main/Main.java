@@ -44,25 +44,37 @@ public class Main {
             DSLogger.reportError("Game unable to set resolution!", null);
         }
         GameObject.MY_WINDOW.centerTheWindow();
-        GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
+        final GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
         Game game = new Game(inCfg, gameObject); // init game with given configuration and game object
         Renderer renderer = new Renderer(gameObject); // init renderer with given game object
-        Operations operations = new Operations(gameObject); // init operations thread
         DSLogger.reportInfo("Game initialized.", null);
         //----------------------------------------------------------------------
         Timer timer = new Timer("Timer Utils");
-        TimerTask task = new TimerTask() {
+
+        TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
                 gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 Game.setUps(0);
                 gameObject.getIntrface().getFpsText().setContent("fps: " + Renderer.getFps());
                 Renderer.setFps(0);
-                gameObject.getIntrface().getOpsText().setContent("ops: " + Operations.getOps());
-                Operations.setOps(0);
+
+                gameObject.getIntrface().getAlphaText().setContent("load: " + String.format("%.2f", Renderer.alpha));
             }
         };
-        timer.schedule(task, 1000L, 1000L);
+
+        TimerTask task2 = new TimerTask() {
+            @Override
+            public void run() {
+                gameObject.chunkOperations();
+                if (Game.isWaterEffects()) {
+                    gameObject.getWaterRenderer().refresh();
+                }
+            }
+        };
+
+        timer.scheduleAtFixedRate(task1, 1000L, 1000L);
+        timer.scheduleAtFixedRate(task2, 125L, 125L);
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {
@@ -70,18 +82,10 @@ public class Main {
                 DSLogger.reportInfo("Renderer started.", null);
             }
         });
-        SERVICE.execute(new Runnable() {
-            @Override
-            public void run() {
-                operations.start();
-                DSLogger.reportInfo("Operations started.", null);
-            }
-        });
         SERVICE.shutdown();
         DSLogger.reportInfo("Game will start soon.", null);
         game.go();
         try {
-            operations.join();
             renderer.join(); // and it's blocked here until it finishes
         } catch (InterruptedException ex) {
             DSLogger.reportError(ex.getMessage(), ex);

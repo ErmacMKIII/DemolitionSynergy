@@ -136,7 +136,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void buffer() {
+    public synchronized void buffer() {
         bufferVbo();
         buffered = true;
     }

@@ -24,11 +24,11 @@ public class MathUtils {
 
     // linear interpolation for floats
     public static float lerp(float a, float b, float alpha) {
-        return (1 - alpha) * a + alpha * b;
+        return (1.0f - alpha) * a + alpha * b;
     }
 
     // linear interpolation for doubles
     public static double lerp(double a, double b, double alpha) {
-        return (1 - alpha) * a + alpha * b;
+        return (1.0 - alpha) * a + alpha * b;
     }
 }

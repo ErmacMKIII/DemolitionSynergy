@@ -54,9 +54,6 @@ public class Game {
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap  
 
-    private static int updPasses = 0;
-    public static final int UPD_MAX_PASSES = 5;
-
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
@@ -103,6 +100,12 @@ public class Game {
     };
     private static Mode currentMode = Mode.FREE;
 
+    /**
+     * Construct new game view
+     *
+     * @param inCfg configuration
+     * @param gameObject game object control
+     */
     public Game(Configuration inCfg, GameObject gameObject) {
         this.gameObject = gameObject;
         Game.fpsMax = inCfg.getFpsCap();
@@ -124,6 +127,9 @@ public class Game {
         initCallbacks();
     }
 
+    /**
+     * Handles input for observer (or player)
+     */
     private void observerDo() {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
@@ -182,6 +188,9 @@ public class Game {
         }
     }
 
+    /**
+     * Handles input for editor (when in editor mode)
+     */
     private void editorDo() {
         if (keys[GLFW.GLFW_KEY_N]) {
             Editor.selectNew(gameObject);
@@ -244,6 +253,9 @@ public class Game {
         }
     }
 
+    /**
+     * Handle input for player (Single player mode)
+     */
     public void playerDo() {
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
 
@@ -308,6 +320,9 @@ public class Game {
         }
     }
 
+    /**
+     * Init input (keyboard & mouse)
+     */
     private void initCallbacks() {
         GLFWErrorCallback.createPrint(System.err).set();
 
@@ -398,6 +413,9 @@ public class Game {
         GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), defaultMouseButtonCallback);
     }
 
+    /**
+     * Starts the main (update) loop
+     */
     public void go() {
         // start the music
         AudioFile audioFile = AudioFile.AMBIENT;
@@ -407,26 +425,27 @@ public class Game {
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
-        double diff;
+        double deltaTime;
+        double acc = 0.0; // accumulator
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
-            diff = currTime - lastTime;
-            upsTicks += -Math.expm1(-diff * Game.TPS);
+            deltaTime = currTime - lastTime;
+            upsTicks += deltaTime * Game.TPS;
+            acc += deltaTime;
             lastTime = currTime;
 
             // Detecting critical status
-            if (ups == 0 && diff > CRITICAL_TIME) {
+            if (ups == 0 && deltaTime > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
                 GameObject.MY_WINDOW.close();
                 break;
             }
 
-            while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+            while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 gameObject.determineVisibleChunks();
-                float deltaTime = (float) (upsTicks / TPS);
-                gameObject.update(deltaTime);
+                gameObject.update((float) (upsTicks / TPS));
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
@@ -437,23 +456,20 @@ public class Game {
                 }
                 ups++;
                 upsTicks--;
-                updPasses++;
-            }
-            updPasses = 0;
-
-            synchronized (GameObject.OBJ_SYNC) {
-                GameObject.OBJ_SYNC.notify();
+                acc -= 1.0 / TPS;
             }
 
+            Renderer.alpha = acc * TPS;
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
-        // wakes up the sleepers!
-        synchronized (GameObject.OBJ_SYNC) {
-            GameObject.OBJ_SYNC.notify();
-        }
     }
 
+    /**
+     * Creates configuration from settings
+     *
+     * @return Configuration cfg
+     */
     public Configuration makeConfig() {
         Configuration cfg = new Configuration();
         cfg.setFpsCap(fpsMax);
@@ -538,10 +554,6 @@ public class Game {
 
     public static float getYoffset() {
         return yoffset;
-    }
-
-    public static int getUpdPasses() {
-        return updPasses;
     }
 
 }

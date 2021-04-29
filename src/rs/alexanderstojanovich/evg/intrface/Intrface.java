@@ -43,7 +43,7 @@ public class Intrface {
     private Quad crosshair;
     private DynamicText updText; // displays updates
     private DynamicText fpsText; // displays framerates
-    private DynamicText opsText; // displays operations per second
+    private DynamicText alphaText; // display alpha ratio
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
@@ -77,8 +77,8 @@ public class Intrface {
         updText.alignToNextChar();
         fpsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
         fpsText.alignToNextChar();
-        opsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
-        opsText.alignToNextChar();
+        alphaText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
+        alphaText.alignToNextChar();
 
         collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
@@ -383,10 +383,10 @@ public class Intrface {
             fpsText.buffer();
         }
         fpsText.render();
-        if (!opsText.isBuffered()) {
-            opsText.buffer();
+        if (!alphaText.isBuffered()) {
+            alphaText.buffer();
         }
-        opsText.render();
+        alphaText.render();
         if (!collText.isBuffered()) {
             collText.buffer();
         }
@@ -442,8 +442,8 @@ public class Intrface {
         return fpsText;
     }
 
-    public DynamicText getOpsText() {
-        return opsText;
+    public DynamicText getAlphaText() {
+        return alphaText;
     }
 
     public DynamicText getCollText() {

@@ -178,7 +178,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // renderer does this stuff prior to any rendering
-    public void bufferAll() {
+    public synchronized void bufferAll() {
         if (!cached) {
             for (Tuple tuple : tupleList) {
                 tuple.buffer();
@@ -187,13 +187,13 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
         for (Tuple tuple : tupleList) {
             tuple.getBlocks().animate();
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering        
+    public synchronized void prepare() { // call only for fluid blocks before rendering        
         for (Tuple tuple : tupleList) {
             Blocks blocks = tuple.getBlocks();
             blocks.prepare();
@@ -208,7 +208,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
             Texture.enable();
 

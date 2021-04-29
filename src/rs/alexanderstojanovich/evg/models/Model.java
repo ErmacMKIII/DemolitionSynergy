@@ -231,7 +231,7 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
+    public synchronized void bufferAll() { // explicit call to buffer unbuffered before the rendering
         bufferVertices();
         bufferIndices();
         buffered = true;
@@ -311,7 +311,7 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
-    public void release() {
+    public synchronized void release() {
         if (buffered) {
             GL15.glDeleteBuffers(vbo);
             GL15.glDeleteBuffers(ibo);
@@ -545,7 +545,7 @@ public class Model implements Comparable<Model> {
         return "Model{" + "modelFileName=" + modelFileName + ", texName = " + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
-    public void animate() {
+    public synchronized void animate() {
         for (int i = 0; i < indices.size(); i += 3) {
             Vertex a = vertices.get(indices.get(i));
             Vertex b = vertices.get(indices.get(i + 1));

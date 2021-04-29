@@ -149,20 +149,20 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
-    public void bufferAll() { // buffer both, call it before any rendering
+    public synchronized void bufferAll() { // buffer both, call it before any rendering
         bufferVertices();
         bufferIndices();
         buffered = true;
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
         for (Block block : blockList) {
             block.animate();
         }
         updateVertices();
     }
 
-    public void prepare() { // call only for fluid blocks before rendering
+    public synchronized void prepare() { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
                 block.reverseFaceVertexOrder();
@@ -173,7 +173,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // standard render all
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
             Texture.enable();
 
@@ -232,7 +232,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // powerful render if block is visible by camera
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public synchronized void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
             Texture.enable();
 

@@ -27,9 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -208,7 +206,7 @@ public class Block extends Model {
     }
 
     @Override
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
+    public synchronized void bufferAll() { // explicit call to buffer unbuffered before the rendering
         bufferVertices();
         bufferIndices();
         buffered = true;

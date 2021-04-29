@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
+import java.util.Objects;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
@@ -76,6 +77,15 @@ public class Vertex {
                     && this.uv.equals(that.uv));
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 67 * hash + Objects.hashCode(this.pos);
+        hash = 67 * hash + Objects.hashCode(this.normal);
+        hash = 67 * hash + Objects.hashCode(this.uv);
+        return hash;
     }
 
     public Vector3f getPos() {
