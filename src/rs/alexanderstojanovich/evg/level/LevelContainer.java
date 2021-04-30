@@ -734,7 +734,6 @@ public class LevelContainer implements GravityEnviroment {
                 } else if (!solidChunk.isAlive() && solidChunk.isBuffered()) {
                     solidChunk.unbuffer();
                 } else if (solidChunk.isAlive() && solidChunk.isBuffered()) {
-                    solidChunk.prepare();
                     solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
                 }
             }
@@ -808,7 +807,6 @@ public class LevelContainer implements GravityEnviroment {
                 } else if (!solidChunk.isAlive() && solidChunk.isBuffered()) {
                     solidChunk.unbuffer();
                 } else if (solidChunk.isAlive() && solidChunk.isBuffered()) {
-                    solidChunk.prepare();
                     solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
                 }
             }
