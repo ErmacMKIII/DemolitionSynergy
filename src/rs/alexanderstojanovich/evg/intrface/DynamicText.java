@@ -136,13 +136,13 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void buffer() {
+    public synchronized void buffer() {
         bufferVbo();
         buffered = true;
     }
 
     @Override
-    public void render() {
+    public synchronized void render() {
         if (enabled && buffered && !content.isEmpty()) {
             float relWidth = getRelativeCharWidth();
             float relHeight = getRelativeCharHeight();
@@ -179,7 +179,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void setContent(String content) {
+    public synchronized void setContent(String content) {
         super.setContent(content);
         buffered = false;
     }

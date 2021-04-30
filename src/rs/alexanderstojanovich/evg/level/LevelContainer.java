@@ -232,10 +232,9 @@ public class LevelContainer implements GravityEnviroment {
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block("doom0");
-
-                entity.getPos().x = 4.0f * i;
-                entity.getPos().y = 4.0f * j;
-                entity.getPos().z = 3.0f;
+                entity.getPos().x = (4 * i) & 0xFFFFFFFE;
+                entity.getPos().y = (4 * j) & 0xFFFFFFFE;
+                entity.getPos().z = 3 & 0xFFFFFFFE;
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;

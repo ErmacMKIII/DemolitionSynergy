@@ -129,12 +129,12 @@ public class Text {
         }
     }
 
-    public void buffer() {
+    public synchronized void buffer() {
         init();
         buffered = true;
     }
 
-    public void render() {
+    public synchronized void render() {
         if (enabled && buffered) {
             int index = 0;
             for (Quad quad : quadList) {
@@ -191,7 +191,7 @@ public class Text {
         return content;
     }
 
-    public void setContent(String content) {
+    public synchronized void setContent(String content) {
         this.content = content;
         buffered = false;
     }
