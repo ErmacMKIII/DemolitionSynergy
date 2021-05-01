@@ -29,7 +29,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
-import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.BigList;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -39,7 +39,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new GapList<>();
+    private final List<Block> blockList = new BigList<>(5000);
     private int bigVbo = 0;
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;
