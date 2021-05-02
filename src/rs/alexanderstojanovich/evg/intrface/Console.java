@@ -45,6 +45,7 @@ public class Console {
     private final DynamicText inText;
     private final List<Pair<DynamicText, Quad>> history = new ArrayList<>();
     private boolean enabled = false;
+    private final DynamicText completes;
 
     public static final int HISTORY_CAPACITY = 12;
 
@@ -62,6 +63,12 @@ public class Console {
 
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
         this.inText.alignToNextChar();
+
+        this.completes = new DynamicText(Texture.FONT, "");
+        this.completes.color = Vector3fColors.YELLOW;
+        this.completes.pos.x = -1.0f;
+        this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
+        this.completes.alignToNextChar();
     }
 
     public void open() {
@@ -135,6 +142,24 @@ public class Console {
                             input.setLength(0);
                             inText.setContent("]_");
                         }
+                    } else if (key == GLFW.GLFW_KEY_TAB && action == GLFW.GLFW_PRESS) {
+                        List<String> candidates = Command.autoComplete(input.toString());
+                        StringBuilder sb = new StringBuilder();
+                        int index = 0;
+                        for (String candidate : candidates) {
+                            sb.append(candidate);
+                            if (index < candidates.size() - 1) {
+                                sb.append("\n");
+                            }
+                        }
+                        completes.setContent(sb.toString());
+                        completes.setAlignment(Text.ALIGNMENT_LEFT);
+
+                        if (candidates.size() == 1) {
+                            input.setLength(0);
+                            input.append(candidates.get(0));
+                            inText.setContent("]" + input + "_");
+                        }
                     }
                 }
             });
@@ -183,6 +208,11 @@ public class Console {
                 quad.render();
                 index++;
             }
+
+            if (!completes.isBuffered()) {
+                completes.buffer();
+            }
+            completes.render();
         }
     }
 
@@ -208,6 +238,10 @@ public class Console {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public DynamicText getCompletes() {
+        return completes;
     }
 
 }

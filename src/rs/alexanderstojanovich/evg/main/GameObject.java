@@ -32,7 +32,7 @@ import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
-    public static final String TITLE = "Demolition Synergy - v21 VIVID";
+    public static final String TITLE = "Demolition Synergy - v22 WARDEN";
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window

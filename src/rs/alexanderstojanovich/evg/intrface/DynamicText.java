@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
@@ -40,7 +38,6 @@ public class DynamicText extends Text {
     protected int dynamicSize = 100;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected int[] vboEntries = new int[1024];
-    protected final List<Pair<Float, Float>> pairList = new ArrayList<>(); // pairs xinc, ydec
     protected static final Vector2f[] VERTICES = new Vector2f[4]; //            
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
@@ -160,7 +157,14 @@ public class DynamicText extends Text {
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
             for (int k = 0; k < content.length(); k++) {
-                Pair<Float, Float> pair = pairList.get(vboEntries[k] >> 2);
+                int index = vboEntries[k] >> 2;
+
+                // again some fail safes
+                if (index < 0 || index >= pairList.size()) {
+                    break;
+                }
+
+                Pair<Float, Float> pair = pairList.get(index);
                 float xinc = (float) pair.getKey();
                 float ydec = (float) pair.getValue();
 

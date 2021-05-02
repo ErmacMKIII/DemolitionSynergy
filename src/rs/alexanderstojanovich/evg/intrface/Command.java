@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
@@ -27,6 +28,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Trie;
 
 /**
  *
@@ -48,9 +50,37 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
     ERROR;
 
     // commands differ in arugment length and type, therefore list is used
-    private final List<Object> args = new ArrayList<>();
+    protected final List<Object> args = new ArrayList<>();
 
-    // constructs command from given string input
+    protected static final Trie trie = new Trie();
+
+    static {
+        for (Command command : values()) {
+            if (command != ERROR && command != NOP) {
+                trie.insert(command.name().toLowerCase());
+            }
+        }
+    }
+
+    /**
+     * Perform auto complete with list of string for given input
+     *
+     * @param input given input
+     * @return possible commands
+     */
+    public static List<String> autoComplete(String input) {
+        List<String> words = trie.autoComplete(input);
+        Collections.sort(words);
+
+        return words;
+    }
+
+    /**
+     * Constructs command from given string input
+     *
+     * @param input given input
+     * @return Command with empty args.
+     */
     public static Command getCommand(String input) {
         Command command = ERROR;
         String[] things = input.split(" ");
@@ -128,9 +158,14 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
         return command;
     }
 
-    // executes command which modifies game, renderer or game object
-    // Rule is that commands which directly affect window or OpenGL 
-    // are being called from the Renderer, whilst other can be called from the main method
+    /**
+     * Executes command which modifies game, renderer or game object Rule is
+     * that commands which directly affect window or OpenGL are being called
+     * from the Renderer, whilst other can be called from the main method
+     *
+     * @param command chosen command
+     * @return execution status (true if successful, otherwise false)
+     */
     public static boolean execute(Command command) {
         boolean success = false;
         switch (command) {

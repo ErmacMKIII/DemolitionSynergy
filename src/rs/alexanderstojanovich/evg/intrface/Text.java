@@ -45,7 +45,7 @@ public class Text {
     public static final float LINE_SPACING = 1.5f;
 
     private final List<Quad> quadList = new GapList<>();
-    private final List<Pair<Float, Float>> pairList = new ArrayList<>();
+    protected final List<Pair<Float, Float>> pairList = new ArrayList<>();
 
     protected boolean enabled;
 
