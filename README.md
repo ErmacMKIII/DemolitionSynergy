@@ -9,5 +9,5 @@ In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and
 4. GapList & BigList (for Block lists) : http://www.mediafire.com/file/emp70k226y9i7fo/brownies-collections-0.9.14.jar/file
 5. Apache logger : http://www.mediafire.com/file/sdxldqua55gdheb/file
 
-Testers: 13, Hellblade64
+Testers: 13, Hellblade64;
 Credits: Erokia
