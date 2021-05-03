@@ -88,6 +88,7 @@ public class Console {
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         inText.setContent("");
+                        completes.setContent("");
                         input.setLength(0);
                         enabled = false;
                     } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
