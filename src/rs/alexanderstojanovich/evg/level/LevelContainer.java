@@ -651,6 +651,7 @@ public class LevelContainer implements GravityEnviroment {
                         } else if (Chunk.isCached(visibleId, true)) {
                             solidChunk = Chunk.loadFromDisk(visibleId, true);
                             solidChunks.getChunkList().add(solidChunk);
+                            solidChunks.getChunkList().sort(Chunks.COMPARATOR);
                         }
 
                         Chunk fluidChunk = fluidChunks.getChunk(visibleId);
@@ -660,6 +661,7 @@ public class LevelContainer implements GravityEnviroment {
                             fluidChunk = Chunk.loadFromDisk(visibleId, false);
                             fluidChunk.updateFluids();
                             fluidChunks.getChunkList().add(fluidChunk);
+                            fluidChunks.getChunkList().sort(Chunks.COMPARATOR);
                         }
                     }
                     break;
@@ -672,9 +674,8 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidChunk != null) {
                             if (solidChunk.isAlive()) {
                                 solidChunk.decTimeToLive();
-                            } else if (!solidChunk.isAlive() && solidChunk.isBuffered()) {
+                            } else if (!solidChunk.isAlive()) {
                                 solidChunk.unbuffer();
-                            } else if (!solidChunk.isBuffered() && !solidChunk.isCached()) {
                                 solidChunk.saveToDisk();
                                 solidChunks.getChunkList().remove(solidChunk);
                             }
@@ -683,9 +684,8 @@ public class LevelContainer implements GravityEnviroment {
                         if (fluidChunk != null) {
                             if (fluidChunk.isAlive()) {
                                 fluidChunk.decTimeToLive();
-                            } else if (!fluidChunk.isAlive() && fluidChunk.isBuffered()) {
+                            } else if (!fluidChunk.isAlive()) {
                                 fluidChunk.unbuffer();
-                            } else if (!fluidChunk.isBuffered() && !fluidChunk.isCached()) {
                                 fluidChunk.saveToDisk();
                                 fluidChunks.getChunkList().remove(fluidChunk);
                             }

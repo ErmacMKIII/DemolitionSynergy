@@ -137,7 +137,7 @@ public class Chunks {
 
     public void animate() { // call only for fluid blocks
         for (Chunk chunk : getChunkList()) {
-            if (!chunk.isCached() && chunk.isBuffered()) {
+            if (!Chunk.isCached(chunk.getId(), solid) && chunk.isBuffered()) {
                 chunk.animate();
             }
         }
@@ -244,15 +244,20 @@ public class Chunks {
         StringBuilder sb = new StringBuilder();
         sb.append("CHUNKS\n");
         sb.append("CHUNKS TOTAL SIZE = ").append(totalSize()).append("\n");
-        sb.append("NUMBER OF CHUNKS = ").append(chunkList.size()).append("\n");
         sb.append("DETAILED INFO\n");
-        for (Chunk chunk : chunkList) {
-            sb.append("id = ").append(chunk.getId())
-                    .append(" | solid = ").append(chunk.isSolid())
-                    .append(" | size = ").append(chunk.loadedSize())
-                    .append(" | timeToLive = ").append(chunk.getTimeToLive())
-                    .append(" | buffered = ").append(chunk.isBuffered())
-                    .append(" | cached = ").append(chunk.isCached())
+        for (int id = -Chunk.VAL; id <= Chunk.VAL; id++) {
+            boolean cached = Chunk.isCached(id, solid);
+            Chunk chunk = null;
+            if (!cached) {
+                chunk = getChunk(id);
+            }
+
+            sb.append("id = ").append(id)
+                    .append(" | solid = ").append(solid)
+                    .append(" | size = ").append((!cached && chunk != null) ? chunk.loadedSize() : Chunk.cachedSize(id, solid))
+                    .append(" | timeToLive = ").append((chunk != null) ? chunk.getTimeToLive() : 0)
+                    .append(" | buffered = ").append((chunk != null) ? chunk.isBuffered() : false)
+                    .append(" | cached = ").append(cached)
                     .append("\n");
         }
         sb.append("------------------------------------------------------------");
