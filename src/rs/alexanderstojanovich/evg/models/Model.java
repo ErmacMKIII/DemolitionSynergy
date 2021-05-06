@@ -188,7 +188,7 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    private void bufferVertices() {
+    public void bufferVertices() {
         // storing vertices and normals in the buffer
         FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
         for (Vertex vertex : vertices) {
@@ -215,7 +215,7 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    private void bufferIndices() {
+    public void bufferIndices() {
         // storing indices in the buffer
         IntBuffer ib = BufferUtils.createIntBuffer(indices.size());
         for (Integer index : indices) {

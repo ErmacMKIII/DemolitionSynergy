@@ -166,7 +166,7 @@ public class Block extends Model {
         }
     }
 
-    private void bufferVertices() {
+    public void bufferVertices() {
         // storing vertices and FACE_NORMALS in the buffer
         FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
         for (Vertex vertex : vertices) {
@@ -193,7 +193,7 @@ public class Block extends Model {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    private void bufferIndices() {
+    public void bufferIndices() {
         // storing indices in the buffer
         IntBuffer ib = createIntBuffer(getFaceBits());
         // storing indices buffer on the graphics card
