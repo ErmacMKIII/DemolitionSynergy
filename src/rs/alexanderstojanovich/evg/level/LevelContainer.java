@@ -57,7 +57,7 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks(true);
     private final Chunks fluidChunks = new Chunks(false);
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 5;
+    public static final int VIPAIR_QUEUE_CAPACITY = 16;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -102,7 +102,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Map<Integer, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
     // std time to live
-    public static final int STD_TTL = 40; // 40 seconds
+    public static final int STD_TTL = 30; // 30 seconds
 
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -110,14 +110,14 @@ public class LevelContainer implements GravityEnviroment {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Pair<String, Byte> pair = ALL_SOLID_MAP.get(hashCodeY);
-            if (pair != null) {
+            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(hashCodeY);
+            if (adjPair != null) {
                 bits |= mask;
-                byte adjBits = pair.getValue();
-                int k = (j % 2 == 0 ? j + 1 : j - 1);
+                byte adjBits = adjPair.getValue();
+                int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                pair.setValue(adjBits);
+                adjPair.setValue(adjBits);
             }
         }
         return bits;
@@ -129,32 +129,32 @@ public class LevelContainer implements GravityEnviroment {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Pair<String, Byte> pair = ALL_FLUID_MAP.get(hashCodeY);
-            if (pair != null) {
+            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(hashCodeY);
+            if (adjPair != null) {
                 bits |= mask;
-                byte adjBits = pair.getValue();
-                int k = (j % 2 == 0 ? j + 1 : j - 1);
+                byte adjBits = adjPair.getValue();
+                int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                pair.setValue(adjBits);
+                adjPair.setValue(adjBits);
             }
         }
         return bits;
     }
 
-    public static void putBlock(Block block, int index) {
+    public static void putBlock(Block block) {
         Vector3f pos = block.getPos();
         String str = block.getTexName();
         if (block.isSolid()) {
             byte bits = updateSolidNeighbors(pos);
             int hashCodeX = Vector3fUtils.hashCode(pos);
-            Pair<String, Byte> tripleX = new Pair<>(str, bits);
-            ALL_SOLID_MAP.put(hashCodeX, tripleX);
+            Pair<String, Byte> pairX = new Pair<>(str, bits);
+            ALL_SOLID_MAP.put(hashCodeX, pairX);
         } else {
             byte bits = updateFluidNeighbors(pos);
             int hashCodeX = Vector3fUtils.hashCode(pos);
-            Pair<String, Byte> tripleX = new Pair<>(str, bits);
-            ALL_FLUID_MAP.put(hashCodeX, tripleX);
+            Pair<String, Byte> pairX = new Pair<>(str, bits);
+            ALL_FLUID_MAP.put(hashCodeX, pairX);
         }
     }
 

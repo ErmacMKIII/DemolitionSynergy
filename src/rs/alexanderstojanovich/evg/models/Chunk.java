@@ -43,11 +43,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int ABS_BOUND = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f); // modulator
-    public static final int DIVIDER = 16; // divider -> number of chunks
-    public static final int VAL = DIVIDER / 2 - 1; // for iterations of determine visible
-
+    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
     public static final float VISION = 100.0f; // determines visibility
+    public static final int MULTIPLIER = 16; // NUMBER OF CHUNKS IS 2 * MULTIPLIER + 1
 
     // id of the chunk (signed)
     private final int id;
@@ -145,7 +143,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         blockList.sort(Block.Y_AXIS_COMP);
 
         if (useLevelContainer) {
-            LevelContainer.putBlock(block, blockList.indexOf(block));
+            LevelContainer.putBlock(block);
         }
 
         buffered = false;
@@ -252,22 +250,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
-        return Math.round(((pos.x + pos.y + pos.z) / (3.0f * DIVIDER)));
-    }
-
-    // determine if chunk is visible
-    public static int chunkFunc(Vector3f actorPos, Vector3f actorFront) {
-        float x = VISION * actorFront.x + actorPos.x;
-        float y = VISION * actorFront.y + actorPos.y;
-        float z = VISION * actorFront.z + actorPos.z;
-
-        return Math.round(((x + y + z) / (3.0f * DIVIDER)));
+        final int cid = Math.round(MULTIPLIER * (pos.x + pos.y + pos.z) / (float) (3 * BOUND));
+        return cid;
     }
 
     // determine where chunk position might be based on the chunkId
     public static Vector3f chunkInverFunc(int chunkId) {
-        float component = chunkId * DIVIDER;
-        return new Vector3f(component, component, component);
+        float cntre = Math.round(BOUND * chunkId / (float) MULTIPLIER);
+        return new Vector3f(cntre, cntre, cntre);
     }
 
     // determine which chunks are visible by this chunk
@@ -277,7 +267,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
-        for (int id = -VAL; id <= VAL; id++) {
+        for (int id = -Chunk.MULTIPLIER; id <= Chunk.MULTIPLIER; id++) {
             Vector3f chunkPos = chunkInverFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
