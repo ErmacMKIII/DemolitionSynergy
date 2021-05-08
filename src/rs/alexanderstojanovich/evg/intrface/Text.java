@@ -100,8 +100,8 @@ public class Text {
                 float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
                 float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j - content.length() * alignment;
-                float ydec = k + l * LINE_SPACING;
+                float xinc = (j - content.length() * alignment) * scale * getRelativeCharWidth();
+                float ydec = (k + l * LINE_SPACING) * scale * getRelativeCharHeight();
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -148,17 +148,17 @@ public class Text {
     }
 
     public float getRelativeCharWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
         return charWidth * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
     }
 
     public float getRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
         return charWidth * widthFactor * content.length() / (float) GameObject.MY_WINDOW.getWidth();
     }
 
     public float getRelativeCharHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / Window.MIN_HEIGHT;
+        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
         return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 

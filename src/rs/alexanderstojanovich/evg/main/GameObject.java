@@ -51,6 +51,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // everyone can access only one instance of the game object
     private static GameObject instance;
 
+    public static final Object OBJ_MUTEX = new Object();
+
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
         this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
@@ -73,11 +75,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     /**
-     * Update Game Object stuff (call only from main)
+     * Update Game Object stuff, like Environment (call only from main)
      *
      * @param deltaTime game object environment update time
      */
-    public synchronized void update(float deltaTime) {
+    public void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }

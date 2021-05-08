@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
@@ -88,8 +89,8 @@ public class DynamicText extends Text {
                 float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
                 float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j - content.length() * alignment;
-                float ydec = k + l * LINE_SPACING;
+                float xinc = (j - content.length() * alignment) * scale * getRelativeCharWidth();
+                float ydec = (k + l * LINE_SPACING) * scale * getRelativeCharHeight();
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -138,11 +139,22 @@ public class DynamicText extends Text {
         buffered = true;
     }
 
+    private Matrix4f calcModelMatrix(float xinc, float ydec) {
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y + ydec, 0.0f);
+        Matrix4f rotationMatrix = new Matrix4f().identity();
+
+        float sx = getRelativeCharWidth();
+        float sy = getRelativeCharHeight();
+        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
+
+        Matrix4f temp = new Matrix4f();
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
+    }
+
     @Override
     public synchronized void render() {
         if (enabled && buffered && !content.isEmpty()) {
-            float relWidth = getRelativeCharWidth();
-            float relHeight = getRelativeCharHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glEnableVertexAttribArray(0);
@@ -151,8 +163,6 @@ public class DynamicText extends Text {
             GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv
             ShaderProgram.getIntrfaceShader().bind();
             ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
-            ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
-            ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
             ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
@@ -168,8 +178,11 @@ public class DynamicText extends Text {
                 float xinc = (float) pair.getKey();
                 float ydec = (float) pair.getValue();
 
-                ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
-                ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
+                Matrix4f projMat4 = new Matrix4f();
+                ShaderProgram.getIntrfaceShader().updateUniform(projMat4, "projectionMatrix");
+
+                Matrix4f modelMat4 = calcModelMatrix(xinc, ydec);
+                ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
 
                 GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, CONST_INT_BUFFER, vboEntries[k]);
             }

@@ -31,4 +31,15 @@ public class MathUtils {
     public static double lerp(double a, double b, double alpha) {
         return (1.0 - alpha) * a + alpha * b;
     }
+
+    // Taylor series approximation
+    public static float expm1(float x) {
+        return x * (1.0f + 0.5f * x * (1.0f + x * (1.0f + 0.25f * x) / 3.0f));
+    }
+
+    // Taylor series approximation
+    public static double expm1(double x) {
+        return x * (1.0 + 0.5 * x * (1.0 + x * (1.0 + 0.25 * x) / 3.0));
+    }
+
 }

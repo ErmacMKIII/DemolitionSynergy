@@ -18,12 +18,14 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -113,25 +115,36 @@ public class Quad {
         buffered = true;
     }
 
+    private Matrix4f calcModelMatrix() {
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x, pos.y, 0.0f);
+        Matrix4f rotationMatrix = new Matrix4f().identity();
+
+        float sx = giveRelativeWidth();
+        float sy = giveRelativeHeight();
+        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
+
+        Matrix4f temp = new Matrix4f();
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
+    }
+
     public void render() { // used for crosshair
         if (enabled && buffered) {
-            float relWidth = giveRelativeWidth();
-            float relHeight = giveRelativeHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                         
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
             ShaderProgram.getIntrfaceShader().bind();
-            ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
-            ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
-            ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
+
+            Matrix4f modelMat4 = calcModelMatrix();
+            ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
+
             ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
-            ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "xinc");
-            ShaderProgram.getIntrfaceShader().updateUniform(0.0f, "ydec");
+
             GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
 
             Texture.unbind(0);
@@ -143,25 +156,36 @@ public class Quad {
         }
     }
 
+    private Matrix4f calcModelMatrix(float xinc, float ydec) {
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y + ydec, 0.0f);
+        Matrix4f rotationMatrix = new Matrix4f().identity();
+
+        float sx = giveRelativeWidth();
+        float sy = giveRelativeHeight();
+        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
+
+        Matrix4f temp = new Matrix4f();
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
+    }
+
     public void render(float xinc, float ydec) { // used for fonts
         if (enabled && buffered) {
-            float relWidth = giveRelativeWidth();
-            float relHeight = giveRelativeHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                         
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
             ShaderProgram.getIntrfaceShader().bind();
-            ShaderProgram.getIntrfaceShader().updateUniform(pos, "trans");
-            ShaderProgram.getIntrfaceShader().updateUniform(relWidth, "width");
-            ShaderProgram.getIntrfaceShader().updateUniform(relHeight, "height");
+
+            Matrix4f modelMat4 = calcModelMatrix(xinc, ydec);
+            ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
+
             ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
             ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
-            ShaderProgram.getIntrfaceShader().updateUniform(xinc, "xinc");
-            ShaderProgram.getIntrfaceShader().updateUniform(ydec, "ydec");
+
             GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
 
             Texture.unbind(0);
@@ -174,12 +198,12 @@ public class Quad {
     }
 
     public float giveRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
         return width * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
     }
 
     public float giveRelativeHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / Window.MIN_HEIGHT;
+        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
         return height * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
