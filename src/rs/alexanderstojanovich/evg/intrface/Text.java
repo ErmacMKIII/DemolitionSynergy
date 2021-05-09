@@ -16,15 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -44,8 +43,10 @@ public class Text {
     protected static final float CELL_SIZE = 1.0f / GRID_SIZE;
     public static final float LINE_SPACING = 1.5f;
 
-    private final List<Quad> quadList = new GapList<>();
-    protected final List<Pair<Float, Float>> pairList = new ArrayList<>();
+    // iterator through txtChList
+    protected final Quad iterator;
+    // first is position, second is uvs
+    protected final List<TextCharacter> txtChList = new GapList<>();
 
     protected boolean enabled;
 
@@ -69,6 +70,7 @@ public class Text {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
+        this.iterator = new Quad(charWidth, charHeight, texture);
     }
 
     public Text(Texture texture, String content, Vector3f color, Vector2f pos) {
@@ -77,6 +79,7 @@ public class Text {
         this.color = color;
         this.pos = pos;
         this.enabled = true;
+        this.iterator = new Quad(charWidth, charHeight, texture);
     }
 
     public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
@@ -85,64 +88,42 @@ public class Text {
         this.enabled = true;
         this.charWidth = charWidth;
         this.charHeight = charHeight;
+        this.iterator = new Quad(charWidth, charHeight, texture);
     }
 
-    private void init() {
-        quadList.clear();
-        pairList.clear();
+    protected void setup() {
+        txtChList.clear();
         String[] lines = content.split("\n");
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
                 int j = i % 64;
                 int k = i / 64;
-                int asciiCode = (int) (lines[l].charAt(i));
-
-                float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
-                float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
-
+                char ch = lines[l].charAt(i);
                 float xinc = (j - content.length() * alignment) * scale * getRelativeCharWidth();
                 float ydec = (k + l * LINE_SPACING) * scale * getRelativeCharHeight();
 
-                pairList.add(new Pair<>(xinc, ydec));
-
-                Quad quad = new Quad(charWidth, charHeight, texture);
-                quad.setColor(color);
-                quad.setPos(pos);
-                quad.setScale(scale);
-
-                quad.getUvs()[0].x = cellU;
-                quad.getUvs()[0].y = cellV + CELL_SIZE;
-
-                quad.getUvs()[1].x = cellU + CELL_SIZE;
-                quad.getUvs()[1].y = cellV + CELL_SIZE;
-
-                quad.getUvs()[2].x = cellU + CELL_SIZE;
-                quad.getUvs()[2].y = cellV;
-
-                quad.getUvs()[3].x = cellU;
-                quad.getUvs()[3].y = cellV;
-
-                quad.buffer();
-
-                quadList.add(quad);
+                TextCharacter txtCh = new TextCharacter(ch);
+                txtCh.setPos(new Vector2f(pos.x + xinc, pos.y + ydec));
+                txtChList.add(txtCh);
             }
         }
     }
 
-    public synchronized void buffer() {
-        init();
+    public void buffer() {
+        setup();
+        iterator.bufferAll();
         buffered = true;
     }
 
-    public synchronized void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled && buffered) {
-            int index = 0;
-            for (Quad quad : quadList) {
-                Pair<Float, Float> pair = pairList.get(index);
-                float xinc = pair.getKey();
-                float ydec = pair.getValue();
-                quad.render(xinc, ydec);
-                index++;
+            iterator.color = color;
+            iterator.scale = scale;
+            for (TextCharacter txtCh : txtChList) {
+                iterator.pos = txtCh.pos;
+                iterator.uvs = txtCh.uvs;
+                iterator.updateVertices();
+                iterator.render(shaderProgram);
             }
         }
     }
@@ -191,7 +172,7 @@ public class Text {
         return content;
     }
 
-    public synchronized void setContent(String content) {
+    public void setContent(String content) {
         this.content = content;
         buffered = false;
     }
@@ -202,14 +183,6 @@ public class Text {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public List<Quad> getQuadList() {
-        return quadList;
-    }
-
-    public List<Pair<Float, Float>> getPairList() {
-        return pairList;
     }
 
     public float getAlignment() {

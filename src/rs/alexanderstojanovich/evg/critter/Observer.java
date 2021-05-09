@@ -35,7 +35,7 @@ public class Observer implements Critter {
 
     public Observer(String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
         this.camera = new Camera(pos);
-        this.model = new Model(Game.WORLD_ENTRY, modelFileName, texName);
+        this.model = Model.readFromObjFile(Game.WORLD_ENTRY, modelFileName, texName);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());

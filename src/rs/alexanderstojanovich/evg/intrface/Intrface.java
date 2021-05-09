@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
@@ -370,53 +371,53 @@ public class Intrface {
         }
     }
 
-    public void render() {
-        saveDialog.render();
-        loadDialog.render();
-        randLvlDialog.render();
-        singlePlayerDialog.render();
+    public void render(ShaderProgram ifcShaderProgram) {
+        saveDialog.render(ifcShaderProgram);
+        loadDialog.render(ifcShaderProgram);
+        randLvlDialog.render(ifcShaderProgram);
+        singlePlayerDialog.render(ifcShaderProgram);
         if (!updText.isBuffered()) {
             updText.buffer();
         }
-        updText.render();
+        updText.render(ifcShaderProgram);
         if (!fpsText.isBuffered()) {
             fpsText.buffer();
         }
-        fpsText.render();
+        fpsText.render(ifcShaderProgram);
         if (!alphaText.isBuffered()) {
             alphaText.buffer();
         }
-        alphaText.render();
+        alphaText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
             collText.buffer();
         }
-        collText.render();
+        collText.render(ifcShaderProgram);
         if (!helpText.isBuffered()) {
             helpText.buffer();
         }
-        helpText.render();
+        helpText.render(ifcShaderProgram);
         if (!gameModeText.isBuffered()) {
             gameModeText.buffer();
         }
-        gameModeText.render();
+        gameModeText.render(ifcShaderProgram);
         if (!progText.isBuffered()) {
             progText.buffer();
         }
-        progText.render();
+        progText.render(ifcShaderProgram);
         if (!screenText.isBuffered()) {
             screenText.buffer();
         }
-        screenText.render();
-        mainMenu.render();
-        optionsMenu.render();
-        editorMenu.render();
+        screenText.render(ifcShaderProgram);
+        mainMenu.render(ifcShaderProgram);
+        optionsMenu.render(ifcShaderProgram);
+        editorMenu.render(ifcShaderProgram);
         if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !showHelp) {
             if (!crosshair.isBuffered()) {
-                crosshair.buffer();
+                crosshair.bufferAll();
             }
-            crosshair.render();
+            crosshair.render(ifcShaderProgram);
         }
-        console.render();
+        console.render(ifcShaderProgram);
     }
 
     // update menu components

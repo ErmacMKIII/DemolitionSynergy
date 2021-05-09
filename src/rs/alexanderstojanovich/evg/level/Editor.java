@@ -51,7 +51,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block();
+            loaded = new Block("crate");
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -152,7 +152,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block();
+                loaded = new Block("crate");
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -195,7 +195,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block();
+                loaded = new Block("crate");
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -284,7 +284,7 @@ public class Editor {
                     gameObject.getLevelContainer().getFluidChunks().updateFluids();
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                loaded = new Block();
+                loaded = new Block("crate");
                 selectLoadedTexture();
             }
         }

@@ -92,7 +92,6 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
         mat4FloatBuff.clear();
 
         for (Block block : blocks.getBlockList()) {
-            block.calcModelMatrix();
             Vector4f[] vectArr = new Vector4f[4];
             for (int i = 0; i < 4; i++) {
                 vectArr[i] = new Vector4f();

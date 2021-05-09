@@ -57,7 +57,7 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks(true);
     private final Chunks fluidChunks = new Chunks(false);
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 16;
+    public static final int VIPAIR_QUEUE_CAPACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {

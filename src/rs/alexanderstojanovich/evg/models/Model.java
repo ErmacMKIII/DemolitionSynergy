@@ -50,10 +50,10 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Model implements Comparable<Model> {
 
-    private String modelFileName;
+    protected String modelFileName;
 
-    protected List<Vertex> vertices = new GapList<>();
-    protected List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
+    protected final List<Vertex> vertices = new GapList<>();
+    protected final List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
     protected String texName;
     protected Texture waterTexture;
 
@@ -79,35 +79,23 @@ public class Model implements Comparable<Model> {
     // fluid models are solid whilst solid ones aren't               
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
+    protected Matrix4f modelMatrix = calcModelMatrix();
+    private FloatBuffer fb;
 
-    protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
-
-    }
-
-    public Model(String dirEntry, String modelFileName) {
-        this.modelFileName = modelFileName;
-        readFromObjFile(dirEntry, modelFileName);
-        calcDims();
-    }
-
-    public Model(String dirEntry, String modelFileName, String texName) {
+    protected Model(String modelFileName, String texName) {
         this.modelFileName = modelFileName;
         this.texName = texName;
-        readFromObjFile(dirEntry, modelFileName);
-        calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    protected Model(String modelFileName, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
         this.texName = texName;
-        readFromObjFile(dirEntry, modelFileName);
         this.pos = pos;
-        calcDims();
         this.primaryColor = primaryColor;
         this.solid = solid;
     }
 
-    private void readFromObjFile(String dirEntry, String fileName) {
+    public static Model readFromObjFile(String dirEntry, String fileName, String texName) {
         File extern = new File(dirEntry + fileName);
         File archive = new File(Game.DATA_ZIP);
         ZipFile zipFile = null;
@@ -136,8 +124,10 @@ public class Model implements Comparable<Model> {
         //----------------------------------------------------------------------
         if (objInput == null) {
             DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
-            return;
+            return null;
         }
+
+        Model result = new Model(fileName, texName);
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
         List<Vector2f> uvs = new ArrayList<>();
         List<Vector3f> normals = new ArrayList<>();
@@ -148,7 +138,7 @@ public class Model implements Comparable<Model> {
                 if (things[0].equals("v")) {
                     Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
                     Vertex vertex = new Vertex(pos);
-                    vertices.add(vertex);
+                    result.vertices.add(vertex);
                 } else if (things[0].equals("vt")) {
                     Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1.0f - Float.parseFloat(things[2]));
                     uvs.add(uv);
@@ -160,12 +150,12 @@ public class Model implements Comparable<Model> {
                     for (String subThing : subThings) {
                         String[] data = subThing.split("/");
                         int index = Integer.parseInt(data[0]) - 1;
-                        indices.add(index);
+                        result.indices.add(index);
                         if (!data[1].isEmpty()) {
-                            vertices.get(index).setUv(uvs.get(Integer.parseInt(data[1]) - 1));
+                            result.vertices.get(index).setUv(uvs.get(Integer.parseInt(data[1]) - 1));
                         }
                         if (!data[2].isEmpty()) {
-                            vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
+                            result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
                         }
                     }
                 }
@@ -186,11 +176,13 @@ public class Model implements Comparable<Model> {
                 }
             }
         }
+
+        return result;
     }
 
     public void bufferVertices() {
         // storing vertices and normals in the buffer
-        FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
+        fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 fb.put(vertex.getPos().x);
@@ -212,6 +204,28 @@ public class Model implements Comparable<Model> {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    public void updateVertices() {
+        // storing vertices and normals in the buffer        
+        for (Vertex vertex : vertices) {
+            if (vertex.isEnabled()) {
+                fb.put(vertex.getPos().x);
+                fb.put(vertex.getPos().y);
+                fb.put(vertex.getPos().z);
+
+                fb.put(vertex.getNormal().x);
+                fb.put(vertex.getNormal().y);
+                fb.put(vertex.getNormal().z);
+
+                fb.put(vertex.getUv().x);
+                fb.put(vertex.getUv().y);
+            }
+        }
+        fb.flip();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
@@ -311,6 +325,7 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
+    @Deprecated
     public void release() {
         if (buffered) {
             GL15.glDeleteBuffers(vbo);
@@ -325,12 +340,13 @@ public class Model implements Comparable<Model> {
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
         Matrix4f temp = new Matrix4f();
-        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+
         return modelMatrix;
     }
 
     protected void transform(ShaderProgram shaderProgram) {
-        Matrix4f modelMatrix = calcModelMatrix();
+        calcModelMatrix();
         shaderProgram.updateUniform(modelMatrix, "modelMatrix");
     }
 
@@ -700,6 +716,10 @@ public class Model implements Comparable<Model> {
 
     public boolean isBuffered() {
         return buffered;
+    }
+
+    public Matrix4f getModelMatrix() {
+        return modelMatrix;
     }
 
     @Override

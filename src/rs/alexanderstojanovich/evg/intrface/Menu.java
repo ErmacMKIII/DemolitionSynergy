@@ -26,6 +26,7 @@ import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
@@ -192,7 +193,7 @@ public abstract class Menu {
         return longest;
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
@@ -201,14 +202,14 @@ public abstract class Menu {
             if (!title.isBuffered()) {
                 title.buffer();
             }
-            title.render();
+            title.render(shaderProgram);
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
                 logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
-                    logo.buffer();
+                    logo.bufferAll();
                 }
-                logo.render();
+                logo.render(shaderProgram);
             }
             int index = 0;
             for (DynamicText item : items) {
@@ -220,7 +221,7 @@ public abstract class Menu {
                     item.buffer();
                 }
 
-                item.render();
+                item.render(shaderProgram);
                 index++;
             }
 
@@ -230,9 +231,9 @@ public abstract class Menu {
             iterator.getPos().y = items.get(selected).getPos().y;
             iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {
-                iterator.buffer();
+                iterator.bufferAll();
             }
-            iterator.render();
+            iterator.render(shaderProgram);
         }
     }
 

@@ -25,6 +25,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Pair;
 
@@ -139,7 +140,7 @@ public abstract class OptionsMenu extends Menu {
     }
 
     @Override
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             getValues();
             int longest = longestWord();
@@ -149,7 +150,7 @@ public abstract class OptionsMenu extends Menu {
             if (!title.isBuffered()) {
                 title.buffer();
             }
-            title.render();
+            title.render(shaderProgram);
             int index = 0;
             for (DynamicText item : items) {
                 item.setAlignment(alignmentAmount);
@@ -159,13 +160,13 @@ public abstract class OptionsMenu extends Menu {
                 if (!item.isBuffered()) {
                     item.buffer();
                 }
-                item.render();
+                item.render(shaderProgram);
                 options.get(index).getKey().getPos().x = item.getPos().x + itemScale * (item.getRelativeWidth() + item.getRelativeCharWidth()) * (1.0f - alignmentAmount);
                 options.get(index).getKey().getPos().y = item.getPos().y;
                 if (!options.get(index).getKey().isBuffered()) {
                     options.get(index).getKey().buffer();
                 }
-                options.get(index).getKey().render();
+                options.get(index).getKey().render(shaderProgram);
                 index++;
             }
             iterator.getPos().x = items.get(selected).getPos().x;
@@ -174,9 +175,9 @@ public abstract class OptionsMenu extends Menu {
             iterator.getPos().y = items.get(selected).getPos().y;
             iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {
-                iterator.buffer();
+                iterator.bufferAll();
             }
-            iterator.render();
+            iterator.render(shaderProgram);
         }
     }
 

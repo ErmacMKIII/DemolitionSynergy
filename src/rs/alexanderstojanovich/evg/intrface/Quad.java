@@ -25,7 +25,6 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -36,32 +35,37 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Quad {
+public class Quad implements ComponentIfc {
 
-    private int width;
-    private int height;
-    private Texture texture;
+    protected int width;
+    protected int height;
+    protected Texture texture;
 
-    private Vector3f color = Vector3fColors.WHITE;
-    private float scale = 1.0f;
+    protected Vector3f color = Vector3fColors.WHITE;
+    protected float scale = 1.0f;
 
-    private Vector2f pos = new Vector2f();
-    private boolean enabled = true;
+    protected Vector2f pos = new Vector2f();
+    protected boolean enabled = true;
 
-    private boolean ignoreFactor = false;
+    protected boolean ignoreFactor = false;
 
-    private static final Vector2f[] VERTICES = new Vector2f[4];
-    private final FloatBuffer fb = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
+    protected static final Vector2f[] VERTICES = new Vector2f[4];
+    protected final FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
 
-    private final Vector2f[] uvs = new Vector2f[4];
-    private static final int[] INDICES = {0, 1, 2, 2, 3, 0};
-    private static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
-    private int vbo = 0;
+    protected Vector2f[] uvs = new Vector2f[4];
+    protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
+    // protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
+    protected int vbo = 0;
+
+    protected final IntBuffer intBuffer = BufferUtils.createIntBuffer(4 * VERTEX_SIZE);
+    protected int ibo = 0;
 
     public static final int VERTEX_SIZE = 4;
     public static final int VERTEX_COUNT = 4;
 
-    private boolean buffered = false;
+    protected boolean buffered = false;
+
+    protected Matrix4f modelMatrix = calcModelMatrix();
 
     static {
         VERTICES[0] = new Vector2f(-1.0f, -1.0f);
@@ -69,10 +73,10 @@ public class Quad {
         VERTICES[2] = new Vector2f(1.0f, 1.0f);
         VERTICES[3] = new Vector2f(-1.0f, 1.0f);
 
-        for (int i : INDICES) {
-            CONST_INT_BUFFER.put(i);
-        }
-        CONST_INT_BUFFER.flip();
+//        for (int i : INDICES) {
+//            CONST_INT_BUFFER.put(i);
+//        }
+//        CONST_INT_BUFFER.flip();
     }
 
     public Quad(int width, int height, Texture texture) {
@@ -97,25 +101,73 @@ public class Quad {
         uvs[3] = new Vector2f(0.0f, 0.0f); // (-1.0f, 1.0f)
     }
 
-    public void buffer() {
-        fb.clear();
+    @Override
+    public void bufferVertices() {
+        floatBuffer.clear();
         for (int i = 0; i < 4; i++) {
-            fb.put(VERTICES[i].x);
-            fb.put(VERTICES[i].y);
-            fb.put(uvs[i].x);
-            fb.put(uvs[i].y);
+            floatBuffer.put(VERTICES[i].x);
+            floatBuffer.put(VERTICES[i].y);
+            floatBuffer.put(uvs[i].x);
+            floatBuffer.put(uvs[i].y);
         }
-        fb.flip();
+        floatBuffer.flip();
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_DYNAMIC_DRAW);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_DYNAMIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         buffered = true;
     }
 
-    private Matrix4f calcModelMatrix() {
+    @Override
+    public void updateVertices() {
+        floatBuffer.clear();
+        for (int i = 0; i < 4; i++) {
+            floatBuffer.put(VERTICES[i].x);
+            floatBuffer.put(VERTICES[i].y);
+            floatBuffer.put(uvs[i].x);
+            floatBuffer.put(uvs[i].y);
+        }
+        floatBuffer.flip();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    @Override
+    public void bufferIndices() {
+        intBuffer.clear();
+        for (int i : INDICES) {
+            intBuffer.put(i);
+        }
+        intBuffer.flip();
+
+        if (ibo == 0) {
+            ibo = GL15.glGenBuffers();
+        }
+
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_DYNAMIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    @Override
+    public void bufferAll() {
+        bufferVertices();
+        bufferIndices();
+        buffered = true;
+    }
+
+    @Override
+    public void bufferSmart() {
+        updateVertices();
+        bufferIndices();
+        buffered = true;
+    }
+
+    protected Matrix4f calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x, pos.y, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
@@ -124,69 +176,31 @@ public class Quad {
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
-        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
         return modelMatrix;
     }
 
-    public void render() { // used for crosshair
+    @Override
+    public void render(ShaderProgram shaderProgram) { // used for crosshair
         if (enabled && buffered) {
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
             GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
-            ShaderProgram.getIntrfaceShader().bind();
+            shaderProgram.bind();
 
-            Matrix4f modelMat4 = calcModelMatrix();
-            ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
+            calcModelMatrix();
+            shaderProgram.updateUniform(modelMatrix, "modelMatrix");
 
-            ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
-            ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
+            shaderProgram.updateUniform(scale, "scale");
+            shaderProgram.updateUniform(color, "color");
+            texture.bind(0, shaderProgram, "ifcTexture");
 
-            GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
-
-            Texture.unbind(0);
-            ShaderProgram.unbind();
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            Texture.disable();
-        }
-    }
-
-    private Matrix4f calcModelMatrix(float xinc, float ydec) {
-        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y + ydec, 0.0f);
-        Matrix4f rotationMatrix = new Matrix4f().identity();
-
-        float sx = giveRelativeWidth();
-        float sy = giveRelativeHeight();
-        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
-
-        Matrix4f temp = new Matrix4f();
-        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
-        return modelMatrix;
-    }
-
-    public void render(float xinc, float ydec) { // used for fonts
-        if (enabled && buffered) {
-            Texture.enable();
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
-            ShaderProgram.getIntrfaceShader().bind();
-
-            Matrix4f modelMat4 = calcModelMatrix(xinc, ydec);
-            ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
-
-            ShaderProgram.getIntrfaceShader().updateUniform(scale, "scale");
-            ShaderProgram.getIntrfaceShader().updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
-
-            GL11.glDrawElements(GL11.GL_TRIANGLES, CONST_INT_BUFFER);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
 
             Texture.unbind(0);
             ShaderProgram.unbind();
@@ -211,18 +225,22 @@ public class Quad {
         return GameObject.MY_WINDOW;
     }
 
+    @Override
     public int getWidth() {
         return width;
     }
 
+    @Override
     public void setWidth(int width) {
         this.width = width;
     }
 
+    @Override
     public int getHeight() {
         return height;
     }
 
+    @Override
     public void setHeight(int height) {
         this.height = height;
     }
@@ -235,10 +253,12 @@ public class Quad {
         this.texture = texture;
     }
 
+    @Override
     public Vector3f getColor() {
         return color;
     }
 
+    @Override
     public void setColor(Vector3f color) {
         this.color = color;
     }
@@ -247,6 +267,7 @@ public class Quad {
         return GameObject.MY_WINDOW;
     }
 
+    @Override
     public float getScale() {
         return scale;
     }
@@ -255,14 +276,17 @@ public class Quad {
         this.scale = scale;
     }
 
+    @Override
     public Vector2f getPos() {
         return pos;
     }
 
+    @Override
     public boolean isEnabled() {
         return enabled;
     }
 
+    @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
@@ -275,6 +299,7 @@ public class Quad {
         this.ignoreFactor = ignoreFactor;
     }
 
+    @Override
     public int getVbo() {
         return vbo;
     }
@@ -283,6 +308,7 @@ public class Quad {
         return VERTICES;
     }
 
+    @Override
     public boolean isBuffered() {
         return buffered;
     }
@@ -291,12 +317,39 @@ public class Quad {
         return uvs;
     }
 
+    @Override
     public void setPos(Vector2f pos) {
         this.pos = pos;
+        calcModelMatrix();
     }
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
+    }
+
+    @Override
+    public FloatBuffer getFloatBuffer() {
+        return floatBuffer;
+    }
+
+    @Override
+    public Matrix4f getModelMatrix() {
+        return modelMatrix;
+    }
+
+    @Override
+    public void unbuffer() {
+        buffered = false;
+    }
+
+    @Override
+    public IntBuffer getIntBuffer() {
+        return intBuffer;
+    }
+
+    @Override
+    public int getIbo() {
+        return ibo;
     }
 
 }
