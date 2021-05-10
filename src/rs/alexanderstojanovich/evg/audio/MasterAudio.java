@@ -30,7 +30,7 @@ public class MasterAudio {
 
     public static final String DEFAULT_DEVICE_NAME = ALC10.alcGetString(0, ALC10.ALC_DEFAULT_DEVICE_SPECIFIER);
     private static final long DEFAULT_DEVICE = ALC10.alcOpenDevice(DEFAULT_DEVICE_NAME);
-    private static int[] attributes = {0};
+    private static final int[] attributes = {0};
     private static long context = 0;
 
     private static ALCCapabilities aLCCapabilities;

@@ -417,16 +417,14 @@ public class Game {
      * Starts the main (update) loop
      */
     public void go() {
-        // start the music
-        AudioFile audioFile = AudioFile.AMBIENT;
-        gameObject.getMusicPlayer().play(audioFile, true);
-
         ups = 0;
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
         double acc = 0.0; // accumulator
+
+        int index = 0; // track index
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
@@ -444,6 +442,13 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
+                if (!gameObject.musicPlayer.isPlaying()) {
+                    gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+
+                    if (index == AudioFile.TRACKS.length) {
+                        index = 0;
+                    }
+                }
                 gameObject.determineVisibleChunks();
                 gameObject.update((float) (upsTicks / TPS));
                 if (currentMode == Mode.SINGLE_PLAYER) {

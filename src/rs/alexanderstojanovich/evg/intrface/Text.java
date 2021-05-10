@@ -103,7 +103,7 @@ public class Text {
                 float ydec = (k + l * LINE_SPACING) * scale * getRelativeCharHeight();
 
                 TextCharacter txtCh = new TextCharacter(ch);
-                txtCh.setPos(new Vector2f(pos.x + xinc, pos.y + ydec));
+                txtCh.setPos(new Vector2f(pos.x + xinc, pos.y - ydec));
                 txtChList.add(txtCh);
             }
         }

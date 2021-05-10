@@ -98,7 +98,7 @@ public class DynamicText extends Text {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
-    private Matrix4f calcModelMatrix(TextCharacter txtCh) {
+    protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(txtCh.pos.x, txtCh.pos.y, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
@@ -130,8 +130,6 @@ public class DynamicText extends Text {
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
             GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv
             shaderProgram.bind();
-            shaderProgram.updateUniform(pos, "trans");
-            shaderProgram.updateUniform(scale, "scale");
             shaderProgram.updateUniform(color, "color");
             texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
 
@@ -152,6 +150,7 @@ public class DynamicText extends Text {
             Texture.unbind(0);
             ShaderProgram.unbind();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             Texture.disable();
@@ -164,6 +163,14 @@ public class DynamicText extends Text {
 
     public int getDynamicSize() {
         return dynamicSize;
+    }
+
+    public int[] getVboEntries() {
+        return vboEntries;
+    }
+
+    public FloatBuffer getBigFloatBuff() {
+        return bigFloatBuff;
     }
 
 }

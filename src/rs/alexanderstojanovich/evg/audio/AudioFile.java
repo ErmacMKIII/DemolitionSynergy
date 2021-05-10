@@ -43,12 +43,19 @@ public class AudioFile { // only ogg are supported
     private int sampleRate;
     private ByteBuffer content;
 
-    public static AudioFile AMBIENT = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient.ogg");
-    public static AudioFile INTERMISSION = new AudioFile(Game.SOUND_ENTRY, "erokia_intermission.ogg");
+    public static final AudioFile AMBIENT = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient.ogg");
+    public static final AudioFile AMBIENT_OCEAN = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_ocean.ogg");
+    public static final AudioFile AMBIENT_AIR = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_air.ogg");
+    public static final AudioFile AMBIENT_HARMONY = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_harmony.ogg");
 
-    public static AudioFile BLOCK_SELECT = new AudioFile(Game.SOUND_ENTRY, "block_selection.ogg");
-    public static AudioFile BLOCK_ADD = new AudioFile(Game.SOUND_ENTRY, "block_addition.ogg");
-    public static AudioFile BLOCK_REMOVE = new AudioFile(Game.SOUND_ENTRY, "block_removal.ogg");
+    public static AudioFile[] TRACKS = {AMBIENT, AMBIENT_OCEAN, AMBIENT_AIR, AMBIENT_HARMONY};
+
+    public static final AudioFile INTERMISSION = new AudioFile(Game.SOUND_ENTRY, "erokia_intermission.ogg");
+    public static final AudioFile RANDOM = new AudioFile(Game.SOUND_ENTRY, "erokia_random.ogg");
+
+    public static final AudioFile BLOCK_SELECT = new AudioFile(Game.SOUND_ENTRY, "block_selection.ogg");
+    public static final AudioFile BLOCK_ADD = new AudioFile(Game.SOUND_ENTRY, "block_addition.ogg");
+    public static final AudioFile BLOCK_REMOVE = new AudioFile(Game.SOUND_ENTRY, "block_removal.ogg");
 
     public AudioFile(String dirEntry, String fileName) {
         this.fileName = fileName;

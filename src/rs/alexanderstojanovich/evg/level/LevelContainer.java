@@ -260,7 +260,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -272,7 +272,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.freeze();
         boolean success = false;
         progress = 0.0f;
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -292,7 +292,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         levelActors.unfreeze();
-        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -381,7 +381,7 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
         working = false;
-        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -485,7 +485,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
-        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 

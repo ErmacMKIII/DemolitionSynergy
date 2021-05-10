@@ -205,6 +205,7 @@ public class Quad implements ComponentIfc {
             Texture.unbind(0);
             ShaderProgram.unbind();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             Texture.disable();
