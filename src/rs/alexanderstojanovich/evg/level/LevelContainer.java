@@ -704,7 +704,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
-            SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
+            SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             Pair<Integer, Float> pair = visibleQueue.peek();
             if (pair != null) {

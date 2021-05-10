@@ -60,6 +60,7 @@ public class Intrface {
     private Menu mainMenu;
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
+    private Menu creditsMenu;
 
     public static final String FONT_IMG = "font.png"; // modified Hack font
 
@@ -103,6 +104,7 @@ public class Intrface {
         mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
         mainMenuPairs.add(new Pair<>("EDITOR", true));
         mainMenuPairs.add(new Pair<>("OPTIONS", true));
+        mainMenuPairs.add(new Pair<>("CREDITS", true));
         mainMenuPairs.add(new Pair<>("EXIT", true));
         mainMenu = new Menu("", mainMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
@@ -122,6 +124,9 @@ public class Intrface {
                         break;
                     case "OPTIONS":
                         optionsMenu.open();
+                        break;
+                    case "CREDITS":
+                        creditsMenu.open();
                         break;
                     case "EXIT":
                         GameObject.MY_WINDOW.close();
@@ -348,6 +353,41 @@ public class Intrface {
             }
         };
         editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+
+        List<Pair<String, Boolean>> creditsMenuPairs = new ArrayList<>();
+        creditsMenuPairs.add(new Pair<>("Programmer", true));
+        creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
+        creditsMenuPairs.add(new Pair<>("Testers", true));
+        creditsMenuPairs.add(new Pair<>("Jesse \"13\" Collins, Edmund \"HellBlade64\" Alby", true));
+        creditsMenuPairs.add(new Pair<>("Art", true));
+        creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
+        creditsMenuPairs.add(new Pair<>("Music/FX", true));
+        creditsMenuPairs.add(new Pair<>("Jordan \"Erokia\" Powell", true));
+
+        creditsMenu = new Menu("CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+            @Override
+            protected void leave() {
+                mainMenu.open();
+            }
+
+            @Override
+            protected void execute() {
+
+            }
+
+        };
+
+        int index = 0;
+        for (DynamicText item : creditsMenu.items) {
+            if ((index & 1) != 0) {
+                item.setColor(Vector3fColors.WHITE);
+                item.setBuffered(false);
+                item.scale = 1.0f;
+            }
+            index++;
+        }
+        creditsMenu.iterator.setEnabled(false);
+        creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
     }
 
     public void setCollText(boolean mode) {
@@ -411,7 +451,9 @@ public class Intrface {
         mainMenu.render(ifcShaderProgram);
         optionsMenu.render(ifcShaderProgram);
         editorMenu.render(ifcShaderProgram);
-        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !showHelp) {
+        creditsMenu.render(ifcShaderProgram);
+
+        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !creditsMenu.isEnabled() && !showHelp) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll();
             }
