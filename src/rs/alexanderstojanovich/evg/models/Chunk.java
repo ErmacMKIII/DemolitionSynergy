@@ -66,8 +66,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     private int timeToLive = 0;
 
-    private int cachedSize = 0;
-
     public Chunk(int id, boolean solid) {
         this.id = id;
         this.solid = solid;
@@ -95,8 +93,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
-            srcTuple.getBlocks().getBlockList().remove(fluidBlock);
-            if (srcTuple.getBlocks().getBlockList().isEmpty()) {
+            srcTuple.getBlockList().remove(fluidBlock);
+            if (srcTuple.getBlockList().isEmpty()) {
                 tupleList.remove(srcTuple);
             }
         }
@@ -106,7 +104,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             dstTuple = new Tuple(fluidTexture, currFaceBits);
             tupleList.add(dstTuple);
         }
-        List<Block> blockList = dstTuple.getBlocks().getBlockList();
+        List<Block> blockList = dstTuple.getBlockList();
         blockList.add(fluidBlock);
         blockList.sort(Block.Y_AXIS_COMP);
 
@@ -119,7 +117,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
             if (pair != null) {
                 byte neighborBits = pair.getValue();
-                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                fluidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = fluidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
                     transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
@@ -138,7 +136,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             tupleList.add(tuple);
         }
 
-        List<Block> blockList = tuple.getBlocks().getBlockList();
+        List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
         blockList.sort(Block.Y_AXIS_COMP);
 
@@ -154,10 +152,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int blockFaceBits = block.getFaceBits();
         Tuple target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {
-            target.getBlocks().getBlockList().remove(block);
+            target.getBlockList().remove(block);
             buffered = false;
             // if tuple has no blocks -> remove it
-            if (target.getBlocks().getBlockList().isEmpty()) {
+            if (target.getBlockList().isEmpty()) {
                 tupleList.remove(target);
             }
 
@@ -178,7 +176,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public void bufferAll() {
         if (!Chunk.isCached(id, solid)) {
             for (Tuple tuple : tupleList) {
-                tuple.buffer();
+                tuple.bufferAll();
             }
             buffered = true;
         }
@@ -186,21 +184,20 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void animate() { // call only for fluid blocks
         for (Tuple tuple : tupleList) {
-            tuple.getBlocks().animate();
+            tuple.animate();
         }
     }
 
     public void prepare() { // call only for fluid blocks before rendering        
         for (Tuple tuple : tupleList) {
-            Blocks blocks = tuple.getBlocks();
-            blocks.prepare();
+            tuple.prepare();
         }
     }
 
     // set camera in fluid for underwater effects (call only for fluid)
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Tuple tuple : tupleList) {
-            tuple.getBlocks().setCameraInFluid(cameraInFluid);
+            tuple.setCameraInFluid(cameraInFluid);
         }
     }
 
@@ -219,7 +216,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             GL20.glEnableVertexAttribArray(7);
 
             for (Tuple tuple : tupleList) {
-                tuple.render(shaderProgram, solid, lightSrc, waterTexture);
+                tuple.renderInstanced(shaderProgram, solid, lightSrc, waterTexture);
             }
 
             GL20.glDisableVertexAttribArray(0);
@@ -285,7 +282,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int size = 0;
         if (!Chunk.isCached(id, solid)) {
             for (Tuple tuple : tupleList) {
-                size += tuple.getBlocks().getBlockList().size();
+                size += tuple.getBlockList().size();
             }
         }
         return size;
@@ -311,7 +308,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public List<Block> getBlockList() {
         List<Block> result = new GapList<>();
         for (Tuple tuple : tupleList) {
-            result.addAll(tuple.getBlocks().getBlockList());
+            result.addAll(tuple.getBlockList());
         }
         return result;
     }
@@ -393,7 +390,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // better than tuples clear (otherwise much slower to load)
             // this indicates that add with no transfer on fluid blocks will be used!
             for (Tuple tuple : tupleList) {
-                tuple.getBlocks().getBlockList().clear();
+                tuple.getBlockList().clear();
             }
 
             File cacheDir = new File(Game.CACHE);
@@ -404,8 +401,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             saveMemToDisk(getFileName());
 
             tupleList.clear();
-
-            cachedSize = blocks.size();
         }
     }
 
@@ -435,8 +430,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Block block = new Block(texName, blockPos, blockCol, solid);
                 addBlock(block, false);
             }
-
-            cachedSize = 0;
         }
     }
 
@@ -526,14 +519,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void setTimeToLive(int timeToLive) {
         this.timeToLive = timeToLive;
-    }
-
-    public int getCachedSize() {
-        return cachedSize;
-    }
-
-    public void setCachedSize(int cachedSize) {
-        this.cachedSize = cachedSize;
     }
 
     public void decTimeToLive() {

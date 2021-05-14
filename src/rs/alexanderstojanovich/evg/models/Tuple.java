@@ -35,14 +35,13 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Tuple { // tuple is distinct rendering object for instanced rendering
+public class Tuple extends Blocks {
+    // tuple is distinct rendering object for instanced rendering
     // all blocks in the tuple have the same properties, 
     // like model matrices, color and texture name, and enabled faces in 6-bit represenation
 
     public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
-
-    private final Blocks blocks = new Blocks();
 
     private int vec3Vbo = 0;
     private FloatBuffer vec3FloatBuff;
@@ -63,12 +62,12 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
     // buffering colors
     public void bufferVectors() {
-        if (vec3FloatBuff == null || vec3FloatBuff.capacity() / VEC3_SIZE <= blocks.getDynamicSize()) {
-            vec3FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * VEC3_SIZE);
+        if (vec3FloatBuff == null || vec3FloatBuff.capacity() / VEC3_SIZE <= dynamicSize) {
+            vec3FloatBuff = BufferUtils.createFloatBuffer(dynamicSize * VEC3_SIZE);
         }
         vec3FloatBuff.clear();
 
-        for (Block block : blocks.getBlockList()) {
+        for (Block block : blockList) {
             Vector3f color = block.getPrimaryColor();
             vec3FloatBuff.put(color.x);
             vec3FloatBuff.put(color.y);
@@ -86,12 +85,12 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
 
     // buffering model matrices
     public void bufferMatrices() {
-        if (mat4FloatBuff == null || mat4FloatBuff.capacity() / MAT4_SIZE <= blocks.getDynamicSize()) {
-            mat4FloatBuff = BufferUtils.createFloatBuffer(blocks.getDynamicSize() * MAT4_SIZE);
+        if (mat4FloatBuff == null || mat4FloatBuff.capacity() / MAT4_SIZE <= dynamicSize) {
+            mat4FloatBuff = BufferUtils.createFloatBuffer(dynamicSize * MAT4_SIZE);
         }
         mat4FloatBuff.clear();
 
-        for (Block block : blocks.getBlockList()) {
+        for (Block block : blockList) {
             Vector4f[] vectArr = new Vector4f[4];
             for (int i = 0; i < 4; i++) {
                 vectArr[i] = new Vector4f();
@@ -114,24 +113,27 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
     }
 
     // renderer does this stuff prior to any rendering
-    public void buffer() {
-        blocks.bufferVertices();
+    @Override
+    public void bufferAll() {
+        bufferVertices();
         bufferVectors();
         bufferMatrices();
+        buffered = true;
     }
 
     @Deprecated
+    @Override
     public void release() {
-        GL15.glDeleteBuffers(blocks.getBigVbo());
-        GL15.glDeleteBuffers(vec3Vbo);
-        GL15.glDeleteBuffers(mat4Vbo);
+//        GL15.glDeleteBuffers(blocks.getBigVbo());
+//        GL15.glDeleteBuffers(vec3Vbo);
+//        GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void render(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
-        if (!blocks.getBlockList().isEmpty() && faceEnBits > 0) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, blocks.getBigVbo());
+        if (!blockList.isEmpty() && faceEnBits > 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
             GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
             GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
@@ -170,7 +172,7 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
                     intBuff,
-                    blocks.getBlockList().size(),
+                    blockList.size(),
                     0
             );
 
@@ -181,10 +183,6 @@ public class Tuple { // tuple is distinct rendering object for instanced renderi
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
-    }
-
-    public Blocks getBlocks() {
-        return blocks;
     }
 
     public int getVec3Vbo() {

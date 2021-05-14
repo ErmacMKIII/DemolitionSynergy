@@ -28,14 +28,19 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -172,6 +177,109 @@ public class Block extends Model {
         buffered = true;
     }
 
+    /**
+     * Render multiple blocks old fashion way.
+     *
+     * @param blocks models to render
+     * @param texName texture name (uses map to find texture)
+     * @param vbo common vbo
+     * @param ibo common ibo
+     * @param lightSrc light source
+     * @param shaderProgram shaderProgram for the models
+     */
+    public static void render(List<Block> blocks, String texName, int vbo, int ibo, Vector3f lightSrc, ShaderProgram shaderProgram) {
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+
+        if (shaderProgram != null) {
+            shaderProgram.bind();
+            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            if (primaryTexture != null) { // this is primary texture
+                primaryTexture.bind(0, shaderProgram, "modelTexture0");
+            }
+
+            for (Block block : blocks) {
+                block.light = lightSrc;
+                block.transform(shaderProgram);
+                block.useLight(shaderProgram);
+                block.setAlpha(shaderProgram);
+                block.primaryColor(shaderProgram);
+
+                GL11.glDrawElements(GL11.GL_TRIANGLES, block.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+            }
+            Texture.unbind(0);
+        }
+        ShaderProgram.unbind();
+
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
+    /**
+     * Render multiple blocks old fashion way.
+     *
+     * @param blocks models to render
+     * @param texName texture name (uses map to find texture)
+     * @param vbo common vbo
+     * @param ibo common ibo
+     * @param lightSrc light source
+     * @param shaderProgram shaderProgram for the models
+     * @param predicate predicate which tells if block is visible or not
+     */
+    public static void renderIf(List<Block> blocks, String texName, int vbo, int ibo, Vector3f lightSrc, ShaderProgram shaderProgram, Predicate<Block> predicate) {
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+
+        if (shaderProgram != null) {
+            shaderProgram.bind();
+            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            if (primaryTexture != null) { // this is primary texture
+                primaryTexture.bind(0, shaderProgram, "modelTexture0");
+            }
+
+            for (Block block : blocks) {
+                block.light = lightSrc;
+                if (predicate.test(block)) {
+                    block.transform(shaderProgram);
+                    block.useLight(shaderProgram);
+                    block.setAlpha(shaderProgram);
+                    block.primaryColor(shaderProgram);
+
+                    GL11.glDrawElements(GL11.GL_TRIANGLES, block.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                }
+            }
+            Texture.unbind(0);
+        }
+        ShaderProgram.unbind();
+
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
     private void calcDims() {
         final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
         final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -216,7 +324,7 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public Pair<Integer, Integer> getFaceVertices(int faceNum) {
+    public static Pair<Integer, Integer> getFaceVertices(int faceNum) {
         return new Pair<>(4 * faceNum, 4 * (faceNum + 1));
     }
 
@@ -275,6 +383,13 @@ public class Block extends Model {
             Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
         }
         verticesReversed = !verticesReversed;
+    }
+
+    public static void reverseFaceVertexOrder(List<Vertex> vertices) {
+        for (int j = 0; j <= 5; j++) {
+            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
+            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
+        }
     }
 
     public void setUVsForSkybox() {
@@ -393,7 +508,7 @@ public class Block extends Model {
     }
 
     // set faces based on faceBits representation
-    public void setFaceBits(int faceBits, boolean selfBuffer) {
+    public void setFaceBits(int faceBits) {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
@@ -403,6 +518,43 @@ public class Block extends Model {
                 disableFace(j);
             }
         }
+    }
+
+    public static void setFaceBits(List<Vertex> vertices, int faceBits) {
+        for (int j = 0; j <= 5; j++) {
+            int mask = 1 << j;
+            int bit = (faceBits & mask) >> j;
+            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
+            List<Vertex> subList = vertices.subList(faceVertices.getKey(), faceVertices.getValue());
+            boolean en = (bit == 1);
+            for (Vertex v : subList) {
+                v.setEnabled(en);
+            }
+        }
+    }
+
+    // make indices list base on bits form of faces
+    public static List<Integer> createIndices(int faceBits) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = 0; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+
+        return indices;
     }
 
     // make int buffer base on bits form of faces

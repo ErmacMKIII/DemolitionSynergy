@@ -325,6 +325,54 @@ public class Model implements Comparable<Model> {
         Texture.disable();
     }
 
+    /**
+     * Render multiple models old fashion way.
+     *
+     * @param models models to render
+     * @param vbo common vbo
+     * @param ibo common ibo
+     * @param lightSrc light source
+     * @param shaderProgram shaderProgram for the models
+     */
+    public static void render(List<Model> models, int vbo, int ibo, Vector3f lightSrc, ShaderProgram shaderProgram) {
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+
+        if (shaderProgram != null) {
+            shaderProgram.bind();
+            for (Model model : models) {
+                model.transform(shaderProgram);
+                model.light = lightSrc;
+                model.useLight(shaderProgram);
+                model.setAlpha(shaderProgram);
+
+                Texture primaryTexture = Texture.TEX_MAP.getOrDefault(model.texName, Texture.QMARK);
+                if (primaryTexture != null) { // this is primary texture
+                    model.primaryColor(shaderProgram);
+                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                }
+                GL11.glDrawElements(GL11.GL_TRIANGLES, model.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                Texture.unbind(0);
+            }
+        }
+        ShaderProgram.unbind();
+
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
     @Deprecated
     public void release() {
         if (buffered) {
@@ -562,6 +610,18 @@ public class Model implements Comparable<Model> {
     }
 
     public void animate() {
+        for (int i = 0; i < indices.size(); i += 3) {
+            Vertex a = vertices.get(indices.get(i));
+            Vertex b = vertices.get(indices.get(i + 1));
+            Vertex c = vertices.get(indices.get(i + 2));
+            Vector2f temp = c.getUv();
+            c.setUv(b.getUv());
+            b.setUv(a.getUv());
+            a.setUv(temp);
+        }
+    }
+
+    public static void animate(List<Vertex> vertices, List<Integer> indices) {
         for (int i = 0; i < indices.size(); i += 3) {
             Vertex a = vertices.get(indices.get(i));
             Vertex b = vertices.get(indices.get(i + 1));

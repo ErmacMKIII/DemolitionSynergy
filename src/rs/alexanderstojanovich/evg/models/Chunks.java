@@ -64,7 +64,7 @@ public class Chunks {
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
             if (pair != null) {
                 byte neighborBits = pair.getValue();
-                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                fluidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = fluidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
                     int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
@@ -149,7 +149,7 @@ public class Chunks {
         }
     }
 
-    // buffer all -> deprecated cuz it's not good use!
+    // bufferAll all -> deprecated cuz it's not good use!
     @Deprecated
     public void bufferAll() {
         for (Chunk chunk : chunkList) {
@@ -283,7 +283,7 @@ public class Chunks {
     public void setCameraInFluid(boolean cameraInFluid) {
         for (Chunk chunk : getChunkList()) {
             for (Tuple tuple : chunk.getTupleList()) {
-                tuple.getBlocks().setCameraInFluid(cameraInFluid);
+                tuple.setCameraInFluid(cameraInFluid);
             }
         }
     }

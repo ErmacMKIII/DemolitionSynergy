@@ -39,19 +39,19 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new BigList<>(5000);
-    private int bigVbo = 0;
-    private boolean cameraInFluid = false;
-    private boolean verticesReversed = false;
+    protected final List<Block> blockList = new BigList<>(5000);
+    protected int bigVbo = 0;
+    protected boolean cameraInFluid = false;
+    protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    private final Map<Integer, Integer> vboEntries = new HashMap<>();
+    protected final Map<Integer, Integer> vboEntries = new HashMap<>();
     // --------------blkIndex---ibo-----------------------------
-    private final Map<Integer, Integer> iboMap = new HashMap<>();
-    private boolean buffered = false;
+    protected final Map<Integer, Integer> iboMap = new HashMap<>();
+    protected boolean buffered = false;
 
-    private int dynamicSize = 0;
-    private FloatBuffer bigFloatBuff;
+    protected int dynamicSize = 0;
+    protected FloatBuffer bigFloatBuff;
 
     public void bufferVertices() { // call it before any rendering
         // auto adjust dynamic size of float buff and do it on every 1000th element
