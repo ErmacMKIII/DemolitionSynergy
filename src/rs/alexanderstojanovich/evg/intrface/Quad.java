@@ -49,7 +49,13 @@ public class Quad implements ComponentIfc {
 
     protected boolean ignoreFactor = false;
 
-    protected static final Vector2f[] VERTICES = new Vector2f[4];
+    protected static final Vector2f[] VERTICES = {
+        new Vector2f(-1.0f, -1.0f),
+        new Vector2f(1.0f, -1.0f),
+        new Vector2f(1.0f, 1.0f),
+        new Vector2f(-1.0f, 1.0f)
+    };
+
     protected final FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
 
     protected Vector2f[] uvs = new Vector2f[4];
@@ -64,20 +70,6 @@ public class Quad implements ComponentIfc {
     public static final int VERTEX_COUNT = 4;
 
     protected boolean buffered = false;
-
-    protected Matrix4f modelMatrix = calcModelMatrix();
-
-    static {
-        VERTICES[0] = new Vector2f(-1.0f, -1.0f);
-        VERTICES[1] = new Vector2f(1.0f, -1.0f);
-        VERTICES[2] = new Vector2f(1.0f, 1.0f);
-        VERTICES[3] = new Vector2f(-1.0f, 1.0f);
-
-//        for (int i : INDICES) {
-//            CONST_INT_BUFFER.put(i);
-//        }
-//        CONST_INT_BUFFER.flip();
-    }
 
     public Quad(int width, int height, Texture texture) {
         this.width = width;
@@ -176,7 +168,8 @@ public class Quad implements ComponentIfc {
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
-        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+
         return modelMatrix;
     }
 
@@ -193,7 +186,7 @@ public class Quad implements ComponentIfc {
             GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
             shaderProgram.bind();
 
-            calcModelMatrix();
+            Matrix4f modelMatrix = calcModelMatrix();
             shaderProgram.updateUniform(modelMatrix, "modelMatrix");
 
             shaderProgram.updateUniform(scale, "scale");
@@ -231,7 +224,6 @@ public class Quad implements ComponentIfc {
         return width;
     }
 
-    @Override
     public void setWidth(int width) {
         this.width = width;
     }
@@ -241,7 +233,6 @@ public class Quad implements ComponentIfc {
         return height;
     }
 
-    @Override
     public void setHeight(int height) {
         this.height = height;
     }
@@ -331,11 +322,6 @@ public class Quad implements ComponentIfc {
     @Override
     public FloatBuffer getFloatBuffer() {
         return floatBuffer;
-    }
-
-    @Override
-    public Matrix4f getModelMatrix() {
-        return modelMatrix;
     }
 
     @Override

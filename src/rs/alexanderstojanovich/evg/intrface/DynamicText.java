@@ -38,8 +38,6 @@ public class DynamicText extends Text {
     protected int dynamicSize = 100;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected int[] vboEntries = new int[1024];
-    protected static final Vector2f[] VERTICES = new Vector2f[4]; //            
-    protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
     protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
 
@@ -99,7 +97,7 @@ public class DynamicText extends Text {
     }
 
     protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
-        Matrix4f translationMatrix = new Matrix4f().setTranslation(txtCh.pos.x, txtCh.pos.y, 0.0f);
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
         float sx = getRelativeCharWidth();
@@ -112,10 +110,10 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void buffer() {
+    public void bufferAll() {
         setup();
         bufferBigVbo();
-        iterator.bufferAll();
+        bufferIndices();
         buffered = true;
     }
 
@@ -124,7 +122,7 @@ public class DynamicText extends Text {
         if (enabled && buffered && !content.isEmpty()) {
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, iterator.ibo);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos

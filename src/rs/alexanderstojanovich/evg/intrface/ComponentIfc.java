@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -31,11 +30,7 @@ public interface ComponentIfc {
 
     public int getWidth();
 
-    public void setWidth(int width);
-
     public int getHeight();
-
-    public void setHeight(int height);
 
     public Vector2f getPos();
 
@@ -44,8 +39,6 @@ public interface ComponentIfc {
     public Vector3f getColor();
 
     public void setColor(Vector3f color);
-
-    public Matrix4f getModelMatrix();
 
     public float getScale();
 

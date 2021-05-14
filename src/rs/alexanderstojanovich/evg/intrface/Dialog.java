@@ -120,7 +120,7 @@ public abstract class Dialog {
     public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             if (!dialog.isBuffered()) {
-                dialog.buffer();
+                dialog.bufferAll();
             }
             dialog.render(shaderProgram);
         }

@@ -200,7 +200,7 @@ public abstract class Menu {
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.buffer();
+                title.bufferAll();
             }
             title.render(shaderProgram);
             if (logo != null && title.getContent().equals("")) {
@@ -218,7 +218,7 @@ public abstract class Menu {
                 item.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
 
                 if (!item.isBuffered()) {
-                    item.buffer();
+                    item.bufferAll();
                 }
 
                 item.render(shaderProgram);

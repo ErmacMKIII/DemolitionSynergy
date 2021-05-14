@@ -25,10 +25,13 @@ import org.joml.Vector2f;
 public class TextCharacter {
 
     protected final char value;
-    protected Vector2f pos = new Vector2f();
     protected final Vector2f[] uvs = new Vector2f[4];
+    protected final float xadv;
+    protected final float ydrop;
 
-    public TextCharacter(char value) {
+    public TextCharacter(float xadv, float ydrop, char value) {
+        this.xadv = xadv;
+        this.ydrop = ydrop;
         this.value = value;
         init();
     }
@@ -60,12 +63,12 @@ public class TextCharacter {
         return value;
     }
 
-    public Vector2f getPos() {
-        return pos;
+    public float getXadv() {
+        return xadv;
     }
 
-    public void setPos(Vector2f pos) {
-        this.pos = pos;
+    public float getYdrop() {
+        return ydrop;
     }
 
     public Vector2f[] getUvs() {

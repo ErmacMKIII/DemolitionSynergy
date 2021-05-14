@@ -148,7 +148,7 @@ public abstract class OptionsMenu extends Menu {
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.buffer();
+                title.bufferAll();
             }
             title.render(shaderProgram);
             int index = 0;
@@ -158,13 +158,13 @@ public abstract class OptionsMenu extends Menu {
                 item.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
 
                 if (!item.isBuffered()) {
-                    item.buffer();
+                    item.bufferAll();
                 }
                 item.render(shaderProgram);
                 options.get(index).getKey().getPos().x = item.getPos().x + itemScale * (item.getRelativeWidth() + item.getRelativeCharWidth()) * (1.0f - alignmentAmount);
                 options.get(index).getKey().getPos().y = item.getPos().y;
                 if (!options.get(index).getKey().isBuffered()) {
-                    options.get(index).getKey().buffer();
+                    options.get(index).getKey().bufferAll();
                 }
                 options.get(index).getKey().render(shaderProgram);
                 index++;

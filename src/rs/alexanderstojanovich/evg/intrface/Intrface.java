@@ -417,35 +417,35 @@ public class Intrface {
         randLvlDialog.render(ifcShaderProgram);
         singlePlayerDialog.render(ifcShaderProgram);
         if (!updText.isBuffered()) {
-            updText.buffer();
+            updText.bufferAll();
         }
         updText.render(ifcShaderProgram);
         if (!fpsText.isBuffered()) {
-            fpsText.buffer();
+            fpsText.bufferAll();
         }
         fpsText.render(ifcShaderProgram);
         if (!alphaText.isBuffered()) {
-            alphaText.buffer();
+            alphaText.bufferAll();
         }
         alphaText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
-            collText.buffer();
+            collText.bufferAll();
         }
         collText.render(ifcShaderProgram);
         if (!helpText.isBuffered()) {
-            helpText.buffer();
+            helpText.bufferAll();
         }
         helpText.render(ifcShaderProgram);
         if (!gameModeText.isBuffered()) {
-            gameModeText.buffer();
+            gameModeText.bufferAll();
         }
         gameModeText.render(ifcShaderProgram);
         if (!progText.isBuffered()) {
-            progText.buffer();
+            progText.bufferAll();
         }
         progText.render(ifcShaderProgram);
         if (!screenText.isBuffered()) {
-            screenText.buffer();
+            screenText.bufferAll();
         }
         screenText.render(ifcShaderProgram);
         mainMenu.render(ifcShaderProgram);

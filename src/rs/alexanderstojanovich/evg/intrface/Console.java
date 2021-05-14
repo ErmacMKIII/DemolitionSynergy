@@ -189,7 +189,7 @@ public class Console {
             inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
 
             if (!inText.isBuffered()) {
-                inText.buffer();
+                inText.bufferAll();
             }
             inText.render(shaderProgram);
             int index = 0;
@@ -201,7 +201,7 @@ public class Console {
                 quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1) - 1.0f;
                 quad.getPos().y = text.pos.y;
                 if (!text.isBuffered()) {
-                    text.buffer();
+                    text.bufferAll();
                 }
                 text.render(shaderProgram);
                 if (!quad.isBuffered()) {
@@ -212,7 +212,7 @@ public class Console {
             }
 
             if (!completes.isBuffered()) {
-                completes.buffer();
+                completes.bufferAll();
             }
             completes.render(shaderProgram);
         }
