@@ -358,7 +358,8 @@ public class Intrface {
         creditsMenuPairs.add(new Pair<>("Programmer", true));
         creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
         creditsMenuPairs.add(new Pair<>("Testers", true));
-        creditsMenuPairs.add(new Pair<>("Jesse \"13\" Collins, Edmund \"HellBlade64\" Alby", true));
+        creditsMenuPairs.add(new Pair<>("Jesse \"13\" Collins", true));
+        creditsMenuPairs.add(new Pair<>("Edmund \"HellBlade64\" Alby", true));
         creditsMenuPairs.add(new Pair<>("Art", true));
         creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
         creditsMenuPairs.add(new Pair<>("Music/FX", true));
@@ -379,7 +380,7 @@ public class Intrface {
 
         int index = 0;
         for (DynamicText item : creditsMenu.items) {
-            if ((index & 1) != 0) {
+            if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
                 item.setColor(Vector3fColors.WHITE);
                 item.setBuffered(false);
                 item.scale = 1.0f;
