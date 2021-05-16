@@ -61,6 +61,9 @@ public class Intrface {
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
     private Menu creditsMenu;
+    private Menu randLvlMenu;
+
+    private int numBlocks = 0;
 
     public static final String FONT_IMG = "font.png"; // modified Hack font
 
@@ -168,16 +171,57 @@ public class Intrface {
         };
 
         randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "ENTER NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
+                "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
-                Editor.deselect();
-                progText.enabled = true;
-                boolean ok = gameObject.generateRandomLevel(Integer.valueOf(command));
-                if (ok) {
-                    Game.setCurrentMode(Mode.EDITOR);
+                boolean ok = false;
+                if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                    Editor.deselect();
+                    ok = gameObject.generateRandomLevel(numBlocks);
+                    if (ok) {
+                        Game.setCurrentMode(Mode.EDITOR);
+                    }
                 }
                 return ok;
+            }
+        };
+
+        List<Pair<String, Boolean>> randLvlMenuPairs = new ArrayList<>();
+        randLvlMenuPairs.add(new Pair<>("SMALL  (25000  blocks)", true));
+        randLvlMenuPairs.add(new Pair<>("MEDIUM (50000  blocks)", true));
+        randLvlMenuPairs.add(new Pair<>("LARGE  (100000 blocks)", true));
+        randLvlMenuPairs.add(new Pair<>("HUGE   (131072 blocks)", true));
+        randLvlMenu = new Menu("GENERATE RANDOM LEVEL", randLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+            @Override
+            protected void leave() {
+                mainMenu.open();
+            }
+
+            @Override
+            protected void execute() {
+                String str = randLvlMenu.items.get(selected).getContent();
+                String[] split = str.split("\\s+");
+                switch (split[0]) {
+                    case "SMALL":
+                        numBlocks = 25000;
+                        break;
+                    case "MEDIUM":
+                        numBlocks = 50000;
+                        break;
+                    case "LARGE":
+                        numBlocks = 100000;
+                        break;
+                    case "HUGE":
+                        numBlocks = 131072;
+                        break;
+                    default:
+                        numBlocks = 0;
+                        break;
+                }
+
+                if (numBlocks != 0) {
+                    randLvlDialog.open();
+                }
             }
         };
 
@@ -339,7 +383,8 @@ public class Intrface {
                         break;
                     case "GENERATE RANDOM LEVEL":
                         progText.setEnabled(true);
-                        randLvlDialog.open();
+                        //randLvlDialog.open();
+                        randLvlMenu.open();
                         break;
                     case "SAVE LEVEL TO FILE":
                         progText.setEnabled(true);
@@ -453,8 +498,10 @@ public class Intrface {
         optionsMenu.render(ifcShaderProgram);
         editorMenu.render(ifcShaderProgram);
         creditsMenu.render(ifcShaderProgram);
+        randLvlMenu.render(ifcShaderProgram);
 
-        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled() && !creditsMenu.isEnabled() && !showHelp) {
+        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
+                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll();
             }

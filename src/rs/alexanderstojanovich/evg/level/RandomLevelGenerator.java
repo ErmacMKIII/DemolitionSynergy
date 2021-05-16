@@ -222,10 +222,9 @@ public class RandomLevelGenerator {
 
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
-            DSLogger.reportInfo("Generating random level..", null);
-            float alpha = random.nextFloat();
-            int solidBlocks = Math.min(Math.round((1.0f - alpha) * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
-            int fluidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
+            DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
+            int solidBlocks = Math.min(random.nextInt(numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
+            int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
