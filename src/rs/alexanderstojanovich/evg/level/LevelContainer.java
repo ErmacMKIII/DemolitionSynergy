@@ -74,10 +74,6 @@ public class LevelContainer implements GravityEnviroment {
     private final Queue<Pair<Integer, Float>> visibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
     private final Queue<Pair<Integer, Float>> invisibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
 
-    private int operation = 0;
-    private static final int LD = 0;
-    private static final int SV = 1;
-
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
@@ -589,7 +585,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!coll) {
             OUTER:
             for (Chunk solidChunk : solidChunks.getChunkList()) {
-                if (Chunk.chunkInverFunc(solidChunk.getId()).distance(critter.getPredictor()) <= 50.0f) {
+                if (Chunk.chunkInverFunc(solidChunk.getId()).distance(critter.getPredictor()) <= Chunk.VISION) {
                     for (Block solidBlock : solidChunk.getBlockList()) {
                         if (solidBlock.containsInsideEqually(critter.getPredictor())
                                 || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
@@ -639,66 +635,55 @@ public class LevelContainer implements GravityEnviroment {
     // method for saving invisible chunks
     public void chunkOperations() {
         if (!working) {
-            switch (operation) {
-                case LD:
-                    Pair<Integer, Float> vPair = visibleQueue.poll();
-                    if (vPair != null) {
-                        Integer visibleId = vPair.getKey();
+            Pair<Integer, Float> vPair = visibleQueue.poll();
+            if (vPair != null) {
+                Integer visibleId = vPair.getKey();
 
-                        Chunk solidChunk = solidChunks.getChunk(visibleId);
-                        if (solidChunk != null) {
-                            solidChunk.setTimeToLive(STD_TTL);
-                        } else if (Chunk.isCached(visibleId, true)) {
-                            solidChunk = Chunk.loadFromDisk(visibleId, true);
-                            solidChunks.getChunkList().add(solidChunk);
-                            solidChunks.getChunkList().sort(Chunks.COMPARATOR);
-                        }
+                Chunk solidChunk = solidChunks.getChunk(visibleId);
+                if (solidChunk != null) {
+                    solidChunk.setTimeToLive(STD_TTL);
+                } else if (Chunk.isCached(visibleId, true)) {
+                    solidChunk = Chunk.loadFromDisk(visibleId, true);
+                    solidChunks.getChunkList().add(solidChunk);
+                    solidChunks.getChunkList().sort(Chunks.COMPARATOR);
+                }
 
-                        Chunk fluidChunk = fluidChunks.getChunk(visibleId);
-                        if (fluidChunk != null) {
-                            fluidChunk.setTimeToLive(STD_TTL);
-                        } else if (Chunk.isCached(visibleId, false)) {
-                            fluidChunk = Chunk.loadFromDisk(visibleId, false);
-                            fluidChunk.updateFluids();
-                            fluidChunks.getChunkList().add(fluidChunk);
-                            fluidChunks.getChunkList().sort(Chunks.COMPARATOR);
-                        }
-                    }
-                    break;
-                case SV:
-                    Pair<Integer, Float> iPair = invisibleQueue.poll();
-                    if (iPair != null) {
-                        Integer invisibleId = iPair.getKey();
-
-                        Chunk solidChunk = solidChunks.getChunk(invisibleId);
-                        if (solidChunk != null) {
-                            if (solidChunk.isAlive()) {
-                                solidChunk.decTimeToLive();
-                            } else if (!solidChunk.isAlive()) {
-                                solidChunk.unbuffer();
-                                solidChunk.saveToDisk();
-                                solidChunks.getChunkList().remove(solidChunk);
-                            }
-                        }
-                        Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
-                        if (fluidChunk != null) {
-                            if (fluidChunk.isAlive()) {
-                                fluidChunk.decTimeToLive();
-                            } else if (!fluidChunk.isAlive()) {
-                                fluidChunk.unbuffer();
-                                fluidChunk.saveToDisk();
-                                fluidChunks.getChunkList().remove(fluidChunk);
-                            }
-                        }
-                    }
-                    break;
+                Chunk fluidChunk = fluidChunks.getChunk(visibleId);
+                if (fluidChunk != null) {
+                    fluidChunk.setTimeToLive(STD_TTL);
+                } else if (Chunk.isCached(visibleId, false)) {
+                    fluidChunk = Chunk.loadFromDisk(visibleId, false);
+                    fluidChunk.updateFluids();
+                    fluidChunks.getChunkList().add(fluidChunk);
+                    fluidChunks.getChunkList().sort(Chunks.COMPARATOR);
+                }
             }
+            //----------------------------------------------------------
+            Pair<Integer, Float> iPair = invisibleQueue.poll();
+            if (iPair != null) {
+                Integer invisibleId = iPair.getKey();
 
-            operation++;
-            if (operation == 2) {
-                operation = 0;
+                Chunk solidChunk = solidChunks.getChunk(invisibleId);
+                if (solidChunk != null) {
+                    if (solidChunk.isAlive()) {
+                        solidChunk.decTimeToLive();
+                    } else if (!solidChunk.isAlive()) {
+                        solidChunk.unbuffer();
+                        solidChunk.saveToDisk();
+                        solidChunks.getChunkList().remove(solidChunk);
+                    }
+                }
+                Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
+                if (fluidChunk != null) {
+                    if (fluidChunk.isAlive()) {
+                        fluidChunk.decTimeToLive();
+                    } else if (!fluidChunk.isAlive()) {
+                        fluidChunk.unbuffer();
+                        fluidChunk.saveToDisk();
+                        fluidChunks.getChunkList().remove(fluidChunk);
+                    }
+                }
             }
-
         }
     }
 
@@ -706,9 +691,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
-            Pair<Integer, Float> pair = visibleQueue.peek();
-            if (pair != null) {
-                Chunk fluidChunk = fluidChunks.getChunk(pair.getKey());
+            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
                 if (fluidChunk != null && Chunk.chunkInverFunc(fluidChunk.getId()).distance(camPos) <= 50.0f) {
                     fluidChunk.tstCameraInFluid(camPos);
                 }

@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
+import org.joml.SimplexNoise;
+
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
@@ -40,6 +42,41 @@ public class MathUtils {
     // Taylor series approximation
     public static double expm1(double x) {
         return x * (1.0 + 0.5 * x * (1.0 + x * (1.0 + 0.25 * x) / 3.0));
+    }
+
+    /**
+     * Generate noise using given number of iterations (or octaves)
+     *
+     * @param numOfOctaves iterations num
+     * @param x x-coord
+     * @param y y-coord
+     * @param persistence amplitude multiplier
+     * @param scale scale
+     * @param low minimum output
+     * @param high maximum output
+     * @param lacunarity frequency multiplier
+     * @return noise
+     */
+    public static float noise(int numOfOctaves, float x, float y, float persistence, float scale, float low, float high, float lacunarity) {
+        float maxAmp = 0.0f;
+        float amp = 1.0f;
+        float freq = scale;
+        float noise = 0.0f;
+
+        // add successively smaller, higher-frequency terms
+        for (int i = 0; i < numOfOctaves; i++) {
+            noise += SimplexNoise.noise(x * freq, y * freq) * amp;
+            maxAmp += amp;
+            amp *= persistence;
+            freq *= lacunarity;
+        }
+        // take the average value of the iterations
+        noise /= maxAmp;
+
+        // normalize the result
+        noise = noise * (high - low) / 2.0f + (high + low) / 2.0f;
+
+        return noise;
     }
 
 }

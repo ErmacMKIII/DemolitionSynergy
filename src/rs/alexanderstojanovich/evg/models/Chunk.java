@@ -202,7 +202,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
             Texture.enable();
 
@@ -305,7 +305,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return size;
     }
 
-    public List<Block> getBlockList() {
+    public synchronized List<Block> getBlockList() {
         List<Block> result = new GapList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());
@@ -367,7 +367,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
     }
 
-    public void saveToDisk() {
+    public synchronized void saveToDisk() {
         if (!Chunk.isCached(id, solid)) {
             List<Block> blocks = getBlockList();
             pos = 0;
@@ -404,7 +404,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void loadFromDisk() {
+    public synchronized void loadFromDisk() {
         if (Chunk.isCached(id, solid)) {
             loadDiskToMem(getFileName());
             pos = 1;
