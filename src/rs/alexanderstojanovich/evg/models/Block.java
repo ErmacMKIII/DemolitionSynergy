@@ -682,6 +682,39 @@ public class Block extends Model {
         return result;
     }
 
+    // assuming that blocks are the same scale
+    public static Vector3f getAdjacentPos(Vector3f pos, int faceNum, float amount) {
+        Vector3f result = new Vector3f();
+        result.x = pos.x;
+        result.y = pos.y;
+        result.z = pos.z;
+
+        switch (faceNum) {
+            case Block.LEFT:
+                result.x -= amount;
+                break;
+            case Block.RIGHT:
+                result.x += amount;
+                break;
+            case Block.BOTTOM:
+                result.y -= amount;
+                break;
+            case Block.TOP:
+                result.y += amount;
+                break;
+            case Block.BACK:
+                result.z -= amount;
+                break;
+            case Block.FRONT:
+                result.z += amount;
+                break;
+            default:
+                break;
+        }
+
+        return result;
+    }
+
     public static int faceAdjacentBy(Vector3f blkPosA, Vector3f blkPosB) { // which face of blk "A" is adjacent to compared blk "B"
         int faceNum = -1;
         if (Math.abs((blkPosA.x - 1.0f) - (blkPosB.x + 1.0f)) == 0.0f

@@ -44,9 +44,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH) >> 4;
-    public static final float VISION = 200.0f; // determines visibility
+    public static final float VISION = 800.0f; // determines visibility
     public static final int MULTIPLIER = 8;
-    public static final int CHUNK_NUM = 16;
+
+    public static final int CHUNK_NUM = 13;
 
     // id of the chunk (signed)
     private final int id;
@@ -252,11 +253,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float ny = (pos.y + BOUND) / (float) (BOUND << 1);
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
-        Vector3f n = new Vector3f(nx, ny, nz);
-        Vector3f h = new Vector3f(0.5f);
-        float dot = n.dot(h);
+        float halfSum = (nx + ny + nz) / 2.0f;
 
-        int cid = Math.round(MULTIPLIER * dot);
+        int cid = Math.round(MULTIPLIER * halfSum);
         return cid;
     }
 

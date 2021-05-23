@@ -35,6 +35,7 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -583,20 +584,32 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
+            final float atps = Game.AMOUNT * Game.TPS;
+
             OUTER:
-            for (Chunk solidChunk : solidChunks.getChunkList()) {
-                if (Chunk.invChunkFunc(solidChunk.getId()).distance(critter.getPredictor()) <= Chunk.VISION) {
-                    for (Block solidBlock : solidChunk.getBlockList()) {
-                        if (solidBlock.containsInsideEqually(critter.getPredictor())
-                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
-                            coll = true;
+            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT / 8.0f) {
+                for (int j = 0; j <= 5; j++) {
+                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
+                    Vector3f align = new Vector3f(
+                            Math.round(adjPos.x) & 0xFFFFFFFE,
+                            Math.round(adjPos.y) & 0xFFFFFFFE,
+                            Math.round(adjPos.z) & 0xFFFFFFFE
+                    );
+
+                    boolean solidOnLoc = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(align));
+
+                    if (solidOnLoc) {
+                        coll = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                                || critter.getModel().intersectsEqually(align, 2.0f, 2.0f, 2.0f);
+
+                        if (coll) {
                             break OUTER;
                         }
                     }
                 }
             }
         }
+
         return coll;
     }
 
@@ -692,7 +705,7 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (fluidChunk != null && Chunk.invChunkFunc(fluidChunk.getId()).distance(camPos) <= Chunk.VISION) {
+                if (Chunk.invChunkFunc(fluidChunk.getId()).distance(camPos) <= Chunk.VISION) {
                     fluidChunk.tstCameraInFluid(camPos);
                 }
             }
