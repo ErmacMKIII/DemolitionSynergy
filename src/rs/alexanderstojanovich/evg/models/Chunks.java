@@ -207,7 +207,7 @@ public class Chunks {
     // total loaded + cached size
     public int totalSize() {
         int result = 0;
-        for (int id = -Chunk.MULTIPLIER; id <= Chunk.MULTIPLIER; id++) {
+        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
             if (Chunk.isCached(id, solid)) {
                 result += Chunk.cachedSize(id, solid);
@@ -224,7 +224,7 @@ public class Chunks {
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
         List<Block> result = new GapList<>();
-        for (int id = -Chunk.MULTIPLIER; id <= Chunk.MULTIPLIER; id++) {
+        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
             if (Chunk.isCached(id, solid)) {
                 chunk = Chunk.loadFromDisk(id, solid);
@@ -245,7 +245,7 @@ public class Chunks {
         sb.append("CHUNKS\n");
         sb.append("CHUNKS TOTAL SIZE = ").append(totalSize()).append("\n");
         sb.append("DETAILED INFO\n");
-        for (int id = -Chunk.MULTIPLIER; id <= Chunk.MULTIPLIER; id++) {
+        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             boolean cached = Chunk.isCached(id, solid);
             Chunk chunk = null;
             if (!cached) {

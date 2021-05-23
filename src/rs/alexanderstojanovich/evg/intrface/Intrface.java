@@ -190,7 +190,7 @@ public class Intrface {
         randLvlMenuPairs.add(new Pair<>("SMALL  (25000  blocks)", true));
         randLvlMenuPairs.add(new Pair<>("MEDIUM (50000  blocks)", true));
         randLvlMenuPairs.add(new Pair<>("LARGE  (100000 blocks)", true));
-        randLvlMenuPairs.add(new Pair<>("HUGE   (131072 blocks)", true));
+        randLvlMenuPairs.add(new Pair<>("HUGE   (131070 blocks)", true));
         randLvlMenu = new Menu("GENERATE RANDOM LEVEL", randLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {

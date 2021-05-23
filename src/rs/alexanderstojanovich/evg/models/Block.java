@@ -590,13 +590,29 @@ public class Block extends Model {
     // used by Random Level Generator
     public List<Integer> getAdjacentFreeFaceNumbers() {
         List<Integer> result = new ArrayList<>();
+
+        int hashPos = Vector3fUtils.hashCode(pos);
+        int sbits = 0;
+        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(hashPos);
+        if (spair != null) {
+            sbits = spair.getValue();
+        }
+
+        int fbits = 0;
+        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(hashPos);
+        if (fpair != null) {
+            fbits = fpair.getValue();
+        }
+
+        int tbits = sbits | fbits;
+
         for (int j = 0; j <= 5; j++) {
-            Vector3f adjPos = getAdjacentPos(j);
-            if (!LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))
-                    && !LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjPos))) {
+            int mask = 1 << j;
+            if ((tbits & mask) == 0) {
                 result.add(j);
             }
         }
+
         return result;
     }
 

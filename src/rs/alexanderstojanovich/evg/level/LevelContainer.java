@@ -77,13 +77,13 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 8.0f;
+    public static final float BASE = 11.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
-    public static final int MAX_NUM_OF_SOLID_BLOCKS = 65536;
-    public static final int MAX_NUM_OF_FLUID_BLOCKS = 65536;
+    public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
+    public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
 
     private float progress = 0.0f;
 
@@ -585,7 +585,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!coll) {
             OUTER:
             for (Chunk solidChunk : solidChunks.getChunkList()) {
-                if (Chunk.chunkInverFunc(solidChunk.getId()).distance(critter.getPredictor()) <= Chunk.VISION) {
+                if (Chunk.invChunkFunc(solidChunk.getId()).distance(critter.getPredictor()) <= Chunk.VISION) {
                     for (Block solidBlock : solidChunk.getBlockList()) {
                         if (solidBlock.containsInsideEqually(critter.getPredictor())
                                 || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
@@ -692,7 +692,7 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
             Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (fluidChunk != null && Chunk.chunkInverFunc(fluidChunk.getId()).distance(camPos) <= 50.0f) {
+                if (fluidChunk != null && Chunk.invChunkFunc(fluidChunk.getId()).distance(camPos) <= Chunk.VISION) {
                     fluidChunk.tstCameraInFluid(camPos);
                 }
             }

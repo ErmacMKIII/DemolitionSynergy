@@ -52,7 +52,7 @@ public class WaterRenderer {
             float obsHeight = obsCamera.getPos().y;
             Vector3f obsUp = obsCamera.getUp();
             for (Chunk fluidChunk : levelContainer.getFluidChunks().getChunkList()) {
-                if (Chunk.chunkInverFunc(fluidChunk.getId()).distance(playerPredictor) <= 50.0f) {
+                if (Chunk.invChunkFunc(fluidChunk.getId()).distance(playerPredictor) <= Chunk.VISION) {
                     for (Block fluidBlock : fluidChunk.getBlockList()) {
                         float waterHeight = fluidBlock.getSurfaceY();
                         if (fluidBlock.getEnabledFaces()[Block.TOP]
