@@ -559,18 +559,29 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
-    @Deprecated
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
 
-        int currChunkId = Chunk.chunkFunc(obsCamPos);
-        Chunk currFluidChunk = fluidChunks.getChunk(currChunkId);
-        if (currFluidChunk != null) {
-            for (Block fluidBLock : currFluidChunk.getBlockList()) {
-                if (fluidBLock.containsInsideEqually(obsCamPos)) {
-                    yea = true;
-                    break;
+        final float atps = Game.AMOUNT * Game.TPS;
+        OUTER:
+        for (float amount = -atps; amount <= atps; amount += Game.AMOUNT / 8.0f) {
+            for (int j = 0; j <= 5; j++) {
+                Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, amount);
+                Vector3f align = new Vector3f(
+                        Math.round(adjPos.x) & 0xFFFFFFFE,
+                        Math.round(adjPos.y) & 0xFFFFFFFE,
+                        Math.round(adjPos.z) & 0xFFFFFFFE
+                );
+
+                boolean solidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(align));
+
+                if (solidOnLoc) {
+                    yea = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, obsCamPos);
+
+                    if (yea) {
+                        break OUTER;
+                    }
                 }
             }
         }
@@ -703,11 +714,8 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
-            Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (Chunk.invChunkFunc(fluidChunk.getId()).distance(camPos) <= Chunk.VISION) {
-                    fluidChunk.tstCameraInFluid(camPos);
-                }
+                fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
     }
