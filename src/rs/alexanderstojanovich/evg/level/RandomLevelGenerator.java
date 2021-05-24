@@ -38,7 +38,7 @@ public class RandomLevelGenerator {
     public static final float ONE_OVER_POS_MAX = 1.0f / POS_MAX;
     public static final float ONE_OVER_POS_MIN = 1.0f / POS_MIN;
 
-    public static final float DENSITY = 500000.0f;
+    public static final float DENSITY = 550000.0f;
 
     private final Random random = new Random(0x123456789L);
 

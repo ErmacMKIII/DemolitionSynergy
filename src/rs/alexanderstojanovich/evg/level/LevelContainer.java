@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import org.joml.Vector3f;
@@ -58,17 +59,22 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks(true);
     private final Chunks fluidChunks = new Chunks(false);
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 8;
+    public static final int VIPAIR_QUEUE_CAPACITY = 6;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
-            if (o1.getValue() > o2.getValue()) {
-                return 1;
-            } else if (o1.getValue() == o2.getValue()) {
+            if (o1 == null || o2 == null) {
                 return 0;
             } else {
-                return -1;
+                if (o1.getValue() > o2.getValue()) {
+                    return 1;
+                } else if (Objects.equals(o1.getValue(), o2.getValue())) {
+                    return 0;
+                } else {
+                    return -1;
+                }
             }
+
         }
     };
 
@@ -246,7 +252,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
+        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -4.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
         levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
         levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
@@ -267,6 +273,13 @@ public class LevelContainer implements GravityEnviroment {
         }
         working = true;
         levelActors.freeze();
+
+        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, Chunk.BOUND >> 1, -4.0f));
+        levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
+        levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
+        levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
+        levelActors.getPlayer().getCamera().calcViewMatrixPub();
+
         boolean success = false;
         progress = 0.0f;
         gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
@@ -288,6 +301,7 @@ public class LevelContainer implements GravityEnviroment {
 
         progress = 100.0f;
         working = false;
+
         levelActors.unfreeze();
         gameObject.getMusicPlayer().stop();
         return success;
@@ -564,8 +578,9 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
 
         final float atps = Game.AMOUNT * Game.TPS;
+
         OUTER:
-        for (float amount = -atps; amount <= atps; amount += Game.AMOUNT / 8.0f) {
+        for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
             for (int j = 0; j <= 5; j++) {
                 Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, amount);
                 Vector3f align = new Vector3f(
@@ -574,9 +589,9 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z) & 0xFFFFFFFE
                 );
 
-                boolean solidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(align));
+                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(align));
 
-                if (solidOnLoc) {
+                if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, obsCamPos);
 
                     if (yea) {
@@ -598,7 +613,7 @@ public class LevelContainer implements GravityEnviroment {
             final float atps = Game.AMOUNT * Game.TPS;
 
             OUTER:
-            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT / 8.0f) {
+            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
                 for (int j = 0; j <= 5; j++) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                     Vector3f align = new Vector3f(

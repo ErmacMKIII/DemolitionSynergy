@@ -80,7 +80,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public synchronized void update(float deltaTime) {
+    public void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }
