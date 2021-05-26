@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -577,25 +578,30 @@ public class LevelContainer implements GravityEnviroment {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
 
-        final float atps = Game.AMOUNT * Game.TPS;
+        Vector3f obsCamPosAlign = new Vector3f(
+                Math.round(obsCamPos.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(obsCamPos.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(obsCamPos.z + 0.5f) & 0xFFFFFFFE
+        );
 
-        OUTER:
-        for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
+        yea = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(obsCamPosAlign));
+
+        if (!yea) {
             for (int j = 0; j <= 5; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, amount);
-                Vector3f align = new Vector3f(
-                        Math.round(adjPos.x) & 0xFFFFFFFE,
-                        Math.round(adjPos.y) & 0xFFFFFFFE,
-                        Math.round(adjPos.z) & 0xFFFFFFFE
+                Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, 2.1f);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(align));
+                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjAlign));
 
                 if (fluidOnLoc) {
-                    yea = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, obsCamPos);
+                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, obsCamPos);
 
                     if (yea) {
-                        break OUTER;
+                        break;
                     }
                 }
             }
@@ -609,27 +615,35 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
+
         if (!coll) {
-            final float atps = Game.AMOUNT * Game.TPS;
+            Vector3f predAlign = new Vector3f(
+                    Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(critter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
+            );
 
-            OUTER:
-            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
+            coll = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(predAlign));
+
+            if (!coll) {
                 for (int j = 0; j <= 5; j++) {
-                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
-                    Vector3f align = new Vector3f(
-                            Math.round(adjPos.x) & 0xFFFFFFFE,
-                            Math.round(adjPos.y) & 0xFFFFFFFE,
-                            Math.round(adjPos.z) & 0xFFFFFFFE
-                    );
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += Game.AMOUNT) {
+                        Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
+                        Vector3f adjAlign = new Vector3f(
+                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                        );
 
-                    boolean solidOnLoc = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(align));
+                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjAlign));
 
-                    if (solidOnLoc) {
-                        coll = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                                || critter.getModel().intersectsEqually(align, 2.0f, 2.0f, 2.0f);
+                        if (solidOnLoc) {
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
+                                    || critter.getModel().intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
 
-                        if (coll) {
-                            break OUTER;
+                            if (coll) {
+                                break;
+                            }
                         }
                     }
                 }
