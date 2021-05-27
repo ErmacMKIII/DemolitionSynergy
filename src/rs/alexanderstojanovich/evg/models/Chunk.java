@@ -44,10 +44,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH) >> 4;
-    public static final float VISION = 800.0f; // determines visibility
-    public static final int MULTIPLIER = 8;
+    public static final float VISION = 100.0f; // determines visibility
+    public static final int MULTIPLIER = 16;
 
-    public static final int CHUNK_NUM = 13;
+    public static final int CHUNK_NUM = 3 * MULTIPLIER / 2 + 1;
 
     // id of the chunk (signed)
     private final int id;
@@ -274,7 +274,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
-        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
+        for (int id = 0; id <= Chunk.CHUNK_NUM; id++) {
             Vector3f chunkPos = invChunkFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);

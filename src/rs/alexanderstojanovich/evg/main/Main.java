@@ -20,7 +20,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -74,8 +73,8 @@ public class Main {
             }
         };
 
-        timer.scheduleAtFixedRate(task1, 1000L, 1000L);
-        timer.scheduleAtFixedRate(task2, 125L, 125L);
+        timer.schedule(task1, 1000L, 1000L);
+        timer.schedule(task2, 125L, 125L);
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {
