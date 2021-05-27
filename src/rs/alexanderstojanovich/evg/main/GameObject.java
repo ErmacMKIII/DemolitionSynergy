@@ -111,14 +111,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     /**
-     * Hint to the render that objects should be buffered
-     */
-    public void unbuffer() {
-        levelContainer.getSolidChunks().setBuffered(false);
-        levelContainer.getFluidChunks().setBuffered(false);
-    }
-
-    /**
      * Calls chunk functions to determine visible chunks
      */
     public void determineVisibleChunks() {

@@ -107,6 +107,8 @@ public class LevelContainer implements GravityEnviroment {
     // std time to live
     public static final int STD_TTL = 30; // 30 seconds
 
+    protected static boolean cameraInFluid = false;
+
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -742,9 +744,7 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
-            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                fluidChunk.setCameraInFluid(isCameraInFluid());
-            }
+            cameraInFluid = isCameraInFluid();
         }
     }
 
@@ -766,24 +766,13 @@ public class LevelContainer implements GravityEnviroment {
         obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
         ShaderProgram.unbind();
 
-        // only visible & uncached are in chunk list
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (!solidChunk.isBuffered()) {
-                solidChunk.bufferAll();
-            }
+        // only visible & uncached are in chunk list      
+        solidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
 
-            solidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
-        }
-
-        // only visible & uncahed are in chunk list
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (!fluidChunk.isBuffered()) {
-                fluidChunk.bufferAll();
-            }
-
-            fluidChunk.prepare();
-            fluidChunk.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
-        }
+        // prepare alters tex coords based on whether or not camera is submerged in fluid
+        fluidChunks.prepare(cameraInFluid);
+        // only visible & uncached are in chunk list 
+        fluidChunks.render(ShaderProgram.getVoxelShader(), obsCamera.getPos());
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -832,24 +821,13 @@ public class LevelContainer implements GravityEnviroment {
         camera.updateCameraFront(ShaderProgram.getWaterVoxelShader());
         ShaderProgram.unbind();
 
-        // only visible & uncached are in chunk list
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (!solidChunk.isBuffered()) {
-                solidChunk.bufferAll();
-            }
+        // only visible & uncached are in chunk list      
+        solidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
 
-            solidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
-        }
-
-        // only visible & uncahed are in chunk list
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (!fluidChunk.isBuffered()) {
-                fluidChunk.bufferAll();
-            }
-
-            fluidChunk.prepare();
-            fluidChunk.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
-        }
+        // prepare alters tex coords based on whether or not camera is submerged in fluid
+        fluidChunks.prepare(cameraInFluid);
+        // only visible & uncached are in chunk list 
+        fluidChunks.render(ShaderProgram.getWaterVoxelShader(), camera.getPos());
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {

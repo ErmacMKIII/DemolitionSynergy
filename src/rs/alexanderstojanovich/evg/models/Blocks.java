@@ -30,8 +30,8 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.BigList;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -41,7 +41,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     protected final List<Block> blockList = new BigList<>(5000);
     protected int bigVbo = 0;
-    protected boolean cameraInFluid = false;
     protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
@@ -159,10 +158,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         for (Block block : blockList) {
             block.animate();
         }
-        updateVertices();
+
+        if (bigFloatBuff == null) {
+            bufferVertices();
+        } else {
+            updateVertices();
+        }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
                 block.reverseFaceVertexOrder();
@@ -315,14 +319,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public boolean isVerticesReversed() {
         return verticesReversed;
-    }
-
-    public boolean isCameraInFluid() {
-        return cameraInFluid;
-    }
-
-    public void setCameraInFluid(boolean cameraInFluid) {
-        this.cameraInFluid = cameraInFluid;
     }
 
     public void setVerticesReversed(boolean verticesReversed) {
