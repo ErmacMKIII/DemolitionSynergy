@@ -212,7 +212,7 @@ public class Intrface {
                         numBlocks = 100000;
                         break;
                     case "HUGE":
-                        numBlocks = 131072;
+                        numBlocks = 131070;
                         break;
                     default:
                         numBlocks = 0;
