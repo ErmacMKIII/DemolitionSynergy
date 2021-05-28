@@ -330,20 +330,18 @@ public class Block extends Model {
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
         boolean bool = false;
-        int counter = 0;
+        
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.25f) {
-                counter++;
+            if (Math.abs(vx.dot(vy)) >= 0.0625f) {                
+                bool = true;
                 break;
             }
         }
-        if (counter >= 1 && counter <= 3) {
-            bool = true;
-        }
+                
         return bool;
     }
 

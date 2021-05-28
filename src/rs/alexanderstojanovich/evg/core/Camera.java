@@ -187,7 +187,7 @@ public class Camera { // is 3D looking camera
         for (Vertex vertex : model.getVertices()) {
             Vector3f temp = new Vector3f();
             Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
-            if (vx.dot(front) >= 0.5f) {
+            if (vx.dot(front) >= 0.25f) {
                 yea = true;
                 break;
             }

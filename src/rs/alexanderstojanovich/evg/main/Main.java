@@ -67,9 +67,6 @@ public class Main {
             @Override
             public void run() {
                 gameObject.chunkOperations();
-                if (Game.isWaterEffects()) {
-                    gameObject.getWaterRenderer().refresh();
-                }
             }
         };
 

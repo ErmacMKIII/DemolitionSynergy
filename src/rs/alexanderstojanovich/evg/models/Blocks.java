@@ -172,7 +172,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                 block.reverseFaceVertexOrder();
             }
             verticesReversed = !verticesReversed;
-            updateVertices();
+            if (bigFloatBuff == null) {
+                bufferVertices();
+            } else {
+                updateVertices();
+            }
         }
     }
 
