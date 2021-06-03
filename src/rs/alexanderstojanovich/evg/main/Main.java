@@ -49,8 +49,7 @@ public class Main {
         Renderer renderer = new Renderer(gameObject); // init renderer with given game object
         DSLogger.reportInfo("Game initialized.", null);
         //----------------------------------------------------------------------
-        Timer timer = new Timer("Timer Utils");
-
+        Timer timer1 = new Timer("Timer Utils");
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
@@ -62,16 +61,17 @@ public class Main {
                 gameObject.getIntrface().getAlphaText().setContent("load: " + String.format("%.2f", Renderer.alpha));
             }
         };
+        timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
 
+        Timer timer2 = new Timer("Chunk Ops");
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
                 gameObject.chunkOperations();
             }
         };
-
-        timer.scheduleAtFixedRate(task1, 1000L, 1000L);
-        timer.schedule(task2, 125L, 125L);
+        timer2.schedule(task2, 125L, 125L);
+        //----------------------------------------------------------------------
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {
@@ -87,7 +87,8 @@ public class Main {
         } catch (InterruptedException ex) {
             DSLogger.reportError(ex.getMessage(), ex);
         }
-        timer.cancel();
+        timer1.cancel();
+        timer2.cancel();
         //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output

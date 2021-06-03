@@ -28,11 +28,10 @@ public class Vector3fUtils {
         final int h1 = Float.floatToIntBits(vector.x);
         final int h2 = Float.floatToIntBits(vector.y);
         final int h3 = Float.floatToIntBits(vector.z);
-
-        int result = (h1 ^ (h1 >>> 16));
-        result = 31 * result + (h2 ^ (h2 >>> 16));
-        result = 31 * result + (h3 ^ (h3 >>> 16));
-        return result;
+        final int xh1 = ~(h1 ^ ((h2 >>> 16) | (h2 << 16))) ^ ((h3 >>> 16) | (h3 << 16));
+        final int xh2 = ((h1 >>> 24) | (h1 << 24)) ^ ((h2 >>> 16) | (h2 << 16)) ^ ~((h3 >>> 8) | (h3 << 8));
+        final int xh3 = ~(xh1 * 103) ^ (~xh2 * 107) ^ (xh1 * 109);
+        return xh3;
     }
 
     public static byte[] vec3fToByteArray(Vector3f vector) {
