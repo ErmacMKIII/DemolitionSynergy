@@ -35,23 +35,12 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class DynamicText extends Text {
 
-    protected int dynamicSize = 100;
+    public static final int DYNAMIC_INCREMENT = 20;
+
+    protected int dynamicSize = 0;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected int[] vboEntries = new int[1024];
-    protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
     protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
-
-    static {
-        VERTICES[0] = new Vector2f(-1.0f, -1.0f);
-        VERTICES[1] = new Vector2f(1.0f, -1.0f);
-        VERTICES[2] = new Vector2f(1.0f, 1.0f);
-        VERTICES[3] = new Vector2f(-1.0f, 1.0f);
-
-        for (int i : INDICES) {
-            CONST_INT_BUFFER.put(i);
-        }
-        CONST_INT_BUFFER.flip();
-    }
 
     public DynamicText(Texture texture, String content) {
         super(texture, content);
@@ -68,7 +57,7 @@ public class DynamicText extends Text {
     public void bufferBigVbo() {
         // auto adjust dynamic size of float buff and do it on every 1024 element
         if (content.length() >= dynamicSize) {
-            dynamicSize = content.length() + 100;
+            dynamicSize = content.length() + DYNAMIC_INCREMENT;
             bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         }
         bigFloatBuff.clear();
@@ -120,7 +109,6 @@ public class DynamicText extends Text {
     @Override
     public void render(ShaderProgram shaderProgram) {
         if (enabled && buffered && !content.isEmpty()) {
-            Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL20.glEnableVertexAttribArray(0);
@@ -151,7 +139,6 @@ public class DynamicText extends Text {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            Texture.disable();
         }
     }
 

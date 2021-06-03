@@ -299,6 +299,7 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
 
+        solidChunks.updateSolids();
         fluidChunks.updateFluids();
 
         progress = 100.0f;
@@ -461,6 +462,8 @@ public class LevelContainer implements GravityEnviroment {
                     pos += 29;
                     progress += 50.0f / solidNum;
                 }
+
+                solidChunks.updateSolids();
 
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
@@ -698,6 +701,7 @@ public class LevelContainer implements GravityEnviroment {
                     solidChunk.setTimeToLive(STD_TTL);
                 } else if (Chunk.isCached(visibleId, true)) {
                     solidChunk = Chunk.loadFromDisk(visibleId, true);
+                    solidChunk.updateSolids();
                     solidChunks.getChunkList().add(solidChunk);
                     solidChunks.getChunkList().sort(Chunks.COMPARATOR);
                 }

@@ -53,6 +53,7 @@ public class Tuple extends Blocks {
     private final int faceEnBits;
 
     private final IntBuffer intBuff;
+    private int ibo = 0;
 
     public Tuple(String texName, int faceEnBits) {
         this.texName = texName;
@@ -112,12 +113,24 @@ public class Tuple extends Blocks {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
+    @Override
+    public void bufferIndices() {
+        // storing indices buffer on the graphics card
+        if (ibo == 0) {
+            ibo = GL15.glGenBuffers();
+        }
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+
     // renderer does this stuff prior to any rendering
     @Override
     public void bufferAll() {
         bufferVertices();
         bufferVectors();
         bufferMatrices();
+        bufferIndices();
         buffered = true;
     }
 
@@ -169,9 +182,12 @@ public class Tuple extends Blocks {
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
-                    intBuff,
+                    Block.INDICES_COUNT,
+                    GL11.GL_UNSIGNED_INT,
+                    0,
                     blockList.size(),
                     0
             );

@@ -39,6 +39,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
+    public static final int DYNAMIC_INCREMENT = 250;
+
     protected final List<Block> blockList = new BigList<>(5000);
     protected int bigVbo = 0;
     protected boolean verticesReversed = false;
@@ -55,7 +57,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void bufferVertices() { // call it before any rendering
         // auto adjust dynamic size of float buff and do it on every 1000th element
         if (bigFloatBuff == null || blockList.size() > dynamicSize) {
-            dynamicSize = blockList.size() + 1000;
+            dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
             bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
         }
         bigFloatBuff.clear();
@@ -183,7 +185,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     // standard render all
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-            Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
 
@@ -235,14 +236,12 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-            Texture.disable();
         }
     }
 
     // powerful render if block is visible by camera
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-            Texture.enable();
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
 
@@ -295,7 +294,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-            Texture.disable();
         }
     }
 

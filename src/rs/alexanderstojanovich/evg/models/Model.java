@@ -64,7 +64,7 @@ public class Model implements Comparable<Model> {
     protected int vbo = 0; // vertex buffer object
     protected int ibo = 0; // index buffer object        
 
-    protected Vector3f pos = new Vector3f();
+    public Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
 
     protected float rX = 0.0f;
@@ -282,8 +282,6 @@ public class Model implements Comparable<Model> {
             return; // this is very critical!!
         }
 
-        Texture.enable();
-
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -322,7 +320,6 @@ public class Model implements Comparable<Model> {
         GL20.glDisableVertexAttribArray(2);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        Texture.disable();
     }
 
     /**

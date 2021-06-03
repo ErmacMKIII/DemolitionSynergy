@@ -57,6 +57,25 @@ public class Chunks {
         }
     };
 
+    public void updateSolids() {
+        for (Block solidBlock : getTotalList()) {
+            int faceBitsBefore = solidBlock.getFaceBits();
+            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(Vector3fUtils.hashCode(solidBlock.pos));
+            if (pair != null) {
+                byte neighborBits = pair.getValue();
+                solidBlock.setFaceBits(~neighborBits & 63);
+                int faceBitsAfter = solidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    int chunkId = Chunk.chunkFunc(solidBlock.getPos());
+                    Chunk solidChunk = getChunk(chunkId);
+                    if (solidChunk != null) {
+                        solidChunk.transfer(solidBlock, faceBitsBefore, faceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();

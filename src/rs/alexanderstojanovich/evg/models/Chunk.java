@@ -113,6 +113,21 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         buffered = false;
     }
 
+    public void updateSolids() {
+        for (Block solidBlock : getBlockList()) {
+            int faceBitsBefore = solidBlock.getFaceBits();
+            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(Vector3fUtils.hashCode(solidBlock.pos));
+            if (pair != null) {
+                byte neighborBits = pair.getValue();
+                solidBlock.setFaceBits(~neighborBits & 63);
+                int faceBitsAfter = solidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    transfer(solidBlock, faceBitsBefore, faceBitsAfter);
+                }
+            }
+        }
+    }
+
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
@@ -199,7 +214,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // it renders all of them instanced if they're visible
     public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
-            Texture.enable();
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -264,18 +278,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public static void determineVisible(Queue<Pair<Integer, Float>> visibleQueue,
             Queue<Pair<Integer, Float>> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
         // current chunk where player is
-        int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Vector3f chunkPos = invChunkFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
-            Pair<Integer, Float> pair = new Pair<>(id, distance);
-            if ((id == cid && distance <= VISION
-                    || id != cid && distance <= VISION && product >= 0.25f) && !visibleQueue.contains(pair)) {
+            if (distance <= Chunk.VISION && product >= 0.25f) {
                 visibleQueue.offer(new Pair<>(id, distance));
-            } else if (!invisibleQueue.contains(pair)) {
+            } else {
                 invisibleQueue.offer(new Pair<>(id, distance));
             }
         }

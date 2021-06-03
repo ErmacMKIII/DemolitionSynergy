@@ -36,7 +36,7 @@ public class DSLogger {
     private static String generateLogFileName() { // such as "dsynergy_2020-20-10_15-20-42.log"
         final LocalDateTime dateTime = LocalDateTime.now();
         StringBuilder sb = new StringBuilder();
-        sb.append("dsynergy_light_");
+        sb.append("dsynergy_");
         sb.append(dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")));
         sb.append(".log");
         return sb.toString();

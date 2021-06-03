@@ -33,7 +33,7 @@ public class Main {
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
-        Configuration inCfg = new Configuration();
+        Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
         DSLogger.init(debug); // this is important initializing Apache logger
@@ -45,7 +45,7 @@ public class Main {
         }
         GameObject.MY_WINDOW.centerTheWindow();
         final GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
-        Game game = new Game(inCfg, gameObject); // init game with given configuration and game object
+        Game game = new Game(gameObject); // init game with given configuration and game object
         Renderer renderer = new Renderer(gameObject); // init renderer with given game object
         DSLogger.reportInfo("Game initialized.", null);
         //----------------------------------------------------------------------
@@ -70,7 +70,7 @@ public class Main {
             }
         };
 
-        timer.schedule(task1, 1000L, 1000L);
+        timer.scheduleAtFixedRate(task1, 1000L, 1000L);
         timer.schedule(task2, 125L, 125L);
         SERVICE.execute(new Runnable() {
             @Override

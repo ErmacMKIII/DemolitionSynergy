@@ -39,6 +39,8 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class Game {
 
+    private static final Configuration cfg = Configuration.getInstance();
+
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
 
     public static final float AMOUNT = 0.05f;
@@ -52,7 +54,7 @@ public class Game {
     public static final float EPSILON = 0.0001f;
 
     private static int ups; // current update per second    
-    private static int fpsMax; // fps max or fps cap  
+    private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
@@ -91,7 +93,7 @@ public class Game {
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
 
-    private static boolean waterEffects = true;
+    private static boolean waterEffects = cfg.isWaterEffects();
 
     protected static double upsTicks = 0.0;
 
@@ -103,27 +105,11 @@ public class Game {
     /**
      * Construct new game view
      *
-     * @param inCfg configuration
      * @param gameObject game object control
      */
-    public Game(Configuration inCfg, GameObject gameObject) {
+    public Game(GameObject gameObject) {
         this.gameObject = gameObject;
-        Game.fpsMax = inCfg.getFpsCap();
-        if (inCfg.isFullscreen()) {
-            GameObject.MY_WINDOW.fullscreen();
-        } else {
-            GameObject.MY_WINDOW.windowed();
-        }
-        if (inCfg.isVsync()) {
-            GameObject.MY_WINDOW.enableVSync();
-        } else {
-            GameObject.MY_WINDOW.disableVSync();
-        }
-        GameObject.MY_WINDOW.centerTheWindow();
-        waterEffects = inCfg.isWaterEffects();
         Arrays.fill(keys, false);
-        gameObject.getMusicPlayer().setGain(inCfg.getMusicVolume());
-        gameObject.getSoundFXPlayer().setGain(inCfg.getSoundFXVolume());
         initCallbacks();
     }
 
@@ -476,7 +462,7 @@ public class Game {
      * @return Configuration cfg
      */
     public Configuration makeConfig() {
-        Configuration cfg = new Configuration();
+        Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
         cfg.setWidth(GameObject.MY_WINDOW.getWidth());
         cfg.setHeight(GameObject.MY_WINDOW.getHeight());

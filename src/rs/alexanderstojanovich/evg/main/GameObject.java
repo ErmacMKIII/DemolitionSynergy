@@ -33,6 +33,8 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
+    private static final Configuration cfg = Configuration.getInstance();
+
     public static final String TITLE = "Demolition Synergy - v23 XENON";
 
     // makes default window -> Renderer sets resolution from config
@@ -59,6 +61,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         this.waterRenderer = new WaterRenderer(levelContainer);
         this.intrface = new Intrface(this);
+        this.init();
+    }
+
+    private void init() {
+        if (cfg.isFullscreen()) {
+            GameObject.MY_WINDOW.fullscreen();
+        } else {
+            GameObject.MY_WINDOW.windowed();
+        }
+        if (cfg.isVsync()) {
+            GameObject.MY_WINDOW.enableVSync();
+        } else {
+            GameObject.MY_WINDOW.disableVSync();
+        }
+        GameObject.MY_WINDOW.centerTheWindow();
+        musicPlayer.setGain(cfg.getMusicVolume());
+        soundFXPlayer.setGain(cfg.getSoundFXVolume());
     }
 
     // lazy initialization allowing only one instance
