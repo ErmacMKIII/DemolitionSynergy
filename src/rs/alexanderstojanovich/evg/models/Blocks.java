@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.BigList;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -39,7 +40,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    public static final int DYNAMIC_INCREMENT = 250;
+    public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
     protected final List<Block> blockList = new BigList<>(5000);
     protected int bigVbo = 0;

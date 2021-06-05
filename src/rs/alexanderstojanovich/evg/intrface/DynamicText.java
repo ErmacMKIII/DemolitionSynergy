@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -26,6 +25,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -35,7 +35,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class DynamicText extends Text {
 
-    public static final int DYNAMIC_INCREMENT = 20;
+    public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getTextDynamicSize();
 
     protected int dynamicSize = 0;
     protected int bigVbo = 0; // vbo containing all the quads (characters)

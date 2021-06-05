@@ -27,8 +27,9 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.texture.Image;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.ImageUtils;
 
 /**
  *
@@ -80,15 +81,17 @@ public class Window {
         }
         // setting the icon
         GLFWImage icon = GLFWImage.malloc();
-        Image ds_image1 = new Image(Game.INTRFACE_ENTRY, "ds_icon.png");
-        icon.set(ds_image1.getWidth(), ds_image1.getHeight(), ds_image1.getContent());
+        BufferedImage ds_image1 = Texture.loadImage(Game.INTRFACE_ENTRY, "ds_icon.png");
+        ByteBuffer dataBuffer1 = ImageUtils.getImageDataBuffer(ds_image1);
+        icon.set(ds_image1.getWidth(), ds_image1.getHeight(), dataBuffer1);
         GLFWImage.Buffer buffer = GLFWImage.malloc(1);
         buffer.put(0, icon);
         GLFW.glfwSetWindowIcon(windowID, buffer);
         // setting the cursor (arrow)
         GLFWImage glfwArrowImage = GLFWImage.malloc();
-        Image ds_image2 = new Image(Game.INTRFACE_ENTRY, "arrow.png");
-        glfwArrowImage.set(ds_image2.getWidth(), ds_image2.getHeight(), ds_image2.getContent());
+        BufferedImage ds_image2 = Texture.loadImage(Game.INTRFACE_ENTRY, "arrow.png");
+        ByteBuffer dataBuffer2 = ImageUtils.getImageDataBuffer(ds_image2);
+        glfwArrowImage.set(ds_image2.getWidth(), ds_image2.getHeight(), dataBuffer2);
         long arrowId = GLFW.glfwCreateCursor(glfwArrowImage, 0, 0);
         GLFW.glfwSetCursor(windowID, arrowId);
         //calculating the monitor

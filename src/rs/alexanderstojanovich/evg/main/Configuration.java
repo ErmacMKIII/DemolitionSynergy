@@ -40,6 +40,10 @@ public class Configuration {
     private boolean debug = false;
     private float musicVolume = 0.5f;
     private float soundFXVolume = 0.5f;
+    private int blockDynamicSize = 250;
+    private int textDynamicSize = 25;
+    private int textureSize = 512;
+
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     private static Configuration instance;
@@ -66,6 +70,8 @@ public class Configuration {
                 while ((line = br.readLine()) != null) {
                     // replace all white space chars with empty string
                     String[] words = line.replaceAll("\\s", "").split("=");
+                    int number;
+                    float val;
                     if (words.length == 2) {
                         switch (words[0].toLowerCase()) {
                             case "fpscap":
@@ -87,20 +93,44 @@ public class Configuration {
                                 waterEffects = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                             case "mousesensitivity":
-                                mouseSensitivity = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    mouseSensitivity = val;
+                                }
                                 break;
                             case "musicvolume":
-                                musicVolume = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    musicVolume = val;
+                                }
                                 break;
                             case "soundfxvolume":
-                                soundFXVolume = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    soundFXVolume = val;
+                                }
                                 break;
                             case "debug":
                                 debug = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                             case "blockdynamicsize":
+                                number = Integer.parseInt(words[1]);
+                                if (number >= 1 && number <= 5000) {
+                                    blockDynamicSize = number;
+                                }
                                 break;
                             case "textdynamicsize":
+                                number = Integer.parseInt(words[1]);
+                                if (number >= 1 && number <= 1000) {
+                                    textDynamicSize = number;
+                                }
+                                break;
+                            case "texturesize":
+                                number = Integer.parseInt(words[1]);
+                                // if tex size is a non-zero power of two
+                                if (number != 0 && (number & (number - 1)) == 0) {
+                                    textureSize = number;
+                                }
                                 break;
                         }
                     }
@@ -140,6 +170,9 @@ public class Configuration {
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
             pw.println("Debug = " + debug);
+            pw.println("BlockDynamicSize = " + blockDynamicSize);
+            pw.println("TextDynamicSize = " + textDynamicSize);
+            pw.println("TextureSize = " + textureSize);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -227,6 +260,18 @@ public class Configuration {
 
     public void setSoundFXVolume(float soundFXVolume) {
         this.soundFXVolume = soundFXVolume;
+    }
+
+    public int getBlockDynamicSize() {
+        return blockDynamicSize;
+    }
+
+    public int getTextDynamicSize() {
+        return textDynamicSize;
+    }
+
+    public int getTextureSize() {
+        return textureSize;
     }
 
 }
