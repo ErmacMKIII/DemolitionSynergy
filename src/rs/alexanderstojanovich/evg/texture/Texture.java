@@ -183,7 +183,10 @@ public class Texture {
         FONT.bufferAll();
         CONSOLE.bufferAll();
         LIGHT_BULB.bufferAll();
-        // world
+        // world        
+        DECAL.bufferAll();
+        MARBLE.bufferAll();
+        QMARK.bufferAll();
         WORLD.bufferAll();
         NIGHT.bufferAll();
         // player
@@ -282,9 +285,6 @@ public class Texture {
         }
         final Texture other = (Texture) obj;
         if (this.textureID != other.textureID) {
-            return false;
-        }
-        if (this.buffered != other.buffered) {
             return false;
         }
         if (!Objects.equals(this.image, other.image)) {

@@ -81,8 +81,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         Tuple result = null;
         for (Tuple tuple : tupleList) {
-            if (tuple.getTexName().equals(keyTexture)
-                    && tuple.getFaceEnBits() == keyFaceBits) {
+            if (Texture.TEX_MAP.get(tuple.texName).getKey()
+                    .equals(Texture.TEX_MAP.get(keyTexture).getKey())
+                    && tuple.faceEnBits == keyFaceBits) {
                 result = tuple;
                 break;
             }

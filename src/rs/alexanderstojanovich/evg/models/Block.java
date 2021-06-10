@@ -122,7 +122,9 @@ public class Block extends Model {
             vertices.add(new Vertex(
                     new Vector3f(v.getPos()),
                     new Vector3f(v.getNormal()),
-                    new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
+                    (texIndex == -1)
+                            ? new Vector2f(v.getUv().x, v.getUv().y)
+                            : new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
             );
         }
     }

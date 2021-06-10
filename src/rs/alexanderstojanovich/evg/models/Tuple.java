@@ -43,17 +43,17 @@ public class Tuple extends Blocks {
     public static final int VEC3_SIZE = 3;
     public static final int MAT4_SIZE = 16;
 
-    private int vec3Vbo = 0;
-    private FloatBuffer vec3FloatBuff;
+    protected int vec3Vbo = 0;
+    protected FloatBuffer vec3FloatBuff;
 
-    private int mat4Vbo = 0;
-    private FloatBuffer mat4FloatBuff;
+    protected int mat4Vbo = 0;
+    protected FloatBuffer mat4FloatBuff;
 
-    private final String texName;
-    private final int faceEnBits;
+    protected final String texName;
+    protected final int faceEnBits;
 
-    private final IntBuffer intBuff;
-    private int ibo = 0;
+    protected final IntBuffer intBuff;
+    protected int ibo = 0;
 
     public Tuple(String texName, int faceEnBits) {
         this.texName = texName;

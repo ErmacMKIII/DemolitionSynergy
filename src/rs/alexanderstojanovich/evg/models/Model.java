@@ -26,7 +26,6 @@ import java.io.InputStreamReader;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -160,8 +159,10 @@ public class Model implements Comparable<Model> {
                         if (!data[1].isEmpty()) {
                             Vertex vertex = result.vertices.get(index);
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                            vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-                            vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
+                            if (texIndex != -1) {
+                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
+                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
+                            }
                         }
                         if (!data[2].isEmpty()) {
                             result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
