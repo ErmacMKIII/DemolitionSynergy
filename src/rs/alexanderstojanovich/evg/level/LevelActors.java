@@ -29,7 +29,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class LevelActors {
 
-    private final Player player = new Player(null, "icosphere.obj", "marble.png", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 0.25f);
+    private final Player player = new Player(null, "icosphere.obj", "marble", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 0.25f);
     private final List<NPC> npcList = new GapList<>();
 
     public void freeze() {

@@ -128,7 +128,7 @@ public class Configuration {
                             case "texturesize":
                                 number = Integer.parseInt(words[1]);
                                 // if tex size is a non-zero power of two
-                                if (number != 0 && (number & (number - 1)) == 0) {
+                                if (number != 0 && (number & (number - 1)) == 0 && number <= 4096) {
                                     textureSize = number;
                                 }
                                 break;

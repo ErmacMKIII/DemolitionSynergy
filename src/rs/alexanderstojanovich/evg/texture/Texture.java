@@ -52,6 +52,7 @@ import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -64,55 +65,50 @@ public class Texture {
     private boolean buffered = false;
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
 
+    public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water"};
+    public static final int GRID_SIZE_WORLD = 2;
+    public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
+    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
+    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
+    public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
+    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
+
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png");
     public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png");
     public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
     public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
-    public static final Texture DOOM0 = new Texture(Game.WORLD_ENTRY, "doom0.png");
-    public static final Texture CRATE = new Texture(Game.WORLD_ENTRY, "crate.png");
-    public static final Texture STONE = new Texture(Game.WORLD_ENTRY, "stone.png");
-    public static final Texture WATER = new Texture(Game.WORLD_ENTRY, "water.png");
-    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
-    public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
-    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
-    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
-
-    public static final Texture PISTOL = new Texture(Game.PLAYER_ENTRY, "pistol.png");
-    public static final Texture ASSAULT_RIFLE = new Texture(Game.PLAYER_ENTRY, "assault_rifle.png");
-    public static final Texture SHOTGUN = new Texture(Game.PLAYER_ENTRY, "shotgun.png");
-    public static final Texture SUB_MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "sub_machine_gun.png");
-    public static final Texture MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "machine_gun.png");
-    public static final Texture SNIPER_RIFLE = new Texture(Game.PLAYER_ENTRY, "sniper_rifle.png");
-
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
 
-    public static final Map<String, Texture> TEX_MAP = new HashMap<>();
+    public static final String[] TEX_PLAYER = {"pistol", "assault_rifle", "shotgun", "sub_machine_gun", "machine_gun", "sniper_rifle"};
+    public static final int GRID_SIZE_PLAYER = 3;
+    public static final Map<String, Pair<Texture, Integer>> TEX_MAP = new HashMap<>();
+    public static final Texture PLAYER = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER, GRID_SIZE_PLAYER);
 
     static {
         // interface stuff
-        TEX_MAP.put("logox", LOGO);
-        TEX_MAP.put("xhair", CROSSHAIR);
-        TEX_MAP.put("minigun", MINIGUN);
-        TEX_MAP.put("font", FONT);
-        TEX_MAP.put("console", CONSOLE);
-        TEX_MAP.put("lbulb", LIGHT_BULB);
+        TEX_MAP.put("logox", new Pair<>(LOGO, -1));
+        TEX_MAP.put("xhair", new Pair<>(CROSSHAIR, -1));
+        TEX_MAP.put("minigun", new Pair<>(MINIGUN, -1));
+        TEX_MAP.put("font", new Pair<>(FONT, -1));
+        TEX_MAP.put("console", new Pair<>(CONSOLE, -1));
+        TEX_MAP.put("lbulb", new Pair<>(LIGHT_BULB, -1));
         // world stuff
-        TEX_MAP.put("doom0", DOOM0);
-        TEX_MAP.put("crate", CRATE);
-        TEX_MAP.put("stone", STONE);
-        TEX_MAP.put("water", WATER);
-        TEX_MAP.put("night", NIGHT);
-        TEX_MAP.put("marble", MARBLE);
-        TEX_MAP.put("qmark", QMARK);
-        TEX_MAP.put("decal", DECAL);
+        TEX_MAP.put("crate", new Pair<>(WORLD, 0));
+        TEX_MAP.put("doom0", new Pair<>(WORLD, 1));
+        TEX_MAP.put("stone", new Pair<>(WORLD, 2));
+        TEX_MAP.put("water", new Pair<>(WORLD, 3));
+        TEX_MAP.put("marble", new Pair<>(MARBLE, -1));
+        TEX_MAP.put("qmark", new Pair<>(QMARK, -1));
+        TEX_MAP.put("decal", new Pair<>(DECAL, -1));
+        TEX_MAP.put("night", new Pair<>(NIGHT, -1));
         // player stuff
-        TEX_MAP.put("pistol", Texture.PISTOL);
-        TEX_MAP.put("assrifle", Texture.ASSAULT_RIFLE);
-        TEX_MAP.put("shotgun", Texture.SHOTGUN);
-        TEX_MAP.put("smg", Texture.SUB_MACHINE_GUN);
-        TEX_MAP.put("machgun", Texture.MACHINE_GUN);
-        TEX_MAP.put("sniper", Texture.SNIPER_RIFLE);
+        TEX_MAP.put("pistol", new Pair<>(PLAYER, 0));
+        TEX_MAP.put("assrifle", new Pair<>(PLAYER, 1));
+        TEX_MAP.put("shotgun", new Pair<>(PLAYER, 2));
+        TEX_MAP.put("smg", new Pair<>(PLAYER, 3));
+        TEX_MAP.put("machgun", new Pair<>(PLAYER, 4));
+        TEX_MAP.put("sniper", new Pair<>(PLAYER, 5));
     }
 
     /**
@@ -180,9 +176,18 @@ public class Texture {
     }
 
     public static void bufferAllTextures() {
-        for (Texture texture : TEX_MAP.values()) {
-            texture.bufferAll();
-        }
+        // intrface
+        LOGO.bufferAll();
+        CROSSHAIR.bufferAll();
+        MINIGUN.bufferAll();
+        FONT.bufferAll();
+        CONSOLE.bufferAll();
+        LIGHT_BULB.bufferAll();
+        // world
+        WORLD.bufferAll();
+        NIGHT.bufferAll();
+        // player
+        PLAYER.bufferAll();
     }
 
     private void loadTexture() {
@@ -323,6 +328,7 @@ public class Texture {
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
 
         g2d.setColor(new Color(0.0f, 0.0f, 0.0f, 0.0f));
         g2d.drawImage(dstImg, 0, 0, null);
@@ -337,6 +343,38 @@ public class Texture {
         imageBuffer.flip();
 
         return imageBuffer;
+    }
+
+    public static Texture buildTextureAtlas(String subDir, String[] texNames, int gridSize) {
+        Texture result = new Texture();
+        Graphics2D g2d = result.image.createGraphics();
+        final int texUnitSize = Math.round(TEX_SIZE / (float) gridSize);
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+        g2d.setColor(new Color(0.0f, 0.0f, 0.0f, 0.0f));
+        int index = 0;
+        OUTER:
+        for (String texName : texNames) {
+            String fileName = texName;
+            if (!fileName.toLowerCase().endsWith(".png")) {
+                fileName += ".png";
+            }
+            BufferedImage image = loadImage(subDir, fileName);
+
+            int row = index / gridSize;
+            int col = index % gridSize;
+
+            int x = row * texUnitSize;
+            int y = col * texUnitSize;
+
+            g2d.drawImage(image, x, y, texUnitSize, texUnitSize, null);
+
+            index++;
+        }
+
+        return result;
     }
 
     public BufferedImage getImage() {

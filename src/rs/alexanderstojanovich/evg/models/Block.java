@@ -63,7 +63,14 @@ public class Block extends Model {
 
     private boolean verticesReversed = false;
 
-    public static final List<Vector3f> FACE_NORMALS = new ArrayList<>();
+    public static final Vector3f[] FACE_NORMALS = {
+        new Vector3f(-1.0f, 0.0f, 0.0f),
+        new Vector3f(1.0f, 0.0f, 0.0f),
+        new Vector3f(0.0f, -1.0f, 0.0f),
+        new Vector3f(0.0f, 1.0f, 0.0f),
+        new Vector3f(0.0f, 0.0f, -1.0f),
+        new Vector3f(0.0f, 0.0f, 1.0f)
+    };
 
     public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
@@ -85,20 +92,13 @@ public class Block extends Model {
     };
 
     static {
-        FACE_NORMALS.add(new Vector3f(-1.0f, 0.0f, 0.0f));
-        FACE_NORMALS.add(new Vector3f(1.0f, 0.0f, 0.0f));
-        FACE_NORMALS.add(new Vector3f(0.0f, -1.0f, 0.0f));
-        FACE_NORMALS.add(new Vector3f(0.0f, 1.0f, 0.0f));
-        FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, -1.0f));
-        FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
-
         readFromTxtFile("cube.txt");
     }
 
     public Block(String texName) {
         super("block.txt", texName);
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices);
+        deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
         calcDims();
     }
@@ -106,15 +106,24 @@ public class Block extends Model {
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super("block.txt", texName, pos, primaryColor, solid);
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices);
+        deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
         calcDims();
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
-    public static void deepCopyTo(List<Vertex> vertices) {
+    public static void deepCopyTo(List<Vertex> vertices, String texName) {
+        int texIndex = Texture.TEX_MAP.get(texName).getValue();
+        int row = texIndex / Texture.GRID_SIZE_WORLD;
+        int col = texIndex % Texture.GRID_SIZE_WORLD;
+        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+
         for (Vertex v : VERTICES) {
-            vertices.add(new Vertex(new Vector3f(v.getPos()), new Vector3f(v.getNormal()), new Vector2f(v.getUv())));
+            vertices.add(new Vertex(
+                    new Vector3f(v.getPos()),
+                    new Vector3f(v.getNormal()),
+                    new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
+            );
         }
     }
 
@@ -201,7 +210,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -252,7 +261,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -343,6 +352,28 @@ public class Block extends Model {
         }
 
         return bool;
+    }
+
+    /**
+     * Returns visible bits based on faces which can seen by camera front.
+     *
+     * @param camFront camera front (eye)
+     * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
+     */
+    public static int getVisibleFaceBits(Vector3f camFront) {
+        int result = 0;
+        Vector3f temp = new Vector3f();
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f normal = FACE_NORMALS[j];
+            float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
+            float angle = (float) Math.toDegrees(Math.acos(dotProduct));
+            if (angle < 180.0f) {
+                int mask = 1 << j;
+                result |= mask;
+            }
+        }
+
+        return result;
     }
 
     public void disableFace(int faceNum) {
@@ -480,7 +511,12 @@ public class Block extends Model {
         return verticesReversed;
     }
 
-    // used in Blocks Series to get face represenation in bits form
+    /**
+     * Get enabled faces used in Tuple Series, representation is in 6-bit form
+     * [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT]
+     *
+     * @return 6-bit face bits
+     */
     public int getFaceBits() {
         int bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -493,6 +529,7 @@ public class Block extends Model {
     }
 
     // used in static Level container to get compressed positioned sets
+    @Deprecated
     public static int getNeighborBits(Vector3f pos, Set<Vector3f> vectorSet) {
         int bits = 0;
         for (int j = 0; j <= 5; j++) { // j - face number
@@ -531,7 +568,14 @@ public class Block extends Model {
         }
     }
 
-    // make indices list base on bits form of faces
+    /**
+     * Make indices list base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @return indices list
+     */
     public static List<Integer> createIndices(int faceBits) {
         // creating indices
         List<Integer> indices = new ArrayList<>();
@@ -555,7 +599,14 @@ public class Block extends Model {
         return indices;
     }
 
-    // make int buffer base on bits form of faces
+    /**
+     * Make index buffer base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @return index buffer
+     */
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
         List<Integer> indices = new ArrayList<>();

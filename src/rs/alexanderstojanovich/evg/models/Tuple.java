@@ -172,7 +172,7 @@ public class Tuple extends Blocks {
 
             shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
 
-            Texture blocksTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            Texture blocksTexture = Texture.TEX_MAP.get(texName).getKey();
             if (blocksTexture != null) {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }

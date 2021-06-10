@@ -203,7 +203,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                 block.light = lightSrc;
                 block.transform(shaderProgram);
                 block.useLight(shaderProgram);
-                Texture primaryTexture = Texture.TEX_MAP.getOrDefault(block.texName, Texture.QMARK);
+                Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
                 if (primaryTexture != null) { // this is primary texture
                     block.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -261,7 +261,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
                     block.useLight(shaderProgram);
-                    Texture primaryTexture = Texture.TEX_MAP.getOrDefault(block.texName, Texture.QMARK);
+                    Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
                     if (primaryTexture != null) { // this is primary texture
                         block.primaryColor(shaderProgram);
                         primaryTexture.bind(0, shaderProgram, "modelTexture0");
