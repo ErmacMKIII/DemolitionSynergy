@@ -305,7 +305,7 @@ public class Intrface {
                                 command.getArgs().add(false);
                                 break;
                         }
-                        FutureTask<Boolean> task = new FutureTask<Boolean>(command);
+                        FutureTask<Object> task = new FutureTask<Object>(command);
                         Renderer.TASK_QUEUE.add(task);
                         break;
                     case 4:

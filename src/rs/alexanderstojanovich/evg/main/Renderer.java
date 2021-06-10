@@ -45,7 +45,7 @@ public class Renderer extends Thread implements Executor {
     private int heightGL = Window.MIN_HEIGHT;
     protected static double alpha = 0.0;
 
-    public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
+    public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     public Renderer(GameObject gameObject) {
         super("Renderer");
@@ -142,7 +142,7 @@ public class Renderer extends Thread implements Executor {
             }
 
             // lastly it executes the console tasks
-            FutureTask<Boolean> task;
+            FutureTask<Object> task;
             while ((task = TASK_QUEUE.poll()) != null) {
                 execute(task);
             }

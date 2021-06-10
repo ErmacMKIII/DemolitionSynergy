@@ -344,7 +344,7 @@ public class Game {
                     gameObject.getLevelContainer().printPriorityQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    FutureTask<Boolean> task = new FutureTask<Boolean>(Command.SCREENSHOT);
+                    FutureTask<Object> task = new FutureTask<Object>(Command.SCREENSHOT);
                     Renderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();

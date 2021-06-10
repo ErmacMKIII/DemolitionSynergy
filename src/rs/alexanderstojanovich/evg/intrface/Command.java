@@ -34,7 +34,7 @@ import rs.alexanderstojanovich.evg.util.Trie;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public enum Command implements Callable<Boolean> { // its not actually a thread but its used for remote execution (from Executor)
+public enum Command implements Callable<Object> { // its not actually a thread but its used for remote execution (from Executor)
     FPS_MAX,
     RESOLUTION,
     FULLSCREEN,
@@ -48,6 +48,12 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
     SCREENSHOT,
     NOP,
     ERROR;
+
+    public static enum Mode {
+        GET, SET
+    };
+    protected Mode mode = Mode.GET;
+    protected boolean status = false;
 
     // commands differ in arugment length and type, therefore list is used
     protected final List<Object> args = new ArrayList<>();
@@ -88,15 +94,15 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
             switch (things[0].toLowerCase()) {
                 case "fps_max":
                 case "fpsmax":
+                    command = FPS_MAX;
                     if (things.length == 2) {
-                        command = FPS_MAX;
                         command.args.add(Integer.parseInt(things[1]));
                     }
                     break;
                 case "resolution":
                 case "res":
+                    command = RESOLUTION;
                     if (things.length == 3) {
-                        command = RESOLUTION;
                         command.args.add(Integer.parseInt(things[1]));
                         command.args.add(Integer.parseInt(things[2]));
                     }
@@ -109,36 +115,36 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                     break;
                 case "v_sync":
                 case "vsync":
+                    command = VSYNC;
                     if (things.length == 2) {
-                        command = VSYNC;
                         command.args.add(Boolean.parseBoolean(things[1]));
                     }
                     break;
                 case "waterEffects":
                 case "water_effects":
+                    command = WATER_EFFECTS;
                     if (things.length == 2) {
-                        command = WATER_EFFECTS;
                         command.args.add(Boolean.parseBoolean(things[1]));
                     }
                     break;
                 case "msens":
                 case "mouse_sensitivity":
+                    command = MOUSE_SENSITIVITY;
                     if (things.length == 2) {
-                        command = MOUSE_SENSITIVITY;
                         command.args.add(Float.parseFloat(things[1]));
                     }
                     break;
-                case "music":
+                case "music_volume":
                 case "musicVolume":
+                    command = MUSIC_VOLUME;
                     if (things.length == 2) {
-                        command = MUSIC_VOLUME;
                         command.args.add(Float.parseFloat(things[1]));
                     }
                     break;
-                case "sound":
+                case "sound_volume":
                 case "soundVolume":
+                    command = SOUND_VOLUME;
                     if (things.length == 2) {
-                        command = SOUND_VOLUME;
                         command.args.add(Float.parseFloat(things[1]));
                     }
                     break;
@@ -155,6 +161,12 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
             }
         }
 
+        if (command.args.isEmpty()) {
+            command.mode = Mode.GET;
+        } else {
+            command.mode = Mode.SET;
+        }
+
         return command;
     }
 
@@ -166,64 +178,123 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
      * @param command chosen command
      * @return execution status (true if successful, otherwise false)
      */
-    public static boolean execute(Command command) {
-        boolean success = false;
+    public static Object execute(Command command) {
+        Object result = null;
+        command.status = false;
         switch (command) {
             case FPS_MAX:
-                int fpsMax = (int) command.args.get(0);
-                if (fpsMax > 0 && fpsMax <= 1E6) {
-                    Renderer.setFps(0);
-                    Renderer.setFpsTicks(0.0);
-                    Game.setFpsMax(fpsMax);
-                    success = true;
+                switch (command.mode) {
+                    case GET:
+                        result = Game.getFpsMax();
+                        command.status = true;
+                        break;
+                    case SET:
+                        int fpsMax = (int) command.args.get(0);
+                        if (fpsMax > 0 && fpsMax <= 1E6) {
+                            Renderer.setFps(0);
+                            Renderer.setFpsTicks(0.0);
+                            Game.setFpsMax(fpsMax);
+                            command.status = true;
+                        }
+                        break;
+
                 }
                 break;
             case RESOLUTION:
-                success = GameObject.MY_WINDOW.setResolution((int) command.args.get(0), (int) command.args.get(1));
-                GameObject.MY_WINDOW.centerTheWindow();
+                switch (command.mode) {
+                    case GET:
+                        result = GameObject.MY_WINDOW.getWidth() + "x" + GameObject.MY_WINDOW.getHeight();
+                        command.status = true;
+                        break;
+                    case SET:
+                        command.status = GameObject.MY_WINDOW.setResolution((int) command.args.get(0), (int) command.args.get(1));
+                        GameObject.MY_WINDOW.centerTheWindow();
+                        break;
+                }
+
                 break;
             case FULLSCREEN:
                 GameObject.MY_WINDOW.fullscreen();
                 GameObject.MY_WINDOW.centerTheWindow();
-                success = true;
+                command.status = true;
                 break;
             case WINDOWED:
                 GameObject.MY_WINDOW.windowed();
                 GameObject.MY_WINDOW.centerTheWindow();
-                success = true;
+                command.status = true;
                 break;
             case VSYNC: // OpenGL
-                boolean bool = (boolean) command.args.get(0);
-                if (bool) {
-                    GameObject.MY_WINDOW.enableVSync();
-                } else {
-                    GameObject.MY_WINDOW.disableVSync();
+                switch (command.mode) {
+                    case GET:
+                        result = GameObject.MY_WINDOW.isVsync();
+                        command.status = true;
+                        break;
+                    case SET:
+                        boolean bool = (boolean) command.args.get(0);
+                        if (bool) {
+                            GameObject.MY_WINDOW.enableVSync();
+                        } else {
+                            GameObject.MY_WINDOW.disableVSync();
+                        }
+                        command.status = true;
+                        break;
                 }
-                success = true;
                 break;
             case WATER_EFFECTS:
-                Game.setWaterEffects((boolean) command.args.get(0));
-                success = true;
+                switch (command.mode) {
+                    case GET:
+                        result = Game.isWaterEffects();
+                        command.status = true;
+                        break;
+                    case SET:
+                        Game.setWaterEffects((boolean) command.args.get(0));
+                        command.status = true;
+                        break;
+                }
                 break;
             case MOUSE_SENSITIVITY:
-                float msens = (float) command.args.get(0);
-                if (msens >= 0.0f && msens <= 100.0f) {
-                    Game.setMouseSensitivity(msens);
-                    success = true;
+                switch (command.mode) {
+                    case GET:
+                        result = Game.getMouseSensitivity();
+                        command.status = true;
+                        break;
+                    case SET:
+                        float msens = (float) command.args.get(0);
+                        if (msens >= 0.0f && msens <= 100.0f) {
+                            Game.setMouseSensitivity(msens);
+                            command.status = true;
+                        }
+                        break;
                 }
                 break;
             case MUSIC_VOLUME:
-                float music = (float) command.args.get(0);
-                if (music >= 0.0f && music <= 1.0f) {
-                    GameObject.getInstance().getMusicPlayer().setGain(music);
-                    success = true;
+                switch (command.mode) {
+                    case GET:
+                        result = GameObject.getInstance().getMusicPlayer().getGain();
+                        command.status = true;
+                        break;
+                    case SET:
+                        float music = (float) command.args.get(0);
+                        if (music >= 0.0f && music <= 1.0f) {
+                            GameObject.getInstance().getMusicPlayer().setGain(music);
+                            command.status = true;
+                        }
+                        break;
                 }
                 break;
             case SOUND_VOLUME:
-                float sound = (float) command.args.get(0);
-                if (sound >= 0.0f && sound <= 1.0f) {
-                    GameObject.getInstance().getSoundFXPlayer().setGain(sound);
-                    success = true;
+                switch (command.mode) {
+                    case GET:
+                        result = GameObject.getInstance().getSoundFXPlayer().getGain();
+                        command.status = true;
+                        break;
+                    case SET:
+                        float sound = (float) command.args.get(0);
+                        if (sound >= 0.0f && sound <= 1.0f) {
+                            GameObject.getInstance().getSoundFXPlayer().setGain(sound);
+                            command.status = true;
+                        }
+                        break;
                 }
                 break;
             case SCREENSHOT: // OpenGL
@@ -252,23 +323,31 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 GameObject gameObject = GameObject.getInstance();
                 gameObject.getIntrface().getScreenText().setEnabled(true);
                 gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
-                success = true;
+                command.status = true;
                 break;
             case EXIT:
                 GameObject.MY_WINDOW.close();
-                success = true;
+                command.status = true;
                 break;
             case NOP:
             default:
-                success = true;
                 break;
         }
+        // clearing the arguments allow execution repeatedly
         command.args.clear();
-        return success;
+        return result;
+    }
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    public boolean isStatus() {
+        return status;
     }
 
     @Override
-    public Boolean call() throws Exception {
+    public Object call() throws Exception {
         return Command.execute(this);
     }
 

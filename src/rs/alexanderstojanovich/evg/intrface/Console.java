@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
@@ -44,7 +44,7 @@ public class Console {
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final DynamicText inText;
-    private final List<Pair<DynamicText, Quad>> history = new ArrayList<>();
+    private final List<Pair<DynamicText, Quad>> history = new CopyOnWriteArrayList<>();
     private boolean enabled = false;
     private final DynamicText completes;
 
@@ -110,8 +110,8 @@ public class Console {
                                 text.setContent("Invalid Command!");
                                 text.setColor(Vector3fColors.RED);
                             } else if (command.isRendererCommand()) {
-                                boolean result = false;
-                                FutureTask<Boolean> consoleTask = new FutureTask<Boolean>(command);
+                                Object result = null;
+                                FutureTask<Object> consoleTask = new FutureTask<Object>(command);
                                 Renderer.TASK_QUEUE.add(consoleTask);
                                 try {
                                     // waits for renderer to execute the task                       
@@ -119,12 +119,12 @@ public class Console {
                                 } catch (InterruptedException | ExecutionException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
-                                quad.setColor(result ? Vector3fColors.GREEN : Vector3fColors.RED);
-                                text.setContent(input.toString());
+                                quad.setColor(command.status ? Vector3fColors.GREEN : Vector3fColors.RED);
+                                text.setContent(command.mode == Command.Mode.GET ? command + " = " + result : input.toString());
                             } else {
-                                boolean ok = Command.execute(command);
-                                quad.setColor(ok ? Vector3fColors.GREEN : Vector3fColors.RED);
-                                text.setContent(input.toString());
+                                Object result = Command.execute(command);
+                                quad.setColor(command.status ? Vector3fColors.GREEN : Vector3fColors.RED);
+                                text.setContent(command.mode == Command.Mode.GET ? command + " = " + result : input.toString());
                             }
 
                             text.pos = new Vector2f(inText.pos);
