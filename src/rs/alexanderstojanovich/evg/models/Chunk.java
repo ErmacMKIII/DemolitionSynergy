@@ -81,8 +81,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         Tuple result = null;
         for (Tuple tuple : tupleList) {
-            if (Texture.TEX_MAP.get(tuple.texName).getKey()
-                    .equals(Texture.TEX_MAP.get(keyTexture).getKey())
+            if (tuple.texName.equals(keyTexture)
                     && tuple.faceEnBits == keyFaceBits) {
                 result = tuple;
                 break;
@@ -91,12 +90,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return result;
     }
 
-    public void transfer(Block fluidBlock, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
-        String fluidTexture = fluidBlock.texName;
+    public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
+        String fluidTexture = block.texName;
 
         Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
-            srcTuple.getBlockList().remove(fluidBlock);
+            srcTuple.getBlockList().remove(block);
             if (srcTuple.getBlockList().isEmpty()) {
                 tupleList.remove(srcTuple);
             }
@@ -108,7 +107,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             tupleList.add(dstTuple);
         }
         List<Block> blockList = dstTuple.getBlockList();
-        blockList.add(fluidBlock);
+        blockList.add(block);
         blockList.sort(Block.Y_AXIS_COMP);
 
         buffered = false;

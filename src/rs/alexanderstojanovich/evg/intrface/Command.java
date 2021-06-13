@@ -342,6 +342,10 @@ public enum Command implements Callable<Object> { // its not actually a thread b
         return mode;
     }
 
+    public void setMode(Mode mode) {
+        this.mode = mode;
+    }
+
     public boolean isStatus() {
         return status;
     }

@@ -272,6 +272,7 @@ public class Intrface {
                     case 0:
                         command = Command.FPS_MAX;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 1:
@@ -280,6 +281,7 @@ public class Intrface {
                         String things[] = giveCurrent.split("x");
                         command.getArgs().add(Integer.parseInt(things[0]));
                         command.getArgs().add(Integer.parseInt(things[1]));
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 2:
@@ -292,6 +294,7 @@ public class Intrface {
                                 command = Command.WINDOWED;
                                 break;
                         }
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 3:
@@ -305,6 +308,7 @@ public class Intrface {
                                 command.getArgs().add(false);
                                 break;
                         }
+                        command.setMode(Command.Mode.SET);
                         FutureTask<Object> task = new FutureTask<Object>(command);
                         Renderer.TASK_QUEUE.add(task);
                         break;
@@ -319,22 +323,26 @@ public class Intrface {
                                 command.getArgs().add(false);
                                 break;
                         }
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 5:
                         float msens = (float) options.get(selected).getValue().giveCurrent();
                         command = Command.MOUSE_SENSITIVITY;
                         command.getArgs().add(msens);
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 6:
                         command = Command.MUSIC_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 7:
                         command = Command.SOUND_VOLUME;
                         command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                 }

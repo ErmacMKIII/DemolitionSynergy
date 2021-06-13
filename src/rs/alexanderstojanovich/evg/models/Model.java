@@ -261,6 +261,10 @@ public class Model implements Comparable<Model> {
         buffered = true;
     }
 
+    public void unbuffer() {
+        buffered = false;
+    }
+
     public void calcNormals() {
         for (int i = 0; i < indices.size(); i += 3) {
             int i0 = indices.get(i);

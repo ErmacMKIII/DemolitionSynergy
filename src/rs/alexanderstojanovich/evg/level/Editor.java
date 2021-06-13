@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
-import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -41,7 +41,7 @@ public class Editor {
     private static Block selectedCurr = null;
     private static int selectedCurrIndex = -1;
 
-    private static int value = 0; // value about which texture to use
+    private static int texValue = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
     private static final int MAX_VAL = 3;
 
@@ -52,8 +52,7 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block("crate");
-            selectLoadedTexture();
+            loaded = new Block(Texture.TEX_WORLD[texValue]);
         }
         selectedNew = loaded;
 
@@ -153,8 +152,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block("crate");
-                selectLoadedTexture();
+                loaded = new Block(Texture.TEX_WORLD[texValue]);
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -185,7 +183,7 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
+                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
             }
         }
     }
@@ -196,8 +194,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block("crate");
-                selectLoadedTexture();
+                loaded = new Block(Texture.TEX_WORLD[texValue]);
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -285,8 +282,7 @@ public class Editor {
                     gameObject.getLevelContainer().getFluidChunks().updateFluids();
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                loaded = new Block("crate");
-                selectLoadedTexture();
+                loaded = new Block(Texture.TEX_WORLD[texValue]);
             }
         }
         deselect();
@@ -306,34 +302,17 @@ public class Editor {
     }
 
     private static void selectLoadedTexture() {
-        String texName = null;
         if (loaded != null) {
-            switch (value) {
-                case 0:
-                    texName = "crate";
-                    loaded.setSolid(true);
-                    break;
-                case 1:
-                    texName = "stone";
-                    loaded.setSolid(true);
-                    break;
-                case 2:
-                    texName = "water";
-                    loaded.setSolid(false);
-                    break;
-                case 3:
-                    texName = "doom0";
-                    loaded.setSolid(true);
-                    break;
-            }
-            loaded.setTexName(texName);
+            loaded.setTexName(Texture.TEX_WORLD[texValue]);
+            Block.deepCopyTo(loaded.getVertices(), Texture.TEX_WORLD[texValue]);
+            loaded.unbuffer();
         }
     }
 
     public static void selectPrevTexture(GameObject gameObject) {
         if (loaded != null) {
-            if (value > MIN_VAL) {
-                value--;
+            if (texValue > MIN_VAL) {
+                texValue--;
                 selectLoadedTexture();
             }
         }
@@ -341,8 +320,8 @@ public class Editor {
 
     public static void selectNextTexture(GameObject gameObject) {
         if (loaded != null) {
-            if (value < MAX_VAL) {
-                value++;
+            if (texValue < MAX_VAL) {
+                texValue++;
                 selectLoadedTexture();
             }
         }

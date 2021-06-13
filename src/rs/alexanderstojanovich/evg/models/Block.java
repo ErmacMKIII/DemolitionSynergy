@@ -118,6 +118,7 @@ public class Block extends Model {
         int col = texIndex % Texture.GRID_SIZE_WORLD;
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
 
+        vertices.clear();
         for (Vertex v : VERTICES) {
             vertices.add(new Vertex(
                     new Vector3f(v.getPos()),

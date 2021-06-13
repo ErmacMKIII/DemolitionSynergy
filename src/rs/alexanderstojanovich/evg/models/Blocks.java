@@ -42,7 +42,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
-    protected final List<Block> blockList = new BigList<>(5000);
+    protected final List<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
     protected int bigVbo = 0;
     protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
@@ -121,22 +121,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void bufferIndices() { // call it before any rendering
         int blkIndex = 0;
         for (Block block : blockList) {
-            List<Integer> indices = new ArrayList<>();
-            for (int j = 0; j < block.getNumOfEnabledFaces(); j++) { // j - face number                                
-                indices.add(4 * j);
-                indices.add(4 * j + 1);
-                indices.add(4 * j + 2);
-
-                indices.add(4 * j + 2);
-                indices.add(4 * j + 3);
-                indices.add(4 * j);
-            }
-            // storing indices in the buffer
-            IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
-            for (Integer index : indices) {
-                intBuff.put(index);
-            }
-            intBuff.flip();
+            IntBuffer intBuff = Block.createIntBuffer(block.getFaceBits());
             // storing indices buffer on the graphics card
             int ibo = iboMap.getOrDefault(blkIndex, 0);
             if (ibo == 0) {
