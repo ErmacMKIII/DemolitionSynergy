@@ -25,7 +25,6 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -232,8 +231,8 @@ public class Editor {
 
     private static boolean cannotPlace(GameObject gameObject) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(selectedNew.getPos()))
-                || LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(selectedNew.getPos()));
+        boolean placeOccupied = LevelContainer.ALL_SOLID_MAP.containsKey(selectedNew.pos)
+                || LevelContainer.ALL_FLUID_MAP.containsKey(selectedNew.pos);
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());

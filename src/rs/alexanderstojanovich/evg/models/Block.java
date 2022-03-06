@@ -643,15 +643,14 @@ public class Block extends Model {
     public List<Integer> getAdjacentFreeFaceNumbers() {
         List<Integer> result = new ArrayList<>();
 
-        int hashPos = Vector3fUtils.hashCode(pos);
         int sbits = 0;
-        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(hashPos);
+        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
         if (spair != null) {
             sbits = spair.getValue();
         }
 
         int fbits = 0;
-        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(hashPos);
+        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
         if (fpair != null) {
             fbits = fpair.getValue();
         }

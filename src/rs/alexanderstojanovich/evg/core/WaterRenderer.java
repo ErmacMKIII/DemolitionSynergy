@@ -63,7 +63,9 @@ public class WaterRenderer {
 
                         if (hMax > hMin && hStep > 0.0f) {
                             for (float h = hMin; h <= hMax; h += hStep) {
-                                waterHeights.add(h);
+                                if (!waterHeights.contains(h)) {
+                                    waterHeights.add(h);
+                                }
                             }
                         }
                         fluidChunk.setWaterTexture(frameBuffer.getTexture());

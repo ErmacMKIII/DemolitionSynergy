@@ -33,6 +33,7 @@ public class Main {
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
+        Chunk.deleteCache();
         Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
@@ -63,14 +64,14 @@ public class Main {
         };
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
 
-        Timer timer2 = new Timer("Chunk Ops");
-        TimerTask task2 = new TimerTask() {
-            @Override
-            public void run() {
-                gameObject.chunkOperations();
-            }
-        };
-        timer2.schedule(task2, 125L, 125L);
+//        Timer timer2 = new Timer("Chunk Ops");
+//        TimerTask task2 = new TimerTask() {
+//            @Override
+//            public void run() {
+//                gameObject.chunkOperations();
+//            }
+//        };
+//        timer2.schedule(task2, 125L, 125L);
         //----------------------------------------------------------------------
         SERVICE.execute(new Runnable() {
             @Override
@@ -88,7 +89,7 @@ public class Main {
             DSLogger.reportError(ex.getMessage(), ex);
         }
         timer1.cancel();
-        timer2.cancel();
+//        timer2.cancel();
         //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output

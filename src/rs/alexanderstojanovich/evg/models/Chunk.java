@@ -43,9 +43,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH) >> 4;
-    public static final float VISION = 100.0f; // determines visibility
-    public static final int MULTIPLIER = 16;
+    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH);
+    public static final float VISION = 200.0f; // determines visibility
+    public static final int MULTIPLIER = 8;
 
     public static final int CHUNK_NUM = 3 * MULTIPLIER / 2 + 1;
 
@@ -91,9 +91,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
-        String fluidTexture = block.texName;
+        String texture = block.texName;
 
-        Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
+        Tuple srcTuple = getTuple(texture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
             srcTuple.getBlockList().remove(block);
             if (srcTuple.getBlockList().isEmpty()) {
@@ -101,9 +101,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
         }
 
-        Tuple dstTuple = getTuple(fluidTexture, currFaceBits);
+        Tuple dstTuple = getTuple(texture, currFaceBits);
         if (dstTuple == null) {
-            dstTuple = new Tuple(fluidTexture, currFaceBits);
+            dstTuple = new Tuple(texture, currFaceBits);
             tupleList.add(dstTuple);
         }
         List<Block> blockList = dstTuple.getBlockList();
@@ -116,7 +116,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
             int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(Vector3fUtils.hashCode(solidBlock.pos));
+            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
             if (pair != null) {
                 byte neighborBits = pair.getValue();
                 solidBlock.setFaceBits(~neighborBits & 63);
@@ -131,7 +131,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
             if (pair != null) {
                 byte neighborBits = pair.getValue();
                 fluidBlock.setFaceBits(~neighborBits & 63);
@@ -271,6 +271,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float k = chunkId / (float) MULTIPLIER;
         float d = 2.0f * k / 3.0f;
         float t = d * (BOUND << 1) - BOUND;
+
         return new Vector3f(t);
     }
 
@@ -278,16 +279,20 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public static void determineVisible(Queue<Pair<Integer, Float>> visibleQueue,
             Queue<Pair<Integer, Float>> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
         // current chunk where player is
-        Vector3f temp = new Vector3f();
+        int currChunkId = chunkFunc(actorPos);
+        visibleQueue.offer(new Pair<>(currChunkId, 0.0f));
         // this is for other chunks
+        Vector3f temp = new Vector3f();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            Vector3f chunkPos = invChunkFunc(id);
-            float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
-            float distance = chunkPos.distance(actorPos);
-            if (distance <= Chunk.VISION && product >= 0.25f) {
-                visibleQueue.offer(new Pair<>(id, distance));
-            } else {
-                invisibleQueue.offer(new Pair<>(id, distance));
+            if (id != currChunkId) {
+                Vector3f chunkPos = invChunkFunc(id);
+                float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
+                float distance = chunkPos.distance(actorPos);
+                if (distance <= Chunk.VISION && product >= 0.25f) {
+                    visibleQueue.offer(new Pair<>(id, distance));
+                } else {
+                    invisibleQueue.offer(new Pair<>(id, distance));
+                }
             }
         }
     }

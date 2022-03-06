@@ -95,10 +95,12 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
-            if (fpsTicks >= 1.0 && Game.upsTicks < 1.0) {
+            int numOfPasses = 0;
+            while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
                 gameObject.render();
                 fps++;
                 fpsTicks--;
+                numOfPasses++;
             }
 
             // update text which shows dialog every 5 seconds

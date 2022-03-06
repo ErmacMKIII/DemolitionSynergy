@@ -57,7 +57,7 @@ public class Game {
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 5.0;
+    public static final double CRITICAL_TIME = 15.0;
 
     private final GameObject gameObject;
 
@@ -354,7 +354,7 @@ public class Game {
                     Editor.selectPrevTexture(gameObject);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Editor.selectNextTexture(gameObject);
-                } else {
+                } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;
                     } else if (action == GLFW.GLFW_RELEASE) {
@@ -415,7 +415,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            upsTicks += deltaTime * Game.TPS;
+            upsTicks += -Math.expm1(-deltaTime * Game.TPS);
             acc += deltaTime;
             lastTime = currTime;
 
@@ -450,6 +450,7 @@ public class Game {
                 acc -= 1.0 / TPS;
             }
 
+            gameObject.chunkOperations();
             Renderer.alpha = acc * TPS;
         }
         // stops the music        

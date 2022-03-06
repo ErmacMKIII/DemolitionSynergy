@@ -102,11 +102,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param deltaTime game object environment update time
      */
     public void update(float deltaTime) {
-        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-            levelContainer.update(deltaTime);
+        try {
+            lock.writeLock().lock();
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+                levelContainer.update(deltaTime);
+            }
+            intrface.update();
+            intrface.setCollText(assertCollision);
+        } finally {
+            lock.writeLock().unlock();
         }
-        intrface.update();
-        intrface.setCollText(assertCollision);
     }
 
     /**
