@@ -46,10 +46,10 @@ public class LevelActors {
         }
     }
 
-    public void render() {
-        player.render();
+    public void render(List<Vector3f> lightSrc) {
+        player.render(lightSrc);
         for (NPC npc : npcList) {
-            npc.render();
+            npc.render(lightSrc);
         }
     }
 

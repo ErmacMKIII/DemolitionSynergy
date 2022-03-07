@@ -167,6 +167,13 @@ public class ShaderProgram {
         GL20.glUniform3f(uniformLocation, vect.x, vect.y, vect.z);
     }
 
+    public void updateUniform(Vector3f[] vectArr, String name) {
+        for (int i = 0; i < vectArr.length; i++) {
+            int uniformLocation = GL20.glGetUniformLocation(program, name + "[" + i + "]");
+            GL20.glUniform3f(uniformLocation, vectArr[i].x, vectArr[i].y, vectArr[i].z);
+        }
+    }
+
     public void updateUniform(Vector4f vect, String name) {
         int uniformLocation = GL20.glGetUniformLocation(program, name);
         GL20.glUniform4f(uniformLocation, vect.x, vect.y, vect.z, vect.w);

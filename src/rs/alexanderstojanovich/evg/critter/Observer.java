@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -169,7 +170,7 @@ public class Observer implements Critter {
     }
 
     @Override
-    public void render() {
+    public void render(List<Vector3f> lightSrc) {
         if (givenControl) {
             camera.render(ShaderProgram.getMainShader());
         }

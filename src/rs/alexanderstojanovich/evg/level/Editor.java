@@ -42,7 +42,7 @@ public class Editor {
 
     private static int texValue = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
-    private static final int MAX_VAL = 3;
+    private static final int MAX_VAL = Texture.TEX_WORLD.length - 1;
 
     private static Block selectedNewWireFrame = null;
     private static Block selectedCurrWireFrame = null;

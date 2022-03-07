@@ -455,6 +455,8 @@ public class Game {
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
+
+        DSLogger.reportInfo("Main loop ended.", null);
     }
 
     /**

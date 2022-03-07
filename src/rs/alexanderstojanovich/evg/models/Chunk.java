@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -63,7 +64,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     private boolean buffered = false;
 
-    private static final byte[] MEMORY = new byte[0x100000];
+    private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
 
     private int timeToLive = 0;
@@ -115,6 +116,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
+                break;
+            }
+
             int faceBitsBefore = solidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
             if (pair != null) {
@@ -130,6 +135,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
+                break;
+            }
+
             int faceBitsBefore = fluidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
             if (pair != null) {
@@ -212,7 +221,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
 
             GL20.glEnableVertexAttribArray(0);

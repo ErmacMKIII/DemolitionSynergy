@@ -28,7 +28,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
-import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.BigList;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -41,7 +41,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
-    protected final List<Block> blockList = new GapList<>(DYNAMIC_INCREMENT);
+    protected final List<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
     protected int bigVbo = 0;
     protected boolean verticesReversed = false;
     // array with offsets in the big float buffer

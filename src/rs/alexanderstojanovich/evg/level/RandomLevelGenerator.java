@@ -45,6 +45,10 @@ public class RandomLevelGenerator {
 
     private int numberOfBlocks = 0;
 
+    // MAX NUMER OF LIGHTS MUST NOT REACH 255 (+1 Reserved for player)
+    public static int numOfLights = 0;
+    public static int maxNumOfLights = 0;
+
     public RandomLevelGenerator(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
     }
@@ -54,8 +58,8 @@ public class RandomLevelGenerator {
         this.numberOfBlocks = numberOfBlocks;
     }
 
-    private String randomSolidTexture() {
-        int randTexture = random.nextInt(3);
+    private String randomSolidTexture(boolean includingLight) {
+        int randTexture = random.nextInt(includingLight ? 4 : 3);
         switch (randTexture) {
             case 0:
                 return "stone";
@@ -63,7 +67,15 @@ public class RandomLevelGenerator {
                 return "crate";
             case 2:
                 return "doom0";
+            case 3:
+                if (numOfLights < maxNumOfLights) {
+                    numOfLights++;
+                    return "reflc";
+                } else {
+                    return "stone";
+                }
         }
+
         return null;
     }
 
@@ -98,7 +110,7 @@ public class RandomLevelGenerator {
 
         String tex = "stone";
         if (random.nextFloat() >= 0.5f) {
-            tex = randomSolidTexture();
+            tex = randomSolidTexture(true);
         }
 
         Block solidBlock = new Block(tex, pos, color, true);
@@ -174,7 +186,7 @@ public class RandomLevelGenerator {
 
         String adjTex = "stone";
         if (random.nextFloat() >= 0.5f) {
-            adjTex = randomSolidTexture();
+            adjTex = randomSolidTexture(false);
         }
 
         Block solidAdjBlock = new Block(adjTex, adjPos, color, true);
@@ -229,6 +241,203 @@ public class RandomLevelGenerator {
         return fluidAdjBlock;
     }
 
+    //---------------------------------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------------------------------
+    private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
+        // make "stone" terrain
+        noise1:
+        for (int x = posMin; x <= posMax; x += 2) {
+            for (int z = posMin; z <= posMax; z += 2) {
+
+                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
+
+                for (int y = yBottom; y <= yTop; y += 2) {
+                    Vector3f pos = new Vector3f(x, y, z);
+
+                    if (repeatCondition(pos)) {
+                        continue;
+                    }
+
+                    // color chance
+                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                    if (random.nextFloat() >= 0.95f) {
+                        Vector3f tempc = new Vector3f();
+                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                    }
+
+                    if (solidBlocks > 0) {
+                        String tex = "stone";
+
+                        if (random.nextFloat() >= 0.95f) {
+                            tex = randomSolidTexture(false);
+                        }
+
+                        Block solidBlock = new Block(tex, pos, color, true);
+                        levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        solidBlocks--;
+
+                        if (solidBlocks == 0) {
+                            break noise1;
+                        }
+                    }
+                }
+            }
+        }
+
+        final int mask1 = 0x08; // bottom only mask
+        final int mask2 = 0x17; // bottom exclusive mask
+        // make water
+        noise2:
+        for (int x = posMin; x <= posMax; x += 2) {
+            for (int z = posMin; z <= posMax; z += 2) {
+
+                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
+
+                for (int y = yBottom; y <= yTop; y += 2) {
+                    Vector3f pos = new Vector3f(x, y, z);
+
+                    if (repeatCondition(pos)) {
+                        continue;
+                    }
+
+                    int sbits = 0;
+                    Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
+                    if (spair != null) {
+                        sbits = spair.getValue();
+                    }
+
+                    int fbits = 0;
+                    Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
+                    if (fpair != null) {
+                        fbits = fpair.getValue();
+                    }
+
+                    int tbits = (sbits & mask1) | (~fbits & mask2);
+
+                    // color chance
+                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                    if (random.nextFloat() >= 0.95f) {
+                        Vector3f tempc = new Vector3f();
+                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                    }
+
+                    if (fluidBlocks > 0 && tbits != 0) {
+                        String tex = "water";
+
+                        Block fluidBlock = new Block(tex, pos, color, false);
+                        levelContainer.getFluidChunks().addBlock(fluidBlock, true);
+                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        fluidBlocks--;
+                    }
+
+                    if (fluidBlocks == 0) {
+                        break noise2;
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
+        // 2. Random part
+        //beta 
+        float beta = random.nextFloat();
+        int maxSolidBatchSize = (int) ((1.0f - beta) * solidBlocks);
+        int maxFluidBatchSize = (int) (beta * fluidBlocks);
+
+        while ((solidBlocks > 0 && fluidBlocks > 0)
+                && !levelContainer.getMyWindow().shouldClose()) {
+            if (solidBlocks > 0) {
+                int solidBatch = 1 + random.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
+                Block solidBlock = null;
+                Block solidAdjBlock = null;
+                while (solidBatch > 0
+                        && !levelContainer.getMyWindow().shouldClose()) {
+                    if (solidBlock == null) {
+                        solidBlock = generateRandomSolidBlock(posMin, posMax);
+                        solidAdjBlock = solidBlock;
+                        solidBatch--;
+                        solidBlocks--;
+                        // this provides external monitoring of level generation progress                        
+                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                    } else if (solidAdjBlock != null) {
+                        solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
+                        if (solidAdjBlock != null) {
+                            solidBatch--;
+                            solidBlocks--;
+                            // this provides external monitoring of level generation progress                        
+                            levelContainer.incProgress(50.0f / (float) totalAmount);
+                        }
+                        //--------------------------------------------------
+                        if (random.nextInt(2) == 0) {
+                            solidBlock = solidAdjBlock;
+                        } else {
+                            solidBlock = null;
+                        }
+                    }
+                }
+            }
+
+            if (fluidBlocks > 0) {
+                int fluidBatch = 1 + random.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
+                Block fluidBlock = null;
+                Block fluidAdjBlock = null;
+                while (fluidBatch > 0
+                        && !levelContainer.getMyWindow().shouldClose()) {
+                    if (fluidBlock == null) {
+                        fluidBlock = generateRandomFluidBlock(posMin, posMax);
+                        fluidAdjBlock = fluidBlock;
+                        fluidBatch--;
+                        fluidBlocks--;
+                        // this provides external monitoring of level generation progress                        
+                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                    } else if (fluidAdjBlock != null) {
+                        fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
+                        if (fluidAdjBlock != null) {
+                            fluidBatch--;
+                            fluidBlocks--;
+                            // this provides external monitoring of level generation progress                        
+                            levelContainer.incProgress(50.0f / (float) totalAmount);
+                        } //--------------------------------------------------
+                        if (random.nextInt(2) == 0) {
+                            fluidBlock = fluidAdjBlock;
+                        } else {
+                            fluidBlock = null;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void generateFluidSeries() {
+        levelContainer.setProgress(0.0f);
+        List<Block> totalFldBlkList = levelContainer.getFluidChunks().getTotalList();
+        for (Block fluidBlock : totalFldBlkList) {
+            if (levelContainer.getMyWindow().shouldClose()) {
+                break;
+            }
+
+            List<Integer> freeFaces = fluidBlock.getAdjacentFreeFaceNumbers();
+            for (int faceNum : freeFaces) {
+                if (faceNum == Block.TOP && random.nextFloat() >= 0.5f) {
+                    continue;
+                }
+                Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
+                Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
+                levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
+            }
+        }
+    }
+
+    //---------------------------------------------------------------------------------------------------------------------------
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
@@ -237,203 +446,34 @@ public class RandomLevelGenerator {
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
+            maxNumOfLights = Math.round(48.0f * totalAmount / 25000.0f);
+
             if (totalAmount > 0) {
+                //---------------------------------------------------------------------------------------------------------------------------
+                float alpha = 0.2f + random.nextFloat() * 0.8f;
+                //---------------------------------------------------------------------------------------------------------------------------
                 final float HB = numberOfBlocks / DENSITY;
                 final int posMin = Math.round((POS_MIN >> 2) * HB) & 0xFFFFFFFE;
                 final int posMax = Math.round((POS_MAX >> 2) * HB) & 0xFFFFFFFE;
-
-                DSLogger.reportInfo("Part I - Noise", null);
-                // 1. Noise Part    
-
-                // make "stone" terrain
-                noise1:
-                for (int x = posMin; x <= posMax; x += 2) {
-                    for (int z = posMin; z <= posMax; z += 2) {
-
-                        int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                        int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                        int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
-
-                        for (int y = yBottom; y <= yTop; y += 2) {
-                            Vector3f pos = new Vector3f(x, y, z);
-
-                            if (repeatCondition(pos)) {
-                                continue;
-                            }
-
-                            // color chance
-                            Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                            if (random.nextFloat() >= 0.95f) {
-                                Vector3f tempc = new Vector3f();
-                                color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
-                            }
-
-                            if (solidBlocks > 0) {
-                                String tex = "stone";
-
-                                if (random.nextFloat() >= 0.95f) {
-                                    tex = randomSolidTexture();
-                                }
-
-                                Block solidBlock = new Block(tex, pos, color, true);
-                                levelContainer.getSolidChunks().addBlock(solidBlock, true);
-                                levelContainer.incProgress(50.0f / (float) totalAmount);
-                                solidBlocks--;
-
-                                if (solidBlocks == 0) {
-                                    break noise1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                final int mask1 = 0x08; // bottom only mask
-                final int mask2 = 0x17; // bottom exclusive mask
-                // make water
-                noise2:
-                for (int x = posMin; x <= posMax; x += 2) {
-                    for (int z = posMin; z <= posMax; z += 2) {
-
-                        int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                        int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                        int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
-
-                        for (int y = yBottom; y <= yTop; y += 2) {
-                            Vector3f pos = new Vector3f(x, y, z);
-
-                            if (repeatCondition(pos)) {
-                                continue;
-                            }
-
-                            int sbits = 0;
-                            Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
-                            if (spair != null) {
-                                sbits = spair.getValue();
-                            }
-
-                            int fbits = 0;
-                            Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
-                            if (fpair != null) {
-                                fbits = fpair.getValue();
-                            }
-
-                            int tbits = (sbits & mask1) | (~fbits & mask2);
-
-                            // color chance
-                            Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                            if (random.nextFloat() >= 0.95f) {
-                                Vector3f tempc = new Vector3f();
-                                color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
-                            }
-
-                            if (fluidBlocks > 0 && tbits != 0) {
-                                String tex = "water";
-
-                                Block fluidBlock = new Block(tex, pos, color, false);
-                                levelContainer.getFluidChunks().addBlock(fluidBlock, true);
-                                levelContainer.incProgress(50.0f / (float) totalAmount);
-                                fluidBlocks--;
-                            }
-
-                            if (fluidBlocks == 0) {
-                                break noise2;
-                            }
-                        }
-                    }
-                }
-
+                //---------------------------------------------------------------------------------------------------------------------------
+                DSLogger.reportInfo("Generating Part I - Noise", null);
+                // 1. Noise Part                   
+                generateByNoise(Math.round((1.0f - alpha) * solidBlocks), Math.round((1.0f - alpha) * fluidBlocks), totalAmount, posMin, posMax);
+                DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
-                DSLogger.reportInfo("Part II - Random", null);
-                // 2. Random part
-                //beta 
-                float beta = random.nextFloat();
-                int maxSolidBatchSize = (int) ((1.0f - beta) * solidBlocks);
-                int maxFluidBatchSize = (int) (beta * fluidBlocks);
-
-                while ((solidBlocks > 0)
-                        && !levelContainer.getMyWindow().shouldClose()) {
-                    if (solidBlocks > 0) {
-                        int solidBatch = 1 + random.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
-                        Block solidBlock = null;
-                        Block solidAdjBlock = null;
-                        while (solidBatch > 0
-                                && !levelContainer.getMyWindow().shouldClose()) {
-                            if (solidBlock == null) {
-                                solidBlock = generateRandomSolidBlock(posMin, posMax);
-                                solidAdjBlock = solidBlock;
-                                solidBatch--;
-                                solidBlocks--;
-                                // this provides external monitoring of level generation progress                        
-                                levelContainer.incProgress(50.0f / (float) totalAmount);
-                            } else if (solidAdjBlock != null) {
-                                solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
-                                if (solidAdjBlock != null) {
-                                    solidBatch--;
-                                    solidBlocks--;
-                                    // this provides external monitoring of level generation progress                        
-                                    levelContainer.incProgress(50.0f / (float) totalAmount);
-                                }
-                                //--------------------------------------------------
-                                if (random.nextInt(2) == 0) {
-                                    solidBlock = solidAdjBlock;
-                                } else {
-                                    solidBlock = null;
-                                }
-                            }
-                        }
-                    }
-
-                    if (fluidBlocks > 0) {
-                        int fluidBatch = 1 + random.nextInt(Math.min(maxFluidBatchSize, fluidBlocks));
-                        Block fluidBlock = null;
-                        Block fluidAdjBlock = null;
-                        while (fluidBatch > 0
-                                && !levelContainer.getMyWindow().shouldClose()) {
-                            if (fluidBlock == null) {
-                                fluidBlock = generateRandomFluidBlock(posMin, posMax);
-                                fluidAdjBlock = fluidBlock;
-                                fluidBatch--;
-                                fluidBlocks--;
-                                // this provides external monitoring of level generation progress                        
-                                levelContainer.incProgress(50.0f / (float) totalAmount);
-                            } else if (fluidAdjBlock != null) {
-                                fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
-                                if (fluidAdjBlock != null) {
-                                    fluidBatch--;
-                                    fluidBlocks--;
-                                    // this provides external monitoring of level generation progress                        
-                                    levelContainer.incProgress(50.0f / (float) totalAmount);
-                                } //--------------------------------------------------
-                                if (random.nextInt(2) == 0) {
-                                    fluidBlock = fluidAdjBlock;
-                                } else {
-                                    fluidBlock = null;
-                                }
-                            }
-                        }
-                    }
-                }
-
+                DSLogger.reportInfo("Generating Part II - Random", null);
+                // 2. Random Part                 
+                generateByRandom(Math.round(alpha * solidBlocks), Math.round(alpha * fluidBlocks), totalAmount, posMin, posMax);
+                DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
-                DSLogger.reportInfo("Part III - Fluid Series", null);
-                List<Block> totalFldBlkList = levelContainer.getFluidChunks().getTotalList();
-                for (Block fluidBlock : totalFldBlkList) {
-                    List<Integer> freeFaces = fluidBlock.getAdjacentFreeFaceNumbers();
-                    for (int faceNum : freeFaces) {
-                        if (faceNum == Block.TOP && random.nextFloat() >= 0.5f) {
-                            continue;
-                        }
-                        Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
-                        Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
-                        levelContainer.getSolidChunks().addBlock(solidBlock, true);
-                        levelContainer.incProgress(50.0f / (float) totalFldBlkList.size());
-                    }
-                }
+                DSLogger.reportInfo("Generating Part III - Fluid Series", null);
+                // 3. Fluid Series
+                generateFluidSeries();
+                DSLogger.reportInfo("Done.", null);
             }
         }
 
-        DSLogger.reportInfo("Finished!", null);
+        DSLogger.reportInfo("All finished!", null);
     }
 
     public LevelContainer getLevelContainer() {

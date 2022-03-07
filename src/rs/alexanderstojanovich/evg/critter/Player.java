@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -66,8 +67,8 @@ public class Player extends Observer {
     }
 
     @Override
-    public void render() {
-        super.render();
+    public void render(List<Vector3f> lightSrc) {
+        super.render(lightSrc);
         ShaderProgram.getPlayerShader().bind();
         ShaderProgram.getPlayerShader().updateUniform(viewMatrix, "viewMatrix");
         ShaderProgram.unbind();
@@ -75,7 +76,7 @@ public class Player extends Observer {
             if (!currWeapon.isBuffered()) {
                 currWeapon.bufferAll();
             }
-            currWeapon.render(ShaderProgram.getPlayerShader());
+            currWeapon.render(lightSrc, ShaderProgram.getPlayerShader());
         }
     }
 

@@ -65,8 +65,8 @@ public class Texture {
     private boolean buffered = false;
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
 
-    public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water"};
-    public static final int GRID_SIZE_WORLD = 2;
+    public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
+    public static final int GRID_SIZE_WORLD = 3;
     public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
     public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
     public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
@@ -98,6 +98,7 @@ public class Texture {
         TEX_MAP.put("doom0", new Pair<>(WORLD, 1));
         TEX_MAP.put("stone", new Pair<>(WORLD, 2));
         TEX_MAP.put("water", new Pair<>(WORLD, 3));
+        TEX_MAP.put("reflc", new Pair<>(WORLD, 4));
         TEX_MAP.put("marble", new Pair<>(MARBLE, -1));
         TEX_MAP.put("qmark", new Pair<>(QMARK, -1));
         TEX_MAP.put("decal", new Pair<>(DECAL, -1));

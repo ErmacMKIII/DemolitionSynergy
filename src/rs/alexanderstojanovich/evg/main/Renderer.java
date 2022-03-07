@@ -152,6 +152,8 @@ public class Renderer extends Thread implements Executor {
 
         // renderer is reaching end of life!
         Window.unloadContext();
+
+        DSLogger.reportInfo("Renderer exited.", null);
     }
 
     @Override

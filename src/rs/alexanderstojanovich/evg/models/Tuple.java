@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -142,7 +143,7 @@ public class Tuple extends Blocks {
 //        GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, Vector3f lightSrc, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, List<Vector3f> lightSrc, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         if (!blockList.isEmpty() && faceEnBits > 0) {
@@ -168,7 +169,9 @@ public class Tuple extends Blocks {
 
             shaderProgram.bind();
 
-            shaderProgram.updateUniform(lightSrc, "modelLight");
+            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
+            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
+            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
 
             shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
 
