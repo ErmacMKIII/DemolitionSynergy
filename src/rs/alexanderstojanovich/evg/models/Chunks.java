@@ -57,6 +57,7 @@ public class Chunks {
         }
     };
 
+    @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getTotalList()) {
             if (GameObject.MY_WINDOW.shouldClose()) {
@@ -80,6 +81,7 @@ public class Chunks {
         }
     }
 
+    @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
             if (GameObject.MY_WINDOW.shouldClose()) {
@@ -100,60 +102,6 @@ public class Chunks {
                     }
                 }
             }
-        }
-    }
-
-    public void updateSolids(LevelContainer levelContainer) {
-        levelContainer.setProgress(0.0f);
-        List<Block> totalList = getTotalList();
-        for (Block solidBlock : totalList) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
-                solidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = solidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    int chunkId = Chunk.chunkFunc(solidBlock.getPos());
-                    Chunk solidChunk = getChunk(chunkId);
-                    if (solidChunk != null) {
-                        solidChunk.transfer(solidBlock, faceBitsBefore, faceBitsAfter);
-                    }
-                }
-            }
-
-            levelContainer.incProgress(50.0f / totalList.size());
-        }
-    }
-
-    public void updateFluids(LevelContainer levelContainer) {
-        levelContainer.setProgress(0.0f);
-        List<Block> totalList = getTotalList();
-        for (Block fluidBlock : totalList) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
-                fluidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = fluidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
-                    Chunk fluidChunk = getChunk(chunkId);
-                    if (fluidChunk != null) {
-                        fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
-                    }
-                }
-            }
-
-            levelContainer.incProgress(50.0f / totalList.size());
         }
     }
 

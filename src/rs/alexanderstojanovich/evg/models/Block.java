@@ -656,9 +656,12 @@ public class Block extends Model {
         }
 
         int fbits = 0;
-        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
-        if (fpair != null) {
-            fbits = fpair.getValue();
+
+        if (sbits == 0) {
+            Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
+            if (fpair != null) {
+                fbits = fpair.getValue();
+            }
         }
 
         int tbits = sbits | fbits;

@@ -79,16 +79,24 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return Chunks.COMPARATOR.compare(this, o);
     }
 
+    // logaritmic binary search
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
-        Tuple result = null;
-        for (Tuple tuple : tupleList) {
-            if (tuple.texName.equals(keyTexture)
-                    && tuple.faceEnBits == keyFaceBits) {
-                result = tuple;
-                break;
+        String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
+        int left = 0;
+        int right = tupleList.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Tuple candidate = tupleList.get(mid);
+            int res = candidate.getName().compareTo(keyName);
+            if (res > 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                return candidate;
+            } else {
+                right = mid - 1;
             }
         }
-        return result;
+        return null;
     }
 
     public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
@@ -106,6 +114,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         if (dstTuple == null) {
             dstTuple = new Tuple(texture, currFaceBits);
             tupleList.add(dstTuple);
+            tupleList.sort(Tuple.TUPLE_COMP);
         }
         List<Block> blockList = dstTuple.getBlockList();
         blockList.add(block);
@@ -114,6 +123,49 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         buffered = false;
     }
 
+    public void updateSolid(Block block) {
+        int faceBitsBefore = block.getFaceBits();
+        Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(block.pos);
+        if (pair != null) {
+            byte neighborBits = pair.getValue();
+            block.setFaceBits(~neighborBits & 63);
+            int faceBitsAfter = block.getFaceBits();
+            if (faceBitsBefore != faceBitsAfter) {
+                // if bits changed, i.e. some face(s) got disabled
+                // tranfer to correct tuple
+                transfer(block, faceBitsBefore, faceBitsAfter);
+            }
+        }
+        // check adjacent blocks
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+            Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
+            if (adjPair != null) {
+                byte adjNBits = adjPair.getValue();
+
+                Block adjBlock = null;
+                for (Block blk : getBlockList()) {
+                    if (blk.pos.equals(adjPos)) {
+                        adjBlock = blk;
+                        break;
+                    }
+                }
+
+                if (adjBlock != null) {
+                    int adjFaceBitsBefore = adjBlock.getFaceBits();
+                    adjBlock.setFaceBits(~adjNBits & 63);
+                    int adjFaceBitsAfter = adjBlock.getFaceBits();
+                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                        // if bits changed, i.e. some face(s) got disabled
+                        // tranfer to correct tuple
+                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
+    @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
             if (GameObject.MY_WINDOW.shouldClose()) {
@@ -133,6 +185,49 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
+    public void updateFluid(Block block) {
+        int faceBitsBefore = block.getFaceBits();
+        Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(block.pos);
+        if (pair != null) {
+            byte neighborBits = pair.getValue();
+            block.setFaceBits(~neighborBits & 63);
+            int faceBitsAfter = block.getFaceBits();
+            if (faceBitsBefore != faceBitsAfter) {
+                // if bits changed, i.e. some face(s) got disabled
+                // tranfer to correct tuple
+                transfer(block, faceBitsBefore, faceBitsAfter);
+            }
+        }
+        // check adjacent blocks
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
+            if (adjPair != null) {
+                byte adjNBits = adjPair.getValue();
+
+                Block adjBlock = null;
+                for (Block blk : getBlockList()) {
+                    if (blk.pos.equals(adjPos)) {
+                        adjBlock = blk;
+                        break;
+                    }
+                }
+
+                if (adjBlock != null) {
+                    int adjFaceBitsBefore = adjBlock.getFaceBits();
+                    adjBlock.setFaceBits(~adjNBits & 63);
+                    int adjFaceBitsAfter = adjBlock.getFaceBits();
+                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                        // if bits changed, i.e. some face(s) got disabled
+                        // tranfer to correct tuple
+                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
+    @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
             if (GameObject.MY_WINDOW.shouldClose()) {
@@ -160,6 +255,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         if (tuple == null) {
             tuple = new Tuple(blockTexture, blockFaceBits);
             tupleList.add(tuple);
+            tupleList.sort(Tuple.TUPLE_COMP);
         }
 
         List<Block> blockList = tuple.getBlockList();
@@ -167,7 +263,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         blockList.sort(Block.Y_AXIS_COMP);
 
         if (useLevelContainer) {
+            // level container also set neighbor bits
             LevelContainer.putBlock(block);
+            // update original block with neighbor blocks
+            if (solid) {
+                updateSolid(block);
+            } else {
+                updateFluid(block);
+            }
         }
 
         buffered = false;
@@ -186,7 +289,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
 
             if (useLevelContainer) {
+                // level container also set neighbor bits
                 LevelContainer.removeBlock(block);
+                // update original block with neighbor blocks
+                if (solid) {
+                    updateSolid(block);
+                } else {
+                    updateFluid(block);
+                }
             }
         }
     }

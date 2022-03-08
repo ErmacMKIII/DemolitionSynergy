@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Comparator;
 import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -50,15 +51,20 @@ public class Tuple extends Blocks {
     protected int mat4Vbo = 0;
     protected FloatBuffer mat4FloatBuff;
 
-    protected final String texName;
-    protected final int faceEnBits;
+    protected final String name;
 
     protected final IntBuffer intBuff;
     protected int ibo = 0;
 
+    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
+        @Override
+        public int compare(Tuple o1, Tuple o2) {
+            return o2.getName().compareTo(o1.getName());
+        }
+    };
+
     public Tuple(String texName, int faceEnBits) {
-        this.texName = texName;
-        this.faceEnBits = faceEnBits;
+        this.name = String.format("%s%02d", texName, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
     }
 
@@ -146,6 +152,8 @@ public class Tuple extends Blocks {
     public void renderInstanced(ShaderProgram shaderProgram, boolean solid, List<Vector3f> lightSrc, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
         if (!blockList.isEmpty() && faceEnBits > 0) {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
@@ -212,12 +220,12 @@ public class Tuple extends Blocks {
         return mat4Vbo;
     }
 
-    public String getTexName() {
-        return texName;
+    public String getName() {
+        return name;
     }
 
-    public int getFaceEnBits() {
-        return faceEnBits;
+    public int getIbo() {
+        return ibo;
     }
 
     public FloatBuffer getVec3FloatBuff() {

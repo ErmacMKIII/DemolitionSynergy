@@ -277,7 +277,7 @@ public class RandomLevelGenerator {
 
                         Block solidBlock = new Block(tex, pos, color, true);
                         levelContainer.getSolidChunks().addBlock(solidBlock, true);
-                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
                         solidBlocks--;
 
                         if (solidBlocks == 0) {
@@ -332,7 +332,7 @@ public class RandomLevelGenerator {
 
                         Block fluidBlock = new Block(tex, pos, color, false);
                         levelContainer.getFluidChunks().addBlock(fluidBlock, true);
-                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
                         fluidBlocks--;
                     }
 
@@ -365,14 +365,14 @@ public class RandomLevelGenerator {
                         solidBatch--;
                         solidBlocks--;
                         // this provides external monitoring of level generation progress                        
-                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
                     } else if (solidAdjBlock != null) {
                         solidAdjBlock = generateRandomSolidBlockAdjacent(solidBlock);
                         if (solidAdjBlock != null) {
                             solidBatch--;
                             solidBlocks--;
                             // this provides external monitoring of level generation progress                        
-                            levelContainer.incProgress(50.0f / (float) totalAmount);
+                            levelContainer.incProgress(100.0f / (float) totalAmount);
                         }
                         //--------------------------------------------------
                         if (random.nextInt(2) == 0) {
@@ -396,14 +396,14 @@ public class RandomLevelGenerator {
                         fluidBatch--;
                         fluidBlocks--;
                         // this provides external monitoring of level generation progress                        
-                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
                     } else if (fluidAdjBlock != null) {
                         fluidAdjBlock = generateRandomFluidBlockAdjacent(fluidBlock);
                         if (fluidAdjBlock != null) {
                             fluidBatch--;
                             fluidBlocks--;
                             // this provides external monitoring of level generation progress                        
-                            levelContainer.incProgress(50.0f / (float) totalAmount);
+                            levelContainer.incProgress(100.0f / (float) totalAmount);
                         } //--------------------------------------------------
                         if (random.nextInt(2) == 0) {
                             fluidBlock = fluidAdjBlock;
@@ -432,8 +432,9 @@ public class RandomLevelGenerator {
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
                 Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
                 levelContainer.getSolidChunks().addBlock(solidBlock, true);
-                levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
             }
+
+            levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
         }
     }
 
@@ -446,11 +447,11 @@ public class RandomLevelGenerator {
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
-            maxNumOfLights = Math.round(48.0f * totalAmount / 25000.0f);
+            maxNumOfLights = Math.round(48.5f * totalAmount / 25000.0f);
 
             if (totalAmount > 0) {
                 //---------------------------------------------------------------------------------------------------------------------------
-                float alpha = 0.2f + random.nextFloat() * 0.8f;
+                float alpha = (1 + random.nextInt(3)) * 0.1f;
                 //---------------------------------------------------------------------------------------------------------------------------
                 final float HB = numberOfBlocks / DENSITY;
                 final int posMin = Math.round((POS_MIN >> 2) * HB) & 0xFFFFFFFE;
