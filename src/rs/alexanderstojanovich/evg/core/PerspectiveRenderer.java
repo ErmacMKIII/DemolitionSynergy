@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
-import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -43,7 +42,7 @@ public class PerspectiveRenderer {
     public static void updatePerspective(Window myWindow) {
         for (ShaderProgram shaderProgram : ShaderProgram.getSHADER_PROGRAMS()) {
             shaderProgram.bind();
-            perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), Game.EPSILON, 1.0f / Game.EPSILON, shaderProgram);
+            perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 4400.0f, shaderProgram);
             ShaderProgram.unbind();
         }
     }

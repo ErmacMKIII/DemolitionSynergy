@@ -20,6 +20,7 @@ import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -33,9 +34,6 @@ public class RandomLevelGenerator {
 
     public static final int POS_MAX = (Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f)) & 0xFFFFFFFE;
     public static final int POS_MIN = (Math.round(-LevelContainer.SKYBOX_WIDTH + 2.0f)) & 0xFFFFFFFE;
-
-    public static final float ONE_OVER_POS_MAX = 1.0f / POS_MAX;
-    public static final float ONE_OVER_POS_MIN = 1.0f / POS_MIN;
 
     public static final float DENSITY = 560000.0f;
 
@@ -245,6 +243,7 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
     private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
+        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // make "stone" terrain
         noise1:
         for (int x = posMin; x <= posMax; x += 2) {
@@ -252,9 +251,8 @@ public class RandomLevelGenerator {
 
                 int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
                 int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
-                for (int y = yBottom; y <= yTop; y += 2) {
+                for (int y = yMid; y <= yTop; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
 
                     if (repeatCondition(pos)) {
@@ -296,10 +294,9 @@ public class RandomLevelGenerator {
             for (int z = posMin; z <= posMax; z += 2) {
 
                 int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
                 int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
-                for (int y = yBottom; y <= yTop; y += 2) {
+                for (int y = yBottom; y <= yMid; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
 
                     if (repeatCondition(pos)) {
@@ -345,13 +342,14 @@ public class RandomLevelGenerator {
     }
 
     private void generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
+        DSLogger.reportInfo("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // 2. Random part
         //beta 
         float beta = random.nextFloat();
         int maxSolidBatchSize = (int) ((1.0f - beta) * solidBlocks);
         int maxFluidBatchSize = (int) (beta * fluidBlocks);
 
-        while ((solidBlocks > 0 && fluidBlocks > 0)
+        while ((solidBlocks > 0 || fluidBlocks > 0)
                 && !levelContainer.getMyWindow().shouldClose()) {
             if (solidBlocks > 0) {
                 int solidBatch = 1 + random.nextInt(Math.min(maxSolidBatchSize, solidBlocks));
@@ -416,11 +414,16 @@ public class RandomLevelGenerator {
         }
     }
 
-    private void generateFluidSeries() {
+    private void generateFluidSeries(int solidBlocks) {
+        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks, null);
         levelContainer.setProgress(0.0f);
         List<Block> totalFldBlkList = levelContainer.getFluidChunks().getTotalList();
         for (Block fluidBlock : totalFldBlkList) {
             if (levelContainer.getMyWindow().shouldClose()) {
+                break;
+            }
+
+            if (solidBlocks == 0) {
                 break;
             }
 
@@ -432,8 +435,8 @@ public class RandomLevelGenerator {
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
                 Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
                 levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                solidBlocks--;
             }
-
             levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
         }
     }
@@ -442,7 +445,9 @@ public class RandomLevelGenerator {
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
-            int solidBlocks = Math.min(random.nextInt(2 * numberOfBlocks / 3) + numberOfBlocks / 3, LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
+            // define alpha: solid to fluid ratio
+            float alpha = 0.1f + (1 + random.nextInt(6)) * 0.15f;
+            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
             int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
@@ -451,25 +456,29 @@ public class RandomLevelGenerator {
 
             if (totalAmount > 0) {
                 //---------------------------------------------------------------------------------------------------------------------------
-                float alpha = (1 + random.nextInt(3)) * 0.1f;
+                // define beta: noise to random ratio
+                float beta = (1 + random.nextInt(3)) * 0.1f;
+                // define gamma: random fluid to series solid ratio
+                final float gamma = 0.17f;
                 //---------------------------------------------------------------------------------------------------------------------------
-                final float HB = numberOfBlocks / DENSITY;
-                final int posMin = Math.round((POS_MIN >> 2) * HB) & 0xFFFFFFFE;
-                final int posMax = Math.round((POS_MAX >> 2) * HB) & 0xFFFFFFFE;
+                final float HB = (numberOfBlocks + 25000) / DENSITY;
+
+                final int posMin = Math.round(HB * (POS_MIN + Chunk.VISION) / 9.35f) & 0xFFFFFFFE;
+                final int posMax = Math.round(HB * (POS_MAX - Chunk.VISION) / 9.35f) & 0xFFFFFFFE;
                 //---------------------------------------------------------------------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part I - Noise", null);
-                // 1. Noise Part                   
-                generateByNoise(Math.round((1.0f - alpha) * solidBlocks), Math.round((1.0f - alpha) * fluidBlocks), totalAmount, posMin, posMax);
+                // 1. Noise Part                                   
+                generateByNoise(Math.round((1.0f - beta) * solidBlocks), Math.round((1.0f - beta) * fluidBlocks), totalAmount, posMin, posMax);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part II - Random", null);
                 // 2. Random Part                 
-                generateByRandom(Math.round(alpha * solidBlocks), Math.round(alpha * fluidBlocks), totalAmount, posMin, posMax);
+                generateByRandom(Math.round(beta * gamma * solidBlocks), Math.round(beta * fluidBlocks), totalAmount, posMin, posMax);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part III - Fluid Series", null);
                 // 3. Fluid Series
-                generateFluidSeries();
+                generateFluidSeries(Math.round(beta * (1.0f - gamma) * solidBlocks));
                 DSLogger.reportInfo("Done.", null);
             }
         }

@@ -51,7 +51,7 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    public static final float EPSILON = 0.0001f;
+    public static final float EPSILON = 0.005f;
 
     private static int ups; // current update per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  

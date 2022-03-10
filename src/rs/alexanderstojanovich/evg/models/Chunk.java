@@ -44,7 +44,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH);
+    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f);
     public static final float VISION = 200.0f; // determines visibility
     public static final int MULTIPLIER = 8;
 
@@ -134,35 +134,44 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // if bits changed, i.e. some face(s) got disabled
                 // tranfer to correct tuple
                 transfer(block, faceBitsBefore, faceBitsAfter);
-            }
-        }
-        // check adjacent blocks
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
-                byte adjNBits = adjPair.getValue();
+                // check adjacent blocks
+                for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+                    Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+                    Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
+                    if (adjPair != null) {
+                        String tupleTexName = adjPair.getKey();
+                        byte adjNBits = adjPair.getValue();
+                        int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                        int mask = 1 << k;
+                        // revert the bit that was set in LevelContainer
+                        //(looking for old bits i.e. current tuple)
+                        int tupleBits = adjNBits ^ (~mask & 63);
 
-                Block adjBlock = null;
-                for (Block blk : getBlockList()) {
-                    if (blk.pos.equals(adjPos)) {
-                        adjBlock = blk;
-                        break;
+                        Tuple tuple = getTuple(tupleTexName, tupleBits);
+                        Block adjBlock = null;
+                        if (tuple != null) {
+                            for (Block blk : tuple.blockList) {
+                                if (blk.pos.equals(adjPos)) {
+                                    adjBlock = blk;
+                                    break;
+                                }
+                            }
+                        }
+                        if (adjBlock != null) {
+                            int adjFaceBitsBefore = adjBlock.getFaceBits();
+                            adjBlock.setFaceBits(~adjNBits & 63);
+                            int adjFaceBitsAfter = adjBlock.getFaceBits();
+                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                                // if bits changed, i.e. some face(s) got disabled
+                                // tranfer to correct tuple
+                                transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            }
+                        }
                     }
                 }
-
-                if (adjBlock != null) {
-                    int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
-                    int adjFaceBitsAfter = adjBlock.getFaceBits();
-                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                        // if bits changed, i.e. some face(s) got disabled
-                        // tranfer to correct tuple
-                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                    }
-                }
             }
         }
+
     }
 
     @Deprecated
@@ -196,35 +205,44 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // if bits changed, i.e. some face(s) got disabled
                 // tranfer to correct tuple
                 transfer(block, faceBitsBefore, faceBitsAfter);
-            }
-        }
-        // check adjacent blocks
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
-                byte adjNBits = adjPair.getValue();
+                // check adjacent blocks
+                for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+                    Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+                    Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
+                    if (adjPair != null) {
+                        String tupleTexName = adjPair.getKey();
+                        byte adjNBits = adjPair.getValue();
+                        int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                        int mask = 1 << k;
+                        // revert the bit that was set in LevelContainer
+                        //(looking for old bits i.e. current tuple)
+                        int tupleBits = adjNBits ^ (~mask & 63);
 
-                Block adjBlock = null;
-                for (Block blk : getBlockList()) {
-                    if (blk.pos.equals(adjPos)) {
-                        adjBlock = blk;
-                        break;
+                        Tuple tuple = getTuple(tupleTexName, tupleBits);
+                        Block adjBlock = null;
+                        if (tuple != null) {
+                            for (Block blk : tuple.blockList) {
+                                if (blk.pos.equals(adjPos)) {
+                                    adjBlock = blk;
+                                    break;
+                                }
+                            }
+                        }
+                        if (adjBlock != null) {
+                            int adjFaceBitsBefore = adjBlock.getFaceBits();
+                            adjBlock.setFaceBits(~adjNBits & 63);
+                            int adjFaceBitsAfter = adjBlock.getFaceBits();
+                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                                // if bits changed, i.e. some face(s) got disabled
+                                // tranfer to correct tuple
+                                transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            }
+                        }
                     }
                 }
-
-                if (adjBlock != null) {
-                    int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
-                    int adjFaceBitsAfter = adjBlock.getFaceBits();
-                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                        // if bits changed, i.e. some face(s) got disabled
-                        // tranfer to correct tuple
-                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                    }
-                }
             }
         }
+
     }
 
     @Deprecated

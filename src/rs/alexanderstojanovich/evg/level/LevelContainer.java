@@ -115,7 +115,7 @@ public class LevelContainer implements GravityEnviroment {
 
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
-        for (int j = 0; j <= 5; j++) {
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
@@ -133,7 +133,7 @@ public class LevelContainer implements GravityEnviroment {
 
     private static byte updateFluidNeighbors(Vector3f vector) {
         byte bits = 0;
-        for (int j = 0; j <= 5; j++) {
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
             Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
