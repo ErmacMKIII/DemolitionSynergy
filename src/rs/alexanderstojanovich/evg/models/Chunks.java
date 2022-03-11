@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -105,7 +106,14 @@ public class Chunks {
         }
     }
 
-    // for both internal (Init) and external use (Editor)
+    /**
+     * Adds block to the chunks. Block will be added to the corresponding solid
+     * chunk based on Chunk.chunkFunc
+     *
+     * @param block block to add
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void addBlock(Block block, boolean useLevelContainer) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -120,7 +128,14 @@ public class Chunks {
         chunk.addBlock(block, useLevelContainer);
     }
 
-    // for removing blocks (Editor)
+    /**
+     * Removes block from the chunks. Block will be located based on
+     * Chunk.chunkFunc and then removed if exits.
+     *
+     * @param block block to remove
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void removeBlock(Block block, boolean useLevelContainer) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -145,7 +160,12 @@ public class Chunks {
 //        }
 //        return result;
 //    }
-    // (logaritmic) binary search through sorted chunkList to get the chunk
+    /**
+     * Gets the chunk using
+     *
+     * @param chunkId
+     * @return
+     */
     public Chunk getChunk(int chunkId) {
         int left = 0;
         int right = chunkList.size() - 1;
@@ -244,7 +264,7 @@ public class Chunks {
 
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
-        List<Block> result = new GapList<>();
+        List<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
             if (Chunk.isCached(id, solid)) {

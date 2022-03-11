@@ -59,7 +59,7 @@ public class Tuple extends Blocks {
     public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
         @Override
         public int compare(Tuple o1, Tuple o2) {
-            return o2.getName().compareTo(o1.getName());
+            return o1.getName().compareTo(o2.getName());
         }
     };
 
@@ -238,6 +238,11 @@ public class Tuple extends Blocks {
 
     public IntBuffer getIntBuff() {
         return intBuff;
+    }
+
+    @Override
+    public String toString() {
+        return "Tuple{" + "name=" + name + '}';
     }
 
 }

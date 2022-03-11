@@ -51,7 +51,8 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block(Texture.TEX_WORLD[texValue]);
+            loaded = new Block("crate");
+            selectLoadedTexture();
         }
         selectedNew = loaded;
 
@@ -151,7 +152,8 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(Texture.TEX_WORLD[texValue]);
+                loaded = new Block("crate");
+                selectLoadedTexture();
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -193,7 +195,8 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(Texture.TEX_WORLD[texValue]);
+                loaded = new Block("crate");
+                selectLoadedTexture();
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -304,7 +307,9 @@ public class Editor {
 
     private static void selectLoadedTexture() {
         if (loaded != null) {
-            loaded.setTexName(Texture.TEX_WORLD[texValue]);
+            String texName = Texture.TEX_WORLD[texValue];
+            loaded.setTexName(texName);
+            loaded.setSolid(!texName.equals("water"));
             Block.deepCopyTo(loaded.getVertices(), Texture.TEX_WORLD[texValue]);
             loaded.unbuffer();
         }

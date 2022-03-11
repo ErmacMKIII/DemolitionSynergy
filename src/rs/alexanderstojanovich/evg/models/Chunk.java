@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
+import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -44,11 +45,11 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f);
+    public static final int BOUND = 250;
     public static final float VISION = 200.0f; // determines visibility
-    public static final int MULTIPLIER = 8;
+    public static final int MULTIPLIER = 12;
 
-    public static final int CHUNK_NUM = 3 * MULTIPLIER / 2 + 1;
+    public static final int CHUNK_NUM = MULTIPLIER + 1;
 
     // id of the chunk (signed)
     private final int id;
@@ -79,7 +80,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return Chunks.COMPARATOR.compare(this, o);
     }
 
-    // logaritmic binary search
+    /**
+     * Binary search of the tuple. Tuples are sorted by name ascending.
+     * Complexity is logarithmic.
+     *
+     * @param keyTexture texture name part
+     * @param keyFaceBits face bits part
+     * @return Tuple if found (null if not found)
+     */
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
@@ -88,7 +96,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             int mid = left + (right - left) / 2;
             Tuple candidate = tupleList.get(mid);
             int res = candidate.getName().compareTo(keyName);
-            if (res > 0) {
+            if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
                 return candidate;
@@ -99,6 +107,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return null;
     }
 
+    /**
+     * Transfer block between two tuples. Block will be transfered from tuple
+     * with formFaceBits to tuple with current facebits.
+     *
+     * @param block block to transfer
+     * @param formFaceBits face bits before
+     * @param currFaceBits face bits current (after the change)
+     */
     public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         String texture = block.texName;
 
@@ -123,7 +139,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         buffered = false;
     }
 
-    public void updateSolid(Block block) {
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
+     *
+     * Used after add operation.
+     *
+     * @param block block to update
+     */
+    private void updateSolidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
         Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(block.pos);
         if (pair != null) {
@@ -174,6 +198,98 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     }
 
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
+     *
+     * Used after removal operation.
+     *
+     * @param block block to update
+     */
+    private void updateSolidForRem(Block block) {
+        // check adjacent blocks
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+            Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
+            if (adjPair != null) {
+                String tupleTexName = adjPair.getKey();
+                byte adjNBits = adjPair.getValue();
+                int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                int mask = 1 << k;
+                // revert the bit that was set in LevelContainer
+                //(looking for old bits i.e. current tuple)
+                int tupleBits = adjNBits ^ (~mask & 63);
+
+                Tuple tuple = getTuple(tupleTexName, tupleBits);
+                Block adjBlock = null;
+                if (tuple != null) {
+                    for (Block blk : tuple.blockList) {
+                        if (blk.pos.equals(adjPos)) {
+                            adjBlock = blk;
+                            break;
+                        }
+                    }
+                }
+                if (adjBlock != null) {
+                    int adjFaceBitsBefore = adjBlock.getFaceBits();
+                    adjBlock.setFaceBits(~adjNBits & 63);
+                    int adjFaceBitsAfter = adjBlock.getFaceBits();
+                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                        // if bits changed, i.e. some face(s) got disabled
+                        // tranfer to correct tuple
+                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
+     *
+     * Used after removal operation.
+     *
+     * @param block block to update
+     */
+    private void updateFluidForRem(Block block) {
+        // check adjacent blocks
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
+            if (adjPair != null) {
+                String tupleTexName = adjPair.getKey();
+                byte adjNBits = adjPair.getValue();
+                int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                int mask = 1 << k;
+                // revert the bit that was set in LevelContainer
+                //(looking for old bits i.e. current tuple)
+                int tupleBits = adjNBits ^ (~mask & 63);
+
+                Tuple tuple = getTuple(tupleTexName, tupleBits);
+                Block adjBlock = null;
+                if (tuple != null) {
+                    for (Block blk : tuple.blockList) {
+                        if (blk.pos.equals(adjPos)) {
+                            adjBlock = blk;
+                            break;
+                        }
+                    }
+                }
+                if (adjBlock != null) {
+                    int adjFaceBitsBefore = adjBlock.getFaceBits();
+                    adjBlock.setFaceBits(~adjNBits & 63);
+                    int adjFaceBitsAfter = adjBlock.getFaceBits();
+                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                        // if bits changed, i.e. some face(s) got disabled
+                        // tranfer to correct tuple
+                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
     @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
@@ -194,7 +310,13 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void updateFluid(Block block) {
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be fluid. Removal is used only if block is being removed.
+     *
+     * @param block block to update
+     */
+    private void updateFluidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
         Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(block.pos);
         if (pair != null) {
@@ -265,6 +387,13 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
+    /**
+     * Add block to the chunk.
+     *
+     * @param block block to add
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void addBlock(Block block, boolean useLevelContainer) {
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -285,15 +414,22 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             LevelContainer.putBlock(block);
             // update original block with neighbor blocks
             if (solid) {
-                updateSolid(block);
+                updateSolidForAdd(block);
             } else {
-                updateFluid(block);
+                updateFluidForAdd(block);
             }
         }
 
         buffered = false;
     }
 
+    /**
+     * Remove block from the chunk.
+     *
+     * @param block block to remove
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void removeBlock(Block block, boolean useLevelContainer) {
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
@@ -311,9 +447,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 LevelContainer.removeBlock(block);
                 // update original block with neighbor blocks
                 if (solid) {
-                    updateSolid(block);
+                    updateSolidForRem(block);
                 } else {
-                    updateFluid(block);
+                    updateFluidForRem(block);
                 }
             }
         }
@@ -394,10 +530,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
         float nx = (pos.x + BOUND) / (float) (BOUND << 1);
-        float ny = (pos.y + BOUND) / (float) (BOUND << 1);
+        //float ny = (pos.y + BOUND) / (float) (BOUND << 1);
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
-        float halfSum = (nx + ny + nz) / 2.0f;
+        float halfSum = (nx + nz) / 2.0f;
 
         int cid = Math.round(MULTIPLIER * halfSum);
         return cid;
@@ -406,10 +542,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // determine chunk (where am I)
     public static Vector3f invChunkFunc(int chunkId) {
         float k = chunkId / (float) MULTIPLIER;
-        float d = 2.0f * k / 3.0f;
-        float t = d * (BOUND << 1) - BOUND;
+        //float d = 2.0f * k / 3.0f;
+        float t = k * (BOUND << 1) - BOUND;
 
-        return new Vector3f(t);
+        return new Vector3f(t, 0.0f, t);
     }
 
     // determine which chunks are visible by this chunk
@@ -462,7 +598,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public List<Block> getBlockList() {
-        List<Block> result = new GapList<>();
+        List<Block> result = new BigList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());
         }
@@ -584,7 +720,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 pos += blockPosCol.length;
 
                 Block block = new Block(texName, blockPos, blockCol, solid);
-                addBlock(block, false);
+                addBlock(block, true);
             }
         }
     }
