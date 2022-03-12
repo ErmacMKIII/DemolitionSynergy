@@ -20,6 +20,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -59,7 +60,9 @@ public class Main {
                 gameObject.getIntrface().getFpsText().setContent("fps: " + Renderer.getFps());
                 Renderer.setFps(0);
 
-                gameObject.getIntrface().getAlphaText().setContent("load: " + String.format("%.2f", Renderer.alpha));
+                Vector3f actorPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
+                int chunkId = Chunk.chunkFunc(actorPos);
+                gameObject.getIntrface().getAlphaText().setContent(String.format("pos: (%.2f,%.2f,%.2f)\nchunk: %d", actorPos.x, actorPos.y, actorPos.z, chunkId));
             }
         };
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);

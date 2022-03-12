@@ -32,6 +32,7 @@ import org.lwjgl.opengl.GL33;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -154,7 +155,7 @@ public class Tuple extends Blocks {
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
         int faceEnBits = Integer.parseInt(name.substring(5));
-        if (!blockList.isEmpty() && faceEnBits > 0) {
+        if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
             GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        

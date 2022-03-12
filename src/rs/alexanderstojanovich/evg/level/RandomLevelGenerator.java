@@ -20,7 +20,6 @@ import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -35,7 +34,10 @@ public class RandomLevelGenerator {
     public static final int POS_MAX = (Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f)) & 0xFFFFFFFE;
     public static final int POS_MIN = (Math.round(-LevelContainer.SKYBOX_WIDTH + 2.0f)) & 0xFFFFFFFE;
 
-    public static final float DENSITY = 560000.0f;
+    public static final float CUBIC = 1.07E-14f;
+    public static final float QUADRATIC = -3.2E-9f;
+    public static final float LINEAR = 4.3E-4f;
+    public static final float CONST = 15.0f;
 
     private final Random random = new Random(0x123456789L);
 
@@ -243,7 +245,7 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
     private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
-        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
+//        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // make "stone" terrain
         noise1:
         for (int x = posMin; x <= posMax; x += 2) {
@@ -251,8 +253,9 @@ public class RandomLevelGenerator {
 
                 int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
                 int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
-                for (int y = yMid; y <= yTop; y += 2) {
+                for (int y = yBottom; y <= yTop; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
 
                     if (repeatCondition(pos)) {
@@ -294,9 +297,10 @@ public class RandomLevelGenerator {
             for (int z = posMin; z <= posMax; z += 2) {
 
                 int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
                 int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
-                for (int y = yBottom; y <= yMid; y += 2) {
+                for (int y = yBottom; y <= yTop; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
 
                     if (repeatCondition(pos)) {
@@ -342,7 +346,7 @@ public class RandomLevelGenerator {
     }
 
     private void generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
-        DSLogger.reportInfo("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
+//        DSLogger.reportInfo("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // 2. Random part
         //beta 
         float beta = random.nextFloat();
@@ -415,7 +419,7 @@ public class RandomLevelGenerator {
     }
 
     private void generateFluidSeries(int solidBlocks) {
-        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks, null);
+//        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks, null);
         levelContainer.setProgress(0.0f);
         List<Block> totalFldBlkList = levelContainer.getFluidChunks().getTotalList();
         for (Block fluidBlock : totalFldBlkList) {
@@ -446,8 +450,8 @@ public class RandomLevelGenerator {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
             // define alpha: solid to fluid ratio
-            float alpha = 0.1f + (1 + random.nextInt(6)) * 0.15f;
-            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
+            float alpha = 0.5f * random.nextFloat() + 0.2f;
+            int solidBlocks = Math.min(Math.round((1.0f - alpha) * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
             int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
@@ -459,26 +463,29 @@ public class RandomLevelGenerator {
                 // define beta: noise to random ratio
                 float beta = (1 + random.nextInt(3)) * 0.1f;
                 // define gamma: random fluid to series solid ratio
-                final float gamma = 0.17f;
                 //---------------------------------------------------------------------------------------------------------------------------
-                final float HB = (numberOfBlocks + 25000) / DENSITY;
+                float valueN = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, numberOfBlocks);
+                final int posN_Min = Math.round(-valueN) & 0xFFFFFFFE;
+                final int posN_Max = Math.round(valueN) & 0xFFFFFFFE;
 
-                final int posMin = Math.round(HB * (POS_MIN + Chunk.VISION) / 9.35f) & 0xFFFFFFFE;
-                final int posMax = Math.round(HB * (POS_MAX - Chunk.VISION) / 9.35f) & 0xFFFFFFFE;
+                float valueR = 1.5f * valueN;
+                final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
+                final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
+
                 //---------------------------------------------------------------------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part I - Noise", null);
                 // 1. Noise Part                                   
-                generateByNoise(Math.round((1.0f - beta) * solidBlocks), Math.round((1.0f - beta) * fluidBlocks), totalAmount, posMin, posMax);
+                generateByNoise(Math.round((1.0f - beta) * solidBlocks), Math.round((1.0f - beta) * fluidBlocks), totalAmount, posN_Min, posN_Max);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part II - Random", null);
                 // 2. Random Part                 
-                generateByRandom(Math.round(beta * gamma * solidBlocks), Math.round(beta * fluidBlocks), totalAmount, posMin, posMax);
+                generateByRandom(Math.round(beta * solidBlocks), Math.round(beta * fluidBlocks), totalAmount, posR_Min, posR_Max);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part III - Fluid Series", null);
                 // 3. Fluid Series
-                generateFluidSeries(Math.round(beta * (1.0f - gamma) * solidBlocks));
+                generateFluidSeries(Math.round(beta * solidBlocks));
                 DSLogger.reportInfo("Done.", null);
             }
         }

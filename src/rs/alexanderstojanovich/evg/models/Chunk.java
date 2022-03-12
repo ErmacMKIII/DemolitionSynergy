@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
+import org.joml.Intersectionf;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
@@ -46,10 +48,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 250;
-    public static final float VISION = 200.0f; // determines visibility
-    public static final int MULTIPLIER = 12;
+    public static final float VISION = 250.0f; // determines visibility
+    public static final int MULTIPLIER = 24;
 
     public static final int CHUNK_NUM = MULTIPLIER + 1;
+    public static final float LENGTH = (BOUND << 1) / (float) MULTIPLIER;
 
     // id of the chunk (signed)
     private final int id;
@@ -414,6 +417,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             LevelContainer.putBlock(block);
             // update original block with neighbor blocks
             if (solid) {
+                // check if it's light block
+                if (block.getTexName().equals("reflc")
+                        && !LevelContainer.LIGHT_SRC.contains(block.pos)) {
+                    LevelContainer.LIGHT_SRC.add(new Vector3f(block.pos));
+                }
                 updateSolidForAdd(block);
             } else {
                 updateFluidForAdd(block);
@@ -447,6 +455,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 LevelContainer.removeBlock(block);
                 // update original block with neighbor blocks
                 if (solid) {
+                    // check if it's light block
+                    if (block.getTexName().equals("reflc")
+                            && LevelContainer.LIGHT_SRC.contains(block.pos)) {
+                        LevelContainer.LIGHT_SRC.remove(new Vector3f(block.pos));
+                    }
                     updateSolidForRem(block);
                 } else {
                     updateFluidForRem(block);
@@ -555,13 +568,16 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int currChunkId = chunkFunc(actorPos);
         visibleQueue.offer(new Pair<>(currChunkId, 0.0f));
         // this is for other chunks
-        Vector3f temp = new Vector3f();
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector2f temp3 = new Vector2f();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (id != currChunkId) {
                 Vector3f chunkPos = invChunkFunc(id);
-                float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
                 float distance = chunkPos.distance(actorPos);
-                if (distance <= Chunk.VISION && product >= 0.25f) {
+                Vector3f chunkMin = chunkPos.sub(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp1);
+                Vector3f chunkMax = chunkPos.add(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp2);
+                if (distance <= VISION && Intersectionf.intersectRayAab(actorPos, actorFront, chunkMin, chunkMax, temp3)) {
                     visibleQueue.offer(new Pair<>(id, distance));
                 } else {
                     invisibleQueue.offer(new Pair<>(id, distance));

@@ -408,15 +408,15 @@ public class Game {
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
-        double acc = 0.0; // accumulator
 
         int index = 0; // track index
+
+        double timerc = GLFW.glfwGetTime();
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             upsTicks += -Math.expm1(-deltaTime * Game.TPS);
-            acc += deltaTime;
             lastTime = currTime;
 
             // Detecting critical status
@@ -447,11 +447,12 @@ public class Game {
                 }
                 ups++;
                 upsTicks--;
-                acc -= 1.0 / TPS;
             }
 
-            gameObject.chunkOperations();
-            Renderer.alpha = acc * TPS;
+            if (GLFW.glfwGetTime() > timerc + 0.03125) {
+                gameObject.chunkOperations();
+                timerc += 0.03125;
+            }
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

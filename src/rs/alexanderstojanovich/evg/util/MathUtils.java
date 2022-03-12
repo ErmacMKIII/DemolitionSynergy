@@ -45,6 +45,45 @@ public class MathUtils {
     }
 
     /**
+     * Calculate linear polynomial with given constants.
+     *
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float linear, float cnst, float x) {
+        return (linear * x + cnst);
+    }
+
+    /**
+     * Calculate quadratic polynomial with given constants.
+     *
+     * @param quad
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float quad, float linear, float cnst, float x) {
+        return (quad * x * x + linear * x + cnst);
+    }
+
+    /**
+     * Calculate cubic polynomial with given constants.
+     *
+     * @param cubic
+     * @param quad
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float cubic, float quad, float linear, float cnst, float x) {
+        return (cubic * x * x * x + quad * x * x + linear * x + cnst);
+    }
+
+    /**
      * Generate noise using given number of iterations (or octaves)
      *
      * @param numOfOctaves iterations num

@@ -363,6 +363,23 @@ public class Block extends Model {
         return bool;
     }
 
+    public static boolean canBeSeenBy(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
+        boolean bool = false;
+
+        for (Vector3f normal : FACE_NORMALS) {
+            Vector3f temp1 = new Vector3f();
+            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
+            Vector3f temp2 = new Vector3f();
+            Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
+            if (Math.abs(vx.dot(vy)) >= 0.0625f) {
+                bool = true;
+                break;
+            }
+        }
+
+        return bool;
+    }
+
     /**
      * Returns visible bits based on faces which can seen by camera front.
      *
