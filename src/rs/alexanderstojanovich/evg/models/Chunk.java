@@ -296,7 +296,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
                 break;
             }
 
@@ -373,7 +373,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
                 break;
             }
 

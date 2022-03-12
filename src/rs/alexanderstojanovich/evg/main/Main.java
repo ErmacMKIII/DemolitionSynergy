@@ -97,6 +97,7 @@ public class Main {
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
+        gameObject.destroy(); // destroy window alongside with the OpenGL context
         MasterAudio.destroy(); // destroy context after writting to the ini file                                
         //---------------------------------------------------------------------- 
         Chunk.deleteCache();

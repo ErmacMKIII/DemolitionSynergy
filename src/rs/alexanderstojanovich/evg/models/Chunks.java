@@ -61,7 +61,7 @@ public class Chunks {
     @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getTotalList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
                 break;
             }
 
@@ -85,7 +85,7 @@ public class Chunks {
     @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
                 break;
             }
 

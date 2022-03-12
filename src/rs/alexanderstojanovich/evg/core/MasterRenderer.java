@@ -29,6 +29,12 @@ public class MasterRenderer {
     private static GLCapabilities glCaps; // GL context   
 
     // load GL context into this thread  -> important!
+    /**
+     * Initializes OpenGL into this thread and configures it. Notice that OpenGL
+     * is being rendered in the Window. Call only from Renderer.
+     *
+     * @param myWindow window associated with rendering.
+     */
     public static void initGL(Window myWindow) {
         // load context
         myWindow.loadContext();
