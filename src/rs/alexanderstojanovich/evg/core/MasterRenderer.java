@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.core;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 
 /**
  *
@@ -57,7 +58,7 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
 
-        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // set the background to black        
+        GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f); // set the background to sky color        
     }
 
     public static void setResolution(int width, int height) {

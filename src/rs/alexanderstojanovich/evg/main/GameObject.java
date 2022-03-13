@@ -20,9 +20,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.critter.ModelCritter;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
@@ -102,16 +104,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param deltaTime game object environment update time
      */
     public void update(float deltaTime) {
-        try {
-            lock.writeLock().lock();
-            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                levelContainer.update(deltaTime);
-            }
-            intrface.update();
-            intrface.setCollText(assertCollision);
-        } finally {
-            lock.writeLock().unlock();
+        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+            levelContainer.update(deltaTime);
         }
+        intrface.update();
+        intrface.setCollText(assertCollision);
     }
 
     /**
@@ -122,6 +119,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         lock.readLock().lock();
         try {
             MasterRenderer.render(); // it clears color bit and depth buffer bit
+            PerspectiveRenderer.updatePerspective(MY_WINDOW);
             if (levelContainer.isWorking()) { // working check avoids locking the monitor
                 intrface.getProgText().setEnabled(true);
                 intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
@@ -165,11 +163,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        lock.readLock().lock();
+        lock.writeLock().lock();
         try {
             levelContainer.animate();
         } finally {
-            lock.readLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -213,7 +211,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // collision detection - critter against solid obstacles
     public boolean hasCollisionWithCritter(Critter critter) {
-        return levelContainer.hasCollisionWithCritter(critter);
+        return levelContainer.hasCollisionWithEnvironment(critter);
+    }
+    
+    // collision detection - critter against solid obstacles
+    public boolean hasCollisionWithCritter(ModelCritter livingCritter) {
+        return levelContainer.hasCollisionWithEnvironment(livingCritter);
     }
 
     // prints general and detailed information about solid and fluid chunks

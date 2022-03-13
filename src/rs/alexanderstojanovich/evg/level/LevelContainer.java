@@ -37,6 +37,9 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -254,7 +257,41 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     // -------------------------------------------------------------------------
+    private void configureMainActor(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
+        Critter mainActor = levelActors.getMainActor();
+        if (mainActor instanceof Observer) {
+            Observer obs = (Observer) mainActor;
+            obs.getCamera().setPos(pos);
+            obs.getCamera().setFront(front);
+            obs.getCamera().setUp(up);
+            obs.getCamera().setRight(right);
+            obs.getCamera().calcViewMatrixPub();
+        } else if (mainActor instanceof Player) {
+            Player player = (Player) mainActor;
+            player.setPosition(pos);
+            player.setFront(front);
+            player.setUp(up);
+            player.setRight(right);
+            player.getCamera().calcViewMatrixPub();
+        }               
+        
+    }
+    public Camera mainCamera() {
+        Camera camera = null;
+        Critter mainActor = levelActors.getMainActor();        
+        if (mainActor instanceof Observer) {
+            Observer obs = (Observer) mainActor;
+            camera = obs.getCamera();
+        } else if (mainActor instanceof Player) {
+            Player player =  (Player) mainActor;
+            camera = player.getCamera();
+        } 
+        
+        return camera;
+    }
     // -------------------------------------------------------------------------
+    
+    
     public boolean startNewLevel() {
         if (working) {
             return false;
@@ -288,13 +325,8 @@ public class LevelContainer implements GravityEnviroment {
                 progress += 100.0f / 9.0f;
             }
         }
-
-        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -4.0f));
-        levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
-        levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
-        levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
-        levelActors.getPlayer().getCamera().calcViewMatrixPub();
-        levelActors.getPlayer().updateModelPos();
+        
+        configureMainActor(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
         levelActors.unfreeze();
         progress = 100.0f;
@@ -311,11 +343,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         levelActors.freeze();
 
-        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f));
-        levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
-        levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
-        levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
-        levelActors.getPlayer().getCamera().calcViewMatrixPub();
+        configureMainActor(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
         boolean success = false;
         progress = 0.0f;
@@ -358,7 +386,12 @@ public class LevelContainer implements GravityEnviroment {
         buffer[0] = 'D';
         buffer[1] = 'S';
         pos += 2;
-        Camera camera = levelActors.getPlayer().getCamera();
+        
+        Camera camera = mainCamera();
+        if (camera == null) {
+            return false;
+        }
+        
         byte[] campos = Vector3fUtils.vec3fToByteArray(camera.getPos());
         System.arraycopy(campos, 0, buffer, pos, campos.length);
         pos += campos.length;
@@ -475,12 +508,7 @@ public class LevelContainer implements GravityEnviroment {
             Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
             pos += rightArr.length;
 
-            levelActors.getPlayer().getCamera().setPos(campos);
-            levelActors.getPlayer().getCamera().setFront(camfront);
-            levelActors.getPlayer().getCamera().setUp(camup);
-            levelActors.getPlayer().getCamera().setRight(camright);
-            levelActors.getPlayer().getCamera().calcViewMatrixPub();
-            levelActors.getPlayer().updateModelPos();
+            configureMainActor(campos, camfront, camup, camright);
 
             char[] solid = new char[5];
             for (int i = 0; i < solid.length; i++) {
@@ -615,19 +643,19 @@ public class LevelContainer implements GravityEnviroment {
 
     public boolean isCameraInFluid() {
         boolean yea = false;
-        Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
+        Vector3f camPos = mainCamera().getPos();
 
         Vector3f obsCamPosAlign = new Vector3f(
-                Math.round(obsCamPos.x + 0.5f) & 0xFFFFFFFE,
-                Math.round(obsCamPos.y + 0.5f) & 0xFFFFFFFE,
-                Math.round(obsCamPos.z + 0.5f) & 0xFFFFFFFE
+                Math.round(camPos.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(camPos.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
         yea = ALL_FLUID_MAP.containsKey(obsCamPosAlign);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, 2.1f);
+                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.1f);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
                         Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
@@ -637,7 +665,7 @@ public class LevelContainer implements GravityEnviroment {
                 boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(adjAlign);
 
                 if (fluidOnLoc) {
-                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, obsCamPos);
+                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
 
                     if (yea) {
                         break;
@@ -649,11 +677,9 @@ public class LevelContainer implements GravityEnviroment {
         return yea;
     }
 
-    public boolean hasCollisionWithCritter(Critter critter) {
+    public boolean hasCollisionWithEnvironment(Critter critter) {
         boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
-                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
-                        critter.getModel().getHeight(), critter.getModel().getDepth()));
+        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
             Vector3f predAlign = new Vector3f(
@@ -677,8 +703,49 @@ public class LevelContainer implements GravityEnviroment {
                         boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
 
                         if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
-                                    || critter.getModel().intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor());
+                            if (coll) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return coll;
+    }
+    
+    public boolean hasCollisionWithEnvironment(ModelCritter livingCritter) {
+        boolean coll;
+        coll = (!SKYBOX.containsInsideExactly(livingCritter.getPredictor())
+                || !SKYBOX.intersectsExactly(livingCritter.getPredictor(), livingCritter.getModel().getWidth(),
+                        livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
+
+        if (!coll) {
+            Vector3f predAlign = new Vector3f(
+                    Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(livingCritter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(livingCritter.getPredictor().z + 0.5f) & 0xFFFFFFFE
+            );
+
+            coll = ALL_SOLID_MAP.containsKey(predAlign);
+
+            if (!coll) {
+                for (int j = 0; j <= 5; j++) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += Game.AMOUNT) {
+                        Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
+                        Vector3f adjAlign = new Vector3f(
+                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                        );
+
+                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
+
+                        if (solidOnLoc) {
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, livingCritter.getPredictor())
+                                    || livingCritter.getModel().intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
 
                             if (coll) {
                                 break;
@@ -719,8 +786,8 @@ public class LevelContainer implements GravityEnviroment {
     // method for determining visible chunks
     public void determineVisible() {
         if (visibleQueue.isEmpty() && invisibleQueue.isEmpty()) {
-            Camera obsCamera = levelActors.getPlayer().getCamera();
-            Chunk.determineVisible(visibleQueue, invisibleQueue, obsCamera.getPos(), obsCamera.getFront());
+            Camera mainCamera = mainCamera();
+            Chunk.determineVisible(visibleQueue, invisibleQueue, mainCamera.getPos(), mainCamera.getFront());
         }
     }
 
@@ -785,11 +852,11 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
             cameraInFluid = isCameraInFluid();
 
-            Camera obsCamera = levelActors.getPlayer().getCamera();
+            Camera mainCamera = mainCamera();
             if (LIGHT_SRC.isEmpty()) {
-                LIGHT_SRC.add(obsCamera.getPos());
+                LIGHT_SRC.add(mainCamera.getPos());
             } else {
-                LIGHT_SRC.set(0, obsCamera.getPos());
+                LIGHT_SRC.set(0, mainCamera.getPos());
             }
 
         }
@@ -800,7 +867,7 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
 
-        Camera obsCamera = levelActors.getPlayer().getCamera();
+        Camera mainCamera = mainCamera();
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
@@ -808,9 +875,9 @@ public class LevelContainer implements GravityEnviroment {
 
         // copy uniforms from main shader to voxel shader
         ShaderProgram.getVoxelShader().bind();
-        obsCamera.updateViewMatrix(ShaderProgram.getVoxelShader());
-        obsCamera.updateCameraPosition(ShaderProgram.getVoxelShader());
-        obsCamera.updateCameraFront(ShaderProgram.getVoxelShader());
+        mainCamera.updateViewMatrix(ShaderProgram.getVoxelShader());
+        mainCamera.updateCameraPosition(ShaderProgram.getVoxelShader());
+        mainCamera.updateCameraFront(ShaderProgram.getVoxelShader());
         ShaderProgram.unbind();
 
         // only visible & uncached are in chunk list      
@@ -823,7 +890,7 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(obsCamera.getPos());
+            editorNew.setLight(mainCamera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
@@ -832,7 +899,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
         if (selectedNewWireFrame != null) {
-            selectedNewWireFrame.setLight(obsCamera.getPos());
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
             }
@@ -841,14 +907,13 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
         if (selectedCurrFrame != null) {
-            selectedCurrFrame.setLight(obsCamera.getPos());
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
             selectedCurrFrame.render(LIGHT_SRC, ShaderProgram.getMainShader());
         }
 
-        levelActors.render(LIGHT_SRC);
+        levelActors.render(LIGHT_SRC, ShaderProgram.getMainShader());
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
@@ -861,8 +926,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(LIGHT_SRC, ShaderProgram.getWaterBaseShader());
-        levelActors.render(LIGHT_SRC);
+        SKYBOX.render(LIGHT_SRC, ShaderProgram.getWaterBaseShader());        
 
         // copy uniforms from main shader to voxel shader
         ShaderProgram.getWaterVoxelShader().bind();
@@ -905,6 +969,8 @@ public class LevelContainer implements GravityEnviroment {
             }
             selectedCurrFrame.render(LIGHT_SRC, ShaderProgram.getWaterBaseShader());
         }
+        
+        levelActors.render(LIGHT_SRC, ShaderProgram.getWaterBaseShader());
     }
 
     // -------------------------------------------------------------------------
