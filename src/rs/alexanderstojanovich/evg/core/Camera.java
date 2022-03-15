@@ -30,17 +30,17 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Camera { // is 3D looking camera
 
-    private Vector3f pos; // is camera position in space; it's uniform
-    private final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
+    protected Vector3f pos; // is camera position in space; it's uniform
+    protected final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
 
     public static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
     public static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
 
     // three vectors determining exact camera position aka camera vectors
-    private Vector3f front = Z_AXIS;
-    private Vector3f up = Y_AXIS;
-    private Vector3f right = X_AXIS;
+    protected Vector3f front = Z_AXIS;
+    protected Vector3f up = Y_AXIS;
+    protected Vector3f right = X_AXIS;
 
     private float yaw = (float) (-Math.PI / 2.0); // sideways look angle
     private float pitch = (float) (-Math.PI); // up and down look angle

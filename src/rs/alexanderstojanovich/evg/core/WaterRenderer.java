@@ -45,20 +45,20 @@ public class WaterRenderer {
 
     private void refresh() { // call this in update (renderer) 
         if (!levelContainer.isWorking()) {
-            Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
-            Vector3f obsCameraPos = obsCamera.getPos();
-            Vector3f obsCameraFront = obsCamera.getFront();
+            Camera actCam = levelContainer.getLevelActors().mainCamera();
+            Vector3f actCamPos = actCam.getPos();
+            Vector3f catCamFront = actCam.getFront();
 
             Vector3f temp = new Vector3f();
             for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
                 Vector3f chunkPos = Chunk.invChunkFunc(id);
-                float product = chunkPos.sub(obsCameraPos, temp).normalize(temp).dot(obsCameraFront);
-                float distance = chunkPos.distance(obsCameraPos);
-                if (chunkPos.distance(obsCameraPos) <= Chunk.VISION / 8.0f) {
+                float product = chunkPos.sub(actCamPos, temp).normalize(temp).dot(catCamFront);
+                float distance = chunkPos.distance(actCamPos);
+                if (chunkPos.distance(actCamPos) <= Chunk.VISION / 8.0f) {
                     Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
                     if (fluidChunk != null && distance <= Chunk.VISION && product >= 0.25f) {
                         float hMin = Math.round(chunkPos.y) & 0xFFFFFFFE;
-                        float hMax = Math.round(obsCameraPos.y) & 0xFFFFFFFE;
+                        float hMax = Math.round(actCamPos.y) & 0xFFFFFFFE;
                         float hStep = Math.round(hMax - hMin) << 4;
 
                         if (hMax > hMin && hStep > 0.0f) {

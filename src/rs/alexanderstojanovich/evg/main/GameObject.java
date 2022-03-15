@@ -118,8 +118,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public void render() {
         lock.readLock().lock();
         try {
-            MasterRenderer.render(); // it clears color bit and depth buffer bit
-            PerspectiveRenderer.updatePerspective(MY_WINDOW);
+            MasterRenderer.render(); // it clears color bit and depth buffer bit            
+            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
+            MasterRenderer.updateView(levelContainer.getLevelActors().mainCamera()); // update view matrix for all the shaders (alongside with camera vectors)            
             if (levelContainer.isWorking()) { // working check avoids locking the monitor
                 intrface.getProgText().setEnabled(true);
                 intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
@@ -213,7 +214,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithEnvironment(critter);
     }
-    
+
     // collision detection - critter against solid obstacles
     public boolean hasCollisionWithCritter(ModelCritter livingCritter) {
         return levelContainer.hasCollisionWithEnvironment(livingCritter);

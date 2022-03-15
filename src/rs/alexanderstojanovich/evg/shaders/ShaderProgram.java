@@ -44,11 +44,13 @@ public class ShaderProgram {
     private static ShaderProgram waterVoxelShader;
     private static ShaderProgram intrfaceShader;
     private static ShaderProgram playerShader;
+    private static ShaderProgram weaponShader;
 
-    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[6];
+    public static final int SHADER_COUNT = 7;
+    public static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[SHADER_COUNT];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
-        // 1. Init main shader (skybox, camera)
+        // 1. Init main shader (skybox, NPCs, items)
         Shader mainVertexShader = new Shader(Game.EFFECTS_ENTRY, "mainVS.glsl", Shader.VERTEX_SHADER);
         Shader mainFragmentShader = new Shader(Game.EFFECTS_ENTRY, "mainFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> mainShaders = new ArrayList<>();
@@ -80,7 +82,7 @@ public class ShaderProgram {
         waterVoxelShaders.add(waterVoxelFragmentShader);
         waterVoxelShader = new ShaderProgram(waterVoxelShaders);
         SHADER_PROGRAMS[3] = waterVoxelShader;
-        // 5. Init interface shader (crosshair)
+        // 5. Init interface shader (crosshair & fonts)
         Shader intrfaceVertexShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceVS.glsl", Shader.VERTEX_SHADER);
         Shader intrfaceFragmentShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> intrfaceShaders = new ArrayList<>();
@@ -88,7 +90,7 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         SHADER_PROGRAMS[4] = intrfaceShader;
-        // 6. Init player shader (weapons)
+        // 6. Init player shader (camera)
         Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
         Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> playerShaders = new ArrayList<>();
@@ -96,6 +98,14 @@ public class ShaderProgram {
         playerShaders.add(playerFragmentShader);
         playerShader = new ShaderProgram(playerShaders);
         SHADER_PROGRAMS[5] = playerShader;
+        // 7. Init weapon shader (player weapons)
+        Shader weaponVertexShader = new Shader(Game.EFFECTS_ENTRY, "weaponVS.glsl", Shader.VERTEX_SHADER);
+        Shader weaponFragmentShader = new Shader(Game.EFFECTS_ENTRY, "weaponFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> weaponShaders = new ArrayList<>();
+        weaponShaders.add(weaponVertexShader);
+        weaponShaders.add(weaponFragmentShader);
+        weaponShader = new ShaderProgram(weaponShaders);
+        SHADER_PROGRAMS[6] = weaponShader;
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -218,8 +228,8 @@ public class ShaderProgram {
         return playerShader;
     }
 
-    public static ShaderProgram[] getSHADER_PROGRAMS() {
-        return SHADER_PROGRAMS;
+    public static ShaderProgram getWeaponShader() {
+        return weaponShader;
     }
 
 }

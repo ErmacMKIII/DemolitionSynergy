@@ -29,23 +29,23 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class ModelCritter implements Critter {
 
     protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
-    
+
     protected Vector3f front = Camera.Z_AXIS;
     protected Vector3f up = Camera.Y_AXIS;
     protected Vector3f right = Camera.Y_AXIS;
-    
+
     protected float yaw = (float) (-Math.PI / 2.0); // sideways look angle
     protected float pitch = (float) (-Math.PI); // up and down look angle
-    
+
     protected boolean givenControl = false;
-    
+
     protected final Model model;
 
     public ModelCritter(Model model) {
         this.model = model;
         this.predictor = new Vector3f(model.pos);
-    }        
-    
+    }
+
     private void updateDirectionVectors() {
         Vector3f temp1 = new Vector3f();
         front = front.normalize(temp1);
@@ -54,7 +54,7 @@ public class ModelCritter implements Critter {
         Vector3f temp3 = new Vector3f();
         up = front.cross(right, temp3).normalize(temp3);
     }
-    
+
     @Override
     public void moveForward(float amount) {
         if (givenControl) {
@@ -187,7 +187,7 @@ public class ModelCritter implements Critter {
     @Override
     public void bufferAll() {
         model.bufferAll();
-    }   
+    }
 
     public Model getModel() {
         return model;
@@ -249,12 +249,12 @@ public class ModelCritter implements Critter {
     }
 
     public void setPitch(float pitch) {
-        this.pitch = pitch;        
+        this.pitch = pitch;
     }
-    
+
     public void setPosition(Vector3f position) {
         predictor = new Vector3f(position);
         model.setPos(new Vector3f(position));
     }
-    
+
 }

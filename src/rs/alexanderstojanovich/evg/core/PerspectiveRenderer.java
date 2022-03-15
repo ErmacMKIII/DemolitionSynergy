@@ -40,7 +40,7 @@ public class PerspectiveRenderer {
     }
 
     public static void updatePerspective(Window myWindow) {
-        for (ShaderProgram shaderProgram : ShaderProgram.getSHADER_PROGRAMS()) {
+        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();
             perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 4400.0f, shaderProgram);
             ShaderProgram.unbind();

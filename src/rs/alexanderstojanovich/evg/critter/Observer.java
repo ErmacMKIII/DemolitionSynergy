@@ -33,7 +33,7 @@ public class Observer implements Critter {
 
     public Observer(Vector3f pos) {
         this.camera = new Camera(pos);
-    }     
+    }
 
     @Override
     public void moveForward(float amount) {
@@ -102,7 +102,7 @@ public class Observer implements Critter {
             camera.turnRight(angle);
         }
     }
-    
+
     @Override
     public void lookAtOffset(float xoffset, float yoffset) {
         if (givenControl) {
@@ -116,7 +116,7 @@ public class Observer implements Critter {
             camera.lookAt(yaw, pitch);
         }
     }
-    
+
     public void lookAt(float mouseSensitivity, float xoffset, float yoffset) {
         if (givenControl) {
             camera.lookAt(mouseSensitivity, xoffset, yoffset);
@@ -130,7 +130,7 @@ public class Observer implements Critter {
 
     @Override
     public void bufferAll() {
-        
+
     }
 
     @Override
@@ -143,7 +143,7 @@ public class Observer implements Critter {
     @Override
     public String toString() {
         return "Observer{" + "camera=" + camera + ", givenControl=" + givenControl + ", predictor=" + predictor + '}';
-    }    
+    }
 
     @Override
     public boolean isGivenControl() {
