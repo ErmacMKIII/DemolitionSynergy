@@ -43,6 +43,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
+import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -646,6 +647,8 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
+            final float stepAmount = 0.05f;
+
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
                     Math.round(critter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
@@ -655,8 +658,9 @@ public class LevelContainer implements GravityEnviroment {
             coll = ALL_SOLID_MAP.containsKey(predAlign);
 
             if (!coll) {
+                OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += Game.AMOUNT) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -667,9 +671,10 @@ public class LevelContainer implements GravityEnviroment {
                         boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
 
                         if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor());
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
+                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor(), 0.075f, 0.075f, 0.075f);
                             if (coll) {
-                                break;
+                                break OUTER;
                             }
                         }
                     }
@@ -687,6 +692,8 @@ public class LevelContainer implements GravityEnviroment {
                         livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
 
         if (!coll) {
+            final float stepAmount = 0.05f;
+
             Vector3f predAlign = new Vector3f(
                     Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
                     Math.round(livingCritter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
@@ -696,8 +703,9 @@ public class LevelContainer implements GravityEnviroment {
             coll = ALL_SOLID_MAP.containsKey(predAlign);
 
             if (!coll) {
+                OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += Game.AMOUNT) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -712,7 +720,7 @@ public class LevelContainer implements GravityEnviroment {
                                     || livingCritter.getModel().intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
 
                             if (coll) {
-                                break;
+                                break OUTER;
                             }
                         }
                     }

@@ -20,6 +20,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -29,6 +31,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -70,6 +73,17 @@ public class Renderer extends Thread implements Executor {
         double deltaTime = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
+            // if update (Game) is running 
+            if (Game.getUpsTicks() >= 1.0) {
+                synchronized (GameObject.MY_WINDOW) {
+                    try {
+                        GameObject.MY_WINDOW.wait(Math.round(1000.0 * Game.getUpsTicks() / (long) Game.TPS));
+                    } catch (InterruptedException ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                }
+            }
+
             // changing resolution if necessary
             int width = GameObject.MY_WINDOW.getWidth();
             int height = GameObject.MY_WINDOW.getHeight();

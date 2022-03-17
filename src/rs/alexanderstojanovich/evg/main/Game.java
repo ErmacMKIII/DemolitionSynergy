@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -478,7 +479,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            upsTicks += -Math.expm1(-deltaTime) * Game.TPS;
+            upsTicks += -MathUtils.expm1(-deltaTime) * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
@@ -523,6 +524,10 @@ public class Game {
                 }
                 ups++;
                 upsTicks--;
+            }
+
+            synchronized (GameObject.MY_WINDOW) {
+                GameObject.MY_WINDOW.notify();
             }
 
             if (GLFW.glfwGetTime() > timerc + 0.03125) {
