@@ -93,11 +93,9 @@ public class ModelCritter implements Critter {
 
     @Override
     public void movePredictorForward(float amount) {
-        if (givenControl) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f temp2 = new Vector3f();
-            predictor = model.pos.add(front.mul(amount, temp1), temp2);
-        }
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = model.pos.add(front.mul(amount, temp1), temp2);
     }
 
     @Override
@@ -136,13 +134,13 @@ public class ModelCritter implements Critter {
     }
 
     @Override
-    public void lookAtOffset(float xoffset, float yoffset) {
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         if (givenControl) {
-            yaw += xoffset;
+            yaw += sensitivity * xoffset;
             while (yaw >= 2.0 * Math.PI) {
                 yaw -= 2.0 * Math.PI;
             }
-            pitch += yoffset;
+            pitch += sensitivity * yoffset;
             if (pitch > Math.PI / 2.1) {
                 pitch = (float) (Math.PI / 2.1);
             }

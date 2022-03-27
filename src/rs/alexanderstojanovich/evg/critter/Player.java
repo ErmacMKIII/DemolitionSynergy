@@ -34,7 +34,7 @@ public class Player extends ModelCritter {
     private Model currWeapon;
     private final Camera camera;
 
-    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 0.0f);
+    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
     public static final Model PISTOL = Model.readFromObjFile(Game.PLAYER_ENTRY, "pistol.obj", "pistol");
     public static final Model SUB_MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "sub_machine_gun.obj", "smg");
@@ -77,13 +77,13 @@ public class Player extends ModelCritter {
     public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
 //        super.render(lightSrc, shaderProgram);
         if (givenControl) {
+            camera.render(shaderProgram);
             if (currWeapon != null) {
                 if (!currWeapon.isBuffered()) {
                     currWeapon.bufferAll();
                 }
                 currWeapon.render(lightSrc, ShaderProgram.getWeaponShader());
             }
-            camera.render(shaderProgram);
         }
     }
 
@@ -134,7 +134,7 @@ public class Player extends ModelCritter {
     public void moveLeft(float amount) {
         if (givenControl) {
             super.moveLeft(amount);
-            camera.moveRight(amount);
+            camera.moveLeft(amount);
             linkDirectionVectors();
         }
     }
@@ -167,6 +167,24 @@ public class Player extends ModelCritter {
     public void setYaw(float yaw) {
         super.setYaw(yaw);
         linkDirectionVectors();
+    }
+
+    @Override
+    public void lookAtAngle(float yaw, float pitch) {
+        super.lookAtAngle(yaw, pitch);
+        if (givenControl) {
+            camera.lookAt(yaw, pitch);
+            linkDirectionVectors();
+        }
+    }
+
+    @Override
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
+        super.lookAtOffset(sensitivity, xoffset, yoffset);
+        if (givenControl) {
+            camera.lookAt(sensitivity, xoffset, yoffset);
+            linkDirectionVectors();
+        }
     }
 
     @Override

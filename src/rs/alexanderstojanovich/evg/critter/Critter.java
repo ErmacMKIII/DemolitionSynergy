@@ -112,13 +112,14 @@ public interface Critter { // interface for Observer, Player and NPC
     public void turnRight(float angle);
 
     /**
-     * Look for xoffset, yoffset using Euler angles. Requires given control (set
+     * Look for xoffset, yoffset using Euler angles.Requires given control (set
      * to true)
      *
+     * @param sensitivity mouse sensitivity - multiplier
      * @param xoffset X-axis offset
      * @param yoffset Y-axis offset
      */
-    public void lookAtOffset(float xoffset, float yoffset);
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset);
 
     /**
      * Look at exactly yaw & pitch angle using Euler angles.Requires given

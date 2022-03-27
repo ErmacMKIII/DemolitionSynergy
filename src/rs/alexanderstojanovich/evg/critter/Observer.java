@@ -104,20 +104,14 @@ public class Observer implements Critter {
     }
 
     @Override
-    public void lookAtOffset(float xoffset, float yoffset) {
-        if (givenControl) {
-            camera.lookAt(1.0f, xoffset, yoffset);
-        }
-    }
-
-    @Override
     public void lookAtAngle(float yaw, float pitch) {
         if (givenControl) {
             camera.lookAt(yaw, pitch);
         }
     }
 
-    public void lookAt(float mouseSensitivity, float xoffset, float yoffset) {
+    @Override
+    public void lookAtOffset(float mouseSensitivity, float xoffset, float yoffset) {
         if (givenControl) {
             camera.lookAt(mouseSensitivity, xoffset, yoffset);
         }
