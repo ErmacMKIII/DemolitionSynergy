@@ -843,7 +843,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(LIGHT_SRC, ShaderProgram.getMainShader());
+        SKYBOX.render(LIGHT_SRC, ShaderProgram.getPlayerShader());
 
         // only visible & uncached are in chunk list      
         solidChunks.render(ShaderProgram.getVoxelShader(), LIGHT_SRC);

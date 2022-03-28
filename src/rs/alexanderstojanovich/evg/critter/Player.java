@@ -77,13 +77,13 @@ public class Player extends ModelCritter {
     public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
 //        super.render(lightSrc, shaderProgram);
         if (givenControl) {
-            camera.render(shaderProgram);
             if (currWeapon != null) {
                 if (!currWeapon.isBuffered()) {
                     currWeapon.bufferAll();
                 }
                 currWeapon.render(lightSrc, ShaderProgram.getWeaponShader());
             }
+            camera.render(shaderProgram);
         }
     }
 
