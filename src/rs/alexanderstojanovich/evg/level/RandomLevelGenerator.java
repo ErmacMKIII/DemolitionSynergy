@@ -451,7 +451,7 @@ public class RandomLevelGenerator {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
             // define alpha: solid to fluid ratio
             float alpha = 0.5f * random.nextFloat() + 0.2f;
-            int solidBlocks = Math.min(Math.round((1.0f - alpha) * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
+            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
             int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
@@ -468,7 +468,7 @@ public class RandomLevelGenerator {
                 final int posN_Min = Math.round(-valueN) & 0xFFFFFFFE;
                 final int posN_Max = Math.round(valueN) & 0xFFFFFFFE;
 
-                float valueR = 1.5f * valueN;
+                float valueR = 1.75f * valueN;
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 

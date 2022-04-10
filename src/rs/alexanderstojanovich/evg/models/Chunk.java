@@ -49,10 +49,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 250;
     public static final float VISION = 250.0f; // determines visibility
-    public static final int MULTIPLIER = 24;
+    public static final int MULTIPLIER = 8;
 
-    public static final int CHUNK_NUM = MULTIPLIER + 1;
-    public static final float LENGTH = (BOUND << 1) / (float) MULTIPLIER;
+    public static final int CHUNK_NUM = 33;
+    public static final float LENGTH = BOUND / (float) MULTIPLIER;
 
     // id of the chunk (signed)
     private final int id;
@@ -542,23 +542,33 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
+        // normalized x & z
         float nx = (pos.x + BOUND) / (float) (BOUND << 1);
-        //float ny = (pos.y + BOUND) / (float) (BOUND << 1);
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
-        float halfSum = (nx + nz) / 2.0f;
+        final int gridSize = Math.round((float) Math.sqrt(MULTIPLIER));
 
-        int cid = Math.round(MULTIPLIER * halfSum);
+        int col = Math.round(MULTIPLIER * nx);
+        int row = Math.round(MULTIPLIER * nz);
+
+        int cid = row * gridSize + col;
         return cid;
     }
 
     // determine chunk (where am I)
     public static Vector3f invChunkFunc(int chunkId) {
-        float k = chunkId / (float) MULTIPLIER;
-        //float d = 2.0f * k / 3.0f;
-        float t = k * (BOUND << 1) - BOUND;
+        int gridSize = Math.round((float) Math.sqrt(MULTIPLIER));
 
-        return new Vector3f(t, 0.0f, t);
+        int col = chunkId % gridSize;
+        int row = chunkId / gridSize;
+
+        float nx = col / (float) MULTIPLIER;
+        float nz = row / (float) MULTIPLIER;
+
+        float x = nx * (BOUND << 1) - BOUND;
+        float z = nz * (BOUND << 1) - BOUND;
+
+        return new Vector3f(x, 0.0f, z);
     }
 
     // determine which chunks are visible by this chunk
@@ -574,13 +584,18 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (id != currChunkId) {
                 Vector3f chunkPos = invChunkFunc(id);
-                float distance = chunkPos.distance(actorPos);
+                float distance1 = chunkPos.distance(actorPos);
                 Vector3f chunkMin = chunkPos.sub(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp1);
                 Vector3f chunkMax = chunkPos.add(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp2);
-                if (distance <= VISION && Intersectionf.intersectRayAab(actorPos, actorFront, chunkMin, chunkMax, temp3)) {
-                    visibleQueue.offer(new Pair<>(id, distance));
+                boolean intersects = Intersectionf.intersectRayAab(actorPos, actorFront, chunkMin, chunkMax, temp3);
+                Vector3f nearPoint = new Vector3f(actorPos.add(actorFront.mul(temp3.x, temp1), temp2));
+                float distance2 = actorPos.distance(nearPoint);
+                Vector3f farPoint = new Vector3f(actorPos.add(actorFront.mul(temp3.y, temp1), temp2));
+                float distance3 = actorPos.distance(farPoint);
+                if (distance1 <= VISION || (intersects && distance2 <= VISION && distance3 <= 8.0f * VISION)) {
+                    visibleQueue.offer(new Pair<>(id, distance1));
                 } else {
-                    invisibleQueue.offer(new Pair<>(id, distance));
+                    invisibleQueue.offer(new Pair<>(id, distance1));
                 }
             }
         }
