@@ -49,10 +49,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 250;
     public static final float VISION = 250.0f; // determines visibility
-    public static final int MULTIPLIER = 8;
+    private static final int GRID_SIZE = 4;
 
-    public static final int CHUNK_NUM = 33;
-    public static final float LENGTH = BOUND / (float) MULTIPLIER;
+    public static final float STEP = 1.0f / (float) (GRID_SIZE);
+    public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
+    public static final float LENGTH = BOUND * STEP;
 
     // id of the chunk (signed)
     private final int id;
@@ -540,30 +541,60 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    // determine chunk (where am I)
+    /**
+     * Calculate chunk based on position.
+     *
+     * @param pos position of the thing (critter or object)
+     * @return chunk number (grid size based)
+     */
     public static int chunkFunc(Vector3f pos) {
         // normalized x & z
         float nx = (pos.x + BOUND) / (float) (BOUND << 1);
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
-        final int gridSize = Math.round((float) Math.sqrt(MULTIPLIER));
+        // check which column of the interval
+        int col = 0;
+        for (float k = 0.0f; k <= 1.0f - STEP; k += STEP) {
+            if (nx >= k && nx <= k + STEP) {
+                break;
+            } else {
+                col++;
+            }
+        }
 
-        int col = Math.round(MULTIPLIER * nx);
-        int row = Math.round(MULTIPLIER * nz);
+        // check which rows of the interval
+        int row = 0;
+        for (float k = 0.0f; k <= 1.0f - STEP; k += STEP) {
+            if (nz >= k && nz <= k + STEP) {
+                break;
+            } else {
+                row++;
+            }
+        }
 
-        int cid = row * gridSize + col;
+        // determining chunk id -> row(z) & col(x)
+        int cid = row * GRID_SIZE + col;
+
         return cid;
     }
 
-    // determine chunk (where am I)
+    /**
+     * Calculate position centroid based on the chunk Id
+     *
+     * @param chunkId chunk number (from 0 to 15)
+     *
+     * @return chunk middle position
+     */
     public static Vector3f invChunkFunc(int chunkId) {
-        int gridSize = Math.round((float) Math.sqrt(MULTIPLIER));
+        // determining row(z) & col(x)
+        int col = chunkId % GRID_SIZE;
+        int row = chunkId / GRID_SIZE;
 
-        int col = chunkId % gridSize;
-        int row = chunkId / gridSize;
-
-        float nx = col / (float) MULTIPLIER;
-        float nz = row / (float) MULTIPLIER;
+        // calculating middle normalized
+        // col * STEP + STEP / 2.0f;
+        // row * STEP + STEP / 2.0f;
+        float nx = STEP * (col + 0.5f);
+        float nz = row * STEP + STEP / 2.0f;
 
         float x = nx * (BOUND << 1) - BOUND;
         float z = nz * (BOUND << 1) - BOUND;
@@ -585,7 +616,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             if (id != currChunkId) {
                 Vector3f chunkPos = invChunkFunc(id);
                 float distance1 = chunkPos.distance(actorPos);
-                Vector3f chunkMin = chunkPos.sub(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp1);
+                Vector3f chunkMin = chunkPos.add(-LENGTH / 2.0f + 2.0f, -BOUND << 4, -LENGTH / 2.0f + 2.0f, temp1);
                 Vector3f chunkMax = chunkPos.add(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp2);
                 boolean intersects = Intersectionf.intersectRayAab(actorPos, actorFront, chunkMin, chunkMax, temp3);
                 Vector3f nearPoint = new Vector3f(actorPos.add(actorFront.mul(temp3.x, temp1), temp2));
