@@ -581,7 +581,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     /**
      * Calculate position centroid based on the chunk Id
      *
-     * @param chunkId chunk number (from 0 to 15)
+     * @param chunkId chunk number
      *
      * @return chunk middle position
      */
@@ -594,7 +594,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // col * STEP + STEP / 2.0f;
         // row * STEP + STEP / 2.0f;
         float nx = STEP * (col + 0.5f);
-        float nz = row * STEP + STEP / 2.0f;
+        float nz = STEP * (row + 0.5f);
 
         float x = nx * (BOUND << 1) - BOUND;
         float z = nz * (BOUND << 1) - BOUND;
