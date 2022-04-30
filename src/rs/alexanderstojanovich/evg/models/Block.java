@@ -72,7 +72,7 @@ public class Block extends Model {
         new Vector3f(0.0f, 0.0f, 1.0f)
     };
 
-    public static final int VERTEX_COUNT = 24;
+    public static final int VERTEX_COUNT = 8;
     public static final int INDICES_COUNT = 36;
 
     public static final List<Vertex> VERTICES = new GapList<>();
@@ -92,11 +92,11 @@ public class Block extends Model {
     };
 
     static {
-        readFromTxtFile("cube.txt");
+        readFromTxtFileMK2("cubex.txt");
     }
 
     public Block(String texName) {
-        super("block.txt", texName);
+        super("cubex.txt", texName);
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
@@ -104,7 +104,7 @@ public class Block extends Model {
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("block.txt", texName, pos, primaryColor, solid);
+        super("cubex.txt", texName, pos, primaryColor, solid);
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
@@ -130,6 +130,7 @@ public class Block extends Model {
         }
     }
 
+    @Deprecated
     private static void readFromTxtFile(String fileName) {
         InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
         if (in == null) {
@@ -153,6 +154,78 @@ public class Block extends Model {
                     INDICES.add(Integer.parseInt(things[0]));
                     INDICES.add(Integer.parseInt(things[1]));
                     INDICES.add(Integer.parseInt(things[2]));
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        } catch (IOException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        }
+        if (br != null) {
+            try {
+                br.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        }
+    }
+
+    private static void readFromTxtFileMK2(String fileName) {
+        VERTICES.clear();
+        INDICES.clear();
+
+        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        if (in == null) {
+            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
+            return;
+        }
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(in));
+            List<Vector3f> positions = new GapList<>();
+            List<Vector2f> uvs = new ArrayList<>();
+            List<Vector3f> normals = new ArrayList<>();
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("v:")) {
+                    String[] things = line.split("\\s+");
+                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
+                    positions.add(pos);
+                } else if (line.startsWith("t:")) {
+                    String[] things = line.split("\\s+");
+                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), Float.parseFloat(things[2]));
+                    uvs.add(uv);
+                } else if (line.startsWith("n:")) {
+                    String[] things = line.split("\\s+");
+                    Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
+                    normals.add(normal);
+                } else if (line.startsWith("i:")) {
+                    String[] things = line.split("\\s+");
+                    for (String thing : things) {
+                        if (thing.equals("i:")) {
+                            continue;
+                        }
+
+                        String[] subThings = thing.split("/");
+
+                        int indexOfVertex = Integer.parseInt(subThings[0]);
+                        Vector3f pos = new Vector3f(positions.get(indexOfVertex));
+
+                        int indexOfUv = Integer.parseInt(subThings[1]);
+                        Vector2f uv = new Vector2f(uvs.get(indexOfUv));
+
+                        int indexOfNormal = Integer.parseInt(subThings[2]);
+                        Vector3f normal = new Vector3f(normals.get(indexOfNormal));
+
+                        Vertex vertex = new Vertex(pos, normal, uv);
+
+                        if (!VERTICES.contains(vertex)) {
+                            VERTICES.add(vertex);
+                        }
+
+                        INDICES.add(VERTICES.lastIndexOf(vertex));
+                    }
+
                 }
             }
         } catch (FileNotFoundException ex) {
@@ -342,8 +415,8 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public static Pair<Integer, Integer> getFaceVertices(int faceNum) {
-        return new Pair<>(4 * faceNum, 4 * (faceNum + 1));
+    public static List<Vertex> getFaceVertices(List<Vertex> vertices, int faceNum) {
+        return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
@@ -403,17 +476,15 @@ public class Block extends Model {
     }
 
     public void disableFace(int faceNum) {
-        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
-        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
-            vertices.get(i).setEnabled(false);
+        for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
+            subVertex.setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
     }
 
     public void enableFace(int faceNum) {
-        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
-        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
-            vertices.get(i).setEnabled(true);
+        for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
+            subVertex.setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
     }
@@ -433,17 +504,15 @@ public class Block extends Model {
     }
 
     public void reverseFaceVertexOrder() {
-        for (int j = 0; j <= 5; j++) {
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
+        for (int faceNum = 0; faceNum <= 5; faceNum++) {
+            Collections.reverse(getFaceVertices(vertices, faceNum));
         }
         verticesReversed = !verticesReversed;
     }
 
     public static void reverseFaceVertexOrder(List<Vertex> vertices) {
-        for (int j = 0; j <= 5; j++) {
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
+        for (int faceNum = 0; faceNum <= 5; faceNum++) {
+            Collections.reverse(getFaceVertices(vertices, faceNum));
         }
     }
 
@@ -585,8 +654,7 @@ public class Block extends Model {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            List<Vertex> subList = vertices.subList(faceVertices.getKey(), faceVertices.getValue());
+            List<Vertex> subList = getFaceVertices(vertices, j);
             boolean en = (bit == 1);
             for (Vertex v : subList) {
                 v.setEnabled(en);

@@ -480,7 +480,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            upsTicks += -MathUtils.expm1(-deltaTime) * Game.TPS;
+            upsTicks += deltaTime * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
