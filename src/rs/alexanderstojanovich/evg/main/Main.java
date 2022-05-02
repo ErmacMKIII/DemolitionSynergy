@@ -62,7 +62,8 @@ public class Main {
 
                 Vector3f pos = gameObject.getLevelContainer().getLevelActors().mainCamera().getPos();
                 int chunkId = Chunk.chunkFunc(pos);
-                gameObject.getIntrface().getAlphaText().setContent(String.format("pos: (%.2f,%.2f,%.2f)\nchunk: %d", pos.x, pos.y, pos.z, chunkId));
+                gameObject.getIntrface().getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
+                gameObject.getIntrface().getChunkText().setContent(String.format("chunkId: %d", chunkId));
             }
         };
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);

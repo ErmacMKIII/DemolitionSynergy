@@ -72,7 +72,7 @@ public class Block extends Model {
         new Vector3f(0.0f, 0.0f, 1.0f)
     };
 
-    public static final int VERTEX_COUNT = 8;
+    public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
 
     public static final List<Vertex> VERTICES = new GapList<>();

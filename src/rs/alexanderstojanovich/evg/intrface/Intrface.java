@@ -44,7 +44,9 @@ public class Intrface {
     private Quad crosshair;
     private DynamicText updText; // displays updates
     private DynamicText fpsText; // displays framerates
-    private DynamicText alphaText; // display alpha ratio
+    private DynamicText posText; // display position
+    private DynamicText chunkText; // display current chunk (player)
+
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
@@ -82,8 +84,14 @@ public class Intrface {
         updText.alignToNextChar();
         fpsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
         fpsText.alignToNextChar();
-        alphaText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
-        alphaText.alignToNextChar();
+
+        posText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -1.0f));
+        posText.setAlignment(Text.ALIGNMENT_RIGHT);
+        posText.alignToNextChar();
+
+        chunkText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -0.85f));
+        chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
+        chunkText.alignToNextChar();
 
         collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
@@ -478,10 +486,14 @@ public class Intrface {
             fpsText.bufferAll();
         }
         fpsText.render(ifcShaderProgram);
-        if (!alphaText.isBuffered()) {
-            alphaText.bufferAll();
+        if (!posText.isBuffered()) {
+            posText.bufferAll();
         }
-        alphaText.render(ifcShaderProgram);
+        posText.render(ifcShaderProgram);
+        if (!chunkText.isBuffered()) {
+            chunkText.bufferAll();
+        }
+        chunkText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
             collText.bufferAll();
         }
@@ -541,8 +553,24 @@ public class Intrface {
         return fpsText;
     }
 
-    public DynamicText getAlphaText() {
-        return alphaText;
+    public DynamicText getPosText() {
+        return posText;
+    }
+
+    public DynamicText getChunkText() {
+        return chunkText;
+    }
+
+    public Menu getCreditsMenu() {
+        return creditsMenu;
+    }
+
+    public Menu getRandLvlMenu() {
+        return randLvlMenu;
+    }
+
+    public int getNumBlocks() {
+        return numBlocks;
     }
 
     public DynamicText getCollText() {
