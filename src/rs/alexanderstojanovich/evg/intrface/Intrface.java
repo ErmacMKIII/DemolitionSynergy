@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.FutureTask;
@@ -60,10 +62,13 @@ public class Intrface {
     private ConcurrentDialog singlePlayerDialog;
 
     private Menu mainMenu;
+
     private OptionsMenu optionsMenu;
+
     private Menu editorMenu;
     private Menu creditsMenu;
     private Menu randLvlMenu;
+    private Menu loadLvlMenu;
 
     private int numBlocks = 0;
 
@@ -177,6 +182,34 @@ public class Intrface {
                 return ok;
             }
         };
+        loadDialog.dialog.alignToNextChar();
+
+        File currFile = new File("./");
+        String[] datFileList = currFile.list(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.toLowerCase().endsWith(".dat");
+            }
+        });
+
+        List<Pair<String, Boolean>> loadLvlMenuPairs = new ArrayList<>();
+        for (String datFile : datFileList) {
+            loadLvlMenuPairs.add(new Pair<>(datFile, true));
+        }
+
+        loadLvlMenu = new Menu("LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+            @Override
+            protected void leave() {
+                editorMenu.open();
+            }
+
+            @Override
+            protected void execute() {
+                String chosen = loadLvlMenu.getItems().get(loadLvlMenu.getSelected()).getContent();
+                gameObject.loadLevelFromFile(chosen);
+            }
+        };
+        loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
         randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
@@ -193,6 +226,7 @@ public class Intrface {
                 return ok;
             }
         };
+        randLvlDialog.dialog.alignToNextChar();
 
         List<Pair<String, Boolean>> randLvlMenuPairs = new ArrayList<>();
         randLvlMenuPairs.add(new Pair<>("SMALL  (25000  blocks)", true));
@@ -245,6 +279,7 @@ public class Intrface {
                 return ok;
             }
         };
+        singlePlayerDialog.dialog.alignToNextChar();
 
         List<Pair<String, Boolean>> optionsMenuPairs = new ArrayList<>();
         optionsMenuPairs.add(new Pair<>("FPS CAP", true));
@@ -408,7 +443,7 @@ public class Intrface {
                         break;
                     case "LOAD LEVEL FROM FILE":
                         progText.setEnabled(true);
-                        loadDialog.open();
+                        loadLvlMenu.open();
                         break;
                 }
             }
@@ -519,8 +554,9 @@ public class Intrface {
         editorMenu.render(ifcShaderProgram);
         creditsMenu.render(ifcShaderProgram);
         randLvlMenu.render(ifcShaderProgram);
+        loadLvlMenu.render(ifcShaderProgram);
 
-        if (!mainMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
+        if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
                 && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll();

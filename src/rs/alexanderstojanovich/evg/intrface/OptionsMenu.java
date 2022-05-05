@@ -169,11 +169,7 @@ public abstract class OptionsMenu extends Menu {
                 options.get(index).getKey().render(shaderProgram);
                 index++;
             }
-            iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
-            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
-            iterator.getPos().y = items.get(selected).getPos().y;
-            iterator.setColor(items.get(selected).getColor());
+
             if (!iterator.isBuffered()) {
                 iterator.bufferAll();
             }
