@@ -70,15 +70,8 @@ public class Renderer extends Thread implements Executor {
         double deltaTime = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
-            // if update (Game) is running 
-            if (Game.getUpsTicks() >= 1.0) {
-                synchronized (GameObject.MY_WINDOW) {
-                    try {
-                        GameObject.MY_WINDOW.wait(Math.round(1000.0 * Game.getUpsTicks() / (long) Game.TPS));
-                    } catch (InterruptedException ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
-                }
+            if (Game.getUpsTicks() > 1.0) {
+                continue;
             }
 
             // changing resolution if necessary
@@ -94,7 +87,7 @@ public class Renderer extends Thread implements Executor {
 
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-
+            // hunger time w/ no update
             fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
@@ -106,51 +99,51 @@ public class Renderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
-                gameObject.render();
+            while (fpsTicks >= 1.0 && numOfPasses < Game.TPS / 2) {
+                gameObject.render();// update text which shows dialog every 5 seconds
+
+                if (GLFW.glfwGetTime() > timer1 + 5.0) {
+                    if (gameObject.getIntrface().getSaveDialog().isDone()) {
+                        gameObject.getIntrface().getSaveDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
+                        gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
+                    }
+
+                    if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
+                        gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
+                    }
+
+                    gameObject.getIntrface().getCollText().setContent("");
+                    gameObject.getIntrface().getScreenText().setEnabled(false);
+
+                    timer1 += 5.0;
+                }
+
+                // update text which animates water every quarter of the second
+                if (GLFW.glfwGetTime() > timer2 + 0.25) {
+                    if (gameObject.getLevelContainer().getProgress() == 100.0f) {
+                        gameObject.getIntrface().getProgText().setEnabled(false);
+                        gameObject.getLevelContainer().setProgress(0.0f);
+                    }
+
+                    if (!gameObject.isWorking()) {
+                        if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
+                            gameObject.animate();
+                        }
+                    }
+                    timer2 += 0.25;
+                }
+
                 fps++;
                 fpsTicks--;
                 numOfPasses++;
-            }
-
-            // update text which shows dialog every 5 seconds
-            if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                if (gameObject.getIntrface().getSaveDialog().isDone()) {
-                    gameObject.getIntrface().getSaveDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
-                    gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
-                }
-
-                if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
-                    gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
-                }
-
-                gameObject.getIntrface().getCollText().setContent("");
-                gameObject.getIntrface().getScreenText().setEnabled(false);
-
-                timer1 += 5.0;
-            }
-
-            // update text which animates water every quarter of the second
-            if (GLFW.glfwGetTime() > timer2 + 0.25) {
-                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
-                    gameObject.getIntrface().getProgText().setEnabled(false);
-                    gameObject.getLevelContainer().setProgress(0.0f);
-                }
-
-                if (!gameObject.isWorking()) {
-                    if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
-                        gameObject.animate();
-                    }
-                }
-                timer2 += 0.25;
             }
 
             // lastly it executes the console tasks

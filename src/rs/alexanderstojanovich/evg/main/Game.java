@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -480,6 +479,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
+            // hunger time
             upsTicks += deltaTime * Game.TPS;
             lastTime = currTime;
 
@@ -500,34 +500,32 @@ public class Game {
                     }
                 }
                 gameObject.determineVisibleChunks();
-                gameObject.update((float) (Math.floorMod(Math.round(upsTicks), TPS)));
+                gameObject.update((float) upsTicks / (float) Game.TPS);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
                         break;
                     case EDITOR:
                         // observer has control
-                        observerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
+                        observerDo((AMOUNT * (float) upsTicks) / (float) TPS);
                         editorDo();
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        playerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
+                        playerDo((AMOUNT * (float) upsTicks) / (float) TPS);
                         break;
                 }
+
+                if (GLFW.glfwGetTime() > timerc + 0.03125) {
+                    gameObject.chunkOperations();
+                    timerc += 0.03125;
+                }
+
                 ups++;
                 upsTicks--;
             }
 
-            synchronized (GameObject.MY_WINDOW) {
-                GameObject.MY_WINDOW.notify();
-            }
-
-            if (GLFW.glfwGetTime() > timerc + 0.03125) {
-                gameObject.chunkOperations();
-                timerc += 0.03125;
-            }
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

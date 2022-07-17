@@ -49,7 +49,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 1000;
     public static final float VISION = 250.0f; // determines visibility
-    private static final int GRID_SIZE = 9;
+    private static final int GRID_SIZE = 3;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -553,24 +553,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
         // check which column of the interval
-        int col = 0;
-        for (float k = 0.0f; k <= 1.0f - STEP; k += STEP) {
-            if (nx >= k && nx <= k + STEP) {
-                break;
-            } else {
-                col++;
-            }
-        }
+        int col = Math.round(nx * (1.0f / STEP - 1.0f));
 
         // check which rows of the interval
-        int row = 0;
-        for (float k = 0.0f; k <= 1.0f - STEP; k += STEP) {
-            if (nz >= k && nz <= k + STEP) {
-                break;
-            } else {
-                row++;
-            }
-        }
+        int row = Math.round(nz * (1.0f / STEP - 1.0f));
 
         // determining chunk id -> row(z) & col(x)
         int cid = row * GRID_SIZE + col;
