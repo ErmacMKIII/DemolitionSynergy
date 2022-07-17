@@ -20,7 +20,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -58,22 +57,18 @@ public class Renderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context        
+        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context          
 
-        double timer1 = GLFW.glfwGetTime();
-        double timer2 = GLFW.glfwGetTime();
+        double timer1 = 0.0;
+        double timer2 = 0.0;
 
         fps = 0;
 
-        double lastTime = GLFW.glfwGetTime();
+        double lastTime = Game.accumulator * Game.TICK_TIME;
         double currTime;
         double deltaTime = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
-            if (Game.getUpsTicks() > 1.0) {
-                continue;
-            }
-
             // changing resolution if necessary
             int width = GameObject.MY_WINDOW.getWidth();
             int height = GameObject.MY_WINDOW.getHeight();
@@ -85,9 +80,8 @@ public class Renderer extends Thread implements Executor {
                 heightGL = height;
             }
 
-            currTime = GLFW.glfwGetTime();
+            currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
-            // hunger time w/ no update
             fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
@@ -102,7 +96,7 @@ public class Renderer extends Thread implements Executor {
             while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
                 gameObject.render();// update text which shows dialog every 5 seconds
 
-                if (GLFW.glfwGetTime() > timer1 + 5.0) {
+                if (Game.accumulator > timer1 + 500.0) {
                     if (gameObject.getIntrface().getSaveDialog().isDone()) {
                         gameObject.getIntrface().getSaveDialog().setEnabled(false);
                     }
@@ -123,11 +117,11 @@ public class Renderer extends Thread implements Executor {
                     gameObject.getIntrface().getCollText().setContent("");
                     gameObject.getIntrface().getScreenText().setEnabled(false);
 
-                    timer1 += 5.0;
+                    timer1 += 500.0;
                 }
 
                 // update text which animates water every quarter of the second
-                if (GLFW.glfwGetTime() > timer2 + 0.25) {
+                if (Game.accumulator > timer2 + 20.0) {
                     if (gameObject.getLevelContainer().getProgress() == 100.0f) {
                         gameObject.getIntrface().getProgText().setEnabled(false);
                         gameObject.getLevelContainer().setProgress(0.0f);
@@ -138,7 +132,7 @@ public class Renderer extends Thread implements Executor {
                             gameObject.animate();
                         }
                     }
-                    timer2 += 0.25;
+                    timer2 += 20.0;
                 }
 
                 fps++;

@@ -149,11 +149,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     /**
      * Auto load/save level container chunks
+     *
+     * @param deltaTime game object environment update time
      */
-    public void chunkOperations() {
+    public void chunkOperations(float deltaTime) {
         lock.writeLock().lock();
         try {
-            levelContainer.chunkOperations();
+            levelContainer.chunkOperations(deltaTime);
         } finally {
             lock.writeLock().unlock();
         }

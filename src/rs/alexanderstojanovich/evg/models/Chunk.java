@@ -25,8 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
-import org.joml.Intersectionf;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
@@ -72,7 +70,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
 
-    private int timeToLive = 0;
+    private float timeToLive = 0.0f;
 
     public Chunk(int id, boolean solid) {
         this.id = id;
@@ -594,22 +592,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // current chunk where player is
         int currChunkId = chunkFunc(actorPos);
         visibleQueue.offer(new Pair<>(currChunkId, 0.0f));
-        // this is for other chunks
-        Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
-        Vector2f temp3 = new Vector2f();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (id != currChunkId) {
                 Vector3f chunkPos = invChunkFunc(id);
                 float distance1 = chunkPos.distance(actorPos);
-                Vector3f chunkMin = chunkPos.add(-LENGTH / 2.0f + 2.0f, -BOUND << 4, -LENGTH / 2.0f + 2.0f, temp1);
-                Vector3f chunkMax = chunkPos.add(LENGTH / 2.0f - 2.0f, BOUND << 4, LENGTH / 2.0f - 2.0f, temp2);
-                boolean intersects = Intersectionf.intersectRayAab(actorPos, actorFront, chunkMin, chunkMax, temp3);
-                Vector3f nearPoint = new Vector3f(actorPos.add(actorFront.mul(temp3.x, temp1), temp2));
-                float distance2 = actorPos.distance(nearPoint);
-                Vector3f farPoint = new Vector3f(actorPos.add(actorFront.mul(temp3.y, temp1), temp2));
-                float distance3 = actorPos.distance(farPoint);
-                if (distance1 <= VISION || (intersects && distance2 <= VISION && distance3 <= 8.0f * VISION)) {
+                if (distance1 <= VISION) {
                     visibleQueue.offer(new Pair<>(id, distance1));
                 } else {
                     invisibleQueue.offer(new Pair<>(id, distance1));
@@ -831,24 +818,24 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return pos;
     }
 
-    public int getTimeToLive() {
+    public float getTimeToLive() {
         return timeToLive;
     }
 
-    public void setTimeToLive(int timeToLive) {
+    public void setTimeToLive(float timeToLive) {
         this.timeToLive = timeToLive;
     }
 
-    public void decTimeToLive() {
-        if (timeToLive > 0) {
-            timeToLive--;
+    public void decTimeToLive(float timeDec) {
+        if (timeDec > 0.0f) {
+            this.timeToLive -= timeDec;
         } else {
-            timeToLive = 0;
+            this.timeToLive = 0.0f;
         }
     }
 
     public boolean isAlive() {
-        return timeToLive > 0;
+        return timeToLive > 0.0f;
     }
 
 }

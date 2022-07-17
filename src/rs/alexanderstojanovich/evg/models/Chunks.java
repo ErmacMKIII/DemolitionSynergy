@@ -296,7 +296,7 @@ public class Chunks {
             sb.append("id = ").append(id)
                     .append(" | solid = ").append(solid)
                     .append(" | size = ").append((!cached && chunk != null) ? chunk.loadedSize() : Chunk.cachedSize(id, solid))
-                    .append(" | timeToLive = ").append((chunk != null) ? chunk.getTimeToLive() : 0)
+                    .append(" | timeToLive = ").append((chunk != null) ? String.format("%.1f", chunk.getTimeToLive()) : 0.0f)
                     .append(" | buffered = ").append((chunk != null) ? chunk.isBuffered() : false)
                     .append(" | cached = ").append(cached)
                     .append("\n");

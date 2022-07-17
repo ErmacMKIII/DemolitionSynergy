@@ -111,7 +111,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Map<Vector3f, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS >> 4);
 
     // std time to live
-    public static final int STD_TTL = 30; // 30 seconds
+    public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
 
     protected static boolean cameraInFluid = false;
 
@@ -764,7 +764,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     // method for saving invisible chunks
-    public void chunkOperations() {
+    public void chunkOperations(float deltaTime) {
         if (!working) {
             Pair<Integer, Float> vPair = visibleQueue.poll();
             if (vPair != null) {
@@ -798,7 +798,7 @@ public class LevelContainer implements GravityEnviroment {
                 Chunk solidChunk = solidChunks.getChunk(invisibleId);
                 if (solidChunk != null) {
                     if (solidChunk.isAlive()) {
-                        solidChunk.decTimeToLive();
+                        solidChunk.decTimeToLive(deltaTime);
                     } else if (!solidChunk.isAlive()) {
                         solidChunk.unbuffer();
                         solidChunk.saveToDisk();
@@ -808,7 +808,7 @@ public class LevelContainer implements GravityEnviroment {
                 Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
                 if (fluidChunk != null) {
                     if (fluidChunk.isAlive()) {
-                        fluidChunk.decTimeToLive();
+                        fluidChunk.decTimeToLive(deltaTime);
                     } else if (!fluidChunk.isAlive()) {
                         fluidChunk.unbuffer();
                         fluidChunk.saveToDisk();
