@@ -34,12 +34,13 @@ public class RandomLevelGenerator {
     public static final int POS_MAX = (Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f)) & 0xFFFFFFFE;
     public static final int POS_MIN = (Math.round(-LevelContainer.SKYBOX_WIDTH + 2.0f)) & 0xFFFFFFFE;
 
-    public static final float CUBIC = 1.07E-14f;
-    public static final float QUADRATIC = -3.2E-9f;
-    public static final float LINEAR = 4.3E-4f;
-    public static final float CONST = 15.0f;
+    public static final float CUBIC = 1.067E-14f;
+    public static final float QUADRATIC = -8.0E-10f;
+    public static final float LINEAR = 2.67E-4f;
+    public static final float CONST = 23.0f;
 
     private final Random random = new Random(0x123456789L);
+    public static final int RAND_MAX_ATTEMPTS = 1000;
 
     private final LevelContainer levelContainer;
 
@@ -92,13 +93,20 @@ public class RandomLevelGenerator {
         float posy;
         float posz;
         Vector3f randPos;
+        int randomAttempts = 0;
         do {
             posx = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
             posy = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
             posz = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
 
             randPos = new Vector3f(posx, posy, posz);
-        } while (repeatCondition(randPos) && !levelContainer.getMyWindow().shouldClose());
+            randomAttempts++;
+//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(randPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
 
         Vector3f pos = randPos;
         // color chance
@@ -124,13 +132,20 @@ public class RandomLevelGenerator {
         float posy;
         float posz;
         Vector3f randPos;
+        int randomAttempts = 0;
         do {
             posx = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
             posy = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
             posz = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
 
             randPos = new Vector3f(posx, posy, posz);
-        } while (repeatCondition(randPos) && !levelContainer.getMyWindow().shouldClose());
+            randomAttempts++;
+//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(randPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
 
         Vector3f pos = randPos;
         Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -151,6 +166,7 @@ public class RandomLevelGenerator {
         }
         int randFace;
         Vector3f adjPos;
+        int randomAttempts = 0;
         do {
             randFace = possibleFaces.get(random.nextInt(possibleFaces.size()));
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
@@ -176,7 +192,13 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (repeatCondition(adjPos) && !levelContainer.getMyWindow().shouldClose());
+            randomAttempts++;
+//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(adjPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
 
         Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
         if (random.nextFloat() >= 0.95f) {
@@ -202,6 +224,7 @@ public class RandomLevelGenerator {
         }
         int randFace;
         Vector3f adjPos;
+        int randomAttempts = 0;
         do {
             randFace = possibleFaces.get(random.nextInt(possibleFaces.size()));
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
@@ -227,7 +250,13 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (repeatCondition(adjPos) && !levelContainer.getMyWindow().shouldClose());
+            randomAttempts++;
+//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(adjPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
 
         String adjTexture = "water";
         Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -375,6 +404,8 @@ public class RandomLevelGenerator {
                             solidBlocks--;
                             // this provides external monitoring of level generation progress                        
                             levelContainer.incProgress(100.0f / (float) totalAmount);
+                        } else {
+                            break;
                         }
                         //--------------------------------------------------
                         if (random.nextInt(2) == 0) {
@@ -406,7 +437,10 @@ public class RandomLevelGenerator {
                             fluidBlocks--;
                             // this provides external monitoring of level generation progress                        
                             levelContainer.incProgress(100.0f / (float) totalAmount);
-                        } //--------------------------------------------------
+                        } else {
+                            break;
+                        }
+                        //--------------------------------------------------
                         if (random.nextInt(2) == 0) {
                             fluidBlock = fluidAdjBlock;
                         } else {
@@ -433,7 +467,7 @@ public class RandomLevelGenerator {
 
             List<Integer> freeFaces = fluidBlock.getAdjacentFreeFaceNumbers();
             for (int faceNum : freeFaces) {
-                if (faceNum == Block.TOP && random.nextFloat() >= 0.5f) {
+                if (faceNum == Block.TOP && random.nextFloat() >= 0.25f) {
                     continue;
                 }
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
@@ -450,7 +484,7 @@ public class RandomLevelGenerator {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
             // define alpha: solid to fluid ratio
-            float alpha = 0.5f * random.nextFloat() + 0.2f;
+            final float alpha = 0.3f + random.nextFloat() * 0.7f;
             int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
             int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
 
@@ -461,31 +495,47 @@ public class RandomLevelGenerator {
             if (totalAmount > 0) {
                 //---------------------------------------------------------------------------------------------------------------------------
                 // define beta: noise to random ratio
-                float beta = (1 + random.nextInt(3)) * 0.1f;
+                final float beta = 0.6f + 0.4f * random.nextFloat();
+                final float gamma = 0.83333f;
+
+                final int solidBlocksN = Math.round(beta * solidBlocks);
+                final int solidBlocksN1 = Math.round(gamma * solidBlocksN);
+                final int solidBlocksN2 = solidBlocks - solidBlocksN1;
+
+                final int fluidBlocksN = Math.round(beta * fluidBlocks);
+
+                final int solidBlocksR = solidBlocks - solidBlocksN;
+                final int solidBlocksR1 = Math.round(gamma * solidBlocksR);
+                final int solidBlocksR2 = solidBlocksR - solidBlocksR;
+
+                final int fluidBlocksR = fluidBlocks - fluidBlocksN;
+
                 // define gamma: random fluid to series solid ratio
                 //---------------------------------------------------------------------------------------------------------------------------
-                float valueN = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, numberOfBlocks);
-                final int posN_Min = Math.round(-valueN) & 0xFFFFFFFE;
-                final int posN_Max = Math.round(valueN) & 0xFFFFFFFE;
+                float valueK = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, solidBlocksN + fluidBlocksN);
+                int valueK0 = Math.round(valueK) & 0xFFFFFFFE;
 
-                float valueR = 1.75f * valueN;
+                final int posN_Min = -valueK0;
+                final int posN_Max = valueK0;
+
+                float valueR = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, solidBlocksR + fluidBlocksR);
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 
-                //---------------------------------------------------------------------------------------------------------------------------
-                DSLogger.reportInfo("Generating Part I - Noise", null);
+                DSLogger.reportInfo(String.format("Generating Part I - Noise (%d blocks)", solidBlocksN + fluidBlocksN), null);
                 // 1. Noise Part                                   
-                generateByNoise(Math.round((1.0f - beta) * solidBlocks), Math.round((1.0f - beta) * fluidBlocks), totalAmount, posN_Min, posN_Max);
+                generateByNoise(solidBlocksN1, fluidBlocksN, totalAmount, posN_Min, posN_Max);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
-                DSLogger.reportInfo("Generating Part II - Random", null);
+                //--------------------------------------------------------------------------------------------------------------------------- 
+                DSLogger.reportInfo(String.format("Generating Part II - Random (%d blocks)", solidBlocksR + solidBlocksR), null);
                 // 2. Random Part                 
-                generateByRandom(Math.round(beta * solidBlocks), Math.round(beta * fluidBlocks), totalAmount, posR_Min, posR_Max);
+                generateByRandom(solidBlocksR1, fluidBlocksR, totalAmount, posR_Min, posR_Max);
                 DSLogger.reportInfo("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportInfo("Generating Part III - Fluid Series", null);
                 // 3. Fluid Series
-                generateFluidSeries(Math.round(beta * solidBlocks));
+                generateFluidSeries(solidBlocksN2 + solidBlocksR2);
                 DSLogger.reportInfo("Done.", null);
             }
         }
