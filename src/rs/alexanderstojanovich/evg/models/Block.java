@@ -78,6 +78,15 @@ public class Block extends Model {
     public static final List<Vertex> VERTICES = new GapList<>();
     public static final List<Integer> INDICES = new ArrayList<>();
 
+    public static final Comparator<Block> FLOAT3_BITS_COMP = new Comparator<Block>() {
+        @Override
+        public int compare(Block o1, Block o2) {
+            String name1 = Vector3fUtils.float3ToString(o1.pos);
+            String name2 = Vector3fUtils.float3ToString(o2.pos);
+            return name1.compareTo(name2);
+        }
+    };
+
     public static final Comparator<Block> Y_AXIS_COMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {

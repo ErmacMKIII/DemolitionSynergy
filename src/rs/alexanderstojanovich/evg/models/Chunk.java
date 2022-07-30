@@ -45,7 +45,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = 1000;
+    public static final int BOUND = 64;
     public static final float VISION = 250.0f; // determines visibility
     private static final int GRID_SIZE = 3;
 
@@ -109,6 +109,26 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return null;
     }
 
+    public static Block getBlock(Tuple tuple, Vector3f pos) {
+        String keyStr = Vector3fUtils.float3ToString(pos);
+        int left = 0;
+        int right = tuple.blockList.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                return candidate;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return null;
+    }
+
     /**
      * Transfer block between two tuples. Block will be transfered from tuple
      * with formFaceBits to tuple with current facebits.
@@ -136,7 +156,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
         List<Block> blockList = dstTuple.getBlockList();
         blockList.add(block);
-        blockList.sort(Block.Y_AXIS_COMP);
+        blockList.sort(Block.FLOAT3_BITS_COMP);
 
         buffered = false;
     }
@@ -176,12 +196,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                         Tuple tuple = getTuple(tupleTexName, tupleBits);
                         Block adjBlock = null;
                         if (tuple != null) {
-                            for (Block blk : tuple.blockList) {
-                                if (blk.pos.equals(adjPos)) {
-                                    adjBlock = blk;
-                                    break;
-                                }
-                            }
+                            adjBlock = Chunk.getBlock(tuple, adjPos);
                         }
                         if (adjBlock != null) {
                             int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -225,12 +240,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
                 if (tuple != null) {
-                    for (Block blk : tuple.blockList) {
-                        if (blk.pos.equals(adjPos)) {
-                            adjBlock = blk;
-                            break;
-                        }
-                    }
+                    adjBlock = Chunk.getBlock(tuple, adjPos);
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -271,12 +281,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
                 if (tuple != null) {
-                    for (Block blk : tuple.blockList) {
-                        if (blk.pos.equals(adjPos)) {
-                            adjBlock = blk;
-                            break;
-                        }
-                    }
+                    adjBlock = Chunk.getBlock(tuple, adjPos);
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -345,12 +350,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                         Tuple tuple = getTuple(tupleTexName, tupleBits);
                         Block adjBlock = null;
                         if (tuple != null) {
-                            for (Block blk : tuple.blockList) {
-                                if (blk.pos.equals(adjPos)) {
-                                    adjBlock = blk;
-                                    break;
-                                }
-                            }
+                            adjBlock = Chunk.getBlock(tuple, adjPos);
                         }
                         if (adjBlock != null) {
                             int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -409,7 +409,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
-        blockList.sort(Block.Y_AXIS_COMP);
+        blockList.sort(Block.FLOAT3_BITS_COMP);
 
         if (useLevelContainer) {
             // level container also set neighbor bits
