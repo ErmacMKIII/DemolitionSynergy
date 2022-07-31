@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
+import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -34,7 +35,7 @@ public class Main {
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
-        Chunk.deleteCache();
+        CacheModule.deleteCache();
         Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
@@ -101,7 +102,7 @@ public class Main {
         gameObject.destroy(); // destroy window alongside with the OpenGL context
         MasterAudio.destroy(); // destroy context after writting to the ini file                                
         //---------------------------------------------------------------------- 
-        Chunk.deleteCache();
+        CacheModule.deleteCache();
         DSLogger.reportInfo("Game finished.", null);
     }
 

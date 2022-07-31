@@ -16,25 +16,17 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -45,9 +37,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = 64;
+    public static final int BOUND = 512;
     public static final float VISION = 250.0f; // determines visibility
-    private static final int GRID_SIZE = 3;
+    private static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -66,9 +58,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     private Texture waterTexture;
 
     private boolean buffered = false;
-
-    private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
-    private static int pos = 0;
 
     private float timeToLive = 0.0f;
 
@@ -90,7 +79,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
+    protected Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -169,7 +158,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      *
      * @param block block to update
      */
-    private void updateSolidForAdd(Block block) {
+    protected void updateSolidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
         Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(block.pos);
         if (pair != null) {
@@ -223,7 +212,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      *
      * @param block block to update
      */
-    private void updateSolidForRem(Block block) {
+    protected void updateSolidForRem(Block block) {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
@@ -258,72 +247,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     /**
      * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
-     *
-     * Used after removal operation.
-     *
-     * @param block block to update
-     */
-    private void updateFluidForRem(Block block) {
-        // check adjacent blocks
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
-                String tupleTexName = adjPair.getKey();
-                byte adjNBits = adjPair.getValue();
-                int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                int mask = 1 << k;
-                // revert the bit that was set in LevelContainer
-                //(looking for old bits i.e. current tuple)
-                int tupleBits = adjNBits ^ (~mask & 63);
-
-                Tuple tuple = getTuple(tupleTexName, tupleBits);
-                Block adjBlock = null;
-                if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos);
-                }
-                if (adjBlock != null) {
-                    int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
-                    int adjFaceBitsAfter = adjBlock.getFaceBits();
-                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                        // if bits changed, i.e. some face(s) got disabled
-                        // tranfer to correct tuple
-                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                    }
-                }
-            }
-        }
-    }
-
-    @Deprecated
-    public void updateSolids() {
-        for (Block solidBlock : getBlockList()) {
-            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
-                solidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = solidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    transfer(solidBlock, faceBitsBefore, faceBitsAfter);
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
      * must be fluid. Removal is used only if block is being removed.
      *
      * @param block block to update
      */
-    private void updateFluidForAdd(Block block) {
+    protected void updateFluidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
         Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(block.pos);
         if (pair != null) {
@@ -369,8 +297,69 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     }
 
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
+     *
+     * Used after removal operation.
+     *
+     * @param block block to update
+     */
+    protected void updateFluidForRem(Block block) {
+        // check adjacent blocks
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
+            if (adjPair != null) {
+                String tupleTexName = adjPair.getKey();
+                byte adjNBits = adjPair.getValue();
+                int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                int mask = 1 << k;
+                // revert the bit that was set in LevelContainer
+                //(looking for old bits i.e. current tuple)
+                int tupleBits = adjNBits ^ (~mask & 63);
+
+                Tuple tuple = getTuple(tupleTexName, tupleBits);
+                Block adjBlock = null;
+                if (tuple != null) {
+                    adjBlock = Chunk.getBlock(tuple, adjPos);
+                }
+                if (adjBlock != null) {
+                    int adjFaceBitsBefore = adjBlock.getFaceBits();
+                    adjBlock.setFaceBits(~adjNBits & 63);
+                    int adjFaceBitsAfter = adjBlock.getFaceBits();
+                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                        // if bits changed, i.e. some face(s) got disabled
+                        // tranfer to correct tuple
+                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                    }
+                }
+            }
+        }
+    }
+
     @Deprecated
-    public void updateFluids() {
+    protected void updateSolids() {
+        for (Block solidBlock : getBlockList()) {
+            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
+                break;
+            }
+
+            int faceBitsBefore = solidBlock.getFaceBits();
+            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
+            if (pair != null) {
+                byte neighborBits = pair.getValue();
+                solidBlock.setFaceBits(~neighborBits & 63);
+                int faceBitsAfter = solidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    transfer(solidBlock, faceBitsBefore, faceBitsAfter);
+                }
+            }
+        }
+    }
+
+    @Deprecated
+    protected void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
             if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
                 break;
@@ -469,14 +458,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // hint that stuff should be buffered again
     public void unbuffer() {
-        if (!Chunk.isCached(id, solid)) {
+        if (!CacheModule.isCached(id, solid)) {
             buffered = false;
         }
     }
 
     // renderer does this stuff prior to any rendering
     public void bufferAll() {
-        if (!Chunk.isCached(id, solid)) {
+        if (!CacheModule.isCached(id, solid)) {
             for (Tuple tuple : tupleList) {
                 tuple.bufferAll();
             }
@@ -523,19 +512,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             GL20.glDisableVertexAttribArray(7);
 
             Texture.disable();
-        }
-    }
-
-    // deallocates Chunk from graphic card
-    @Deprecated
-    public void release() {
-        if (!Chunk.isCached(id, solid)) {
-            //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
-            //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-            for (Tuple tuple : tupleList) {
-                tuple.release();
-            }
-            buffered = false;
         }
     }
 
@@ -605,181 +581,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public int loadedSize() { // for debugging purposes
-        int size = 0;
-        if (!Chunk.isCached(id, solid)) {
-            for (Tuple tuple : tupleList) {
-                size += tuple.getBlockList().size();
-            }
-        }
-        return size;
-    }
-
-    public static int cachedSize(int id, boolean solid) { // for debugging purposes
-        int size = 0;
-        if (Chunk.isCached(id, solid)) {
-            try {
-                FileInputStream fos = new FileInputStream(getFileName(id, solid));
-                byte[] bytes = new byte[3];
-                fos.read(bytes, 0, 3);
-                size = ((bytes[2] & 0xFF) << 8) | (bytes[1] & 0xFF);
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
-            } catch (IOException ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
-            }
-        }
-        return size;
-    }
-
     public List<Block> getBlockList() {
         List<Block> result = new BigList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());
         }
         return result;
-    }
-
-    private void saveMemToDisk(String filename) {
-        BufferedOutputStream bos = null;
-        File file = new File(filename);
-        if (file.exists()) {
-            file.delete();
-        }
-        try {
-            bos = new BufferedOutputStream(new FileOutputStream(file));
-            bos.write(MEMORY, 0, pos);
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (bos != null) {
-            try {
-                bos.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-    }
-
-    private void loadDiskToMem(String filename) {
-        File file = new File(filename);
-        if (file.exists()) {
-            BufferedInputStream bis = null;
-            try {
-                bis = new BufferedInputStream(new FileInputStream(file));
-                bis.read(MEMORY);
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-            if (bis != null) {
-                try {
-                    bis.close();
-                } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage(), ex);
-                }
-            }
-            file.delete();
-        }
-    }
-
-    private String getFileName() {
-        return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
-    }
-
-    private static String getFileName(int id, boolean solid) {
-        return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
-    }
-
-    public void saveToDisk() {
-        if (!Chunk.isCached(id, solid)) {
-            List<Block> blocks = getBlockList();
-            pos = 0;
-            MEMORY[pos++] = (byte) id;
-            MEMORY[pos++] = (byte) blocks.size();
-            MEMORY[pos++] = (byte) (blocks.size() >> 8);
-            for (Block block : blocks) {
-                byte[] texName = block.texName.getBytes();
-                System.arraycopy(texName, 0, MEMORY, pos, 5);
-                pos += 5;
-                byte[] solidPos = Vector3fUtils.vec3fToByteArray(block.getPos());
-                System.arraycopy(solidPos, 0, MEMORY, pos, solidPos.length);
-                pos += solidPos.length;
-                Vector3f primCol = block.getPrimaryColor();
-                byte[] solidCol = Vector3fUtils.vec3fToByteArray(primCol);
-                System.arraycopy(solidCol, 0, MEMORY, pos, solidCol.length);
-                pos += solidCol.length;
-            }
-
-            // better than tuples clear (otherwise much slower to load)
-            // this indicates that add with no transfer on fluid blocks will be used!
-            for (Tuple tuple : tupleList) {
-                tuple.getBlockList().clear();
-            }
-
-            File cacheDir = new File(Game.CACHE);
-            if (!cacheDir.exists()) {
-                cacheDir.mkdir();
-            }
-
-            saveMemToDisk(getFileName());
-
-            tupleList.clear();
-        }
-    }
-
-    public void loadFromDisk() {
-        if (Chunk.isCached(id, solid)) {
-            loadDiskToMem(getFileName());
-            pos = 1;
-            int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
-            pos += 2;
-            for (int i = 0; i < len; i++) {
-                char[] texNameArr = new char[5];
-                for (int k = 0; k < texNameArr.length; k++) {
-                    texNameArr[k] = (char) MEMORY[pos++];
-                }
-                String texName = String.valueOf(texNameArr);
-
-                byte[] blockPosArr = new byte[12];
-                System.arraycopy(MEMORY, pos, blockPosArr, 0, blockPosArr.length);
-                Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                pos += blockPosArr.length;
-
-                byte[] blockPosCol = new byte[12];
-                System.arraycopy(MEMORY, pos, blockPosCol, 0, blockPosCol.length);
-                Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                pos += blockPosCol.length;
-
-                Block block = new Block(texName, blockPos, blockCol, solid);
-                addBlock(block, true);
-            }
-        }
-    }
-
-    public static Chunk loadFromDisk(int chunkId, boolean solid) {
-        Chunk chunk = new Chunk(chunkId, solid);
-        chunk.loadFromDisk();
-        return chunk;
-    }
-
-    public static void deleteCache() {
-        // deleting cache
-        File cache = new File(Game.CACHE);
-        if (cache.exists()) {
-            for (File file : cache.listFiles()) {
-                file.delete(); // deleting all chunk files
-            }
-            cache.delete();
-        }
-    }
-
-    public static boolean isCached(int chunkId, boolean solid) {
-        File file = new File(getFileName(chunkId, solid));
-        return file.exists();
     }
 
     public int getId() {
@@ -810,14 +617,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         this.buffered = buffered;
     }
 
-    public static byte[] getMEMORY() {
-        return MEMORY;
-    }
-
-    public int getPos() {
-        return pos;
-    }
-
     public float getTimeToLive() {
         return timeToLive;
     }
@@ -827,9 +626,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public void decTimeToLive(float timeDec) {
-        if (timeDec > 0.0f) {
-            this.timeToLive -= timeDec;
-        } else {
+        this.timeToLive -= timeDec;
+        if (this.timeToLive < 0.0f) {
             this.timeToLive = 0.0f;
         }
     }
