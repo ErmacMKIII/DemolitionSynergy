@@ -23,13 +23,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
 import java.util.Queue;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -65,7 +65,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final int MAX_LIGHTS = 256;
     public static final List<Vector3f> LIGHT_SRC = new ArrayList<>();
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 8;
+    public static final int QUEUE_CAPACITY = 9;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -84,13 +84,13 @@ public class LevelContainer implements GravityEnviroment {
         }
     };
 
-    private final Queue<Pair<Integer, Float>> visibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
-    private final Queue<Pair<Integer, Float>> invisibleQueue = new PriorityQueue<>(VIPAIR_QUEUE_CAPACITY, VIPAIR_COMPARATOR);
+    private final Queue<Integer> vChnkIdQueue = new ArrayDeque<>(QUEUE_CAPACITY);
+    private final Queue<Integer> iChnkIdQueue = new ArrayDeque<>(QUEUE_CAPACITY);
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 13.0f;
+    public static final float BASE = 16.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
@@ -243,16 +243,16 @@ public class LevelContainer implements GravityEnviroment {
         DSLogger.reportInfo(sb.toString(), null);
     }
 
-    public void printPriorityQueues() {
+    public void printQueues() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("VISIBLE QUEUE\n");
-        sb.append(visibleQueue);
+        sb.append(vChnkIdQueue);
         sb.append("\n");
         sb.append("---------------------------");
         sb.append("\n");
         sb.append("INVISIBLE QUEUE\n");
-        sb.append(invisibleQueue);
+        sb.append(iChnkIdQueue);
         sb.append("\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
@@ -739,11 +739,11 @@ public class LevelContainer implements GravityEnviroment {
     public void gravityDo(float deltaTime) {
 //        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 //        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
-//        for (Vector3f solidBlockPos : solidMap.keySet()) {
+//        for (Vector3f solidBlockPos : solidMap.keyQueue()) {
 //            Vector3f bottom = new Vector3f(solidBlockPos);
 //            bottom.y -= 1.0f;
 //            boolean massBelow = false;
-//            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
+//            for (Vector3f otherSolidBlockPos : solidMap.keyQueue()) {
 //                if (!solidBlockPos.equals(otherSolidBlockPos)
 //                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
 //                    massBelow = true;
@@ -760,58 +760,29 @@ public class LevelContainer implements GravityEnviroment {
 
     // method for determining visible chunks
     public void determineVisible() {
-        if (visibleQueue.isEmpty() && invisibleQueue.isEmpty()) {
-            Camera mainCamera = levelActors.mainCamera();
-            Chunk.determineVisible(visibleQueue, invisibleQueue, mainCamera.getPos(), mainCamera.getFront());
-        }
+        Camera mainCamera = levelActors.mainCamera();
+        Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
     }
 
-    // method for saving invisible chunks
-    public void chunkOperations(float deltaTime) {
+    // method for saving invisible chunks / loading visible chunks
+    public void chunkOperations() {
         if (!working) {
-            Pair<Integer, Float> vPair = visibleQueue.poll();
-            if (vPair != null) {
-                Integer visibleId = vPair.getKey();
-
+            Integer visibleId = vChnkIdQueue.peek();
+            if (visibleId != null) {
                 if (CacheModule.isCached(visibleId, true)) {
                     cacheModule.loadFromDisk(visibleId, true);
-                } else {
-                    Chunk solidChunk = solidChunks.getChunk(visibleId);
-                    if (solidChunk != null) {
-                        solidChunk.setTimeToLive(LevelContainer.STD_TTL);
-                    }
                 }
 
                 if (CacheModule.isCached(visibleId, false)) {
                     cacheModule.loadFromDisk(visibleId, false);
-                } else {
-                    Chunk fluidChunk = fluidChunks.getChunk(visibleId);
-                    if (fluidChunk != null) {
-                        fluidChunk.setTimeToLive(LevelContainer.STD_TTL);
-                    }
                 }
-
             }
             //----------------------------------------------------------
-            Pair<Integer, Float> iPair = invisibleQueue.poll();
-            if (iPair != null) {
-                Integer invisibleId = iPair.getKey();
+            Integer invisibleId = iChnkIdQueue.peek();
+            if (invisibleId != null) {
+                cacheModule.saveToDisk(invisibleId, true);
 
-                Chunk solidChunk = solidChunks.getChunk(invisibleId);
-                if (solidChunk != null) {
-                    solidChunk.decTimeToLive(deltaTime);
-                    if (solidChunk.getTimeToLive() == 0.0f) {
-                        cacheModule.saveToDisk(invisibleId, true);
-                    }
-                }
-
-                Chunk fluidChunk = fluidChunks.getChunk(invisibleId);
-                if (fluidChunk != null) {
-                    fluidChunk.decTimeToLive(deltaTime);
-                    if (fluidChunk.getTimeToLive() == 0.0f) {
-                        cacheModule.saveToDisk(invisibleId, false);
-                    }
-                }
+                cacheModule.saveToDisk(invisibleId, false);
             }
         }
     }
@@ -843,12 +814,12 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.render(LIGHT_SRC, ShaderProgram.getPlayerShader());
 
         // only visible & uncached are in chunk list      
-        solidChunks.render(ShaderProgram.getVoxelShader(), LIGHT_SRC);
+        solidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SRC);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         fluidChunks.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        fluidChunks.render(ShaderProgram.getVoxelShader(), LIGHT_SRC);
+        fluidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SRC);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -884,19 +855,20 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // render SKYBOX
-        camera.render(ShaderProgram.getWaterBaseShader());
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
+        camera.render(ShaderProgram.getWaterBaseShader());
         SKYBOX.render(LIGHT_SRC, ShaderProgram.getWaterBaseShader());
 
+        camera.render(ShaderProgram.getWaterVoxelShader());
         // only visible & uncached are in chunk list      
-        solidChunks.render(ShaderProgram.getWaterVoxelShader(), LIGHT_SRC);
+        solidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SRC);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         fluidChunks.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        fluidChunks.render(ShaderProgram.getWaterVoxelShader(), LIGHT_SRC);
+        fluidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SRC);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -972,12 +944,12 @@ public class LevelContainer implements GravityEnviroment {
         return gameObject;
     }
 
-    public Queue<Pair<Integer, Float>> getVisibleQueue() {
-        return visibleQueue;
+    public Queue<Integer> getvChnkIdQueue() {
+        return vChnkIdQueue;
     }
 
-    public Queue<Pair<Integer, Float>> getInvisibleQueue() {
-        return invisibleQueue;
+    public Queue<Integer> getiChnkIdQueue() {
+        return iChnkIdQueue;
     }
 
     public byte[] getBuffer() {

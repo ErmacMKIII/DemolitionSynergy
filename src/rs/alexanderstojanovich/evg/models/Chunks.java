@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Queue;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -410,6 +411,18 @@ public class Chunks {
                 chunk.bufferAll();
             }
             chunk.render(shaderProgram, lightSrc);
+        }
+    }
+
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+        for (int chunkId : queue) {
+            Chunk chunk = getChunk(chunkId);
+            if (chunk != null) {
+                if (!chunk.isBuffered()) {
+                    chunk.bufferAll();
+                }
+                chunk.render(shaderProgram, lightSrc);
+            }
         }
     }
 

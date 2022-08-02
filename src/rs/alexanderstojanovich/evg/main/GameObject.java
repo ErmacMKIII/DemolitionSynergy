@@ -144,18 +144,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Calls chunk functions to determine visible chunks
      */
     public void determineVisibleChunks() {
+        lock.writeLock().lock();
         levelContainer.determineVisible();
+        try {
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
      * Auto load/save level container chunks
      *
-     * @param deltaTime game object environment update time
      */
-    public void chunkOperations(float deltaTime) {
+    public void chunkOperations() {
         lock.writeLock().lock();
         try {
-            levelContainer.chunkOperations(deltaTime);
+            levelContainer.chunkOperations();
         } finally {
             lock.writeLock().unlock();
         }

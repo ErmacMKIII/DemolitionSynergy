@@ -32,7 +32,6 @@ import org.lwjgl.opengl.GL33;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -211,6 +210,14 @@ public class Tuple extends Blocks {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
+    }
+
+    public String texName() {
+        return name.substring(0, 5);
+    }
+
+    public int faceBits() {
+        return Integer.parseInt(name.substring(5));
     }
 
     public int getVec3Vbo() {

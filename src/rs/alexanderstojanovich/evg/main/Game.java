@@ -405,7 +405,7 @@ public class Game {
                     LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.getLevelContainer().printPriorityQueues();
+                    gameObject.getLevelContainer().printQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Object> task = new FutureTask<Object>(Command.SCREENSHOT);
@@ -523,7 +523,7 @@ public class Game {
 
                 // update chunks every 10 ticks
                 if (accumulator > timerc + 10.0) {
-                    gameObject.chunkOperations((float) TICK_TIME);
+                    gameObject.chunkOperations();
                     timerc += 10.0;
                 }
 
