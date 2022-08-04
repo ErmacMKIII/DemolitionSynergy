@@ -2,6 +2,8 @@
 Voxel Engine (Incomplete Game) using latest LWJGL.
 Audio material was provided from freesound.org by Erokia.
 
+![Alt text](https://i.postimg.cc/xdkzSqCd/DSynergy.png "Screenshot")
+
 In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and following libraries:
 1. LWJGL 3.3.1 with JOML 1.10.4,
 2. Jorbis OGG Decoder (for OGG audio files),
