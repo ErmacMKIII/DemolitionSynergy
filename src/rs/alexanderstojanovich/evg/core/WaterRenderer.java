@@ -48,7 +48,7 @@ public class WaterRenderer {
         float hMax = -Chunk.BOUND;
         if (!levelContainer.isWorking()) {
             Camera actCam = levelContainer.getLevelActors().mainCamera();
-            hMax = Math.round(actCam.pos.y + 0.5f) & 0xFFFFFFFE;
+            hMax = actCam.pos.y;
             for (int id : levelContainer.getvChnkIdQueue()) {
                 Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
                 if (fluidChunk != null) {

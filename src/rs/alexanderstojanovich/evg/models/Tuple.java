@@ -55,6 +55,7 @@ public class Tuple extends Blocks {
 
     protected final IntBuffer intBuff;
     protected int ibo = 0;
+    protected final int indicesNum;
 
     public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
         @Override
@@ -66,6 +67,15 @@ public class Tuple extends Blocks {
     public Tuple(String texName, int faceEnBits) {
         this.name = String.format("%s%02d", texName, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
+
+        int numberOfOnes = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            int mask = 1 << j;
+            if ((faceEnBits & mask) != 0) {
+                numberOfOnes++;
+            }
+        }
+        this.indicesNum = 6 * numberOfOnes;
     }
 
     // buffering colors
@@ -196,7 +206,7 @@ public class Tuple extends Blocks {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
-                    Block.INDICES_COUNT,
+                    indicesNum,
                     GL11.GL_UNSIGNED_INT,
                     0,
                     blockList.size(),

@@ -20,6 +20,7 @@ import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
@@ -31,8 +32,8 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class RandomLevelGenerator {
 
-    public static final int POS_MAX = (Math.round(LevelContainer.SKYBOX_WIDTH - 2.0f)) & 0xFFFFFFFE;
-    public static final int POS_MIN = (Math.round(-LevelContainer.SKYBOX_WIDTH + 2.0f)) & 0xFFFFFFFE;
+    public static final int POS_MAX = Chunk.BOUND;
+    public static final int POS_MIN = -Chunk.BOUND;
 
     public static final float CUBIC = 1.067E-14f;
     public static final float QUADRATIC = -8.0E-10f;
@@ -325,9 +326,9 @@ public class RandomLevelGenerator {
         for (int x = posMin; x <= posMax; x += 2) {
             for (int z = posMin; z <= posMax; z += 2) {
 
-                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.0035f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
+                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
                 for (int y = yBottom; y <= yTop; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
@@ -474,6 +475,9 @@ public class RandomLevelGenerator {
                 Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
                 levelContainer.getSolidChunks().addBlock(solidBlock, true);
                 solidBlocks--;
+                if (solidBlocks == 0) {
+                    break;
+                }
             }
             levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
         }
@@ -496,7 +500,7 @@ public class RandomLevelGenerator {
                 //---------------------------------------------------------------------------------------------------------------------------
                 // define beta: noise to random ratio
                 final float beta = 0.6f + 0.4f * random.nextFloat();
-                final float gamma = 0.83333f;
+                final float gamma = 0.84f;
 
                 final int solidBlocksN = Math.round(beta * solidBlocks);
                 final int solidBlocksN1 = Math.round(gamma * solidBlocksN);
@@ -506,7 +510,7 @@ public class RandomLevelGenerator {
 
                 final int solidBlocksR = solidBlocks - solidBlocksN;
                 final int solidBlocksR1 = Math.round(gamma * solidBlocksR);
-                final int solidBlocksR2 = solidBlocksR - solidBlocksR;
+                final int solidBlocksR2 = solidBlocksR - solidBlocksR1;
 
                 final int fluidBlocksR = fluidBlocks - fluidBlocksN;
 
@@ -518,7 +522,7 @@ public class RandomLevelGenerator {
                 final int posN_Min = -valueK0;
                 final int posN_Max = valueK0;
 
-                float valueR = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, solidBlocksR + fluidBlocksR);
+                float valueR = MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST / 2.0f, solidBlocksR + fluidBlocksR);
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 

@@ -278,10 +278,11 @@ public class Block extends Model {
      * @param texName texture name (uses map to find texture)
      * @param vbo common vbo
      * @param ibo common ibo
+     * @param indicesNum num of indices (from the tuple)
      * @param lightSrc light source
      * @param shaderProgram shaderProgram for the models
      */
-    public static void render(List<Block> blocks, String texName, int vbo, int ibo, List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
+    public static void render(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -310,7 +311,7 @@ public class Block extends Model {
                 block.setAlpha(shaderProgram);
                 block.primaryColor(shaderProgram);
 
-                GL11.glDrawElements(GL11.GL_TRIANGLES, block.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
             }
             Texture.unbind(0);
         }
@@ -331,11 +332,12 @@ public class Block extends Model {
      * @param texName texture name (uses map to find texture)
      * @param vbo common vbo
      * @param ibo common ibo
+     * @param indicesNum num of indices (from the tuple)
      * @param lightSrc light source
      * @param shaderProgram shaderProgram for the models
      * @param predicate predicate which tells if block is visible or not
      */
-    public static void renderIf(List<Block> blocks, String texName, int vbo, int ibo, List<Vector3f> lightSrc, ShaderProgram shaderProgram, Predicate<Block> predicate) {
+    public static void renderIf(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, List<Vector3f> lightSrc, ShaderProgram shaderProgram, Predicate<Block> predicate) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -365,7 +367,7 @@ public class Block extends Model {
                     block.setAlpha(shaderProgram);
                     block.primaryColor(shaderProgram);
 
-                    GL11.glDrawElements(GL11.GL_TRIANGLES, block.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                    GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
                 }
             }
             Texture.unbind(0);
