@@ -277,98 +277,94 @@ public class RandomLevelGenerator {
     private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax) {
 //        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // make "stone" terrain
-        noise1:
+        noiseMain:
         for (int x = posMin; x <= posMax; x += 2) {
             for (int z = posMin; z <= posMax; z += 2) {
+                if (solidBlocks == 0 && fluidBlocks == 0) {
+                    break noiseMain;
+                }
 
-                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
+                int yMid = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
 
-                for (int y = yBottom; y <= yTop; y += 2) {
+                noise1:
+                for (int y = yMid; y <= yTop; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
-
                     if (repeatCondition(pos)) {
                         continue;
                     }
+                    float value = MathUtils.noise3(16, x, y, z, 0.5f, 0.007f, yMid, yTop, 2.0f);
+                    if (solidBlocks > 0 && value >= 0.0f) {
+                        // color chance
+                        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                        if (random.nextFloat() >= 0.95f) {
+                            Vector3f tempc = new Vector3f();
+                            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                        }
 
-                    // color chance
-                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                    if (random.nextFloat() >= 0.95f) {
-                        Vector3f tempc = new Vector3f();
-                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                        if (solidBlocks > 0) {
+                            String tex = "stone";
+
+                            if (random.nextFloat() >= 0.95f) {
+                                tex = randomSolidTexture(false);
+                            }
+
+                            Block solidBlock = new Block(tex, pos, color, true);
+                            levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                            levelContainer.incProgress(100.0f / (float) totalAmount);
+                            solidBlocks--;
+                        }
                     }
 
-                    if (solidBlocks > 0) {
-                        String tex = "stone";
-
-                        if (random.nextFloat() >= 0.95f) {
-                            tex = randomSolidTexture(false);
-                        }
-
-                        Block solidBlock = new Block(tex, pos, color, true);
-                        levelContainer.getSolidChunks().addBlock(solidBlock, true);
-                        levelContainer.incProgress(100.0f / (float) totalAmount);
-                        solidBlocks--;
-
-                        if (solidBlocks == 0) {
-                            break noise1;
-                        }
+                    if (solidBlocks == 0) {
+                        break noise1;
                     }
                 }
-            }
-        }
 
-        final int mask1 = 0x08; // bottom only mask
-        final int mask2 = 0x17; // bottom exclusive mask
-        // make water
-        noise2:
-        for (int x = posMin; x <= posMax; x += 2) {
-            for (int z = posMin; z <= posMax; z += 2) {
-
-                int yMid = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, yMid, posMax, 2.0f)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise(16, x, z, 0.5f, 0.007f, posMin, yMid, 2.0f)) & 0xFFFFFFFE;
-
-                for (int y = yBottom; y <= yTop; y += 2) {
+                noise2:
+                for (int y = yBottom; y <= yMid; y += 2) {
                     Vector3f pos = new Vector3f(x, y, z);
-
                     if (repeatCondition(pos)) {
                         continue;
                     }
+                    float value = MathUtils.noise3(16, x, y, z, 0.5f, 0.007f, yMid, yTop, 2.0f);
+                    if (fluidBlocks > 0 && value < 0.0f) {
+                        // color chance
+                        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                        if (random.nextFloat() >= 0.95f) {
+                            Vector3f tempc = new Vector3f();
+                            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                        }
 
-                    int sbits = 0;
-                    Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
-                    if (spair != null) {
-                        sbits = spair.getValue();
-                    }
+                        int sbits = 0;
+                        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
+                        if (spair != null) {
+                            sbits = spair.getValue();
+                        }
 
-                    int fbits = 0;
-                    Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
-                    if (fpair != null) {
-                        fbits = fpair.getValue();
-                    }
+                        int fbits = 0;
+                        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
+                        if (fpair != null) {
+                            fbits = fpair.getValue();
+                        }
 
-                    int tbits = (sbits & mask1) | (~fbits & mask2);
+                        final int mask1 = 0x08; // bottom only mask
+                        final int mask2 = 0x17; // bottom exclusive mask
+                        int tbits = (sbits & mask1) | (~fbits & mask2);
 
-                    // color chance
-                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                    if (random.nextFloat() >= 0.95f) {
-                        Vector3f tempc = new Vector3f();
-                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
-                    }
+                        if (fluidBlocks > 0 && tbits != 0) {
+                            String tex = "water";
 
-                    if (fluidBlocks > 0 && tbits != 0) {
-                        String tex = "water";
+                            Block fluidBlock = new Block(tex, pos, color, false);
+                            levelContainer.getFluidChunks().addBlock(fluidBlock, true);
+                            levelContainer.incProgress(100.0f / (float) totalAmount);
+                            fluidBlocks--;
+                        }
 
-                        Block fluidBlock = new Block(tex, pos, color, false);
-                        levelContainer.getFluidChunks().addBlock(fluidBlock, true);
-                        levelContainer.incProgress(100.0f / (float) totalAmount);
-                        fluidBlocks--;
-                    }
-
-                    if (fluidBlocks == 0) {
-                        break noise2;
+                        if (fluidBlocks == 0) {
+                            break noise2;
+                        }
                     }
                 }
             }

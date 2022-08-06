@@ -16,7 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import java.nio.charset.StandardCharsets;
+import com.eatthepath.uuid.FastUUID;
+import java.util.UUID;
 import org.joml.Vector3f;
 
 /**
@@ -24,39 +25,6 @@ import org.joml.Vector3f;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Vector3fUtils {
-
-    public static String float3ToString(Vector3f vector) {
-        byte[] buffer = new byte[12];
-        int x = Float.floatToIntBits(vector.x);
-        buffer[0] = (byte) (x);
-        buffer[1] = (byte) (x >> 8);
-        buffer[2] = (byte) (x >> 16);
-        buffer[3] = (byte) (x >> 24);
-
-        int y = Float.floatToIntBits(vector.y);
-        buffer[4] = (byte) (y);
-        buffer[5] = (byte) (y >> 8);
-        buffer[6] = (byte) (y >> 16);
-        buffer[7] = (byte) (y >> 24);
-
-        int z = Float.floatToIntBits(vector.z);
-        buffer[8] = (byte) (z);
-        buffer[9] = (byte) (z >> 8);
-        buffer[10] = (byte) (z >> 16);
-        buffer[11] = (byte) (z >> 24);
-
-        byte s1 = (byte) (buffer[0] + buffer[1] + buffer[2] + buffer[3]);
-        byte s2 = (byte) (buffer[3] + buffer[5] + buffer[6] + buffer[7]);
-        byte s3 = (byte) (buffer[11] + buffer[9] + buffer[10] + buffer[11]);
-
-        String str = new String(new byte[]{
-            buffer[0], buffer[3], buffer[1], buffer[2], s1,
-            buffer[4], buffer[7], buffer[5], buffer[6], s2,
-            buffer[8], buffer[11], buffer[9], buffer[10], s3
-        }, StandardCharsets.UTF_16LE);
-
-        return str;
-    }
 
     public static byte[] vec3fToByteArray(Vector3f vector) {
         byte[] buffer = new byte[12];
@@ -93,4 +61,13 @@ public class Vector3fUtils {
 
         return new Vector3f(x, y, z);
     }
+
+    public static String float3ToUniqueString(Vector3f vector) {
+        byte[] bytes = vec3fToByteArray(vector);
+        UUID guid = UUID.nameUUIDFromBytes(bytes);
+        String guidStr = FastUUID.toString(guid);
+        String result = guidStr.substring(0, 8) + guidStr.substring(24, 36);
+        return result;
+    }
+
 }

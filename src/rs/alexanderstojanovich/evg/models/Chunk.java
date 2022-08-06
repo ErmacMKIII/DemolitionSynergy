@@ -39,7 +39,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 512;
     public static final float VISION = 256.0f; // determines visibility
-    private static final int GRID_SIZE = 5;
+    private static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -98,23 +98,63 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return null;
     }
 
+    /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k).
+     *
+     * @param tuple (chunk) tuple where block might be located
+     * @param pos Vector3f position of the block
+     * @return block if found (null if not found)
+     */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        String keyStr = Vector3fUtils.float3ToString(pos);
+        String keyStr = Vector3fUtils.float3ToUniqueString(pos);
+
         int left = 0;
         int right = tuple.blockList.size() - 1;
+        int startIndex = -1;
+
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candStr = Vector3fUtils.float3ToString(candidate.pos);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
             int res = candStr.compareTo(keyStr);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
-                return candidate;
+                startIndex = mid;
+                right = mid - 1;
             } else {
                 right = mid - 1;
             }
         }
+
+        left = 0;
+        right = tuple.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = tuple.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
         return null;
     }
 
@@ -131,7 +171,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         Tuple srcTuple = getTuple(texture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
-            srcTuple.getBlockList().remove(block);
+            srcTuple.blockList.remove(block);
             if (srcTuple.getBlockList().isEmpty()) {
                 tupleList.remove(srcTuple);
             }
@@ -143,7 +183,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             tupleList.add(dstTuple);
             tupleList.sort(Tuple.TUPLE_COMP);
         }
-        List<Block> blockList = dstTuple.getBlockList();
+        List<Block> blockList = dstTuple.blockList;
         blockList.add(block);
         blockList.sort(Block.FLOAT3_BITS_COMP);
 
