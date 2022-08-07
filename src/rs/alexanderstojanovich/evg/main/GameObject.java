@@ -42,7 +42,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static final String TITLE = "Demolition Synergy - v25 ZENITH";
 
     // makes default window -> Renderer sets resolution from config
-    public static final Window MY_WINDOW = Window.getInstance(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
+    public static final Window MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
 
     protected final LevelContainer levelContainer;
     protected final WaterRenderer waterRenderer;
@@ -61,11 +61,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private GameObject() {
+        this.init();
         this.levelContainer = new LevelContainer(this);
         this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         this.waterRenderer = new WaterRenderer(levelContainer);
         this.intrface = new Intrface(this);
-        this.init();
     }
 
     private void init() {
@@ -80,8 +80,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             GameObject.MY_WINDOW.disableVSync();
         }
         GameObject.MY_WINDOW.centerTheWindow();
-        musicPlayer.setGain(cfg.getMusicVolume());
-        soundFXPlayer.setGain(cfg.getSoundFXVolume());
+        this.musicPlayer.setGain(cfg.getMusicVolume());
+        this.soundFXPlayer.setGain(cfg.getSoundFXVolume());
     }
 
     // lazy initialization allowing only one instance

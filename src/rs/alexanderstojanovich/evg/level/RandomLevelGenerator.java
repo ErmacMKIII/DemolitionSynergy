@@ -40,7 +40,8 @@ public class RandomLevelGenerator {
     public static final float LINEAR = 2.67E-4f;
     public static final float CONST = 23.0f;
 
-    private final Random random = new Random(0x123456789L);
+    protected long seed = 0x123456789L;
+    protected Random random = new Random(seed);
     public static final int RAND_MAX_ATTEMPTS = 1000;
 
     private final LevelContainer levelContainer;
@@ -482,7 +483,7 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
-            DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks)..", null);
+            DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
             // define alpha: solid to fluid ratio
             final float alpha = 0.3f + random.nextFloat() * 0.7f;
             int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
@@ -553,6 +554,15 @@ public class RandomLevelGenerator {
 
     public void setNumberOfBlocks(int numberOfBlocks) {
         this.numberOfBlocks = numberOfBlocks;
+    }
+
+    public final long getSeed() {
+        return seed;
+    }
+
+    public void setSeed(long seed) {
+        this.seed = seed;
+        this.random = new Random(seed);
     }
 
 }
