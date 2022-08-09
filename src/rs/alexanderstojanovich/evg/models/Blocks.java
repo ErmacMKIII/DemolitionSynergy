@@ -29,6 +29,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.BigList;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -168,7 +169,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // standard render all
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
@@ -183,10 +184,10 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
             int blkIndex = 0;
             shaderProgram.bind();
+            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
+            shaderProgram.updateUniform(lightSrc, "modelLights");
             for (Block block : blockList) {
-                block.light = lightSrc;
                 block.transform(shaderProgram);
-                block.useLight(shaderProgram);
                 Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
                 if (primaryTexture != null) { // this is primary texture
                     block.primaryColor(shaderProgram);
@@ -225,7 +226,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // powerful render if block is visible by camera
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
@@ -240,11 +241,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
             int blkIndex = 0;
             shaderProgram.bind();
+            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
+            shaderProgram.updateUniform(lightSrc, "modelLights");
             for (Block block : blockList) {
-                block.light = lightSrc;
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    block.useLight(shaderProgram);
+                    shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
+                    shaderProgram.updateUniform(lightSrc, "modelLights");
                     Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
                     if (primaryTexture != null) { // this is primary texture
                         block.primaryColor(shaderProgram);

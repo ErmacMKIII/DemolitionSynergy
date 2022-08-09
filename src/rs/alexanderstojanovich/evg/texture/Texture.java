@@ -70,7 +70,7 @@ public class Texture {
     public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
     public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
     public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
-    public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
+    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png");
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
 
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png");
@@ -99,7 +99,7 @@ public class Texture {
         TEX_MAP.put("stone", new Pair<>(WORLD, 2));
         TEX_MAP.put("water", new Pair<>(WORLD, 3));
         TEX_MAP.put("reflc", new Pair<>(WORLD, 4));
-        TEX_MAP.put("marble", new Pair<>(MARBLE, -1));
+        TEX_MAP.put("suntx", new Pair<>(SUN, -1));
         TEX_MAP.put("qmark", new Pair<>(QMARK, -1));
         TEX_MAP.put("decal", new Pair<>(DECAL, -1));
         TEX_MAP.put("night", new Pair<>(NIGHT, -1));
@@ -186,7 +186,7 @@ public class Texture {
         LIGHT_BULB.bufferAll();
         // world        
         DECAL.bufferAll();
-        MARBLE.bufferAll();
+        SUN.bufferAll();
         QMARK.bufferAll();
         WORLD.bufferAll();
         NIGHT.bufferAll();

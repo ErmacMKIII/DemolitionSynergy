@@ -24,6 +24,7 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -405,7 +406,7 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -414,7 +415,7 @@ public class Chunks {
         }
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         for (int chunkId : queue) {
             Chunk chunk = getChunk(chunkId);
             if (chunk != null) {

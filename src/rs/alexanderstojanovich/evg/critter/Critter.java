@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.critter;
 
 import java.util.List;
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -136,7 +137,7 @@ public interface Critter { // interface for Observer, Player and NPC
      * @param lightSrc list of light sources
      * @param shaderProgram shader program used for rendering
      */
-    public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram);
+    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram);
 
     //--------------------------------------------------------------------------
     /**

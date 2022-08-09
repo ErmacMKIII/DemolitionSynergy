@@ -53,7 +53,7 @@ public class LevelActors {
         }
     }
 
-    public void render(List<Vector3f> lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
+    public void render(List<LightSource> lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }

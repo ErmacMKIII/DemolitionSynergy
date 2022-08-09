@@ -45,7 +45,7 @@ public class Vector3fColors { // some of the defined colors
 
     public static final Vector3f DARK_CYAN = new Vector3f(0.0f, 0.5f, 0.5f);
     public static final Vector3f DARK_MAGENTA = new Vector3f(0.5f, 0.0f, 0.5f);
-    public static final Vector3f DARK_YELLOW = new Vector3f(0.5f, 0.0f, 0.5f);
+    public static final Vector3f DARK_YELLOW = new Vector3f(0.5f, 0.5f, 0.0f);
 
     public static final Map<Byte, Vector3f> PALETTE = new HashMap<>();
     public static final Map<Vector3f, Byte> COLOR_TO_INDEX = new HashMap<>();

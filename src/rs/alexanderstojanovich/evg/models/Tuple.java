@@ -29,6 +29,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -159,7 +160,7 @@ public class Tuple extends Blocks {
 //        GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, List<Vector3f> lightSrc, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, List<LightSource> lightSrc, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
@@ -188,8 +189,7 @@ public class Tuple extends Blocks {
             shaderProgram.bind();
 
             shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            shaderProgram.updateUniform(lightSrc, "modelLights");
 
             shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
 

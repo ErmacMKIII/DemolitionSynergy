@@ -24,6 +24,7 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -446,9 +447,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // update original block with neighbor blocks
             if (solid) {
                 // check if it's light block
+                LightSource lightSource = new LightSource(block.pos, block.primaryColor, 1.0f);
                 if (block.getTexName().equals("reflc")
-                        && !LevelContainer.LIGHT_SRC.contains(block.pos)) {
-                    LevelContainer.LIGHT_SRC.add(new Vector3f(block.pos));
+                        && !LevelContainer.LIGHT_SRC.contains(lightSource)) {
+                    LevelContainer.LIGHT_SRC.add(lightSource);
                 }
                 updateSolidForAdd(block);
             } else {
@@ -484,9 +486,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // update original block with neighbor blocks
                 if (solid) {
                     // check if it's light block
+                    LightSource lightSource = new LightSource(block.pos, block.primaryColor, 1.0f);
                     if (block.getTexName().equals("reflc")
-                            && LevelContainer.LIGHT_SRC.contains(block.pos)) {
-                        LevelContainer.LIGHT_SRC.remove(new Vector3f(block.pos));
+                            && LevelContainer.LIGHT_SRC.contains(lightSource)) {
+                        LevelContainer.LIGHT_SRC.remove(lightSource);
                     }
                     updateSolidForRem(block);
                 } else {
@@ -526,7 +529,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
 
             GL20.glEnableVertexAttribArray(0);
