@@ -478,6 +478,7 @@ public class Game {
         int index = 0; // track index
 
         double timerc = 0.0;
+        double timero = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
@@ -525,6 +526,12 @@ public class Game {
                 if (accumulator > timerc + 10.0) {
                     gameObject.chunkOperations();
                     timerc += 10.0;
+                }
+
+                // optimize every 160 ticks
+                if (accumulator > timero + 160.0) {
+                    gameObject.optimize();
+                    timero += 160.0;
                 }
 
                 ups++;

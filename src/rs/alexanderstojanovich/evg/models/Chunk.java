@@ -100,6 +100,34 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     /**
+     * Binary search of the tuple. Tuples are sorted by name ascending.
+     * Complexity is logarithmic.
+     *
+     * @param tupleList provided tuple list
+     * @param keyTexture texture name part
+     * @param keyFaceBits face bits part
+     * @return Tuple if found (null if not found)
+     */
+    public static Tuple getTuple(List<Tuple> tupleList, String keyTexture, Integer keyFaceBits) {
+        String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
+        int left = 0;
+        int right = tupleList.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Tuple candidate = tupleList.get(mid);
+            int res = candidate.getName().compareTo(keyName);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                return candidate;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Gets Block from the tuple block list (duplicates may exist but in very
      * low quantity). Complexity is O(log(n)+k).
      *
@@ -553,8 +581,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             GL20.glDisableVertexAttribArray(5);
             GL20.glDisableVertexAttribArray(6);
             GL20.glDisableVertexAttribArray(7);
-
-            Texture.disable();
         }
     }
 

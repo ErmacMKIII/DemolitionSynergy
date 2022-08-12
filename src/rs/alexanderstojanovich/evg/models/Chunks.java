@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import org.joml.Vector3f;
+import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
@@ -27,6 +28,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
 
@@ -42,6 +44,9 @@ public class Chunks {
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
+
+    protected final List<Tuple> optimizedTuples = new GapList<>();
+    protected boolean optimized = false;
 
     public Chunks(boolean solid) {
         this.solid = solid;
@@ -369,10 +374,11 @@ public class Chunks {
     }
 
     /**
-     * Gets the chunk using
+     * Gets the chunk using chunk id. Uses binary search. Complexity is
+     * algorithmic.
      *
-     * @param chunkId
-     * @return
+     * @param chunkId provided chunk id.
+     * @return chunk (if exists)
      */
     public Chunk getChunk(int chunkId) {
         int left = 0;
@@ -392,17 +398,46 @@ public class Chunks {
     }
 
     public void animate() { // call only for fluid blocks
-        for (Chunk chunk : getChunkList()) {
-            if (!CacheModule.isCached(chunk.getId(), solid) && chunk.isBuffered()) {
-                chunk.animate();
+        for (Tuple tuple : optimizedTuples) {
+            if (tuple.isBuffered()) {
+                tuple.animate();
             }
         }
     }
 
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
         for (Chunk chunk : chunkList) {
             chunk.prepare(cameraInFluid);
         }
+    }
+
+    public void optimize(Queue<Integer> queue) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
+        while (faceBits <= 63) {
+            for (String tex : Texture.TEX_WORLD) {
+                Tuple optmTuple = null;
+                for (int chunkId : queue) {
+                    Chunk chunk = getChunk(chunkId);
+                    if (chunk != null) {
+                        Tuple tuple = chunk.getTuple(tex, faceBits);
+                        if (tuple != null) {
+                            if (optmTuple == null) {
+                                optmTuple = new Tuple(tex, faceBits);
+                            }
+                            optmTuple.blockList.addAll(tuple.blockList);
+                        }
+                    }
+                }
+
+                if (optmTuple != null) {
+                    optimizedTuples.add(optmTuple);
+                }
+            }
+            faceBits++;
+        }
+
+        optimized = true;
     }
 
     // for each instanced rendering
@@ -416,15 +451,34 @@ public class Chunks {
     }
 
     public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
-        for (int chunkId : queue) {
-            Chunk chunk = getChunk(chunkId);
-            if (chunk != null) {
-                if (!chunk.isBuffered()) {
-                    chunk.bufferAll();
-                }
-                chunk.render(shaderProgram, lightSrc);
-            }
+        if (!optimized) {
+            return;
         }
+
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+        GL20.glEnableVertexAttribArray(3);
+        GL20.glEnableVertexAttribArray(4);
+        GL20.glEnableVertexAttribArray(5);
+        GL20.glEnableVertexAttribArray(6);
+        GL20.glEnableVertexAttribArray(7);
+
+        for (Tuple tuple : optimizedTuples) {
+            if (!tuple.isBuffered()) {
+                tuple.bufferAll();
+            }
+            tuple.renderInstanced(shaderProgram, solid, lightSrc, null);
+        }
+
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+        GL20.glDisableVertexAttribArray(3);
+        GL20.glDisableVertexAttribArray(4);
+        GL20.glDisableVertexAttribArray(5);
+        GL20.glDisableVertexAttribArray(6);
+        GL20.glDisableVertexAttribArray(7);
     }
 
     // all blocks from all the chunks in one big list
@@ -471,6 +525,14 @@ public class Chunks {
 
     public boolean isSolid() {
         return solid;
+    }
+
+    public boolean isOptimized() {
+        return optimized;
+    }
+
+    public void setOptimized(boolean optimized) {
+        this.optimized = optimized;
     }
 
 }

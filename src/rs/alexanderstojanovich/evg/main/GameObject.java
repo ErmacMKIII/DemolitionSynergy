@@ -178,6 +178,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         }
     }
 
+    public void optimize() {
+        lock.writeLock().lock();
+        try {
+            levelContainer.optimize();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Called from concurrent thread
     public void startNewLevel() {

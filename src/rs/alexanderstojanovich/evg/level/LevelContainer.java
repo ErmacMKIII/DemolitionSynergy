@@ -803,12 +803,18 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             if (LIGHT_SRC.isEmpty()) {
                 LIGHT_SRC.add(new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
-                LIGHT_SRC.add(new LightSource(SUN.pos, SUN_COLOR, (float) Math.pow(2.0, 28.0)));
+                LIGHT_SRC.add(new LightSource(SUN.pos, SUN_COLOR, (float) (1 << 27)));
             } else {
                 LIGHT_SRC.set(0, new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
-                LIGHT_SRC.set(1, new LightSource(SUN.pos, SUN_COLOR, (float) Math.pow(2.0, 28.0)));
+                LIGHT_SRC.set(1, new LightSource(SUN.pos, SUN_COLOR, (float) (1 << 27)));
             }
+        }
+    }
 
+    public void optimize() {
+        if (!working) {
+            solidChunks.optimize(vChnkIdQueue);
+            fluidChunks.optimize(vChnkIdQueue);
         }
     }
 
@@ -873,6 +879,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         camera.render(ShaderProgram.getWaterBaseShader());
+
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
