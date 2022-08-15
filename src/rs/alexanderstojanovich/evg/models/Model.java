@@ -40,6 +40,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LightSource;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -298,7 +299,7 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
+    public void render(LightSources lightSources, ShaderProgram shaderProgram) {
         if (!buffered) {
             return; // this is very critical!!
         }
@@ -319,8 +320,7 @@ public class Model implements Comparable<Model> {
             transform(shaderProgram);
             setAlpha(shaderProgram);
 
-            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            shaderProgram.updateUniform(lightSrc, "modelLights");
+            lightSources.updateLightsInShader(shaderProgram);
 
             Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
             if (primaryTexture != null) { // this is primary texture
@@ -351,10 +351,10 @@ public class Model implements Comparable<Model> {
      * @param models models to render
      * @param vbo common vbo
      * @param ibo common ibo
-     * @param lightSrc light source
+     * @param lightSources light sources {SUN, PLAYER, OTHER LIGHT BLOCKS etc}
      * @param shaderProgram shaderProgram for the models
      */
-    public static void render(List<Model> models, int vbo, int ibo, List<LightSource> lightSrc, ShaderProgram shaderProgram) {
+    public static void render(List<Model> models, int vbo, int ibo, LightSources lightSources, ShaderProgram shaderProgram) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -369,8 +369,7 @@ public class Model implements Comparable<Model> {
         if (shaderProgram != null) {
             shaderProgram.bind();
 
-            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            shaderProgram.updateUniform(lightSrc, "modelLights");
+            lightSources.updateLightsInShader(shaderProgram);
 
             for (Model model : models) {
                 model.transform(shaderProgram);

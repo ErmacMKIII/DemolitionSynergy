@@ -38,6 +38,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -282,7 +283,7 @@ public class Block extends Model {
      * @param lightSrc light source
      * @param shaderProgram shaderProgram for the models
      */
-    public static void render(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
+    public static void render(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, LightSources lightSrc, ShaderProgram shaderProgram) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -301,9 +302,7 @@ public class Block extends Model {
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            lightSrc.updateLightsInShader(shaderProgram);
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
@@ -337,7 +336,7 @@ public class Block extends Model {
      * @param shaderProgram shaderProgram for the models
      * @param predicate predicate which tells if block is visible or not
      */
-    public static void renderIf(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, List<Vector3f> lightSrc, ShaderProgram shaderProgram, Predicate<Block> predicate) {
+    public static void renderIf(List<Block> blocks, String texName, int vbo, int ibo, int indicesNum, LightSources lightSrc, ShaderProgram shaderProgram, Predicate<Block> predicate) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -356,9 +355,7 @@ public class Block extends Model {
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            lightSrc.updateLightsInShader(shaderProgram);
 
             for (Block block : blocks) {
                 if (predicate.test(block)) {

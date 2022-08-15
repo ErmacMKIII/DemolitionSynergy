@@ -20,6 +20,7 @@ import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LightSource;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -171,7 +172,7 @@ public class ModelCritter implements Critter {
     }
 
     @Override
-    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         if (!model.isBuffered()) {
             model.bufferAll();
         }

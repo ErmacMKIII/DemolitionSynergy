@@ -26,6 +26,7 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSource;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -441,16 +442,16 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
             }
-            chunk.render(shaderProgram, lightSrc);
+            chunk.render(shaderProgram, lightSources);
         }
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
         if (!optimized) {
             return;
         }
@@ -468,7 +469,7 @@ public class Chunks {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, solid, lightSrc, null);
+            tuple.renderInstanced(shaderProgram, solid, lightSources, null);
         }
 
         GL20.glDisableVertexAttribArray(0);
