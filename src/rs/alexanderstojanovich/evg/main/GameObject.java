@@ -155,14 +155,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Auto load/save level container chunks
      *
+     * @return did chunk operations modify anything (something changed).
      */
-    public void chunkOperations() {
+    public boolean chunkOperations() {
+        boolean changed = false;
         lock.writeLock().lock();
         try {
-            levelContainer.chunkOperations();
+            changed = levelContainer.chunkOperations();
         } finally {
             lock.writeLock().unlock();
         }
+        return changed;
     }
 
     /**

@@ -791,16 +791,19 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     // method for saving invisible chunks / loading visible chunks
-    public void chunkOperations() {
+    public boolean chunkOperations() {
+        boolean changed = false;
         if (!working) {
             Integer visibleId = vChnkIdQueue.peek();
             if (visibleId != null) {
                 if (CacheModule.isCached(visibleId, true)) {
                     cacheModule.loadFromDisk(visibleId, true);
+                    changed = true;
                 }
 
                 if (CacheModule.isCached(visibleId, false)) {
                     cacheModule.loadFromDisk(visibleId, false);
+                    changed = true;
                 }
             }
             //----------------------------------------------------------
@@ -809,8 +812,11 @@ public class LevelContainer implements GravityEnviroment {
                 cacheModule.saveToDisk(invisibleId, true);
 
                 cacheModule.saveToDisk(invisibleId, false);
+                changed = true;
             }
         }
+
+        return changed;
     }
 
     public void update(float deltaTime) { // call it externally from the main thread 

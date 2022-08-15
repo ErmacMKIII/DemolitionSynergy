@@ -94,8 +94,9 @@ public class Renderer extends Thread implements Executor {
 
             int numOfPasses = 0;
             while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
-                gameObject.render();// update text which shows dialog every 5 seconds
+                gameObject.render();
 
+                // update text which shows dialog every 500.0 ticks                
                 if (Game.accumulator > timer1 + 500.0) {
                     if (gameObject.getIntrface().getSaveDialog().isDone()) {
                         gameObject.getIntrface().getSaveDialog().setEnabled(false);
