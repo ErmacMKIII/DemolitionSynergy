@@ -63,7 +63,6 @@ public class WaterRenderer {
                             }
                         }
                     }
-                    fluidChunk.setWaterTexture(frameBuffer.getTexture());
                 }
             }
 

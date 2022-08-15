@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -36,6 +37,8 @@ public class LevelActors {
 
     protected final Observer observer = new Observer(new Vector3f());
     protected final Player player = new Player(observer.getCamera(), null, Model.readFromObjFile(Game.CHARACTER_ENTRY, "Player1_Sheriff.obj", "water"));
+    protected final LightSource playerLight = new LightSource(observer.getCamera().getPos(), Vector3fColors.WHITE, 8.0f);
+
     //(Game.CHARACTER_ENTRY, null, "Player1_Sheriff.obj", "marble", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 1.0f);
     protected final List<NPC> npcList = new GapList<>();
 
@@ -110,6 +113,10 @@ public class LevelActors {
 
     public List<NPC> getNpcList() {
         return npcList;
+    }
+
+    public LightSource getPlayerLight() {
+        return playerLight;
     }
 
 }
