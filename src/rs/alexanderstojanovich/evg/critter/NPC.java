@@ -16,22 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
-import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class NPC extends Observer {
+public class NPC extends ModelCritter {
 
-    public NPC(String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
-        super(modelFileName, texName, pos, color, scale);
-    }
-
-    public NPC(Camera camera, Model model) {
-        super(camera, model);
+    public NPC(Model model) {
+        super(model);
     }
 
 }

@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.Comparator;
 import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -28,6 +29,8 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import rs.alexanderstojanovich.evg.level.LightSource;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -50,16 +53,31 @@ public class Tuple extends Blocks {
     protected int mat4Vbo = 0;
     protected FloatBuffer mat4FloatBuff;
 
-    protected final String texName;
-    protected final int faceEnBits;
+    protected final String name;
 
     protected final IntBuffer intBuff;
     protected int ibo = 0;
+    protected final int indicesNum;
+
+    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
+        @Override
+        public int compare(Tuple o1, Tuple o2) {
+            return o1.getName().compareTo(o2.getName());
+        }
+    };
 
     public Tuple(String texName, int faceEnBits) {
-        this.texName = texName;
-        this.faceEnBits = faceEnBits;
+        this.name = String.format("%s%02d", texName, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
+
+        int numberOfOnes = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            int mask = 1 << j;
+            if ((faceEnBits & mask) != 0) {
+                numberOfOnes++;
+            }
+        }
+        this.indicesNum = 6 * numberOfOnes;
     }
 
     // buffering colors
@@ -143,10 +161,12 @@ public class Tuple extends Blocks {
 //        GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, List<Vector3f> lightSrc, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, LightSources lightSources, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
-        if (!blockList.isEmpty() && faceEnBits > 0) {
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
+        if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
             GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
@@ -169,9 +189,7 @@ public class Tuple extends Blocks {
 
             shaderProgram.bind();
 
-            shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            lightSources.updateLightsInShader(shaderProgram);
 
             shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
 
@@ -188,7 +206,7 @@ public class Tuple extends Blocks {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
-                    Block.INDICES_COUNT,
+                    indicesNum,
                     GL11.GL_UNSIGNED_INT,
                     0,
                     blockList.size(),
@@ -204,6 +222,14 @@ public class Tuple extends Blocks {
         }
     }
 
+    public String texName() {
+        return name.substring(0, 5);
+    }
+
+    public int faceBits() {
+        return Integer.parseInt(name.substring(5));
+    }
+
     public int getVec3Vbo() {
         return vec3Vbo;
     }
@@ -212,12 +238,12 @@ public class Tuple extends Blocks {
         return mat4Vbo;
     }
 
-    public String getTexName() {
-        return texName;
+    public String getName() {
+        return name;
     }
 
-    public int getFaceEnBits() {
-        return faceEnBits;
+    public int getIbo() {
+        return ibo;
     }
 
     public FloatBuffer getVec3FloatBuff() {
@@ -230,6 +256,11 @@ public class Tuple extends Blocks {
 
     public IntBuffer getIntBuff() {
         return intBuff;
+    }
+
+    @Override
+    public String toString() {
+        return "Tuple{" + "name=" + name + '}';
     }
 
 }

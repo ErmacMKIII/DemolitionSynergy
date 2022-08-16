@@ -23,6 +23,8 @@ import org.lwjgl.openal.ALCCapabilities;
 import org.lwjgl.openal.ALCapabilities;
 
 /**
+ * This class is responsible for configuring the audio with OpenAL library.
+ * Initialize first on program start and call "destroy" method on program end.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */

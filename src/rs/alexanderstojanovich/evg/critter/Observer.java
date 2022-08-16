@@ -16,11 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
-import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -30,54 +28,17 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class Observer implements Critter {
 
     protected final Camera camera;
-    protected final Model model;
-    protected boolean givenControl = true;
+    protected boolean givenControl = false;
     protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
 
-    public Observer(String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
+    public Observer(Vector3f pos) {
         this.camera = new Camera(pos);
-        this.model = Model.readFromObjFile(Game.WORLD_ENTRY, modelFileName, texName);
-        this.model.setPrimaryColor(color);
-        this.model.setScale(scale);
-        this.model.setLight(camera.getPos());
-        initModelPos();
-    }
-
-    public Observer(Camera camera, Model model) {
-        this.camera = camera;
-        this.model = model;
-        this.model.setLight(camera.getPos());
-        initModelPos();
-    }
-
-    private void initModelPos() {
-        model.setPos(new Vector3f(camera.getPos()));
-        Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
-        Vector3f temp3 = new Vector3f();
-        model.setPos(model.getPos().sub(camera.getFront().mul(model.getDepth() / 2.0f, temp1), temp1));
-        model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
-        model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
-        predictor = new Vector3f(camera.getPos().x, camera.getPos().y, camera.getPos().z);
-    }
-
-    public void updateModelPos() {
-        model.setPos(new Vector3f(camera.getPos()));
-        Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
-        Vector3f temp3 = new Vector3f();
-        model.setPos(model.getPos().sub(camera.getFront().mul(model.getDepth() / 2.0f, temp1), temp1));
-        model.setPos(model.getPos().sub(camera.getUp().mul(model.getHeight() / 2.0f, temp2), temp2));
-        model.setPos(model.getPos().sub(camera.getRight().mul(model.getWidth() / 2.0f, temp3), temp3));
-        predictor = new Vector3f(camera.getPos().x, camera.getPos().y, camera.getPos().z);
     }
 
     @Override
     public void moveForward(float amount) {
         if (givenControl) {
             camera.moveForward(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().add(camera.getFront().mul(amount, temp));
         }
     }
 
@@ -85,8 +46,6 @@ public class Observer implements Critter {
     public void moveBackward(float amount) {
         if (givenControl) {
             camera.moveBackward(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().sub(camera.getFront().mul(amount, temp));
         }
     }
 
@@ -94,8 +53,6 @@ public class Observer implements Critter {
     public void moveLeft(float amount) {
         if (givenControl) {
             camera.moveLeft(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().sub(camera.getRight().mul(amount, temp));
         }
     }
 
@@ -103,8 +60,6 @@ public class Observer implements Critter {
     public void moveRight(float amount) {
         if (givenControl) {
             camera.moveRight(amount);
-            Vector3f temp = new Vector3f();
-            model.getPos().add(camera.getRight().mul(amount, temp));
         }
     }
 
@@ -138,7 +93,6 @@ public class Observer implements Critter {
     public void turnLeft(float angle) {
         if (givenControl) {
             camera.turnLeft(angle);
-            model.setrX(-angle);
         }
     }
 
@@ -146,50 +100,43 @@ public class Observer implements Critter {
     public void turnRight(float angle) {
         if (givenControl) {
             camera.turnRight(angle);
-            model.setrX(angle);
         }
     }
 
     @Override
-    public void lookAt(float mouseSensitivity, float xoffset, float yoffset) {
+    public void lookAtAngle(float yaw, float pitch) {
+        if (givenControl) {
+            camera.lookAt(yaw, pitch);
+        }
+    }
+
+    @Override
+    public void lookAtOffset(float mouseSensitivity, float xoffset, float yoffset) {
         if (givenControl) {
             camera.lookAt(mouseSensitivity, xoffset, yoffset);
-            model.setrX(-camera.getPitch());
-            model.setrY(camera.getYaw());
         }
     }
 
     @Override
     public boolean isBuffered() {
-        return model.isBuffered();
+        return true;
     }
 
     @Override
     public void bufferAll() {
-        model.bufferAll();
+
     }
 
     @Override
-    public void render(List<Vector3f> lightSrc) {
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         if (givenControl) {
-            camera.render(ShaderProgram.getMainShader());
+            camera.render(shaderProgram);
         }
-//        model.render(ShaderProgram.getMainShader());
     }
 
     @Override
     public String toString() {
-        return "Observer{" + "camera=" + camera + ", model=" + model + ", givenControl=" + givenControl + ", predictor=" + predictor + '}';
-    }
-
-    @Override
-    public Camera getCamera() {
-        return camera;
-    }
-
-    @Override
-    public Model getModel() {
-        return model;
+        return "Observer{" + "camera=" + camera + ", givenControl=" + givenControl + ", predictor=" + predictor + '}';
     }
 
     @Override
@@ -205,6 +152,10 @@ public class Observer implements Critter {
     @Override
     public Vector3f getPredictor() {
         return predictor;
+    }
+
+    public Camera getCamera() {
+        return camera;
     }
 
 }

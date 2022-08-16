@@ -32,6 +32,8 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Represents decoded audio file. Audio file(s) are can be played with audio
+ * player.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -62,6 +64,14 @@ public class AudioFile { // only ogg are supported
         loadAudio(dirEntry, fileName);
     }
 
+    /**
+     *
+     * Load audio data in ".ogg" format from the ZIP file (dsynergy.zip). Audio
+     * data is decoded from ".ogg" format.
+     *
+     * @param dirEntry directory where file is located
+     * @param fileName audio file name
+     */
     private void loadAudio(String dirEntry, String fileName) {
         File extern = new File(dirEntry + fileName);
         File archive = new File(Game.DATA_ZIP);

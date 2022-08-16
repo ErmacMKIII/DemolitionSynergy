@@ -16,14 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import java.util.Queue;
-import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.models.Tuple;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -33,9 +32,11 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class WaterRenderer {
 
     private final LevelContainer levelContainer;
-    private final Queue<Float> waterHeights = new GapList<>();
     private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
     private final Camera camera = new Camera();
+
+    public static final int TOP_MASK = 1 << Block.TOP;
+    public static final int BOTTOM_MASK = 1 << Block.BOTTOM;
 
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
     public WaterRenderer(LevelContainer levelContainer) {
@@ -43,37 +44,31 @@ public class WaterRenderer {
 //        this.debugQuad.setScale(0.25f);
     }
 
-    private void refresh() { // call this in update (renderer) 
+    private float findHeightMax() { // call this in update (renderer)
+        float hMax = -Chunk.BOUND;
         if (!levelContainer.isWorking()) {
-            Camera obsCamera = levelContainer.getLevelActors().getPlayer().getCamera();
-            Vector3f obsCameraPos = obsCamera.getPos();
-            Vector3f obsCameraFront = obsCamera.getFront();
-
-            Vector3f temp = new Vector3f();
-            for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-                Vector3f chunkPos = Chunk.invChunkFunc(id);
-                float product = chunkPos.sub(obsCameraPos, temp).normalize(temp).dot(obsCameraFront);
-                float distance = chunkPos.distance(obsCameraPos);
-                if (chunkPos.distance(obsCameraPos) <= Chunk.VISION / 8.0f) {
-                    Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
-                    if (fluidChunk != null && distance <= Chunk.VISION && product >= 0.25f) {
-                        float hMin = Math.round(chunkPos.y) & 0xFFFFFFFE;
-                        float hMax = Math.round(obsCameraPos.y) & 0xFFFFFFFE;
-                        float hStep = Math.round(hMax - hMin) << 4;
-
-                        if (hMax > hMin && hStep > 0.0f) {
-                            for (float h = hMin; h <= hMax; h += hStep) {
-                                if (!waterHeights.contains(h)) {
-                                    waterHeights.add(h);
+            Camera actCam = levelContainer.getLevelActors().mainCamera();
+            hMax = actCam.pos.y;
+            for (int id : levelContainer.getvChnkIdQueue()) {
+                Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
+                if (fluidChunk != null) {
+                    for (Tuple tuple : fluidChunk.getTupleList()) {
+                        if ((tuple.faceBits() & TOP_MASK) != 0
+                                && (tuple.faceBits() & BOTTOM_MASK) == 0) {
+                            for (Block block : tuple.getBlockList()) {
+                                float h = block.pos.y;
+                                if (h > hMax) {
+                                    hMax = h;
                                 }
                             }
                         }
-                        fluidChunk.setWaterTexture(frameBuffer.getTexture());
                     }
-
                 }
             }
+
         }
+
+        return hMax;
     }
 
     private void prepare() {
@@ -103,22 +98,14 @@ public class WaterRenderer {
         frameBuffer.bind();
         prepare();
         if (!levelContainer.isWorking()) {
-            // refresh is called from the update (renderer)           
-            Float height;
-            while ((height = waterHeights.poll()) != null) {
-                capture(height);
-            }
-            refresh();
+            float hMax = findHeightMax();
+            capture(hMax);
         }
         frameBuffer.unbind();
 //        if (!debugQuad.isBuffered()) {
-//            debugQuad.buffer();
+//            debugQuad.bufferAll();
 //        }
-//        debugQuad.render();
-    }
-
-    public Queue<Float> getWaterHeights() {
-        return waterHeights;
+//        debugQuad.render(ShaderProgram.getIntrfaceShader());
     }
 
     public FrameBuffer getFrameBuffer() {

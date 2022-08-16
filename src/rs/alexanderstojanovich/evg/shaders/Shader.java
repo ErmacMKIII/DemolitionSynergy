@@ -27,10 +27,10 @@ import rs.alexanderstojanovich.evg.util.PlainTextReader;
  */
 public class Shader {
 
-    private final int type; // either vertex (pixel position) or fragment (pixel color)
-    private final String src; // source code of the shader (glsl language)
-    private final String fileName;
-    private int shader;
+    protected final int type; // either vertex (pixel position) or fragment (pixel color)
+    protected final String src; // source code of the shader (glsl language)
+    protected final String fileName;
+    protected int shader;
 
     public static int VERTEX_SHADER = GL20.GL_VERTEX_SHADER;
     public static int FRAGMENT_SHADER = GL20.GL_FRAGMENT_SHADER;
@@ -61,6 +61,7 @@ public class Shader {
         if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
             DSLogger.reportError("@" + fileName, null);
             DSLogger.reportError(GL20.glGetShaderInfoLog(shader, 1024), null);
+            GL20.glDeleteShader(shader);
             System.exit(1);
         }
     }

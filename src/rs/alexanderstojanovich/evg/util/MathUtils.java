@@ -36,12 +36,51 @@ public class MathUtils {
 
     // Taylor series approximation
     public static float expm1(float x) {
-        return x * (1.0f + 0.5f * x * (1.0f + x * (1.0f + 0.25f * x) / 3.0f));
+        return x * (1.0f + 0.5f * x * (1.0f + x * (1.0f + 0.25f * x * (1.0f + 0.2f * x)) / 3.0f));
     }
 
     // Taylor series approximation
     public static double expm1(double x) {
-        return x * (1.0 + 0.5 * x * (1.0 + x * (1.0 + 0.25 * x) / 3.0));
+        return x * (1.0 + 0.5 * x * (1.0 + x * (1.0 + 0.25 * x * (1.0 + 0.2 * x)) / 3.0));
+    }
+
+    /**
+     * Calculate linear polynomial with given constants.
+     *
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float linear, float cnst, float x) {
+        return (linear * x + cnst);
+    }
+
+    /**
+     * Calculate quadratic polynomial with given constants.
+     *
+     * @param quad
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float quad, float linear, float cnst, float x) {
+        return (quad * x * x + linear * x + cnst);
+    }
+
+    /**
+     * Calculate cubic polynomial with given constants.
+     *
+     * @param cubic
+     * @param quad
+     * @param linear
+     * @param cnst
+     * @param x
+     * @return polynomial value
+     */
+    public static float polynomial(float cubic, float quad, float linear, float cnst, float x) {
+        return (cubic * x * x * x + quad * x * x + linear * x + cnst);
     }
 
     /**
@@ -57,7 +96,7 @@ public class MathUtils {
      * @param lacunarity frequency multiplier
      * @return noise
      */
-    public static float noise(int numOfOctaves, float x, float y, float persistence, float scale, float low, float high, float lacunarity) {
+    public static float noise2(int numOfOctaves, float x, float y, float persistence, float scale, float low, float high, float lacunarity) {
         float maxAmp = 0.0f;
         float amp = 1.0f;
         float freq = scale;
@@ -66,6 +105,42 @@ public class MathUtils {
         // add successively smaller, higher-frequency terms
         for (int i = 0; i < numOfOctaves; i++) {
             noise += SimplexNoise.noise(x * freq, y * freq) * amp;
+            maxAmp += amp;
+            amp *= persistence;
+            freq *= lacunarity;
+        }
+        // take the average value of the iterations
+        noise /= maxAmp;
+
+        // normalize the result
+        noise = noise * (high - low) / 2.0f + (high + low) / 2.0f;
+
+        return noise;
+    }
+
+    /**
+     * Generate noise using given number of iterations (or octaves)
+     *
+     * @param numOfOctaves iterations num
+     * @param x x-coord
+     * @param y y-coord
+     * @param z y-coord
+     * @param persistence amplitude multiplier
+     * @param scale scale
+     * @param low minimum output
+     * @param high maximum output
+     * @param lacunarity frequency multiplier
+     * @return noise
+     */
+    public static float noise3(int numOfOctaves, float x, float y, float z, float persistence, float scale, float low, float high, float lacunarity) {
+        float maxAmp = 0.0f;
+        float amp = 1.0f;
+        float freq = scale;
+        float noise = 0.0f;
+
+        // add successively smaller, higher-frequency terms
+        for (int i = 0; i < numOfOctaves; i++) {
+            noise += SimplexNoise.noise(x * freq, y * freq, z * freq) * amp;
             maxAmp += amp;
             amp *= persistence;
             freq *= lacunarity;

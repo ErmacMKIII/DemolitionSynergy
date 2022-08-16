@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
-import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -51,14 +51,16 @@ public class Editor {
         deselect();
         if (loaded == null) // first time it's null
         {
-            loaded = new Block(Texture.TEX_WORLD[texValue]);
+            loaded = new Block("crate");
+            selectLoadedTexture();
         }
         selectedNew = loaded;
 
         // fetching..
-        Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
-        Vector3f pos = obs.getCamera().getPos();
-        Vector3f front = obs.getCamera().getFront();
+        Camera camera = gameObject.getLevelContainer().levelActors.mainCamera();
+        Vector3f pos = camera.getPos();
+        Vector3f front = camera.getFront();
+
         final float skyboxWidth = LevelContainer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
         // and make it follows player camera        
@@ -75,8 +77,8 @@ public class Editor {
 
     public static void selectCurrSolid(GameObject gameObject) {
         deselect();
-        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
+        Vector3f cameraPos = gameObject.getLevelContainer().levelActors.mainCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().levelActors.mainCamera().getFront();
         float minDistanceOfSolid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
@@ -108,8 +110,8 @@ public class Editor {
 
     public static void selectCurrFluid(GameObject gameObject) {
         deselect();
-        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
+        Vector3f cameraPos = gameObject.getLevelContainer().levelActors.mainCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().levelActors.mainCamera().getFront();
         float minDistanceOfFluid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
@@ -151,7 +153,8 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(Texture.TEX_WORLD[texValue]);
+                loaded = new Block("crate");
+                selectLoadedTexture();
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -193,7 +196,8 @@ public class Editor {
         if (selectedCurr != null) {
             if (loaded == null) // first time it's null
             {
-                loaded = new Block(Texture.TEX_WORLD[texValue]);
+                loaded = new Block("crate");
+                selectLoadedTexture();
             }
             selectedNew = loaded;
             selectedNew.getPos().x = selectedCurr.getPos().x;
@@ -273,13 +277,13 @@ public class Editor {
 
     public static void add(GameObject gameObject) {
         if (selectedNew != null) {
-            if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
+            if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
                 if (selectedNew.isSolid()) { // else if block is solid
                     gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
-                    gameObject.getLevelContainer().getFluidChunks().updateSolids();
+//                    gameObject.getLevelContainer().getFluidChunks().updateSolids();
                 } else { // if block is fluid                    
                     gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew, true);
-                    gameObject.getLevelContainer().getFluidChunks().updateFluids();
+//                    gameObject.getLevelContainer().getFluidChunks().updateFluids();
                 }
                 gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block(Texture.TEX_WORLD[texValue]);
@@ -292,10 +296,10 @@ public class Editor {
         if (selectedCurr != null) {
             if (selectedCurr.isSolid()) {
                 gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr, true);
-                gameObject.getLevelContainer().getFluidChunks().updateSolids();
+//                gameObject.getLevelContainer().getFluidChunks().updateSolids();
             } else {
                 gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr, true);
-                gameObject.getLevelContainer().getFluidChunks().updateFluids();
+//                gameObject.getLevelContainer().getFluidChunks().updateFluids();
             }
             gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
@@ -304,7 +308,9 @@ public class Editor {
 
     private static void selectLoadedTexture() {
         if (loaded != null) {
-            loaded.setTexName(Texture.TEX_WORLD[texValue]);
+            String texName = Texture.TEX_WORLD[texValue];
+            loaded.setTexName(texName);
+            loaded.setSolid(!texName.equals("water"));
             Block.deepCopyTo(loaded.getVertices(), Texture.TEX_WORLD[texValue]);
             loaded.unbuffer();
         }

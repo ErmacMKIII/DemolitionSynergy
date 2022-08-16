@@ -26,6 +26,7 @@ import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -44,11 +45,13 @@ public class ShaderProgram {
     private static ShaderProgram waterVoxelShader;
     private static ShaderProgram intrfaceShader;
     private static ShaderProgram playerShader;
+    private static ShaderProgram weaponShader;
 
-    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[6];
+    public static final int SHADER_COUNT = 7;
+    public static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[SHADER_COUNT];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
-        // 1. Init main shader (skybox, camera)
+        // 1. Init main shader (skybox, NPCs, items)
         Shader mainVertexShader = new Shader(Game.EFFECTS_ENTRY, "mainVS.glsl", Shader.VERTEX_SHADER);
         Shader mainFragmentShader = new Shader(Game.EFFECTS_ENTRY, "mainFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> mainShaders = new ArrayList<>();
@@ -80,7 +83,7 @@ public class ShaderProgram {
         waterVoxelShaders.add(waterVoxelFragmentShader);
         waterVoxelShader = new ShaderProgram(waterVoxelShaders);
         SHADER_PROGRAMS[3] = waterVoxelShader;
-        // 5. Init interface shader (crosshair)
+        // 5. Init interface shader (crosshair & fonts)
         Shader intrfaceVertexShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceVS.glsl", Shader.VERTEX_SHADER);
         Shader intrfaceFragmentShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> intrfaceShaders = new ArrayList<>();
@@ -88,7 +91,7 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         SHADER_PROGRAMS[4] = intrfaceShader;
-        // 6. Init player shader (weapons)
+        // 6. Init player shader (camera)
         Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
         Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
         List<Shader> playerShaders = new ArrayList<>();
@@ -96,6 +99,14 @@ public class ShaderProgram {
         playerShaders.add(playerFragmentShader);
         playerShader = new ShaderProgram(playerShaders);
         SHADER_PROGRAMS[5] = playerShader;
+        // 7. Init weapon shader (player weapons)
+        Shader weaponVertexShader = new Shader(Game.EFFECTS_ENTRY, "weaponVS.glsl", Shader.VERTEX_SHADER);
+        Shader weaponFragmentShader = new Shader(Game.EFFECTS_ENTRY, "weaponFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> weaponShaders = new ArrayList<>();
+        weaponShaders.add(weaponVertexShader);
+        weaponShaders.add(weaponFragmentShader);
+        weaponShader = new ShaderProgram(weaponShaders);
+        SHADER_PROGRAMS[6] = weaponShader;
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -112,6 +123,10 @@ public class ShaderProgram {
         GL20.glLinkProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
             DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
+            for (Shader shader : shaders) {
+                GL20.glDeleteShader(shader.getShader());
+            }
+            GL20.glDeleteProgram(program);
             System.exit(1);
         }
     }
@@ -120,6 +135,10 @@ public class ShaderProgram {
         GL20.glValidateProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_FALSE) {
             DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
+            for (Shader shader : shaders) {
+                GL20.glDeleteShader(shader.getShader());
+            }
+            GL20.glDeleteProgram(program);
             System.exit(1);
         }
     }
@@ -174,6 +193,35 @@ public class ShaderProgram {
         }
     }
 
+    public void updateUniform(LightSource[] lightSrc, String name) {
+        for (int i = 0; i < lightSrc.length; i++) {
+            int locPos = GL20.glGetUniformLocation(program, name + "[" + i + "].pos");
+            GL20.glUniform3f(locPos, lightSrc[i].getPos().x, lightSrc[i].getPos().y, lightSrc[i].getPos().z);
+
+            int locCol = GL20.glGetUniformLocation(program, name + "[" + i + "].color");
+            GL20.glUniform3f(locCol, lightSrc[i].getColor().x, lightSrc[i].getColor().y, lightSrc[i].getColor().z);
+
+            int locInt = GL20.glGetUniformLocation(program, name + "[" + i + "].intensity");
+            GL20.glUniform1f(locInt, lightSrc[i].getIntensity());
+        }
+    }
+
+    public void updateUniform(List<LightSource> lightSrc, String name) {
+        int index = 0;
+        for (LightSource ls : lightSrc) {
+            int locPos = GL20.glGetUniformLocation(program, name + "[" + index + "].pos");
+            GL20.glUniform3f(locPos, ls.getPos().x, ls.getPos().y, ls.getPos().z);
+
+            int locCol = GL20.glGetUniformLocation(program, name + "[" + index + "].color");
+            GL20.glUniform3f(locCol, ls.getColor().x, ls.getColor().y, ls.getColor().z);
+
+            int locInt = GL20.glGetUniformLocation(program, name + "[" + index + "].intensity");
+            GL20.glUniform1f(locInt, ls.getIntensity());
+
+            index++;
+        }
+    }
+
     public void updateUniform(Vector4f vect, String name) {
         int uniformLocation = GL20.glGetUniformLocation(program, name);
         GL20.glUniform4f(uniformLocation, vect.x, vect.y, vect.z, vect.w);
@@ -218,8 +266,8 @@ public class ShaderProgram {
         return playerShader;
     }
 
-    public static ShaderProgram[] getSHADER_PROGRAMS() {
-        return SHADER_PROGRAMS;
+    public static ShaderProgram getWeaponShader() {
+        return weaponShader;
     }
 
 }

@@ -16,18 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -35,32 +33,29 @@ import rs.alexanderstojanovich.evg.util.Pair;
  */
 public abstract class OptionsMenu extends Menu {
 
-    protected List<Pair<DynamicText, Combo>> options = new ArrayList<>();
+    protected static enum InputMode {
+        INIT, GET, PUT
+    }
+    protected static InputMode mode = InputMode.INIT;
 
-    public OptionsMenu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
-        super(title, itemPairs, textureFileName);
-        init();
+    protected boolean inputEdited = false;
+
+    protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
+
+    public OptionsMenu(String title, List<MenuItem> items, String textureFileName) {
+        super(title, items, textureFileName);
     }
 
-    public OptionsMenu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
-        super(title, itemPairs, textureFileName, pos, scale);
-        init();
+    public OptionsMenu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
+        super(title, items, textureFileName, pos, scale);
     }
-
-    private void init() {
-        for (DynamicText item : items) {
-            Pair<DynamicText, Combo> option = new Pair<>(new DynamicText(Texture.FONT, ""), new Combo());
-            option.getKey().getPos().x = item.getPos().x;
-            option.getKey().getPos().y = item.getPos().y;
-            options.add(option);
-        }
-    }
-
-    protected abstract void getValues();
 
     @Override
     public void open() {
         enabled = true;
+        inputEdited = false;
+        mode = InputMode.INIT;
+        input.setLength(0);
         GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
         GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCursorPosCallback() {
             @Override
@@ -79,12 +74,12 @@ public abstract class OptionsMenu extends Menu {
                 yposGL = new_yposGL;
             }
         });
-        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), null);
         GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
                     enabled = false;
+                    input.setLength(0);
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
@@ -97,20 +92,70 @@ public abstract class OptionsMenu extends Menu {
                 } else if (key == GLFW.GLFW_KEY_DOWN && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectNext();
                 } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    if (options.get(selected) != null) {
-                        options.get(selected).getValue().selectPrev();
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditMultiValue) {
+                        MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
+                        selectedMultiValue.selectPrev();
                         execute();
                     }
                 } else if (key == GLFW.GLFW_KEY_RIGHT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    if (options.get(selected) != null) {
-                        options.get(selected).getValue().selectNext();
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditMultiValue) {
+                        MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
+                        selectedMultiValue.selectNext();
                         execute();
                     }
                 } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
-                    if (options.get(selected) != null) {
-                        options.get(selected).getValue().selectNext();
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditSingleValue) {
+                        // if both are reset
+                        switch (mode) {
+                            case INIT:
+                                input.setLength(0);
+                                input.append(selectedMenuItem.menuValue.getCurrentValue());
+                                selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                                inputEdited = false;
+                                mode = InputMode.GET;
+                                break;
+                            case GET:
+                                mode = mode.PUT;
+                                break;
+                            case PUT:
+                                selectedMenuItem.menuValue.setCurrentValue(Long.parseLong(input.toString()));
+                                mode = InputMode.INIT;
+                                execute();
+                                break;
+                        }
+                    } else if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditNoValue) {
+                        enabled = false;
+                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                        GLFW.glfwSetCharCallback(window, null);
+                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                        GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                        GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
                         execute();
                     }
+                } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (input.length() > 0 && mode == InputMode.GET) {
+                        input.deleteCharAt(input.length() - 1);
+                    }
+                    selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                }
+            }
+        });
+        GLFW.glfwWaitEvents();
+        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
+            @Override
+            public void invoke(long window, int codepoint) {
+                if (mode == InputMode.GET) {
+                    input.append((char) codepoint);
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (selectedMenuItem != null && selectedMenuItem.menuValue != null) {
+                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                    }
+                    inputEdited = true;
                 }
             }
         });
@@ -119,12 +164,25 @@ public abstract class OptionsMenu extends Menu {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
-                    if (options.get(selected) != null) {
-                        options.get(selected).getValue().selectNext();
+                    MenuItem selectedMenuItem = items.get(OptionsMenu.this.selected);
+                    if (selectedMenuItem != null) {
+                        switch (selectedMenuItem.editType) {
+                            case EditSingleValue:
+                                SingleValue selectedSingleValue = (SingleValue) selectedMenuItem.getMenuValue();
+                                selectedSingleValue.setCurrentValue(input);
+                                break;
+                            case EditMultiValue:
+                                MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
+                                selectedMultiValue.selectNext();
+                                break;
+                            case EditNoValue:
+                            default:
+                                break;
+                        }
                         execute();
                     }
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
-                    if (options.get(selected) != null) {
+                    if (items.get(OptionsMenu.this.selected) != null) {
                         enabled = false;
                         GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
                         GLFW.glfwSetCharCallback(window, null);
@@ -142,7 +200,7 @@ public abstract class OptionsMenu extends Menu {
     @Override
     public void render(ShaderProgram shaderProgram) {
         if (enabled) {
-            getValues();
+            //setOptionValues();
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
@@ -152,37 +210,25 @@ public abstract class OptionsMenu extends Menu {
             }
             title.render(shaderProgram);
             int index = 0;
-            for (DynamicText item : items) {
-                item.setAlignment(alignmentAmount);
-                item.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.getRelativeCharWidth()) + pos.x;
-                item.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
+            for (MenuItem item : items) {
+                item.keyText.setAlignment(alignmentAmount);
+                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
+                item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
 
-                if (!item.isBuffered()) {
-                    item.bufferAll();
+                if (item.menuValue != null && item.menuValue.getValueText() != null) {
+                    item.menuValue.getValueText().getPos().x = item.keyText.getPos().x + itemScale * (item.keyText.getRelativeWidth() + item.keyText.getRelativeCharWidth()) * (1.0f - alignmentAmount);
+                    item.menuValue.getValueText().getPos().y = item.keyText.getPos().y;
                 }
                 item.render(shaderProgram);
-                options.get(index).getKey().getPos().x = item.getPos().x + itemScale * (item.getRelativeWidth() + item.getRelativeCharWidth()) * (1.0f - alignmentAmount);
-                options.get(index).getKey().getPos().y = item.getPos().y;
-                if (!options.get(index).getKey().isBuffered()) {
-                    options.get(index).getKey().bufferAll();
-                }
-                options.get(index).getKey().render(shaderProgram);
+
                 index++;
             }
-            iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
-            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
-            iterator.getPos().y = items.get(selected).getPos().y;
-            iterator.setColor(items.get(selected).getColor());
+
             if (!iterator.isBuffered()) {
                 iterator.bufferAll();
             }
             iterator.render(shaderProgram);
         }
-    }
-
-    public List<Pair<DynamicText, Combo>> getOptions() {
-        return options;
     }
 
 }

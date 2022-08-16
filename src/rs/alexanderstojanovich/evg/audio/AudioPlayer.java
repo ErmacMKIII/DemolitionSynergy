@@ -21,6 +21,8 @@ import org.lwjgl.openal.AL10;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Audio player is used to play decoded audio tracks. Loop can be optionally
+ * set. Volume can be adjusted.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -36,6 +38,12 @@ public class AudioPlayer {
         sourcePointer = AL10.alGenSources();
     }
 
+    /**
+     * Play audio track.
+     *
+     * @param audioFile audio track
+     * @param loop repeat playing track after its end.
+     */
     public void play(AudioFile audioFile, boolean loop) {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!", null);
@@ -57,6 +65,12 @@ public class AudioPlayer {
         AL10.alSourcePlay(sourcePointer);
     }
 
+    /**
+     * Play audio sound effects.
+     *
+     * @param audioFile audio sound FX.
+     * @param pos position in 3D space of the sound FX.
+     */
     public void play(AudioFile audioFile, Vector3f pos) {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!", null);

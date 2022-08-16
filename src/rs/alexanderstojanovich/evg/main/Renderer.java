@@ -20,7 +20,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -43,7 +42,6 @@ public class Renderer extends Thread implements Executor {
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
-    protected static double alpha = 0.0;
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
@@ -59,14 +57,14 @@ public class Renderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context        
+        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context          
 
-        double timer1 = GLFW.glfwGetTime();
-        double timer2 = GLFW.glfwGetTime();
+        double timer1 = 0.0;
+        double timer2 = 0.0;
 
         fps = 0;
 
-        double lastTime = GLFW.glfwGetTime();
+        double lastTime = Game.accumulator * Game.TICK_TIME;
         double currTime;
         double deltaTime = 0.0;
 
@@ -82,9 +80,8 @@ public class Renderer extends Thread implements Executor {
                 heightGL = height;
             }
 
-            currTime = GLFW.glfwGetTime();
+            currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
-
             fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
@@ -98,49 +95,50 @@ public class Renderer extends Thread implements Executor {
             int numOfPasses = 0;
             while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
                 gameObject.render();
+
+                // update text which shows dialog every 500.0 ticks                
+                if (Game.accumulator > timer1 + 500.0) {
+                    if (gameObject.getIntrface().getSaveDialog().isDone()) {
+                        gameObject.getIntrface().getSaveDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                    }
+                    if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
+                        gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
+                    }
+
+                    if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
+                        gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
+                    }
+
+                    gameObject.getIntrface().getCollText().setContent("");
+                    gameObject.getIntrface().getScreenText().setEnabled(false);
+
+                    timer1 += 500.0;
+                }
+
+                // update text which animates water every quarter of the second
+                if (Game.accumulator > timer2 + 20.0) {
+                    if (gameObject.getLevelContainer().getProgress() == 100.0f) {
+                        gameObject.getIntrface().getProgText().setEnabled(false);
+                        gameObject.getLevelContainer().setProgress(0.0f);
+                    }
+
+                    if (!gameObject.isWorking()) {
+                        if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
+                            gameObject.animate();
+                        }
+                    }
+                    timer2 += 20.0;
+                }
+
                 fps++;
                 fpsTicks--;
                 numOfPasses++;
-            }
-
-            // update text which shows dialog every 5 seconds
-            if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                if (gameObject.getIntrface().getSaveDialog().isDone()) {
-                    gameObject.getIntrface().getSaveDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                }
-                if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
-                    gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
-                }
-
-                if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
-                    gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
-                }
-
-                gameObject.getIntrface().getCollText().setContent("");
-                gameObject.getIntrface().getScreenText().setEnabled(false);
-
-                timer1 += 5.0;
-            }
-
-            // update text which animates water every quarter of the second
-            if (GLFW.glfwGetTime() > timer2 + 0.25) {
-                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
-                    gameObject.getIntrface().getProgText().setEnabled(false);
-                    gameObject.getLevelContainer().setProgress(0.0f);
-                }
-
-                if (!gameObject.isWorking()) {
-                    if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
-                        gameObject.animate();
-                    }
-                }
-                timer2 += 0.25;
             }
 
             // lastly it executes the console tasks
@@ -179,10 +177,6 @@ public class Renderer extends Thread implements Executor {
 
     public static void setFps(int fps) {
         Renderer.fps = fps;
-    }
-
-    public static double getAlpha() {
-        return alpha;
     }
 
 }

@@ -32,6 +32,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
 
 /**
+ * Main core class related with the window on which OpenGL is being rendered. It
+ * wraps around GLFW window.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -53,7 +55,25 @@ public class Window {
     public static final int MIN_WIDTH = 640;
     public static final int MIN_HEIGHT = 480;
 
-    public Window(int width, int height, String title) {
+    private static Window instance;
+
+    /**
+     * Gets one instance of the window (creates the window if not exists).
+     *
+     * @param width window width
+     * @param height window height
+     * @param title window title
+     *
+     * @return single window instance
+     */
+    public static Window getInstance(int width, int height, String title) {
+        if (instance == null) {
+            instance = new Window(width, height, title);
+        }
+        return instance;
+    }
+
+    private Window(int width, int height, String title) {
         this.width = width;
         this.height = height;
         this.title = title;
@@ -163,6 +183,11 @@ public class Window {
         GLFW.glfwTerminate();
     }
 
+    /**
+     * Gives all possible resolutions for the primary monitor.
+     *
+     * @return array of strings [width x height]
+     */
     public Object[] giveAllResolutions() {
         ArrayList<Object> res = new ArrayList<>();
         Buffer buffer = GLFW.glfwGetVideoModes(monitorID);

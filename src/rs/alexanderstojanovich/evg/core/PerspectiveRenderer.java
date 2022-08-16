@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
-import rs.alexanderstojanovich.evg.main.Game;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -29,7 +28,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class PerspectiveRenderer {
 
-    private final static Matrix4f PROJECTION_MATRIX = new Matrix4f();
+    public final static Matrix4f PROJECTION_MATRIX = new Matrix4f();
 
     private static void perspective(float fov, int width, int height, float zNear, float zFar, ShaderProgram shaderProgram) {
         // LH is for OpenGL way, it's required..
@@ -41,15 +40,11 @@ public class PerspectiveRenderer {
     }
 
     public static void updatePerspective(Window myWindow) {
-        for (ShaderProgram shaderProgram : ShaderProgram.getSHADER_PROGRAMS()) {
+        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();
-            perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), Game.EPSILON, 1.0f / Game.EPSILON, shaderProgram);
+            perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 12288.0f, shaderProgram);
             ShaderProgram.unbind();
         }
-    }
-
-    public static Matrix4f getPROJECTION_MATRIX() {
-        return PROJECTION_MATRIX;
     }
 
 }
