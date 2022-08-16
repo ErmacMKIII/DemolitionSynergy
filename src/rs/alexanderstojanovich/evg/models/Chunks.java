@@ -25,7 +25,6 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -469,7 +468,7 @@ public class Chunks {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, solid, lightSources, null);
+            tuple.renderInstanced(shaderProgram, solid, lightSources, solid ? null : GameObject.getInstance().getWaterRenderer().getFrameBuffer().getTexture());
         }
 
         GL20.glDisableVertexAttribArray(0);

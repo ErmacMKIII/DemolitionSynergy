@@ -48,7 +48,8 @@ public class WaterRenderer {
         float hMax = -Chunk.BOUND;
         if (!levelContainer.isWorking()) {
             Camera actCam = levelContainer.getLevelActors().mainCamera();
-            hMax = actCam.pos.y;
+            float chMax = actCam.pos.y;
+
             for (int id : levelContainer.getvChnkIdQueue()) {
                 Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
                 if (fluidChunk != null) {
@@ -57,7 +58,7 @@ public class WaterRenderer {
                                 && (tuple.faceBits() & BOTTOM_MASK) == 0) {
                             for (Block block : tuple.getBlockList()) {
                                 float h = block.pos.y;
-                                if (h > hMax) {
+                                if (h > hMax && h <= chMax) {
                                     hMax = h;
                                 }
                             }
