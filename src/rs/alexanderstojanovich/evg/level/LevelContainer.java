@@ -25,9 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
@@ -110,10 +108,7 @@ public class LevelContainer implements GravityEnviroment {
     public final LevelActors levelActors = new LevelActors();
 
     // position of all the solid blocks to texture name & neighbors
-    public static final Map<Vector3f, Pair<String, Byte>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS >> 4);
-
-    // position of all the fluid blocks to texture name & neighbors
-    public static final Map<Vector3f, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS >> 4);
+    public static final BlockLocation ALL_BLOCK_MAP = new BlockLocation();
 
     // std time to live
     public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
@@ -127,14 +122,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -145,14 +140,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -163,14 +158,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits &= ~maskAdj & 63;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -181,14 +176,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits &= ~maskAdj & 63;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -199,25 +194,25 @@ public class LevelContainer implements GravityEnviroment {
         String str = block.getTexName();
         if (block.isSolid()) {
             byte bits = updatePutSolidNeighbors(pos);
-            Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_SOLID_MAP.put(new Vector3f(pos), pairX);
+            TexByte pairX = new TexByte(str, bits, block.isSolid());
+            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
         } else {
             byte bits = updatePutFluidNeighbors(pos);
-            Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_FLUID_MAP.put(new Vector3f(pos), pairX);
+            TexByte pairX = new TexByte(str, bits, block.isSolid());
+            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
         }
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
         if (block.isSolid()) {
-            Pair<String, Byte> pair = ALL_SOLID_MAP.remove(pos);
-            if (pair != null && pair.getValue() > 0) {
+            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+            if (rem) {
                 updateRemSolidNeighbors(pos);
             }
         } else {
-            Pair<String, Byte> pair = ALL_FLUID_MAP.remove(pos);
-            if (pair != null && pair.getValue() > 0) {
+            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+            if (rem) {
                 updateRemFluidNeighbors(pos);
             }
         }
@@ -248,11 +243,11 @@ public class LevelContainer implements GravityEnviroment {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("SOLID POSITION MAP");
-        sb.append("(size = ").append(ALL_SOLID_MAP.size()).append(")\n");
+        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
         sb.append("\n");
         sb.append("FLUID POSITION MAP");
-        sb.append("(size = ").append(ALL_FLUID_MAP.size()).append(")\n");
+        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
     }
@@ -287,8 +282,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_MAP.clear();
-        ALL_FLUID_MAP.clear();
+        ALL_BLOCK_MAP.init();
 
         LIGHT_SOURCES.lightSrcList.clear();
         LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -339,8 +333,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_MAP.clear();
-        ALL_FLUID_MAP.clear();
+        ALL_BLOCK_MAP.init();
 
         LIGHT_SOURCES.lightSrcList.clear();
         LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -472,8 +465,7 @@ public class LevelContainer implements GravityEnviroment {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            ALL_SOLID_MAP.clear();
-            ALL_FLUID_MAP.clear();
+            ALL_BLOCK_MAP.init();
 
             LIGHT_SOURCES.lightSrcList.clear();
             LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -645,7 +637,7 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = ALL_FLUID_MAP.containsKey(obsCamPosAlign);
+        yea = ALL_BLOCK_MAP.isLocationPopulated(obsCamPosAlign, false);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
@@ -656,7 +648,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(adjAlign);
+                boolean fluidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, false);
 
                 if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
@@ -676,7 +668,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.005f;
+            final float stepAmount = 0.05f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -684,12 +676,12 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_SOLID_MAP.containsKey(predAlign);
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -697,7 +689,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
@@ -721,7 +713,7 @@ public class LevelContainer implements GravityEnviroment {
                         livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.005f;
+            final float stepAmount = 0.05f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -729,12 +721,12 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(livingCritter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_SOLID_MAP.containsKey(predAlign);
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -742,7 +734,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, livingCritter.getPredictor())
@@ -763,11 +755,13 @@ public class LevelContainer implements GravityEnviroment {
     // thats what gravity does, object fells down if they don't have support below it (sky or other object)
     @Override
     public void gravityDo(float deltaTime) {
+        if (working) {
+            return;
+        }
 //        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-//        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
 //        for (Vector3f solidBlockPos : solidMap.keyQueue()) {
 //            Vector3f bottom = new Vector3f(solidBlockPos);
-//            bottom.y -= 1.0f;
+//            bottom.y -= 2.0f;
 //            boolean massBelow = false;
 //            for (Vector3f otherSolidBlockPos : solidMap.keyQueue()) {
 //                if (!solidBlockPos.equals(otherSolidBlockPos)
@@ -781,7 +775,95 @@ public class LevelContainer implements GravityEnviroment {
 //                solidBlockPos.y -= value;
 //            }
 //        }
-//        solidChunks.setBuffered(false);
+//        final int[] faces = new int[]{Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
+//        List<Block> markForRemList = new GapList<>();        
+//        List<Vector3f> populatedLocations = LevelContainer.ALL_FLUID_MAP.getPopulatedLocation();
+//        for (Vector3f fluidPos : populatedLocations) {
+//            for (int f : faces) {
+//                Vector3f adjFluidPos = Block.getAdjacentPos(fluidPos, f);                
+//                boolean modified = false;
+//                if (!LevelContainer.ALL_SOLID_MAP.isLocationPopulated(adjFluidPos)
+//                        && !LevelContainer.ALL_FLUID_MAP.isLocationPopulated(adjFluidPos)) {
+//                    int fluidChunkId = Chunk.chunkFunc(fluidPos);
+//                    Chunk fluidChunk = this.fluidChunks.getChunk(fluidChunkId);
+//                    TexByte pair = LevelContainer.ALL_FLUID_MAP.getLocation(fluidPos);
+//                    String texName = pair.texName;
+//                    int bits = pair.byteValue;
+//                    if (fluidChunk != null) {
+//                        int tupleBits = (~bits & 63);
+//                        Tuple tuple = fluidChunk.getTuple(texName, tupleBits);
+//                        if (tuple != null) {
+//                            Block fldBlk = Chunk.getBlock(tuple, fluidPos);
+//                            if (fldBlk != null) {
+//                                List<Vertex> faceVertices = Block.getFaceVertices(fldBlk.getVertices(), f);
+//                                for (Vertex v : faceVertices) {
+//                                    if (v.getPos().y > -1.0f) {
+//                                        v.getPos().y = Math.max(v.getPos().y - value, -1.0f);
+//                                    }
+//                                }
+//                                List<Vertex> topVertices = Block.getFaceVertices(fldBlk.getVertices(), Block.TOP);
+//                                boolean markedForRem = false;
+//                                for (Vertex vt : topVertices) {
+//                                    if (vt.getPos().y > -1.0f) {
+//                                        modified = true;
+//                                        vt.getPos().y = Math.max(vt.getPos().y - value, -1.0f);
+//                                    } else if (vt.getPos().y == -1.0f) {
+//                                        markedForRem = true;
+//                                        break;
+//                                    }
+//                                }
+//
+//                                if (markedForRem) {
+//                                    markForRemList.add(fldBlk);
+//                                }
+//                                
+//                            }
+//                        }
+//                    }                                       
+//                    
+//            }
+
+//                if (modified && LevelContainer.ALL_FLUID_MAP.isLocationPopulated(adjFluidPos) ) {
+//                    int adjFluidChunkId = Chunk.chunkFunc(adjFluidPos);
+//                    Chunk adjFluidChunk = fluidChunks.getChunk(adjFluidChunkId);
+//                    if (adjFluidChunk != null) {
+//                        System.err.println("FCHUNK FOUND!");
+//                        TexByte adjPair = LevelContainer.ALL_FLUID_MAP.get(adjFluidPos);
+//                        if (adjPair != null) {
+//                            System.err.println("PAIR FOUND!");
+//                            String tupleTexName = adjPair.getKey();
+//                            byte adjNBits = adjPair.getValue();                            
+//                            int k = ((f & 1) == 0 ? f + 1 : f - 1);
+//                            int mask = 1 << k;
+//                            // revert the bit that was set in LevelContainer
+//                            //(looking for old bits i.e. current tuple)
+//                            int tupleBits = adjNBits ^ (~mask & 63);
+//
+//                            Tuple tuple = adjFluidChunk.getTuple(tupleTexName, tupleBits);
+//                            Block adjBlock = null;
+//                            if (tuple != null) {
+//                                adjBlock = Chunk.getBlock(tuple, adjFluidPos);
+//                                System.err.println("BLK FOUND!");
+//                            }
+//                            if (adjBlock != null) {
+//                                int adjFaceBitsBefore = adjBlock.getFaceBits();
+//                                adjBlock.setFaceBits((~mask & 63) ^ adjNBits);
+//                                int adjFaceBitsAfter = adjBlock.getFaceBits();
+//                                if (adjFaceBitsBefore != adjFaceBitsAfter) {
+//                                    // if bits changed, i.e. some face(s) got disabled
+//                                    // tranfer to correct tuple
+//                                    adjFluidChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        for (Block fldBlk : markForRemList) {
+//            fluidChunks.removeBlock(fldBlk, true);
+//        }
     }
 
     // method for determining visible chunks

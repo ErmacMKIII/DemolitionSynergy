@@ -564,6 +564,7 @@ public class Game {
                 }
 
                 gameObject.update((float) TICK_TIME);
+                gameObject.gravityDo((float) TICK_TIME);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control

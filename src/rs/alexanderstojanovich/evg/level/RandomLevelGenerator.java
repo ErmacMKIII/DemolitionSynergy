@@ -23,7 +23,6 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -83,8 +82,7 @@ public class RandomLevelGenerator {
     }
 
     private boolean repeatCondition(Vector3f pos) {
-        return LevelContainer.ALL_SOLID_MAP.containsKey(pos)
-                || LevelContainer.ALL_FLUID_MAP.containsKey(pos)
+        return LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(pos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(pos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(pos)
                 || levelContainer.getMyWindow().shouldClose();
@@ -339,15 +337,12 @@ public class RandomLevelGenerator {
                         }
 
                         int sbits = 0;
-                        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
-                        if (spair != null) {
-                            sbits = spair.getValue();
-                        }
-
                         int fbits = 0;
-                        Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
-                        if (fpair != null) {
-                            fbits = fpair.getValue();
+                        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(pos);
+                        if (pair != null && pair.solid) {
+                            sbits = pair.getByteValue();
+                        } else if (pair != null && !pair.solid) {
+                            fbits = pair.getByteValue();
                         }
 
                         final int mask1 = 0x08; // bottom only mask

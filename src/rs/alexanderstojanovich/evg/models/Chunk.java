@@ -26,10 +26,10 @@ import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -230,9 +230,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      */
     protected void updateSolidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
-        Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(block.pos);
-        if (pair != null) {
-            byte neighborBits = pair.getValue();
+        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
+        if (pair != null && pair.isSolid()) {
+            byte neighborBits = pair.getByteValue();
             block.setFaceBits(~neighborBits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
@@ -242,10 +242,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // check adjacent blocks
                 for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                     Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                    Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
-                    if (adjPair != null) {
-                        String tupleTexName = adjPair.getKey();
-                        byte adjNBits = adjPair.getValue();
+                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                    if (adjPair != null && adjPair.isSolid()) {
+                        String tupleTexName = adjPair.getTexName();
+                        byte adjNBits = adjPair.getByteValue();
                         int k = ((j & 1) == 0 ? j + 1 : j - 1);
                         int mask = 1 << k;
                         // revert the bit that was set in LevelContainer
@@ -286,10 +286,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
-                String tupleTexName = adjPair.getKey();
-                byte adjNBits = adjPair.getValue();
+            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.isSolid()) {
+                String tupleTexName = adjPair.getTexName();
+                byte adjNBits = adjPair.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -323,9 +323,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      */
     protected void updateFluidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
-        Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(block.pos);
+        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
         if (pair != null) {
-            byte neighborBits = pair.getValue();
+            byte neighborBits = pair.getByteValue();
             block.setFaceBits(~neighborBits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
@@ -335,10 +335,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // check adjacent blocks
                 for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                     Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                    Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-                    if (adjPair != null) {
-                        String tupleTexName = adjPair.getKey();
-                        byte adjNBits = adjPair.getValue();
+                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                    if (adjPair != null && !adjPair.isSolid()) {
+                        String tupleTexName = adjPair.getTexName();
+                        byte adjNBits = adjPair.getByteValue();
                         int k = ((j & 1) == 0 ? j + 1 : j - 1);
                         int mask = 1 << k;
                         // revert the bit that was set in LevelContainer
@@ -379,10 +379,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
-                String tupleTexName = adjPair.getKey();
-                byte adjNBits = adjPair.getValue();
+            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.isSolid()) {
+                String tupleTexName = adjPair.getTexName();
+                byte adjNBits = adjPair.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -416,9 +416,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
 
             int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
+            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(solidBlock.pos);
+            if (pair != null && pair.isSolid()) {
+                byte neighborBits = pair.getByteValue();
                 solidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = solidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
@@ -436,9 +436,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
 
             int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
+            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(fluidBlock.pos);
+            if (pair != null && !pair.isSolid()) {
+                byte neighborBits = pair.getByteValue();
                 fluidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = fluidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled

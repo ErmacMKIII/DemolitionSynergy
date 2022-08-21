@@ -235,8 +235,7 @@ public class Editor {
 
     private static boolean cannotPlace(GameObject gameObject) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_SOLID_MAP.containsKey(selectedNew.pos)
-                || LevelContainer.ALL_FLUID_MAP.containsKey(selectedNew.pos);
+        boolean placeOccupied = LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(selectedNew.pos);
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
