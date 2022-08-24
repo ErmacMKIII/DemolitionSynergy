@@ -45,7 +45,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
-    public static final float LENGTH = BOUND * STEP;
+    public static final float LENGTH = BOUND * STEP * 2.0f;
 
     // id of the chunk (signed)
     private final int id;
@@ -646,7 +646,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             if (chunkId != currChunkId) {
                 Vector3f chunkPos = invChunkFunc(chunkId);
                 float distance1 = actorPos.distance(chunkPos);
-                if (distance1 - distance0 <= LENGTH) {
+                if (distance1 - distance0 <= LENGTH / 2.0f) {
                     vChnkIdQueue.offer(chunkId);
                 } else if (!iChnkIdQueue.contains(chunkId)) {
                     iChnkIdQueue.offer(chunkId);

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -41,9 +42,12 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.models.Tuple;
+import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -758,6 +762,7 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+
 //        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 //        for (Vector3f solidBlockPos : solidMap.keyQueue()) {
 //            Vector3f bottom = new Vector3f(solidBlockPos);
@@ -775,92 +780,54 @@ public class LevelContainer implements GravityEnviroment {
 //                solidBlockPos.y -= value;
 //            }
 //        }
-//        final int[] faces = new int[]{Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
-//        List<Block> markForRemList = new GapList<>();        
-//        List<Vector3f> populatedLocations = LevelContainer.ALL_FLUID_MAP.getPopulatedLocation();
-//        for (Vector3f fluidPos : populatedLocations) {
+//        List<Block> markForRemList = new GapList<>();
+//        List<Block> markForLeak = new GapList<>();
+//        final int[] faces = new int[] {Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
+//        for (Block fluidBlk : fluidChunks.getTotalList()) {
 //            for (int f : faces) {
-//                Vector3f adjFluidPos = Block.getAdjacentPos(fluidPos, f);                
-//                boolean modified = false;
-//                if (!LevelContainer.ALL_SOLID_MAP.isLocationPopulated(adjFluidPos)
-//                        && !LevelContainer.ALL_FLUID_MAP.isLocationPopulated(adjFluidPos)) {
-//                    int fluidChunkId = Chunk.chunkFunc(fluidPos);
-//                    Chunk fluidChunk = this.fluidChunks.getChunk(fluidChunkId);
-//                    TexByte pair = LevelContainer.ALL_FLUID_MAP.getLocation(fluidPos);
-//                    String texName = pair.texName;
-//                    int bits = pair.byteValue;
-//                    if (fluidChunk != null) {
-//                        int tupleBits = (~bits & 63);
-//                        Tuple tuple = fluidChunk.getTuple(texName, tupleBits);
-//                        if (tuple != null) {
-//                            Block fldBlk = Chunk.getBlock(tuple, fluidPos);
-//                            if (fldBlk != null) {
-//                                List<Vertex> faceVertices = Block.getFaceVertices(fldBlk.getVertices(), f);
-//                                for (Vertex v : faceVertices) {
-//                                    if (v.getPos().y > -1.0f) {
-//                                        v.getPos().y = Math.max(v.getPos().y - value, -1.0f);
-//                                    }
-//                                }
-//                                List<Vertex> topVertices = Block.getFaceVertices(fldBlk.getVertices(), Block.TOP);
-//                                boolean markedForRem = false;
-//                                for (Vertex vt : topVertices) {
-//                                    if (vt.getPos().y > -1.0f) {
-//                                        modified = true;
-//                                        vt.getPos().y = Math.max(vt.getPos().y - value, -1.0f);
-//                                    } else if (vt.getPos().y == -1.0f) {
-//                                        markedForRem = true;
-//                                        break;
-//                                    }
-//                                }
-//
-//                                if (markedForRem) {
-//                                    markForRemList.add(fldBlk);
-//                                }
-//                                
-//                            }
-//                        }
-//                    }                                       
-//                    
+//                Vector3f jFluidPos = Block.getAdjacentPos(fluidBlk.pos, f);
+//                if (!ALL_BLOCK_MAP.isLocationPopulated(jFluidPos)) {
+//                    markForLeak.add(fluidBlk);
+//                }                
+//                
 //            }
-
-//                if (modified && LevelContainer.ALL_FLUID_MAP.isLocationPopulated(adjFluidPos) ) {
-//                    int adjFluidChunkId = Chunk.chunkFunc(adjFluidPos);
-//                    Chunk adjFluidChunk = fluidChunks.getChunk(adjFluidChunkId);
-//                    if (adjFluidChunk != null) {
-//                        System.err.println("FCHUNK FOUND!");
-//                        TexByte adjPair = LevelContainer.ALL_FLUID_MAP.get(adjFluidPos);
-//                        if (adjPair != null) {
-//                            System.err.println("PAIR FOUND!");
-//                            String tupleTexName = adjPair.getKey();
-//                            byte adjNBits = adjPair.getValue();                            
-//                            int k = ((f & 1) == 0 ? f + 1 : f - 1);
-//                            int mask = 1 << k;
-//                            // revert the bit that was set in LevelContainer
-//                            //(looking for old bits i.e. current tuple)
-//                            int tupleBits = adjNBits ^ (~mask & 63);
+//        }
+//        
+//        for (Block fluidAffBlk : markForLeak) {            
+//            for (Vertex v : fluidAffBlk.getVertices()) {
+//                if (v.getPos().y > -1.0f) {
+//                    v.getPos().y = Math.max(v.getPos().y - value, -1.0f);
+//                } else if (v.getPos().y == 1.0f) {
+//                    markForRemList.add(fluidAffBlk);
+//                }
+//            }            
 //
-//                            Tuple tuple = adjFluidChunk.getTuple(tupleTexName, tupleBits);
-//                            Block adjBlock = null;
-//                            if (tuple != null) {
-//                                adjBlock = Chunk.getBlock(tuple, adjFluidPos);
-//                                System.err.println("BLK FOUND!");
-//                            }
-//                            if (adjBlock != null) {
-//                                int adjFaceBitsBefore = adjBlock.getFaceBits();
-//                                adjBlock.setFaceBits((~mask & 63) ^ adjNBits);
-//                                int adjFaceBitsAfter = adjBlock.getFaceBits();
-//                                if (adjFaceBitsBefore != adjFaceBitsAfter) {
-//                                    // if bits changed, i.e. some face(s) got disabled
-//                                    // tranfer to correct tuple
-//                                    adjFluidChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-//                                }
+//            for (int k : faces) {
+//                Vector3f kFluidPos = Block.getAdjacentPos(fluidAffBlk.pos, k);
+//                int kFluidChunkId = Chunk.chunkFunc(kFluidPos);
+//                Chunk kFluidChunk = this.fluidChunks.getChunk(kFluidChunkId);
+//                TexByte kLocation = LevelContainer.ALL_BLOCK_MAP.getLocation(kFluidPos);
+//                if (kFluidChunk != null && kLocation != null) {
+//                    String jTexName = kLocation.texName;
+//                    int kBits = ~kLocation.byteValue & 63;
+//                    Tuple kTuple = kFluidChunk.getTuple(jTexName, kBits);
+//                    if (kTuple != null) {
+//                        Block kfldBlk = Chunk.getBlock(kTuple, kFluidPos);
+//                        if (kfldBlk != null) {
+//                            kfldBlk.setPrimaryColor(Vector3fColors.MAGENTA);
+//                            int l = ((k & 1) == 0 ? k + 1 : k - 1);
+//                            int lMask = 1 << l;
+//                            kfldBlk.setFaceBits(kBits ^ (lMask & 63));
+//                            int kFaceBitsNow = kfldBlk.getFaceBits();
+//                            if (kFaceBitsNow != kBits) {
+//                                kFluidChunk.transfer(kfldBlk, kBits, kFaceBitsNow);
 //                            }
 //                        }
 //                    }
 //                }
-//            }
+//            }                
 //        }
-//
+//        
 //        for (Block fldBlk : markForRemList) {
 //            fluidChunks.removeBlock(fldBlk, true);
 //        }

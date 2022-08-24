@@ -17,6 +17,8 @@
 package rs.alexanderstojanovich.evg.level;
 
 import java.util.List;
+import java.util.Queue;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -131,14 +133,15 @@ public class BlockLocation {
     }
 
     /**
-     * List of populated locations.
+     * List of populated locations. Warning: this is performance costly - So
+     * don't call it in a loop!
      *
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocation() {
+    public List<Vector3f> getPopulatedLocations() {
         List<Vector3f> result = new GapList<>();
         for (int i = 0; i < Chunk.BOUND; i++) {
-            for (int j = 0; i < Chunk.BOUND; j++) {
+            for (int j = 0; j < Chunk.BOUND; j++) {
                 for (int k = 0; k < Chunk.BOUND; k++) {
                     if (locationMap[i][j][k] != null) {
                         float x = 2.0f * i - Chunk.BOUND;
@@ -146,6 +149,117 @@ public class BlockLocation {
                         float z = 2.0f * k - Chunk.BOUND;
 
                         result.add(new Vector3f(x, y, z));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * List of populated locations with given predicated. Warning: this is
+     * performance costly - So don't call it in a loop!
+     *
+     * @param predicate predicate
+     * @return List of Vector3f of populated locationMap(s)
+     */
+    public List<Vector3f> getPopulatedLocations(Predicate<TexByte> predicate) {
+        List<Vector3f> result = new GapList<>();
+        for (int i = 0; i < Chunk.BOUND; i++) {
+            for (int j = 0; j < Chunk.BOUND; j++) {
+                for (int k = 0; k < Chunk.BOUND; k++) {
+                    TexByte value = locationMap[i][j][k];
+                    if (value != null && predicate.test(value)) {
+                        float x = 2.0f * i - Chunk.BOUND;
+                        float y = 2.0f * j - Chunk.BOUND;
+                        float z = 2.0f * k - Chunk.BOUND;
+
+                        result.add(new Vector3f(x, y, z));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * List of populated locations with given predicated. Warning: this is
+     * performance costly - So don't call it in a loop!
+     *
+     * @param chunkId chunkId to check (block) population.
+     *
+     * @param predicate predicate
+     * @return List of Vector3f of populated locationMap(s)
+     */
+    public List<Vector3f> getPopulatedLocations(int chunkId, Predicate<TexByte> predicate) {
+        List<Vector3f> result = new GapList<>();
+        Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
+
+        float lXBound = chunkPos.x - Chunk.LENGTH / 2.0f + 2.0f;
+        float rXBound = chunkPos.x + Chunk.LENGTH / 2.0f - 2.0f;
+
+        float lZBound = chunkPos.z - Chunk.LENGTH / 2.0f + 2.0f;
+        float rZBound = chunkPos.z + Chunk.LENGTH / 2.0f - 2.0f;
+
+        float lYBound = -Chunk.BOUND + 2.0f;
+        float rYBound = Chunk.BOUND - 2.0f;
+
+        for (float x = lXBound; x <= rXBound; x += 2.0f) {
+            for (float y = lYBound; y <= rYBound; y += 2.0f) {
+                for (float z = lZBound; z <= rZBound; z += 2.0f) {
+
+                    int i = Math.round((x + Chunk.BOUND) / 2.0f);
+                    int j = Math.round((y + Chunk.BOUND) / 2.0f);
+                    int k = Math.round((z + Chunk.BOUND) / 2.0f);
+
+                    TexByte value = locationMap[i][j][k];
+                    if (value != null && predicate.test(value)) {
+                        result.add(new Vector3f(x, y, z));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * List of populated locations with given predicated. Warning: this is
+     * performance costly - So don't call it in a loop!
+     *
+     * @param chunkIdQueue chunkId queue to check (block) population.
+     *
+     * @param predicate predicate
+     * @return List of Vector3f of populated locationMap(s)
+     */
+    public List<Vector3f> getPopulatedLocations(Queue<Integer> chunkIdQueue, Predicate<TexByte> predicate) {
+        List<Vector3f> result = new GapList<>();
+        for (int chunkId : chunkIdQueue) {
+            Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
+
+            float lXBound = chunkPos.x - Chunk.LENGTH / 2.0f + 2.0f;
+            float rXBound = chunkPos.x + Chunk.LENGTH / 2.0f - 2.0f;
+
+            float lZBound = chunkPos.z - Chunk.LENGTH / 2.0f + 2.0f;
+            float rZBound = chunkPos.z + Chunk.LENGTH / 2.0f - 2.0f;
+
+            float lYBound = -Chunk.BOUND + 2.0f;
+            float rYBound = Chunk.BOUND - 2.0f;
+
+            for (float x = lXBound; x <= rXBound; x += 1.0f) {
+                for (float y = lYBound; y <= rYBound; y += 1.0f) {
+                    for (float z = lZBound; z <= rZBound; z += 1.0f) {
+
+                        int i = Math.round((x + Chunk.BOUND) / 2.0f);
+                        int j = Math.round((y + Chunk.BOUND) / 2.0f);
+                        int k = Math.round((z + Chunk.BOUND) / 2.0f);
+
+                        TexByte value = locationMap[i][j][k];
+                        if (value != null && predicate.test(value)) {
+                            result.add(new Vector3f(x, y, z));
+                        }
                     }
                 }
             }

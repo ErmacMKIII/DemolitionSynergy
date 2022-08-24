@@ -56,4 +56,9 @@ public class TexByte {
         this.solid = solid;
     }
 
+    @Override
+    public String toString() {
+        return "TexByte{" + "texName=" + texName + ", byteValue=" + byteValue + ", solid=" + solid + '}';
+    }
+
 }
