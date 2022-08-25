@@ -24,9 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
+import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 
@@ -45,6 +47,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     MUSIC_VOLUME,
     SOUND_VOLUME,
     EXIT,
+    POSITION,
     SCREENSHOT,
     NOP,
     ERROR;
@@ -155,6 +158,18 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 case "screenshot":
                     command = SCREENSHOT;
                     break;
+                case "pos":
+                case "position":
+                    command = POSITION;
+                    if (things.length == 2) {
+                        command.args.add(Integer.parseInt(things[1]));
+                    }
+                    if (things.length == 4) {
+                        command.args.add(Float.parseFloat(things[1]));
+                        command.args.add(Float.parseFloat(things[2]));
+                        command.args.add(Float.parseFloat(things[3]));
+                    }
+                    break;
                 default:
                     command = ERROR;
                     break;
@@ -181,6 +196,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     public static Object execute(Command command) {
         Object result = null;
         command.status = false;
+        GameObject gameObject = GameObject.getInstance();
         switch (command) {
             case FPS_MAX:
                 switch (command.mode) {
@@ -320,7 +336,6 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
-                GameObject gameObject = GameObject.getInstance();
                 gameObject.getIntrface().getScreenText().setEnabled(true);
                 gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 command.status = true;
@@ -329,6 +344,40 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 GameObject.MY_WINDOW.close();
                 command.status = true;
                 break;
+            case POSITION:
+                Vector3f mainActorPos = gameObject.getLevelContainer().levelActors.getMainActor().getPosition();
+                int chunkId;
+                switch (command.mode) {
+                    case GET:
+                        final StringBuilder sb = new StringBuilder();
+                        sb.append(String.format("pos: (%.1f,%.1f,%.1f)", mainActorPos.x, mainActorPos.y, mainActorPos.z));
+                        chunkId = Chunk.chunkFunc(mainActorPos);
+                        sb.append(" | ");
+                        sb.append(String.format("chunkId: %d", chunkId));
+                        result = sb.toString();
+                        command.status = true;
+                        break;
+                    case SET:
+                        if (command.args.size() == 1) {
+                            chunkId = (int) command.args.get(0);
+                            Vector3f newPos = Chunk.invChunkFunc(chunkId);
+                            mainActorPos.x = newPos.x;
+                            mainActorPos.y = newPos.y;
+                            mainActorPos.z = newPos.z;
+                            command.status = true;
+                        } else if (command.args.size() == 3) {
+                            float newPosx = (float) command.args.get(0);
+                            float newPosy = (float) command.args.get(1);
+                            float newPosz = (float) command.args.get(2);
+                            mainActorPos.x = newPosx;
+                            mainActorPos.y = newPosy;
+                            mainActorPos.z = newPosz;
+                            command.status = true;
+                        }
+                        break;
+                }
+                break;
+
             case NOP:
             default:
                 break;
