@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
@@ -49,6 +50,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     EXIT,
     POSITION,
     SCREENSHOT,
+    SIZEOF,
     NOP,
     ERROR;
 
@@ -170,13 +172,20 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                         command.args.add(Float.parseFloat(things[3]));
                     }
                     break;
+                case "sizeof":
+                case "size_of":
+                    command = SIZEOF;
+                    if (things.length == 2) {
+                        command.args.add(Integer.parseInt(things[1]));
+                    }
+                    break;
                 default:
                     command = ERROR;
                     break;
             }
         }
 
-        if (command.args.isEmpty()) {
+        if (command.args.isEmpty() || command == SIZEOF) {
             command.mode = Mode.GET;
         } else {
             command.mode = Mode.SET;
@@ -377,7 +386,34 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                         break;
                 }
                 break;
-
+            case SIZEOF:
+                if (command.mode == Mode.GET) {
+                    if (command.args.isEmpty()) {
+                        int solidSize = CacheModule.totalSize(gameObject.getLevelContainer().getSolidChunks(), true);
+                        int fluidSize = CacheModule.totalSize(gameObject.getLevelContainer().getFluidChunks(), false);
+                        result = String.format("SolidSize = %d | FluidSize = %d | TotalChunks = %d", solidSize, fluidSize, Chunk.CHUNK_NUM);
+                    } else {
+                        chunkId = (int) command.args.get(0);
+                        boolean cached = CacheModule.isCached(chunkId, true);
+                        int solidSize = 0, fluidSize = 0;
+                        if (cached) {
+                            solidSize = CacheModule.cachedSize(chunkId, true);
+                            fluidSize = CacheModule.cachedSize(chunkId, false);
+                        } else {
+                            Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
+                            if (solidChunk != null) {
+                                solidSize = solidChunk.getBlockList().size();
+                            }
+                            Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
+                            if (fluidChunk != null) {
+                                fluidSize = fluidChunk.getBlockList().size();
+                            }
+                        }
+                        result = String.format("SolidSize = %d | FluidSize = %d | Cached = %s", solidSize, fluidSize, cached);
+                    }
+                }
+                command.status = true;
+                break;
             case NOP:
             default:
                 break;

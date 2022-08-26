@@ -495,7 +495,7 @@ public class Chunks {
         return result;
     }
 
-    public void printInfo() { // for debugging purposes
+    public String printInfo() { // for debugging purposes
         StringBuilder sb = new StringBuilder();
         sb.append("CHUNKS\n");
         sb.append("CHUNKS TOTAL SIZE = ").append(CacheModule.totalSize(this, solid)).append("\n");
@@ -517,6 +517,8 @@ public class Chunks {
         }
         sb.append("------------------------------------------------------------");
         DSLogger.reportInfo(sb.toString(), null);
+
+        return sb.toString();
     }
 
     public List<Chunk> getChunkList() {
