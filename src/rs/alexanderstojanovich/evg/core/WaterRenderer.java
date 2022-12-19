@@ -48,13 +48,13 @@ public class WaterRenderer {
         if (!levelContainer.isWorking()) {
             Camera actCam = levelContainer.getLevelActors().mainCamera();
             float chMax = Math.round(actCam.pos.y + 0.5f) & 0xFFFFFFFE;
-            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {                         
+            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
                 if (y > hMax && y <= chMax) {
                     hMax = y;
                 }
             }
         }
-        
+
         return hMax;
     }
 

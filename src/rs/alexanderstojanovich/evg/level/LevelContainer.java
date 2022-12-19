@@ -225,7 +225,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setScale(SKYBOX_SCALE);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 8912.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
     }

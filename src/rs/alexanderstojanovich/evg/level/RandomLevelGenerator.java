@@ -208,7 +208,7 @@ public class RandomLevelGenerator {
 
         String adjTex = "stone";
         if (random.nextFloat() >= 0.5f) {
-            adjTex = randomSolidTexture(false);
+            adjTex = randomSolidTexture(random.nextFloat() <= 0.5f);
         }
 
         Block solidAdjBlock = new Block(adjTex, adjPos, color, true);
@@ -306,7 +306,7 @@ public class RandomLevelGenerator {
                             String tex = "stone";
 
                             if (random.nextFloat() >= 0.95f) {
-                                tex = randomSolidTexture(false);
+                                tex = randomSolidTexture(random.nextFloat() <= 0.5f);
                             }
 
                             Block solidBlock = new Block(tex, pos, color, true);

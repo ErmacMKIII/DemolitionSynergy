@@ -476,7 +476,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // update original block with neighbor blocks
             if (solid) {
                 // check if it's light block
-                LightSource lightSource = new LightSource(block.pos, block.primaryColor, 32.0f);
+                LightSource lightSource = new LightSource(block.pos, block.primaryColor, 8.0f);
                 if (block.getTexName().equals("reflc")
                         && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
                     LevelContainer.LIGHT_SOURCES.getLightSrcList().add(lightSource);
