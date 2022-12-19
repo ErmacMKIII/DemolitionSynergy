@@ -16,9 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.function.Predicate;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -30,6 +33,8 @@ import rs.alexanderstojanovich.evg.models.Chunk;
 public class BlockLocation {
 
     protected final TexByte[][][] locationMap = new TexByte[Chunk.BOUND][Chunk.BOUND][Chunk.BOUND];
+    protected final Map<Float, List<Vector2f>> planes = new LinkedHashMap<>();
+
     protected int population = 0;
 
     /**
@@ -44,6 +49,7 @@ public class BlockLocation {
             }
         }
         population = 0;
+        planes.clear();
     }
 
     /**
@@ -56,11 +62,18 @@ public class BlockLocation {
      * @param solid is block solid (or not)
      */
     public void putLocation(Vector3f pos, String texname, int bits, boolean solid) {
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        locationMap[x][y][z] = new TexByte(texname, (byte) bits, solid);
+        locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid);
+
+        List<Vector2f> yCoords = planes.get((float) k);
+        if (yCoords == null) {
+            yCoords = new GapList<>();
+        }
+        yCoords.add(new Vector2f(pos.x, pos.z));
+
         population++;
     }
 
@@ -71,11 +84,17 @@ public class BlockLocation {
      * @param texByte texture of the block w/ neighbor bits
      */
     public void putLocation(Vector3f pos, TexByte texByte) {
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        locationMap[x][y][z] = texByte;
+        List<Vector2f> yCoords = planes.get((float) k);
+        if (yCoords == null) {
+            yCoords = new GapList<>();
+        }
+        yCoords.add(new Vector2f(pos.x, pos.z));
+
+        locationMap[i][j][k] = texByte;
         population++;
     }
 
@@ -86,11 +105,11 @@ public class BlockLocation {
      * @return texture w/ byte of locationMap or null if does not exist
      */
     public TexByte getLocation(Vector3f pos) {
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        return locationMap[x][y][z];
+        return locationMap[i][j][k];
     }
 
     /**
@@ -101,11 +120,11 @@ public class BlockLocation {
      * @return condition on whether or not it's populated.
      */
     public boolean isLocationPopulated(Vector3f pos) {
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        return locationMap[x][y][z] != null;
+        return locationMap[i][j][k] != null;
     }
 
     /**
@@ -120,11 +139,11 @@ public class BlockLocation {
     public boolean isLocationPopulated(Vector3f pos, boolean solid) {
         boolean result = false;
 
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        TexByte value = locationMap[x][y][z];
+        TexByte value = locationMap[i][j][k];
         if (value != null && value.solid == solid) {
             result = true;
         }
@@ -140,17 +159,11 @@ public class BlockLocation {
      */
     public List<Vector3f> getPopulatedLocations() {
         List<Vector3f> result = new GapList<>();
-        for (int i = 0; i < Chunk.BOUND; i++) {
-            for (int j = 0; j < Chunk.BOUND; j++) {
-                for (int k = 0; k < Chunk.BOUND; k++) {
-                    if (locationMap[i][j][k] != null) {
-                        float x = 2.0f * i - Chunk.BOUND;
-                        float y = 2.0f * j - Chunk.BOUND;
-                        float z = 2.0f * k - Chunk.BOUND;
 
-                        result.add(new Vector3f(x, y, z));
-                    }
-                }
+        for (int j = 0; j < Chunk.BOUND; j++) {
+            float y = 2.0f * j - Chunk.BOUND;
+            for (Vector2f xz : planes.get(y)) {
+                result.add(new Vector3f(xz.x, y, xz.y));
             }
         }
 
@@ -166,17 +179,15 @@ public class BlockLocation {
      */
     public List<Vector3f> getPopulatedLocations(Predicate<TexByte> predicate) {
         List<Vector3f> result = new GapList<>();
-        for (int i = 0; i < Chunk.BOUND; i++) {
-            for (int j = 0; j < Chunk.BOUND; j++) {
-                for (int k = 0; k < Chunk.BOUND; k++) {
-                    TexByte value = locationMap[i][j][k];
-                    if (value != null && predicate.test(value)) {
-                        float x = 2.0f * i - Chunk.BOUND;
-                        float y = 2.0f * j - Chunk.BOUND;
-                        float z = 2.0f * k - Chunk.BOUND;
 
-                        result.add(new Vector3f(x, y, z));
-                    }
+        for (int j = 0; j < Chunk.BOUND; j++) {
+            float y = 2.0f * j - Chunk.BOUND;
+            for (Vector2f xz : planes.get(y)) {
+                int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
+                int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
+                TexByte value = locationMap[i][j][k];
+                if (value != null && predicate.test(value)) {
+                    result.add(new Vector3f(xz.x, y, xz.y));
                 }
             }
         }
@@ -195,28 +206,21 @@ public class BlockLocation {
      */
     public List<Vector3f> getPopulatedLocations(int chunkId, Predicate<TexByte> predicate) {
         List<Vector3f> result = new GapList<>();
-        Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
-
-        float lXBound = chunkPos.x - Chunk.LENGTH / 2.0f + 2.0f;
-        float rXBound = chunkPos.x + Chunk.LENGTH / 2.0f - 2.0f;
-
-        float lZBound = chunkPos.z - Chunk.LENGTH / 2.0f + 2.0f;
-        float rZBound = chunkPos.z + Chunk.LENGTH / 2.0f - 2.0f;
 
         float lYBound = -Chunk.BOUND + 2.0f;
         float rYBound = Chunk.BOUND - 2.0f;
 
-        for (float x = lXBound; x <= rXBound; x += 2.0f) {
-            for (float y = lYBound; y <= rYBound; y += 2.0f) {
-                for (float z = lZBound; z <= rZBound; z += 2.0f) {
-
-                    int i = Math.round((x + Chunk.BOUND) / 2.0f);
+        for (float y = lYBound; y <= rYBound; y += 2.0f) {
+            List<Vector2f> yCoords = planes.get((float) y);
+            if (yCoords != null) {
+                for (Vector2f xz : yCoords) {
+                    int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
                     int j = Math.round((y + Chunk.BOUND) / 2.0f);
-                    int k = Math.round((z + Chunk.BOUND) / 2.0f);
-
+                    int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
                     TexByte value = locationMap[i][j][k];
-                    if (value != null && predicate.test(value)) {
-                        result.add(new Vector3f(x, y, z));
+                    Vector3f pos = new Vector3f(xz.x, y, xz.y);
+                    if (value != null && predicate.test(value) && Chunk.chunkFunc(pos) == chunkId) {
+                        result.add(pos);
                     }
                 }
             }
@@ -237,28 +241,20 @@ public class BlockLocation {
     public List<Vector3f> getPopulatedLocations(Queue<Integer> chunkIdQueue, Predicate<TexByte> predicate) {
         List<Vector3f> result = new GapList<>();
         for (int chunkId : chunkIdQueue) {
-            Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
-
-            float lXBound = chunkPos.x - Chunk.LENGTH / 2.0f + 2.0f;
-            float rXBound = chunkPos.x + Chunk.LENGTH / 2.0f - 2.0f;
-
-            float lZBound = chunkPos.z - Chunk.LENGTH / 2.0f + 2.0f;
-            float rZBound = chunkPos.z + Chunk.LENGTH / 2.0f - 2.0f;
-
             float lYBound = -Chunk.BOUND + 2.0f;
             float rYBound = Chunk.BOUND - 2.0f;
 
-            for (float x = lXBound; x <= rXBound; x += 1.0f) {
-                for (float y = lYBound; y <= rYBound; y += 1.0f) {
-                    for (float z = lZBound; z <= rZBound; z += 1.0f) {
-
-                        int i = Math.round((x + Chunk.BOUND) / 2.0f);
+            for (float y = lYBound; y <= rYBound; y += 2.0f) {
+                List<Vector2f> yCoords = planes.get((float) y);
+                if (yCoords != null) {
+                    for (Vector2f xz : yCoords) {
+                        int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
                         int j = Math.round((y + Chunk.BOUND) / 2.0f);
-                        int k = Math.round((z + Chunk.BOUND) / 2.0f);
-
+                        int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
                         TexByte value = locationMap[i][j][k];
-                        if (value != null && predicate.test(value)) {
-                            result.add(new Vector3f(x, y, z));
+                        Vector3f pos = new Vector3f(xz.x, y, xz.y);
+                        if (value != null && predicate.test(value) && Chunk.chunkFunc(pos) == chunkId) {
+                            result.add(pos);
                         }
                     }
                 }
@@ -276,26 +272,48 @@ public class BlockLocation {
      * @return was location previously populated
      */
     protected boolean removeLocation(Vector3f pos) {
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+        int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        boolean populated = locationMap[x][y][z] != null;
-        locationMap[x][y][z] = null;
+        boolean populated = locationMap[i][j][k] != null;
+        locationMap[i][j][k] = null;
 
         if (populated) {
             population--;
         }
 
+        List<Vector2f> yCoords = planes.get((float) pos.y);
+        if (yCoords != null) {
+            yCoords.remove(new Vector2f(pos.x, pos.z));
+            if (yCoords.isEmpty()) {
+                planes.remove(pos.y);
+            }
+        }
+
         return populated;
     }
 
+    /**
+     * Get Location Map of all the blocks
+     *
+     * @return location map [i,j,k] => (x,z,y)
+     */
     public TexByte[][][] getLocationMap() {
         return locationMap;
     }
 
     public int getPopulation() {
         return population;
+    }
+
+    /**
+     * Get XZ PLanes based on Y
+     *
+     * @return XZ Planes Where one Y maps into several XZ
+     */
+    public Map<Float, List<Vector2f>> getPlanes() {
+        return planes;
     }
 
 }
