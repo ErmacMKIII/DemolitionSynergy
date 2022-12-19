@@ -68,12 +68,13 @@ public class BlockLocation {
 
         locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid);
 
-        List<Vector2f> yCoords = planes.get((float) k);
+        List<Vector2f> yCoords = planes.get(pos.y);
         if (yCoords == null) {
             yCoords = new GapList<>();
         }
         yCoords.add(new Vector2f(pos.x, pos.z));
-
+        planes.put(pos.y, yCoords);
+        
         population++;
     }
 
@@ -87,14 +88,16 @@ public class BlockLocation {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-
-        List<Vector2f> yCoords = planes.get((float) k);
+        
+        locationMap[i][j][k] = texByte;
+        
+        List<Vector2f> yCoords = planes.get(pos.y);
         if (yCoords == null) {
             yCoords = new GapList<>();
         }
         yCoords.add(new Vector2f(pos.x, pos.z));
-
-        locationMap[i][j][k] = texByte;
+        planes.put(pos.y, yCoords);
+        
         population++;
     }
 
@@ -303,6 +306,10 @@ public class BlockLocation {
         return locationMap;
     }
 
+    /**
+     *  Population (number of blocks).
+     * @return Block number - population.
+    */    
     public int getPopulation() {
         return population;
     }
