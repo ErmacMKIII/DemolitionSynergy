@@ -36,12 +36,12 @@ public class Player extends ModelCritter {
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
-    public static final Model PISTOL = Model.readFromObjFile(Game.PLAYER_ENTRY, "pistol.obj", "pistol");
-    public static final Model SUB_MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "sub_machine_gun.obj", "smg");
-    public static final Model SHOTGUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "shotgun.obj", "shotgun");
-    public static final Model ASSAULT_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "assault_rifle.obj", "assrifle");
-    public static final Model MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "machine_gun.obj", "machgun");
-    public static final Model SNIPER_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "sniper_rifle.obj", "sniper");
+    public static final Model PISTOL = Model.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9");
+    public static final Model SUB_MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9");
+    public static final Model SHOTGUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9");
+    public static final Model ASSAULT_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK");
+    public static final Model MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6");
+    public static final Model SNIPER_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8");
     public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
 
     static {

@@ -52,6 +52,12 @@ public class BlockLocation {
         planes.clear();
     }
 
+    public boolean safeCheck(int i, int j, int k) {
+        return i >= 0 && i < Chunk.BOUND
+                && j >= 0 && j < Chunk.BOUND
+                && k >= 0 && k < Chunk.BOUND;
+    }
+
     /**
      * Put block locationMap into the population matrix.
      *
@@ -65,6 +71,10 @@ public class BlockLocation {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
+
+        if (!safeCheck(i, j, k)) {
+            return;
+        }
 
         locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid);
 
@@ -89,6 +99,10 @@ public class BlockLocation {
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
+        if (!safeCheck(i, j, k)) {
+            return;
+        }
+
         locationMap[i][j][k] = texByte;
 
         List<Vector2f> yCoords = planes.get(pos.y);
@@ -112,6 +126,10 @@ public class BlockLocation {
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
+        if (!safeCheck(i, j, k)) {
+            return null;
+        }
+
         return locationMap[i][j][k];
     }
 
@@ -127,7 +145,7 @@ public class BlockLocation {
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
 
-        return locationMap[i][j][k] != null;
+        return safeCheck(i, j, k) && locationMap[i][j][k] != null;
     }
 
     /**
@@ -145,6 +163,10 @@ public class BlockLocation {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
+
+        if (!safeCheck(i, j, k)) {
+            return false;
+        }
 
         TexByte value = locationMap[i][j][k];
         if (value != null && value.solid == solid) {
@@ -189,6 +211,11 @@ public class BlockLocation {
                 int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
                 int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
                 TexByte value = locationMap[i][j][k];
+
+                if (!safeCheck(i, j, k)) {
+                    continue;
+                }
+
                 if (value != null && predicate.test(value)) {
                     result.add(new Vector3f(xz.x, y, xz.y));
                 }
@@ -220,6 +247,11 @@ public class BlockLocation {
                     int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
                     int j = Math.round((y + Chunk.BOUND) / 2.0f);
                     int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
+
+                    if (!safeCheck(i, j, k)) {
+                        continue;
+                    }
+
                     TexByte value = locationMap[i][j][k];
                     Vector3f pos = new Vector3f(xz.x, y, xz.y);
                     if (value != null && predicate.test(value) && Chunk.chunkFunc(pos) == chunkId) {
@@ -254,6 +286,11 @@ public class BlockLocation {
                         int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
                         int j = Math.round((y + Chunk.BOUND) / 2.0f);
                         int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
+
+                        if (!safeCheck(i, j, k)) {
+                            continue;
+                        }
+
                         TexByte value = locationMap[i][j][k];
                         Vector3f pos = new Vector3f(xz.x, y, xz.y);
                         if (value != null && predicate.test(value) && Chunk.chunkFunc(pos) == chunkId) {
@@ -278,6 +315,10 @@ public class BlockLocation {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
+
+        if (!safeCheck(i, j, k)) {
+            return false;
+        }
 
         boolean populated = locationMap[i][j][k] != null;
         locationMap[i][j][k] = null;

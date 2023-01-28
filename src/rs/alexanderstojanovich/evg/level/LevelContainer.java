@@ -57,7 +57,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
-    public static final float SUN_SCALE = 64.0f;
+    public static final float SUN_SCALE = 32.0f;
     public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
@@ -223,9 +223,10 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
+        SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 8192.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
     }
@@ -758,75 +759,34 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+        /*
+        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 
-//        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-//        for (Vector3f solidBlockPos : solidMap.keyQueue()) {
-//            Vector3f bottom = new Vector3f(solidBlockPos);
-//            bottom.y -= 2.0f;
-//            boolean massBelow = false;
-//            for (Vector3f otherSolidBlockPos : solidMap.keyQueue()) {
-//                if (!solidBlockPos.equals(otherSolidBlockPos)
-//                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
-//                    massBelow = true;
-//                    break;
-//                }
-//            }
-//            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
-//            if (!massBelow && inSkybox) {
-//                solidBlockPos.y -= value;
-//            }
-//        }
-//        List<Block> markForRemList = new GapList<>();
-//        List<Block> markForLeak = new GapList<>();
-//        final int[] faces = new int[] {Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
-//        for (Block fluidBlk : fluidChunks.getTotalList()) {
-//            for (int f : faces) {
-//                Vector3f jFluidPos = Block.getAdjacentPos(fluidBlk.pos, f);
-//                if (!ALL_BLOCK_MAP.isLocationPopulated(jFluidPos)) {
-//                    markForLeak.add(fluidBlk);
-//                }                
-//                
-//            }
-//        }
-//        
-//        for (Block fluidAffBlk : markForLeak) {            
-//            for (Vertex v : fluidAffBlk.getVertices()) {
-//                if (v.getPos().y > -1.0f) {
-//                    v.getPos().y = Math.max(v.getPos().y - value, -1.0f);
-//                } else if (v.getPos().y == 1.0f) {
-//                    markForRemList.add(fluidAffBlk);
-//                }
-//            }            
-//
-//            for (int k : faces) {
-//                Vector3f kFluidPos = Block.getAdjacentPos(fluidAffBlk.pos, k);
-//                int kFluidChunkId = Chunk.chunkFunc(kFluidPos);
-//                Chunk kFluidChunk = this.fluidChunks.getChunk(kFluidChunkId);
-//                TexByte kLocation = LevelContainer.ALL_BLOCK_MAP.getLocation(kFluidPos);
-//                if (kFluidChunk != null && kLocation != null) {
-//                    String jTexName = kLocation.texName;
-//                    int kBits = ~kLocation.byteValue & 63;
-//                    Tuple kTuple = kFluidChunk.getTuple(jTexName, kBits);
-//                    if (kTuple != null) {
-//                        Block kfldBlk = Chunk.getBlock(kTuple, kFluidPos);
-//                        if (kfldBlk != null) {
-//                            kfldBlk.setPrimaryColor(Vector3fColors.MAGENTA);
-//                            int l = ((k & 1) == 0 ? k + 1 : k - 1);
-//                            int lMask = 1 << l;
-//                            kfldBlk.setFaceBits(kBits ^ (lMask & 63));
-//                            int kFaceBitsNow = kfldBlk.getFaceBits();
-//                            if (kFaceBitsNow != kBits) {
-//                                kFluidChunk.transfer(kfldBlk, kBits, kFaceBitsNow);
-//                            }
-//                        }
-//                    }
-//                }
-//            }                
-//        }
-//        
-//        for (Block fldBlk : markForRemList) {
-//            fluidChunks.removeBlock(fldBlk, true);
-//        }
+        List<Vector3f> populatedFluidLocations = ALL_BLOCK_MAP.getPopulatedLocations(vChnkIdQueue, i -> !i.solid);
+        for (Vector3f fluidLoc : populatedFluidLocations) {
+            for (int j = 0; j <= 5; j++) {
+                if (j != Block.TOP) {
+                    Vector3f adjFluidLoc = Block.getAdjacentPos(fluidLoc, j);
+                    if (!ALL_BLOCK_MAP.isLocationPopulated(adjFluidLoc)) {
+                        TexByte texByte = ALL_BLOCK_MAP.getLocation(fluidLoc);
+                        int chunkId = Chunk.chunkFunc(fluidLoc);
+                        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
+                        if (fluidChunk != null) {
+                            Tuple tuple = fluidChunk.getTuple(texByte.texName, ~texByte.byteValue & 63);
+                            if (tuple != null) {
+                                Block fluidBlk = tuple.getBlock(fluidLoc);
+                                if (fluidBlk != null) {
+                                    for (Vertex v : fluidBlk.getVertices()) {
+                                        v.getPos().y -= value;
+                                    }
+                                    fluidChunk.unbuffer();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }*/
     }
 
     // method for determining visible chunks

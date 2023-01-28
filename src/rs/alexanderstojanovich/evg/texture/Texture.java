@@ -80,8 +80,11 @@ public class Texture {
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
 
-    public static final String[] TEX_PLAYER = {"pistol", "assault_rifle", "shotgun", "sub_machine_gun", "machine_gun", "sniper_rifle"};
-    public static final int GRID_SIZE_PLAYER = 3;
+    public static final String[] TEX_PLAYER = {"W01M9", "W02M1", "W03DE", "W04UZ",
+        "W05M5", "W06P9", "W07AK", "W08M4",
+        "W09G3", "W10M6", "W11MS", "W12W2",
+        "W13B9", "W14R7", "W15DR", "W16M8"};
+    public static final int GRID_SIZE_PLAYER = 4;
     public static final Map<String, Pair<Texture, Integer>> TEX_MAP = new HashMap<>();
     public static final Texture PLAYER = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER, GRID_SIZE_PLAYER);
 
@@ -94,22 +97,22 @@ public class Texture {
         TEX_MAP.put("console", new Pair<>(CONSOLE, -1));
         TEX_MAP.put("lbulb", new Pair<>(LIGHT_BULB, -1));
         // world stuff
-        TEX_MAP.put("crate", new Pair<>(WORLD, 0));
-        TEX_MAP.put("doom0", new Pair<>(WORLD, 1));
-        TEX_MAP.put("stone", new Pair<>(WORLD, 2));
-        TEX_MAP.put("water", new Pair<>(WORLD, 3));
-        TEX_MAP.put("reflc", new Pair<>(WORLD, 4));
+        int index;
+        index = 0;
+        for (String texname : TEX_WORLD) {
+            TEX_MAP.put(texname, new Pair<>(WORLD, index++));
+        }
+
         TEX_MAP.put("suntx", new Pair<>(SUN, -1));
         TEX_MAP.put("qmark", new Pair<>(QMARK, -1));
         TEX_MAP.put("decal", new Pair<>(DECAL, -1));
         TEX_MAP.put("night", new Pair<>(NIGHT, -1));
+
         // player stuff
-        TEX_MAP.put("pistol", new Pair<>(PLAYER, 0));
-        TEX_MAP.put("assrifle", new Pair<>(PLAYER, 1));
-        TEX_MAP.put("shotgun", new Pair<>(PLAYER, 2));
-        TEX_MAP.put("smg", new Pair<>(PLAYER, 3));
-        TEX_MAP.put("machgun", new Pair<>(PLAYER, 4));
-        TEX_MAP.put("sniper", new Pair<>(PLAYER, 5));
+        index = 0;
+        for (String texname : TEX_PLAYER) {
+            TEX_MAP.put(texname, new Pair<>(PLAYER, index++));
+        }
     }
 
     /**
@@ -346,6 +349,14 @@ public class Texture {
         return imageBuffer;
     }
 
+    /**
+     * Build Texture Atlas from various textures.
+     *
+     * @param subDir Subdirectory in dsynergy.zip
+     * @param texNames texture names to build atlas from.
+     * @param gridSize must be square root of number of textures.
+     * @return Texture Atlas as one big Texture.
+     */
     public static Texture buildTextureAtlas(String subDir, String[] texNames, int gridSize) {
         Texture result = new Texture();
         Graphics2D g2d = result.image.createGraphics();

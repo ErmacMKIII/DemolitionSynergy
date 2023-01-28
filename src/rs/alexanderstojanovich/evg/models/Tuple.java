@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
-import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -29,11 +28,11 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
-import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -65,6 +64,65 @@ public class Tuple extends Blocks {
             return o1.getName().compareTo(o2.getName());
         }
     };
+
+    /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k).
+     *
+     * @param pos Vector3f position of the block
+     * @return block if found (null if not found)
+     */
+    public Block getBlock(Vector3f pos) {
+        String keyStr = Vector3fUtils.float3ToUniqueString(pos);
+
+        int left = 0;
+        int right = this.blockList.size() - 1;
+        int startIndex = -1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = this.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = this.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
 
     public Tuple(String texName, int faceEnBits) {
         this.name = String.format("%s%02d", texName, faceEnBits);

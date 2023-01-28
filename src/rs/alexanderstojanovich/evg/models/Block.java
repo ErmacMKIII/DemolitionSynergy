@@ -566,6 +566,13 @@ public class Block extends Model {
 
     }
 
+    public void nullifyNormalsForFace(int faceNum) {
+        List<Vertex> faceVertices = Block.getFaceVertices(vertices, faceNum);
+        for (Vertex fv : faceVertices) {
+            fv.getNormal().zero();
+        }
+    }
+
     private void revertGroupsOfVertices() {
         Collections.reverse(vertices.subList(4 * LEFT, 4 * LEFT + 3));
         Collections.reverse(vertices.subList(4 * RIGHT, 4 * RIGHT + 3));

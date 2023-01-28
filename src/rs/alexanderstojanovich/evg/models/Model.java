@@ -39,7 +39,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -158,15 +157,15 @@ public class Model implements Comparable<Model> {
                         String[] data = subThing.split("/");
                         int index = Integer.parseInt(data[0]) - 1;
                         result.indices.add(index);
-                        if (!data[1].isEmpty()) {
-                            Vertex vertex = result.vertices.get(index);
+                        Vertex vertex = result.vertices.get(index);
+                        if (data.length >= 2 && !data[1].isEmpty()) {
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
                             if (texIndex != -1) {
                                 vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
                                 vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
                             }
                         }
-                        if (!data[2].isEmpty()) {
+                        if (data.length >= 3 && !data[2].isEmpty()) {
                             result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
                         }
                     }
@@ -289,7 +288,7 @@ public class Model implements Comparable<Model> {
 
     public void nullifyNormals() {
         for (int i = 0; i < vertices.size(); i++) {
-            vertices.get(i).setNormal(new Vector3f());
+            vertices.get(i).getNormal().zero();
         }
     }
 
@@ -432,7 +431,7 @@ public class Model implements Comparable<Model> {
     }
 
     protected void setAlpha(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
+        shaderProgram.updateUniform(solid ? 1.0f : 0.05f, "modelAlpha");
     }
 
     private void calcDims() {
