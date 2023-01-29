@@ -57,6 +57,7 @@ public class Tuple extends Blocks {
     protected final IntBuffer intBuff;
     protected int ibo = 0;
     protected final int indicesNum;
+    protected final int verticesNum;
 
     public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
         @Override
@@ -64,6 +65,21 @@ public class Tuple extends Blocks {
             return o1.getName().compareTo(o2.getName());
         }
     };
+
+    public Tuple(String texName, int faceEnBits) {
+        this.name = String.format("%s%02d", texName, faceEnBits);
+        this.intBuff = Block.createIntBuffer(faceEnBits);
+
+        int numberOfOnes = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            int mask = 1 << j;
+            if ((faceEnBits & mask) != 0) {
+                numberOfOnes++;
+            }
+        }
+        this.verticesNum = 4 * numberOfOnes;
+        this.indicesNum = 6 * numberOfOnes;
+    }
 
     /**
      * Gets Block from the tuple block list (duplicates may exist but in very
@@ -124,18 +140,63 @@ public class Tuple extends Blocks {
         return null;
     }
 
-    public Tuple(String texName, int faceEnBits) {
-        this.name = String.format("%s%02d", texName, faceEnBits);
-        this.intBuff = Block.createIntBuffer(faceEnBits);
-
-        int numberOfOnes = 0;
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            int mask = 1 << j;
-            if ((faceEnBits & mask) != 0) {
-                numberOfOnes++;
-            }
+    @Override
+    public void bufferVertices() { // call it before any rendering
+        // auto adjust dynamic size of float buff and do it on every 1000th element
+        if (bigFloatBuff == null || blockList.size() > dynamicSize) {
+            dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
+            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * verticesNum * Vertex.SIZE);
         }
-        this.indicesNum = 6 * numberOfOnes;
+        bigFloatBuff.clear();
+        int blkIndex = 0;
+        for (Block block : blockList) {
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                }
+            }
+            blkIndex++;
+        }
+        bigFloatBuff.flip();
+        if (bigVbo == 0) {
+            bigVbo = GL15.glGenBuffers();
+        }
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    @Override
+    public void updateVertices() { // call it before any rendering        
+        bigFloatBuff.clear();
+        int blkIndex = 0;
+        for (Block block : blockList) {
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                }
+            }
+            blkIndex++;
+        }
+        bigFloatBuff.flip();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
     // buffering colors
