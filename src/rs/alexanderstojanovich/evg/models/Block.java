@@ -740,7 +740,11 @@ public class Block extends Model {
         for (Integer index : indices) {
             intBuff.put(index);
         }
-        intBuff.flip();
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
         return intBuff;
     }
 

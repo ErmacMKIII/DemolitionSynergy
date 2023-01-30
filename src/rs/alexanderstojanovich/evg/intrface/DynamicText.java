@@ -75,7 +75,10 @@ public class DynamicText extends Text {
             }
         }
 
-        bigFloatBuff.flip();
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
+
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }

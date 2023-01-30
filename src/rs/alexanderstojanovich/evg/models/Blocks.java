@@ -28,6 +28,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.BigList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -41,9 +42,8 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
-    protected final List<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
+    protected final IList<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
     protected int bigVbo = 0;
-    protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
     protected final Map<Integer, Integer> vboEntries = new HashMap<>();
@@ -51,15 +51,16 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     protected final Map<Integer, Integer> iboMap = new HashMap<>();
     protected boolean buffered = false;
 
-    protected int dynamicSize = 0;
-    protected FloatBuffer bigFloatBuff;
+    protected int dynamicSize = DYNAMIC_INCREMENT;
+    protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
 
     public void bufferVertices() { // call it before any rendering
         // auto adjust dynamic size of float buff and do it on every 1000th element
-        if (bigFloatBuff == null || blockList.size() > dynamicSize) {
+        if (blockList.size() > dynamicSize) {
             dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
             bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
         }
+
         bigFloatBuff.clear();
         int offset = 0;
         int blkIndex = 0;
@@ -110,7 +111,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             }
             blkIndex++;
         }
-        bigFloatBuff.flip();
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
         GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
@@ -142,29 +145,28 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     public void animate() { // call only for fluid blocks
+        if (!buffered || blockList.isEmpty()) {
+            return;
+        }
+
         for (Block block : blockList) {
             block.animate();
         }
 
-        if (bigFloatBuff == null) {
-            bufferVertices();
-        } else {
-            updateVertices();
-        }
+        updateVertices();
     }
 
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
-            for (Block block : blockList) {
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+        if (!buffered || blockList.isEmpty()) {
+            return;
+        }
+
+        for (Block block : blockList) {
+            if (cameraInFluid ^ block.isVerticesReversed()) {
                 block.reverseFaceVertexOrder();
             }
-            verticesReversed = !verticesReversed;
-            if (bigFloatBuff == null) {
-                bufferVertices();
-            } else {
-                updateVertices();
-            }
         }
+        updateVertices();
     }
 
     // standard render all
@@ -300,14 +302,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public int getBigVbo() {
         return bigVbo;
-    }
-
-    public boolean isVerticesReversed() {
-        return verticesReversed;
-    }
-
-    public void setVerticesReversed(boolean verticesReversed) {
-        this.verticesReversed = verticesReversed;
     }
 
     public void setBuffered(boolean buffered) {

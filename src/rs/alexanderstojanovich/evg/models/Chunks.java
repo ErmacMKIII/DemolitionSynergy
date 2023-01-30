@@ -23,6 +23,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSources;
@@ -68,7 +69,7 @@ public class Chunks {
     @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getTotalList()) {
-            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
 
@@ -92,7 +93,7 @@ public class Chunks {
     @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
-            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
 
@@ -411,6 +412,16 @@ public class Chunks {
         }
     }
 
+    public void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
+        if (!optimized) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            tuple.prepare(cameraInFluid);
+        }
+    }
+
     public void optimize(Queue<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
@@ -483,7 +494,7 @@ public class Chunks {
 
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
-        List<Block> result = new BigList<>();
+        IList<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (!CacheModule.isCached(id, solid)) {
                 Chunk chunk = getChunk(id);

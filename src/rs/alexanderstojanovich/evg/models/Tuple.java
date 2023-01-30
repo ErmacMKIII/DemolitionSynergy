@@ -143,12 +143,12 @@ public class Tuple extends Blocks {
     @Override
     public void bufferVertices() { // call it before any rendering
         // auto adjust dynamic size of float buff and do it on every 1000th element
-        if (bigFloatBuff == null || blockList.size() > dynamicSize) {
+        if (blockList.size() > dynamicSize) {
             dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
             bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * verticesNum * Vertex.SIZE);
         }
+
         bigFloatBuff.clear();
-        int blkIndex = 0;
         for (Block block : blockList) {
             for (Vertex vertex : block.vertices) { // for each vertex
                 if (vertex.isEnabled()) {
@@ -162,9 +162,12 @@ public class Tuple extends Blocks {
                     bigFloatBuff.put(vertex.getUv().y);
                 }
             }
-            blkIndex++;
         }
-        bigFloatBuff.flip();
+
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
+
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }

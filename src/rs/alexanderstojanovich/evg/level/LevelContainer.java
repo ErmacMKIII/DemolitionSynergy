@@ -24,11 +24,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -814,10 +816,15 @@ public class LevelContainer implements GravityEnviroment {
             //----------------------------------------------------------
             Integer invisibleId = iChnkIdQueue.peek();
             if (invisibleId != null) {
-                cacheModule.saveToDisk(invisibleId, true);
+                if (!CacheModule.isCached(invisibleId, true)) {
+                    cacheModule.saveToDisk(invisibleId, true);
+                    changed = true;
+                }
 
-                cacheModule.saveToDisk(invisibleId, false);
-                changed = true;
+                if (!CacheModule.isCached(invisibleId, false)) {
+                    cacheModule.saveToDisk(invisibleId, false);
+                    changed = true;
+                }
             }
         }
 
@@ -866,8 +873,8 @@ public class LevelContainer implements GravityEnviroment {
         // only visible & uncached are in chunk list      
         solidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
-        // prepare alters tex coords based on whether or not camera is submerged in fluid
-        fluidChunks.prepare(cameraInFluid);
+        // prepare alters tex coords based on whether or not camera is submerged in fluid   
+        fluidChunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
         fluidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
@@ -923,7 +930,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
-        fluidChunks.prepare(cameraInFluid);
+        fluidChunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
         fluidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
