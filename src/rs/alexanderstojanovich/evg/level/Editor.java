@@ -69,7 +69,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(gameObject)) {
-            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, false);
+            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, true);
         }
 
         gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -102,7 +102,7 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = currSolidChunk.getBlockList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
+                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
             }
         }
 
@@ -135,7 +135,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getBlockList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, false);
+                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
             }
         }
     }
@@ -228,15 +228,14 @@ public class Editor {
             }
 
             if (!cannotPlace(gameObject)) {
-                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, false);
+                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
             }
         }
     }
 
     private static boolean cannotPlace(GameObject gameObject) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_SOLID_MAP.containsKey(selectedNew.pos)
-                || LevelContainer.ALL_FLUID_MAP.containsKey(selectedNew.pos);
+        boolean placeOccupied = LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(selectedNew.pos);
         //----------------------------------------------------------------------
         boolean intsSolid = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
@@ -270,7 +269,7 @@ public class Editor {
             cant = gameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
         }
         if (cant) {
-            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, false);
+            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, true);
         }
         return cant;
     }

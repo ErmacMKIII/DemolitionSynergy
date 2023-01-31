@@ -49,8 +49,9 @@ public class AudioFile { // only ogg are supported
     public static final AudioFile AMBIENT_OCEAN = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_ocean.ogg");
     public static final AudioFile AMBIENT_AIR = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_air.ogg");
     public static final AudioFile AMBIENT_HARMONY = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_harmony.ogg");
+    public static final AudioFile AMBIENT_GRACE = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_grace.ogg");
 
-    public static AudioFile[] TRACKS = {AMBIENT, AMBIENT_OCEAN, AMBIENT_AIR, AMBIENT_HARMONY};
+    public static AudioFile[] TRACKS = {AMBIENT, AMBIENT_OCEAN, AMBIENT_AIR, AMBIENT_HARMONY, AMBIENT_GRACE};
 
     public static final AudioFile INTERMISSION = new AudioFile(Game.SOUND_ENTRY, "erokia_intermission.ogg");
     public static final AudioFile RANDOM = new AudioFile(Game.SOUND_ENTRY, "erokia_random.ogg");

@@ -30,6 +30,13 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public interface Critter { // interface for Observer, Player and NPC
 
     /**
+     * Get Position of this critter.
+     *
+     * @return position of this critter
+     */
+    public Vector3f getPosition();
+
+    /**
      * Move this critter in front direction for amount. Also to move critter has
      * to have give control (set to true).
      *

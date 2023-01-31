@@ -61,7 +61,7 @@ public class Main {
                 gameObject.getIntrface().getFpsText().setContent("fps: " + Renderer.getFps());
                 Renderer.setFps(0);
 
-                Vector3f pos = gameObject.getLevelContainer().getLevelActors().mainCamera().getPos();
+                Vector3f pos = gameObject.getLevelContainer().levelActors.getMainActor().getPosition();
                 int chunkId = Chunk.chunkFunc(pos);
                 gameObject.getIntrface().getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
                 gameObject.getIntrface().getChunkText().setContent(String.format("chunkId: %d", chunkId));

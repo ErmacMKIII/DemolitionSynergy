@@ -22,7 +22,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
-import rs.alexanderstojanovich.evg.models.Tuple;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -48,25 +47,12 @@ public class WaterRenderer {
         float hMax = -Chunk.BOUND;
         if (!levelContainer.isWorking()) {
             Camera actCam = levelContainer.getLevelActors().mainCamera();
-            float chMax = actCam.pos.y;
-
-            for (int id : levelContainer.getvChnkIdQueue()) {
-                Chunk fluidChunk = levelContainer.getFluidChunks().getChunk(id);
-                if (fluidChunk != null) {
-                    for (Tuple tuple : fluidChunk.getTupleList()) {
-                        if ((tuple.faceBits() & TOP_MASK) != 0
-                                && (tuple.faceBits() & BOTTOM_MASK) == 0) {
-                            for (Block block : tuple.getBlockList()) {
-                                float h = block.pos.y;
-                                if (h > hMax && h <= chMax) {
-                                    hMax = h;
-                                }
-                            }
-                        }
-                    }
+            float chMax = Math.round(actCam.pos.y + 0.5f) & 0xFFFFFFFE;
+            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
+                if (y > hMax && y <= chMax) {
+                    hMax = y;
                 }
             }
-
         }
 
         return hMax;

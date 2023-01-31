@@ -39,11 +39,11 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -474,12 +474,11 @@ public class Block extends Model {
             Vector3f normal = FACE_NORMALS[j];
             float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
             float angle = (float) Math.toDegrees(Math.acos(dotProduct));
-            if (angle < 180.0f) {
+            if (angle < 178.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }
         }
-
         return result;
     }
 
@@ -564,6 +563,13 @@ public class Block extends Model {
             vertices.get(4 * BOTTOM + i).getUv().y = vertices.get(4 * LEFT + i).getUv().y + 1.0f / 3.0f;
         }
 
+    }
+
+    public void nullifyNormalsForFace(int faceNum) {
+        List<Vertex> faceVertices = Block.getFaceVertices(vertices, faceNum);
+        for (Vertex fv : faceVertices) {
+            fv.getNormal().zero();
+        }
     }
 
     private void revertGroupsOfVertices() {
@@ -733,7 +739,11 @@ public class Block extends Model {
         for (Integer index : indices) {
             intBuff.put(index);
         }
-        intBuff.flip();
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
         return intBuff;
     }
 
@@ -743,18 +753,15 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
 
         int sbits = 0;
-        Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
-        if (spair != null) {
-            sbits = spair.getValue();
+        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(pos);
+        if (pair != null && pair.isSolid()) {
+            sbits = pair.getByteValue();
         }
 
         int fbits = 0;
 
-        if (sbits == 0) {
-            Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
-            if (fpair != null) {
-                fbits = fpair.getValue();
-            }
+        if (pair != null && sbits == 0 && !pair.isSolid()) {
+            fbits = pair.getByteValue();
         }
 
         int tbits = sbits | fbits;

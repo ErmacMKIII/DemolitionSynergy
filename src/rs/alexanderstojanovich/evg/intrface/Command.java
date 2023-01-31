@@ -24,9 +24,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
+import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 
@@ -45,7 +48,9 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     MUSIC_VOLUME,
     SOUND_VOLUME,
     EXIT,
+    POSITION,
     SCREENSHOT,
+    SIZEOF,
     NOP,
     ERROR;
 
@@ -155,13 +160,32 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 case "screenshot":
                     command = SCREENSHOT;
                     break;
+                case "pos":
+                case "position":
+                    command = POSITION;
+                    if (things.length == 2) {
+                        command.args.add(Integer.parseInt(things[1]));
+                    }
+                    if (things.length == 4) {
+                        command.args.add(Float.parseFloat(things[1]));
+                        command.args.add(Float.parseFloat(things[2]));
+                        command.args.add(Float.parseFloat(things[3]));
+                    }
+                    break;
+                case "sizeof":
+                case "size_of":
+                    command = SIZEOF;
+                    if (things.length == 2) {
+                        command.args.add(Integer.parseInt(things[1]));
+                    }
+                    break;
                 default:
                     command = ERROR;
                     break;
             }
         }
 
-        if (command.args.isEmpty()) {
+        if (command.args.isEmpty() || command == SIZEOF) {
             command.mode = Mode.GET;
         } else {
             command.mode = Mode.SET;
@@ -181,6 +205,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     public static Object execute(Command command) {
         Object result = null;
         command.status = false;
+        GameObject gameObject = GameObject.getInstance();
         switch (command) {
             case FPS_MAX:
                 switch (command.mode) {
@@ -320,13 +345,73 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
-                GameObject gameObject = GameObject.getInstance();
                 gameObject.getIntrface().getScreenText().setEnabled(true);
                 gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 command.status = true;
                 break;
             case EXIT:
                 GameObject.MY_WINDOW.close();
+                command.status = true;
+                break;
+            case POSITION:
+                Vector3f mainActorPos = gameObject.getLevelContainer().levelActors.getMainActor().getPosition();
+                int chunkId;
+                switch (command.mode) {
+                    case GET:
+                        final StringBuilder sb = new StringBuilder();
+                        sb.append(String.format("pos: (%.1f,%.1f,%.1f)", mainActorPos.x, mainActorPos.y, mainActorPos.z));
+                        chunkId = Chunk.chunkFunc(mainActorPos);
+                        sb.append(" | ");
+                        sb.append(String.format("chunkId: %d", chunkId));
+                        result = sb.toString();
+                        command.status = true;
+                        break;
+                    case SET:
+                        if (command.args.size() == 1) {
+                            chunkId = (int) command.args.get(0);
+                            Vector3f newPos = Chunk.invChunkFunc(chunkId);
+                            mainActorPos.x = newPos.x;
+                            mainActorPos.y = newPos.y;
+                            mainActorPos.z = newPos.z;
+                            command.status = true;
+                        } else if (command.args.size() == 3) {
+                            float newPosx = (float) command.args.get(0);
+                            float newPosy = (float) command.args.get(1);
+                            float newPosz = (float) command.args.get(2);
+                            mainActorPos.x = newPosx;
+                            mainActorPos.y = newPosy;
+                            mainActorPos.z = newPosz;
+                            command.status = true;
+                        }
+                        break;
+                }
+                break;
+            case SIZEOF:
+                if (command.mode == Mode.GET) {
+                    if (command.args.isEmpty()) {
+                        int solidSize = CacheModule.totalSize(gameObject.getLevelContainer().getSolidChunks(), true);
+                        int fluidSize = CacheModule.totalSize(gameObject.getLevelContainer().getFluidChunks(), false);
+                        result = String.format("SolidSize = %d | FluidSize = %d | TotalChunks = %d", solidSize, fluidSize, Chunk.CHUNK_NUM);
+                    } else {
+                        chunkId = (int) command.args.get(0);
+                        boolean cached = CacheModule.isCached(chunkId, true);
+                        int solidSize = 0, fluidSize = 0;
+                        if (cached) {
+                            solidSize = CacheModule.cachedSize(chunkId, true);
+                            fluidSize = CacheModule.cachedSize(chunkId, false);
+                        } else {
+                            Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
+                            if (solidChunk != null) {
+                                solidSize = solidChunk.getBlockList().size();
+                            }
+                            Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
+                            if (fluidChunk != null) {
+                                fluidSize = fluidChunk.getBlockList().size();
+                            }
+                        }
+                        result = String.format("SolidSize = %d | FluidSize = %d | Cached = %s", solidSize, fluidSize, cached);
+                    }
+                }
                 command.status = true;
                 break;
             case NOP:

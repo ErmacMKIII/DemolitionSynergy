@@ -16,10 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
-import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -255,6 +253,11 @@ public class ModelCritter implements Critter {
     public void setPosition(Vector3f position) {
         predictor = new Vector3f(position);
         model.setPos(new Vector3f(position));
+    }
+
+    @Override
+    public Vector3f getPosition() {
+        return model.pos;
     }
 
 }

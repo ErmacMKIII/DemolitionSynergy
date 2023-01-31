@@ -39,7 +39,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v25 ZENITH";
+    public static final String TITLE = "Demolition Synergy - v30 ARCTIC";
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
@@ -109,6 +109,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         }
         intrface.update();
         intrface.setCollText(assertCollision);
+    }
+
+    /**
+     * Gravity Environment (call only from main)
+     *
+     * @param deltaTime game object environment update time
+     */
+    public void gravityDo(float deltaTime) {
+        lock.writeLock().lock();
+        levelContainer.gravityDo(deltaTime);
+        try {
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**

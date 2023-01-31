@@ -21,7 +21,6 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -61,7 +60,7 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
 
-        GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f);
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     public static void updateView(Camera camera) {

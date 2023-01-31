@@ -57,7 +57,7 @@ public class Console {
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
-        this.inText = new DynamicText(Texture.FONT, "]_");
+        this.inText = new DynamicText(Texture.FONT, "]_", new Vector2f(), 18, 18);
         this.inText.setColor(Vector3fColors.GREEN);
         this.inText.pos.x = -1.0f;
         this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
@@ -65,7 +65,7 @@ public class Console {
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
         this.inText.alignToNextChar();
 
-        this.completes = new DynamicText(Texture.FONT, "");
+        this.completes = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
         this.completes.color = Vector3fColors.YELLOW;
         this.completes.pos.x = -1.0f;
         this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
@@ -102,8 +102,8 @@ public class Console {
 //                            for (DynamicText item : history) {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }
-                            DynamicText text = new DynamicText(Texture.FONT, "");
-                            Quad quad = new Quad(16, 16, Texture.LIGHT_BULB);
+                            DynamicText text = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
+                            Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
                             Command command = Command.getCommand(input.toString());
                             // if command is invalid it's null
                             if (command == Command.ERROR) {
@@ -134,6 +134,7 @@ public class Console {
                             quad.getPos().y = text.pos.y;
 
                             text.setAlignment(Text.ALIGNMENT_LEFT);
+                            text.alignToNextChar();
 
                             history.add(0, new Pair<>(text, quad));
 

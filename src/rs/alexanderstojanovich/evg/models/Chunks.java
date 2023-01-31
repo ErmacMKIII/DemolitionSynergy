@@ -23,14 +23,15 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -68,14 +69,14 @@ public class Chunks {
     @Deprecated
     public void updateSolids() {
         for (Block solidBlock : getTotalList()) {
-            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
 
             int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
+            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(solidBlock.pos);
+            if (pair != null && pair.isSolid()) {
+                byte neighborBits = pair.getByteValue();
                 solidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = solidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
@@ -92,14 +93,14 @@ public class Chunks {
     @Deprecated
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
-            if (GameObject.getInstance().MY_WINDOW.shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
 
             int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
-            if (pair != null) {
-                byte neighborBits = pair.getValue();
+            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(fluidBlock.pos);
+            if (pair != null && !pair.isSolid()) {
+                byte neighborBits = pair.getByteValue();
                 fluidBlock.setFaceBits(~neighborBits & 63);
                 int faceBitsAfter = fluidBlock.getFaceBits();
                 if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
@@ -123,11 +124,11 @@ public class Chunks {
      */
     private void updateSolidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
-        Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(block.pos);
+        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
-        if (pair != null && chunk != null) {
-            byte neighborBits = pair.getValue();
+        if (pair != null && pair.isSolid() && chunk != null) {
+            byte neighborBits = pair.getByteValue();
             block.setFaceBits(~neighborBits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
@@ -140,10 +141,10 @@ public class Chunks {
                     Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
                     int adjChunkId = Chunk.chunkFunc(adjPos);
                     Chunk adjChunk = getChunk(adjChunkId);
-                    Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
-                    if (adjPair != null && adjChunk != null) {
-                        String tupleTexName = adjPair.getKey();
-                        byte adjNBits = adjPair.getValue();
+                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                    if (adjPair != null && adjPair.isSolid() && adjChunk != null) {
+                        String tupleTexName = adjPair.getTexName();
+                        byte adjNBits = adjPair.getByteValue();
                         int k = ((j & 1) == 0 ? j + 1 : j - 1);
                         int mask = 1 << k;
                         // revert the bit that was set in LevelContainer
@@ -183,10 +184,10 @@ public class Chunks {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
-                String tupleTexName = adjPair.getKey();
-                byte adjNBits = adjPair.getValue();
+            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.isSolid()) {
+                String tupleTexName = adjPair.getTexName();
+                byte adjNBits = adjPair.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -224,11 +225,11 @@ public class Chunks {
      */
     private void updateFluidForAdd(Block block) {
         int faceBitsBefore = block.getFaceBits();
-        Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(block.pos);
+        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
-        if (pair != null && chunk != null) {
-            byte neighborBits = pair.getValue();
+        if (pair != null && chunk != null && !pair.isSolid()) {
+            byte neighborBits = pair.getByteValue();
             block.setFaceBits(~neighborBits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
@@ -241,10 +242,10 @@ public class Chunks {
                     Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
                     int adjChunkId = Chunk.chunkFunc(adjPos);
                     Chunk adjChunk = getChunk(adjChunkId);
-                    Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-                    if (adjPair != null && adjChunk != null) {
-                        String tupleTexName = adjPair.getKey();
-                        byte adjNBits = adjPair.getValue();
+                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                    if (adjPair != null && !pair.isSolid() && adjChunk != null) {
+                        String tupleTexName = adjPair.getTexName();
+                        byte adjNBits = adjPair.getByteValue();
                         int k = ((j & 1) == 0 ? j + 1 : j - 1);
                         int mask = 1 << k;
                         // revert the bit that was set in LevelContainer
@@ -285,10 +286,10 @@ public class Chunks {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            Pair<String, Byte> adjPair = LevelContainer.ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
-                String tupleTexName = adjPair.getKey();
-                byte adjNBits = adjPair.getValue();
+            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.isSolid()) {
+                String tupleTexName = adjPair.getTexName();
+                byte adjNBits = adjPair.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -411,6 +412,16 @@ public class Chunks {
         }
     }
 
+    public void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
+        if (!optimized) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            tuple.prepare(cameraInFluid);
+        }
+    }
+
     public void optimize(Queue<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
@@ -437,6 +448,37 @@ public class Chunks {
             faceBits++;
         }
 
+        optimized = true;
+    }
+
+    public void optimize(Queue<Integer> queue, Vector3f camFront) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
+        final int mask = Block.getVisibleFaceBits(camFront);
+        while (faceBits <= 63) {
+            if ((faceBits & (mask & 63)) != 0) {
+                for (String tex : Texture.TEX_WORLD) {
+                    Tuple optmTuple = null;
+                    for (int chunkId : queue) {
+                        Chunk chunk = getChunk(chunkId);
+                        if (chunk != null) {
+                            Tuple tuple = chunk.getTuple(tex, faceBits);
+                            if (tuple != null) {
+                                if (optmTuple == null) {
+                                    optmTuple = new Tuple(tex, faceBits);
+                                }
+                                optmTuple.blockList.addAll(tuple.blockList);
+                            }
+                        }
+                    }
+
+                    if (optmTuple != null) {
+                        optimizedTuples.add(optmTuple);
+                    }
+                }
+            }
+            faceBits++;
+        }
         optimized = true;
     }
 
@@ -483,7 +525,7 @@ public class Chunks {
 
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
-        List<Block> result = new BigList<>();
+        IList<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (!CacheModule.isCached(id, solid)) {
                 Chunk chunk = getChunk(id);
@@ -495,7 +537,7 @@ public class Chunks {
         return result;
     }
 
-    public void printInfo() { // for debugging purposes
+    public String printInfo() { // for debugging purposes
         StringBuilder sb = new StringBuilder();
         sb.append("CHUNKS\n");
         sb.append("CHUNKS TOTAL SIZE = ").append(CacheModule.totalSize(this, solid)).append("\n");
@@ -517,6 +559,8 @@ public class Chunks {
         }
         sb.append("------------------------------------------------------------");
         DSLogger.reportInfo(sb.toString(), null);
+
+        return sb.toString();
     }
 
     public List<Chunk> getChunkList() {
@@ -533,6 +577,10 @@ public class Chunks {
 
     public void setOptimized(boolean optimized) {
         this.optimized = optimized;
+    }
+
+    public List<Tuple> getOptimizedTuples() {
+        return optimizedTuples;
     }
 
 }

@@ -40,8 +40,8 @@ public class Configuration {
     private boolean debug = false;
     private float musicVolume = 0.5f;
     private float soundFXVolume = 0.5f;
-    private int blockDynamicSize = 250;
-    private int textDynamicSize = 25;
+    private int blockDynamicSize = 50;
+    private int textDynamicSize = 10;
     private int textureSize = 512;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
@@ -115,13 +115,13 @@ public class Configuration {
                                 break;
                             case "blockdynamicsize":
                                 number = Integer.parseInt(words[1]);
-                                if (number >= 1 && number <= 5000) {
+                                if (number >= 3 && number <= 5000) {
                                     blockDynamicSize = number;
                                 }
                                 break;
                             case "textdynamicsize":
                                 number = Integer.parseInt(words[1]);
-                                if (number >= 1 && number <= 1000) {
+                                if (number >= 3 && number <= 1000) {
                                     textDynamicSize = number;
                                 }
                                 break;

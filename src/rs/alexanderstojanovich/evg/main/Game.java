@@ -564,6 +564,7 @@ public class Game {
                 }
 
                 gameObject.update((float) TICK_TIME);
+                gameObject.gravityDo((float) TICK_TIME);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -590,7 +591,7 @@ public class Game {
 
                 // optimize every 160 ticks
                 if (accumulator > timero + 160.0) {
-                    if (needOptimize) {
+                    if (actionPerformed || needOptimize) {
                         gameObject.optimize();
                     }
                     timero += 160.0;

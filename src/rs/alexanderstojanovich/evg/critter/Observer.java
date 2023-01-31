@@ -158,4 +158,9 @@ public class Observer implements Critter {
         return camera;
     }
 
+    @Override
+    public Vector3f getPosition() {
+        return camera.getPos();
+    }
+
 }

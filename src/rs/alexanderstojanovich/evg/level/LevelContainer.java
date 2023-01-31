@@ -24,13 +24,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -59,7 +59,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
-    public static final float SUN_SCALE = 64.0f;
+    public static final float SUN_SCALE = 32.0f;
     public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
@@ -110,10 +110,7 @@ public class LevelContainer implements GravityEnviroment {
     public final LevelActors levelActors = new LevelActors();
 
     // position of all the solid blocks to texture name & neighbors
-    public static final Map<Vector3f, Pair<String, Byte>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS >> 4);
-
-    // position of all the fluid blocks to texture name & neighbors
-    public static final Map<Vector3f, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS >> 4);
+    public static final BlockLocation ALL_BLOCK_MAP = new BlockLocation();
 
     // std time to live
     public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
@@ -127,14 +124,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -145,14 +142,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -163,14 +160,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits &= ~maskAdj & 63;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -181,14 +178,14 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
-            if (adjPair != null) {
+            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (adjPair != null && !adjPair.solid) {
                 bits |= mask;
-                byte adjBits = adjPair.getValue();
+                byte adjBits = adjPair.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits &= ~maskAdj & 63;
-                adjPair.setValue(adjBits);
+                adjPair.byteValue = adjBits;
             }
         }
         return bits;
@@ -199,25 +196,25 @@ public class LevelContainer implements GravityEnviroment {
         String str = block.getTexName();
         if (block.isSolid()) {
             byte bits = updatePutSolidNeighbors(pos);
-            Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_SOLID_MAP.put(new Vector3f(pos), pairX);
+            TexByte pairX = new TexByte(str, bits, block.isSolid());
+            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
         } else {
             byte bits = updatePutFluidNeighbors(pos);
-            Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_FLUID_MAP.put(new Vector3f(pos), pairX);
+            TexByte pairX = new TexByte(str, bits, block.isSolid());
+            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
         }
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
         if (block.isSolid()) {
-            Pair<String, Byte> pair = ALL_SOLID_MAP.remove(pos);
-            if (pair != null && pair.getValue() > 0) {
+            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+            if (rem) {
                 updateRemSolidNeighbors(pos);
             }
         } else {
-            Pair<String, Byte> pair = ALL_FLUID_MAP.remove(pos);
-            if (pair != null && pair.getValue() > 0) {
+            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+            if (rem) {
                 updateRemFluidNeighbors(pos);
             }
         }
@@ -228,9 +225,10 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
+        SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 8912.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
     }
@@ -248,11 +246,11 @@ public class LevelContainer implements GravityEnviroment {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("SOLID POSITION MAP");
-        sb.append("(size = ").append(ALL_SOLID_MAP.size()).append(")\n");
+        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
         sb.append("\n");
         sb.append("FLUID POSITION MAP");
-        sb.append("(size = ").append(ALL_FLUID_MAP.size()).append(")\n");
+        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
     }
@@ -287,8 +285,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_MAP.clear();
-        ALL_FLUID_MAP.clear();
+        ALL_BLOCK_MAP.init();
 
         LIGHT_SOURCES.lightSrcList.clear();
         LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -339,8 +336,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_MAP.clear();
-        ALL_FLUID_MAP.clear();
+        ALL_BLOCK_MAP.init();
 
         LIGHT_SOURCES.lightSrcList.clear();
         LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -472,8 +468,7 @@ public class LevelContainer implements GravityEnviroment {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            ALL_SOLID_MAP.clear();
-            ALL_FLUID_MAP.clear();
+            ALL_BLOCK_MAP.init();
 
             LIGHT_SOURCES.lightSrcList.clear();
             LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
@@ -645,7 +640,7 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = ALL_FLUID_MAP.containsKey(obsCamPosAlign);
+        yea = ALL_BLOCK_MAP.isLocationPopulated(obsCamPosAlign, false);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
@@ -656,7 +651,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(adjAlign);
+                boolean fluidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, false);
 
                 if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
@@ -676,7 +671,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.005f;
+            final float stepAmount = 0.05f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -684,12 +679,12 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_SOLID_MAP.containsKey(predAlign);
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -697,7 +692,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
@@ -721,7 +716,7 @@ public class LevelContainer implements GravityEnviroment {
                         livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.005f;
+            final float stepAmount = 0.05f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -729,12 +724,12 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(livingCritter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_SOLID_MAP.containsKey(predAlign);
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -742,7 +737,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, livingCritter.getPredictor())
@@ -763,25 +758,37 @@ public class LevelContainer implements GravityEnviroment {
     // thats what gravity does, object fells down if they don't have support below it (sky or other object)
     @Override
     public void gravityDo(float deltaTime) {
-//        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-//        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
-//        for (Vector3f solidBlockPos : solidMap.keyQueue()) {
-//            Vector3f bottom = new Vector3f(solidBlockPos);
-//            bottom.y -= 1.0f;
-//            boolean massBelow = false;
-//            for (Vector3f otherSolidBlockPos : solidMap.keyQueue()) {
-//                if (!solidBlockPos.equals(otherSolidBlockPos)
-//                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
-//                    massBelow = true;
-//                    break;
-//                }
-//            }
-//            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
-//            if (!massBelow && inSkybox) {
-//                solidBlockPos.y -= value;
-//            }
-//        }
-//        solidChunks.setBuffered(false);
+        if (working) {
+            return;
+        }
+        /*
+        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+
+        List<Vector3f> populatedFluidLocations = ALL_BLOCK_MAP.getPopulatedLocations(vChnkIdQueue, i -> !i.solid);
+        for (Vector3f fluidLoc : populatedFluidLocations) {
+            for (int j = 0; j <= 5; j++) {
+                if (j != Block.TOP) {
+                    Vector3f adjFluidLoc = Block.getAdjacentPos(fluidLoc, j);
+                    if (!ALL_BLOCK_MAP.isLocationPopulated(adjFluidLoc)) {
+                        TexByte texByte = ALL_BLOCK_MAP.getLocation(fluidLoc);
+                        int chunkId = Chunk.chunkFunc(fluidLoc);
+                        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
+                        if (fluidChunk != null) {
+                            Tuple tuple = fluidChunk.getTuple(texByte.texName, ~texByte.byteValue & 63);
+                            if (tuple != null) {
+                                Block fluidBlk = tuple.getBlock(fluidLoc);
+                                if (fluidBlk != null) {
+                                    for (Vertex v : fluidBlk.getVertices()) {
+                                        v.getPos().y -= value;
+                                    }
+                                    fluidChunk.unbuffer();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }*/
     }
 
     // method for determining visible chunks
@@ -809,10 +816,15 @@ public class LevelContainer implements GravityEnviroment {
             //----------------------------------------------------------
             Integer invisibleId = iChnkIdQueue.peek();
             if (invisibleId != null) {
-                cacheModule.saveToDisk(invisibleId, true);
+                if (!CacheModule.isCached(invisibleId, true)) {
+                    cacheModule.saveToDisk(invisibleId, true);
+                    changed = true;
+                }
 
-                cacheModule.saveToDisk(invisibleId, false);
-                changed = true;
+                if (!CacheModule.isCached(invisibleId, false)) {
+                    cacheModule.saveToDisk(invisibleId, false);
+                    changed = true;
+                }
             }
         }
 
@@ -834,8 +846,9 @@ public class LevelContainer implements GravityEnviroment {
 
     public void optimize() {
         if (!working) {
-            solidChunks.optimize(vChnkIdQueue);
-            fluidChunks.optimize(vChnkIdQueue);
+            Vector3f camFront = levelActors.mainCamera().getFront();
+            solidChunks.optimize(vChnkIdQueue, camFront);
+            fluidChunks.optimize(vChnkIdQueue, camFront);
         }
     }
 
@@ -861,8 +874,8 @@ public class LevelContainer implements GravityEnviroment {
         // only visible & uncached are in chunk list      
         solidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
-        // prepare alters tex coords based on whether or not camera is submerged in fluid
-        fluidChunks.prepare(cameraInFluid);
+        // prepare alters tex coords based on whether or not camera is submerged in fluid   
+        fluidChunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
         fluidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
@@ -918,7 +931,7 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
-        fluidChunks.prepare(cameraInFluid);
+        fluidChunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
         fluidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 

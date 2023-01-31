@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
-import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -29,11 +28,11 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
-import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
  *
@@ -58,6 +57,7 @@ public class Tuple extends Blocks {
     protected final IntBuffer intBuff;
     protected int ibo = 0;
     protected final int indicesNum;
+    protected final int verticesNum;
 
     public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
         @Override
@@ -77,7 +77,129 @@ public class Tuple extends Blocks {
                 numberOfOnes++;
             }
         }
+        this.verticesNum = 4 * numberOfOnes;
         this.indicesNum = 6 * numberOfOnes;
+    }
+
+    /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k).
+     *
+     * @param pos Vector3f position of the block
+     * @return block if found (null if not found)
+     */
+    public Block getBlock(Vector3f pos) {
+        String keyStr = Vector3fUtils.float3ToUniqueString(pos);
+
+        int left = 0;
+        int right = this.blockList.size() - 1;
+        int startIndex = -1;
+
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = this.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
+            int res = candStr.compareTo(keyStr);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = this.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public void bufferVertices() { // call it before any rendering
+        // auto adjust dynamic size of float buff and do it on every 1000th element
+        if (blockList.size() > dynamicSize) {
+            dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
+            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * verticesNum * Vertex.SIZE);
+        }
+
+        bigFloatBuff.clear();
+        for (Block block : blockList) {
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                }
+            }
+        }
+
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
+
+        if (bigVbo == 0) {
+            bigVbo = GL15.glGenBuffers();
+        }
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
+    @Override
+    public void updateVertices() { // call it before any rendering        
+        bigFloatBuff.clear();
+        int blkIndex = 0;
+        for (Block block : blockList) {
+            for (Vertex vertex : block.vertices) { // for each vertex
+                if (vertex.isEnabled()) {
+                    bigFloatBuff.put(vertex.getPos().x);
+                    bigFloatBuff.put(vertex.getPos().y);
+                    bigFloatBuff.put(vertex.getPos().z);
+                    bigFloatBuff.put(vertex.getNormal().x);
+                    bigFloatBuff.put(vertex.getNormal().y);
+                    bigFloatBuff.put(vertex.getNormal().z);
+                    bigFloatBuff.put(vertex.getUv().x);
+                    bigFloatBuff.put(vertex.getUv().y);
+                }
+            }
+            blkIndex++;
+        }
+        bigFloatBuff.flip();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
     // buffering colors
