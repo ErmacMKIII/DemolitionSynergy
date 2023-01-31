@@ -846,8 +846,9 @@ public class LevelContainer implements GravityEnviroment {
 
     public void optimize() {
         if (!working) {
-            solidChunks.optimize(vChnkIdQueue);
-            fluidChunks.optimize(vChnkIdQueue);
+            Vector3f camFront = levelActors.mainCamera().getFront();
+            solidChunks.optimize(vChnkIdQueue, camFront);
+            fluidChunks.optimize(vChnkIdQueue, camFront);
         }
     }
 

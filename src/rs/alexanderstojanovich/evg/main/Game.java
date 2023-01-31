@@ -591,7 +591,7 @@ public class Game {
 
                 // optimize every 160 ticks
                 if (accumulator > timero + 160.0) {
-                    if (needOptimize) {
+                    if (actionPerformed || needOptimize) {
                         gameObject.optimize();
                     }
                     timero += 160.0;

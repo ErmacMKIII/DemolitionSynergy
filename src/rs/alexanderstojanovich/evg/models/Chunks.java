@@ -451,6 +451,37 @@ public class Chunks {
         optimized = true;
     }
 
+    public void optimize(Queue<Integer> queue, Vector3f camFront) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
+        final int mask = Block.getVisibleFaceBits(camFront);
+        while (faceBits <= 63) {
+            if ((faceBits & (mask & 63)) != 0) {
+                for (String tex : Texture.TEX_WORLD) {
+                    Tuple optmTuple = null;
+                    for (int chunkId : queue) {
+                        Chunk chunk = getChunk(chunkId);
+                        if (chunk != null) {
+                            Tuple tuple = chunk.getTuple(tex, faceBits);
+                            if (tuple != null) {
+                                if (optmTuple == null) {
+                                    optmTuple = new Tuple(tex, faceBits);
+                                }
+                                optmTuple.blockList.addAll(tuple.blockList);
+                            }
+                        }
+                    }
+
+                    if (optmTuple != null) {
+                        optimizedTuples.add(optmTuple);
+                    }
+                }
+            }
+            faceBits++;
+        }
+        optimized = true;
+    }
+
     // for each instanced rendering
     public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         for (Chunk chunk : chunkList) {

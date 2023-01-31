@@ -474,12 +474,11 @@ public class Block extends Model {
             Vector3f normal = FACE_NORMALS[j];
             float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
             float angle = (float) Math.toDegrees(Math.acos(dotProduct));
-            if (angle < 180.0f) {
+            if (angle < 178.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }
         }
-
         return result;
     }
 
