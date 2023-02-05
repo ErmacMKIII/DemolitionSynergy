@@ -63,33 +63,6 @@ public class MasterRenderer {
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
-    public static void updateView(Camera camera) {
-        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
-            if (shaderProgram != ShaderProgram.getWaterBaseShader()
-                    && shaderProgram != ShaderProgram.getWaterVoxelShader()) {
-                camera.calcViewMatrixPub();
-                shaderProgram.bind();
-                shaderProgram.updateUniform(camera.viewMatrix, "viewMatrix");
-                shaderProgram.updateUniform(camera.pos, "cameraPos");
-                shaderProgram.updateUniform(camera.front, "cameraFront");
-                ShaderProgram.unbind();
-            }
-        }
-    }
-
-    public static void updateView(Matrix4f viewMatrix, Vector3f cameraPos, Vector3f cameraFront) {
-        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
-            if (shaderProgram != ShaderProgram.getWaterBaseShader()
-                    && shaderProgram != ShaderProgram.getWaterVoxelShader()) {
-                shaderProgram.bind();
-                shaderProgram.updateUniform(viewMatrix, "viewMatrix");
-                shaderProgram.updateUniform(cameraPos, "cameraPos");
-                shaderProgram.updateUniform(cameraFront, "cameraFront");
-                ShaderProgram.unbind();
-            }
-        }
-    }
-
     public static void setResolution(int width, int height) {
         GL11.glViewport(0, 0, width, height);
     }

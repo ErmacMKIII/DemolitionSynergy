@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
@@ -39,7 +40,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v30 ARCTIC";
+    public static final String TITLE = "Demolition Synergy - v31 BALTIC";
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
@@ -105,6 +106,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
             levelContainer.update(deltaTime);
         }
         intrface.update();
@@ -117,12 +119,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param deltaTime game object environment update time
      */
     public void gravityDo(float deltaTime) {
-        lock.writeLock().lock();
         levelContainer.gravityDo(deltaTime);
-        try {
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**
@@ -130,27 +127,28 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public void render() {
-        lock.readLock().lock();
-        try {
-            MasterRenderer.render(); // it clears color bit and depth buffer bit            
-            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
-            MasterRenderer.updateView(levelContainer.getLevelActors().mainCamera()); // update view matrix for all the shaders (alongside with camera vectors)            
-            if (levelContainer.isWorking()) { // working check avoids locking the monitor
-                intrface.getProgText().setEnabled(true);
-                intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
-            } else {
+        MasterRenderer.render(); // it clears color bit and depth buffer bit            
+        PerspectiveRenderer.render(); // it sets perspective matrix accross shaders       
+        if (levelContainer.isWorking()) { // working check avoids locking the monitor
+            intrface.getProgText().setEnabled(true);
+            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
+        } else {
+            Camera mainCamera = levelContainer.getLevelActors().mainCamera();
+            mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
+            lock.readLock().lock();
+            try {
                 levelContainer.render();
                 if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
                     waterRenderer.render();
                 }
-                intrface.getProgText().setEnabled(false);
+            } finally {
+                lock.readLock().unlock();
             }
-            intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-            intrface.render(ShaderProgram.getIntrfaceShader());
-            MY_WINDOW.render();
-        } finally {
-            lock.readLock().unlock();
+            intrface.getProgText().setEnabled(false);
         }
+        intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+        intrface.render(ShaderProgram.getIntrfaceShader());
+        MY_WINDOW.render();
     }
 
     // -------------------------------------------------------------------------
@@ -158,12 +156,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Calls chunk functions to determine visible chunks
      */
     public void determineVisibleChunks() {
-        lock.writeLock().lock();
         levelContainer.determineVisible();
-        try {
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**
@@ -187,21 +180,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        lock.writeLock().lock();
-        try {
-            levelContainer.animate();
-        } finally {
-            lock.writeLock().unlock();
-        }
+        levelContainer.animate();
     }
 
+    /**
+     * Optimize with special tuples
+     */
     public void optimize() {
-        lock.writeLock().lock();
-        try {
-            levelContainer.optimize();
-        } finally {
-            lock.writeLock().unlock();
-        }
+        levelContainer.optimize();
     }
 
     // -------------------------------------------------------------------------

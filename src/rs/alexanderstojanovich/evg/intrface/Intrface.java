@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
@@ -360,7 +360,7 @@ public class Intrface {
                         }
                         command.setMode(Command.Mode.SET);
                         FutureTask<Object> task = new FutureTask<Object>(command);
-                        Renderer.TASK_QUEUE.add(task);
+                        GameRenderer.TASK_QUEUE.add(task);
                         break;
                     case 4:
                         String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();

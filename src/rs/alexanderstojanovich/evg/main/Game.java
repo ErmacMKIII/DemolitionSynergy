@@ -59,7 +59,7 @@ public class Game {
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 15.0;
+    public static final double CRITICAL_TIME = 10.0;
 
     private final GameObject gameObject;
 
@@ -467,7 +467,7 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Object> task = new FutureTask<Object>(Command.SCREENSHOT);
-                    Renderer.TASK_QUEUE.add(task);
+                    GameRenderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -535,8 +535,12 @@ public class Game {
 
         int index = 0; // track index
 
+        double timera = 0.0;
         double timerc = 0.0;
         double timero = 0.0;
+
+        // first time we got nothing
+        boolean needOptimize = false;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
@@ -555,19 +559,19 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                if (!gameObject.musicPlayer.isPlaying()) {
-                    gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
-
-                    if (index == AudioFile.TRACKS.length) {
-                        index = 0;
+                gameObject.update((float) TICK_TIME);
+                if (accumulator > timera + 40.0) {
+                    if (!gameObject.musicPlayer.isPlaying()) {
+                        gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+                        if (index == AudioFile.TRACKS.length) {
+                            index = 0;
+                        }
                     }
                 }
-
-                gameObject.update((float) TICK_TIME);
-                gameObject.gravityDo((float) TICK_TIME);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
+                        actionPerformed = true;
                         break;
                     case EDITOR:
                         // observer has control
@@ -580,26 +584,37 @@ public class Game {
                         actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         break;
                 }
-
-                // update chunks every 10 ticks
-                boolean needOptimize = false;
-                if (accumulator > timerc + 10.0) {
+                
+                if (accumulator > timerc + 80.0 && actionPerformed) {
                     gameObject.determineVisibleChunks();
-                    needOptimize |= gameObject.chunkOperations();
-                    timerc += 10.0;
+                    needOptimize = true;
                 }
-
-                // optimize every 160 ticks
-                if (accumulator > timero + 160.0) {
-                    if (actionPerformed || needOptimize) {
-                        gameObject.optimize();
-                    }
-                    timero += 160.0;
+                if (accumulator > timerc + 160.0 && needOptimize) {
+                    gameObject.optimize();
                 }
-
+                
                 ups++;
                 upsTicks--;
             }
+
+            // update music player every 40 tics
+            if (accumulator > timera + 40.0) {                
+                timera += 40.0;
+            }
+            
+            // update chunks every 80 ticks
+            if (accumulator > timerc + 80.0) {                
+                timerc += 80.0;
+            }
+
+            // optimize every 160 ticks
+            if (accumulator > timero + 160.0) {
+                if (needOptimize) {
+                    gameObject.optimize();
+                }
+                timero += 160.0;
+            }
+
             actionPerformed = false;
         }
         // stops the music        

@@ -33,7 +33,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Renderer extends Thread implements Executor {
+public class GameRenderer extends Thread implements Executor {
 
     private final GameObject gameObject;
 
@@ -45,7 +45,7 @@ public class Renderer extends Thread implements Executor {
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
-    public Renderer(GameObject gameObject) {
+    public GameRenderer(GameObject gameObject) {
         super("Renderer");
         this.gameObject = gameObject;
     }
@@ -93,54 +93,51 @@ public class Renderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0 && numOfPasses < Game.TPS) {
-                gameObject.render();
-
-                // update text which shows dialog every 500.0 ticks                
-                if (Game.accumulator > timer1 + 500.0) {
-                    if (gameObject.getIntrface().getSaveDialog().isDone()) {
-                        gameObject.getIntrface().getSaveDialog().setEnabled(false);
-                    }
-                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                    }
-                    if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                        gameObject.getIntrface().getLoadDialog().setEnabled(false);
-                    }
-                    if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
-                        gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
-                    }
-
-                    if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
-                        gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
-                    }
-
-                    gameObject.getIntrface().getCollText().setContent("");
-                    gameObject.getIntrface().getScreenText().setEnabled(false);
-
-                    timer1 += 500.0;
-                }
-
-                // update text which animates water every quarter of the second
-                if (Game.accumulator > timer2 + 20.0) {
-                    if (gameObject.getLevelContainer().getProgress() == 100.0f) {
-                        gameObject.getIntrface().getProgText().setEnabled(false);
-                        gameObject.getLevelContainer().setProgress(0.0f);
-                    }
-
-                    if (!gameObject.isWorking()) {
-                        if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
-                            gameObject.animate();
-                        }
-                    }
-                    timer2 += 20.0;
-                }
-
+            while (fpsTicks >= 1.0 && numOfPasses < Game.getUpsTicks()) {
+                gameObject.render();                                    
+                if (!gameObject.isWorking() && Game.accumulator - timer2 > 20.0) {
+                    gameObject.animate();
+                }                
                 fps++;
                 fpsTicks--;
                 numOfPasses++;
             }
 
+            // update text which shows dialog every 500.0 ticks                
+            if (Game.accumulator > timer1 + 500.0) {
+                if (gameObject.getIntrface().getSaveDialog().isDone()) {
+                    gameObject.getIntrface().getSaveDialog().setEnabled(false);
+                }
+                if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                }
+                if (gameObject.getIntrface().getLoadDialog().isDone()) {
+                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                }
+                if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
+                    gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
+                }
+
+                if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
+                    gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
+                }
+
+                gameObject.getIntrface().getCollText().setContent("");
+                gameObject.getIntrface().getScreenText().setEnabled(false);
+
+                timer1 += 500.0;
+            }
+
+            // update text which animates water every quarter of the second
+            if (Game.accumulator > timer2 + 20.0) {
+                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
+                    gameObject.getIntrface().getProgText().setEnabled(false);
+                    gameObject.getLevelContainer().setProgress(0.0f);
+                }                
+                timer2 += 20.0;
+            }
+
+            
             // lastly it executes the console tasks
             FutureTask<Object> task;
             while ((task = TASK_QUEUE.poll()) != null) {
@@ -168,7 +165,7 @@ public class Renderer extends Thread implements Executor {
     }
 
     public static void setFpsTicks(double fpsTicks) {
-        Renderer.fpsTicks = fpsTicks;
+        GameRenderer.fpsTicks = fpsTicks;
     }
 
     public static int getFps() {
@@ -176,7 +173,7 @@ public class Renderer extends Thread implements Executor {
     }
 
     public static void setFps(int fps) {
-        Renderer.fps = fps;
+        GameRenderer.fps = fps;
     }
 
 }

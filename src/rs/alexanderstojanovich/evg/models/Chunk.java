@@ -22,6 +22,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSource;
@@ -55,7 +56,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // where each tuple is considered as:                
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple> tupleList = new GapList<>();
+    private final IList<Tuple> tupleList = new GapList<>();
 
     private Texture waterTexture;
 
@@ -632,31 +633,35 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // determine which chunks are visible by this chunk
     public static void determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
-        vChnkIdQueue.clear();
-        iChnkIdQueue.clear();
         // current chunk where player is        
         int currChunkId = chunkFunc(actorPos);
-        Vector3f currChunkPos = invChunkFunc(currChunkId);
-        float distance0 = actorPos.distance(currChunkPos);
+        int currCol = currChunkId % GRID_SIZE;
+        int currRow = currChunkId / GRID_SIZE;
+
         if (!vChnkIdQueue.contains(currChunkId)) {
-            vChnkIdQueue.offer(currChunkId);
+            vChnkIdQueue.add(currChunkId);
         }
+
         // rest of the chunks
         for (int chunkId = 0; chunkId < Chunk.CHUNK_NUM; chunkId++) {
             if (chunkId != currChunkId) {
-                Vector3f chunkPos = invChunkFunc(chunkId);
-                float distance1 = actorPos.distance(chunkPos);
-                if (distance1 - distance0 <= LENGTH / 2.0f) {
-                    vChnkIdQueue.offer(chunkId);
+                int col = chunkId % GRID_SIZE;
+                int row = chunkId / GRID_SIZE;
+
+                int deltaCol = Math.abs(currCol - col);
+                int deltaRow = Math.abs(currRow - row);
+
+                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdQueue.contains(chunkId)) {
+                    vChnkIdQueue.add(chunkId);
                 } else if (!iChnkIdQueue.contains(chunkId)) {
-                    iChnkIdQueue.offer(chunkId);
+                    iChnkIdQueue.add(chunkId);
                 }
             }
         }
     }
 
     public List<Block> getBlockList() {
-        List<Block> result = new BigList<>();
+        IList<Block> result = new BigList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());
         }

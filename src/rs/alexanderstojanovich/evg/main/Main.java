@@ -49,7 +49,7 @@ public class Main {
         GameObject.MY_WINDOW.centerTheWindow();
         final GameObject gameObject = GameObject.getInstance(); // inits it once if null and returns it
         Game game = new Game(gameObject); // init game with given configuration and game object
-        Renderer renderer = new Renderer(gameObject); // init renderer with given game object
+        GameRenderer renderer = new GameRenderer(gameObject); // init renderer with given game object
         DSLogger.reportInfo("Game initialized.", null);
         //----------------------------------------------------------------------
         Timer timer1 = new Timer("Timer Utils");
@@ -58,8 +58,8 @@ public class Main {
             public void run() {
                 gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 Game.setUps(0);
-                gameObject.getIntrface().getFpsText().setContent("fps: " + Renderer.getFps());
-                Renderer.setFps(0);
+                gameObject.getIntrface().getFpsText().setContent("fps: " + GameRenderer.getFps());
+                GameRenderer.setFps(0);
 
                 Vector3f pos = gameObject.getLevelContainer().levelActors.getMainActor().getPosition();
                 int chunkId = Chunk.chunkFunc(pos);
@@ -67,7 +67,7 @@ public class Main {
                 gameObject.getIntrface().getChunkText().setContent(String.format("chunkId: %d", chunkId));
             }
         };
-        timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
+        timer1.schedule(task1, 1000L, 1000L);
 
 //        Timer timer2 = new Timer("Chunk Ops");
 //        TimerTask task2 = new TimerTask() {

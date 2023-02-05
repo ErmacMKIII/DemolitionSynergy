@@ -28,7 +28,7 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
@@ -101,15 +101,15 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 case "fpsmax":
                     command = FPS_MAX;
                     if (things.length == 2) {
-                        command.args.add(Integer.parseInt(things[1]));
+                        command.args.add(Integer.valueOf(things[1]));
                     }
                     break;
                 case "resolution":
                 case "res":
                     command = RESOLUTION;
                     if (things.length == 3) {
-                        command.args.add(Integer.parseInt(things[1]));
-                        command.args.add(Integer.parseInt(things[2]));
+                        command.args.add(Integer.valueOf(things[1]));
+                        command.args.add(Integer.valueOf(things[2]));
                     }
                     break;
                 case "fullscreen":
@@ -122,35 +122,35 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 case "vsync":
                     command = VSYNC;
                     if (things.length == 2) {
-                        command.args.add(Boolean.parseBoolean(things[1]));
+                        command.args.add(Boolean.valueOf(things[1]));
                     }
                     break;
                 case "waterEffects":
                 case "water_effects":
                     command = WATER_EFFECTS;
                     if (things.length == 2) {
-                        command.args.add(Boolean.parseBoolean(things[1]));
+                        command.args.add(Boolean.valueOf(things[1]));
                     }
                     break;
                 case "msens":
                 case "mouse_sensitivity":
                     command = MOUSE_SENSITIVITY;
                     if (things.length == 2) {
-                        command.args.add(Float.parseFloat(things[1]));
+                        command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "music_volume":
                 case "musicVolume":
                     command = MUSIC_VOLUME;
                     if (things.length == 2) {
-                        command.args.add(Float.parseFloat(things[1]));
+                        command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "sound_volume":
                 case "soundVolume":
                     command = SOUND_VOLUME;
                     if (things.length == 2) {
-                        command.args.add(Float.parseFloat(things[1]));
+                        command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "quit":
@@ -164,19 +164,19 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 case "position":
                     command = POSITION;
                     if (things.length == 2) {
-                        command.args.add(Integer.parseInt(things[1]));
+                        command.args.add(Integer.valueOf(things[1]));
                     }
                     if (things.length == 4) {
-                        command.args.add(Float.parseFloat(things[1]));
-                        command.args.add(Float.parseFloat(things[2]));
-                        command.args.add(Float.parseFloat(things[3]));
+                        command.args.add(Float.valueOf(things[1]));
+                        command.args.add(Float.valueOf(things[2]));
+                        command.args.add(Float.valueOf(things[3]));
                     }
                     break;
                 case "sizeof":
                 case "size_of":
                     command = SIZEOF;
                     if (things.length == 2) {
-                        command.args.add(Integer.parseInt(things[1]));
+                        command.args.add(Integer.valueOf(things[1]));
                     }
                     break;
                 default:
@@ -197,7 +197,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     /**
      * Executes command which modifies game, renderer or game object Rule is
      * that commands which directly affect window or OpenGL are being called
-     * from the Renderer, whilst other can be called from the main method
+     * from the GameRenderer, whilst other can be called from the main method
      *
      * @param command chosen command
      * @return execution status (true if successful, otherwise false)
@@ -216,8 +216,8 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                     case SET:
                         int fpsMax = (int) command.args.get(0);
                         if (fpsMax > 0 && fpsMax <= 1E6) {
-                            Renderer.setFps(0);
-                            Renderer.setFpsTicks(0.0);
+                            GameRenderer.setFps(0);
+                            GameRenderer.setFpsTicks(0.0);
                             Game.setFpsMax(fpsMax);
                             command.status = true;
                         }

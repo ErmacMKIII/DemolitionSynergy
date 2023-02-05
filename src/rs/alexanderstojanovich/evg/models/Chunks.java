@@ -44,9 +44,9 @@ public class Chunks {
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Chunk> chunkList = new GapList<>();
+    private final List<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
 
-    protected final List<Tuple> optimizedTuples = new GapList<>();
+    protected final IList<Tuple> optimizedTuples = new GapList<>(63);
     protected boolean optimized = false;
 
     public Chunks(boolean solid) {
@@ -422,7 +422,7 @@ public class Chunks {
         }
     }
 
-    public void optimize(Queue<Integer> queue) {
+    public synchronized void optimize(Queue<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         while (faceBits <= 63) {
@@ -451,7 +451,7 @@ public class Chunks {
         optimized = true;
     }
 
-    public void optimize(Queue<Integer> queue, Vector3f camFront) {
+    public synchronized void optimize(Queue<Integer> queue, Vector3f camFront) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
@@ -492,8 +492,8 @@ public class Chunks {
         }
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
-        if (!optimized) {
+    public synchronized void render(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
+        if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 

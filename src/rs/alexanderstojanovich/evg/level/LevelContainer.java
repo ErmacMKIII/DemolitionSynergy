@@ -24,13 +24,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -671,7 +669,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.05f;
+            final float stepAmount = 0.1f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -684,7 +682,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -716,7 +714,7 @@ public class LevelContainer implements GravityEnviroment {
                         livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.05f;
+            final float stepAmount = 0.1f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -729,7 +727,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -801,30 +799,16 @@ public class LevelContainer implements GravityEnviroment {
     public boolean chunkOperations() {
         boolean changed = false;
         if (!working) {
-            Integer visibleId = vChnkIdQueue.peek();
+            Integer visibleId = vChnkIdQueue.poll();
             if (visibleId != null) {
-                if (CacheModule.isCached(visibleId, true)) {
-                    cacheModule.loadFromDisk(visibleId, true);
-                    changed = true;
-                }
-
-                if (CacheModule.isCached(visibleId, false)) {
-                    cacheModule.loadFromDisk(visibleId, false);
-                    changed = true;
-                }
+                changed |= cacheModule.loadFromDisk(visibleId, true);
+                changed |= cacheModule.loadFromDisk(visibleId, false);
             }
             //----------------------------------------------------------
-            Integer invisibleId = iChnkIdQueue.peek();
+            Integer invisibleId = iChnkIdQueue.poll();
             if (invisibleId != null) {
-                if (!CacheModule.isCached(invisibleId, true)) {
-                    cacheModule.saveToDisk(invisibleId, true);
-                    changed = true;
-                }
-
-                if (!CacheModule.isCached(invisibleId, false)) {
-                    cacheModule.saveToDisk(invisibleId, false);
-                    changed = true;
-                }
+                changed |= cacheModule.saveToDisk(invisibleId, true);
+                changed |= cacheModule.saveToDisk(invisibleId, false);
             }
         }
 
