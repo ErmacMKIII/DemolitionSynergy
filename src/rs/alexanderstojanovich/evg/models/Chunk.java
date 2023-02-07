@@ -177,9 +177,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
 
         if (startIndex != -1 && endIndex != -1) {
-            if (endIndex - startIndex > 0) {
-                System.err.println(endIndex - startIndex);
-            }
             for (int i = startIndex; i <= endIndex; i++) {
                 Block blk = tuple.blockList.get(i);
                 if (blk.pos.equals(pos)) {
