@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.Objects;
+
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
@@ -59,6 +61,36 @@ public class TexByte {
     @Override
     public String toString() {
         return "TexByte{" + "texName=" + texName + ", byteValue=" + byteValue + ", solid=" + solid + '}';
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 73 * hash + Objects.hashCode(this.texName);
+        hash = 73 * hash + this.byteValue;
+        hash = 73 * hash + (this.solid ? 1 : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TexByte other = (TexByte) obj;
+        if (this.byteValue != other.byteValue) {
+            return false;
+        }
+        if (this.solid != other.solid) {
+            return false;
+        }
+        return Objects.equals(this.texName, other.texName);
     }
 
 }

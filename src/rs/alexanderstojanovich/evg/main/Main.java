@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.level.CacheModule;
@@ -31,8 +29,6 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Main {
-
-    public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
         CacheModule.deleteCache();
@@ -68,33 +64,18 @@ public class Main {
             }
         };
         timer1.schedule(task1, 1000L, 1000L);
-
-//        Timer timer2 = new Timer("Chunk Ops");
-//        TimerTask task2 = new TimerTask() {
-//            @Override
-//            public void run() {
-//                gameObject.chunkOperations();
-//            }
-//        };
-//        timer2.schedule(task2, 125L, 125L);
         //----------------------------------------------------------------------
-        SERVICE.execute(new Runnable() {
-            @Override
-            public void run() {
-                renderer.start();
-                DSLogger.reportInfo("Renderer started.", null);
-            }
-        });
-        SERVICE.shutdown();
+        renderer.start();
+        DSLogger.reportInfo("Renderer started.", null);
         DSLogger.reportInfo("Game will start soon.", null);
         game.go();
+        //----------------------------------------------------------------------
         try {
             renderer.join(); // and it's blocked here until it finishes
         } catch (InterruptedException ex) {
             DSLogger.reportError(ex.getMessage(), ex);
         }
         timer1.cancel();
-//        timer2.cancel();
         //----------------------------------------------------------------------        
         Configuration outCfg = game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output

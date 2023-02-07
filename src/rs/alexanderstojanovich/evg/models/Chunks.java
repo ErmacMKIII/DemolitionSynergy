@@ -398,7 +398,11 @@ public class Chunks {
         return null;
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
+        if (!optimized) {
+            return;
+        }
+
         for (Tuple tuple : optimizedTuples) {
             if (tuple.isBuffered()) {
                 tuple.animate();
@@ -406,13 +410,13 @@ public class Chunks {
         }
     }
 
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
+    public synchronized void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
         for (Chunk chunk : chunkList) {
             chunk.prepare(cameraInFluid);
         }
     }
 
-    public void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
+    public synchronized void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
         if (!optimized) {
             return;
         }

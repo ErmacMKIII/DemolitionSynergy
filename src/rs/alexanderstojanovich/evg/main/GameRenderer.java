@@ -23,7 +23,6 @@ import java.util.concurrent.FutureTask;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -94,10 +93,10 @@ public class GameRenderer extends Thread implements Executor {
 
             int numOfPasses = 0;
             while (fpsTicks >= 1.0 && numOfPasses < Game.getUpsTicks()) {
-                gameObject.render();                                    
+                gameObject.render();
                 if (!gameObject.isWorking() && Game.accumulator - timer2 > 20.0) {
                     gameObject.animate();
-                }                
+                }
                 fps++;
                 fpsTicks--;
                 numOfPasses++;
@@ -133,11 +132,10 @@ public class GameRenderer extends Thread implements Executor {
                 if (gameObject.getLevelContainer().getProgress() == 100.0f) {
                     gameObject.getIntrface().getProgText().setEnabled(false);
                     gameObject.getLevelContainer().setProgress(0.0f);
-                }                
+                }
                 timer2 += 20.0;
             }
 
-            
             // lastly it executes the console tasks
             FutureTask<Object> task;
             while ((task = TASK_QUEUE.poll()) != null) {

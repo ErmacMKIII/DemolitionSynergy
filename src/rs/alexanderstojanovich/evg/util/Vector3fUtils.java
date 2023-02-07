@@ -16,7 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import com.eatthepath.uuid.FastUUID;
+import java.util.Objects;
 import java.util.UUID;
 import org.joml.Vector3f;
 
@@ -26,6 +26,12 @@ import org.joml.Vector3f;
  */
 public class Vector3fUtils {
 
+    /**
+     * Convert VEC3 to byte array.
+     *
+     * @param vector float3(x,y,z) vector
+     * @return byte array of that vector
+     */
     public static byte[] vec3fToByteArray(Vector3f vector) {
         byte[] buffer = new byte[12];
         int x = Float.floatToIntBits(vector.x);
@@ -49,6 +55,12 @@ public class Vector3fUtils {
         return buffer;
     }
 
+    /**
+     * Convert VEC3 from byte array.
+     *
+     * @param array byte array of that vector;
+     * @return float3(x,y,z) vector
+     */
     public static Vector3f vec3fFromByteArray(byte[] array) {
         int valx = (array[3] & 0xFF) << 24 | (array[2] & 0xFF) << 16 | (array[1] & 0xFF) << 8 | (array[0] & 0xFF);
         float x = Float.intBitsToFloat(valx);
@@ -62,12 +74,70 @@ public class Vector3fUtils {
         return new Vector3f(x, y, z);
     }
 
+    /**
+     * Convert VEC3 to byte array.
+     *
+     * @param vector float3(x,y,z) vector
+     * @return unique string
+     */
     public static String float3ToUniqueString(Vector3f vector) {
         byte[] bytes = vec3fToByteArray(vector);
         UUID guid = UUID.nameUUIDFromBytes(bytes);
-        String guidStr = FastUUID.toString(guid);
+        String guidStr = guid.toString();
+
         String result = guidStr.substring(0, 8) + guidStr.substring(24, 36);
         return result;
     }
 
+    /**
+     * Convert VEC3 to unique string.
+     *
+     * @param vector float3(x,y,z) vector
+     * @param texName texName[5] string
+     *
+     * @return unique string
+     */
+    public static String float3ToUniqueString(Vector3f vector, String texName) {
+        byte[] bytesV = vec3fToByteArray(vector);
+        byte[] bytesT = texName.getBytes();
+
+        byte[] bytesR = new byte[bytesV.length + bytesT.length];
+        int len = 0;
+        System.arraycopy(bytesV, 0, bytesR, 0, bytesV.length);
+        len += bytesV.length;
+        System.arraycopy(bytesT, 0, bytesR, len, bytesT.length);
+
+        UUID guid = UUID.nameUUIDFromBytes(bytesR);
+
+        String guidStr = guid.toString();
+        String result = guidStr.substring(0, 8) + guidStr.substring(24, 36);
+        return result;
+    }
+
+    /**
+     * Convert VEC3 to unique integer.
+     *
+     * @param vector float3(x,y,z) vector
+     *
+     * @return unique integer
+     */
+    public static int float3ToUniqueInteger(Vector3f vector) {
+        String guid = float3ToUniqueString(vector);
+        int result = Objects.hashCode(guid);
+        return result;
+    }
+
+    /**
+     * Convert VEC3 to unique integer.
+     *
+     * @param vector float3(x,y,z) vector
+     * @param texName texName[5] integer
+     *
+     * @return unique integer
+     */
+    public static int float3ToUniqueInteger(Vector3f vector, String texName) {
+        String guid = float3ToUniqueString(vector, texName);
+        int result = Objects.hashCode(guid);
+        return result;
+    }
 }

@@ -841,10 +841,6 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
 
-        Camera mainCamera = levelActors.mainCamera();
-        mainCamera.render(ShaderProgram.getMainShader());
-        mainCamera.render(ShaderProgram.getVoxelShader());
-
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
@@ -865,7 +861,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(mainCamera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
@@ -947,6 +942,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getWaterBaseShader());
+
         LIGHT_SOURCES.modified = false;
     }
 

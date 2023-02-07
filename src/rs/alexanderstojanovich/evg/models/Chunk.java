@@ -138,17 +138,16 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        String keyStr = Vector3fUtils.float3ToUniqueString(pos);
+        Integer key = Vector3fUtils.float3ToUniqueInteger(pos, tuple.texName());
 
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
-
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
-            int res = candStr.compareTo(keyStr);
+            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -165,8 +164,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
-            int res = candStr.compareTo(keyStr);
+            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -178,6 +177,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
 
         if (startIndex != -1 && endIndex != -1) {
+            if (endIndex - startIndex > 0) {
+                System.err.println(endIndex - startIndex);
+            }
             for (int i = startIndex; i <= endIndex; i++) {
                 Block blk = tuple.blockList.get(i);
                 if (blk.pos.equals(pos)) {
@@ -216,7 +218,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
         List<Block> blockList = dstTuple.blockList;
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_BITS_COMP);
+        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
 
         buffered = false;
     }
@@ -469,7 +471,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_BITS_COMP);
+        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
 
         if (useLevelContainer) {
             // level container also set neighbor bits

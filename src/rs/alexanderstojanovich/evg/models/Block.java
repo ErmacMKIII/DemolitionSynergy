@@ -79,12 +79,21 @@ public class Block extends Model {
     public static final List<Vertex> VERTICES = new GapList<>();
     public static final List<Integer> INDICES = new ArrayList<>();
 
+    public static final Comparator<Block> FLOAT3_TEX_BITS_COMP = new Comparator<Block>() {
+        @Override
+        public int compare(Block o1, Block o2) {
+            Integer hash1 = Vector3fUtils.float3ToUniqueInteger(o1.pos, o1.texName);
+            Integer hash2 = Vector3fUtils.float3ToUniqueInteger(o2.pos, o2.texName);
+            return hash1.compareTo(hash2);
+        }
+    };
+
     public static final Comparator<Block> FLOAT3_BITS_COMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            String name1 = Vector3fUtils.float3ToUniqueString(o1.pos);
-            String name2 = Vector3fUtils.float3ToUniqueString(o2.pos);
-            return name1.compareTo(name2);
+            Integer hash1 = Vector3fUtils.float3ToUniqueInteger(o1.pos);
+            Integer hash2 = Vector3fUtils.float3ToUniqueInteger(o2.pos);
+            return hash1.compareTo(hash2);
         }
     };
 
@@ -161,9 +170,9 @@ public class Block extends Model {
                     VERTICES.add(v);
                 } else if (line.startsWith("i:")) {
                     String[] things = line.replace("i:", "").trim().split(" ", -1);
-                    INDICES.add(Integer.parseInt(things[0]));
-                    INDICES.add(Integer.parseInt(things[1]));
-                    INDICES.add(Integer.parseInt(things[2]));
+                    INDICES.add(Integer.valueOf(things[0]));
+                    INDICES.add(Integer.valueOf(things[1]));
+                    INDICES.add(Integer.valueOf(things[2]));
                 }
             }
         } catch (FileNotFoundException ex) {
@@ -192,7 +201,7 @@ public class Block extends Model {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(in));
-            List<Vector3f> positions = new GapList<>();
+            List<Vector3f> positions = new ArrayList<>();
             List<Vector2f> uvs = new ArrayList<>();
             List<Vector3f> normals = new ArrayList<>();
             String line;

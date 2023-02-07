@@ -107,6 +107,7 @@ public class Game {
     private static Mode currentMode = Mode.FREE;
 
     protected static boolean actionPerformed = false;
+    protected static boolean needOptimize = false;
 
     /**
      * Construct new game view
@@ -536,11 +537,10 @@ public class Game {
         int index = 0; // track index
 
         double timera = 0.0;
-        double timerc = 0.0;
         double timero = 0.0;
 
         // first time we got nothing
-        boolean needOptimize = false;
+        needOptimize = false;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
@@ -584,34 +584,30 @@ public class Game {
                         actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         break;
                 }
-                
-                if (accumulator > timerc + 80.0 && actionPerformed) {
+
+                if (actionPerformed) {
                     gameObject.determineVisibleChunks();
-                    needOptimize = true;
+                    actionPerformed = false;
                 }
-                if (accumulator > timerc + 160.0 && needOptimize) {
+
+                if (needOptimize) {
                     gameObject.optimize();
+                    needOptimize = false;
                 }
-                
+
                 ups++;
                 upsTicks--;
             }
 
             // update music player every 40 tics
-            if (accumulator > timera + 40.0) {                
+            if (accumulator > timera + 40.0) {
+                actionPerformed = true;
                 timera += 40.0;
-            }
-            
-            // update chunks every 80 ticks
-            if (accumulator > timerc + 80.0) {                
-                timerc += 80.0;
             }
 
             // optimize every 160 ticks
             if (accumulator > timero + 160.0) {
-                if (needOptimize) {
-                    gameObject.optimize();
-                }
+                needOptimize = true;
                 timero += 160.0;
             }
 
@@ -740,6 +736,14 @@ public class Game {
 
     public static boolean isChanged() {
         return actionPerformed;
+    }
+
+    public static boolean isActionPerformed() {
+        return actionPerformed;
+    }
+
+    public static boolean isNeedOptimize() {
+        return needOptimize;
     }
 
 }
