@@ -154,9 +154,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
     /**
      * Calls chunk functions to determine visible chunks
+     *
+     * @return is changed
      */
-    public void determineVisibleChunks() {
-        levelContainer.determineVisible();
+    public boolean determineVisibleChunks() {
+        return levelContainer.determineVisible();
     }
 
     /**

@@ -92,18 +92,20 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0 && numOfPasses < Game.getUpsTicks()) {
-                gameObject.render();
-                if (!gameObject.isWorking() && Game.accumulator - timer2 > 20.0) {
-                    gameObject.animate();
+            while (fpsTicks >= 1.0) {
+                if (numOfPasses < Game.getUpsTicks()) {
+                    gameObject.render();
+                    if (!gameObject.isWorking() && Game.accumulator - timer2 > 20.0) {
+                        gameObject.animate();
+                    }
+                    fps++;
+                    numOfPasses++;
                 }
-                fps++;
                 fpsTicks--;
-                numOfPasses++;
             }
 
             // update text which shows dialog every 500.0 ticks                
-            if (Game.accumulator > timer1 + 500.0) {
+            if (Game.accumulator - timer1 > 500.0) {
                 if (gameObject.getIntrface().getSaveDialog().isDone()) {
                     gameObject.getIntrface().getSaveDialog().setEnabled(false);
                 }
@@ -128,7 +130,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // update text which animates water every quarter of the second
-            if (Game.accumulator > timer2 + 20.0) {
+            if (Game.accumulator - timer2 > 20.0) {
                 if (gameObject.getLevelContainer().getProgress() == 100.0f) {
                     gameObject.getIntrface().getProgText().setEnabled(false);
                     gameObject.getLevelContainer().setProgress(0.0f);

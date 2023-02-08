@@ -540,6 +540,7 @@ public class Game {
         double timero = 0.0;
 
         // first time we got nothing
+        actionPerformed = false;
         needOptimize = false;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
@@ -560,18 +561,17 @@ public class Game {
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 gameObject.update((float) TICK_TIME);
-                if (accumulator > timera + 40.0) {
-                    if (!gameObject.musicPlayer.isPlaying()) {
-                        gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
-                        if (index == AudioFile.TRACKS.length) {
-                            index = 0;
-                        }
+                if (!gameObject.musicPlayer.isPlaying()) {
+                    gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+                    if (index == AudioFile.TRACKS.length) {
+                        index = 0;
                     }
                 }
+
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
-                        actionPerformed = true;
+                        actionPerformed = false;
                         break;
                     case EDITOR:
                         // observer has control
@@ -586,32 +586,29 @@ public class Game {
                 }
 
                 if (actionPerformed) {
-                    gameObject.determineVisibleChunks();
-                    actionPerformed = false;
-                }
-
-                if (needOptimize) {
-                    gameObject.optimize();
-                    needOptimize = false;
+                    needOptimize |= gameObject.determineVisibleChunks();
                 }
 
                 ups++;
                 upsTicks--;
             }
 
-            // update music player every 40 tics
-            if (accumulator > timera + 40.0) {
+            if (Game.accumulator - timera > 40.0) {
                 actionPerformed = true;
                 timera += 40.0;
             }
 
-            // optimize every 160 ticks
-            if (accumulator > timero + 160.0) {
+            if (Game.accumulator - timero > 160.0) {
                 needOptimize = true;
                 timero += 160.0;
             }
 
-            actionPerformed = false;
+            if (actionPerformed && needOptimize) {
+                gameObject.optimize();
+                actionPerformed = false;
+                needOptimize = false;
+            }
+
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

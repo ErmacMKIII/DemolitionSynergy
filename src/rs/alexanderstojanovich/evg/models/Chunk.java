@@ -630,8 +630,18 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return new Vector3f(x, 0.0f, z);
     }
 
-    // determine which chunks are visible by this chunk
-    public static void determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
+    /**
+     * Determine which chunks are visible by this chunk. If visible put into the
+     * V queue, otherwise put into the I queue.
+     *
+     * @param vChnkIdQueue visible chunk queue
+     * @param iChnkIdQueue invisible chunk queue
+     * @param actorPos actor pos (self-expl)
+     *
+     * @return was any of the queue changed
+     */
+    public static boolean determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
+        boolean change = false;
         // current chunk where player is        
         int currChunkId = chunkFunc(actorPos);
         int currCol = currChunkId % GRID_SIZE;
@@ -652,11 +662,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
                 if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdQueue.contains(chunkId)) {
                     vChnkIdQueue.add(chunkId);
+                    change = true;
                 } else if (!iChnkIdQueue.contains(chunkId)) {
                     iChnkIdQueue.add(chunkId);
+                    change = true;
                 }
             }
         }
+
+        return change;
     }
 
     public List<Block> getBlockList() {

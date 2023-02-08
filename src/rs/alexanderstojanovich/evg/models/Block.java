@@ -44,6 +44,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -482,8 +483,8 @@ public class Block extends Model {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f normal = FACE_NORMALS[j];
             float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
-            float angle = (float) Math.toDegrees(Math.acos(dotProduct));
-            if (angle < 178.0f) {
+            float angle = (float) Math.toDegrees(MathUtils.acos(dotProduct));
+            if (angle <= 177.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }

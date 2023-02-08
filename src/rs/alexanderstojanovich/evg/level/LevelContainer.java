@@ -790,9 +790,11 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     // method for determining visible chunks
-    public void determineVisible() {
+    public boolean determineVisible() {
         Camera mainCamera = levelActors.mainCamera();
-        Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
+        boolean val = Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
+
+        return val;
     }
 
     // method for saving invisible chunks / loading visible chunks
