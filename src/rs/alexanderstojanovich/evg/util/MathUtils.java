@@ -154,4 +154,25 @@ public class MathUtils {
         return noise;
     }
 
+    /**
+     * Arc-cosine (cos^-1) from radian angle x
+     *
+     * @param x in [-1, 1]
+     * @return angle
+     */
+    public static float acos(float x) {
+        float negate = Math.signum(x);
+        x = Math.abs(x);
+        float ret = -0.0187293f;
+        ret = ret * x;
+        ret = ret + 0.0742610f;
+        ret = ret * x;
+        ret = ret - 0.2121144f;
+        ret = ret * x;
+        ret = ret + 1.5707288f;
+        ret = (float) (ret * Math.sqrt(1.0f - x));
+        ret = ret - 2.0f * negate * ret;
+        return negate * 3.14159265358979f + ret;
+    }
+
 }

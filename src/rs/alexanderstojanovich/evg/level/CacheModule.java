@@ -47,6 +47,14 @@ public class CacheModule {
         this.levelContainer = levelContainer;
     }
 
+    /**
+     * Size of the chunk when is loaded.
+     *
+     * @param id chunk id
+     * @param solid is chunk solid or fluid
+     *
+     * @return loaded size of the chunk
+     */
     public int loadedSize(int id, boolean solid) { // for debugging purposes
         int size = 0;
         if (!CacheModule.isCached(id, solid)) {
@@ -62,6 +70,13 @@ public class CacheModule {
         return size;
     }
 
+    /**
+     * Size of the chunk when is loaded.
+     *
+     * @param chunk chunk itself
+     *
+     * @return loaded size of that chunk
+     */
     public static int loadedSize(Chunk chunk) {
         int size = 0;
         if (!CacheModule.isCached(chunk.getId(), chunk.isSolid())) {
@@ -72,6 +87,14 @@ public class CacheModule {
         return size;
     }
 
+    /**
+     * Size of the chunk when is cached.
+     *
+     * @param id chunk id
+     * @param solid is chunk solid or fluid
+     *
+     * @return loaded size of the chunk
+     */
     public static int cachedSize(int id, boolean solid) { // for debugging purposes
         int size = 0;
         if (CacheModule.isCached(id, solid)) {
@@ -126,6 +149,11 @@ public class CacheModule {
     }
 
     //--------------------------------------------------------------------------
+    /**
+     * Save Memory Buffer to Disk (SSD or HardDrive)
+     *
+     * @param filename filename of cached file to save
+     */
     private void saveMemToDisk(String filename) {
         BufferedOutputStream bos = null;
         File file = new File(filename);
@@ -149,6 +177,11 @@ public class CacheModule {
         }
     }
 
+    /**
+     * Load Memory Buffer from Disk (SSD or HardDrive)
+     *
+     * @param filename filename of cached file to load
+     */
     private void loadDiskToMem(String filename) {
         File file = new File(filename);
         if (file.exists()) {
@@ -176,7 +209,15 @@ public class CacheModule {
         return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
     }
 
-    public void saveToDisk(int id, boolean solid) {
+    /**
+     * Save chunk to Disk.
+     *
+     * @param id chunk id
+     * @param solid is chunk solid or fluid
+     * @return is operation performed (chunks modified)
+     */
+    public boolean saveToDisk(int id, boolean solid) {
+        boolean op = false;
         if (!CacheModule.isCached(id, solid)) {
             List<Block> blocks = null;
             // DETERMINING WHICH CHUNK
@@ -227,11 +268,22 @@ public class CacheModule {
                 }
 
                 saveMemToDisk(getFileName(id, solid));
+                op = true;
             }
         }
+
+        return op;
     }
 
-    public void loadFromDisk(int id, boolean solid) {
+    /**
+     * Load chunk from Disk.
+     *
+     * @param id chunk id
+     * @param solid is chunk solid or fluid
+     * @return is operation performed (chunks modified)
+     */
+    public boolean loadFromDisk(int id, boolean solid) {
+        boolean op = false;
         // IF ITS NOT CACHED TO DISK
         if (CacheModule.isCached(id, solid)) {
             // LOAD INTO MEMORY
@@ -273,10 +325,15 @@ public class CacheModule {
                     levelContainer.fluidChunks.addBlock(block, true);
                 }
             }
+            op = true;
         }
 
+        return op;
     }
 
+    /**
+     * Delete all the cache files.
+     */
     public static void deleteCache() {
         // deleting cache
         File cache = new File(Game.CACHE);
@@ -288,6 +345,13 @@ public class CacheModule {
         }
     }
 
+    /**
+     * Is cached.
+     *
+     * @param chunkId chunk id
+     * @param solid is chunk solid or fluid
+     * @return is chunk cached or not cached (loaded)
+     */
     public static boolean isCached(int chunkId, boolean solid) {
         File file = new File(getFileName(chunkId, solid));
         return file.exists();

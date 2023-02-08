@@ -22,6 +22,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSource;
@@ -55,7 +56,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // where each tuple is considered as:                
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Tuple> tupleList = new GapList<>();
+    private final IList<Tuple> tupleList = new GapList<>();
 
     private Texture waterTexture;
 
@@ -137,17 +138,16 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        String keyStr = Vector3fUtils.float3ToUniqueString(pos);
+        Integer key = Vector3fUtils.float3ToUniqueInteger(pos, tuple.texName());
 
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
-
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
-            int res = candStr.compareTo(keyStr);
+            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -164,8 +164,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candStr = Vector3fUtils.float3ToUniqueString(candidate.pos);
-            int res = candStr.compareTo(keyStr);
+            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -215,7 +215,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
         List<Block> blockList = dstTuple.blockList;
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_BITS_COMP);
+        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
 
         buffered = false;
     }
@@ -468,7 +468,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_BITS_COMP);
+        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
 
         if (useLevelContainer) {
             // level container also set neighbor bits
@@ -630,33 +630,51 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return new Vector3f(x, 0.0f, z);
     }
 
-    // determine which chunks are visible by this chunk
-    public static void determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
-        vChnkIdQueue.clear();
-        iChnkIdQueue.clear();
+    /**
+     * Determine which chunks are visible by this chunk. If visible put into the
+     * V queue, otherwise put into the I queue.
+     *
+     * @param vChnkIdQueue visible chunk queue
+     * @param iChnkIdQueue invisible chunk queue
+     * @param actorPos actor pos (self-expl)
+     *
+     * @return was any of the queue changed
+     */
+    public static boolean determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
+        boolean change = false;
         // current chunk where player is        
         int currChunkId = chunkFunc(actorPos);
-        Vector3f currChunkPos = invChunkFunc(currChunkId);
-        float distance0 = actorPos.distance(currChunkPos);
+        int currCol = currChunkId % GRID_SIZE;
+        int currRow = currChunkId / GRID_SIZE;
+
         if (!vChnkIdQueue.contains(currChunkId)) {
-            vChnkIdQueue.offer(currChunkId);
+            vChnkIdQueue.add(currChunkId);
         }
+
         // rest of the chunks
         for (int chunkId = 0; chunkId < Chunk.CHUNK_NUM; chunkId++) {
             if (chunkId != currChunkId) {
-                Vector3f chunkPos = invChunkFunc(chunkId);
-                float distance1 = actorPos.distance(chunkPos);
-                if (distance1 - distance0 <= LENGTH / 2.0f) {
-                    vChnkIdQueue.offer(chunkId);
+                int col = chunkId % GRID_SIZE;
+                int row = chunkId / GRID_SIZE;
+
+                int deltaCol = Math.abs(currCol - col);
+                int deltaRow = Math.abs(currRow - row);
+
+                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdQueue.contains(chunkId)) {
+                    vChnkIdQueue.add(chunkId);
+                    change = true;
                 } else if (!iChnkIdQueue.contains(chunkId)) {
-                    iChnkIdQueue.offer(chunkId);
+                    iChnkIdQueue.add(chunkId);
+                    change = true;
                 }
             }
         }
+
+        return change;
     }
 
     public List<Block> getBlockList() {
-        List<Block> result = new BigList<>();
+        IList<Block> result = new BigList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());
         }

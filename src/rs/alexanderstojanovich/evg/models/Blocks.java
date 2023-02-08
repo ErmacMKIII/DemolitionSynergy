@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.lwjgl.BufferUtils;
@@ -296,7 +295,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         return buffered;
     }
 
-    public List<Block> getBlockList() {
+    public IList<Block> getBlockList() {
         return blockList;
     }
 

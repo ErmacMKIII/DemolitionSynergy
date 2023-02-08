@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -112,7 +112,7 @@ public class Console {
                             } else if (command.isRendererCommand()) {
                                 Object result = null;
                                 FutureTask<Object> consoleTask = new FutureTask<Object>(command);
-                                Renderer.TASK_QUEUE.add(consoleTask);
+                                GameRenderer.TASK_QUEUE.add(consoleTask);
                                 try {
                                     // waits for renderer to execute the task                       
                                     result = consoleTask.get();

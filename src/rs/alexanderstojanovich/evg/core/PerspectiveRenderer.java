@@ -28,21 +28,28 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class PerspectiveRenderer {
 
-    public final static Matrix4f PROJECTION_MATRIX = new Matrix4f();
+    public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
+    protected static final FloatBuffer floatBuff = BufferUtils.createFloatBuffer(4 * 4);
 
-    private static void perspective(float fov, int width, int height, float zNear, float zFar, ShaderProgram shaderProgram) {
+    static {
+        PROJECTION_MATRIX.get(floatBuff);
+    }
+
+    private static void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
         PROJECTION_MATRIX.setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
-        PROJECTION_MATRIX.get(fb);
-        int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
-        GL20.glUniformMatrix4fv(uniformLocation, false, fb);
+        PROJECTION_MATRIX.get(floatBuff);
     }
 
     public static void updatePerspective(Window myWindow) {
+        loadPerspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 8192.0f);
+    }
+
+    public static void render() {
         for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();
-            perspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 12288.0f, shaderProgram);
+            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
+            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuff);
             ShaderProgram.unbind();
         }
     }

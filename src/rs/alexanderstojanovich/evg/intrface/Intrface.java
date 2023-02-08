@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.Renderer;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
@@ -39,8 +39,6 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Intrface {
-
-    private final GameObject gameObject;
 
     private Quad crosshair;
     private DynamicText updText; // displays updates
@@ -75,14 +73,13 @@ public class Intrface {
 
     private final Console console = new Console();
 
-    public Intrface(GameObject gameObject) {
-        this.gameObject = gameObject;
+    public Intrface() {
         initIntrface();
     }
 
     private void initIntrface() {
-        AudioPlayer musicPlayer = gameObject.getMusicPlayer();
-        AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
+        AudioPlayer musicPlayer = GameObject.getMusicPlayer();
+        AudioPlayer soundFXPlayer = GameObject.getSoundFXPlayer();
 
         updText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 1.0f));
         updText.alignToNextChar();
@@ -160,7 +157,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = gameObject.saveLevelToFile(command);
+                boolean ok = GameObject.saveLevelToFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -174,7 +171,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = gameObject.loadLevelFromFile(command);
+                boolean ok = GameObject.loadLevelFromFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -205,7 +202,7 @@ public class Intrface {
             @Override
             protected void execute() {
                 String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
-                gameObject.loadLevelFromFile(chosen);
+                GameObject.loadLevelFromFile(chosen);
             }
         };
         loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
@@ -215,9 +212,9 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
-                if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
-                    ok = gameObject.generateRandomLevel(numBlocks);
+                    ok = GameObject.generateRandomLevel(numBlocks);
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
                     }
@@ -232,7 +229,7 @@ public class Intrface {
         randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
         randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
         randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
-        randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+        randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
 
         randLvlMenu = new OptionsMenu("GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
@@ -260,7 +257,7 @@ public class Intrface {
                     default:
                     case "SEED":
                         MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
-                        gameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
+                        GameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
                         break;
                 }
 
@@ -276,7 +273,7 @@ public class Intrface {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
-                if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
@@ -360,7 +357,7 @@ public class Intrface {
                         }
                         command.setMode(Command.Mode.SET);
                         FutureTask<Object> task = new FutureTask<Object>(command);
-                        Renderer.TASK_QUEUE.add(task);
+                        GameRenderer.TASK_QUEUE.add(task);
                         break;
                     case 4:
                         String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
@@ -419,7 +416,7 @@ public class Intrface {
                 switch (s) {
                     case "START NEW LEVEL":
                         progText.setEnabled(true);
-                        gameObject.startNewLevel();
+                        GameObject.startNewLevel();
                         Game.setCurrentMode(Mode.EDITOR);
                         break;
                     case "GENERATE RANDOM LEVEL":
@@ -561,10 +558,6 @@ public class Intrface {
         mainMenu.update();
         optionsMenu.update();
         editorMenu.update();
-    }
-
-    public GameObject getGameObject() {
-        return gameObject;
     }
 
     public Quad getCrosshair() {

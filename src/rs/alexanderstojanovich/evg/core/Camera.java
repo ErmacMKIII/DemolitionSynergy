@@ -88,13 +88,9 @@ public class Camera { // is 3D looking camera
     private void calcViewMatrix() {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
+//        if (pos.isFinite() && !front.equals(temp) && !up.equals(temp)) {
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
-    }
-
-    public void calcViewMatrixPub() { // public version of force calc
-        updateCameraVectors();
-        Vector3f temp = new Vector3f();
-        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
+//        }
     }
 
     public void updateCameraPosition(ShaderProgram shaderProgram) {
@@ -208,12 +204,34 @@ public class Camera { // is 3D looking camera
         calcViewMatrix();
     }
 
+    /**
+     * Render accross single shader
+     *
+     * @param shaderProgram single shader program
+     */
     public void render(ShaderProgram shaderProgram) {
+        calcViewMatrix();
         shaderProgram.bind();
         updateViewMatrix(shaderProgram);
         updateCameraPosition(shaderProgram);
         updateCameraFront(shaderProgram);
         ShaderProgram.unbind();
+    }
+
+    /**
+     * Render accross multiple shaders
+     *
+     * @param shaderPrograms multiple shader programs (array)
+     */
+    public void render(ShaderProgram[] shaderPrograms) {
+        calcViewMatrix();
+        for (ShaderProgram shaderProgram : shaderPrograms) {
+            shaderProgram.bind();
+            updateViewMatrix(shaderProgram);
+            updateCameraPosition(shaderProgram);
+            updateCameraFront(shaderProgram);
+            ShaderProgram.unbind();
+        }
     }
 
     public boolean intersects(Model model) {

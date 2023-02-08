@@ -24,13 +24,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -53,8 +51,6 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LevelContainer implements GravityEnviroment {
-
-    private final GameObject gameObject;
 
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
@@ -233,8 +229,7 @@ public class LevelContainer implements GravityEnviroment {
         SUN.setScale(SUN_SCALE);
     }
 
-    public LevelContainer(GameObject gameObject) {
-        this.gameObject = gameObject;
+    public LevelContainer() {
         this.cacheModule = new CacheModule(this);
 
         LIGHT_SOURCES.lightSrcList.clear();
@@ -280,7 +275,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -316,7 +311,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -331,7 +326,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -356,7 +351,7 @@ public class LevelContainer implements GravityEnviroment {
         working = false;
 
         levelActors.unfreeze();
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -368,7 +363,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -450,7 +445,7 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
         working = false;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -462,7 +457,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
@@ -553,7 +548,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -671,7 +666,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.05f;
+            final float stepAmount = 0.1f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -684,7 +679,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -716,7 +711,7 @@ public class LevelContainer implements GravityEnviroment {
                         livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.05f;
+            final float stepAmount = 0.1f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -729,7 +724,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = -Game.AMOUNT * Game.TPS; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
                         Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -792,39 +787,27 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     // method for determining visible chunks
-    public void determineVisible() {
+    public boolean determineVisible() {
         Camera mainCamera = levelActors.mainCamera();
-        Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
+        boolean val = Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
+
+        return val;
     }
 
     // method for saving invisible chunks / loading visible chunks
     public boolean chunkOperations() {
         boolean changed = false;
         if (!working) {
-            Integer visibleId = vChnkIdQueue.peek();
+            Integer visibleId = vChnkIdQueue.poll();
             if (visibleId != null) {
-                if (CacheModule.isCached(visibleId, true)) {
-                    cacheModule.loadFromDisk(visibleId, true);
-                    changed = true;
-                }
-
-                if (CacheModule.isCached(visibleId, false)) {
-                    cacheModule.loadFromDisk(visibleId, false);
-                    changed = true;
-                }
+                changed |= cacheModule.loadFromDisk(visibleId, true);
+                changed |= cacheModule.loadFromDisk(visibleId, false);
             }
             //----------------------------------------------------------
-            Integer invisibleId = iChnkIdQueue.peek();
+            Integer invisibleId = iChnkIdQueue.poll();
             if (invisibleId != null) {
-                if (!CacheModule.isCached(invisibleId, true)) {
-                    cacheModule.saveToDisk(invisibleId, true);
-                    changed = true;
-                }
-
-                if (!CacheModule.isCached(invisibleId, false)) {
-                    cacheModule.saveToDisk(invisibleId, false);
-                    changed = true;
-                }
+                changed |= cacheModule.saveToDisk(invisibleId, true);
+                changed |= cacheModule.saveToDisk(invisibleId, false);
             }
         }
 
@@ -857,10 +840,6 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
 
-        Camera mainCamera = levelActors.mainCamera();
-        mainCamera.render(ShaderProgram.getMainShader());
-        mainCamera.render(ShaderProgram.getVoxelShader());
-
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
@@ -881,7 +860,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(mainCamera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
@@ -963,6 +941,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getWaterBaseShader());
+
         LIGHT_SOURCES.modified = false;
     }
 
@@ -1006,10 +985,6 @@ public class LevelContainer implements GravityEnviroment {
         return fluidChunks;
     }
 
-    public GameObject getGameObject() {
-        return gameObject;
-    }
-
     public Queue<Integer> getvChnkIdQueue() {
         return vChnkIdQueue;
     }
@@ -1027,7 +1002,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public AudioPlayer getMusicPlayer() {
-        return gameObject.getMusicPlayer();
+        return GameObject.getMusicPlayer();
     }
 
     public LevelActors getLevelActors() {
