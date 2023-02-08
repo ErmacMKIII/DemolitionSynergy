@@ -52,8 +52,6 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    private final GameObject gameObject;
-
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
@@ -231,8 +229,7 @@ public class LevelContainer implements GravityEnviroment {
         SUN.setScale(SUN_SCALE);
     }
 
-    public LevelContainer(GameObject gameObject) {
-        this.gameObject = gameObject;
+    public LevelContainer() {
         this.cacheModule = new CacheModule(this);
 
         LIGHT_SOURCES.lightSrcList.clear();
@@ -278,7 +275,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -314,7 +311,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -329,7 +326,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
@@ -354,7 +351,7 @@ public class LevelContainer implements GravityEnviroment {
         working = false;
 
         levelActors.unfreeze();
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -366,7 +363,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -448,7 +445,7 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
         working = false;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -460,7 +457,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
@@ -551,7 +548,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
-        gameObject.getMusicPlayer().stop();
+        GameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -988,10 +985,6 @@ public class LevelContainer implements GravityEnviroment {
         return fluidChunks;
     }
 
-    public GameObject getGameObject() {
-        return gameObject;
-    }
-
     public Queue<Integer> getvChnkIdQueue() {
         return vChnkIdQueue;
     }
@@ -1009,7 +1002,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public AudioPlayer getMusicPlayer() {
-        return gameObject.getMusicPlayer();
+        return GameObject.getMusicPlayer();
     }
 
     public LevelActors getLevelActors() {

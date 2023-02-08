@@ -514,7 +514,7 @@ public class Chunks {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, solid, lightSources, solid ? null : GameObject.getInstance().getWaterRenderer().getFrameBuffer().getTexture());
+            tuple.renderInstanced(shaderProgram, solid, lightSources, solid ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
         }
 
         GL20.glDisableVertexAttribArray(0);

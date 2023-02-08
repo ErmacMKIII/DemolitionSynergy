@@ -205,7 +205,6 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     public static Object execute(Command command) {
         Object result = null;
         command.status = false;
-        GameObject gameObject = GameObject.getInstance();
         switch (command) {
             case FPS_MAX:
                 switch (command.mode) {
@@ -295,13 +294,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
             case MUSIC_VOLUME:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.getInstance().getMusicPlayer().getGain();
+                        result = GameObject.getMusicPlayer().getGain();
                         command.status = true;
                         break;
                     case SET:
                         float music = (float) command.args.get(0);
                         if (music >= 0.0f && music <= 1.0f) {
-                            GameObject.getInstance().getMusicPlayer().setGain(music);
+                            GameObject.getMusicPlayer().setGain(music);
                             command.status = true;
                         }
                         break;
@@ -310,13 +309,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
             case SOUND_VOLUME:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.getInstance().getSoundFXPlayer().getGain();
+                        result = GameObject.getSoundFXPlayer().getGain();
                         command.status = true;
                         break;
                     case SET:
                         float sound = (float) command.args.get(0);
                         if (sound >= 0.0f && sound <= 1.0f) {
-                            GameObject.getInstance().getSoundFXPlayer().setGain(sound);
+                            GameObject.getSoundFXPlayer().setGain(sound);
                             command.status = true;
                         }
                         break;
@@ -345,8 +344,8 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
-                gameObject.getIntrface().getScreenText().setEnabled(true);
-                gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
+                GameObject.getIntrface().getScreenText().setEnabled(true);
+                GameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 command.status = true;
                 break;
             case EXIT:
@@ -354,7 +353,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 command.status = true;
                 break;
             case POSITION:
-                Vector3f mainActorPos = gameObject.getLevelContainer().levelActors.getMainActor().getPosition();
+                Vector3f mainActorPos = GameObject.getLevelContainer().levelActors.getMainActor().getPosition();
                 int chunkId;
                 switch (command.mode) {
                     case GET:
@@ -389,8 +388,8 @@ public enum Command implements Callable<Object> { // its not actually a thread b
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int solidSize = CacheModule.totalSize(gameObject.getLevelContainer().getSolidChunks(), true);
-                        int fluidSize = CacheModule.totalSize(gameObject.getLevelContainer().getFluidChunks(), false);
+                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getSolidChunks(), true);
+                        int fluidSize = CacheModule.totalSize(GameObject.getLevelContainer().getFluidChunks(), false);
                         result = String.format("SolidSize = %d | FluidSize = %d | TotalChunks = %d", solidSize, fluidSize, Chunk.CHUNK_NUM);
                     } else {
                         chunkId = (int) command.args.get(0);
@@ -400,11 +399,11 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                             solidSize = CacheModule.cachedSize(chunkId, true);
                             fluidSize = CacheModule.cachedSize(chunkId, false);
                         } else {
-                            Chunk solidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
+                            Chunk solidChunk = GameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
                             if (solidChunk != null) {
                                 solidSize = solidChunk.getBlockList().size();
                             }
-                            Chunk fluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
+                            Chunk fluidChunk = GameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
                             if (fluidChunk != null) {
                                 fluidSize = fluidChunk.getBlockList().size();
                             }

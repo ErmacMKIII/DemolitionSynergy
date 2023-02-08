@@ -34,8 +34,6 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameRenderer extends Thread implements Executor {
 
-    private final GameObject gameObject;
-
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 
@@ -44,9 +42,8 @@ public class GameRenderer extends Thread implements Executor {
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
-    public GameRenderer(GameObject gameObject) {
+    public GameRenderer() {
         super("Renderer");
-        this.gameObject = gameObject;
     }
 
     @Override
@@ -56,7 +53,7 @@ public class GameRenderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        gameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context          
+        GameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context          
 
         double timer1 = 0.0;
         double timer2 = 0.0;
@@ -94,10 +91,7 @@ public class GameRenderer extends Thread implements Executor {
             int numOfPasses = 0;
             while (fpsTicks >= 1.0) {
                 if (numOfPasses < Game.getUpsTicks()) {
-                    gameObject.render();
-                    if (!gameObject.isWorking() && Game.accumulator - timer2 > 20.0) {
-                        gameObject.animate();
-                    }
+                    GameObject.render();
                     fps++;
                     numOfPasses++;
                 }
@@ -106,34 +100,38 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which shows dialog every 500.0 ticks                
             if (Game.accumulator - timer1 > 500.0) {
-                if (gameObject.getIntrface().getSaveDialog().isDone()) {
-                    gameObject.getIntrface().getSaveDialog().setEnabled(false);
+                if (GameObject.intrface.getSaveDialog().isDone()) {
+                    GameObject.intrface.getSaveDialog().setEnabled(false);
                 }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                if (GameObject.intrface.getLoadDialog().isDone()) {
+                    GameObject.intrface.getLoadDialog().setEnabled(false);
                 }
-                if (gameObject.getIntrface().getLoadDialog().isDone()) {
-                    gameObject.getIntrface().getLoadDialog().setEnabled(false);
+                if (GameObject.intrface.getLoadDialog().isDone()) {
+                    GameObject.intrface.getLoadDialog().setEnabled(false);
                 }
-                if (gameObject.getIntrface().getRandLvlDialog().isDone()) {
-                    gameObject.getIntrface().getRandLvlDialog().setEnabled(false);
-                }
-
-                if (gameObject.getIntrface().getSinglePlayerDialog().isDone()) {
-                    gameObject.getIntrface().getSinglePlayerDialog().setEnabled(false);
+                if (GameObject.intrface.getRandLvlDialog().isDone()) {
+                    GameObject.intrface.getRandLvlDialog().setEnabled(false);
                 }
 
-                gameObject.getIntrface().getCollText().setContent("");
-                gameObject.getIntrface().getScreenText().setEnabled(false);
+                if (GameObject.intrface.getSinglePlayerDialog().isDone()) {
+                    GameObject.intrface.getSinglePlayerDialog().setEnabled(false);
+                }
+
+                GameObject.intrface.getCollText().setContent("");
+                GameObject.intrface.getScreenText().setEnabled(false);
 
                 timer1 += 500.0;
             }
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - timer2 > 20.0) {
-                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
-                    gameObject.getIntrface().getProgText().setEnabled(false);
-                    gameObject.getLevelContainer().setProgress(0.0f);
+                if (GameObject.getLevelContainer().getProgress() == 100.0f) {
+                    GameObject.intrface.getProgText().setEnabled(false);
+                    GameObject.getLevelContainer().setProgress(0.0f);
+                }
+
+                if (!GameObject.isWorking()) {
+                    GameObject.animate();
                 }
                 timer2 += 20.0;
             }
@@ -157,7 +155,7 @@ public class GameRenderer extends Thread implements Executor {
     }
 
     public LevelContainer getLevelContainer() {
-        return gameObject.getLevelContainer();
+        return GameObject.getLevelContainer();
     }
 
     public static double getFpsTicks() {

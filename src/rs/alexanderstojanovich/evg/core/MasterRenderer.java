@@ -16,12 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
