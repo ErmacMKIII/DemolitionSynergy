@@ -261,7 +261,7 @@ public class Intrface {
                         break;
                 }
 
-                if (numBlocks != 0) {
+                if (numBlocks != 0 && selected != 4) {
                     randLvlDialog.open();
                 }
             }
@@ -326,8 +326,8 @@ public class Intrface {
                         command = Command.RESOLUTION;
                         String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
                         String things[] = giveCurrent.split("x");
-                        command.getArgs().add(Integer.parseInt(things[0]));
-                        command.getArgs().add(Integer.parseInt(things[1]));
+                        command.getArgs().add(Integer.valueOf(things[0]));
+                        command.getArgs().add(Integer.valueOf(things[1]));
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;

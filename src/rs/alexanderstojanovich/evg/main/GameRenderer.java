@@ -56,7 +56,6 @@ public class GameRenderer extends Thread implements Executor {
         GameObject.getWaterRenderer().getFrameBuffer().tune(); // it is tuned in the correct OpenGL context          
 
         double timer1 = 0.0;
-        double timer2 = 0.0;
 
         fps = 0;
 
@@ -98,42 +97,12 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // update text which shows dialog every 500.0 ticks                
-            if (Game.accumulator - timer1 > 500.0) {
-                if (GameObject.intrface.getSaveDialog().isDone()) {
-                    GameObject.intrface.getSaveDialog().setEnabled(false);
-                }
-                if (GameObject.intrface.getLoadDialog().isDone()) {
-                    GameObject.intrface.getLoadDialog().setEnabled(false);
-                }
-                if (GameObject.intrface.getLoadDialog().isDone()) {
-                    GameObject.intrface.getLoadDialog().setEnabled(false);
-                }
-                if (GameObject.intrface.getRandLvlDialog().isDone()) {
-                    GameObject.intrface.getRandLvlDialog().setEnabled(false);
-                }
-
-                if (GameObject.intrface.getSinglePlayerDialog().isDone()) {
-                    GameObject.intrface.getSinglePlayerDialog().setEnabled(false);
-                }
-
-                GameObject.intrface.getCollText().setContent("");
-                GameObject.intrface.getScreenText().setEnabled(false);
-
-                timer1 += 500.0;
-            }
-
             // update text which animates water every quarter of the second
-            if (Game.accumulator - timer2 > 20.0) {
-                if (GameObject.getLevelContainer().getProgress() == 100.0f) {
-                    GameObject.intrface.getProgText().setEnabled(false);
-                    GameObject.getLevelContainer().setProgress(0.0f);
-                }
-
+            if (Game.accumulator - timer1 > 20.0) {
                 if (!GameObject.isWorking()) {
                     GameObject.animate();
                 }
-                timer2 += 20.0;
+                timer1 += 20.0;
             }
 
             // lastly it executes the console tasks
