@@ -105,6 +105,7 @@ public class Game {
     private static Mode currentMode = Mode.FREE;
 
     protected static boolean actionPerformed = false;
+    protected static boolean causingCollision = false;
     protected static boolean needOptimize = false;
 
     /**
@@ -123,17 +124,17 @@ public class Game {
      * @return did observer do something..
      */
     private boolean observerDo(float amount) {
-        boolean changed = true;
+        boolean changed = false;
+        causingCollision = false;
 
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorForward(amount);
             if (GameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorBackward(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 obs.moveForward(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
@@ -142,10 +143,9 @@ public class Game {
             obs.movePredictorBackward(amount);
             if (GameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorForward(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 obs.moveBackward(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
 
@@ -155,10 +155,9 @@ public class Game {
             obs.movePredictorLeft(amount);
             if (GameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorRight(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 obs.moveLeft(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
@@ -167,13 +166,13 @@ public class Game {
             obs.movePredictorRight(amount);
             if (GameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorLeft(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 obs.moveRight(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
+
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             GameObject.getLevelContainer().getLevelActors().getObserver().turnLeft(ANGLE);
             changed = true;
@@ -289,16 +288,16 @@ public class Game {
      */
     public boolean playerDo(float amount) {
         boolean changed = false;
+        causingCollision = false;
 
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Player player = GameObject.getLevelContainer().getLevelActors().getPlayer();
             player.movePredictorForward(amount);
             if (GameObject.hasCollisionWithCritter(player)) {
                 player.movePredictorBackward(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 player.moveForward(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
@@ -307,10 +306,9 @@ public class Game {
             player.movePredictorBackward(amount);
             if (GameObject.hasCollisionWithCritter(player)) {
                 player.movePredictorForward(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 player.moveBackward(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
 
@@ -320,10 +318,9 @@ public class Game {
             player.movePredictorLeft(amount);
             if (GameObject.hasCollisionWithCritter(player)) {
                 player.movePredictorRight(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 player.moveLeft(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
@@ -332,10 +329,9 @@ public class Game {
             player.movePredictorRight(amount);
             if (GameObject.hasCollisionWithCritter(player)) {
                 player.movePredictorLeft(amount);
-                GameObject.setAssertCollision(true);
+                causingCollision = true;
             } else {
                 player.moveRight(amount);
-                GameObject.setAssertCollision(false);
                 changed = true;
             }
         }
@@ -347,6 +343,7 @@ public class Game {
             GameObject.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
             changed = true;
         }
+
         if (moveMouse) {
             GameObject.getLevelContainer().getLevelActors().getPlayer().lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
@@ -583,6 +580,8 @@ public class Game {
                 if (actionPerformed) {
                     needOptimize |= GameObject.determineVisibleChunks();
                 }
+
+                GameObject.assertCheckCollision(causingCollision);
 
                 ups++;
                 upsTicks--;

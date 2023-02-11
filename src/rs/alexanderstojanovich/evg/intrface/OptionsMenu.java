@@ -118,10 +118,10 @@ public abstract class OptionsMenu extends Menu {
                                 mode = InputMode.GET;
                                 break;
                             case GET:
-                                mode = mode.PUT;
+                                mode = InputMode.PUT;
                                 break;
                             case PUT:
-                                selectedMenuItem.menuValue.setCurrentValue(Long.parseLong(input.toString()));
+                                selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
                                 mode = InputMode.INIT;
                                 execute();
                                 break;

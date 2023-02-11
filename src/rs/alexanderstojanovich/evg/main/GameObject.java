@@ -59,8 +59,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected static AudioPlayer musicPlayer;
     protected static AudioPlayer soundFXPlayer;
 
-    protected static boolean assertCollision = false;
-
     protected static Game game;
     protected static GameRenderer renderer;
 
@@ -110,9 +108,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                GameObject.intrface.getUpdText().setContent("ups: " + Game.getUps());
+                intrface.getUpdText().setContent("ups: " + Game.getUps());
                 Game.setUps(0);
-                GameObject.intrface.getFpsText().setContent("fps: " + GameRenderer.getFps());
+                intrface.getFpsText().setContent("fps: " + GameRenderer.getFps());
                 GameRenderer.setFps(0);
             }
         };
@@ -150,13 +148,43 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             levelContainer.update(deltaTime);
             Vector3f pos = levelContainer.levelActors.getMainActor().getPosition();
             int chunkId = Chunk.chunkFunc(pos);
-            intrface.getProgText().setEnabled(false);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
         }
+
+        if (intrface.getSaveDialog().isDone()) {
+            intrface.getSaveDialog().setEnabled(false);
+        }
+
+        if (intrface.getLoadDialog().isDone()) {
+            intrface.getLoadDialog().setEnabled(false);
+        }
+
+        if (intrface.getLoadDialog().isDone()) {
+            intrface.getLoadDialog().setEnabled(false);
+        }
+
+        if (intrface.getRandLvlDialog().isDone()) {
+            intrface.getRandLvlDialog().setEnabled(false);
+        }
+
+        if (intrface.getSinglePlayerDialog().isDone()) {
+            intrface.getSinglePlayerDialog().setEnabled(false);
+        }
+
+        if (GameObject.getLevelContainer().getProgress() == 0.0f
+                || GameObject.getLevelContainer().getProgress() == 100.0f) {
+            GameObject.intrface.getProgText().setEnabled(false);
+            GameObject.getLevelContainer().setProgress(0.0f);
+        }
+
         intrface.update();
-        intrface.setCollText(assertCollision);
+    }
+
+    public static void assertCheckCollision(boolean collision) {
+        intrface.setCollText(collision);
+        intrface.getCollText().unbuffer();
     }
 
     /**
@@ -297,14 +325,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static AudioPlayer getSoundFXPlayer() {
         return soundFXPlayer;
-    }
-
-    public static boolean isAssertCollision() {
-        return assertCollision;
-    }
-
-    public static void setAssertCollision(boolean assertCollision) {
-        assertCollision = GameObject.assertCollision;
     }
 
     public static WaterRenderer getWaterRenderer() {
