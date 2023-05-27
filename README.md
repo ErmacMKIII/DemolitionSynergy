@@ -10,8 +10,9 @@ Has ambient soundtracks.
 Random level building & manual level building via Editor.
 Many tweaked optimizations in rendering.
 
-![Alt text](/misc/DSynergy1.png?raw=true "Screen1")
-![Alt text](/misc/DSynergy2.png?raw=true "Screen2")
+![Alt text](/misc/DSynergy1.png?raw=true "Doom Underwater")
+![Alt text](/misc/DSynergy2.png?raw=true "Random Level Small")
+![Alt text](/misc/DSynergy2.png?raw=true "Random Level Huge")
 
 Build was coded in Apache NetBeans 16. Requires Java 1.8 (or later).
 In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and following libraries:
@@ -23,8 +24,8 @@ In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and
 Download lastest library LWJGL (3.3.2 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)
 
-Put [MoveAllFiles.bat](/util/MoveAllFiles.bat) inside the directory with downloaded & extracted zip content.
-Run [MoveAllFiles.bat](/util/MoveAllFiles.bat) and wait brief amount of time (less than 3 seconds) to sort out the files under directories.
+Put [MoveAllFiles.bat](/utils/MoveAllFiles.bat) inside the directory with downloaded & extracted zip content.
+Run [MoveAllFiles.bat](/utils/MoveAllFiles.bat) and wait brief amount of time (less than 3 seconds) to sort out the files under directories.
 Put rest unsorted  files into classpath directory.
 
 In Apache NetBeans IDE 16 (or later) create new library
