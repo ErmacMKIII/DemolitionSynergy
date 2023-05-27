@@ -42,7 +42,7 @@ public class PerspectiveRenderer {
     }
 
     public static void updatePerspective(Window myWindow) {
-        loadPerspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 8192.0f);
+        loadPerspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 16384.0f);
     }
 
     public static void render() {

@@ -45,7 +45,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v31 BALTIC";
+    public static final String TITLE = "Demolition Synergy - v32C";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -135,7 +135,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public static void update(float deltaTime) {
+    public static synchronized void update(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -204,7 +204,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Renderer method. Requires context to be set in the proper thread (call
      * only from renderer)
      */
-    public static void render() {
+    public static synchronized void render() {
         if (!initialized) {
             return;
         }

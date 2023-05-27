@@ -25,6 +25,9 @@ import org.joml.Vector3f;
  */
 public class LightSource {
 
+    public static final float DEFAULT_LIGHT_INTENSITY = 16.0f;
+    public static final float PLAYER_LIGHT_INTENSITY = 4.0f;
+
     protected Vector3f pos;
     protected Vector3f color;
     protected float intensity;

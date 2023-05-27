@@ -73,9 +73,9 @@ public class Model implements Comparable<Model> {
     protected float rZ = 0.0f;
 
     protected Vector3f primaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
+    protected float primaryColorAlpha = 1.0f;
 
     protected Vector3f light = new Vector3f();
-
     protected boolean solid = true; // is movement through this model possible
     // fluid models are solid whilst solid ones aren't               
 
@@ -94,6 +94,7 @@ public class Model implements Comparable<Model> {
         this.pos = pos;
         this.primaryColor = primaryColor;
         this.solid = solid;
+        this.primaryColorAlpha = (solid) ? 1.0f : 0.5f;
     }
 
     public static Model readFromObjFile(String dirEntry, String fileName, String texName) {
@@ -431,7 +432,7 @@ public class Model implements Comparable<Model> {
     }
 
     protected void setAlpha(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(solid ? 1.0f : 0.05f, "modelAlpha");
+        shaderProgram.updateUniform(this.primaryColorAlpha, "modelAlpha");
     }
 
     private void calcDims() {
@@ -679,6 +680,14 @@ public class Model implements Comparable<Model> {
         return (modelPos.y - modelHeight / 2.0f);
     }
 
+    public float getPrimaryColorAlpha() {
+        return primaryColorAlpha;
+    }
+
+    public void setPrimaryColorAlpha(float primaryColorAlpha) {
+        this.primaryColorAlpha = primaryColorAlpha;
+    }
+
     public String getModelFileName() {
         return modelFileName;
     }
@@ -776,6 +785,7 @@ public class Model implements Comparable<Model> {
 
     public void setSolid(boolean solid) {
         this.solid = solid;
+        this.primaryColorAlpha = (solid) ? 1.0f : 0.5f;
     }
 
     public void setPos(Vector3f pos) {
