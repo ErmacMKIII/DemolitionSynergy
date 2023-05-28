@@ -26,7 +26,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class MasterRenderer {
-
+    
     private static GLCapabilities glCaps; // GL context   
 
     // load GL context into this thread  -> important!
@@ -40,37 +40,33 @@ public class MasterRenderer {
         // load context
         myWindow.loadContext();
         // enable/disable vsync
-        if (myWindow.isVsync()) {
-            myWindow.enableVSync();
-        } else {
-            myWindow.disableVSync();
-        }
+        myWindow.setVSync(false);
 
         // create openGL context        
         glCaps = GL.createCapabilities();
-
+        
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
-
+        
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-
+        
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
-
+        
         GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f);
     }
-
+    
     public static void setResolution(int width, int height) {
         GL11.glViewport(0, 0, width, height);
     }
-
+    
     public static void render() {
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
-
+    
     public static GLCapabilities getGlCaps() {
         return glCaps;
     }
-
+    
 }

@@ -74,16 +74,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         soundFXPlayer = new AudioPlayer();
         intrface = new Intrface();
         //----------------------------------------------------------------------
-        if (cfg.isFullscreen()) {
-            MY_WINDOW.fullscreen();
-        } else {
-            MY_WINDOW.windowed();
-        }
-        if (cfg.isVsync()) {
-            MY_WINDOW.enableVSync();
-        } else {
-            MY_WINDOW.disableVSync();
-        }
+        MY_WINDOW.setFullscreen(cfg.isFullscreen());
+        MY_WINDOW.setVSync(cfg.isVsync());
         MY_WINDOW.centerTheWindow();
         //----------------------------------------------------------------------
         musicPlayer.setGain(cfg.getMusicVolume());

@@ -129,26 +129,49 @@ public class Window {
         GLFW.glfwSetWindowPos(windowID, xpos, ypos);
     }
 
-    public void fullscreen() {
-        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
-        GLFW.glfwSetWindowMonitor(windowID, monitorID, 0, 0, width, height, vidmode.refreshRate());
-        fullscreen = true;
+//    @Deprecated
+//    public void fullscreen() {
+//        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
+//        GLFW.glfwSetWindowMonitor(windowID, monitorID, 0, 0, width, height, vidmode.refreshRate());
+//        fullscreen = true;
+//    }
+//
+//    @Deprecated
+//    public void windowed() {
+//        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
+//        GLFW.glfwSetWindowMonitor(windowID, 0, 0, 0, width, height, vidmode.refreshRate());
+//        fullscreen = false;
+//    }
+//
+//    @Deprecated
+//    public void enableVSync() {
+//        GLFW.glfwSwapInterval(1);
+//        vsync = true;
+//    }
+//
+//    @Deprecated
+//    public void disableVSync() {
+//        GLFW.glfwSwapInterval(0);
+//        vsync = false;
+//    }
+    public void setVSync(boolean vsync) {
+        if (vsync) {
+            GLFW.glfwSwapInterval(1);
+        } else {
+            GLFW.glfwSwapInterval(0);
+        }
+        this.vsync = vsync;
     }
 
-    public void windowed() {
-        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
-        GLFW.glfwSetWindowMonitor(windowID, 0, 0, 0, width, height, vidmode.refreshRate());
-        fullscreen = false;
-    }
-
-    public void enableVSync() {
-        GLFW.glfwSwapInterval(1);
-        vsync = true;
-    }
-
-    public void disableVSync() {
-        GLFW.glfwSwapInterval(0);
-        vsync = false;
+    public void setFullscreen(boolean fullscreen) {
+        if (fullscreen) {
+            GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
+            GLFW.glfwSetWindowMonitor(windowID, monitorID, 0, 0, width, height, vidmode.refreshRate());
+        } else {
+            GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
+            GLFW.glfwSetWindowMonitor(windowID, 0, 0, 0, width, height, vidmode.refreshRate());
+        }
+        this.fullscreen = fullscreen;
     }
 
     public void render() {
