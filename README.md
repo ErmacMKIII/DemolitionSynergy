@@ -12,7 +12,7 @@ Many tweaked optimizations in rendering.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Doom Underwater")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Small")
-![Alt text](/misc/DSynergy2.png?raw=true "Random Level Huge")
+![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
 
 Build was coded in Apache NetBeans 16. Requires Java 1.8 (or later).
 In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and following libraries:
