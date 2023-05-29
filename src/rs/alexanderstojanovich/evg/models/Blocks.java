@@ -149,7 +149,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
 
         for (Block block : blockList) {
-            block.animate();
+            if (!block.solid) {
+                block.animate();
+            }
         }
 
         updateVertices();
@@ -161,7 +163,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
 
         for (Block block : blockList) {
-            if (cameraInFluid ^ block.isVerticesReversed()) {
+            if (!block.solid && cameraInFluid ^ block.isVerticesReversed()) {
                 block.reverseFaceVertexOrder();
             }
         }

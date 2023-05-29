@@ -50,7 +50,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // id of the chunk (signed)
     private final int id;
-    private final boolean solid;
 
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
@@ -64,9 +63,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     private float timeToLive = LevelContainer.STD_TTL;
 
-    public Chunk(int id, boolean solid) {
+    public Chunk(int id) {
         this.id = id;
-        this.solid = solid;
     }
 
     @Override
@@ -138,15 +136,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        Integer key = Vector3fUtils.float3ToUniqueInteger(pos, tuple.texName());
-
+        String key = Vector3fUtils.blockSpecsToUniqueString(tuple.isSolid(), tuple.texName(), pos);
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -164,7 +161,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -215,86 +212,96 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
         List<Block> blockList = dstTuple.blockList;
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
+        blockList.sort(Block.UNIQUE_BLOCK_CMP);
 
         buffered = false;
     }
 
     /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
+     * Updates blocks faces of both original block and adjacent blocks.
      *
      * Used after add operation.
      *
      * @param block block to update
      */
-    protected void updateSolidForAdd(Block block) {
-        int faceBitsBefore = block.getFaceBits();
-        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
-        if (pair != null && pair.isSolid()) {
-            byte neighborBits = pair.getByteValue();
-            block.setFaceBits(~neighborBits & 63);
+    protected void updateForAdd(Block block) {
+        // only same solidity - solid to solid or fluid to fluid is updated        
+        int nbits = block.solid
+                ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
+                : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
+        // if has neighbors (otherwise pointless)
+        if (nbits != 0) {
+            // retieve current neightbor bits      
+            int faceBitsBefore = block.getFaceBits();
+            // -------------------------------------------------------------------
+            // this logic updates facebits of this block
+            // & transfers it to correct tuple 
+            // -------------------------------------------------------------------                    
+            block.setFaceBits(~nbits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
-                // if bits changed, i.e. some face(s) got disabled
-                // tranfer to correct tuple
                 transfer(block, faceBitsBefore, faceBitsAfter);
-                // check adjacent blocks
-                for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-                    Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
-                    if (adjPair != null && adjPair.isSolid()) {
-                        String tupleTexName = adjPair.getTexName();
-                        byte adjNBits = adjPair.getByteValue();
-                        int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                        int mask = 1 << k;
-                        // revert the bit that was set in LevelContainer
-                        //(looking for old bits i.e. current tuple)
-                        int tupleBits = adjNBits ^ (~mask & 63);
-
-                        Tuple tuple = getTuple(tupleTexName, tupleBits);
-                        Block adjBlock = null;
-                        if (tuple != null) {
-                            adjBlock = Chunk.getBlock(tuple, adjPos);
-                        }
-                        if (adjBlock != null) {
-                            int adjFaceBitsBefore = adjBlock.getFaceBits();
-                            adjBlock.setFaceBits(~adjNBits & 63);
-                            int adjFaceBitsAfter = adjBlock.getFaceBits();
-                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                                // if bits changed, i.e. some face(s) got disabled
-                                // tranfer to correct tuple
-                                transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                            }
+            }
+            // query all neighbors and update this block and adjacent blocks accordingly
+            for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+                // -------------------------------------------------------------------
+                // following logic updates adjacent block 
+                // if it is same solidity as this block
+                // need to find tuple where it is located
+                // -------------------------------------------------------------------
+                Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
+                TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                if (location != null) {
+                    String tupleTexName = location.getTexName();
+                    int adjNBits = block.solid
+                            ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(adjPos)
+                            : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(adjPos);
+                    int k = ((j & 1) == 0 ? j + 1 : j - 1);
+                    int mask = 1 << k;
+                    int tupleBits = adjNBits ^ (~mask & 63);
+                    Tuple tuple = getTuple(tupleTexName, tupleBits);
+                    Block adjBlock = null;
+                    if (tuple != null) {
+                        adjBlock = Chunk.getBlock(tuple, adjPos);
+                    }
+                    if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                        int adjFaceBitsBefore = adjBlock.getFaceBits();
+                        adjBlock.setFaceBits(~adjNBits & 63);
+                        int adjFaceBitsAfter = adjBlock.getFaceBits();
+                        if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                            // if bits changed, i.e. some face(s) got disabled
+                            // tranfer to correct tuple
+                            transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
                         }
                     }
                 }
             }
         }
-
     }
 
     /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
+     * Updates blocks faces of both original block and adjacent blocks.
      *
      * Used after removal operation.
      *
      * @param block block to update
      */
-    protected void updateSolidForRem(Block block) {
+    protected void updateForRem(Block block) {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && adjPair.isSolid()) {
-                String tupleTexName = adjPair.getTexName();
-                byte adjNBits = adjPair.getByteValue();
+            TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            int nBits = block.solid
+                    ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
+                    : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
+            // location exists and has neighbors (otherwise pointless)
+            if (location != null && nBits != 0) {
+                String tupleTexName = location.getTexName();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
                 //(looking for old bits i.e. current tuple)
-                int tupleBits = adjNBits ^ (~mask & 63);
+                int tupleBits = nBits ^ (~mask & 63);
 
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
@@ -303,100 +310,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
-                    int adjFaceBitsAfter = adjBlock.getFaceBits();
-                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                        // if bits changed, i.e. some face(s) got disabled
-                        // tranfer to correct tuple
-                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be fluid. Removal is used only if block is being removed.
-     *
-     * @param block block to update
-     */
-    protected void updateFluidForAdd(Block block) {
-        int faceBitsBefore = block.getFaceBits();
-        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
-        if (pair != null) {
-            byte neighborBits = pair.getByteValue();
-            block.setFaceBits(~neighborBits & 63);
-            int faceBitsAfter = block.getFaceBits();
-            if (faceBitsBefore != faceBitsAfter) {
-                // if bits changed, i.e. some face(s) got disabled
-                // tranfer to correct tuple
-                transfer(block, faceBitsBefore, faceBitsAfter);
-                // check adjacent blocks
-                for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-                    Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                    TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
-                    if (adjPair != null && !adjPair.isSolid()) {
-                        String tupleTexName = adjPair.getTexName();
-                        byte adjNBits = adjPair.getByteValue();
-                        int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                        int mask = 1 << k;
-                        // revert the bit that was set in LevelContainer
-                        //(looking for old bits i.e. current tuple)
-                        int tupleBits = adjNBits ^ (~mask & 63);
-
-                        Tuple tuple = getTuple(tupleTexName, tupleBits);
-                        Block adjBlock = null;
-                        if (tuple != null) {
-                            adjBlock = Chunk.getBlock(tuple, adjPos);
-                        }
-                        if (adjBlock != null) {
-                            int adjFaceBitsBefore = adjBlock.getFaceBits();
-                            adjBlock.setFaceBits(~adjNBits & 63);
-                            int adjFaceBitsAfter = adjBlock.getFaceBits();
-                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                                // if bits changed, i.e. some face(s) got disabled
-                                // tranfer to correct tuple
-                                transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-
-    /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
-     *
-     * Used after removal operation.
-     *
-     * @param block block to update
-     */
-    protected void updateFluidForRem(Block block) {
-        // check adjacent blocks
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            TexByte adjPair = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && !adjPair.isSolid()) {
-                String tupleTexName = adjPair.getTexName();
-                byte adjNBits = adjPair.getByteValue();
-                int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                int mask = 1 << k;
-                // revert the bit that was set in LevelContainer
-                //(looking for old bits i.e. current tuple)
-                int tupleBits = adjNBits ^ (~mask & 63);
-
-                Tuple tuple = getTuple(tupleTexName, tupleBits);
-                Block adjBlock = null;
-                if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos);
-                }
-                if (adjBlock != null) {
-                    int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
+                    adjBlock.setFaceBits(~nBits & 63);
                     int adjFaceBitsAfter = adjBlock.getFaceBits();
                     if (adjFaceBitsBefore != adjFaceBitsAfter) {
                         // if bits changed, i.e. some face(s) got disabled
@@ -452,10 +366,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * Add block to the chunk.
      *
      * @param block block to add
-     * @param useLevelContainer update level container environment map (for
-     * adjacency)
      */
-    public void addBlock(Block block, boolean useLevelContainer) {
+    public void addBlock(Block block) {
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple tuple = getTuple(blockTexture, blockFaceBits);
@@ -468,24 +380,18 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
-        blockList.sort(Block.FLOAT3_TEX_BITS_COMP);
+        blockList.sort(Block.UNIQUE_BLOCK_CMP);
 
-        if (useLevelContainer) {
-            // level container also set neighbor bits
-            LevelContainer.putBlock(block);
-            // update original block with neighbor blocks
-            if (solid) {
-                // check if it's light block
-                LightSource lightSource = new LightSource(block.pos, block.primaryColor, LightSource.DEFAULT_LIGHT_INTENSITY);
-                if (block.getTexName().equals("reflc")
-                        && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
-                    LevelContainer.LIGHT_SOURCES.getLightSrcList().add(lightSource);
-                }
-                updateSolidForAdd(block);
-            } else {
-                updateFluidForAdd(block);
-            }
+        // level container also set neighbor bits
+        LevelContainer.putBlock(block);
+        // update original block with neighbor blocks
+        // check if it's light block
+        LightSource lightSource = new LightSource(block.pos, block.primaryColor, LightSource.DEFAULT_LIGHT_INTENSITY);
+        if (block.getTexName().equals("reflc")
+                && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
+            LevelContainer.LIGHT_SOURCES.getLightSrcList().add(lightSource);
         }
+        updateForAdd(block);
 
         buffered = false;
     }
@@ -494,10 +400,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * Remove block from the chunk.
      *
      * @param block block to remove
-     * @param useLevelContainer update level container environment map (for
-     * adjacency)
      */
-    public void removeBlock(Block block, boolean useLevelContainer) {
+    public void removeBlock(Block block) {
         String blockTexture = block.texName;
         int blockFaceBits = block.getFaceBits();
         Tuple target = getTuple(blockTexture, blockFaceBits);
@@ -509,33 +413,29 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 tupleList.remove(target);
             }
 
-            if (useLevelContainer) {
-                // level container also set neighbor bits
-                LevelContainer.removeBlock(block);
-                // update original block with neighbor blocks
-                if (solid) {
-                    // check if it's light block
-                    if (block.getTexName().equals("reflc")) {
-                        LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
-                    }
-                    updateSolidForRem(block);
-                } else {
-                    updateFluidForRem(block);
-                }
+            // level container also set neighbor bits
+            LevelContainer.removeBlock(block);
+            // update original block with neighbor blocks
+            // check if it's light block
+            if (block.getTexName().equals("reflc")) {
+                LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
             }
+            updateForRem(block);
+
+            buffered = false;
         }
     }
 
     // hint that stuff should be buffered again
     public void unbuffer() {
-        if (!CacheModule.isCached(id, solid)) {
+        if (!CacheModule.isCached(id)) {
             buffered = false;
         }
     }
 
     // renderer does this stuff prior to any rendering
     public void bufferAll() {
-        if (!CacheModule.isCached(id, solid)) {
+        if (!CacheModule.isCached(id)) {
             for (Tuple tuple : tupleList) {
                 tuple.bufferAll();
             }
@@ -569,7 +469,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             GL20.glEnableVertexAttribArray(7);
 
             for (Tuple tuple : tupleList) {
-                tuple.renderInstanced(shaderProgram, solid, lightSources, waterTexture);
+                tuple.renderInstanced(shaderProgram, lightSources, waterTexture);
             }
 
             GL20.glDisableVertexAttribArray(0);
@@ -683,10 +583,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public int getId() {
         return id;
-    }
-
-    public boolean isSolid() {
-        return solid;
     }
 
     public List<Tuple> getTupleList() {

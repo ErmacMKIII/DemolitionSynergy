@@ -435,27 +435,21 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getSolidChunks(), true);
-                        int fluidSize = CacheModule.totalSize(GameObject.getLevelContainer().getFluidChunks(), false);
-                        result = String.format("SolidSize = %d | FluidSize = %d | TotalChunks = %d", solidSize, fluidSize, Chunk.CHUNK_NUM);
+                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
+                        result = String.format("Size = %d | TotalChunks = %d", solidSize, Chunk.CHUNK_NUM);
                     } else {
                         chunkId = (int) command.args.get(0);
-                        boolean cached = CacheModule.isCached(chunkId, true);
-                        int solidSize = 0, fluidSize = 0;
+                        boolean cached = CacheModule.isCached(chunkId);
+                        int size = 0;
                         if (cached) {
-                            solidSize = CacheModule.cachedSize(chunkId, true);
-                            fluidSize = CacheModule.cachedSize(chunkId, false);
+                            size = CacheModule.cachedSize(chunkId);
                         } else {
-                            Chunk solidChunk = GameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
-                            if (solidChunk != null) {
-                                solidSize = solidChunk.getBlockList().size();
-                            }
-                            Chunk fluidChunk = GameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
-                            if (fluidChunk != null) {
-                                fluidSize = fluidChunk.getBlockList().size();
+                            Chunk chunk = GameObject.getLevelContainer().getChunks().getChunk(chunkId);
+                            if (chunk != null) {
+                                size = chunk.getBlockList().size();
                             }
                         }
-                        result = String.format("SolidSize = %d | FluidSize = %d | Cached = %s", solidSize, fluidSize, cached);
+                        result = String.format("SolidSize = %d | Cached = %s", size, cached);
                     }
                 }
                 command.status = Status.SUCCEEDED;

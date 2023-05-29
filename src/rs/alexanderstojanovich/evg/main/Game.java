@@ -39,71 +39,71 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Game {
-    
+
     private static final Configuration cfg = Configuration.getInstance();
-    
+
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final double TICK_TIME = 1.0 / (double) TPS;
-    
+
     public static final float AMOUNT = 4.0f;
     public static final float ANGLE = (float) (Math.PI / 180);
-    
+
     public static final int FORWARD = 0;
     public static final int BACKWARD = 1;
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
-    
+
     public static final float EPSILON = 0.005f;
-    
+
     private static int ups; // current update per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 10.0;
-    
+
     private final boolean[] keys = new boolean[512];
-    
+
     private static float lastX = 0.0f;
     private static float lastY = 0.0f;
     private static float xoffset = 0.0f;
     private static float yoffset = 0.0f;
     private static float mouseSensitivity = 1.5f;
     private boolean moveMouse = false;
-    
+
     private int crosshairColorNum = 0;
-    
+
     private final boolean[] mouseButtons = new boolean[8];
-    
+
     private static GLFWKeyCallback defaultKeyCallback;
     private static GLFWCursorPosCallback defaultCursorCallback;
     private static GLFWMouseButtonCallback defaultMouseButtonCallback;
-    
+
     public static final String ROOT = "/";
     public static final String CURR = "./";
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evg/resources/";
-    
+
     public static final String DATA_ZIP = "dsynergy.zip";
-    
+
     public static final String SCREENSHOTS = "screenshots";
     public static final String CACHE = "cache";
-    
+
     public static final String INTRFACE_ENTRY = "intrface/";
     public static final String PLAYER_ENTRY = "player/";
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
-    
+
     private static boolean waterEffects = cfg.isWaterEffects();
-    
+
     protected static double upsTicks = 0.0;
     protected static double accumulator = 0.0;
-    
+
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
     };
     private static Mode currentMode = Mode.FREE;
-    
+
     protected static boolean actionPerformed = false;
     protected static boolean causingCollision = false;
     protected static boolean needOptimize = false;
@@ -126,7 +126,7 @@ public class Game {
     private boolean observerDo(float amount) {
         boolean changed = false;
         causingCollision = false;
-        
+
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorForward(amount);
@@ -148,7 +148,7 @@ public class Game {
                 obs.moveBackward(amount);
                 changed = true;
             }
-            
+
         }
         if (keys[GLFW.GLFW_KEY_A]) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().getObserver();
@@ -172,7 +172,7 @@ public class Game {
                 changed = true;
             }
         }
-        
+
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             GameObject.getLevelContainer().getLevelActors().getObserver().turnLeft(ANGLE);
             changed = true;
@@ -186,7 +186,7 @@ public class Game {
             moveMouse = false;
             changed = true;
         }
-        
+
         return changed;
     }
 
@@ -197,7 +197,7 @@ public class Game {
      */
     private boolean editorDo() {
         boolean changed = false;
-        
+
         if (keys[GLFW.GLFW_KEY_N]) {
             Editor.selectNew();
             changed = true;
@@ -207,7 +207,7 @@ public class Game {
             Editor.selectCurrSolid();
             changed = true;
         }
-        
+
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectCurrFluid();
             changed = true;
@@ -261,7 +261,7 @@ public class Game {
         if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(Block.FRONT);
             changed = true;
-            
+
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
@@ -276,7 +276,7 @@ public class Game {
             Editor.remove();
             changed = true;
         }
-        
+
         return changed;
     }
 
@@ -289,7 +289,7 @@ public class Game {
     public boolean playerDo(float amount) {
         boolean changed = false;
         causingCollision = false;
-        
+
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
             Player player = GameObject.getLevelContainer().getLevelActors().getPlayer();
             player.movePredictorForward(amount);
@@ -311,7 +311,7 @@ public class Game {
                 player.moveBackward(amount);
                 changed = true;
             }
-            
+
         }
         if (keys[GLFW.GLFW_KEY_A]) {
             Player player = GameObject.getLevelContainer().getLevelActors().getPlayer();
@@ -343,17 +343,17 @@ public class Game {
             GameObject.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
             changed = true;
         }
-        
+
         if (moveMouse) {
             GameObject.getLevelContainer().getLevelActors().getPlayer().lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
-        
+
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
             changed = true;
         }
-        
+
         if (keys[GLFW.GLFW_KEY_1]) {
             GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(1);
             changed = true;
@@ -378,18 +378,18 @@ public class Game {
             GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(6);
             changed = true;
         }
-        
+
         if (keys[GLFW.GLFW_KEY_R]) {
             changed = true;
         }
-        
+
         return changed;
     }
-    
+
     private void setCrosshairColor(Vector3f color) {
         GameObject.getIntrface().getCrosshair().setColor(color);
     }
-    
+
     private void cycleCrosshairColor() {
         switch (crosshairColorNum) {
             case 0:
@@ -426,7 +426,7 @@ public class Game {
      */
     private void initCallbacks() {
         GLFWErrorCallback.createPrint(System.err).set();
-        
+
         defaultKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -479,7 +479,7 @@ public class Game {
             }
         };
         GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), defaultKeyCallback);
-        
+
         GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
         GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
@@ -487,20 +487,20 @@ public class Game {
             public void invoke(long window, double xpos, double ypos) {
                 float xposGL = (float) (xpos / GameObject.MY_WINDOW.getWidth() - 0.5f) * 2.0f;
                 float yposGL = (float) (0.5f - ypos / GameObject.MY_WINDOW.getHeight()) * 2.0f;
-                
+
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
-                
+
                 if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
                 }
-                
+
                 lastX = (float) xposGL;
                 lastY = (float) yposGL;
             }
         };
         GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), defaultCursorCallback);
-        
+
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
@@ -520,12 +520,12 @@ public class Game {
     public void go() {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
-        
+
         accumulator = 0.0;
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
-        
+
         int index = 0; // track index
 
         double timera = 0.0;
@@ -534,7 +534,7 @@ public class Game {
         // first time we got nothing
         actionPerformed = false;
         needOptimize = false;
-        
+
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
@@ -549,7 +549,7 @@ public class Game {
                 GameObject.MY_WINDOW.close();
                 break;
             }
-            
+
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 GameObject.update((float) TICK_TIME);
@@ -559,7 +559,7 @@ public class Game {
                         index = 0;
                     }
                 }
-                
+
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -576,37 +576,37 @@ public class Game {
                         actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         break;
                 }
-                
+
                 if (actionPerformed) {
                     needOptimize |= GameObject.determineVisibleChunks();
                 }
-                
+
                 GameObject.assertCheckCollision(causingCollision);
-                
+
                 ups++;
                 upsTicks--;
             }
-            
+
             if (Game.accumulator - timera > 40.0) {
                 actionPerformed = true;
                 timera += 40.0;
             }
-            
+
             if (Game.accumulator - timero > 160.0) {
                 needOptimize = true;
                 timero += 160.0;
             }
-            
+
             if (actionPerformed && needOptimize) {
                 GameObject.optimize();
                 actionPerformed = false;
                 needOptimize = false;
             }
-            
+
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();
-        
+
         DSLogger.reportInfo("Main loop ended.", null);
     }
 
@@ -628,59 +628,59 @@ public class Game {
         cfg.setSoundFXVolume(GameObject.getSoundFXPlayer().getGain());
         return cfg;
     }
-    
+
     public static GLFWKeyCallback getDefaultKeyCallback() {
         return defaultKeyCallback;
     }
-    
+
     public static GLFWCursorPosCallback getDefaultCursorCallback() {
         return defaultCursorCallback;
     }
-    
+
     public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
         return defaultMouseButtonCallback;
     }
-    
+
     public static int getUps() {
         return ups;
     }
-    
+
     public static void setUps(int ups) {
         Game.ups = ups;
     }
-    
+
     public static int getFpsMax() {
         return fpsMax;
     }
-    
+
     public static void setFpsMax(int fpsMax) {
         Game.fpsMax = fpsMax;
     }
-    
+
     public static float getMouseSensitivity() {
         return mouseSensitivity;
     }
-    
+
     public static void setMouseSensitivity(float mouseSensitivity) {
         Game.mouseSensitivity = mouseSensitivity;
     }
-    
+
     public static boolean isWaterEffects() {
         return waterEffects;
     }
-    
+
     public static void setWaterEffects(boolean waterEffects) {
         Game.waterEffects = waterEffects;
     }
-    
+
     public static double getUpsTicks() {
         return upsTicks;
     }
-    
+
     public static Mode getCurrentMode() {
         return currentMode;
     }
-    
+
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
         switch (currentMode) {
@@ -703,37 +703,37 @@ public class Game {
                 break;
         }
     }
-    
+
     public static float getLastX() {
         return lastX;
     }
-    
+
     public static float getLastY() {
         return lastY;
     }
-    
+
     public static float getXoffset() {
         return xoffset;
     }
-    
+
     public static float getYoffset() {
         return yoffset;
     }
-    
+
     public static double getAccumulator() {
         return accumulator;
     }
-    
+
     public static boolean isChanged() {
         return actionPerformed;
     }
-    
+
     public static boolean isActionPerformed() {
         return actionPerformed;
     }
-    
+
     public static boolean isNeedOptimize() {
         return needOptimize;
     }
-    
+
 }

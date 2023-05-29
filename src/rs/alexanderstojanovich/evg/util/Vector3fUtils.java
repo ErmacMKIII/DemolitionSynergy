@@ -16,8 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 import org.joml.Vector3f;
 
 /**
@@ -75,69 +74,27 @@ public class Vector3fUtils {
     }
 
     /**
-     * Convert VEC3 to byte array.
+     * Convert block specs {solid, texName, VEC3} to unique string.
      *
+     * @param solid is block solid
+     * @param texName texName[5] string,
      * @param vector float3(x,y,z) vector
-     * @return unique string
-     */
-    public static String float3ToUniqueString(Vector3f vector) {
-        byte[] bytes = vec3fToByteArray(vector);
-        UUID guid = UUID.nameUUIDFromBytes(bytes);
-        String guidStr = guid.toString();
-
-        String result = guidStr.substring(0, 8) + guidStr.substring(24, 36);
-        return result;
-    }
-
-    /**
-     * Convert VEC3 to unique string.
-     *
-     * @param vector float3(x,y,z) vector
-     * @param texName texName[5] string
      *
      * @return unique string
      */
-    public static String float3ToUniqueString(Vector3f vector, String texName) {
-        byte[] bytesV = vec3fToByteArray(vector);
-        byte[] bytesT = texName.getBytes();
+    public static String blockSpecsToUniqueString(boolean solid, String texName, Vector3f vector) {
+        StringBuilder sb = new StringBuilder();
+        char s = solid ? 'S' : 'F';
+        sb.append(s);
 
-        byte[] bytesR = new byte[bytesV.length + bytesT.length];
-        int len = 0;
-        System.arraycopy(bytesV, 0, bytesR, 0, bytesV.length);
-        len += bytesV.length;
-        System.arraycopy(bytesT, 0, bytesR, len, bytesT.length);
+        sb.append(texName.toUpperCase());
 
-        UUID guid = UUID.nameUUIDFromBytes(bytesR);
+        byte[] bytesVect = vec3fToByteArray(vector);
+        String strVect = new String(bytesVect, StandardCharsets.US_ASCII);
 
-        String guidStr = guid.toString();
-        String result = guidStr.substring(0, 8) + guidStr.substring(24, 36);
-        return result;
+        sb.append(strVect);
+//        DSLogger.reportInfo(sb.toString(), null);
+        return sb.toString();
     }
 
-    /**
-     * Convert VEC3 to unique integer.
-     *
-     * @param vector float3(x,y,z) vector
-     *
-     * @return unique integer
-     */
-    public static int float3ToUniqueInteger(Vector3f vector) {
-        String guid = float3ToUniqueString(vector);
-        int result = Objects.hashCode(guid);
-        return result;
-    }
-
-    /**
-     * Convert VEC3 to unique integer.
-     *
-     * @param vector float3(x,y,z) vector
-     * @param texName texName[5] integer
-     *
-     * @return unique integer
-     */
-    public static int float3ToUniqueInteger(Vector3f vector, String texName) {
-        String guid = float3ToUniqueString(vector, texName);
-        int result = Objects.hashCode(guid);
-        return result;
-    }
 }

@@ -208,7 +208,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
 
             levelContainer.render();
-            if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
+            if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
                 waterRenderer.render();
             }
         }
@@ -303,8 +303,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // prints general and detailed information about solid and fluid chunks
     public static void printInfo() {
-        levelContainer.getSolidChunks().printInfo();
-        levelContainer.getFluidChunks().printInfo();
+        levelContainer.getChunks().printInfo();
     }
 
     public static LevelContainer getLevelContainer() {

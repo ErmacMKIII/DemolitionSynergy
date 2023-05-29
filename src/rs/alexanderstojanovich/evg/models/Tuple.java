@@ -89,7 +89,7 @@ public class Tuple extends Blocks {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        Integer key = Vector3fUtils.float3ToUniqueInteger(pos, this.texName());
+        String key = Vector3fUtils.blockSpecsToUniqueString(isSolid(), this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -97,7 +97,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -115,7 +115,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = Vector3fUtils.float3ToUniqueInteger(candidate.pos, candidate.texName);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -282,7 +282,7 @@ public class Tuple extends Blocks {
 //        GL15.glDeleteBuffers(mat4Vbo);
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, boolean solid, LightSources lightSources, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
@@ -312,7 +312,7 @@ public class Tuple extends Blocks {
 
             lightSources.updateLightsInShader(shaderProgram);
 
-            shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
+            shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 
             Texture blocksTexture = Texture.TEX_MAP.get(texName).getKey();
             if (blocksTexture != null) {
@@ -349,6 +349,10 @@ public class Tuple extends Blocks {
 
     public int faceBits() {
         return Integer.parseInt(name.substring(5));
+    }
+
+    public boolean isSolid() {
+        return !texName().equals("water");
     }
 
     public int getVec3Vbo() {

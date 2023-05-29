@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 
 /**
@@ -365,4 +366,31 @@ public class BlockLocation {
         return planes;
     }
 
+    // used in static Level container to get compressed positioned sets    
+    public int getNeighborSolidBits(Vector3f pos) {
+        int bits = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) { // j - face number
+            Vector3f adjPos = Block.getAdjacentPos(pos, j);
+            TexByte location = this.getLocation(adjPos);
+            if (location != null && location.isSolid()) {
+                int mask = 1 << j;
+                bits |= mask;
+            }
+        }
+        return bits;
+    }
+
+    // used in static Level container to get compressed positioned sets    
+    public int getNeighborFluidBits(Vector3f pos) {
+        int bits = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) { // j - face number
+            Vector3f adjPos = Block.getAdjacentPos(pos, j);
+            TexByte location = this.getLocation(adjPos);
+            if (location != null && !location.isSolid()) {
+                int mask = 1 << j;
+                bits |= mask;
+            }
+        }
+        return bits;
+    }
 }
