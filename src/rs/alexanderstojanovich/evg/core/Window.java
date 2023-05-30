@@ -73,6 +73,13 @@ public class Window {
         return instance;
     }
 
+    /**
+     * Create new window
+     *
+     * @param width window width
+     * @param height window height
+     * @param title window title
+     */
     private Window(int width, int height, String title) {
         this.width = width;
         this.height = height;
@@ -154,6 +161,11 @@ public class Window {
 //        GLFW.glfwSwapInterval(0);
 //        vsync = false;
 //    }
+    /**
+     * Synchronize frame rate with refresh rate
+     *
+     * @param vsync enabled
+     */
     public void setVSync(boolean vsync) {
         if (vsync) {
             GLFW.glfwSwapInterval(1);
@@ -163,6 +175,11 @@ public class Window {
         this.vsync = vsync;
     }
 
+    /**
+     * Set app to fullscreen or windowed
+     *
+     * @param fullscreen true - fullscreen, false - windowed
+     */
     public void setFullscreen(boolean fullscreen) {
         if (fullscreen) {
             GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
@@ -174,20 +191,37 @@ public class Window {
         this.fullscreen = fullscreen;
     }
 
+    /**
+     * Render window (swap buffers)
+     */
     public void render() {
         GLFW.glfwSwapBuffers(windowID);
     }
 
+    /**
+     * Load OpenGL context in the window (see GameRenderer)
+     */
     public void loadContext() {
         // make the OpenGL context current
         GLFW.glfwMakeContextCurrent(windowID);
     }
 
+    /**
+     * Lose OpenGL Context (nobody has it)
+     */
     public static void unloadContext() {
         // unload context in favor to another thread
         GLFW.glfwMakeContextCurrent(0);
     }
 
+    /**
+     * Set Resolution if available for this monitor. Notice that this only
+     * changes window dimensions in pixel. OpenGL view port remains unchanged.
+     *
+     * @param width resolution width
+     * @param height resolution height
+     * @return is resolution changed
+     */
     public boolean setResolution(int width, int height) {
         boolean success = false;
         if (width >= MIN_WIDTH && width <= monitorWidth && height >= MIN_HEIGHT && height <= monitorHeight) {
@@ -201,6 +235,9 @@ public class Window {
         return success;
     }
 
+    /**
+     * Destroy window with context alltogether
+     */
     public void destroy() {
         GLFW.glfwDestroyWindow(windowID);
         GLFW.glfwTerminate();
@@ -235,7 +272,11 @@ public class Window {
         GLFW.glfwSetWindowShouldClose(windowID, true);
     }
 
-    // save screenshot in the memory (BufferedImage)
+    /**
+     * Save Screenshot (of the OpenGL render)
+     *
+     * @return image with read pixels
+     */
     public BufferedImage getScreen() {
         final int rgba = 4;
 

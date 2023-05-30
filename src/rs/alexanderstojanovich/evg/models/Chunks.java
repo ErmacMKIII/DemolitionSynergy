@@ -259,8 +259,7 @@ public class Chunks {
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block);
 
-//            updateSolidForRem(block);
-//            updateFluidForRem(block);
+            updateForRem(block);
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleList().isEmpty()) {
                 chunkList.remove(chunk);
@@ -316,7 +315,9 @@ public class Chunks {
         }
 
         for (Tuple tuple : optimizedTuples) {
-            tuple.prepare(cameraInFluid);
+            if (!tuple.isSolid()) {
+                tuple.prepare(cameraInFluid);
+            }
         }
     }
 
@@ -379,6 +380,42 @@ public class Chunks {
             }
             faceBits++;
         }
+
+        optimized = true;
+    }
+
+    public synchronized void optimizeSuper(Queue<Integer> vQueue, Vector3f camFront) {
+        final int mask = Block.getVisibleFaceBits(camFront);
+        for (int faceBits = 1; faceBits <= 63; faceBits++) {
+            final int faceBitsCopy = faceBits;
+            if ((faceBitsCopy & (mask & 63)) != 0) {
+                for (String tex : Texture.TEX_WORLD) {
+                    for (int chunkId : vQueue) {
+                        Chunk chunk = getChunk(chunkId);
+                        if (chunk != null) {
+                            Tuple tuple = chunk.getTuple(tex, faceBits);
+                            if (tuple != null) {
+                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBitsCopy);
+                                if (optmTuple == null) {
+                                    optmTuple = new Tuple(tex, faceBitsCopy);
+                                    optimizedTuples.add(optmTuple);
+                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                                } else {
+                                    optmTuple.buffered = false;
+                                }
+                                final Tuple optmTupleCopy = optmTuple;
+                                tuple.blockList.forEach(blk -> {
+                                    optmTupleCopy.blockList.addIfAbsent(blk);
+                                });
+                            }
+                        }
+                    }
+                }
+            } else {
+                optimizedTuples.removeIf(ot -> ot.faceBits() == faceBitsCopy);
+            }
+        }
+
         optimized = true;
     }
 

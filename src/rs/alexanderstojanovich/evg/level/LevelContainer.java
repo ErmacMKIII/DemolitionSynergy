@@ -781,7 +781,7 @@ public class LevelContainer implements GravityEnviroment {
     public void optimize() {
         if (!working) {
             Vector3f camFront = levelActors.mainCamera().getFront();
-            chunks.optimize(vChnkIdQueue, camFront);
+            chunks.optimizeSuper(vChnkIdQueue, camFront);
         }
     }
 
@@ -853,8 +853,6 @@ public class LevelContainer implements GravityEnviroment {
         SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
 
         camera.render(ShaderProgram.getWaterVoxelShader());
-        // only visible & uncached are in chunk list      
-        chunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         chunks.prepareOptimized(cameraInFluid);

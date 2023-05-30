@@ -451,7 +451,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
         for (Tuple tuple : tupleList) {
-            tuple.prepare(cameraInFluid);
+            if (!tuple.isSolid()) {
+                tuple.prepare(cameraInFluid);
+            }
         }
     }
 
