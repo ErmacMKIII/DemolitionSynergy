@@ -43,9 +43,9 @@ public class Chunks {
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final List<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
+    private final IList<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
 
-    protected final IList<Tuple> optimizedTuples = new GapList<>(63);
+    protected final IList<Tuple> optimizedTuples = new GapList<>(63 * Texture.TEX_WORLD.length);
     protected boolean optimized = false;
 
     public Chunks() {
@@ -407,6 +407,9 @@ public class Chunks {
                                 tuple.blockList.forEach(blk -> {
                                     optmTupleCopy.blockList.addIfAbsent(blk);
                                 });
+                                if (optmTupleCopy.blockList.isEmpty()) {
+                                    optimizedTuples.remove(optmTupleCopy);
+                                }
                             }
                         }
                     }
@@ -447,7 +450,7 @@ public class Chunks {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, lightSources, GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
         }
 
         GL20.glDisableVertexAttribArray(0);
@@ -461,7 +464,7 @@ public class Chunks {
     }
 
     // all blocks from all the chunks in one big list
-    public List<Block> getTotalList() {
+    public IList<Block> getTotalList() {
         IList<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             if (!CacheModule.isCached(id)) {
@@ -499,6 +502,11 @@ public class Chunks {
         return sb.toString();
     }
 
+    public void clear() {
+        this.chunkList.forEach(c -> c.clear());
+        this.optimizedTuples.clear();
+    }
+
     public List<Chunk> getChunkList() {
         return chunkList;
     }
@@ -511,7 +519,7 @@ public class Chunks {
         this.optimized = optimized;
     }
 
-    public List<Tuple> getOptimizedTuples() {
+    public IList<Tuple> getOptimizedTuples() {
         return optimizedTuples;
     }
 

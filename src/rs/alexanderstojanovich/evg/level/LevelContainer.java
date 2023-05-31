@@ -25,12 +25,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -57,7 +56,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
-    public static final float SUN_SCALE = 32.0f;
+    public static final float SUN_SCALE = 16.0f;
     public static final float SUN_INTENSITY = (float) (1 << 29);
 
     public static final LightSource SUNLIGHT
@@ -97,7 +96,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
-    public static final int MAX_NUM_OF_BLOCKS = 65535;
+    public static final int MAX_NUM_OF_BLOCKS = 131070;
 
     private float progress = 0.0f;
 
@@ -173,12 +172,13 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
-        SKYBOX.setPrimaryColorAlpha(0.95f);
+        SKYBOX.setPrimaryColorAlpha(5E-2f);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 16384.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
+        SUN.setPrimaryColorAlpha(1.0f);
     }
 
     public LevelContainer() {
@@ -229,7 +229,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.freeze();
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
-        chunks.getChunkList().clear();
+        chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
@@ -279,7 +279,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 0.0f;
         GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
-        chunks.getChunkList().clear();
+        chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
@@ -340,12 +340,12 @@ public class LevelContainer implements GravityEnviroment {
         System.arraycopy(camup, 0, buffer, pos, camright.length);
         pos += camright.length;
 
-        List<Block> allBlocks = chunks.getTotalList();
+        IList<Block> allBlocks = chunks.getTotalList();
         Predicate predSolid = (Predicate<Block>) (Block t) -> t.isSolid();
-        List<Block> solidBlocks = (List<Block>) allBlocks.stream().filter(predSolid).collect(Collectors.toList());
+        IList<Block> solidBlocks = (IList<Block>) allBlocks.filteredList(predSolid);
 
         Predicate predFluid = (Predicate<Block>) (Block t) -> !t.isSolid();
-        List<Block> fluidBlocks = (List<Block>) allBlocks.stream().filter(predFluid).collect(Collectors.toList());
+        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filteredList(predFluid);
 
         buffer[pos++] = 'S';
         buffer[pos++] = 'O';
@@ -414,7 +414,7 @@ public class LevelContainer implements GravityEnviroment {
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
-            chunks.getChunkList().clear();
+            chunks.clear();
 
             ALL_BLOCK_MAP.init();
 
@@ -769,6 +769,10 @@ public class LevelContainer implements GravityEnviroment {
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 16.0f);
             SUN.pos.rotateAxis(deltaTime / 16.0f, 0.0f, 0.0f, 1.0f);
+            float factor = Math.max((float) Math.cos(((float) Math.PI / 2.0f) - SUN.pos.angleCos(Camera.Y_AXIS)), 0.0f);
+            SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
+            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(factor));
+            SUNLIGHT.intensity = factor * SUN_INTENSITY;
             cameraInFluid = isCameraInFluid();
 
             Camera mainCamera = levelActors.mainCamera();
@@ -789,16 +793,15 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+        if (!SUN.isBuffered()) {
+            SUN.bufferAll();
+        }
+        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
         SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
-
-        if (!SUN.isBuffered()) {
-            SUN.bufferAll();
-        }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
 
         // only visible & uncached are in chunk list      
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
@@ -842,15 +845,15 @@ public class LevelContainer implements GravityEnviroment {
 
         camera.render(ShaderProgram.getWaterBaseShader());
 
-        if (!SKYBOX.isBuffered()) {
-            SKYBOX.bufferAll();
-        }
-        SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
         SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
+        }
+        SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
 
         camera.render(ShaderProgram.getWaterVoxelShader());
 

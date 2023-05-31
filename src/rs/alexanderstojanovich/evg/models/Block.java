@@ -571,6 +571,7 @@ public class Block extends Model {
         for (Vertex fv : faceVertices) {
             fv.getNormal().zero();
         }
+        buffered = false;
     }
 
     private void revertGroupsOfVertices() {

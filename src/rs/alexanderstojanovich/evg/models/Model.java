@@ -189,6 +189,8 @@ public class Model implements Comparable<Model> {
             }
         }
 
+        result.calcDims();
+
         return result;
     }
 
@@ -291,12 +293,14 @@ public class Model implements Comparable<Model> {
         for (int i = 0; i < vertices.size(); i++) {
             vertices.get(i).getNormal().zero();
         }
+        buffered = false;
     }
 
     public void negateNormals() {
         for (int i = 0; i < vertices.size(); i++) {
             vertices.get(i).getNormal().negate();
         }
+        buffered = false;
     }
 
     public void render(LightSources lightSources, ShaderProgram shaderProgram) {

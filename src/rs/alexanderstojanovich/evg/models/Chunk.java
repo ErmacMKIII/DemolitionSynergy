@@ -583,6 +583,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return result;
     }
 
+    public void clear() {
+        this.tupleList.forEach(t -> t.blockList.clear());
+        this.tupleList.clear();
+    }
+
     public int getId() {
         return id;
     }

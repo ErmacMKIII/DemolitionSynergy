@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
@@ -62,6 +63,8 @@ public class MasterRenderer {
     }
 
     public static void render() {
+        Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryColor();
+        GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
