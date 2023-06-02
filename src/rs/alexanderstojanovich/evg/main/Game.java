@@ -615,7 +615,7 @@ public class Game {
      *
      * @return Configuration cfg
      */
-    public Configuration makeConfig() {
+    public static Configuration makeConfig() {
         Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
         cfg.setWidth(GameObject.MY_WINDOW.getWidth());

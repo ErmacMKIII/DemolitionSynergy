@@ -45,6 +45,7 @@ public class Intrface {
     private DynamicText fpsText; // displays framerates
     private DynamicText posText; // display position
     private DynamicText chunkText; // display current chunk (player)
+    private DynamicText gameTimeText;
 
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
@@ -108,6 +109,10 @@ public class Intrface {
         gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
         gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
         gameModeText.alignToNextChar();
+
+        gameTimeText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(0.0f, 1.0f));
+        gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
+        gameTimeText.alignToNextChar();
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         crosshair.setColor(Vector3fColors.WHITE);
@@ -538,6 +543,12 @@ public class Intrface {
         if (!screenText.isBuffered()) {
             screenText.bufferAll();
         }
+
+        if (!gameTimeText.isBuffered()) {
+            gameTimeText.bufferSmart();
+        }
+        gameTimeText.render(ifcShaderProgram);
+
         screenText.render(ifcShaderProgram);
         mainMenu.render(ifcShaderProgram);
         optionsMenu.render(ifcShaderProgram);
@@ -657,6 +668,10 @@ public class Intrface {
 
     public Console getConsole() {
         return console;
+    }
+
+    public DynamicText getGameTimeText() {
+        return gameTimeText;
     }
 
 }

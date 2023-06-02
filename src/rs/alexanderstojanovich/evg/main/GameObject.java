@@ -143,6 +143,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+            GameTime now = GameTime.Now();
+            intrface.getGameTimeText().setContent(String.format("%02d:%02d:%02d", now.hours, now.minutes, now.seconds));
         }
 
         if (intrface.getSaveDialog().isDone()) {

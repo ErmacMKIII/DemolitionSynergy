@@ -38,11 +38,12 @@ public class Configuration {
     private boolean waterEffects = true;
     private float mouseSensitivity = 1.5f;
     private boolean debug = false;
-    private float musicVolume = 0.5f;
-    private float soundFXVolume = 0.5f;
+    private float musicVolume = 0.2f;
+    private float soundFXVolume = 0.2f;
     private int blockDynamicSize = 50;
     private int textDynamicSize = 10;
     private int textureSize = 512;
+    private float gameTimeMultiplier = 1.0f;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -132,6 +133,11 @@ public class Configuration {
                                     textureSize = number;
                                 }
                                 break;
+                            case "GameTimeMultiplier":
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.0f && val <= 10.0f) {
+                                    gameTimeMultiplier = val;
+                                }
                         }
                     }
                 }
@@ -173,6 +179,7 @@ public class Configuration {
             pw.println("BlockDynamicSize = " + blockDynamicSize);
             pw.println("TextDynamicSize = " + textDynamicSize);
             pw.println("TextureSize = " + textureSize);
+            pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -272,6 +279,10 @@ public class Configuration {
 
     public int getTextureSize() {
         return textureSize;
+    }
+
+    public float getGameTimeMultiplier() {
+        return gameTimeMultiplier;
     }
 
 }

@@ -36,6 +36,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -53,6 +54,7 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
+    protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
@@ -172,7 +174,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
-        SKYBOX.setPrimaryColorAlpha(5E-2f);
+        SKYBOX.setPrimaryColorAlpha(0.25f);
 
         SUN.setPrimaryColor(SUN_COLOR);
         SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
@@ -767,9 +769,10 @@ public class LevelContainer implements GravityEnviroment {
 
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
-            SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 16.0f);
-            SUN.pos.rotateAxis(deltaTime / 16.0f, 0.0f, 0.0f, 1.0f);
-            float factor = Math.max((float) Math.cos(((float) Math.PI / 2.0f) - SUN.pos.angleCos(Camera.Y_AXIS)), 0.0f);
+            final float gtm = cfg.getGameTimeMultiplier();
+            SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
+            SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
+            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
             SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
             SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(factor));
             SUNLIGHT.intensity = factor * SUN_INTENSITY;
