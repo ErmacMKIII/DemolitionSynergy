@@ -197,6 +197,9 @@ public class Text implements ComponentIfc {
     @Override
     public void bufferSmart() {
         setup();
+        if (vbo == 0) {
+            bufferVertices();
+        }
         updateVertices();
         bufferIndices();
         buffered = true;
@@ -226,7 +229,6 @@ public class Text implements ComponentIfc {
 
             for (TextCharacter txtCh : txtChList) {
                 uvs = txtCh.uvs;
-                updateVertices();
 
                 Matrix4f modelMatrix = calcModelMatrix(txtCh.xadv, txtCh.ydrop);
                 shaderProgram.updateUniform(modelMatrix, "modelMatrix");

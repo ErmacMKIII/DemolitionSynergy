@@ -16,9 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 
 /**
  *
@@ -39,11 +41,7 @@ public class MasterRenderer {
         // load context
         myWindow.loadContext();
         // enable/disable vsync
-        if (myWindow.isVsync()) {
-            myWindow.enableVSync();
-        } else {
-            myWindow.disableVSync();
-        }
+        myWindow.setVSync(false);
 
         // create openGL context        
         glCaps = GL.createCapabilities();
@@ -57,7 +55,7 @@ public class MasterRenderer {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
 
-        GL11.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f);
     }
 
     public static void setResolution(int width, int height) {
@@ -65,6 +63,8 @@ public class MasterRenderer {
     }
 
     public static void render() {
+        Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryColor();
+        GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 

@@ -88,6 +88,36 @@ public class DynamicText extends Text {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
 
+    public void updateBigVbo() {
+        // auto adjust dynamic size of float buff and do it on every 1024 element
+        bigFloatBuff.clear();
+
+        int e = 0;
+        int offset = 0;
+        for (TextCharacter txtCh : txtChList) {
+            vboEntries[e++] = offset;
+            for (int v = 0; v < 4; v++) {
+                bigFloatBuff.put(VERTICES[v].x);
+                bigFloatBuff.put(VERTICES[v].y);
+                bigFloatBuff.put(txtCh.uvs[v].x);
+                bigFloatBuff.put(txtCh.uvs[v].y);
+                offset++;
+            }
+        }
+
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
+
+        if (bigVbo == 0) {
+            bigVbo = GL15.glGenBuffers();
+        }
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+    }
+
     protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
@@ -105,6 +135,19 @@ public class DynamicText extends Text {
     public void bufferAll() {
         setup();
         bufferBigVbo();
+        bufferIndices();
+        buffered = true;
+    }
+
+    @Override
+    public void bufferSmart() {
+        if (this.content.length() == this.txtChList.size()) {
+            setup();
+            updateBigVbo();
+        } else {
+            setup();
+            bufferBigVbo();
+        }
         bufferIndices();
         buffered = true;
     }

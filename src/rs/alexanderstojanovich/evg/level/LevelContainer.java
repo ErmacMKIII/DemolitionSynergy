@@ -25,16 +25,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -52,21 +54,21 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
+    protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
-    public static final float SUN_SCALE = 32.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 27);
+    public static final float SUN_SCALE = 16.0f;
+    public static final float SUN_INTENSITY = (float) (1 << 29);
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);
 
-    protected final Chunks solidChunks = new Chunks(true);
-    protected final Chunks fluidChunks = new Chunks(false);
+    protected final Chunks chunks = new Chunks();
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
-    public static final int QUEUE_CAPACITY = 9;
+    public static final int QUEUE_CAPACITY = 10;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -96,8 +98,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
-    public static final int MAX_NUM_OF_SOLID_BLOCKS = 65535;
-    public static final int MAX_NUM_OF_FLUID_BLOCKS = 65535;
+    public static final int MAX_NUM_OF_BLOCKS = 131070;
 
     private float progress = 0.0f;
 
@@ -115,73 +116,37 @@ public class LevelContainer implements GravityEnviroment {
 
     protected static boolean cameraInFluid = false;
 
-    private static byte updatePutSolidNeighbors(Vector3f vector) {
+    private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && adjPair.solid) {
+            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (locVal != null) {
                 bits |= mask;
-                byte adjBits = adjPair.byteValue;
+                byte adjBits = locVal.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits |= maskAdj;
-                adjPair.byteValue = adjBits;
+                locVal.byteValue = adjBits;
             }
         }
         return bits;
     }
 
-    private static byte updatePutFluidNeighbors(Vector3f vector) {
+    private static byte updateRemNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && !adjPair.solid) {
+            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPos);
+            if (locVal != null) {
                 bits |= mask;
-                byte adjBits = adjPair.byteValue;
-                int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                int maskAdj = 1 << k;
-                adjBits |= maskAdj;
-                adjPair.byteValue = adjBits;
-            }
-        }
-        return bits;
-    }
-
-    private static byte updateRemSolidNeighbors(Vector3f vector) {
-        byte bits = 0;
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            int mask = 1 << j;
-            Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && adjPair.solid) {
-                bits |= mask;
-                byte adjBits = adjPair.byteValue;
+                byte adjBits = locVal.byteValue;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int maskAdj = 1 << k;
                 adjBits &= ~maskAdj & 63;
-                adjPair.byteValue = adjBits;
-            }
-        }
-        return bits;
-    }
-
-    private static byte updateRemFluidNeighbors(Vector3f vector) {
-        byte bits = 0;
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            int mask = 1 << j;
-            Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte adjPair = ALL_BLOCK_MAP.getLocation(adjPos);
-            if (adjPair != null && !adjPair.solid) {
-                bits |= mask;
-                byte adjBits = adjPair.byteValue;
-                int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                int maskAdj = 1 << k;
-                adjBits &= ~maskAdj & 63;
-                adjPair.byteValue = adjBits;
+                locVal.byteValue = adjBits;
             }
         }
         return bits;
@@ -190,29 +155,16 @@ public class LevelContainer implements GravityEnviroment {
     public static void putBlock(Block block) {
         Vector3f pos = block.getPos();
         String str = block.getTexName();
-        if (block.isSolid()) {
-            byte bits = updatePutSolidNeighbors(pos);
-            TexByte pairX = new TexByte(str, bits, block.isSolid());
-            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
-        } else {
-            byte bits = updatePutFluidNeighbors(pos);
-            TexByte pairX = new TexByte(str, bits, block.isSolid());
-            ALL_BLOCK_MAP.putLocation(new Vector3f(pos), pairX);
-        }
+        byte bits = updatePutNeighbors(pos);
+        TexByte locVal = new TexByte(str, bits, block.isSolid());
+        ALL_BLOCK_MAP.putLocation(new Vector3f(pos), locVal);
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
-        if (block.isSolid()) {
-            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
-            if (rem) {
-                updateRemSolidNeighbors(pos);
-            }
-        } else {
-            boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
-            if (rem) {
-                updateRemFluidNeighbors(pos);
-            }
+        boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+        if (rem) {
+            updateRemNeighbors(pos);
         }
     }
 
@@ -222,11 +174,13 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
+        SKYBOX.setPrimaryColorAlpha(0.25f);
 
         SUN.setPrimaryColor(SUN_COLOR);
         SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
+        SUN.setPrimaryColorAlpha(1.0f);
     }
 
     public LevelContainer() {
@@ -277,8 +231,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.freeze();
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
-        solidChunks.getChunkList().clear();
-        fluidChunks.getChunkList().clear();
+        chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
@@ -299,7 +252,7 @@ public class LevelContainer implements GravityEnviroment {
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
                 entity.getPrimaryColor().z = 0.0f;
 
-                solidChunks.addBlock(entity, true);
+                chunks.addBlock(entity);
 
                 progress += 100.0f / 9.0f;
             }
@@ -328,8 +281,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 0.0f;
         GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
-        solidChunks.getChunkList().clear();
-        fluidChunks.getChunkList().clear();
+        chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
@@ -339,7 +291,7 @@ public class LevelContainer implements GravityEnviroment {
 
         CacheModule.deleteCache();
 
-        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
+        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
             success = true;
@@ -390,16 +342,20 @@ public class LevelContainer implements GravityEnviroment {
         System.arraycopy(camup, 0, buffer, pos, camright.length);
         pos += camright.length;
 
+        IList<Block> allBlocks = chunks.getTotalList();
+        Predicate predSolid = (Predicate<Block>) (Block t) -> t.isSolid();
+        IList<Block> solidBlocks = (IList<Block>) allBlocks.filteredList(predSolid);
+
+        Predicate predFluid = (Predicate<Block>) (Block t) -> !t.isSolid();
+        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filteredList(predFluid);
+
         buffer[pos++] = 'S';
         buffer[pos++] = 'O';
         buffer[pos++] = 'L';
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        List<Block> solidBlocks = solidChunks.getTotalList();
-        List<Block> fluidBlocks = fluidChunks.getTotalList();
-
-        int solidNum = cacheModule.totalSize(true);
+        int solidNum = solidBlocks.size();
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
@@ -411,7 +367,7 @@ public class LevelContainer implements GravityEnviroment {
             byte[] byteArraySolid = solidBlock.toByteArray();
             System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
             pos += 29;
-            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
+            progress += 50.0f / (float) allBlocks.size();
         }
 
         buffer[pos++] = 'F';
@@ -420,7 +376,7 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        int fluidNum = cacheModule.totalSize(false);
+        int fluidNum = fluidBlocks.size();
         buffer[pos++] = (byte) (fluidNum);
         buffer[pos++] = (byte) (fluidNum >> 8);
 
@@ -431,7 +387,7 @@ public class LevelContainer implements GravityEnviroment {
             byte[] byteArrayFluid = fluidBlock.toByteArray();
             System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
             pos += 29;
-            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
+            progress += 50.0f / (float) allBlocks.size();
         }
 
         buffer[pos++] = 'E';
@@ -460,8 +416,7 @@ public class LevelContainer implements GravityEnviroment {
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
-            solidChunks.getChunkList().clear();
-            fluidChunks.getChunkList().clear();
+            chunks.clear();
 
             ALL_BLOCK_MAP.init();
 
@@ -507,7 +462,7 @@ public class LevelContainer implements GravityEnviroment {
                     byte[] byteArraySolid = new byte[29];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
-                    solidChunks.addBlock(solidBlock, true);
+                    chunks.addBlock(solidBlock);
                     pos += 29;
                     progress += 50.0f / solidNum;
                 }
@@ -526,7 +481,7 @@ public class LevelContainer implements GravityEnviroment {
                         byte[] byteArrayFluid = new byte[29];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
-                        fluidChunks.addBlock(fluidBlock, true);
+                        chunks.addBlock(fluidBlock);
                         pos += 29;
                         progress += 50.0f / fluidNum;
                     }
@@ -621,7 +576,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public void animate() {
         if (!working) {
-            fluidChunks.animate();
+            chunks.animate();
         }
     }
 
@@ -800,14 +755,12 @@ public class LevelContainer implements GravityEnviroment {
         if (!working) {
             Integer visibleId = vChnkIdQueue.poll();
             if (visibleId != null) {
-                changed |= cacheModule.loadFromDisk(visibleId, true);
-                changed |= cacheModule.loadFromDisk(visibleId, false);
+                changed |= cacheModule.loadFromDisk(visibleId);
             }
             //----------------------------------------------------------
             Integer invisibleId = iChnkIdQueue.poll();
             if (invisibleId != null) {
-                changed |= cacheModule.saveToDisk(invisibleId, true);
-                changed |= cacheModule.saveToDisk(invisibleId, false);
+                changed |= cacheModule.saveToDisk(invisibleId);
             }
         }
 
@@ -816,8 +769,13 @@ public class LevelContainer implements GravityEnviroment {
 
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
-            SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 16.0f);
-            SUN.pos.rotateAxis(deltaTime / 16.0f, 0.0f, 0.0f, 1.0f);
+            final float gtm = cfg.getGameTimeMultiplier();
+            SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
+            SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
+            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
+            SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
+            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(factor));
+            SUNLIGHT.intensity = factor * SUN_INTENSITY;
             cameraInFluid = isCameraInFluid();
 
             Camera mainCamera = levelActors.mainCamera();
@@ -830,8 +788,7 @@ public class LevelContainer implements GravityEnviroment {
     public void optimize() {
         if (!working) {
             Vector3f camFront = levelActors.mainCamera().getFront();
-            solidChunks.optimize(vChnkIdQueue, camFront);
-            fluidChunks.optimize(vChnkIdQueue, camFront);
+            chunks.optimizeSuper(vChnkIdQueue, camFront);
         }
     }
 
@@ -839,24 +796,21 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+        if (!SUN.isBuffered()) {
+            SUN.bufferAll();
+        }
+        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
         SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
 
-        if (!SUN.isBuffered()) {
-            SUN.bufferAll();
-        }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
-
         // only visible & uncached are in chunk list      
-        solidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
-
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
-        fluidChunks.prepareOptimized(cameraInFluid);
+        chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        fluidChunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
+        chunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -894,24 +848,22 @@ public class LevelContainer implements GravityEnviroment {
 
         camera.render(ShaderProgram.getWaterBaseShader());
 
-        if (!SKYBOX.isBuffered()) {
-            SKYBOX.bufferAll();
-        }
-        SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
         SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
 
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
+        }
+        SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
         camera.render(ShaderProgram.getWaterVoxelShader());
-        // only visible & uncached are in chunk list      
-        solidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
-        fluidChunks.prepareOptimized(cameraInFluid);
+        chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        fluidChunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
+        chunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -947,12 +899,8 @@ public class LevelContainer implements GravityEnviroment {
 
     // -------------------------------------------------------------------------
     // -------------------------------------------------------------------------
-    public boolean maxSolidReached() {
-        return cacheModule.totalSize(true) == MAX_NUM_OF_SOLID_BLOCKS;
-    }
-
-    public boolean maxFluidReached() {
-        return cacheModule.totalSize(false) == MAX_NUM_OF_FLUID_BLOCKS;
+    public boolean maxCountReached() {
+        return cacheModule.totalSize() == MAX_NUM_OF_BLOCKS;
     }
 
     public void incProgress(float increment) {
@@ -977,12 +925,12 @@ public class LevelContainer implements GravityEnviroment {
         return working || progress > 0.0f;
     }
 
-    public Chunks getSolidChunks() {
-        return solidChunks;
+    public Chunks getChunks() {
+        return chunks;
     }
 
-    public Chunks getFluidChunks() {
-        return fluidChunks;
+    public CacheModule getCacheModule() {
+        return cacheModule;
     }
 
     public Queue<Integer> getvChnkIdQueue() {

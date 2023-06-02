@@ -37,7 +37,7 @@ public class LevelActors {
 
     protected final Observer observer = new Observer(new Vector3f());
     protected final Player player = new Player(observer.getCamera(), null, Model.readFromObjFile(Game.CHARACTER_ENTRY, "Player1_Sheriff.obj", "water"));
-    protected final LightSource playerLight = new LightSource(observer.getCamera().getPos(), Vector3fColors.WHITE, 8.0f);
+    protected final LightSource playerLight = new LightSource(observer.getCamera().getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
 
     //(Game.CHARACTER_ENTRY, null, "Player1_Sheriff.obj", "marble", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 1.0f);
     protected final List<NPC> npcList = new GapList<>();

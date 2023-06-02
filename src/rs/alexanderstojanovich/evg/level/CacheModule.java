@@ -51,16 +51,13 @@ public class CacheModule {
      * Size of the chunk when is loaded.
      *
      * @param id chunk id
-     * @param solid is chunk solid or fluid
      *
      * @return loaded size of the chunk
      */
-    public int loadedSize(int id, boolean solid) { // for debugging purposes
+    public int loadedSize(int id) { // for debugging purposes
         int size = 0;
-        if (!CacheModule.isCached(id, solid)) {
-            Chunk chunk = (solid)
-                    ? this.levelContainer.solidChunks.getChunk(id)
-                    : this.levelContainer.fluidChunks.getChunk(id);
+        if (!CacheModule.isCached(id)) {
+            Chunk chunk = this.levelContainer.chunks.getChunk(id);
             if (chunk != null) {
                 for (Tuple tuple : chunk.getTupleList()) {
                     size += tuple.getBlockList().size();
@@ -79,7 +76,7 @@ public class CacheModule {
      */
     public static int loadedSize(Chunk chunk) {
         int size = 0;
-        if (!CacheModule.isCached(chunk.getId(), chunk.isSolid())) {
+        if (!CacheModule.isCached(chunk.getId())) {
             for (Tuple tuple : chunk.getTupleList()) {
                 size += tuple.getBlockList().size();
             }
@@ -91,15 +88,14 @@ public class CacheModule {
      * Size of the chunk when is cached.
      *
      * @param id chunk id
-     * @param solid is chunk solid or fluid
      *
      * @return loaded size of the chunk
      */
-    public static int cachedSize(int id, boolean solid) { // for debugging purposes
+    public static int cachedSize(int id) { // for debugging purposes
         int size = 0;
-        if (CacheModule.isCached(id, solid)) {
+        if (CacheModule.isCached(id)) {
             try {
-                FileInputStream fos = new FileInputStream(getFileName(id, solid));
+                FileInputStream fos = new FileInputStream(getFileName(id));
                 byte[] bytes = new byte[3];
                 fos.read(bytes, 0, 3);
                 size = ((bytes[2] & 0xFF) << 8) | (bytes[1] & 0xFF);
@@ -113,18 +109,16 @@ public class CacheModule {
     }
 
     // total loaded + cached size
-    public int totalSize(boolean solid) {
+    public int totalSize() {
         int result = 0;
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
-            if (CacheModule.isCached(id, solid)) {
-                result += CacheModule.cachedSize(id, solid);
+            if (CacheModule.isCached(id)) {
+                result += CacheModule.cachedSize(id);
             } else {
-                chunk = (solid)
-                        ? levelContainer.solidChunks.getChunk(id)
-                        : levelContainer.fluidChunks.getChunk(id);
+                chunk = levelContainer.chunks.getChunk(id);
                 if (chunk != null) {
-                    result += loadedSize(id, solid);
+                    result += loadedSize(id);
                 }
             }
         }
@@ -132,12 +126,12 @@ public class CacheModule {
     }
 
     // total loaded + cached size
-    public static int totalSize(Chunks chunks, boolean solid) {
+    public static int totalSize(Chunks chunks) {
         int result = 0;
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
-            if (CacheModule.isCached(id, solid)) {
-                result += CacheModule.cachedSize(id, solid);
+            if (CacheModule.isCached(id)) {
+                result += CacheModule.cachedSize(id);
             } else {
                 chunk = chunks.getChunk(id);
                 if (chunk != null) {
@@ -205,25 +199,22 @@ public class CacheModule {
         }
     }
 
-    private static String getFileName(int id, boolean solid) {
-        return Game.CACHE + File.separator + (solid ? "s" : "f") + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
+    private static String getFileName(int id) {
+        return Game.CACHE + File.separator + "chnk" + (id < 0 ? "m" + (-id) : id) + ".cache";
     }
 
     /**
      * Save chunk to Disk.
      *
      * @param id chunk id
-     * @param solid is chunk solid or fluid
      * @return is operation performed (chunks modified)
      */
-    public boolean saveToDisk(int id, boolean solid) {
+    public boolean saveToDisk(int id) {
         boolean op = false;
-        if (!CacheModule.isCached(id, solid)) {
+        if (!CacheModule.isCached(id)) {
             List<Block> blocks = null;
             // DETERMINING WHICH CHUNK
-            Chunk chunk = (solid)
-                    ? this.levelContainer.solidChunks.getChunk(id)
-                    : this.levelContainer.fluidChunks.getChunk(id);
+            Chunk chunk = this.levelContainer.chunks.getChunk(id);
             // REMOVE OPREATIONS
             if (chunk != null) {
                 chunk.unbuffer();
@@ -236,12 +227,7 @@ public class CacheModule {
                     tuple.getBlockList().clear();
                 }
                 chunk.getTupleList().clear();
-
-                if (solid) {
-                    this.levelContainer.solidChunks.getChunkList().remove(chunk);
-                } else {
-                    this.levelContainer.fluidChunks.getChunkList().remove(chunk);
-                }
+                this.levelContainer.chunks.getChunkList().remove(chunk);
             }
             // SAVE OPERATIONS
             if (blocks != null) {
@@ -267,7 +253,7 @@ public class CacheModule {
                     cacheDir.mkdir();
                 }
 
-                saveMemToDisk(getFileName(id, solid));
+                saveMemToDisk(getFileName(id));
                 op = true;
             }
         }
@@ -279,15 +265,14 @@ public class CacheModule {
      * Load chunk from Disk.
      *
      * @param id chunk id
-     * @param solid is chunk solid or fluid
      * @return is operation performed (chunks modified)
      */
-    public boolean loadFromDisk(int id, boolean solid) {
+    public boolean loadFromDisk(int id) {
         boolean op = false;
         // IF ITS NOT CACHED TO DISK
-        if (CacheModule.isCached(id, solid)) {
+        if (CacheModule.isCached(id)) {
             // LOAD INTO MEMORY
-            loadDiskToMem(getFileName(id, solid));
+            loadDiskToMem(getFileName(id));
             pos = 1;
             // INIT BLOCK ARRAY
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
@@ -311,19 +296,13 @@ public class CacheModule {
                 Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
                 pos += blockPosCol.length;
 
-                Block block = new Block(texName, blockPos, blockCol, solid);
+                Block block = new Block(texName, blockPos, blockCol, !texName.equals("water"));
                 blocks[i] = block;
             }
 
             // PUT ALL BLOCK WHERE THEY BELONG TO
-            if (solid) {
-                for (Block block : blocks) {
-                    levelContainer.solidChunks.addBlock(block, true);
-                }
-            } else {
-                for (Block block : blocks) {
-                    levelContainer.fluidChunks.addBlock(block, true);
-                }
+            for (Block block : blocks) {
+                levelContainer.chunks.addBlock(block);
             }
             op = true;
         }
@@ -349,11 +328,10 @@ public class CacheModule {
      * Is cached.
      *
      * @param chunkId chunk id
-     * @param solid is chunk solid or fluid
      * @return is chunk cached or not cached (loaded)
      */
-    public static boolean isCached(int chunkId, boolean solid) {
-        File file = new File(getFileName(chunkId, solid));
+    public static boolean isCached(int chunkId) {
+        File file = new File(getFileName(chunkId));
         return file.exists();
     }
 }

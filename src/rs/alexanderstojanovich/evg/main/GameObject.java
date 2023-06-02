@@ -45,7 +45,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v31 BALTIC";
+    public static final String TITLE = "Demolition Synergy - v32C";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -74,16 +74,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         soundFXPlayer = new AudioPlayer();
         intrface = new Intrface();
         //----------------------------------------------------------------------
-        if (cfg.isFullscreen()) {
-            MY_WINDOW.fullscreen();
-        } else {
-            MY_WINDOW.windowed();
-        }
-        if (cfg.isVsync()) {
-            MY_WINDOW.enableVSync();
-        } else {
-            MY_WINDOW.disableVSync();
-        }
+        MY_WINDOW.setFullscreen(cfg.isFullscreen());
+        MY_WINDOW.setVSync(cfg.isVsync());
         MY_WINDOW.centerTheWindow();
         //----------------------------------------------------------------------
         musicPlayer.setGain(cfg.getMusicVolume());
@@ -135,7 +127,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public static void update(float deltaTime) {
+    public static synchronized void update(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -151,6 +143,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+            GameTime now = GameTime.Now();
+            intrface.getGameTimeText().setContent(String.format("%02d:%02d:%02d", now.hours, now.minutes, now.seconds));
         }
 
         if (intrface.getSaveDialog().isDone()) {
@@ -204,7 +198,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Renderer method. Requires context to be set in the proper thread (call
      * only from renderer)
      */
-    public static void render() {
+    public static synchronized void render() {
         if (!initialized) {
             return;
         }
@@ -216,7 +210,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
 
             levelContainer.render();
-            if (Game.isWaterEffects() && !levelContainer.getFluidChunks().getChunkList().isEmpty()) {
+            if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
                 waterRenderer.render();
             }
         }
@@ -311,8 +305,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // prints general and detailed information about solid and fluid chunks
     public static void printInfo() {
-        levelContainer.getSolidChunks().printInfo();
-        levelContainer.getFluidChunks().printInfo();
+        levelContainer.getChunks().printInfo();
     }
 
     public static LevelContainer getLevelContainer() {

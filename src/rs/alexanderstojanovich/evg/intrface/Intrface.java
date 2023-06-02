@@ -45,6 +45,7 @@ public class Intrface {
     private DynamicText fpsText; // displays framerates
     private DynamicText posText; // display position
     private DynamicText chunkText; // display current chunk (player)
+    private DynamicText gameTimeText;
 
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
@@ -108,6 +109,10 @@ public class Intrface {
         gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
         gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
         gameModeText.alignToNextChar();
+
+        gameTimeText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(0.0f, 1.0f));
+        gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
+        gameTimeText.alignToNextChar();
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         crosshair.setColor(Vector3fColors.WHITE);
@@ -314,31 +319,34 @@ public class Intrface {
 
             @Override
             protected void execute() {
-                Command command = Command.NOP;
+                Command command;
+                FutureTask<Object> task;
                 switch (selected) {
                     case 0:
-                        command = Command.FPS_MAX;
+                        command = Command.getCommand(Command.Target.FPS_MAX);
                         command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 1:
-                        command = Command.RESOLUTION;
+                        command = Command.getCommand(Command.Target.RESOLUTION);
                         String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
                         String things[] = giveCurrent.split("x");
                         command.getArgs().add(Integer.valueOf(things[0]));
                         command.getArgs().add(Integer.valueOf(things[1]));
                         command.setMode(Command.Mode.SET);
-                        Command.execute(command);
+                        task = new FutureTask<>(command);
+                        GameRenderer.TASK_QUEUE.add(task);
                         break;
                     case 2:
                         String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
+                        command = Command.getCommand(Command.Target.FULLSCREEN);
                         switch (fullscreen) {
                             case "ON":
-                                command = Command.FULLSCREEN;
+                                command.args.add(true);
                                 break;
                             case "OFF":
-                                command = Command.WINDOWED;
+                                command.args.add(false);
                                 break;
                         }
                         command.setMode(Command.Mode.SET);
@@ -346,7 +354,7 @@ public class Intrface {
                         break;
                     case 3:
                         String vsync = (String) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.VSYNC;
+                        command = Command.getCommand(Command.Target.VSYNC);
                         switch (vsync) {
                             case "ON":
                                 command.getArgs().add(true);
@@ -356,12 +364,12 @@ public class Intrface {
                                 break;
                         }
                         command.setMode(Command.Mode.SET);
-                        FutureTask<Object> task = new FutureTask<Object>(command);
+                        task = new FutureTask<>(command);
                         GameRenderer.TASK_QUEUE.add(task);
                         break;
                     case 4:
                         String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.WATER_EFFECTS;
+                        command = Command.getCommand(Command.Target.WATER_EFFECTS);
                         switch (waterEffects) {
                             case "ON":
                                 command.getArgs().add(true);
@@ -375,19 +383,19 @@ public class Intrface {
                         break;
                     case 5:
                         float msens = (float) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.MOUSE_SENSITIVITY;
+                        command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
                         command.getArgs().add(msens);
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 6:
-                        command = Command.MUSIC_VOLUME;
+                        command = Command.getCommand(Command.Target.MUSIC_VOLUME);
                         command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 7:
-                        command = Command.SOUND_VOLUME;
+                        command = Command.getCommand(Command.Target.SOUND_VOLUME);
                         command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
@@ -535,6 +543,12 @@ public class Intrface {
         if (!screenText.isBuffered()) {
             screenText.bufferAll();
         }
+
+        if (!gameTimeText.isBuffered()) {
+            gameTimeText.bufferSmart();
+        }
+        gameTimeText.render(ifcShaderProgram);
+
         screenText.render(ifcShaderProgram);
         mainMenu.render(ifcShaderProgram);
         optionsMenu.render(ifcShaderProgram);
@@ -654,6 +668,10 @@ public class Intrface {
 
     public Console getConsole() {
         return console;
+    }
+
+    public DynamicText getGameTimeText() {
+        return gameTimeText;
     }
 
 }

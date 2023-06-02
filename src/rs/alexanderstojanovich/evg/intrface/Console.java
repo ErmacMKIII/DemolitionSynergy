@@ -18,9 +18,9 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -31,8 +31,6 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -44,7 +42,7 @@ public class Console {
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final DynamicText inText;
-    private final List<Pair<DynamicText, Quad>> history = new CopyOnWriteArrayList<>();
+    private final List<HistoryItem> history = new CopyOnWriteArrayList<>();
     private boolean enabled = false;
     private final DynamicText completes;
 
@@ -102,41 +100,18 @@ public class Console {
 //                            for (DynamicText item : history) {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }
-                            DynamicText text = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
                             Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
-                            Command command = Command.getCommand(input.toString());
-                            // if command is invalid it's null
-                            if (command == Command.ERROR) {
-                                text.setContent("Invalid Command!");
-                                text.setColor(Vector3fColors.RED);
-                            } else if (command.isRendererCommand()) {
-                                Object result = null;
-                                FutureTask<Object> consoleTask = new FutureTask<Object>(command);
+                            Command cmd = Command.getCommand(input.toString());
+                            // if cmd is invalid it's null
+                            if (cmd.isRendererCommand()) {
+                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                                cmd.status = Command.Status.PENDING;
                                 GameRenderer.TASK_QUEUE.add(consoleTask);
-                                try {
-                                    // waits for renderer to execute the task                       
-                                    result = consoleTask.get();
-                                } catch (InterruptedException | ExecutionException ex) {
-                                    DSLogger.reportError(ex.getMessage(), ex);
-                                }
-                                quad.setColor(command.status ? Vector3fColors.GREEN : Vector3fColors.RED);
-                                text.setContent(command.mode == Command.Mode.GET ? command + " = " + result : input.toString());
-                            } else {
-                                Object result = Command.execute(command);
-                                quad.setColor(command.status ? Vector3fColors.GREEN : Vector3fColors.RED);
-                                text.setContent(command.mode == Command.Mode.GET ? command + " = " + result : input.toString());
+                            } else if (cmd.isGameCommand()) {
+                                Command.execute(cmd);
                             }
 
-                            text.pos = new Vector2f(inText.pos);
-                            text.pos.y += (0.5f - text.getRelativeCharHeight()) * Text.LINE_SPACING;
-
-                            quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1);
-                            quad.getPos().y = text.pos.y;
-
-                            text.setAlignment(Text.ALIGNMENT_LEFT);
-                            text.alignToNextChar();
-
-                            history.add(0, new Pair<>(text, quad));
+                            history.add(0, new HistoryItem(cmd, quad));
 
                             if (history.size() == HISTORY_CAPACITY) {
                                 history.remove(history.size() - 1);
@@ -194,21 +169,8 @@ public class Console {
             }
             inText.render(shaderProgram);
             int index = 0;
-            for (Pair<DynamicText, Quad> item : history) {
-                DynamicText text = item.getKey();
-                Quad quad = item.getValue();
-                text.pos.x = inText.pos.x;
-                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * 2.0f;
-                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1) - 1.0f;
-                quad.getPos().y = text.pos.y;
-                if (!text.isBuffered()) {
-                    text.bufferAll();
-                }
-                text.render(shaderProgram);
-                if (!quad.isBuffered()) {
-                    quad.bufferAll();
-                }
-                quad.render(shaderProgram);
+            for (HistoryItem item : history) {
+                item.render(new Vector2f(inText.pos.x, inText.pos.y + (index + 1) * inText.getRelativeCharHeight() * 2.0f), shaderProgram);
                 index++;
             }
 
@@ -217,6 +179,19 @@ public class Console {
             }
             completes.render(shaderProgram);
         }
+    }
+
+    public static Vector3f StatusColor(Command.Status status) {
+        switch (status) {
+            case PENDING:
+                return Vector3fColors.WHITE;
+            default:
+            case FAILED:
+                return Vector3fColors.RED;
+            case SUCCEEDED:
+                return Vector3fColors.GREEN;
+        }
+
     }
 
     public Window getMyWindow() {
@@ -235,16 +210,16 @@ public class Console {
         return inText;
     }
 
-    public List<Pair<DynamicText, Quad>> getHistory() {
-        return history;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }
 
     public DynamicText getCompletes() {
         return completes;
+    }
+
+    public List<HistoryItem> getHistory() {
+        return history;
     }
 
 }

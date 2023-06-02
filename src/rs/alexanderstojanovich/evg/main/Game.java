@@ -459,7 +459,7 @@ public class Game {
                     GameObject.getLevelContainer().printQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    FutureTask<Object> task = new FutureTask<Object>(Command.SCREENSHOT);
+                    FutureTask<Object> task = new FutureTask<>(Command.getCommand(Command.Target.SCREENSHOT));
                     GameRenderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
@@ -615,7 +615,7 @@ public class Game {
      *
      * @return Configuration cfg
      */
-    public Configuration makeConfig() {
+    public static Configuration makeConfig() {
         Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
         cfg.setWidth(GameObject.MY_WINDOW.getWidth());

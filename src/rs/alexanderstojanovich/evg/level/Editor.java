@@ -52,6 +52,7 @@ public class Editor {
         if (loaded == null) // first time it's null
         {
             loaded = new Block("crate");
+            texValue = 0;
             selectLoadedTexture();
         }
         selectedNew = loaded;
@@ -81,17 +82,17 @@ public class Editor {
         Vector3f cameraFront = GameObject.getLevelContainer().levelActors.mainCamera().getFront();
         float minDistanceOfSolid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currSolidChunk = GameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
+        Chunk chunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
 
         int solidTargetIndex = -1;
-        if (currSolidChunk != null) {
+        if (chunk != null) {
             int solidBlkIndex = 0;
-            for (Block solidBlock : currSolidChunk.getBlockList()) {
-                if (Block.intersectsRay(solidBlock.getPos(), cameraFront, cameraPos)) {
+            for (Block blk : chunk.getBlockList()) {
+                if (blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
-                            solidBlock.getPos().x, solidBlock.getPos().y, solidBlock.getPos().z);
+                            blk.getPos().x, blk.getPos().y, blk.getPos().z);
                     if (distance < minDistanceOfSolid
-                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, solidBlock.getPos(), 2.0f, 2.0f, 2.0f)) {
+                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.getPos(), 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfSolid = distance;
                         solidTargetIndex = solidBlkIndex;
                     }
@@ -100,7 +101,7 @@ public class Editor {
             }
 
             if (solidTargetIndex != -1) {
-                selectedCurr = currSolidChunk.getBlockList().get(solidTargetIndex);
+                selectedCurr = chunk.getBlockList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
                 selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
             }
@@ -114,17 +115,17 @@ public class Editor {
         Vector3f cameraFront = GameObject.getLevelContainer().levelActors.mainCamera().getFront();
         float minDistanceOfFluid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currFluidChunk = GameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
+        Chunk currFluidChunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
 
         int fluidTargetIndex = -1;
         if (currFluidChunk != null) {
             int fluidBlkIndex = 0;
-            for (Block fluidBlock : currFluidChunk.getBlockList()) {
-                if (Block.intersectsRay(fluidBlock.getPos(), cameraFront, cameraPos)) {
+            for (Block blk : currFluidChunk.getBlockList()) {
+                if (!blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
-                            fluidBlock.getPos().x, fluidBlock.getPos().y, fluidBlock.getPos().z);
+                            blk.getPos().x, blk.getPos().y, blk.getPos().z);
                     if (distance < minDistanceOfFluid
-                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, fluidBlock.getPos(), 2.0f, 2.0f, 2.0f)) {
+                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.getPos(), 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfFluid = distance;
                         fluidTargetIndex = fluidBlkIndex;
                     }
@@ -154,6 +155,7 @@ public class Editor {
             if (loaded == null) // first time it's null
             {
                 loaded = new Block("crate");
+                texValue = 0;
                 selectLoadedTexture();
             }
             selectedNew = loaded;
@@ -237,36 +239,21 @@ public class Editor {
         boolean cant = false;
         boolean placeOccupied = LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(selectedNew.pos);
         //----------------------------------------------------------------------
-        boolean intsSolid = false;
+        boolean intersects = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
-        Chunk currSolidChunk = GameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
+        Chunk currSolidChunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
         if (currSolidChunk != null) {
             for (Block solidBlock : currSolidChunk.getBlockList()) {
-                intsSolid = selectedNew.intersectsExactly(solidBlock);
-                if (intsSolid) {
+                intersects = selectedNew.intersectsExactly(solidBlock);
+                if (intersects) {
                     break;
-                }
-            }
-        }
-        //----------------------------------------------------------------------
-        boolean intsFluid = false;
-        if (!intsSolid) {
-            Chunk currFluidChunk = GameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
-            if (currFluidChunk != null) {
-                for (Block fluidBlock : currFluidChunk.getBlockList()) {
-                    intsFluid = selectedNew.intersectsExactly(fluidBlock);
-                    if (intsFluid) {
-                        break;
-                    }
                 }
             }
         }
         //----------------------------------------------------------------------
         boolean leavesSkybox = !LevelContainer.SKYBOX.intersectsEqually(selectedNew);
         if (selectedNew.isSolid()) {
-            cant = GameObject.getLevelContainer().maxSolidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
-        } else {
-            cant = GameObject.getLevelContainer().maxFluidReached() || placeOccupied || intsSolid || intsFluid || leavesSkybox;
+            cant = GameObject.getLevelContainer().maxCountReached() || placeOccupied || intersects || leavesSkybox;
         }
         if (cant) {
             selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, true);
@@ -277,13 +264,7 @@ public class Editor {
     public static void add() {
         if (selectedNew != null) {
             if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
-                if (selectedNew.isSolid()) { // else if block is solid
-                    GameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
-//                    GameObject.getLevelContainer().getFluidChunks().updateSolids();
-                } else { // if block is fluid                    
-                    GameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew, true);
-//                    GameObject.getLevelContainer().getFluidChunks().updateFluids();
-                }
+                GameObject.getLevelContainer().chunks.addBlock(selectedNew);
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block(Texture.TEX_WORLD[texValue]);
             }
@@ -293,13 +274,7 @@ public class Editor {
 
     public static void remove() {
         if (selectedCurr != null) {
-            if (selectedCurr.isSolid()) {
-                GameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr, true);
-//                GameObject.getLevelContainer().getFluidChunks().updateSolids();
-            } else {
-                GameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr, true);
-//                GameObject.getLevelContainer().getFluidChunks().updateFluids();
-            }
+            GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();

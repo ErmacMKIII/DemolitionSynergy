@@ -123,7 +123,7 @@ public class RandomLevelGenerator {
 
         Block solidBlock = new Block(tex, pos, color, true);
 
-        levelContainer.getSolidChunks().addBlock(solidBlock, true);
+        levelContainer.chunks.addBlock(solidBlock);
         return solidBlock;
     }
 
@@ -155,7 +155,7 @@ public class RandomLevelGenerator {
         }
         Block fluidBlock = new Block("water", pos, color, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidBlock, true);
+        levelContainer.chunks.addBlock(fluidBlock);
         return fluidBlock;
     }
 
@@ -213,7 +213,7 @@ public class RandomLevelGenerator {
 
         Block solidAdjBlock = new Block(adjTex, adjPos, color, true);
 
-        levelContainer.getSolidChunks().addBlock(solidAdjBlock, true);
+        levelContainer.chunks.addBlock(solidAdjBlock);
         return solidAdjBlock;
     }
 
@@ -266,7 +266,7 @@ public class RandomLevelGenerator {
         }
         Block fluidAdjBlock = new Block(adjTexture, adjPos, color, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidAdjBlock, true);
+        levelContainer.chunks.addBlock(fluidAdjBlock);
         return fluidAdjBlock;
     }
 
@@ -310,7 +310,7 @@ public class RandomLevelGenerator {
                             }
 
                             Block solidBlock = new Block(tex, pos, color, true);
-                            levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                            levelContainer.chunks.addBlock(solidBlock);
                             levelContainer.incProgress(100.0f / (float) totalAmount);
                             solidBlocks--;
                         }
@@ -353,7 +353,7 @@ public class RandomLevelGenerator {
                             String tex = "water";
 
                             Block fluidBlock = new Block(tex, pos, color, false);
-                            levelContainer.getFluidChunks().addBlock(fluidBlock, true);
+                            levelContainer.chunks.addBlock(fluidBlock);
                             levelContainer.incProgress(100.0f / (float) totalAmount);
                             fluidBlocks--;
                         }
@@ -448,7 +448,7 @@ public class RandomLevelGenerator {
     private void generateFluidSeries(int solidBlocks) {
 //        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks, null);
         levelContainer.setProgress(0.0f);
-        List<Block> totalFldBlkList = levelContainer.getFluidChunks().getTotalList();
+        List<Block> totalFldBlkList = levelContainer.chunks.getTotalList();
         for (Block fluidBlock : totalFldBlkList) {
             if (levelContainer.getMyWindow().shouldClose()) {
                 break;
@@ -465,7 +465,7 @@ public class RandomLevelGenerator {
                 }
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
                 Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
-                levelContainer.getSolidChunks().addBlock(solidBlock, true);
+                levelContainer.chunks.addBlock(solidBlock);
                 solidBlocks--;
                 if (solidBlocks == 0) {
                     break;
@@ -481,8 +481,8 @@ public class RandomLevelGenerator {
             DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
             // define alpha: solid to fluid ratio
             final float alpha = 0.3f + random.nextFloat() * 0.7f;
-            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_SOLID_BLOCKS);
-            int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_FLUID_BLOCKS);
+            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_BLOCKS / 2);
+            int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_BLOCKS / 2);
 
             final int totalAmount = solidBlocks + fluidBlocks;
 

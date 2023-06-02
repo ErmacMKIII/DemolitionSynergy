@@ -37,10 +37,9 @@ public class GameRenderer extends Thread implements Executor {
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 
-    private int widthGL = Window.MIN_WIDTH;
-    private int heightGL = Window.MIN_HEIGHT;
-
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
+
+    protected FutureTask<Object> task;
 
     public GameRenderer() {
         super("Renderer");
@@ -64,17 +63,6 @@ public class GameRenderer extends Thread implements Executor {
         double deltaTime = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
-            // changing resolution if necessary
-            int width = GameObject.MY_WINDOW.getWidth();
-            int height = GameObject.MY_WINDOW.getHeight();
-            if (width != widthGL
-                    || height != heightGL) {
-                MasterRenderer.setResolution(width, height);
-                PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
-                widthGL = width;
-                heightGL = height;
-            }
-
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
             fpsTicks += deltaTime * Game.getFpsMax();
@@ -106,8 +94,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // lastly it executes the console tasks
-            FutureTask<Object> task;
-            while ((task = TASK_QUEUE.poll()) != null) {
+            if ((task = TASK_QUEUE.poll()) != null) {
                 execute(task);
             }
         }

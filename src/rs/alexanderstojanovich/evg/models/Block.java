@@ -80,21 +80,12 @@ public class Block extends Model {
     public static final List<Vertex> VERTICES = new GapList<>();
     public static final List<Integer> INDICES = new ArrayList<>();
 
-    public static final Comparator<Block> FLOAT3_TEX_BITS_COMP = new Comparator<Block>() {
+    public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            Integer hash1 = Vector3fUtils.float3ToUniqueInteger(o1.pos, o1.texName);
-            Integer hash2 = Vector3fUtils.float3ToUniqueInteger(o2.pos, o2.texName);
-            return hash1.compareTo(hash2);
-        }
-    };
-
-    public static final Comparator<Block> FLOAT3_BITS_COMP = new Comparator<Block>() {
-        @Override
-        public int compare(Block o1, Block o2) {
-            Integer hash1 = Vector3fUtils.float3ToUniqueInteger(o1.pos);
-            Integer hash2 = Vector3fUtils.float3ToUniqueInteger(o2.pos);
-            return hash1.compareTo(hash2);
+            String s1 = Vector3fUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
+            String s2 = Vector3fUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
+            return s1.compareTo(s2);
         }
     };
 
@@ -580,6 +571,7 @@ public class Block extends Model {
         for (Vertex fv : faceVertices) {
             fv.getNormal().zero();
         }
+        buffered = false;
     }
 
     private void revertGroupsOfVertices() {

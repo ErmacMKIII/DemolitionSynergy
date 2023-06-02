@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -37,38 +39,58 @@ import rs.alexanderstojanovich.evg.util.Trie;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public enum Command implements Callable<Object> { // its not actually a thread but its used for remote execution (from Executor)
-    FPS_MAX,
-    RESOLUTION,
-    FULLSCREEN,
-    WINDOWED,
-    VSYNC,
-    WATER_EFFECTS,
-    MOUSE_SENSITIVITY,
-    MUSIC_VOLUME,
-    SOUND_VOLUME,
-    EXIT,
-    POSITION,
-    SCREENSHOT,
-    SIZEOF,
-    NOP,
-    ERROR;
+public class Command implements Callable<Object> { // its not actually a thread but its used for remote execution (from Executor)
+
+    public static enum Target {
+        FPS_MAX,
+        RESOLUTION,
+        FULLSCREEN,
+        VSYNC,
+        WATER_EFFECTS,
+        MOUSE_SENSITIVITY,
+        MUSIC_VOLUME,
+        SOUND_VOLUME,
+        EXIT,
+        POSITION,
+        SCREENSHOT,
+        SIZEOF,
+        NOP,
+        ERROR
+    };
+
+    protected Target target = Target.NOP;
 
     public static enum Mode {
         GET, SET
     };
     protected Mode mode = Mode.GET;
-    protected boolean status = false;
+
+    public static enum Status {
+        INIT, PENDING, SUCCEEDED, FAILED
+    }
+
+    protected Object result = null;
+    protected Status status = Status.INIT;
 
     // commands differ in arugment length and type, therefore list is used
     protected final List<Object> args = new ArrayList<>();
 
     protected static final Trie trie = new Trie();
 
+    protected String input;
+
+    protected Command(String input) {
+        this.input = input;
+    }
+
+    protected Command(Target target) {
+        this.target = target;
+    }
+
     static {
-        for (Command command : values()) {
-            if (command != ERROR && command != NOP) {
-                trie.insert(command.name().toLowerCase());
+        for (Target target : Target.values()) {
+            if (target != Target.ERROR && target != Target.NOP) {
+                trie.insert(target.name().toLowerCase());
             }
         }
     }
@@ -87,82 +109,93 @@ public enum Command implements Callable<Object> { // its not actually a thread b
     }
 
     /**
+     * Constructs command from given target
+     *
+     * @param target give target to construct command
+     * @return Command with empty args.
+     */
+    public static Command getCommand(Target target) {
+        return new Command(target);
+    }
+
+    /**
      * Constructs command from given string input
      *
      * @param input given input
      * @return Command with empty args.
      */
     public static Command getCommand(String input) {
-        Command command = ERROR;
+        Command command = new Command(input);
+        command.args.clear();
         String[] things = input.split(" ");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "fps_max":
                 case "fpsmax":
-                    command = FPS_MAX;
+                    command.target = Target.FPS_MAX;
                     if (things.length == 2) {
                         command.args.add(Integer.valueOf(things[1]));
                     }
                     break;
                 case "resolution":
                 case "res":
-                    command = RESOLUTION;
+                    command.target = Target.RESOLUTION;
                     if (things.length == 3) {
                         command.args.add(Integer.valueOf(things[1]));
                         command.args.add(Integer.valueOf(things[2]));
                     }
                     break;
                 case "fullscreen":
-                    command = FULLSCREEN;
+                    command.target = Target.FULLSCREEN;
                     break;
-                case "windowed":
-                    command = WINDOWED;
-                    break;
+//                case "windowed":
+//                    command.target = Target.WINDOWED;
+//                    break;
                 case "v_sync":
                 case "vsync":
-                    command = VSYNC;
+                    command.target = Target.VSYNC;
                     if (things.length == 2) {
                         command.args.add(Boolean.valueOf(things[1]));
                     }
                     break;
                 case "waterEffects":
                 case "water_effects":
-                    command = WATER_EFFECTS;
+                    command.target = Target.WATER_EFFECTS;
                     if (things.length == 2) {
                         command.args.add(Boolean.valueOf(things[1]));
                     }
                     break;
                 case "msens":
                 case "mouse_sensitivity":
-                    command = MOUSE_SENSITIVITY;
+                    command.target = Target.MOUSE_SENSITIVITY;
                     if (things.length == 2) {
                         command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "music_volume":
                 case "musicVolume":
-                    command = MUSIC_VOLUME;
+                    command.target = Target.MUSIC_VOLUME;
                     if (things.length == 2) {
                         command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "sound_volume":
                 case "soundVolume":
-                    command = SOUND_VOLUME;
+                    command.target = Target.SOUND_VOLUME;
                     if (things.length == 2) {
                         command.args.add(Float.valueOf(things[1]));
                     }
                     break;
                 case "quit":
                 case "exit":
-                    command = EXIT;
+                    command.target = Target.EXIT;
                     break;
                 case "screenshot":
-                    command = SCREENSHOT;
+                    command.target = Target.SCREENSHOT;
                     break;
                 case "pos":
                 case "position":
-                    command = POSITION;
+                    command.target = Target.POSITION;
                     if (things.length == 2) {
                         command.args.add(Integer.valueOf(things[1]));
                     }
@@ -174,18 +207,18 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                     break;
                 case "sizeof":
                 case "size_of":
-                    command = SIZEOF;
+                    command.target = Target.SIZEOF;
                     if (things.length == 2) {
                         command.args.add(Integer.valueOf(things[1]));
                     }
                     break;
                 default:
-                    command = ERROR;
+                    command.target = Target.ERROR;
                     break;
             }
         }
 
-        if (command.args.isEmpty() || command == SIZEOF) {
+        if (command.args.isEmpty() || command.target == Target.SIZEOF) {
             command.mode = Mode.GET;
         } else {
             command.mode = Mode.SET;
@@ -204,13 +237,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
      */
     public static Object execute(Command command) {
         Object result = null;
-        command.status = false;
-        switch (command) {
+        command.status = Status.PENDING;
+        switch (command.target) {
             case FPS_MAX:
                 switch (command.mode) {
                     case GET:
                         result = Game.getFpsMax();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         int fpsMax = (int) command.args.get(0);
@@ -218,7 +251,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                             GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0);
                             Game.setFpsMax(fpsMax);
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         }
                         break;
 
@@ -228,39 +261,53 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 switch (command.mode) {
                     case GET:
                         result = GameObject.MY_WINDOW.getWidth() + "x" + GameObject.MY_WINDOW.getHeight();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        command.status = GameObject.MY_WINDOW.setResolution((int) command.args.get(0), (int) command.args.get(1));
+                        // changing resolution if necessary
+                        int width = (int) command.args.get(0);
+                        int height = (int) command.args.get(1);
+                        boolean status = GameObject.MY_WINDOW.setResolution(width, height);
+                        if (status) {
+                            MasterRenderer.setResolution(width, height);
+                            PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+                            command.status = Status.SUCCEEDED;
+                        } else {
+                            command.status = Status.FAILED;
+                        }
                         GameObject.MY_WINDOW.centerTheWindow();
                         break;
                 }
 
                 break;
             case FULLSCREEN:
-                GameObject.MY_WINDOW.fullscreen();
-                GameObject.MY_WINDOW.centerTheWindow();
-                command.status = true;
+                switch (command.mode) {
+                    case GET:
+                        result = GameObject.MY_WINDOW.isFullscreen();
+                        command.status = Status.SUCCEEDED;
+                        break;
+                    case SET:
+                        boolean bool = (boolean) command.args.get(0);
+                        GameObject.MY_WINDOW.setFullscreen(bool);
+                        GameObject.MY_WINDOW.centerTheWindow();
+                        break;
+                }
                 break;
-            case WINDOWED:
-                GameObject.MY_WINDOW.windowed();
-                GameObject.MY_WINDOW.centerTheWindow();
-                command.status = true;
-                break;
+//            case WINDOWED:
+//                GameObject.MY_WINDOW.windowed();
+//                GameObject.MY_WINDOW.centerTheWindow();
+//                command.status = Status.SUCCEEDED;
+//                break;
             case VSYNC: // OpenGL
                 switch (command.mode) {
                     case GET:
                         result = GameObject.MY_WINDOW.isVsync();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         boolean bool = (boolean) command.args.get(0);
-                        if (bool) {
-                            GameObject.MY_WINDOW.enableVSync();
-                        } else {
-                            GameObject.MY_WINDOW.disableVSync();
-                        }
-                        command.status = true;
+                        GameObject.MY_WINDOW.setVSync(bool);
+                        command.status = Status.SUCCEEDED;
                         break;
                 }
                 break;
@@ -268,11 +315,11 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 switch (command.mode) {
                     case GET:
                         result = Game.isWaterEffects();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         Game.setWaterEffects((boolean) command.args.get(0));
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                 }
                 break;
@@ -280,13 +327,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 switch (command.mode) {
                     case GET:
                         result = Game.getMouseSensitivity();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float msens = (float) command.args.get(0);
                         if (msens >= 0.0f && msens <= 100.0f) {
                             Game.setMouseSensitivity(msens);
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         }
                         break;
                 }
@@ -295,13 +342,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 switch (command.mode) {
                     case GET:
                         result = GameObject.getMusicPlayer().getGain();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float music = (float) command.args.get(0);
                         if (music >= 0.0f && music <= 1.0f) {
                             GameObject.getMusicPlayer().setGain(music);
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         }
                         break;
                 }
@@ -310,13 +357,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 switch (command.mode) {
                     case GET:
                         result = GameObject.getSoundFXPlayer().getGain();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float sound = (float) command.args.get(0);
                         if (sound >= 0.0f && sound <= 1.0f) {
                             GameObject.getSoundFXPlayer().setGain(sound);
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         }
                         break;
                 }
@@ -346,11 +393,11 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                 }
                 GameObject.getIntrface().getScreenText().setEnabled(true);
                 GameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
-                command.status = true;
+                command.status = Status.SUCCEEDED;
                 break;
             case EXIT:
                 GameObject.MY_WINDOW.close();
-                command.status = true;
+                command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
                 Vector3f mainActorPos = GameObject.getLevelContainer().levelActors.getMainActor().getPosition();
@@ -363,7 +410,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                         sb.append(" | ");
                         sb.append(String.format("chunkId: %d", chunkId));
                         result = sb.toString();
-                        command.status = true;
+                        command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         if (command.args.size() == 1) {
@@ -372,7 +419,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                             mainActorPos.x = newPos.x;
                             mainActorPos.y = newPos.y;
                             mainActorPos.z = newPos.z;
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         } else if (command.args.size() == 3) {
                             float newPosx = (float) command.args.get(0);
                             float newPosy = (float) command.args.get(1);
@@ -380,7 +427,7 @@ public enum Command implements Callable<Object> { // its not actually a thread b
                             mainActorPos.x = newPosx;
                             mainActorPos.y = newPosy;
                             mainActorPos.z = newPosz;
-                            command.status = true;
+                            command.status = Status.SUCCEEDED;
                         }
                         break;
                 }
@@ -388,37 +435,36 @@ public enum Command implements Callable<Object> { // its not actually a thread b
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getSolidChunks(), true);
-                        int fluidSize = CacheModule.totalSize(GameObject.getLevelContainer().getFluidChunks(), false);
-                        result = String.format("SolidSize = %d | FluidSize = %d | TotalChunks = %d", solidSize, fluidSize, Chunk.CHUNK_NUM);
+                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
+                        result = String.format("Size = %d | TotalChunks = %d", solidSize, Chunk.CHUNK_NUM);
                     } else {
                         chunkId = (int) command.args.get(0);
-                        boolean cached = CacheModule.isCached(chunkId, true);
-                        int solidSize = 0, fluidSize = 0;
+                        boolean cached = CacheModule.isCached(chunkId);
+                        int size = 0;
                         if (cached) {
-                            solidSize = CacheModule.cachedSize(chunkId, true);
-                            fluidSize = CacheModule.cachedSize(chunkId, false);
+                            size = CacheModule.cachedSize(chunkId);
                         } else {
-                            Chunk solidChunk = GameObject.getLevelContainer().getSolidChunks().getChunk(chunkId);
-                            if (solidChunk != null) {
-                                solidSize = solidChunk.getBlockList().size();
-                            }
-                            Chunk fluidChunk = GameObject.getLevelContainer().getFluidChunks().getChunk(chunkId);
-                            if (fluidChunk != null) {
-                                fluidSize = fluidChunk.getBlockList().size();
+                            Chunk chunk = GameObject.getLevelContainer().getChunks().getChunk(chunkId);
+                            if (chunk != null) {
+                                size = chunk.getBlockList().size();
                             }
                         }
-                        result = String.format("SolidSize = %d | FluidSize = %d | Cached = %s", solidSize, fluidSize, cached);
+                        result = String.format("SolidSize = %d | Cached = %s", size, cached);
                     }
                 }
-                command.status = true;
+                command.status = Status.SUCCEEDED;
                 break;
             case NOP:
             default:
                 break;
         }
         // clearing the arguments allow execution repeatedly
-        command.args.clear();
+        if (command.status != Status.SUCCEEDED) {
+            command.status = Status.FAILED;
+        }
+
+        command.result = result;
+
         return result;
     }
 
@@ -430,13 +476,13 @@ public enum Command implements Callable<Object> { // its not actually a thread b
         this.mode = mode;
     }
 
-    public boolean isStatus() {
+    public Status getStatus() {
         return status;
     }
 
     @Override
     public Object call() throws Exception {
-        return Command.execute(this);
+        return (this.result = Command.execute(this));
     }
 
     public List<Object> getArgs() {
@@ -445,22 +491,28 @@ public enum Command implements Callable<Object> { // its not actually a thread b
 
     // renderer commands need OpenGL whilst other doesn't
     public boolean isRendererCommand() {
-        if (this == VSYNC
-                || this == SCREENSHOT) {
-            return true;
-        } else {
-            return false;
-        }
+        return this.target == Target.VSYNC || this.target == Target.SCREENSHOT || this.target == Target.RESOLUTION;
+    }
+
+    // game commands
+    public boolean isGameCommand() {
+        return this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
+                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF;
+    }
+
+    // game commands
+    public static boolean isGameCommand(Command command) {
+        return command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
+                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF;
     }
 
     // renderer commands need OpenGL whilst other doesn't
     public static boolean isRendererCommand(Command command) {
-        if (command == VSYNC
-                || command == SCREENSHOT) {
-            return true;
-        } else {
-            return false;
-        }
+        return command.target == Target.VSYNC || command.target == Target.SCREENSHOT || command.target == Target.RESOLUTION;
+    }
+
+    public Object getResult() {
+        return result;
     }
 
 }
