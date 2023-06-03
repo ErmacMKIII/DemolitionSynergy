@@ -34,6 +34,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameRenderer extends Thread implements Executor {
 
+    protected static final Configuration cfg = Configuration.getInstance();
+    public static final int NUM_OF_PASSES_MAX = Game.TPS * cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 
@@ -76,12 +78,10 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0) {
-                if (numOfPasses < Game.getUpsTicks()) {
-                    GameObject.render();
-                    fps++;
-                    numOfPasses++;
-                }
+            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX) {
+                GameObject.render();
+                fps++;
+                numOfPasses++;
                 fpsTicks--;
             }
 

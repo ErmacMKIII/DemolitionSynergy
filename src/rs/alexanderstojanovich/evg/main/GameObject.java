@@ -40,12 +40,13 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
+    // game logic is contained in here
 
     protected static boolean initialized = false;
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v32C";
+    public static final String TITLE = "Demolition Synergy - v33D";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -127,7 +128,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public static synchronized void update(float deltaTime) {
+    public static void update(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -186,7 +187,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public void gravityDo(float deltaTime) {
+    public static void gravityDo(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -195,10 +196,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
+     * First optimization - There are blocks but nothing is rendered.
+     *
+     * @return is first optimization
+     */
+    public static boolean isFirstOptimization() {
+        return !GameObject.levelContainer.chunks.getChunkList().isEmpty()
+                && GameObject.levelContainer.chunks.getOptimizedTuples().isEmpty();
+    }
+
+    /**
      * Renderer method. Requires context to be set in the proper thread (call
      * only from renderer)
      */
-    public static synchronized void render() {
+    public static void render() {
         if (!initialized) {
             return;
         }
@@ -234,10 +245,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return did chunk operations modify anything (something changed).
      */
     public static boolean chunkOperations() {
-        boolean changed = false;
-        changed = levelContainer.chunkOperations();
-
-        return changed;
+        return levelContainer.chunkOperations();
     }
 
     /**

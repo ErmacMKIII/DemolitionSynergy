@@ -105,6 +105,7 @@ public class Game {
     private static Mode currentMode = Mode.FREE;
 
     protected static boolean actionPerformed = false;
+    protected static boolean chunksModified = false;
     protected static boolean causingCollision = false;
     protected static boolean needOptimize = false;
 
@@ -533,6 +534,8 @@ public class Game {
 
         // first time we got nothing
         actionPerformed = false;
+        chunksModified = false;
+        causingCollision = false;
         needOptimize = false;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
@@ -550,15 +553,16 @@ public class Game {
                 break;
             }
 
+            if (!GameObject.musicPlayer.isPlaying()) {
+                GameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+                if (index == AudioFile.TRACKS.length) {
+                    index = 0;
+                }
+            }
+
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 GameObject.update((float) TICK_TIME);
-                if (!GameObject.musicPlayer.isPlaying()) {
-                    GameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
-                    if (index == AudioFile.TRACKS.length) {
-                        index = 0;
-                    }
-                }
 
                 switch (currentMode) {
                     case FREE:
@@ -577,29 +581,35 @@ public class Game {
                         break;
                 }
 
-                if (actionPerformed) {
-                    needOptimize |= GameObject.determineVisibleChunks();
-                }
-
                 GameObject.assertCheckCollision(causingCollision);
 
                 ups++;
                 upsTicks--;
             }
 
-            if (Game.accumulator - timera > 40.0) {
+            if (Game.accumulator - timera > 20.0) { // assumed that player moved on each quarter a second
                 actionPerformed = true;
-                timera += 40.0;
+                timera += 20.0;
             }
 
-            if (Game.accumulator - timero > 160.0) {
+            if (Game.accumulator - timero > 480.0) { // optimization every 6 seconds
                 needOptimize = true;
-                timero += 160.0;
+                timero += 480.0;
             }
 
-            if (actionPerformed && needOptimize) {
-                GameObject.optimize();
+            if (actionPerformed) {
+                chunksModified |= GameObject.determineVisibleChunks();
                 actionPerformed = false;
+            }
+
+            if (chunksModified) {
+                needOptimize |= GameObject.chunkOperations();
+                chunksModified = false;
+            }
+
+            if (needOptimize || GameObject.isFirstOptimization()) {
+                // very expensive operation
+                GameObject.optimize();
                 needOptimize = false;
             }
 

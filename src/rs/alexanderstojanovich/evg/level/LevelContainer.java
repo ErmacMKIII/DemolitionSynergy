@@ -23,12 +23,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -58,17 +57,17 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
-    public static final float SUN_SCALE = 16.0f;
+    public static final float SUN_SCALE = 20.0f;
     public static final float SUN_INTENSITY = (float) (1 << 29);
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);
 
-    protected final Chunks chunks = new Chunks();
+    public final Chunks chunks = new Chunks();
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
-    public static final int QUEUE_CAPACITY = 10;
+    public static final int LIST_APACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -87,13 +86,13 @@ public class LevelContainer implements GravityEnviroment {
         }
     };
 
-    private final Queue<Integer> vChnkIdQueue = new ArrayDeque<>(QUEUE_CAPACITY);
-    private final Queue<Integer> iChnkIdQueue = new ArrayDeque<>(QUEUE_CAPACITY);
+    private final IList<Integer> vChnkIdList = new GapList<>(LIST_APACITY);
+    private final IList<Integer> iChnkIdList = new GapList<>(LIST_APACITY);
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 16.0f;
+    public static final float BASE = 20.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
@@ -174,10 +173,10 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
-        SKYBOX.setPrimaryColorAlpha(0.25f);
+        SKYBOX.setPrimaryColorAlpha(0.15f);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 16384.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
         SUN.setPrimaryColorAlpha(1.0f);
@@ -194,11 +193,7 @@ public class LevelContainer implements GravityEnviroment {
     public static void printPositionMaps() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("SOLID POSITION MAP");
-        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
-        sb.append("---------------------------");
-        sb.append("\n");
-        sb.append("FLUID POSITION MAP");
+        sb.append("POSITION MAP");
         sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
@@ -208,12 +203,12 @@ public class LevelContainer implements GravityEnviroment {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("VISIBLE QUEUE\n");
-        sb.append(vChnkIdQueue);
+        sb.append(vChnkIdList);
         sb.append("\n");
         sb.append("---------------------------");
         sb.append("\n");
         sb.append("INVISIBLE QUEUE\n");
-        sb.append(iChnkIdQueue);
+        sb.append(iChnkIdList);
         sb.append("\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
@@ -714,7 +709,7 @@ public class LevelContainer implements GravityEnviroment {
         /*
         float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 
-        List<Vector3f> populatedFluidLocations = ALL_BLOCK_MAP.getPopulatedLocations(vChnkIdQueue, i -> !i.solid);
+        List<Vector3f> populatedFluidLocations = ALL_BLOCK_MAP.getPopulatedLocations(vChnkIdList, i -> !i.solid);
         for (Vector3f fluidLoc : populatedFluidLocations) {
             for (int j = 0; j <= 5; j++) {
                 if (j != Block.TOP) {
@@ -744,23 +739,20 @@ public class LevelContainer implements GravityEnviroment {
     // method for determining visible chunks
     public boolean determineVisible() {
         Camera mainCamera = levelActors.mainCamera();
-        boolean val = Chunk.determineVisible(vChnkIdQueue, iChnkIdQueue, mainCamera.getPos());
+        boolean changed = Chunk.determineVisible(vChnkIdList, iChnkIdList, mainCamera.getPos(), mainCamera.getFront());
 
-        return val;
+        return changed;
     }
 
     // method for saving invisible chunks / loading visible chunks
     public boolean chunkOperations() {
         boolean changed = false;
         if (!working) {
-            Integer visibleId = vChnkIdQueue.poll();
-            if (visibleId != null) {
-                changed |= cacheModule.loadFromDisk(visibleId);
+            for (int v : vChnkIdList) {
+                changed |= cacheModule.loadFromDisk(v);
             }
-            //----------------------------------------------------------
-            Integer invisibleId = iChnkIdQueue.poll();
-            if (invisibleId != null) {
-                changed |= cacheModule.saveToDisk(invisibleId);
+            for (int i : iChnkIdList) {
+                changed |= cacheModule.saveToDisk(i);
             }
         }
 
@@ -787,8 +779,9 @@ public class LevelContainer implements GravityEnviroment {
 
     public void optimize() {
         if (!working) {
-            Vector3f camFront = levelActors.mainCamera().getFront();
-            chunks.optimizeSuper(vChnkIdQueue, camFront);
+            Camera mainCamera = levelActors.mainCamera();
+            Vector3f camFront = mainCamera.getFront();
+            chunks.optimizeSuper(vChnkIdList, camFront);
         }
     }
 
@@ -810,7 +803,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.render(vChnkIdQueue, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
+        chunks.render(vChnkIdList, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -841,7 +834,7 @@ public class LevelContainer implements GravityEnviroment {
         LIGHT_SOURCES.modified = false;
     }
 
-    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
+    public synchronized void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -863,7 +856,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.render(vChnkIdQueue, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
+        chunks.render(vChnkIdList, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -933,12 +926,12 @@ public class LevelContainer implements GravityEnviroment {
         return cacheModule;
     }
 
-    public Queue<Integer> getvChnkIdQueue() {
-        return vChnkIdQueue;
+    public IList<Integer> getvChnkIdList() {
+        return vChnkIdList;
     }
 
-    public Queue<Integer> getiChnkIdQueue() {
-        return iChnkIdQueue;
+    public IList<Integer> getiChnkIdList() {
+        return iChnkIdList;
     }
 
     public byte[] getBuffer() {

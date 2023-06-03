@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.models;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
@@ -121,7 +120,7 @@ public class Chunks {
      *
      * @param block block to update
      */
-    protected void updateForAdd(Block block) {
+    protected synchronized void updateForAdd(Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
         int neighborBits = block.solid
                 ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
@@ -165,18 +164,19 @@ public class Chunks {
                     int adjChunkId = Chunk.chunkFunc(adjPos);
                     Chunk adjChunk = getChunk(adjChunkId);
                     Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
-                    Block adjBlock = null;
                     if (tuple != null) {
+                        Block adjBlock = null;
                         adjBlock = Chunk.getBlock(tuple, adjPos);
-                    }
-                    if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
-                        int adjFaceBitsBefore = adjBlock.getFaceBits();
-                        adjBlock.setFaceBits(~adjNBits & 63);
-                        int adjFaceBitsAfter = adjBlock.getFaceBits();
-                        if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                            // if bits changed, i.e. some face(s) got disabled
-                            // tranfer to correct tuple
-                            adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+
+                        if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                            int adjFaceBitsBefore = adjBlock.getFaceBits();
+                            adjBlock.setFaceBits(~adjNBits & 63);
+                            int adjFaceBitsAfter = adjBlock.getFaceBits();
+                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                                // if bits changed, i.e. some face(s) got disabled
+                                // tranfer to correct tuple
+                                adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            }
                         }
                     }
                 }
@@ -184,7 +184,7 @@ public class Chunks {
         }
     }
 
-    private void updateForRem(Block block) {
+    private synchronized void updateForRem(Block block) {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
@@ -231,7 +231,7 @@ public class Chunks {
      *
      * @param block block to add
      */
-    public void addBlock(Block block) {
+    public synchronized void addBlock(Block block) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -244,6 +244,7 @@ public class Chunks {
 
         chunk.addBlock(block);
         updateForAdd(block);
+        optimized = false;
     }
 
     /**
@@ -252,7 +253,7 @@ public class Chunks {
      *
      * @param block block to remove
      */
-    public void removeBlock(Block block) {
+    public synchronized void removeBlock(Block block) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
@@ -321,7 +322,7 @@ public class Chunks {
         }
     }
 
-    public synchronized void optimize(Queue<Integer> queue) {
+    public synchronized void optimize(IList<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         while (faceBits <= 63) {
@@ -348,10 +349,9 @@ public class Chunks {
             faceBits++;
         }
 
-        optimized = true;
     }
 
-    public synchronized void optimize(Queue<Integer> queue, Vector3f camFront) {
+    public synchronized void optimize(IList<Integer> queue, Vector3f camFront) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
@@ -384,46 +384,80 @@ public class Chunks {
         optimized = true;
     }
 
-    public synchronized void optimizeSuper(Queue<Integer> vQueue, Vector3f camFront) {
+//    @Deprecated
+//    public synchronized void optimizeSuper(IList<Integer> vQueue, Vector3f camFront) {
+//        final List<Integer> vList = new GapList<>(vQueue);
+//        final int mask = Block.getVisibleFaceBits(camFront);
+//        for (int faceBits = 1; faceBits <= 63; faceBits++) {
+//            final int faceBitsCopy = faceBits;
+//            if ((faceBitsCopy & (mask & 63)) != 0) {
+//                for (String tex : Texture.TEX_WORLD) {
+//                    for (int chunkId : vList) {
+//                        Chunk chunk = getChunk(chunkId);
+//                        if (chunk != null) {
+//                            Tuple tuple = chunk.getTuple(tex, faceBits);
+//                            if (tuple != null) {
+//                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBitsCopy);
+//                                if (optmTuple == null) {
+//                                    optmTuple = new Tuple(tex, faceBitsCopy);
+//                                    optimizedTuples.add(optmTuple);
+//                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+//                                } else {
+//                                    optmTuple.buffered = false;
+//                                }
+//                                final Tuple optmTupleCopy = optmTuple;
+//                                tuple.blockList.forEach(blk -> {
+//                                    optmTupleCopy.blockList.addIfAbsent(blk);
+//                                });
+//                                if (optmTupleCopy.blockList.isEmpty()) {
+//                                    optimizedTuples.remove(optmTupleCopy);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                optimizedTuples.removeIf(ot -> ot.faceBits() == faceBitsCopy);
+//            }
+//        }
+//
+//        optimized = true;
+//    }
+    public synchronized void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
-        for (int faceBits = 1; faceBits <= 63; faceBits++) {
-            final int faceBitsCopy = faceBits;
-            if ((faceBitsCopy & (mask & 63)) != 0) {
+        while (faceBits <= 63) {
+            if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
-                    for (int chunkId : vQueue) {
+                    Tuple optmTuple = null;
+                    for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
                             Tuple tuple = chunk.getTuple(tex, faceBits);
                             if (tuple != null) {
-                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBitsCopy);
                                 if (optmTuple == null) {
-                                    optmTuple = new Tuple(tex, faceBitsCopy);
-                                    optimizedTuples.add(optmTuple);
-                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-                                } else {
-                                    optmTuple.buffered = false;
+                                    optmTuple = new Tuple(tex, faceBits);
                                 }
-                                final Tuple optmTupleCopy = optmTuple;
-                                tuple.blockList.forEach(blk -> {
-                                    optmTupleCopy.blockList.addIfAbsent(blk);
-                                });
-                                if (optmTupleCopy.blockList.isEmpty()) {
-                                    optimizedTuples.remove(optmTupleCopy);
-                                }
+                                optmTuple.blockList.addAll(tuple.blockList.filteredList(blk -> blk.canBeSeenBy(camFront)));
                             }
                         }
                     }
+
+                    if (optmTuple != null) {
+                        optimizedTuples.add(optmTuple);
+                        optimizedTuples.sort(Tuple.TUPLE_COMP);
+                    }
                 }
-            } else {
-                optimizedTuples.removeIf(ot -> ot.faceBits() == faceBitsCopy);
             }
+            faceBits++;
         }
 
         optimized = true;
     }
 
     // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
+    public synchronized void render(ShaderProgram shaderProgram, LightSources lightSources) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -432,7 +466,7 @@ public class Chunks {
         }
     }
 
-    public synchronized void render(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
+    public synchronized void render(IList<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }

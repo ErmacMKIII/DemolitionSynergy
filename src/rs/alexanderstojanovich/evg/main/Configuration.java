@@ -44,6 +44,7 @@ public class Configuration {
     private int textDynamicSize = 10;
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
+    private int rendererPasses = 1;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -126,6 +127,11 @@ public class Configuration {
                                     textDynamicSize = number;
                                 }
                                 break;
+                            case "rendererpasses":
+                                number = Integer.parseInt(words[1]);
+                                if (number > 0 && number <= 3) {
+                                    rendererPasses = number;
+                                }
                             case "texturesize":
                                 number = Integer.parseInt(words[1]);
                                 // if tex size is a non-zero power of two
@@ -133,9 +139,9 @@ public class Configuration {
                                     textureSize = number;
                                 }
                                 break;
-                            case "GameTimeMultiplier":
+                            case "gametimemultiplier":
                                 val = Float.parseFloat(words[1]);
-                                if (val >= 0.0f && val <= 10.0f) {
+                                if (val >= 0.0f && val <= 5.0f) {
                                     gameTimeMultiplier = val;
                                 }
                         }
@@ -178,6 +184,7 @@ public class Configuration {
             pw.println("Debug = " + debug);
             pw.println("BlockDynamicSize = " + blockDynamicSize);
             pw.println("TextDynamicSize = " + textDynamicSize);
+            pw.println("RendererPasses = " + rendererPasses);
             pw.println("TextureSize = " + textureSize);
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
         } catch (FileNotFoundException ex) {
@@ -283,6 +290,10 @@ public class Configuration {
 
     public float getGameTimeMultiplier() {
         return gameTimeMultiplier;
+    }
+
+    public int getRendererPasses() {
+        return rendererPasses;
     }
 
 }
