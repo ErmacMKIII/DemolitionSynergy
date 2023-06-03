@@ -42,7 +42,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 512;
     public static final float VISION = 256.0f; // determines visibility
-    private static final int GRID_SIZE = 4;
+    public static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
