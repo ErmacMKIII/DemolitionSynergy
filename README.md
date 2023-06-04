@@ -14,8 +14,8 @@ Many tweaked optimizations in rendering.
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Small")
 ![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
 
-Build was coded in Apache NetBeans 16. Requires Java 1.8 (or later).
-In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and following libraries:
+Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
+In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
 1. LWJGL 3.3.2 with JOML 1.10.5,
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),

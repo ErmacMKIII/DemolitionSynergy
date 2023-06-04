@@ -168,6 +168,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getSinglePlayerDialog().setEnabled(false);
         }
 
+        if (intrface.getScreenText().isEnabled()) {
+            intrface.getScreenText().setEnabled(false);
+        }
+
         if (GameObject.getLevelContainer().getProgress() == 0.0f
                 || GameObject.getLevelContainer().getProgress() == 100.0f) {
             GameObject.intrface.getProgText().setEnabled(false);
