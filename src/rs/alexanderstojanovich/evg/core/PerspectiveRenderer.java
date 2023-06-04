@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -29,7 +29,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class PerspectiveRenderer {
 
     public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static final FloatBuffer floatBuff = BufferUtils.createFloatBuffer(4 * 4);
+    protected static final FloatBuffer floatBuff = MemoryUtil.memAllocFloat(4 * 4);
 
     static {
         PROJECTION_MATRIX.get(floatBuff);

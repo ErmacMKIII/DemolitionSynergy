@@ -23,9 +23,9 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.level.LightSource;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -228,10 +228,14 @@ public class ShaderProgram {
     }
 
     public void updateUniform(Matrix4f mat, String name) {
-        FloatBuffer fb = BufferUtils.createFloatBuffer(4 * 4);
+        FloatBuffer fb = MemoryUtil.memAllocFloat(4 * 4);
         mat.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(program, name);
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
+
+        if (fb.capacity() != 0) {
+            MemoryUtil.memFree(fb);
+        }
     }
 
     public int getProgram() {

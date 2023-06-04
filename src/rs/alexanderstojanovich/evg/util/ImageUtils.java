@@ -30,7 +30,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 
 /**
  *
@@ -70,7 +70,7 @@ public class ImageUtils {
         byte[] data = ((DataBufferByte) dstImage.getRaster().getDataBuffer())
                 .getData();
 
-        imageBuffer = BufferUtils.createByteBuffer(data.length);
+        imageBuffer = MemoryUtil.memCalloc(data.length);
         imageBuffer.put(data, 0, data.length);
         imageBuffer.flip();
 

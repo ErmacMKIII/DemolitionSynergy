@@ -34,7 +34,7 @@ import java.util.zip.ZipFile;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -81,7 +81,7 @@ public class Model implements Comparable<Model> {
 
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
     protected Matrix4f modelMatrix = calcModelMatrix();
-    private FloatBuffer fb;
+    protected static FloatBuffer fb = MemoryUtil.memAllocFloat(Block.VERTEX_COUNT * Vertex.SIZE);
 
     protected Model(String modelFileName, String texName) {
         this.modelFileName = modelFileName;
@@ -196,7 +196,8 @@ public class Model implements Comparable<Model> {
 
     public void bufferVertices() {
         // storing vertices and normals in the buffer
-        fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
+        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
+        fb.clear();
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 fb.put(vertex.getPos().x);
@@ -216,12 +217,21 @@ public class Model implements Comparable<Model> {
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+
+        if (fb.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (fb.capacity() != 0) {
+            MemoryUtil.memFree(fb);
+        }
     }
 
     public void updateVertices() {
+        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
+        fb.clear();
         // storing vertices and normals in the buffer        
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
@@ -241,11 +251,15 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (fb.capacity() != 0) {
+            MemoryUtil.memFree(fb);
+        }
     }
 
     public void bufferIndices() {
         // storing indices in the buffer
-        IntBuffer ib = BufferUtils.createIntBuffer(indices.size());
+        IntBuffer ib = MemoryUtil.memAllocInt(indices.size());
         for (Integer index : indices) {
             ib.put(index);
         }
@@ -257,6 +271,10 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (ib.capacity() != 0) {
+            MemoryUtil.memFree(ib);
+        }
     }
 
     public void bufferAll() { // explicit call to buffer unbuffered before the rendering

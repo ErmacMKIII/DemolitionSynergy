@@ -44,10 +44,10 @@ import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -212,6 +212,10 @@ public class Texture {
 
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, TEX_SIZE, TEX_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageDataBuffer);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
+
+        if (imageDataBuffer.capacity() != 0) {
+            MemoryUtil.memFree(imageDataBuffer);
+        }
     }
 
     /**
@@ -342,7 +346,7 @@ public class Texture {
         byte[] data = ((DataBufferByte) texImage.getRaster().getDataBuffer())
                 .getData();
 
-        imageBuffer = BufferUtils.createByteBuffer(data.length);
+        imageBuffer = MemoryUtil.memCalloc(data.length);
         imageBuffer.put(data, 0, data.length);
         imageBuffer.flip();
 

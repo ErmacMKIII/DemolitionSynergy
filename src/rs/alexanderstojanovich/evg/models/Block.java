@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -261,9 +261,16 @@ public class Block extends Model {
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+
+        if (ib.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (ib.capacity() != 0) {
+            MemoryUtil.memFree(ib);
+        }
     }
 
     @Override
@@ -777,7 +784,7 @@ public class Block extends Model {
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
         // storing indices in the buffer
-        IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+        IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         for (Integer index : indices) {
             intBuff.put(index);
         }

@@ -21,7 +21,7 @@ import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -36,6 +36,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Quad implements ComponentIfc {
+
+    public static final int VERTEX_SIZE = 4;
+    public static final int VERTEX_COUNT = 4;
 
     protected int width;
     protected int height;
@@ -56,18 +59,15 @@ public class Quad implements ComponentIfc {
         new Vector2f(-1.0f, 1.0f)
     };
 
-    protected final FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
+    protected static FloatBuffer FLOAT_BUFFER = MemoryUtil.memAllocFloat(VERTEX_COUNT * VERTEX_SIZE);
 
     protected Vector2f[] uvs = new Vector2f[4];
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
-    // protected static final IntBuffer CONST_INT_BUFFER = BufferUtils.createIntBuffer(6);
+    // protected static final IntBuffer CONST_INT_BUFFER = MemoryUtil.memAllocInt(6);
     protected int vbo = 0;
 
-    protected final IntBuffer intBuffer = BufferUtils.createIntBuffer(4 * VERTEX_SIZE);
+    protected static final IntBuffer intBuffer = MemoryUtil.memAllocInt(4 * VERTEX_SIZE);
     protected int ibo = 0;
-
-    public static final int VERTEX_SIZE = 4;
-    public static final int VERTEX_COUNT = 4;
 
     protected boolean buffered = false;
 
@@ -95,36 +95,44 @@ public class Quad implements ComponentIfc {
 
     @Override
     public void bufferVertices() {
-        floatBuffer.clear();
+        FLOAT_BUFFER = MemoryUtil.memAllocFloat(4 * VERTEX_COUNT);
+        FLOAT_BUFFER.clear();
         for (int i = 0; i < 4; i++) {
-            floatBuffer.put(VERTICES[i].x);
-            floatBuffer.put(VERTICES[i].y);
-            floatBuffer.put(uvs[i].x);
-            floatBuffer.put(uvs[i].y);
+            FLOAT_BUFFER.put(VERTICES[i].x);
+            FLOAT_BUFFER.put(VERTICES[i].y);
+            FLOAT_BUFFER.put(uvs[i].x);
+            FLOAT_BUFFER.put(uvs[i].y);
         }
-        floatBuffer.flip();
+        FLOAT_BUFFER.flip();
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
+
+        if (FLOAT_BUFFER.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, FLOAT_BUFFER, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (FLOAT_BUFFER.capacity() != 0) {
+            MemoryUtil.memFree(FLOAT_BUFFER);
+        }
         buffered = true;
     }
 
     @Override
     public void updateVertices() {
-        floatBuffer.clear();
+        FLOAT_BUFFER.clear();
         for (int i = 0; i < 4; i++) {
-            floatBuffer.put(VERTICES[i].x);
-            floatBuffer.put(VERTICES[i].y);
-            floatBuffer.put(uvs[i].x);
-            floatBuffer.put(uvs[i].y);
+            FLOAT_BUFFER.put(VERTICES[i].x);
+            FLOAT_BUFFER.put(VERTICES[i].y);
+            FLOAT_BUFFER.put(uvs[i].x);
+            FLOAT_BUFFER.put(uvs[i].y);
         }
-        floatBuffer.flip();
+        FLOAT_BUFFER.flip();
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, FLOAT_BUFFER);
 
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
     }
@@ -141,8 +149,10 @@ public class Quad implements ComponentIfc {
             ibo = GL15.glGenBuffers();
         }
 
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_STATIC_DRAW);
+        if (intBuffer.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
@@ -319,18 +329,8 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public FloatBuffer getFloatBuffer() {
-        return floatBuffer;
-    }
-
-    @Override
     public void unbuffer() {
         buffered = false;
-    }
-
-    @Override
-    public IntBuffer getIntBuffer() {
-        return intBuffer;
     }
 
     @Override

@@ -22,10 +22,10 @@ import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -88,11 +88,11 @@ public class Text implements ComponentIfc {
         new Vector2f()
     };
 
-    protected final FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(4 * VERTEX_SIZE);
+    protected static FloatBuffer floatBuffer = MemoryUtil.memAllocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
     protected int vbo = 0;
 
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
-    protected final IntBuffer intBuffer = BufferUtils.createIntBuffer(4 * VERTEX_SIZE);
+    protected static IntBuffer intBuffer = MemoryUtil.memAllocInt(INDICES.length);
     protected int ibo = 0;
 
     public Text(Texture texture, String content) {
@@ -119,6 +119,7 @@ public class Text implements ComponentIfc {
 
     @Override
     public void bufferVertices() {
+        floatBuffer = MemoryUtil.memAllocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
         floatBuffer.clear();
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
@@ -130,9 +131,16 @@ public class Text implements ComponentIfc {
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
+
+        if (floatBuffer.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (floatBuffer.capacity() != 0) {
+            MemoryUtil.memFree(floatBuffer);
+        }
         buffered = true;
     }
 
@@ -154,6 +162,7 @@ public class Text implements ComponentIfc {
 
     @Override
     public void bufferIndices() {
+        intBuffer = MemoryUtil.memAllocInt(INDICES.length);
         intBuffer.clear();
         for (int i : INDICES) {
             intBuffer.put(i);
@@ -164,9 +173,15 @@ public class Text implements ComponentIfc {
             ibo = GL15.glGenBuffers();
         }
 
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_STATIC_DRAW);
+        if (intBuffer.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+        }
     }
 
     protected void setup() {
@@ -187,7 +202,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void bufferAll() {
+    public synchronized void bufferAll() {
         setup();
         bufferVertices();
         bufferIndices();
@@ -195,7 +210,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void bufferSmart() {
+    public synchronized void bufferSmart() {
         setup();
         if (vbo == 0) {
             bufferVertices();
@@ -211,7 +226,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public synchronized void render(ShaderProgram shaderProgram) {
         if (enabled && buffered) {
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
@@ -305,18 +320,8 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public FloatBuffer getFloatBuffer() {
-        return floatBuffer;
-    }
-
-    @Override
     public int getVbo() {
         return vbo;
-    }
-
-    @Override
-    public IntBuffer getIntBuffer() {
-        return intBuffer;
     }
 
     @Override
@@ -340,7 +345,7 @@ public class Text implements ComponentIfc {
         return content;
     }
 
-    public void setContent(String content) {
+    public synchronized void setContent(String content) {
         this.content = content;
         buffered = false;
     }
