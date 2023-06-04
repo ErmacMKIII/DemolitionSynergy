@@ -18,8 +18,8 @@ package rs.alexanderstojanovich.evg.core;
 
 import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -29,11 +29,9 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class PerspectiveRenderer {
 
     public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static final FloatBuffer floatBuff = MemoryUtil.memAllocFloat(4 * 4);
+    protected static FloatBuffer floatBuff = MemoryUtil.memAllocFloat(4 * 4);
 
-    static {
-        PROJECTION_MATRIX.get(floatBuff);
-    }
+    protected static boolean buffered = false;
 
     private static void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
@@ -45,13 +43,37 @@ public class PerspectiveRenderer {
         loadPerspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20000.0f);
     }
 
-    public static void render() {
+    public static void bufferAll() {
+        floatBuff = MemoryUtil.memAllocFloat(16);
+        floatBuff.clear();
+        PROJECTION_MATRIX.get(floatBuff);
         for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();
             int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
             GL20.glUniformMatrix4fv(uniformLocation, false, floatBuff);
             ShaderProgram.unbind();
         }
+        if (floatBuff.capacity() != 0) {
+            MemoryUtil.memFree(floatBuff);
+        }
+
+        buffered = true;
+    }
+
+    public static FloatBuffer getFloatBuff() {
+        return floatBuff;
+    }
+
+    public static void setFloatBuff(FloatBuffer floatBuff) {
+        PerspectiveRenderer.floatBuff = floatBuff;
+    }
+
+    public static boolean isBuffered() {
+        return buffered;
+    }
+
+    public static void setBuffered(boolean buffered) {
+        PerspectiveRenderer.buffered = buffered;
     }
 
 }

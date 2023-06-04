@@ -271,6 +271,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         if (status) {
                             MasterRenderer.setResolution(width, height);
                             PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+                            PerspectiveRenderer.setBuffered(false);
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;

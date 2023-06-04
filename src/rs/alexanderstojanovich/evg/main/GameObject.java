@@ -28,11 +28,14 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.ModelCritter;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -63,11 +66,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected static Game game;
     protected static GameRenderer renderer;
 
+    public static Quad SPLASH_SCREEN;
+
     /**
      * Init this game container.
      */
     public static void init() {
         MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
+        SPLASH_SCREEN = new Quad(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), Texture.CONSOLE, true);
+        SPLASH_SCREEN.setColor(Vector3fColors.YELLOW);
         levelContainer = new LevelContainer();
         randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         waterRenderer = new WaterRenderer(levelContainer);
@@ -218,18 +225,29 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return;
         }
 
-        MasterRenderer.render(); // it clears color bit and depth buffer bit            
-        PerspectiveRenderer.render(); // it sets perspective matrix accross shaders       
-        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-            Camera mainCamera = levelContainer.getLevelActors().mainCamera();
-            mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
-
-            levelContainer.render();
-            if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                waterRenderer.render();
+        MasterRenderer.render(); // it clears color bit and depth buffer bit
+        if (SPLASH_SCREEN.isEnabled()) {
+            if (!SPLASH_SCREEN.isBuffered()) {
+                SPLASH_SCREEN.bufferAll();
             }
+            SPLASH_SCREEN.render(ShaderProgram.getIntrfaceShader());
+        } else {
+            if (!PerspectiveRenderer.isBuffered()) {
+                PerspectiveRenderer.bufferAll(); // it sets perspective matrix accross shaders       
+            }
+
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+                Camera mainCamera = levelContainer.getLevelActors().mainCamera();
+                mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
+
+                levelContainer.render();
+                if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                    waterRenderer.render();
+                }
+            }
+            intrface.render(ShaderProgram.getIntrfaceShader());
         }
-        intrface.render(ShaderProgram.getIntrfaceShader());
+
         MY_WINDOW.render();
     }
 

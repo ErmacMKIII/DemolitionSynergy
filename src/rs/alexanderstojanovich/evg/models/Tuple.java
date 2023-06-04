@@ -54,7 +54,7 @@ public class Tuple extends Blocks {
 
     protected final String name;
 
-    protected final IntBuffer intBuff;
+    protected static IntBuffer intBuff;
     protected int ibo = 0;
     protected final int indicesNum;
     protected final int verticesNum;
@@ -68,7 +68,7 @@ public class Tuple extends Blocks {
 
     public Tuple(String texName, int faceEnBits) {
         this.name = String.format("%s%02d", texName, faceEnBits);
-        this.intBuff = Block.createIntBuffer(faceEnBits);
+        Tuple.intBuff = Block.createIntBuffer(faceEnBits);
 
         int numberOfOnes = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -275,12 +275,23 @@ public class Tuple extends Blocks {
     @Override
     public void bufferIndices() {
         // storing indices buffer on the graphics card
+        final int faceBits = faceBits();
+        intBuff = Block.createIntBuffer(faceBits);
+        intBuff.clear();
+
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+
+        if (intBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (intBuff.capacity() != 0) {
+            MemoryUtil.memFree(intBuff);
+        }
     }
 
     // renderer does this stuff prior to any rendering

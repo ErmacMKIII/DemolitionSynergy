@@ -23,6 +23,7 @@ import java.util.concurrent.FutureTask;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -33,20 +34,20 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class GameRenderer extends Thread implements Executor {
-
+    
     protected static final Configuration cfg = Configuration.getInstance();
     public static final int NUM_OF_PASSES_MAX = Game.TPS * cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
-    private static int fps = 0;
-
+    private static int fps = 0;    
+    
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
-
+    
     protected FutureTask<Object> task;
-
+    
     public GameRenderer() {
         super("Renderer");
     }
-
+    
     @Override
     public void run() {
         MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
@@ -55,15 +56,17 @@ public class GameRenderer extends Thread implements Executor {
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
         GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context          
-
+        GameObject.render();
+        GameObject.SPLASH_SCREEN.setEnabled(false);
+        
         double timer1 = 0.0;
-
+        
         fps = 0;
-
+        
         double lastTime = Game.accumulator * Game.TICK_TIME;
         double currTime;
         double deltaTime = 0.0;
-
+        
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
@@ -76,7 +79,7 @@ public class GameRenderer extends Thread implements Executor {
                 GameObject.MY_WINDOW.close();
                 break;
             }
-
+            
             int numOfPasses = 0;
             while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX) {
                 GameObject.render();
@@ -101,33 +104,33 @@ public class GameRenderer extends Thread implements Executor {
 
         // renderer is reaching end of life!
         Window.unloadContext();
-
+        
         DSLogger.reportInfo("Renderer exited.", null);
     }
-
+    
     @Override
     public void execute(Runnable command) {
         command.run();
     }
-
+    
     public LevelContainer getLevelContainer() {
         return GameObject.getLevelContainer();
     }
-
+    
     public static double getFpsTicks() {
         return fpsTicks;
     }
-
+    
     public static void setFpsTicks(double fpsTicks) {
         GameRenderer.fpsTicks = fpsTicks;
     }
-
+    
     public static int getFps() {
         return fps;
     }
-
+    
     public static void setFps(int fps) {
         GameRenderer.fps = fps;
     }
-
+    
 }
