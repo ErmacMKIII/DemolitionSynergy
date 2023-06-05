@@ -20,9 +20,11 @@ import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
-import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
+import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditNoValue;
+import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditSingleValue;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -42,39 +44,20 @@ public abstract class OptionsMenu extends Menu {
 
     protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
 
+    protected GLFWCharCallback glfwCharCallback;
+
     public OptionsMenu(String title, List<MenuItem> items, String textureFileName) {
         super(title, items, textureFileName);
+        additionalInit();
     }
 
     public OptionsMenu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         super(title, items, textureFileName, pos, scale);
+        additionalInit();
     }
 
-    @Override
-    public void open() {
-        enabled = true;
-        inputEdited = false;
-        mode = InputMode.INIT;
-        input.setLength(0);
-        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCursorPosCallback() {
-            @Override
-            public void invoke(long window, double xpos, double ypos) {
-                // get the new options
-                float new_xposGL = (float) (xpos / GameObject.MY_WINDOW.getWidth() - 0.5f) * 2.0f;
-                float new_yposGL = (float) (0.5f - ypos / GameObject.MY_WINDOW.getHeight()) * 2.0f;
-
-                // if new and prev options aren't the same user moved the mouse
-                if (new_xposGL != xposGL || new_yposGL != yposGL) {
-                    useMouse = true;
-                }
-
-                // assign the new options (remember them)
-                xposGL = new_xposGL;
-                yposGL = new_yposGL;
-            }
-        });
-        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
+    private void additionalInit() {
+        glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
@@ -144,23 +127,9 @@ public abstract class OptionsMenu extends Menu {
                     selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
                 }
             }
-        });
-        GLFW.glfwWaitEvents();
-        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
-            @Override
-            public void invoke(long window, int codepoint) {
-                if (mode == InputMode.GET) {
-                    input.append((char) codepoint);
-                    MenuItem selectedMenuItem = items.get(selected);
-                    if (selectedMenuItem != null && selectedMenuItem.menuValue != null) {
-                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
-                    }
-                    inputEdited = true;
-                }
-            }
-        });
+        };
 
-        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWMouseButtonCallback() {
+        glfwMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
@@ -168,12 +137,28 @@ public abstract class OptionsMenu extends Menu {
                     if (selectedMenuItem != null) {
                         switch (selectedMenuItem.editType) {
                             case EditSingleValue:
-                                SingleValue selectedSingleValue = (SingleValue) selectedMenuItem.getMenuValue();
-                                selectedSingleValue.setCurrentValue(input);
+                                switch (mode) {
+                                    case INIT:
+                                        input.setLength(0);
+                                        input.append(selectedMenuItem.menuValue.getCurrentValue());
+                                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                                        inputEdited = false;
+                                        mode = InputMode.GET;
+                                        break;
+                                    case GET:
+                                        mode = InputMode.PUT;
+                                        break;
+                                    case PUT:
+                                        selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
+                                        mode = InputMode.INIT;
+                                        execute();
+                                        break;
+                                }
                                 break;
                             case EditMultiValue:
                                 MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
                                 selectedMultiValue.selectNext();
+                                execute();
                                 break;
                             case EditNoValue:
                             default:
@@ -194,7 +179,36 @@ public abstract class OptionsMenu extends Menu {
                     }
                 }
             }
-        });
+        };
+
+        glfwCharCallback = new GLFWCharCallback() {
+            @Override
+            public void invoke(long window, int codepoint) {
+                if (mode == InputMode.GET) {
+                    input.append((char) codepoint);
+                    MenuItem selectedMenuItem = items.get(selected);
+                    if (selectedMenuItem != null && selectedMenuItem.menuValue != null) {
+                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                    }
+                    inputEdited = true;
+                }
+            }
+        };
+    }
+
+    @Override
+    public void open() {
+        enabled = true;
+        inputEdited = false;
+        mode = InputMode.INIT;
+        input.setLength(0);
+        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), glfwCursorPosCallback);
+        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
+        GLFW.glfwWaitEvents();
+        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), glfwCharCallback);
+
+        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), glfwMouseButtonCallback);
     }
 
     @Override

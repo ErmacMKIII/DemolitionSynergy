@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -60,6 +61,10 @@ public abstract class Menu {
 
     protected boolean useMouse = false;
 
+    protected GLFWCursorPosCallback glfwCursorPosCallback;
+    protected GLFWKeyCallback glfwKeyCallback;
+    protected GLFWMouseButtonCallback glfwMouseButtonCallback;
+
     public Menu(String title, List<MenuItem> items, String textureFileName) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setColor(Vector3fColors.YELLOW);
@@ -69,6 +74,7 @@ public abstract class Menu {
         iterator.scale = itemScale;
         makeItems();
         updateIterator();
+        init();
     }
 
     public Menu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
@@ -84,6 +90,7 @@ public abstract class Menu {
         iterator.scale = scale;
         makeItems();
         updateIterator();
+        init();
     }
 
     private void makeItems() {
@@ -103,10 +110,8 @@ public abstract class Menu {
 
     protected abstract void execute(); // we don't know the menu functionality
 
-    public void open() {
-        enabled = true;
-        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCursorPosCallback() {
+    private void init() {
+        glfwCursorPosCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
                 // get the new values
@@ -122,9 +127,8 @@ public abstract class Menu {
                 xposGL = new_xposGL;
                 yposGL = new_yposGL;
             }
-        });
-        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), null);
-        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
+        };
+        glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
@@ -151,9 +155,8 @@ public abstract class Menu {
                     execute();
                 }
             }
-        });
-
-        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWMouseButtonCallback() {
+        };
+        glfwMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
@@ -174,7 +177,17 @@ public abstract class Menu {
                     leave();
                 }
             }
-        });
+        };
+
+    }
+
+    public void open() {
+        enabled = true;
+        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), glfwCursorPosCallback);
+        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), null);
+        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
+        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), glfwMouseButtonCallback);
     }
 
     protected int longestWord() {
@@ -256,11 +269,11 @@ public abstract class Menu {
         if (enabled && useMouse) {
             int index = 0;
             for (MenuItem item : items) {
-                float xMin = item.keyText.pos.x; // it already contains pos.x
-                float xMax = xMin + itemScale * item.keyText.getRelativeWidth();
+                float xMin = item.keyText.pos.x - item.keyText.scale * item.keyText.getRelativeWidth();
+                float xMax = item.keyText.pos.x + item.keyText.scale * item.keyText.getRelativeWidth();
 
-                float yMin = item.keyText.pos.y; // it already contains pos.y
-                float yMax = yMin + itemScale * item.keyText.getRelativeCharHeight();
+                float yMin = item.keyText.pos.y - item.keyText.scale * item.keyText.getRelativeCharHeight();
+                float yMax = item.keyText.pos.y + item.keyText.scale * item.keyText.getRelativeCharHeight();
 
                 if (xposGL >= xMin
                         && xposGL <= xMax

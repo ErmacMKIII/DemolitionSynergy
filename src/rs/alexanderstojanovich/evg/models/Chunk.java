@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Queue;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
@@ -42,7 +42,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 512;
     public static final float VISION = 256.0f; // determines visibility
-    private static final int GRID_SIZE = 4;
+    public static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -80,7 +80,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    public Tuple getTuple(String keyTexture, Integer keyFaceBits) {
+    public synchronized Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -108,7 +108,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    public static Tuple getTuple(List<Tuple> tupleList, String keyTexture, Integer keyFaceBits) {
+    public static synchronized Tuple getTuple(List<Tuple> tupleList, String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -534,23 +534,28 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     /**
      * Determine which chunks are visible by this chunk. If visible put into the
-     * V queue, otherwise put into the I queue.
+     * V list, otherwise put into the I list.
      *
-     * @param vChnkIdQueue visible chunk queue
-     * @param iChnkIdQueue invisible chunk queue
+     * @param vChnkIdList visible chunk queue
+     * @param iChnkIdList invisible chunk queue
      * @param actorPos actor pos (self-expl)
+     * @param camFront camera front (vision)
      *
-     * @return was any of the queue changed
+     * @return list of changed chunks
      */
-    public static boolean determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
-        boolean change = false;
+    public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Vector3f actorPos, Vector3f camFront) {
+        final Object[] before = vChnkIdList.toArray();
+
+        vChnkIdList.clear();
+        iChnkIdList.clear();
+
         // current chunk where player is        
         int currChunkId = chunkFunc(actorPos);
         int currCol = currChunkId % GRID_SIZE;
         int currRow = currChunkId / GRID_SIZE;
 
-        if (!vChnkIdQueue.contains(currChunkId)) {
-            vChnkIdQueue.add(currChunkId);
+        if (!vChnkIdList.contains(currChunkId)) {
+            vChnkIdList.add(currChunkId);
         }
 
         // rest of the chunks
@@ -561,18 +566,27 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
-
-                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdQueue.contains(chunkId)) {
-                    vChnkIdQueue.add(chunkId);
-                    change = true;
-                } else if (!iChnkIdQueue.contains(chunkId)) {
-                    iChnkIdQueue.add(chunkId);
-                    change = true;
+                /*
+                Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
+                Vector2f result = new Vector2f();
+                Vector3f temp1 = new Vector3f();
+                Vector3f temp2 = new Vector3f();
+                Intersectionf.intersectRayAab(actorPos, camFront, chunkPos.add(new Vector3f(LENGTH / 2.0f), temp1), chunkPos.sub(new Vector3f(LENGTH / 2.0f), temp2), result);
+                boolean visible = Math.max(result.x, result.y) <= VISION;
+                 */
+                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdList.contains(chunkId)) {
+                    vChnkIdList.add(chunkId);
+                } else if (!iChnkIdList.contains(chunkId)) {
+                    iChnkIdList.add(chunkId);
                 }
+
             }
         }
 
-        return change;
+        final Object[] after = vChnkIdList.toArray();
+        boolean changed = !Arrays.equals(before, after);
+
+        return changed;
     }
 
     public List<Block> getBlockList() {

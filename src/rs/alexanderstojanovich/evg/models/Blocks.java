@@ -21,11 +21,11 @@ import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
@@ -50,15 +50,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     protected final Map<Integer, Integer> iboMap = new HashMap<>();
     protected boolean buffered = false;
 
-    protected int dynamicSize = DYNAMIC_INCREMENT;
-    protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
+//    protected static int dynamicSize = DYNAMIC_INCREMENT;
+    protected static FloatBuffer bigFloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * Block.VERTEX_COUNT * Vertex.SIZE);
 
     public void bufferVertices() { // call it before any rendering
-        // auto adjust dynamic size of float buff and do it on every 1000th element
-        if (blockList.size() > dynamicSize) {
-            dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
-            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Block.VERTEX_COUNT * Vertex.SIZE);
-        }
+        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
 
         bigFloatBuff.clear();
         int offset = 0;
@@ -84,12 +80,20 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
-    public void updateVertices() { // call it before any rendering        
+    public void updateVertices() { // call it before any rendering   
+        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         bigFloatBuff.clear();
         int offset = 0;
         int blkIndex = 0;
@@ -114,9 +118,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             bigFloatBuff.flip();
         }
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
     public void bufferIndices() { // call it before any rendering
@@ -133,6 +143,11 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             // finally assigning it to the array element
             iboMap.put(blkIndex, ibo);
+
+            if (intBuff.capacity() != 0) {
+                MemoryUtil.memFree(intBuff);
+            }
+
             blkIndex++;
         }
     }
@@ -157,7 +172,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         updateVertices();
     }
 
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+    public synchronized void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
         if (!buffered || blockList.isEmpty()) {
             return;
         }
@@ -283,6 +298,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
+    @Deprecated
     public void release() {
         if (buffered) {
             GL15.glDeleteBuffers(bigVbo);
@@ -309,8 +325,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         this.buffered = buffered;
     }
 
-    public int getDynamicSize() {
-        return dynamicSize;
-    }
-
+//    public int getDynamicSize() {
+//        return dynamicSize;
+//    }
 }

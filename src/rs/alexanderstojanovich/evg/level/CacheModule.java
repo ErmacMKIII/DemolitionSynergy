@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
@@ -42,6 +44,7 @@ public class CacheModule {
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
     private final LevelContainer levelContainer;
+    public static final IList<Integer> CACHED_CHUNKS = new GapList<>();
 
     public CacheModule(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
@@ -254,6 +257,9 @@ public class CacheModule {
                 }
 
                 saveMemToDisk(getFileName(id));
+
+                CACHED_CHUNKS.remove(id);
+
                 op = true;
             }
         }
@@ -304,6 +310,9 @@ public class CacheModule {
             for (Block block : blocks) {
                 levelContainer.chunks.addBlock(block);
             }
+
+            CACHED_CHUNKS.add(id);
+
             op = true;
         }
 
@@ -331,7 +340,19 @@ public class CacheModule {
      * @return is chunk cached or not cached (loaded)
      */
     public static boolean isCached(int chunkId) {
-        File file = new File(getFileName(chunkId));
-        return file.exists();
+        return CACHED_CHUNKS.contains((Integer) chunkId);
     }
+
+    public static int getPos() {
+        return pos;
+    }
+
+    public LevelContainer getLevelContainer() {
+        return levelContainer;
+    }
+
+    public static IList<Integer> getCACHED_CHUNKS() {
+        return CACHED_CHUNKS;
+    }
+
 }

@@ -20,11 +20,11 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -37,10 +37,10 @@ public class DynamicText extends Text {
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getTextDynamicSize();
 
-    protected int dynamicSize = 0;
+//    protected int dynamicSize = DYNAMIC_INCREMENT;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected int[] vboEntries = new int[1024];
-    protected FloatBuffer bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+    protected static FloatBuffer bigFloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
 
     public DynamicText(Texture texture, String content) {
         super(texture, content);
@@ -55,11 +55,7 @@ public class DynamicText extends Text {
     }
 
     public void bufferBigVbo() {
-        // auto adjust dynamic size of float buff and do it on every 1024 element
-        if (content.length() >= dynamicSize) {
-            dynamicSize = content.length() + DYNAMIC_INCREMENT;
-            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
-        }
+        bigFloatBuff = MemoryUtil.memAllocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         bigFloatBuff.clear();
 
         int e = 0;
@@ -83,13 +79,20 @@ public class DynamicText extends Text {
             bigVbo = GL15.glGenBuffers();
         }
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
     public void updateBigVbo() {
         // auto adjust dynamic size of float buff and do it on every 1024 element
+        bigFloatBuff = MemoryUtil.memAllocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         bigFloatBuff.clear();
 
         int e = 0;
@@ -113,9 +116,15 @@ public class DynamicText extends Text {
             bigVbo = GL15.glGenBuffers();
         }
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
     protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
@@ -132,7 +141,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void bufferAll() {
+    public synchronized void bufferAll() {
         setup();
         bufferBigVbo();
         bufferIndices();
@@ -140,8 +149,8 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void bufferSmart() {
-        if (this.content.length() == this.txtChList.size()) {
+    public synchronized void bufferSmart() {
+        if (content.length() == txtChList.size() && bigFloatBuff.capacity() != 0 && bigFloatBuff.capacity() == txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE) {
             setup();
             updateBigVbo();
         } else {
@@ -192,10 +201,9 @@ public class DynamicText extends Text {
         return bigVbo;
     }
 
-    public int getDynamicSize() {
-        return dynamicSize;
-    }
-
+//    public int getDynamicSize() {
+//        return dynamicSize;
+//    }
     public int[] getVboEntries() {
         return vboEntries;
     }

@@ -16,8 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -47,10 +45,6 @@ public interface ComponentIfc {
     public void setEnabled(boolean enabled);
 
     public boolean isBuffered();
-
-    public FloatBuffer getFloatBuffer();
-
-    public IntBuffer getIntBuffer();
 
     public int getVbo();
 

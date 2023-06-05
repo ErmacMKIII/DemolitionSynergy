@@ -509,11 +509,11 @@ public class Intrface {
         randLvlDialog.render(ifcShaderProgram);
         singlePlayerDialog.render(ifcShaderProgram);
         if (!updText.isBuffered()) {
-            updText.bufferAll();
+            updText.bufferSmart();
         }
         updText.render(ifcShaderProgram);
         if (!fpsText.isBuffered()) {
-            fpsText.bufferAll();
+            fpsText.bufferSmart();
         }
         fpsText.render(ifcShaderProgram);
         if (!posText.isBuffered()) {
@@ -521,27 +521,27 @@ public class Intrface {
         }
         posText.render(ifcShaderProgram);
         if (!chunkText.isBuffered()) {
-            chunkText.bufferAll();
+            chunkText.bufferSmart();
         }
         chunkText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
-            collText.bufferAll();
+            collText.bufferSmart();
         }
         collText.render(ifcShaderProgram);
         if (!helpText.isBuffered()) {
-            helpText.bufferAll();
+            helpText.bufferSmart();
         }
         helpText.render(ifcShaderProgram);
         if (!gameModeText.isBuffered()) {
-            gameModeText.bufferAll();
+            gameModeText.bufferSmart();
         }
         gameModeText.render(ifcShaderProgram);
         if (!progText.isBuffered()) {
-            progText.bufferAll();
+            progText.bufferSmart();
         }
         progText.render(ifcShaderProgram);
         if (!screenText.isBuffered()) {
-            screenText.bufferAll();
+            screenText.bufferSmart();
         }
 
         if (!gameTimeText.isBuffered()) {
@@ -572,6 +572,7 @@ public class Intrface {
         mainMenu.update();
         optionsMenu.update();
         editorMenu.update();
+        randLvlMenu.update();
     }
 
     public Quad getCrosshair() {

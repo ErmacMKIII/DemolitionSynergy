@@ -20,12 +20,13 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -114,6 +115,10 @@ public class Window {
         GLFWImage.Buffer buffer = GLFWImage.malloc(1);
         buffer.put(0, icon);
         GLFW.glfwSetWindowIcon(windowID, buffer);
+        if (dataBuffer1.capacity() != 0) {
+            MemoryUtil.memFree(dataBuffer1);
+        }
+
         // setting the cursor (arrow)
         GLFWImage glfwArrowImage = GLFWImage.malloc();
         BufferedImage ds_image2 = Texture.loadImage(Game.INTRFACE_ENTRY, "arrow.png");
@@ -126,6 +131,10 @@ public class Window {
         GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
         monitorWidth = vidmode.width();
         monitorHeight = vidmode.height();
+        if (dataBuffer2.capacity() != 0) {
+            MemoryUtil.memFree(dataBuffer2);
+        }
+
         centerTheWindow();
     }
 
@@ -239,6 +248,7 @@ public class Window {
      * Destroy window with context alltogether
      */
     public void destroy() {
+        Callbacks.glfwFreeCallbacks(windowID);
         GLFW.glfwDestroyWindow(windowID);
         GLFW.glfwTerminate();
     }
@@ -281,7 +291,7 @@ public class Window {
         final int rgba = 4;
 
         GL11.glReadBuffer(GL11.GL_FRONT);
-        ByteBuffer buffer = BufferUtils.createByteBuffer(width * height * rgba); // RGBA -> 4
+        ByteBuffer buffer = MemoryUtil.memCalloc(width * height * rgba); // RGBA -> 4
         GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -295,6 +305,8 @@ public class Window {
                 image.setRGB(x, height - (y + 1), (0xFF << 24) | (r << 16) | (g << 8) | b);
             }
         }
+
+        MemoryUtil.memFree(buffer);
 
         return image;
     }

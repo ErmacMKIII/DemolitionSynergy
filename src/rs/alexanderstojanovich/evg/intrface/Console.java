@@ -48,6 +48,9 @@ public class Console {
 
     public static final int HISTORY_CAPACITY = 12;
 
+    protected GLFWCharCallback glfwCharCallback;
+    protected GLFWKeyCallback glfwKeyCallback;
+
     public Console() {
         this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
                 GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
@@ -68,6 +71,81 @@ public class Console {
         this.completes.pos.x = -1.0f;
         this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
         this.completes.alignToNextChar();
+        init();
+    }
+
+    private void init() {
+        glfwKeyCallback = new GLFWKeyCallback() {
+            @Override
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    inText.setContent("");
+                    completes.setContent("");
+                    input.setLength(0);
+                    enabled = false;
+                } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    if (input.length() > 0) {
+                        input.deleteCharAt(input.length() - 1);
+                        inText.setContent("]" + input + "_");
+                    }
+                } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
+                    if (!input.toString().equals("")) {
+//                            for (DynamicText item : history) {
+//                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
+//                            }
+                        Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
+                        Command cmd = Command.getCommand(input.toString());
+// if cmd is invalid it's null
+                        if (cmd.isRendererCommand()) {
+                            FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                            cmd.status = Command.Status.PENDING;
+                            GameRenderer.TASK_QUEUE.add(consoleTask);
+                        } else if (cmd.isGameCommand()) {
+                            Command.execute(cmd);
+                        }
+
+                        history.add(0, new HistoryItem(cmd, quad));
+
+                        if (history.size() == HISTORY_CAPACITY) {
+                            history.remove(history.size() - 1);
+                        }
+
+                        input.setLength(0);
+                        inText.setContent("]_");
+                    }
+                } else if (key == GLFW.GLFW_KEY_TAB && action == GLFW.GLFW_PRESS) {
+                    List<String> candidates = Command.autoComplete(input.toString());
+                    StringBuilder sb = new StringBuilder();
+                    int index = 0;
+                    for (String candidate : candidates) {
+                        sb.append(candidate);
+                        if (index < candidates.size() - 1) {
+                            sb.append("\n");
+                        }
+                    }
+                    completes.setContent(sb.toString());
+                    completes.setAlignment(Text.ALIGNMENT_LEFT);
+
+                    if (candidates.size() == 1) {
+                        input.setLength(0);
+                        input.append(candidates.get(0));
+                        inText.setContent("]" + input + "_");
+                    }
+                }
+            }
+        };
+
+        glfwCharCallback = new GLFWCharCallback() {
+            @Override
+            public void invoke(long window, int codepoint) {
+                input.append((char) codepoint);
+                inText.setContent("]" + input + "_");
+            }
+        };
     }
 
     public void open() {
@@ -78,77 +156,9 @@ public class Console {
 
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
-                @Override
-                public void invoke(long window, int key, int scancode, int action, int mods) {
-                    if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                        GLFW.glfwSetCharCallback(window, null);
-                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                        inText.setContent("");
-                        completes.setContent("");
-                        input.setLength(0);
-                        enabled = false;
-                    } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                        if (input.length() > 0) {
-                            input.deleteCharAt(input.length() - 1);
-                            inText.setContent("]" + input + "_");
-                        }
-                    } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
-                        if (!input.toString().equals("")) {
-//                            for (DynamicText item : history) {
-//                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
-//                            }
-                            Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
-                            Command cmd = Command.getCommand(input.toString());
-                            // if cmd is invalid it's null
-                            if (cmd.isRendererCommand()) {
-                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
-                                cmd.status = Command.Status.PENDING;
-                                GameRenderer.TASK_QUEUE.add(consoleTask);
-                            } else if (cmd.isGameCommand()) {
-                                Command.execute(cmd);
-                            }
-
-                            history.add(0, new HistoryItem(cmd, quad));
-
-                            if (history.size() == HISTORY_CAPACITY) {
-                                history.remove(history.size() - 1);
-                            }
-
-                            input.setLength(0);
-                            inText.setContent("]_");
-                        }
-                    } else if (key == GLFW.GLFW_KEY_TAB && action == GLFW.GLFW_PRESS) {
-                        List<String> candidates = Command.autoComplete(input.toString());
-                        StringBuilder sb = new StringBuilder();
-                        int index = 0;
-                        for (String candidate : candidates) {
-                            sb.append(candidate);
-                            if (index < candidates.size() - 1) {
-                                sb.append("\n");
-                            }
-                        }
-                        completes.setContent(sb.toString());
-                        completes.setAlignment(Text.ALIGNMENT_LEFT);
-
-                        if (candidates.size() == 1) {
-                            input.setLength(0);
-                            input.append(candidates.get(0));
-                            inText.setContent("]" + input + "_");
-                        }
-                    }
-                }
-            });
+            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
-                @Override
-                public void invoke(long window, int codepoint) {
-                    input.append((char) codepoint);
-                    inText.setContent("]" + input + "_");
-                }
-            });
+            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), glfwCharCallback);
         }
     }
 

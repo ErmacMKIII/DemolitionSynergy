@@ -22,12 +22,12 @@ import java.util.Comparator;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -47,14 +47,14 @@ public class Tuple extends Blocks {
     public static final int MAT4_SIZE = 16;
 
     protected int vec3Vbo = 0;
-    protected FloatBuffer vec3FloatBuff;
+    protected static FloatBuffer vec3FloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * VEC3_SIZE);
 
     protected int mat4Vbo = 0;
-    protected FloatBuffer mat4FloatBuff;
+    protected static FloatBuffer mat4FloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * MAT4_SIZE);
 
     protected final String name;
 
-    protected final IntBuffer intBuff;
+    protected static IntBuffer intBuff;
     protected int ibo = 0;
     protected final int indicesNum;
     protected final int verticesNum;
@@ -68,7 +68,7 @@ public class Tuple extends Blocks {
 
     public Tuple(String texName, int faceEnBits) {
         this.name = String.format("%s%02d", texName, faceEnBits);
-        this.intBuff = Block.createIntBuffer(faceEnBits);
+        Tuple.intBuff = Block.createIntBuffer(faceEnBits);
 
         int numberOfOnes = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -141,12 +141,7 @@ public class Tuple extends Blocks {
 
     @Override
     public void bufferVertices() { // call it before any rendering
-        // auto adjust dynamic size of float buff and do it on every 1000th element
-        if (blockList.size() > dynamicSize) {
-            dynamicSize = blockList.size() + DYNAMIC_INCREMENT;
-            bigFloatBuff = BufferUtils.createFloatBuffer(dynamicSize * verticesNum * Vertex.SIZE);
-        }
-
+        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         bigFloatBuff.clear();
         for (Block block : blockList) {
             for (Vertex vertex : block.vertices) { // for each vertex
@@ -170,13 +165,21 @@ public class Tuple extends Blocks {
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
     @Override
     public void updateVertices() { // call it before any rendering        
+        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         bigFloatBuff.clear();
         int blkIndex = 0;
         for (Block block : blockList) {
@@ -196,16 +199,20 @@ public class Tuple extends Blocks {
         }
         bigFloatBuff.flip();
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        if (bigFloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+        }
     }
 
     // buffering colors
     public void bufferVectors() {
-        if (vec3FloatBuff == null || vec3FloatBuff.capacity() / VEC3_SIZE <= dynamicSize) {
-            vec3FloatBuff = BufferUtils.createFloatBuffer(dynamicSize * VEC3_SIZE);
-        }
+        vec3FloatBuff = MemoryUtil.memAllocFloat(blockList.size() * VEC3_SIZE);
         vec3FloatBuff.clear();
 
         for (Block block : blockList) {
@@ -219,16 +226,21 @@ public class Tuple extends Blocks {
         if (vec3Vbo == 0) {
             vec3Vbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec3Vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec3FloatBuff, GL15.GL_STATIC_DRAW);
+
+        if (vec3FloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec3Vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec3FloatBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (vec3FloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(vec3FloatBuff);
+        }
     }
 
     // buffering model matrices
     public void bufferMatrices() {
-        if (mat4FloatBuff == null || mat4FloatBuff.capacity() / MAT4_SIZE <= dynamicSize) {
-            mat4FloatBuff = BufferUtils.createFloatBuffer(dynamicSize * MAT4_SIZE);
-        }
+        mat4FloatBuff = MemoryUtil.memAllocFloat(blockList.size() * MAT4_SIZE);
         mat4FloatBuff.clear();
 
         for (Block block : blockList) {
@@ -248,20 +260,38 @@ public class Tuple extends Blocks {
         if (mat4Vbo == 0) {
             mat4Vbo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
+
+        if (mat4FloatBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (mat4FloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(mat4FloatBuff);
+        }
     }
 
     @Override
     public void bufferIndices() {
         // storing indices buffer on the graphics card
+        final int faceBits = faceBits();
+        intBuff = Block.createIntBuffer(faceBits);
+        intBuff.clear();
+
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+
+        if (intBuff.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (intBuff.capacity() != 0) {
+            MemoryUtil.memFree(intBuff);
+        }
     }
 
     // renderer does this stuff prior to any rendering

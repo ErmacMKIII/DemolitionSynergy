@@ -271,6 +271,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         if (status) {
                             MasterRenderer.setResolution(width, height);
                             PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+                            PerspectiveRenderer.setBuffered(false);
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;
@@ -449,7 +450,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                                 size = chunk.getBlockList().size();
                             }
                         }
-                        result = String.format("SolidSize = %d | Cached = %s", size, cached);
+                        result = String.format("Size = %d | Cached = %s", size, cached);
                     }
                 }
                 command.status = Status.SUCCEEDED;

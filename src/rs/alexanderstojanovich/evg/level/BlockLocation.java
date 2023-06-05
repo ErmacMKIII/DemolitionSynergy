@@ -19,11 +19,11 @@ package rs.alexanderstojanovich.evg.level;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.function.Predicate;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Chunk;
 
@@ -269,14 +269,14 @@ public class BlockLocation {
      * List of populated locations with given predicated. Warning: this is
      * performance costly - So don't call it in a loop!
      *
-     * @param chunkIdQueue chunkId queue to check (block) population.
+     * @param chunkIdList chunkId list to check (block) population.
      *
      * @param predicate predicate
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocations(Queue<Integer> chunkIdQueue, Predicate<TexByte> predicate) {
+    public List<Vector3f> getPopulatedLocations(IList<Integer> chunkIdList, Predicate<TexByte> predicate) {
         List<Vector3f> result = new GapList<>();
-        for (int chunkId : chunkIdQueue) {
+        for (int chunkId : chunkIdList) {
             float lYBound = -Chunk.BOUND + 2.0f;
             float rYBound = Chunk.BOUND - 2.0f;
 

@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -261,9 +261,16 @@ public class Block extends Model {
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+
+        if (ib.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (ib.capacity() != 0) {
+            MemoryUtil.memFree(ib);
+        }
     }
 
     @Override
@@ -428,7 +435,7 @@ public class Block extends Model {
         return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
-    public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
+    public boolean canBeSeenBy(Vector3f front) {
         boolean bool = false;
 
         for (Vector3f normal : FACE_NORMALS) {
@@ -436,7 +443,7 @@ public class Block extends Model {
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.0625f) {
+            if (Math.abs(vx.dot(vy)) >= 0.15f) {
                 bool = true;
                 break;
             }
@@ -445,15 +452,55 @@ public class Block extends Model {
         return bool;
     }
 
-    public static boolean canBeSeenBy(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
+    @Deprecated
+    public boolean canBeSeenByAdv(Vector3f camFront, Vector3f camPos) {
+        boolean bool = false;
+
+        for (Vector3f normal : FACE_NORMALS) {
+            Vector3f temp1 = new Vector3f();
+            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
+            Vector3f temp2 = new Vector3f();
+            Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
+            Vector3f temp3 = new Vector3f();
+            Vector3f vz = this.pos.sub(camPos, temp3).normalize(temp3);
+            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
+                bool = true;
+                break;
+            }
+        }
+
+        return bool;
+    }
+
+    public static boolean canBeSeenBy(Vector3f blockPos, Vector3f camFront) {
         boolean bool = false;
 
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.0625f) {
+            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
+            if (Math.abs(vx.dot(vy)) >= 0.15f) {
+                bool = true;
+                break;
+            }
+        }
+
+        return bool;
+    }
+
+    @Deprecated
+    public static boolean canBeSeenByAdv(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
+        boolean bool = false;
+
+        for (Vector3f normal : FACE_NORMALS) {
+            Vector3f temp1 = new Vector3f();
+            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
+            Vector3f temp2 = new Vector3f();
+            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
+            Vector3f temp3 = new Vector3f();
+            Vector3f vz = blockPos.sub(camPos, temp3).normalize(temp3);
+            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
                 bool = true;
                 break;
             }
@@ -737,7 +784,7 @@ public class Block extends Model {
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
         // storing indices in the buffer
-        IntBuffer intBuff = BufferUtils.createIntBuffer(indices.size());
+        IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         for (Integer index : indices) {
             intBuff.put(index);
         }
@@ -907,14 +954,14 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
+    public static boolean intersectsRay(Vector3f blockPos, Vector3f dir, Vector3f origin) {
         boolean ints = false;
         Vector3f temp1 = new Vector3f();
         Vector3f min = blockPos.sub(1.0f, 1.0f, 1.0f, temp1);
         Vector3f temp2 = new Vector3f();
         Vector3f max = blockPos.add(1.0f, 1.0f, 1.0f, temp2);
         Vector2f result = new Vector2f();
-        ints = Intersectionf.intersectRayAab(l0, l, min, max, result);
+        ints = Intersectionf.intersectRayAab(origin, dir, min, max, result);
         return ints;
     }
 

@@ -16,12 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.joml.Vector2f;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWCharCallback;
-import org.lwjgl.glfw.GLFWKeyCallback;
-import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
@@ -31,22 +28,8 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread                
 
-    private final Runnable command = new Runnable() { // executable command (calls execute method)
-        @Override
-        public void run() {
-            boolean ok = execute(input.toString());
-            if (ok) {
-                dialog.setContent(success);
-                dialog.color = Vector3fColors.GREEN;
-            } else {
-                dialog.setContent(fail);
-                dialog.color = Vector3fColors.RED;
-            }
-            input.setLength(0);
-            done = true;
-        }
-    };
-
+    private Runnable command;
+    public static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private Thread dialogThread; // thread which executes command     
 
     public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) {
@@ -56,60 +39,27 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
     @Override
     protected abstract boolean execute(String command); // we need to override this upon creation of the dialog     
 
+    // what is happening internally on command
     @Override
-    public void open() {
-        if (input.length() == 0) {
-            enabled = true;
-            done = false;
-            dialog.setContent(question + "_");
-            dialog.color = Vector3fColors.WHITE;
-            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
-                @Override
-                public void invoke(long window, int key, int scancode, int action, int mods) {
-                    if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                        GLFW.glfwSetCharCallback(window, null);
-                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                        dialog.setContent("");
-                        input.setLength(0);
-                        enabled = false;
-                        done = true;
-                    } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                        if (input.length() > 0) {
-                            input.deleteCharAt(input.length() - 1);
-                            dialog.setContent(question + input + "_");
-                        }
-                    } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                        GLFW.glfwSetCharCallback(window, null);
-                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                        if (!input.toString().equals("")) {
-                            dialogThread = new Thread(command, "Concurrent Dialog Thread");
-                            dialogThread.start();
-                        } else {
-                            dialog.setContent("");
-                            enabled = false;
-                            done = true;
-                        }
-                        // pls use getter for done and setter for enabled outside
-                        // using timer to determine when to stop showing dialog 
-                        // to set enabled to false
-                    }
+    protected void onCommand() {
+        command = () -> {
+            if (!input.toString().equals("")) {
+                boolean execStatus = execute(input.toString());
+                if (execStatus) {
+                    dialog.setContent(success);
+                    dialog.color = Vector3fColors.GREEN;
+                } else {
+                    dialog.setContent(fail);
+                    dialog.color = Vector3fColors.RED;
                 }
-            });
-            GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
-                @Override
-                public void invoke(long window, int codepoint) {
-                    input.append((char) codepoint);
-                    dialog.setContent(question + input + "_");
-                }
-            });
-        }
+            } else {
+                dialog.setContent("");
+                enabled = false;
+            }
+            input.setLength(0);
+            done = true;
+        };
+        EXECUTOR.execute(command);
     }
 
     public Runnable getCommand() {
