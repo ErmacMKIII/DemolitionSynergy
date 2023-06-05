@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -268,11 +269,11 @@ public abstract class Menu {
         if (enabled && useMouse) {
             int index = 0;
             for (MenuItem item : items) {
-                float xMin = item.keyText.pos.x; // it already contains pos.x
-                float xMax = xMin + itemScale * item.keyText.getRelativeWidth();
+                float xMin = item.keyText.pos.x - item.keyText.scale * item.keyText.getRelativeWidth();
+                float xMax = item.keyText.pos.x + item.keyText.scale * item.keyText.getRelativeWidth();
 
-                float yMin = item.keyText.pos.y; // it already contains pos.y
-                float yMax = yMin + itemScale * item.keyText.getRelativeCharHeight();
+                float yMin = item.keyText.pos.y - item.keyText.scale * item.keyText.getRelativeCharHeight();
+                float yMax = item.keyText.pos.y + item.keyText.scale * item.keyText.getRelativeCharHeight();
 
                 if (xposGL >= xMin
                         && xposGL <= xMax

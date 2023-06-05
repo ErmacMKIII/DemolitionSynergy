@@ -20,7 +20,6 @@ import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
-import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
@@ -138,12 +137,28 @@ public abstract class OptionsMenu extends Menu {
                     if (selectedMenuItem != null) {
                         switch (selectedMenuItem.editType) {
                             case EditSingleValue:
-                                SingleValue selectedSingleValue = (SingleValue) selectedMenuItem.getMenuValue();
-                                selectedSingleValue.setCurrentValue(input);
+                                switch (mode) {
+                                    case INIT:
+                                        input.setLength(0);
+                                        input.append(selectedMenuItem.menuValue.getCurrentValue());
+                                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                                        inputEdited = false;
+                                        mode = InputMode.GET;
+                                        break;
+                                    case GET:
+                                        mode = InputMode.PUT;
+                                        break;
+                                    case PUT:
+                                        selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
+                                        mode = InputMode.INIT;
+                                        execute();
+                                        break;
+                                }
                                 break;
                             case EditMultiValue:
                                 MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
                                 selectedMultiValue.selectNext();
+                                execute();
                                 break;
                             case EditNoValue:
                             default:

@@ -27,6 +27,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -54,7 +55,7 @@ public class Text implements ComponentIfc {
     public static final float LINE_SPACING = 1.5f;
 
     // first is position, second is uvs
-    protected final List<TextCharacter> txtChList = new GapList<>();
+    protected final IList<TextCharacter> txtChList = new GapList<>();
 
     protected boolean enabled;
 
@@ -228,7 +229,6 @@ public class Text implements ComponentIfc {
     @Override
     public synchronized void render(ShaderProgram shaderProgram) {
         if (enabled && buffered) {
-            Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -256,7 +256,6 @@ public class Text implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            Texture.disable();
         }
     }
 
@@ -311,7 +310,7 @@ public class Text implements ComponentIfc {
         return modelMatrix;
     }
 
-    public List<TextCharacter> getTxtChList() {
+    public IList<TextCharacter> getTxtChList() {
         return txtChList;
     }
 

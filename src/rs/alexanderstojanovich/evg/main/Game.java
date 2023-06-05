@@ -538,6 +538,8 @@ public class Game {
         causingCollision = false;
         needOptimize = false;
 
+        GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
+
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;

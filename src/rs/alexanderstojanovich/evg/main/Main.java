@@ -27,6 +27,10 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class Main {
 
     public static void main(String[] args) {
+        // JOML configuration
+        System.setProperty("joml.nounsafe", "true");
+        System.setProperty("joml.fastmath", "true");
+
         CacheModule.deleteCache();
         Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
@@ -42,7 +46,7 @@ public class Main {
         GameObject.MY_WINDOW.centerTheWindow();
         GameObject.start();
         //----------------------------------------------------------------------        
-        Configuration outCfg = GameObject.game.makeConfig(); // makes configuration from ingame settings
+        Configuration outCfg = Game.makeConfig(); // makes configuration from ingame settings
         outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
         GameObject.destroy(); // destroy window alongside with the OpenGL context
