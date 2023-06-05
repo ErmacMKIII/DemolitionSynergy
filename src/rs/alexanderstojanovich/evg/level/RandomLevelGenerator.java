@@ -489,6 +489,7 @@ public class RandomLevelGenerator {
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
+            numOfLights = 0;
             maxNumOfLights = Math.round(0.19f * LightSources.MAX_LIGHTS * totalAmount / 25000.0f);
 
             if (totalAmount > 0) {

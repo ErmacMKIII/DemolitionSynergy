@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
@@ -319,6 +320,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     * Load the window context and destroyes the window.
      */
     public static void destroy() {
+        ConcurrentDialog.EXECUTOR.shutdown();
         MY_WINDOW.loadContext();
         MY_WINDOW.destroy();
     }

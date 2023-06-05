@@ -298,6 +298,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
+    @Deprecated
     public void release() {
         if (buffered) {
             GL15.glDeleteBuffers(bigVbo);

@@ -21,7 +21,7 @@ In order to build the project you are gonna need NetBeans IDE 16 (or later) and 
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) (installed),
 
-Download lastest library LWJGL (3.3.2 at this time) from:
+Download latest library LWJGL (3.3.2 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)
 
 Put [MoveAllFiles.bat](/utils/MoveAllFiles.bat) inside the directory with downloaded & extracted zip content.

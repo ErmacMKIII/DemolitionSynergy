@@ -20,6 +20,7 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -247,6 +248,7 @@ public class Window {
      * Destroy window with context alltogether
      */
     public void destroy() {
+        Callbacks.glfwFreeCallbacks(windowID);
         GLFW.glfwDestroyWindow(windowID);
         GLFW.glfwTerminate();
     }

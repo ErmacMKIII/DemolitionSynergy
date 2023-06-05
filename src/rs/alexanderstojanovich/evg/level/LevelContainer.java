@@ -67,7 +67,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
-    public static final int LIST_APACITY = 8;
+    public static final int LIST_CAPACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -86,8 +86,8 @@ public class LevelContainer implements GravityEnviroment {
         }
     };
 
-    private final IList<Integer> vChnkIdList = new GapList<>(LIST_APACITY);
-    private final IList<Integer> iChnkIdList = new GapList<>(LIST_APACITY);
+    private final IList<Integer> vChnkIdList = new GapList<>(LIST_CAPACITY);
+    private final IList<Integer> iChnkIdList = new GapList<>(LIST_CAPACITY);
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;

@@ -42,6 +42,9 @@ public abstract class Dialog {
     protected final String success; // message if succesful execution
     protected final String fail; // message if failure
 
+    protected final GLFWCharCallback charCallback;
+    protected final GLFWKeyCallback keyCallback;
+
     public Dialog(Texture texture, Vector2f pos,
             String question, String success, String fail) {
         this.dialog = new DynamicText(texture, "");
@@ -51,9 +54,66 @@ public abstract class Dialog {
         this.question = question;
         this.success = success;
         this.fail = fail;
+
+        charCallback = new GLFWCharCallback() {
+            @Override
+            public void invoke(long window, int codepoint) {
+                input.append((char) codepoint);
+                dialog.setContent(question + input + "_");
+            }
+        };
+
+        keyCallback = new GLFWKeyCallback() {
+            @Override
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    dialog.setContent("");
+                    input.setLength(0);
+                    enabled = false;
+                    done = true;
+                } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    if (input.length() > 0) {
+                        input.deleteCharAt(input.length() - 1);
+                        dialog.setContent(question + input + "_");
+                    }
+                } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    onCommand();
+                    // pls use getter for done and setter for enabled outside
+                    // using timer to determine when to stop showing dialog 
+                    // to set enabled to false
+                }
+            }
+        };
     }
 
-    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog        
+    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog  
+
+    // what is happening internally on command
+    protected void onCommand() {
+        if (!input.toString().equals("")) {
+            boolean execStatus = execute(input.toString());
+            if (execStatus) {
+                dialog.setContent(success);
+                dialog.color = Vector3fColors.GREEN;
+            } else {
+                dialog.setContent(fail);
+                dialog.color = Vector3fColors.RED;
+            }
+        } else {
+            dialog.setContent("");
+            enabled = false;
+        }
+        input.setLength(0);
+        done = true;
+    }
 
     public void open() {
         if (input.length() == 0) {
@@ -63,57 +123,9 @@ public abstract class Dialog {
             dialog.color = Vector3fColors.WHITE;
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
-                @Override
-                public void invoke(long window, int key, int scancode, int action, int mods) {
-                    if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                        GLFW.glfwSetCharCallback(window, null);
-                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                        dialog.setContent("");
-                        input.setLength(0);
-                        enabled = false;
-                        done = true;
-                    } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                        if (input.length() > 0) {
-                            input.deleteCharAt(input.length() - 1);
-                            dialog.setContent(question + input + "_");
-                        }
-                    } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
-                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                        GLFW.glfwSetCharCallback(window, null);
-                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                        if (!input.toString().equals("")) {
-                            boolean execStatus = execute(input.toString());
-                            if (execStatus) {
-                                dialog.setContent(success);
-                                dialog.color = Vector3fColors.GREEN;
-                            } else {
-                                dialog.setContent(fail);
-                                dialog.color = Vector3fColors.RED;
-                            }
-                        } else {
-                            dialog.setContent("");
-                            enabled = false;
-                        }
-                        input.setLength(0);
-                        done = true;
-                        // pls use getter for done and setter for enabled outside
-                        // using timer to determine when to stop showing dialog 
-                        // to set enabled to false
-                    }
-                }
-            });
+            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), keyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
-                @Override
-                public void invoke(long window, int codepoint) {
-                    input.append((char) codepoint);
-                    dialog.setContent(question + input + "_");
-                }
-            });
+            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), charCallback);
         }
     }
 

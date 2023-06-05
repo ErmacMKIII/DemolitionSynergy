@@ -617,6 +617,8 @@ public class Game {
         // stops the music        
         GameObject.getMusicPlayer().stop();
 
+        GLFWErrorCallback.createPrint(null).free();
+
         DSLogger.reportInfo("Main loop ended.", null);
     }
 
