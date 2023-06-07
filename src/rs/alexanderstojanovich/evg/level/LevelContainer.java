@@ -39,8 +39,6 @@ import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
-import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -834,7 +832,7 @@ public class LevelContainer implements GravityEnviroment {
         LIGHT_SOURCES.modified = false;
     }
 
-    public synchronized void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -860,7 +858,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(camera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
@@ -869,7 +866,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
         if (selectedNewWireFrame != null) {
-            selectedNewWireFrame.setLight(camera.getPos());
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
             }
@@ -878,7 +874,6 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
         if (selectedCurrFrame != null) {
-            selectedCurrFrame.setLight(camera.getPos());
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }

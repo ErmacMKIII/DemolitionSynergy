@@ -21,7 +21,6 @@ import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
@@ -264,7 +263,9 @@ public class Editor {
     public static void add() {
         if (selectedNew != null) {
             if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
-                GameObject.getLevelContainer().chunks.addBlock(selectedNew);
+                synchronized (GameObject.MUTEX) { // potentially dangerous
+                    GameObject.getLevelContainer().chunks.addBlock(selectedNew);
+                }
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 loaded = new Block(Texture.TEX_WORLD[texValue]);
             }
@@ -274,7 +275,9 @@ public class Editor {
 
     public static void remove() {
         if (selectedCurr != null) {
-            GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
+            synchronized (GameObject.MUTEX) { // potentially dangerous
+                GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
+            }
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
@@ -285,8 +288,8 @@ public class Editor {
             String texName = Texture.TEX_WORLD[texValue];
             loaded.setTexName(texName);
             loaded.setSolid(!texName.equals("water"));
-            Block.deepCopyTo(loaded.getVertices(), Texture.TEX_WORLD[texValue]);
-            loaded.unbuffer();
+            Block.deepCopyTo(loaded.getMeshes().getFirst().getVertices(), Texture.TEX_WORLD[texValue]);
+            loaded.getMeshes().getFirst().unbuffer();
         }
     }
 

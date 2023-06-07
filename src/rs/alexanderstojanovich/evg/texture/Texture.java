@@ -37,8 +37,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
@@ -52,7 +52,6 @@ import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  *
@@ -64,12 +63,15 @@ public class Texture {
     private int textureID = 0;
     private boolean buffered = false;
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
+    public static final Map<String, TexValue> TEX_MAP = new LinkedHashMap<>();
 
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
-    public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
+
     public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
     public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
+    public static final TexValue QMARK_TV = new TexValue(QMARK, -1);
+
     public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png");
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
 
@@ -85,35 +87,9 @@ public class Texture {
         "W09G3", "W10M6", "W11MS", "W12W2",
         "W13B9", "W14R7", "W15DR", "W16M8"};
     public static final int GRID_SIZE_PLAYER = 4;
-    public static final Map<String, Pair<Texture, Integer>> TEX_MAP = new HashMap<>();
+
+    public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
     public static final Texture PLAYER = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER, GRID_SIZE_PLAYER);
-
-    static {
-        // interface stuff
-        TEX_MAP.put("logox", new Pair<>(LOGO, -1));
-        TEX_MAP.put("xhair", new Pair<>(CROSSHAIR, -1));
-        TEX_MAP.put("minigun", new Pair<>(MINIGUN, -1));
-        TEX_MAP.put("font", new Pair<>(FONT, -1));
-        TEX_MAP.put("console", new Pair<>(CONSOLE, -1));
-        TEX_MAP.put("lbulb", new Pair<>(LIGHT_BULB, -1));
-        // world stuff
-        int index;
-        index = 0;
-        for (String texname : TEX_WORLD) {
-            TEX_MAP.put(texname, new Pair<>(WORLD, index++));
-        }
-
-        TEX_MAP.put("suntx", new Pair<>(SUN, -1));
-        TEX_MAP.put("qmark", new Pair<>(QMARK, -1));
-        TEX_MAP.put("decal", new Pair<>(DECAL, -1));
-        TEX_MAP.put("night", new Pair<>(NIGHT, -1));
-
-        // player stuff
-        index = 0;
-        for (String texname : TEX_PLAYER) {
-            TEX_MAP.put(texname, new Pair<>(PLAYER, index++));
-        }
-    }
 
     /**
      * Creates blank Texture (TEXSIZE x TEXSIZE)
@@ -130,6 +106,7 @@ public class Texture {
      */
     public Texture(String subDir, String fileName) {
         this.image = loadImage(subDir, fileName);
+        Texture.TEX_MAP.put(fileName.substring(0, fileName.indexOf(".")), new TexValue(this, -1));
     }
 
     public static BufferedImage loadImage(String dirEntry, String fileName) {
@@ -387,10 +364,15 @@ public class Texture {
 
             g2d.drawImage(image, x, y, texUnitSize, texUnitSize, null);
 
+            TEX_MAP.putIfAbsent(texName, new TexValue(result, index));
             index++;
         }
 
         return result;
+    }
+
+    public static Texture getOrDefault(String texName) {
+        return TEX_MAP.getOrDefault(texName, Texture.QMARK_TV).texture;
     }
 
     public BufferedImage getImage() {

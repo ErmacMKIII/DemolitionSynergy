@@ -141,7 +141,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public synchronized void bufferAll() {
+    public void bufferAll() {
         setup();
         bufferBigVbo();
         bufferIndices();
@@ -149,7 +149,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public synchronized void bufferSmart() {
+    public void bufferSmart() {
         if (content.length() == txtChList.size() && bigFloatBuff.capacity() != 0 && bigFloatBuff.capacity() == txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE) {
             setup();
             updateBigVbo();

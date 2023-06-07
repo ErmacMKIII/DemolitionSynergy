@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.models;
+package rs.alexanderstojanovich.evg.level;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,12 +23,8 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.level.CacheModule;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.level.LightSource;
-import rs.alexanderstojanovich.evg.level.LightSources;
-import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -80,7 +76,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    public synchronized Tuple getTuple(String keyTexture, Integer keyFaceBits) {
+    public Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -108,7 +104,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    public static synchronized Tuple getTuple(List<Tuple> tupleList, String keyTexture, Integer keyFaceBits) {
+    public static Tuple getTuple(List<Tuple> tupleList, String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -143,7 +139,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -161,7 +157,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -194,7 +190,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param currFaceBits face bits current (after the change)
      */
     public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
-        String texture = block.texName;
+        String texture = block.getTexName();
 
         Tuple srcTuple = getTuple(texture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
@@ -226,7 +222,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      */
     protected void updateForAdd(Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
-        int nbits = block.solid
+        int nbits = block.isSolid()
                 ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
                 : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
         // if has neighbors (otherwise pointless)
@@ -253,7 +249,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
                 if (location != null) {
                     String tupleTexName = location.getTexName();
-                    int adjNBits = block.solid
+                    int adjNBits = block.isSolid()
                             ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(adjPos)
                             : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(adjPos);
                     int k = ((j & 1) == 0 ? j + 1 : j - 1);
@@ -291,7 +287,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
             TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
-            int nBits = block.solid
+            int nBits = block.isSolid()
                     ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
                     : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
             // location exists and has neighbors (otherwise pointless)
@@ -368,7 +364,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param block block to add
      */
     public void addBlock(Block block) {
-        String blockTexture = block.texName;
+        String blockTexture = block.getTexName();
         int blockFaceBits = block.getFaceBits();
         Tuple tuple = getTuple(blockTexture, blockFaceBits);
 
@@ -377,23 +373,21 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             tupleList.add(tuple);
             tupleList.sort(Tuple.TUPLE_COMP);
         }
-
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
+        buffered = false;
         blockList.sort(Block.UNIQUE_BLOCK_CMP);
 
         // level container also set neighbor bits
         LevelContainer.putBlock(block);
         // update original block with neighbor blocks
         // check if it's light block
-        LightSource lightSource = new LightSource(block.pos, block.primaryColor, LightSource.DEFAULT_LIGHT_INTENSITY);
+        LightSource lightSource = new LightSource(block.pos, block.getPrimaryColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
         if (block.getTexName().equals("reflc")
                 && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
             LevelContainer.LIGHT_SOURCES.getLightSrcList().add(lightSource);
         }
         updateForAdd(block);
-
-        buffered = false;
     }
 
     /**
@@ -402,7 +396,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param block block to remove
      */
     public void removeBlock(Block block) {
-        String blockTexture = block.texName;
+        String blockTexture = block.getTexName();
         int blockFaceBits = block.getFaceBits();
         Tuple target = getTuple(blockTexture, blockFaceBits);
         if (target != null) {

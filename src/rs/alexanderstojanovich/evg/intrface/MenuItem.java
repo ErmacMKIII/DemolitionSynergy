@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 coas9
+ * Copyright (C) 2022 coas91@rocketmail.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

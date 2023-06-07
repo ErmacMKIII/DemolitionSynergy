@@ -203,7 +203,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public synchronized void bufferAll() {
+    public void bufferAll() {
         setup();
         bufferVertices();
         bufferIndices();
@@ -211,7 +211,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public synchronized void bufferSmart() {
+    public void bufferSmart() {
         setup();
         if (vbo == 0) {
             bufferVertices();
@@ -227,7 +227,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public synchronized void render(ShaderProgram shaderProgram) {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled && buffered) {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -344,7 +344,7 @@ public class Text implements ComponentIfc {
         return content;
     }
 
-    public synchronized void setContent(String content) {
+    public void setContent(String content) {
         this.content = content;
         buffered = false;
     }

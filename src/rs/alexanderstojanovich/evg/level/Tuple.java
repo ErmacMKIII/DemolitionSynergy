@@ -14,11 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.models;
+package rs.alexanderstojanovich.evg.level;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
+import java.util.Objects;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -28,8 +29,9 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
-import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -97,7 +99,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -115,7 +117,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.solid, candidate.texName, candidate.pos);
+            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -144,7 +146,7 @@ public class Tuple extends Blocks {
         bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         bigFloatBuff.clear();
         for (Block block : blockList) {
-            for (Vertex vertex : block.vertices) { // for each vertex
+            for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
                     bigFloatBuff.put(vertex.getPos().y);
@@ -181,9 +183,10 @@ public class Tuple extends Blocks {
     public void updateVertices() { // call it before any rendering        
         bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         bigFloatBuff.clear();
+
         int blkIndex = 0;
         for (Block block : blockList) {
-            for (Vertex vertex : block.vertices) { // for each vertex
+            for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
                     bigFloatBuff.put(vertex.getPos().y);
@@ -216,7 +219,7 @@ public class Tuple extends Blocks {
         vec3FloatBuff.clear();
 
         for (Block block : blockList) {
-            Vector3f color = block.getPrimaryColor();
+            Vector3f color = block.getMaterials().getFirst().getColor();
             vec3FloatBuff.put(color.x);
             vec3FloatBuff.put(color.y);
             vec3FloatBuff.put(color.z);
@@ -304,12 +307,34 @@ public class Tuple extends Blocks {
         buffered = true;
     }
 
-    @Deprecated
     @Override
-    public void release() {
-//        GL15.glDeleteBuffers(blocks.getBigVbo());
-//        GL15.glDeleteBuffers(vec3Vbo);
-//        GL15.glDeleteBuffers(mat4Vbo);
+    public void animate() { // call only for fluid blocks
+        if (!buffered || blockList.isEmpty() || isSolid()) {
+            return;
+        }
+
+        for (Block block : blockList) {
+            if (!block.isSolid()) {
+                block.getMeshes().getFirst().triangSwap();
+            }
+        }
+
+        updateVertices();
+    }
+
+    @Override
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+        if (!buffered || blockList.isEmpty() || isSolid()) {
+            return;
+        }
+
+        for (Block block : blockList) {
+            if (!block.isSolid() && cameraInFluid ^ block.isVerticesReversed()) {
+                block.reverseFaceVertexOrder();
+            }
+        }
+
+        updateVertices();
     }
 
     public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture) {
@@ -344,7 +369,7 @@ public class Tuple extends Blocks {
 
             shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 
-            Texture blocksTexture = Texture.TEX_MAP.get(texName).getKey();
+            Texture blocksTexture = Texture.getOrDefault(texName);
             if (blocksTexture != null) {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -371,6 +396,36 @@ public class Tuple extends Blocks {
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 97 * hash + Objects.hashCode(this.name);
+        hash = 97 * hash + this.indicesNum;
+        hash = 97 * hash + this.verticesNum;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Tuple other = (Tuple) obj;
+        if (this.indicesNum != other.indicesNum) {
+            return false;
+        }
+        if (this.verticesNum != other.verticesNum) {
+            return false;
+        }
+        return Objects.equals(this.name, other.name);
     }
 
     public String texName() {

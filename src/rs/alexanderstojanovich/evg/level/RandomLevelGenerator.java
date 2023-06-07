@@ -20,7 +20,6 @@ import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;

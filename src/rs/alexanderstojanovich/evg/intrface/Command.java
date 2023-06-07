@@ -31,7 +31,7 @@ import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
-import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 

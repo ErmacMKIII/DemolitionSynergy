@@ -573,13 +573,17 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
-                        actionPerformed |= editorDo();
+                        synchronized (GameObject.MUTEX) {
+                            actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= editorDo();
+                        }
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
+                        synchronized (GameObject.MUTEX) {
+                            actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
+                        }
                         break;
                 }
 
@@ -594,9 +598,9 @@ public class Game {
                 timera += 20.0;
             }
 
-            if (Game.accumulator - timero > 480.0) { // optimization every 6 seconds
+            if (Game.accumulator - timero > 10.0) { // optimization every 125ms
                 needOptimize = true;
-                timero += 480.0;
+                timero += 10.0;
             }
 
             if (actionPerformed) {

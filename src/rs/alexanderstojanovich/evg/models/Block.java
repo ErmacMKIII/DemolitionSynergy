@@ -37,6 +37,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.level.TexByte;
@@ -45,6 +46,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -109,21 +111,33 @@ public class Block extends Model {
     public Block(String texName) {
         super("cubex.txt", texName);
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices, texName);
-        indices.addAll(INDICES);
+        final Mesh mesh = new Mesh();
+        deepCopyTo(mesh.vertices, texName);
+        mesh.indices.addAll(INDICES);
+        meshes.add(mesh);
+        Material material = new Material(Texture.getOrDefault(texName));
+        material.color = new Vector3f(Vector3fColors.WHITE);
+        materials.add(material);
         calcDims();
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("cubex.txt", texName, pos, primaryColor, solid);
+        super("cubex.txt", texName);
+        this.pos = pos;
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices, texName);
-        indices.addAll(INDICES);
+        final Mesh mesh = new Mesh();
+        deepCopyTo(mesh.vertices, texName);
+        mesh.indices.addAll(INDICES);
+        meshes.add(mesh);
+        Material material = new Material(Texture.getOrDefault(texName));
+        material.color = primaryColor;
+        materials.add(material);
+        this.solid = solid;
         calcDims();
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
-    public static void deepCopyTo(List<Vertex> vertices, String texName) {
+    public static void deepCopyTo(IList<Vertex> vertices, String texName) {
         int texIndex = Texture.TEX_MAP.get(texName).getValue();
         int row = texIndex / Texture.GRID_SIZE_WORLD;
         int col = texIndex % Texture.GRID_SIZE_WORLD;
@@ -253,33 +267,6 @@ public class Block extends Model {
         }
     }
 
-    @Override
-    public void bufferIndices() {
-        // storing indices in the buffer
-        IntBuffer ib = createIntBuffer(getFaceBits());
-        // storing indices buffer on the graphics card
-        if (ibo == 0) {
-            ibo = GL15.glGenBuffers();
-        }
-
-        if (ib.capacity() != 0) {
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
-        }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        if (ib.capacity() != 0) {
-            MemoryUtil.memFree(ib);
-        }
-    }
-
-    @Override
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
-    }
-
     /**
      * Render multiple blocks old fashion way.
      *
@@ -305,7 +292,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -314,7 +301,6 @@ public class Block extends Model {
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
-                block.useLight(shaderProgram);
                 block.setAlpha(shaderProgram);
                 block.primaryColor(shaderProgram);
 
@@ -358,7 +344,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -368,7 +354,6 @@ public class Block extends Model {
             for (Block block : blocks) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    block.useLight(shaderProgram);
                     block.setAlpha(shaderProgram);
                     block.primaryColor(shaderProgram);
 
@@ -394,11 +379,6 @@ public class Block extends Model {
         width = Math.abs(maxv.x - minv.x) * scale;
         height = Math.abs(maxv.y - minv.y) * scale;
         depth = Math.abs(maxv.z - minv.z) * scale;
-    }
-
-    @Override
-    public String toString() {
-        return "Block{" + "texture=" + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
@@ -531,6 +511,7 @@ public class Block extends Model {
     }
 
     public void disableFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
             subVertex.setEnabled(false);
         }
@@ -538,6 +519,7 @@ public class Block extends Model {
     }
 
     public void enableFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
             subVertex.setEnabled(true);
         }
@@ -545,6 +527,7 @@ public class Block extends Model {
     }
 
     public void enableAllFaces() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             vertex.setEnabled(true);
         }
@@ -552,6 +535,7 @@ public class Block extends Model {
     }
 
     public void disableAllFaces() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             vertex.setEnabled(false);
         }
@@ -559,6 +543,7 @@ public class Block extends Model {
     }
 
     public void reverseFaceVertexOrder() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (int faceNum = 0; faceNum <= 5; faceNum++) {
             Collections.reverse(getFaceVertices(vertices, faceNum));
         }
@@ -573,6 +558,7 @@ public class Block extends Model {
 
     public void setUVsForSkybox() {
         revertGroupsOfVertices();
+        IList<Vertex> vertices = meshes.getFirst().vertices;
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
         vertices.get(4 * LEFT).getUv().y = 1.0f / 3.0f;
@@ -614,14 +600,16 @@ public class Block extends Model {
     }
 
     public void nullifyNormalsForFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         List<Vertex> faceVertices = Block.getFaceVertices(vertices, faceNum);
         for (Vertex fv : faceVertices) {
             fv.getNormal().zero();
         }
-        buffered = false;
+        meshes.getFirst().buffered = false;
     }
 
     private void revertGroupsOfVertices() {
+        IList<Vertex> vertices = meshes.getFirst().vertices;
         Collections.reverse(vertices.subList(4 * LEFT, 4 * LEFT + 3));
         Collections.reverse(vertices.subList(4 * RIGHT, 4 * RIGHT + 3));
         Collections.reverse(vertices.subList(4 * BOTTOM, 4 * BOTTOM + 3));
@@ -653,6 +641,7 @@ public class Block extends Model {
 
     public int getNumOfEnabledVertices() {
         int num = 0;
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 num++;
@@ -974,7 +963,7 @@ public class Block extends Model {
         byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
         System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
         offset += posArr.length;
-        byte[] colArr = Vector3fUtils.vec3fToByteArray(primaryColor);
+        byte[] colArr = Vector3fUtils.vec3fToByteArray(materials.getFirst().color);
         System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
 
         return byteArray;
@@ -1000,6 +989,16 @@ public class Block extends Model {
         Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(super.toString());
+        sb.append("Block{");
+        sb.append("enabledFaces=").append(enabledFaces);
+        sb.append(", verticesReversed=").append(verticesReversed);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

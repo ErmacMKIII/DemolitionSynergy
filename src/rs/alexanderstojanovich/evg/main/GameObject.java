@@ -32,7 +32,7 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -68,6 +68,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected static GameRenderer renderer;
 
     public static Quad SPLASH_SCREEN;
+
+    public static final Object MUTEX = new Object();
 
     /**
      * Init this game container.
@@ -145,8 +147,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
-            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
-            levelContainer.update(deltaTime);
+            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
+            synchronized (MUTEX) {
+                levelContainer.update(deltaTime);
+            }
             Vector3f pos = levelContainer.levelActors.getMainActor().getPosition();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
@@ -186,7 +190,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             GameObject.getLevelContainer().setProgress(0.0f);
         }
 
-        intrface.update();
+        synchronized (MUTEX) {
+            intrface.update();
+        }
     }
 
     public static void assertCheckCollision(boolean collision) {
@@ -240,13 +246,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             if (!levelContainer.isWorking()) { // working check avoids locking the monitor
                 Camera mainCamera = levelContainer.getLevelActors().mainCamera();
                 mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
-
-                levelContainer.render();
-                if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                    waterRenderer.render();
+                synchronized (MUTEX) {
+                    levelContainer.render();
+                    if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                        waterRenderer.render();
+                    }
                 }
             }
-            intrface.render(ShaderProgram.getIntrfaceShader());
+            synchronized (MUTEX) {
+                intrface.render(ShaderProgram.getIntrfaceShader());
+            }
         }
 
         MY_WINDOW.render();
@@ -268,7 +277,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return did chunk operations modify anything (something changed).
      */
     public static boolean chunkOperations() {
-        return levelContainer.chunkOperations();
+        synchronized (MUTEX) {
+            return levelContainer.chunkOperations();
+        }
     }
 
     /**
@@ -276,14 +287,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public static void animate() {
-        levelContainer.animate();
+        synchronized (MUTEX) {
+            levelContainer.animate();
+        }
     }
 
     /**
      * Optimize with special tuples
      */
     public static void optimize() {
-        levelContainer.optimize();
+        synchronized (MUTEX) {
+            levelContainer.optimize();
+        }
     }
 
     // -------------------------------------------------------------------------

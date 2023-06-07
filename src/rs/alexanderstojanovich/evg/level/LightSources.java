@@ -34,7 +34,7 @@ public class LightSources {
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
 
-    public synchronized boolean updateLightsInShader(ShaderProgram shaderProgram) {
+    public boolean updateLightsInShader(ShaderProgram shaderProgram) {
         boolean uniformsUpdated = false;
         if (modified) {
             shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
@@ -44,15 +44,15 @@ public class LightSources {
         return uniformsUpdated;
     }
 
-    public synchronized List<LightSource> getLightSrcList() {
+    public List<LightSource> getLightSrcList() {
         return lightSrcList;
     }
 
-    public synchronized boolean isModified() {
+    public boolean isModified() {
         return modified;
     }
 
-    public synchronized void setModified(boolean modified) {
+    public void setModified(boolean modified) {
         this.modified = modified;
     }
 

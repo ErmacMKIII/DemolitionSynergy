@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.models;
+package rs.alexanderstojanovich.evg.level;
 
 import java.util.Comparator;
 import java.util.List;
@@ -23,11 +23,8 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.level.CacheModule;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.level.LightSources;
-import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -120,9 +117,9 @@ public class Chunks {
      *
      * @param block block to update
      */
-    protected synchronized void updateForAdd(Block block) {
+    protected void updateForAdd(Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
-        int neighborBits = block.solid
+        int neighborBits = block.isSolid()
                 ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
                 : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
         if (neighborBits != 0) {
@@ -152,7 +149,7 @@ public class Chunks {
                 TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
                 if (location != null) {
                     String tupleTexName = location.getTexName();
-                    int adjNBits = block.solid
+                    int adjNBits = block.isSolid()
                             ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(adjPos)
                             : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(adjPos);
                     int k = ((j & 1) == 0 ? j + 1 : j - 1);
@@ -184,11 +181,19 @@ public class Chunks {
         }
     }
 
-    private synchronized void updateForRem(Block block) {
+    /**
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
+     *
+     * Used after rem operation.
+     *
+     * @param block block to update
+     */
+    private void updateForRem(Block block) {
         // check adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            int nBits = block.solid
+            int nBits = block.isSolid()
                     ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
                     : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
             TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
@@ -226,12 +231,12 @@ public class Chunks {
     }
 
     /**
-     * Adds block to the chunks.Block will be added to the corresponding solid
+     * Adds block to the chunks. Block will be added to the corresponding solid
      * chunk based on Chunk.chunkFunc
      *
      * @param block block to add
      */
-    public synchronized void addBlock(Block block) {
+    public void addBlock(Block block) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -243,6 +248,7 @@ public class Chunks {
         }
 
         chunk.addBlock(block);
+        chunk.unbuffer();
         updateForAdd(block);
         optimized = false;
     }
@@ -253,19 +259,21 @@ public class Chunks {
      *
      * @param block block to remove
      */
-    public synchronized void removeBlock(Block block) {
+    public void removeBlock(Block block) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block);
-
+            chunk.unbuffer();
             updateForRem(block);
+            optimized = false;
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleList().isEmpty()) {
                 chunkList.remove(chunk);
             }
         }
+
     }
 
     /**
@@ -292,37 +300,57 @@ public class Chunks {
         return null;
     }
 
-    public synchronized void animate() { // call only for fluid blocks
+    /**
+     * Animate water (call only for fluid blocks)
+     */
+    public void animate() { // call only for fluid blocks
         if (!optimized) {
             return;
         }
 
         for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered()) {
+            if (tuple.isBuffered() && !tuple.isSolid()) {
                 tuple.animate();
             }
         }
     }
 
-    public synchronized void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
+    /**
+     * Reorder group of vertices if underwater
+     *
+     * @param cameraInFluid is camera in fluid (checked by level container
+     * externally)
+     */
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
         for (Chunk chunk : chunkList) {
             chunk.prepare(cameraInFluid);
         }
     }
 
-    public synchronized void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
+    /**
+     * Reorder group of vertices of optimized tuples if underwater
+     *
+     * @param cameraInFluid is camera in fluid (checked by level container
+     * externally)
+     */
+    public void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
         if (!optimized) {
             return;
         }
 
         for (Tuple tuple : optimizedTuples) {
-            if (!tuple.isSolid()) {
+            if (tuple.isBuffered() && !tuple.isSolid()) {
                 tuple.prepare(cameraInFluid);
             }
         }
     }
 
-    public synchronized void optimize(IList<Integer> queue) {
+    /**
+     * Basic version of optimization for tuples from all the chunks.
+     *
+     * @param queue visible chunkId queue
+     */
+    public void optimize(IList<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         while (faceBits <= 63) {
@@ -351,7 +379,13 @@ public class Chunks {
 
     }
 
-    public synchronized void optimize(IList<Integer> queue, Vector3f camFront) {
+    /**
+     * Basic version of optimization for tuples from all the chunks.
+     *
+     * @param queue visible chunkId queue
+     * @param camFront camera front (look at vector)
+     */
+    public void optimize(IList<Integer> queue, Vector3f camFront) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
@@ -384,53 +418,21 @@ public class Chunks {
         optimized = true;
     }
 
-//    @Deprecated
-//    public synchronized void optimizeSuper(IList<Integer> vQueue, Vector3f camFront) {
-//        final List<Integer> vList = new GapList<>(vQueue);
-//        final int mask = Block.getVisibleFaceBits(camFront);
-//        for (int faceBits = 1; faceBits <= 63; faceBits++) {
-//            final int faceBitsCopy = faceBits;
-//            if ((faceBitsCopy & (mask & 63)) != 0) {
-//                for (String tex : Texture.TEX_WORLD) {
-//                    for (int chunkId : vList) {
-//                        Chunk chunk = getChunk(chunkId);
-//                        if (chunk != null) {
-//                            Tuple tuple = chunk.getTuple(tex, faceBits);
-//                            if (tuple != null) {
-//                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBitsCopy);
-//                                if (optmTuple == null) {
-//                                    optmTuple = new Tuple(tex, faceBitsCopy);
-//                                    optimizedTuples.add(optmTuple);
-//                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-//                                } else {
-//                                    optmTuple.buffered = false;
-//                                }
-//                                final Tuple optmTupleCopy = optmTuple;
-//                                tuple.blockList.forEach(blk -> {
-//                                    optmTupleCopy.blockList.addIfAbsent(blk);
-//                                });
-//                                if (optmTupleCopy.blockList.isEmpty()) {
-//                                    optimizedTuples.remove(optmTupleCopy);
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//                optimizedTuples.removeIf(ot -> ot.faceBits() == faceBitsCopy);
-//            }
-//        }
-//
-//        optimized = true;
-//    }
-    public synchronized void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
-        optimizedTuples.clear();
-        int faceBits = 1; // starting from one, cuz zero is not rendered               
+    /**
+     * Advanced version of optimization for tuples from all the chunks. Does not
+     * clear optimized tuples of the time and does not sort them all the time.
+     *
+     * @param queue visible chunkId queue
+     * @param camFront camera front (look at vector)
+     */
+    public void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
+        // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
-        while (faceBits <= 63) {
+        for (int faceBits = 1; faceBits <= 64; faceBits++) {
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
                     Tuple optmTuple = null;
+                    boolean firstTime = true;
                     for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
@@ -439,25 +441,33 @@ public class Chunks {
                                 if (optmTuple == null) {
                                     optmTuple = new Tuple(tex, faceBits);
                                 }
-                                optmTuple.blockList.addAll(tuple.blockList.filteredList(blk -> blk.canBeSeenBy(camFront)));
+
+                                if (firstTime) {
+                                    optmTuple.blockList.clear();
+                                    firstTime = false;
+                                }
+
+                                optmTuple.blockList.addAll(tuple.blockList);
                             }
                         }
                     }
 
                     if (optmTuple != null) {
-                        optimizedTuples.add(optmTuple);
-                        optimizedTuples.sort(Tuple.TUPLE_COMP);
+                        optmTuple.buffered = false;
+                        boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
+                        if (needSort) {
+                            optimizedTuples.sort(Tuple.TUPLE_COMP);
+                        }
                     }
                 }
             }
-            faceBits++;
         }
-
+        optimizedTuples.removeIf(t -> ((t.faceBits() & (mask & 63)) == 0));
         optimized = true;
     }
 
     // for each instanced rendering
-    public synchronized void render(ShaderProgram shaderProgram, LightSources lightSources) {
+    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -466,7 +476,7 @@ public class Chunks {
         }
     }
 
-    public synchronized void render(IList<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
+    public void render(IList<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }

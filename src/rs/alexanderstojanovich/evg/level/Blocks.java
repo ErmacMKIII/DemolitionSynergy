@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.models;
+package rs.alexanderstojanovich.evg.level;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -28,8 +28,9 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -61,7 +62,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         int blkIndex = 0;
         for (Block block : blockList) {
             vboEntries.put(blkIndex, offset);
-            for (Vertex vertex : block.vertices) { // for each vertex
+            for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
                     bigFloatBuff.put(vertex.getPos().y);
@@ -92,14 +93,14 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
-    public void updateVertices() { // call it before any rendering   
+    public void updateVertices() { // call it before any rendering           
         bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         bigFloatBuff.clear();
         int offset = 0;
         int blkIndex = 0;
         for (Block block : blockList) {
             vboEntries.put(blkIndex, offset);
-            for (Vertex vertex : block.vertices) { // for each vertex
+            for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
                     bigFloatBuff.put(vertex.getPos().y);
@@ -164,24 +165,25 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
 
         for (Block block : blockList) {
-            if (!block.solid) {
-                block.animate();
+            if (!block.isSolid()) {
+                block.getMeshes().getFirst().triangSwap();
             }
         }
 
         updateVertices();
     }
 
-    public synchronized void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                      
         if (!buffered || blockList.isEmpty()) {
             return;
         }
 
         for (Block block : blockList) {
-            if (!block.solid && cameraInFluid ^ block.isVerticesReversed()) {
+            if (!block.isSolid() && cameraInFluid ^ block.isVerticesReversed()) {
                 block.reverseFaceVertexOrder();
             }
         }
+
         updateVertices();
     }
 
@@ -204,15 +206,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             lightSources.updateLightsInShader(shaderProgram);
             for (Block block : blockList) {
                 block.transform(shaderProgram);
-                Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
+                Texture primaryTexture = Texture.getOrDefault(block.getTexName());
                 if (primaryTexture != null) { // this is primary texture
                     block.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
 
-                if (block.waterTexture != null) { // this is reflective texture
+                if (block.getWaterTexture() != null) { // this is reflective texture
                     block.secondaryColor(shaderProgram);
-                    block.waterTexture.bind(1, shaderProgram, "modelTexture1");
+                    block.getWaterTexture().bind(1, shaderProgram, "modelTexture1");
                 }
 
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, iboMap.get(blkIndex));
@@ -261,15 +263,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             for (Block block : blockList) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    Texture primaryTexture = Texture.TEX_MAP.get(block.texName).getKey();
+                    Texture primaryTexture = Texture.getOrDefault(block.getTexName());
                     if (primaryTexture != null) { // this is primary texture
                         block.primaryColor(shaderProgram);
                         primaryTexture.bind(0, shaderProgram, "modelTexture0");
                     }
 
-                    if (block.waterTexture != null) { // this is reflective texture
+                    if (block.getWaterTexture() != null) { // this is reflective texture
                         block.secondaryColor(shaderProgram);
-                        block.waterTexture.bind(1, shaderProgram, "modelTexture1");
+                        block.getWaterTexture().bind(1, shaderProgram, "modelTexture1");
                     }
 
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, iboMap.get(blkIndex));

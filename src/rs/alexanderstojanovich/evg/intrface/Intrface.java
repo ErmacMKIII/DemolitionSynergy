@@ -573,6 +573,7 @@ public class Intrface {
         optionsMenu.update();
         editorMenu.update();
         randLvlMenu.update();
+        loadLvlMenu.update();
     }
 
     public Quad getCrosshair() {

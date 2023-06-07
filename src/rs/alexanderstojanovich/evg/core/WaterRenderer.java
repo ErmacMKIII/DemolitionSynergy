@@ -21,7 +21,7 @@ import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**

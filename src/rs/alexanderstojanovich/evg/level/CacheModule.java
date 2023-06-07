@@ -29,9 +29,6 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
-import rs.alexanderstojanovich.evg.models.Chunks;
-import rs.alexanderstojanovich.evg.models.Tuple;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -245,7 +242,7 @@ public class CacheModule {
                     byte[] somePos = Vector3fUtils.vec3fToByteArray(block.getPos());
                     System.arraycopy(somePos, 0, MEMORY, pos, somePos.length);
                     pos += somePos.length;
-                    Vector3f primCol = block.getPrimaryColor();
+                    Vector3f primCol = block.getMaterials().getFirst().getColor();
                     byte[] someCol = Vector3fUtils.vec3fToByteArray(primCol);
                     System.arraycopy(someCol, 0, MEMORY, pos, someCol.length);
                     pos += someCol.length;

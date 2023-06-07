@@ -23,8 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,16 +32,17 @@ import java.util.zip.ZipFile;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -53,17 +52,12 @@ public class Model implements Comparable<Model> {
 
     protected String modelFileName;
 
-    protected final List<Vertex> vertices = new GapList<>();
-    protected final List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
     protected String texName;
     protected Texture waterTexture;
 
     protected float width; // X axis dimension
     protected float height; // Y axis dimension
     protected float depth; // Z axis dimension
-
-    protected int vbo = 0; // vertex buffer object
-    protected int ibo = 0; // index buffer object        
 
     public Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
@@ -72,29 +66,24 @@ public class Model implements Comparable<Model> {
     protected float rY = 0.0f;
     protected float rZ = 0.0f;
 
-    protected Vector3f primaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
-    protected float primaryColorAlpha = 1.0f;
+    protected IList<Material> materials = new GapList<>();
+    protected IList<Mesh> meshes = new GapList<>();
 
-    protected Vector3f light = new Vector3f();
     protected boolean solid = true; // is movement through this model possible
     // fluid models are solid whilst solid ones aren't               
 
-    protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
-    protected Matrix4f modelMatrix = calcModelMatrix();
-    protected static FloatBuffer fb = MemoryUtil.memAllocFloat(Block.VERTEX_COUNT * Vertex.SIZE);
+    protected Matrix4f modelMatrix = new Matrix4f();
 
-    protected Model(String modelFileName, String texName) {
+    public Model(String modelFileName, String texName) {
         this.modelFileName = modelFileName;
         this.texName = texName;
     }
 
-    protected Model(String modelFileName, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    public Model(String modelFileName, String texName, Vector3f pos, boolean solid) {
         this.modelFileName = modelFileName;
         this.texName = texName;
         this.pos = pos;
-        this.primaryColor = primaryColor;
         this.solid = solid;
-        this.primaryColorAlpha = (solid) ? 1.0f : 0.5f;
     }
 
     public static Model readFromObjFile(String dirEntry, String fileName, String texName) {
@@ -135,6 +124,7 @@ public class Model implements Comparable<Model> {
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
 
         Model result = new Model(fileName, texName);
+        Mesh mesh = new Mesh();
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
         List<Vector2f> uvs = new ArrayList<>();
         List<Vector3f> normals = new ArrayList<>();
@@ -145,7 +135,7 @@ public class Model implements Comparable<Model> {
                 if (things[0].equals("v")) {
                     Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
                     Vertex vertex = new Vertex(pos);
-                    result.vertices.add(vertex);
+                    mesh.vertices.add(vertex);
                 } else if (things[0].equals("vt")) {
                     Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1.0f - Float.parseFloat(things[2]));
                     uvs.add(uv);
@@ -157,8 +147,8 @@ public class Model implements Comparable<Model> {
                     for (String subThing : subThings) {
                         String[] data = subThing.split("/");
                         int index = Integer.parseInt(data[0]) - 1;
-                        result.indices.add(index);
-                        Vertex vertex = result.vertices.get(index);
+                        mesh.indices.add(index);
+                        Vertex vertex = mesh.vertices.get(index);
                         if (data.length >= 2 && !data[1].isEmpty()) {
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
                             if (texIndex != -1) {
@@ -167,7 +157,7 @@ public class Model implements Comparable<Model> {
                             }
                         }
                         if (data.length >= 3 && !data[2].isEmpty()) {
-                            result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
+                            mesh.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
                         }
                     }
                 }
@@ -189,145 +179,25 @@ public class Model implements Comparable<Model> {
             }
         }
 
+        Material material = new Material(Texture.TEX_MAP.get(texName).getTexture());
+        material.color = new Vector3f(Vector3fColors.WHITE);
+        result.materials.add(material);
+
+        result.meshes.add(mesh);
         result.calcDims();
 
         return result;
     }
 
-    public void bufferVertices() {
-        // storing vertices and normals in the buffer
-        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
-        fb.clear();
-        for (Vertex vertex : vertices) {
-            if (vertex.isEnabled()) {
-                fb.put(vertex.getPos().x);
-                fb.put(vertex.getPos().y);
-                fb.put(vertex.getPos().z);
-
-                fb.put(vertex.getNormal().x);
-                fb.put(vertex.getNormal().y);
-                fb.put(vertex.getNormal().z);
-
-                fb.put(vertex.getUv().x);
-                fb.put(vertex.getUv().y);
-            }
-        }
-        fb.flip();
-        // storing vertices and normals buffer on the graphics card
-        if (vbo == 0) {
-            vbo = GL15.glGenBuffers();
-        }
-
-        if (fb.capacity() != 0) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
-        }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (fb.capacity() != 0) {
-            MemoryUtil.memFree(fb);
-        }
-    }
-
-    public void updateVertices() {
-        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
-        fb.clear();
-        // storing vertices and normals in the buffer        
-        for (Vertex vertex : vertices) {
-            if (vertex.isEnabled()) {
-                fb.put(vertex.getPos().x);
-                fb.put(vertex.getPos().y);
-                fb.put(vertex.getPos().z);
-
-                fb.put(vertex.getNormal().x);
-                fb.put(vertex.getNormal().y);
-                fb.put(vertex.getNormal().z);
-
-                fb.put(vertex.getUv().x);
-                fb.put(vertex.getUv().y);
-            }
-        }
-        fb.flip();
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (fb.capacity() != 0) {
-            MemoryUtil.memFree(fb);
-        }
-    }
-
-    public void bufferIndices() {
-        // storing indices in the buffer
-        IntBuffer ib = MemoryUtil.memAllocInt(indices.size());
-        for (Integer index : indices) {
-            ib.put(index);
-        }
-        ib.flip();
-        // storing indices buffer on the graphics card
-        if (ibo == 0) {
-            ibo = GL15.glGenBuffers();
-        }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        if (ib.capacity() != 0) {
-            MemoryUtil.memFree(ib);
-        }
-    }
-
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
-    }
-
-    public void unbuffer() {
-        buffered = false;
-    }
-
-    public void calcNormals() {
-        for (int i = 0; i < indices.size(); i += 3) {
-            int i0 = indices.get(i);
-            int i1 = indices.get(i + 1);
-            int i2 = indices.get(i + 2);
-
-            Vector3f v1 = vertices.get(i1).getPos().sub(vertices.get(i0).getPos());
-            Vector3f v2 = vertices.get(i2).getPos().sub(vertices.get(i0).getPos());
-
-            Vector3f normal = v1.cross(v2).normalize();
-            vertices.get(i0).setNormal(vertices.get(i0).getNormal().add(normal));
-            vertices.get(i1).setNormal(vertices.get(i1).getNormal().add(normal));
-            vertices.get(i2).setNormal(vertices.get(i2).getNormal().add(normal));
-        }
-
-        for (int i = 0; i < vertices.size(); i++) {
-            vertices.get(i).setNormal(vertices.get(i).getNormal().normalize());
-        }
-    }
-
-    public void nullifyNormals() {
-        for (int i = 0; i < vertices.size(); i++) {
-            vertices.get(i).getNormal().zero();
-        }
-        buffered = false;
-    }
-
-    public void negateNormals() {
-        for (int i = 0; i < vertices.size(); i++) {
-            vertices.get(i).getNormal().negate();
-        }
-        buffered = false;
-    }
-
     public void render(LightSources lightSources, ShaderProgram shaderProgram) {
-        if (!buffered) {
+        if (meshes.isEmpty() || !meshes.getFirst().buffered || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
             return; // this is very critical!!
         }
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+        final Mesh mesh = meshes.getFirst();
+
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
 
         GL20.glEnableVertexAttribArray(0);
         GL20.glEnableVertexAttribArray(1);
@@ -344,7 +214,7 @@ public class Model implements Comparable<Model> {
 
             lightSources.updateLightsInShader(shaderProgram);
 
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -355,7 +225,7 @@ public class Model implements Comparable<Model> {
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
         }
-        GL11.glDrawElements(GL11.GL_TRIANGLES, indices.size(), GL11.GL_UNSIGNED_INT, 0);
+        GL11.glDrawElements(GL11.GL_TRIANGLES, meshes.getFirst().indices.size(), GL11.GL_UNSIGNED_INT, 0);
         Texture.unbind(0);
         Texture.unbind(1);
         ShaderProgram.unbind();
@@ -397,12 +267,14 @@ public class Model implements Comparable<Model> {
                 model.transform(shaderProgram);
                 model.setAlpha(shaderProgram);
 
-                Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getKey();
+                final Mesh mesh = model.meshes.getFirst();
+
+                Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getTexture();
                 if (primaryTexture != null) { // this is primary texture
                     model.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
-                GL11.glDrawElements(GL11.GL_TRIANGLES, model.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
                 Texture.unbind(0);
             }
         }
@@ -416,15 +288,14 @@ public class Model implements Comparable<Model> {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    @Deprecated
-    public void release() {
-        if (buffered) {
-            GL15.glDeleteBuffers(vbo);
-            GL15.glDeleteBuffers(ibo);
-        }
-        buffered = false;
-    }
-
+//    @Deprecated
+//    public void release() {
+//        if (buffered) {
+//            GL15.glDeleteBuffers(vbo);
+//            GL15.glDeleteBuffers(ibo);
+//        }
+//        buffered = false;
+//    }
     public Matrix4f calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos);
         Matrix4f rotationMatrix = new Matrix4f().setRotationXYZ(rX, rY, rZ);
@@ -436,29 +307,26 @@ public class Model implements Comparable<Model> {
         return modelMatrix;
     }
 
-    protected void transform(ShaderProgram shaderProgram) {
+    public void transform(ShaderProgram shaderProgram) {
         calcModelMatrix();
         shaderProgram.updateUniform(modelMatrix, "modelMatrix");
     }
 
-    protected void primaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(primaryColor, "modelColor0");
+    public void primaryColor(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(materials.getFirst().color, "modelColor0");
     }
 
-    protected void secondaryColor(ShaderProgram shaderProgram) {
+    public void secondaryColor(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
     }
 
-    protected void useLight(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(light, "modelLight");
-    }
-
     protected void setAlpha(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(this.primaryColorAlpha, "modelAlpha");
+        shaderProgram.updateUniform(materials.getFirst().alpha, "modelAlpha");
     }
 
     private void calcDims() {
-        Vector3f vect = vertices.get(0).getPos();
+        final Mesh mesh = meshes.getFirst();
+        Vector3f vect = mesh.vertices.get(0).getPos();
         float xMin = vect.x;
         float yMin = vect.y;
         float zMin = vect.z;
@@ -467,8 +335,8 @@ public class Model implements Comparable<Model> {
         float yMax = vect.y;
         float zMax = vect.z;
 
-        for (int i = 1; i < vertices.size(); i++) {
-            vect = vertices.get(i).getPos();
+        for (int i = 1; i < mesh.vertices.size(); i++) {
+            vect = mesh.vertices.get(i).getPos();
             xMin = Math.min(xMin, vect.x);
             yMin = Math.min(yMin, vect.y);
             zMin = Math.min(zMin, vect.z);
@@ -631,7 +499,7 @@ public class Model implements Comparable<Model> {
 
     public boolean intersectsRay(Vector3f l, Vector3f l0) {
         boolean ints = false; // l is direction and l0 is the point
-        for (Vertex vertex : vertices) {
+        for (Vertex vertex : meshes.getFirst().vertices) {
             Vector3f temp = new Vector3f();
             Vector3f x0 = vertex.getPos().add(pos, temp); // point on the plane translated
             Vector3f n = vertex.getNormal(); // normal of the plane
@@ -648,35 +516,6 @@ public class Model implements Comparable<Model> {
     }
 
     @Override
-    public String toString() {
-        return "Model{" + "modelFileName=" + modelFileName + ", texName = " + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
-    }
-
-    public void animate() {
-        for (int i = 0; i < indices.size(); i += 3) {
-            Vertex a = vertices.get(indices.get(i));
-            Vertex b = vertices.get(indices.get(i + 1));
-            Vertex c = vertices.get(indices.get(i + 2));
-            Vector2f temp = c.getUv();
-            c.setUv(b.getUv());
-            b.setUv(a.getUv());
-            a.setUv(temp);
-        }
-    }
-
-    public static void animate(List<Vertex> vertices, List<Integer> indices) {
-        for (int i = 0; i < indices.size(); i += 3) {
-            Vertex a = vertices.get(indices.get(i));
-            Vertex b = vertices.get(indices.get(i + 1));
-            Vertex c = vertices.get(indices.get(i + 2));
-            Vector2f temp = c.getUv();
-            c.setUv(b.getUv());
-            b.setUv(a.getUv());
-            a.setUv(temp);
-        }
-    }
-
-    @Override
     public int compareTo(Model model) {
         return Float.compare(this.getPos().y, model.getPos().y);
     }
@@ -684,6 +523,69 @@ public class Model implements Comparable<Model> {
     public void calcDimsPub() {
         calcDims();
         calcModelMatrix();
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 89 * hash + Objects.hashCode(this.modelFileName);
+        hash = 89 * hash + Objects.hashCode(this.texName);
+        hash = 89 * hash + Float.floatToIntBits(this.width);
+        hash = 89 * hash + Float.floatToIntBits(this.height);
+        hash = 89 * hash + Float.floatToIntBits(this.depth);
+        hash = 89 * hash + Objects.hashCode(this.pos);
+        hash = 89 * hash + Float.floatToIntBits(this.scale);
+        hash = 89 * hash + Objects.hashCode(this.materials);
+        hash = 89 * hash + Objects.hashCode(this.meshes);
+        hash = 89 * hash + (this.solid ? 1 : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Model other = (Model) obj;
+        if (Float.floatToIntBits(this.width) != Float.floatToIntBits(other.width)) {
+            return false;
+        }
+        if (Float.floatToIntBits(this.height) != Float.floatToIntBits(other.height)) {
+            return false;
+        }
+        if (Float.floatToIntBits(this.depth) != Float.floatToIntBits(other.depth)) {
+            return false;
+        }
+        if (Float.floatToIntBits(this.scale) != Float.floatToIntBits(other.scale)) {
+            return false;
+        }
+        if (this.solid != other.solid) {
+            return false;
+        }
+        if (!Objects.equals(this.modelFileName, other.modelFileName)) {
+            return false;
+        }
+        if (!Objects.equals(this.texName, other.texName)) {
+            return false;
+        }
+        if (!Objects.equals(this.pos, other.pos)) {
+            return false;
+        }
+        if (!Objects.equals(this.materials, other.materials)) {
+            return false;
+        }
+        return Objects.equals(this.meshes, other.meshes);
+    }
+
+    @Override
+    public String toString() {
+        return "Model{" + "modelFileName=" + modelFileName + ", texName=" + texName + ", width=" + width + ", height=" + height + ", depth=" + depth + ", pos=" + pos + ", scale=" + scale + ", materials=" + materials + ", meshes=" + meshes + ", solid=" + solid + '}';
     }
 
     public float getSurfaceY() {
@@ -702,24 +604,8 @@ public class Model implements Comparable<Model> {
         return (modelPos.y - modelHeight / 2.0f);
     }
 
-    public float getPrimaryColorAlpha() {
-        return primaryColorAlpha;
-    }
-
-    public void setPrimaryColorAlpha(float primaryColorAlpha) {
-        this.primaryColorAlpha = primaryColorAlpha;
-    }
-
     public String getModelFileName() {
         return modelFileName;
-    }
-
-    public List<Vertex> getVertices() {
-        return vertices;
-    }
-
-    public List<Integer> getIndices() {
-        return indices;
     }
 
     public Texture getWaterTexture() {
@@ -736,14 +622,6 @@ public class Model implements Comparable<Model> {
 
     public float getDepth() {
         return depth;
-    }
-
-    public int getVbo() {
-        return vbo;
-    }
-
-    public int getIbo() {
-        return ibo;
     }
 
     public Vector3f getPos() {
@@ -785,29 +663,13 @@ public class Model implements Comparable<Model> {
         this.rZ = rZ;
     }
 
-    public Vector3f getPrimaryColor() {
-        return primaryColor;
-    }
-
-    public void setPrimaryColor(Vector3f primaryColor) {
-        this.primaryColor = primaryColor;
-    }
-
-    public Vector3f getLight() {
-        return light;
-    }
-
-    public void setLight(Vector3f light) {
-        this.light = light;
-    }
-
     public boolean isSolid() {
         return solid;
     }
 
     public void setSolid(boolean solid) {
         this.solid = solid;
-        this.primaryColorAlpha = (solid) ? 1.0f : 0.5f;
+        this.materials.getFirst().alpha = (solid) ? 1.0f : 0.5f;
     }
 
     public void setPos(Vector3f pos) {
@@ -826,45 +688,44 @@ public class Model implements Comparable<Model> {
         this.waterTexture = waterTexture;
     }
 
-    public boolean isBuffered() {
-        return buffered;
-    }
-
     public Matrix4f getModelMatrix() {
         return modelMatrix;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Model) {
-            Model that = (Model) obj;
-            return (this.vertices.equals(that.vertices)
-                    && this.indices.equals(that.indices)
-                    && this.pos.equals(that.pos)
-                    && this.texName.equals(that.texName)
-                    && this.primaryColor.equals(that.primaryColor)
-                    && this.width == that.width
-                    && this.height == that.height
-                    && this.depth == that.depth
-                    && this.solid == that.solid);
-        } else {
-            return false;
-        }
+    public IList<Material> getMaterials() {
+        return materials;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 43 * hash + Objects.hashCode(this.vertices);
-        hash = 43 * hash + Objects.hashCode(this.indices);
-        hash = 43 * hash + Objects.hashCode(this.texName);
-        hash = 43 * hash + Float.floatToIntBits(this.width);
-        hash = 43 * hash + Float.floatToIntBits(this.height);
-        hash = 43 * hash + Float.floatToIntBits(this.depth);
-        hash = 43 * hash + Objects.hashCode(this.pos);
-        hash = 43 * hash + Objects.hashCode(this.primaryColor);
-        hash = 43 * hash + (this.solid ? 1 : 0);
-        return hash;
+    public IList<Mesh> getMeshes() {
+        return meshes;
+    }
+
+    public Vector3f getPrimaryColor() {
+        return this.getMaterials().getFirst().color;
+    }
+
+    public void setPrimaryColor(Vector3f color) {
+        this.materials.getFirst().color = color;
+    }
+
+    public float getPrimaryColorAlpha() {
+        return this.materials.getFirst().alpha;
+    }
+
+    public void setPrimaryColorAlpha(float alpha) {
+        this.materials.getFirst().alpha = alpha;
+    }
+
+    public boolean isBuffered() {
+        return meshes.getFirst().buffered;
+    }
+
+    public void bufferAll() {
+        meshes.forEach(m -> m.bufferAll());
+    }
+
+    public IList<Vertex> getVertices() {
+        return meshes.getFirst().vertices;
     }
 
 }
