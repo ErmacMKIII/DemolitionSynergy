@@ -42,6 +42,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -53,7 +54,7 @@ public class LevelContainer implements GravityEnviroment {
 
     protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
-    public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
+    public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
     public static final float SUN_SCALE = 20.0f;
     public static final float SUN_INTENSITY = (float) (1 << 29);
@@ -225,7 +226,7 @@ public class LevelContainer implements GravityEnviroment {
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         chunks.clear();
-
+        levelActors.npcList.clear();
         ALL_BLOCK_MAP.init();
 
         LIGHT_SOURCES.lightSrcList.clear();
@@ -253,6 +254,9 @@ public class LevelContainer implements GravityEnviroment {
 
         levelActors.configureMainActor(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
+//        NPC npc = new NPC(levelActors.player.getModel());
+//        npc.getModel().setPos(new Vector3f(0f, 20f, 0f));
+//        levelActors.npcList.add(npc);
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;

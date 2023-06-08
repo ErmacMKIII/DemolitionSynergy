@@ -16,11 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,19 +27,18 @@ import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.level.TexByte;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -105,7 +99,7 @@ public class Block extends Model {
     };
 
     static {
-        readFromTxtFileMK2("cubex.txt");
+        BlockUtils.readFromTxtFileMK2("cubex.txt");
     }
 
     public Block(String texName) {
@@ -118,7 +112,7 @@ public class Block extends Model {
         Material material = new Material(Texture.getOrDefault(texName));
         material.color = new Vector3f(Vector3fColors.WHITE);
         materials.add(material);
-        calcDims();
+        width = height = depth = 2.0f;
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
@@ -133,7 +127,7 @@ public class Block extends Model {
         material.color = primaryColor;
         materials.add(material);
         this.solid = solid;
-        calcDims();
+        width = height = depth = 2.0f;
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
@@ -152,118 +146,6 @@ public class Block extends Model {
                             ? new Vector2f(v.getUv().x, v.getUv().y)
                             : new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
             );
-        }
-    }
-
-    @Deprecated
-    private static void readFromTxtFile(String fileName) {
-        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
-        if (in == null) {
-            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
-            return;
-        }
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(in));
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("v:")) {
-                    String[] things = line.replace("v:", "").trim().split(",|->", -1);
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[0]), Float.parseFloat(things[1]), Float.parseFloat(things[2]));
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[3]), Float.parseFloat(things[4]), Float.parseFloat(things[5]));
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[6]), Float.parseFloat(things[7]));
-                    Vertex v = new Vertex(pos, normal, uv);
-                    VERTICES.add(v);
-                } else if (line.startsWith("i:")) {
-                    String[] things = line.replace("i:", "").trim().split(" ", -1);
-                    INDICES.add(Integer.valueOf(things[0]));
-                    INDICES.add(Integer.valueOf(things[1]));
-                    INDICES.add(Integer.valueOf(things[2]));
-                }
-            }
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-    }
-
-    private static void readFromTxtFileMK2(String fileName) {
-        VERTICES.clear();
-        INDICES.clear();
-
-        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
-        if (in == null) {
-            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
-            return;
-        }
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(in));
-            List<Vector3f> positions = new ArrayList<>();
-            List<Vector2f> uvs = new ArrayList<>();
-            List<Vector3f> normals = new ArrayList<>();
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("v:")) {
-                    String[] things = line.split("\\s+");
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    positions.add(pos);
-                } else if (line.startsWith("t:")) {
-                    String[] things = line.split("\\s+");
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), Float.parseFloat(things[2]));
-                    uvs.add(uv);
-                } else if (line.startsWith("n:")) {
-                    String[] things = line.split("\\s+");
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    normals.add(normal);
-                } else if (line.startsWith("i:")) {
-                    String[] things = line.split("\\s+");
-                    for (String thing : things) {
-                        if (thing.equals("i:")) {
-                            continue;
-                        }
-
-                        String[] subThings = thing.split("/");
-
-                        int indexOfVertex = Integer.parseInt(subThings[0]);
-                        Vector3f pos = new Vector3f(positions.get(indexOfVertex));
-
-                        int indexOfUv = Integer.parseInt(subThings[1]);
-                        Vector2f uv = new Vector2f(uvs.get(indexOfUv));
-
-                        int indexOfNormal = Integer.parseInt(subThings[2]);
-                        Vector3f normal = new Vector3f(normals.get(indexOfNormal));
-
-                        Vertex vertex = new Vertex(pos, normal, uv);
-
-                        if (!VERTICES.contains(vertex)) {
-                            VERTICES.add(vertex);
-                        }
-
-                        INDICES.add(VERTICES.lastIndexOf(vertex));
-                    }
-
-                }
-            }
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
         }
     }
 
@@ -372,7 +254,8 @@ public class Block extends Model {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    private void calcDims() {
+    @Override
+    public void calcDims() {
         final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
         final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
 

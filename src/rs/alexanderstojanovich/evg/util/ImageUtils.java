@@ -28,15 +28,67 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.Hashtable;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import javax.imageio.ImageIO;
 import org.lwjgl.system.MemoryUtil;
+import rs.alexanderstojanovich.evg.main.Game;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class ImageUtils {
+
+    public static BufferedImage loadImage(String dirEntry, String fileName) {
+        File extern = new File(dirEntry + fileName);
+        File archive = new File(Game.DATA_ZIP);
+        ZipFile zipFile = null;
+        InputStream imgInput = null;
+        if (extern.exists()) {
+            try {
+                imgInput = new FileInputStream(extern);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else if (archive.exists()) {
+            try {
+                zipFile = new ZipFile(archive);
+                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                    if (zipEntry.getName().equals(dirEntry + fileName)) {
+                        imgInput = zipFile.getInputStream(zipEntry);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
+        }
+        //----------------------------------------------------------------------
+        if (imgInput == null) {
+            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
+            return null;
+        } else {
+            try {
+                return ImageIO.read(imgInput);
+            } catch (IOException ex) {
+                DSLogger.reportError("Error during loading image " + dirEntry + fileName + "!", null);
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Get Image Buffer from the source image.

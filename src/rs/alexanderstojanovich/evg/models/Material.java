@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.models;
 
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
@@ -26,11 +27,22 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class Material {
 
+    protected Vector4f ambient = new Vector4f(Vector3fColors.WHITE, 1.0f);
+    protected Vector4f diffuse = new Vector4f(Vector3fColors.WHITE, 1.0f);
+    protected Vector4f specular = new Vector4f(Vector3fColors.WHITE, 1.0f);
+
     protected Vector3f color = new Vector3f(Vector3fColors.WHITE);
     protected float alpha = 1.0f;
     protected final Texture texture;
 
     public Material(Texture texture) {
+        this.texture = texture;
+    }
+
+    public Material(Vector4f ambient, Vector4f diffuse, Vector4f specular, Texture texture) {
+        this.ambient = ambient;
+        this.diffuse = diffuse;
+        this.specular = specular;
         this.texture = texture;
     }
 

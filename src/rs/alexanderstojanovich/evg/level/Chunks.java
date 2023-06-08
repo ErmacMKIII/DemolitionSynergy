@@ -190,7 +190,7 @@ public class Chunks {
      * @param block block to update
      */
     private void updateForRem(Block block) {
-        // check adjacent blocks
+        // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
             int nBits = block.isSolid()

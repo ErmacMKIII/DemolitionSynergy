@@ -32,8 +32,8 @@ import org.magicwerk.brownies.collections.IList;
  */
 public class Mesh {
 
-    protected final IList<Vertex> vertices = new GapList<>();
-    protected final IList<Integer> indices = new GapList<>(); // refers which vertex we want to use when
+    public final IList<Vertex> vertices = new GapList<>();
+    public final IList<Integer> indices = new GapList<>(); // refers which vertex we want to use when
 
     protected static FloatBuffer fb;
     protected static IntBuffer ib;

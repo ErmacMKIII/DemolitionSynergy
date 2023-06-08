@@ -30,20 +30,11 @@ import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import javax.imageio.ImageIO;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -51,7 +42,7 @@ import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.ImageUtils;
 
 /**
  *
@@ -60,6 +51,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class Texture {
 
     private final BufferedImage image;
+    private final String texName;
     private int textureID = 0;
     private boolean buffered = false;
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
@@ -82,20 +74,26 @@ public class Texture {
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
 
-    public static final String[] TEX_PLAYER = {"W01M9", "W02M1", "W03DE", "W04UZ",
+    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png");
+    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png");
+
+    public static final String[] TEX_PLAYER_WEAPONS = {
+        "W01M9", "W02M1", "W03DE", "W04UZ",
         "W05M5", "W06P9", "W07AK", "W08M4",
         "W09G3", "W10M6", "W11MS", "W12W2",
-        "W13B9", "W14R7", "W15DR", "W16M8"};
+        "W13B9", "W14R7", "W15DR", "W16M8"
+    };
     public static final int GRID_SIZE_PLAYER = 4;
 
     public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
-    public static final Texture PLAYER = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER, GRID_SIZE_PLAYER);
+    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER);
 
     /**
      * Creates blank Texture (TEXSIZE x TEXSIZE)
      */
     public Texture() {
         this.image = new BufferedImage(TEX_SIZE, TEX_SIZE, BufferedImage.TYPE_INT_ARGB);
+        this.texName = "blank";
     }
 
     /**
@@ -105,50 +103,9 @@ public class Texture {
      * @param fileName filename of the image (future texture)
      */
     public Texture(String subDir, String fileName) {
-        this.image = loadImage(subDir, fileName);
-        Texture.TEX_MAP.put(fileName.substring(0, fileName.indexOf(".")), new TexValue(this, -1));
-    }
-
-    public static BufferedImage loadImage(String dirEntry, String fileName) {
-        File extern = new File(dirEntry + fileName);
-        File archive = new File(Game.DATA_ZIP);
-        ZipFile zipFile = null;
-        InputStream imgInput = null;
-        if (extern.exists()) {
-            try {
-                imgInput = new FileInputStream(extern);
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        } else if (archive.exists()) {
-            try {
-                zipFile = new ZipFile(archive);
-                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                    if (zipEntry.getName().equals(dirEntry + fileName)) {
-                        imgInput = zipFile.getInputStream(zipEntry);
-                        break;
-                    }
-                }
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        } else {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
-        }
-        //----------------------------------------------------------------------
-        if (imgInput == null) {
-            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
-            return null;
-        } else {
-            try {
-                return ImageIO.read(imgInput);
-            } catch (IOException ex) {
-                DSLogger.reportError("Error during loading image " + dirEntry + fileName + "!", null);
-                DSLogger.reportError(ex.getMessage(), ex);
-            }
-        }
-
-        return null;
+        this.image = ImageUtils.loadImage(subDir, fileName);
+        this.texName = fileName.substring(0, fileName.indexOf("."));
+        Texture.TEX_MAP.put(texName, new TexValue(this, -1));
     }
 
     public void bufferAll() {
@@ -171,7 +128,9 @@ public class Texture {
         WORLD.bufferAll();
         NIGHT.bufferAll();
         // player
-        PLAYER.bufferAll();
+        ALEX.bufferAll();
+        STEVE.bufferAll();
+        PLAYER_WEAPONS.bufferAll();
     }
 
     private void loadTexture() {
@@ -354,7 +313,7 @@ public class Texture {
             if (!fileName.toLowerCase().endsWith(".png")) {
                 fileName += ".png";
             }
-            BufferedImage image = loadImage(subDir, fileName);
+            BufferedImage image = ImageUtils.loadImage(subDir, fileName);
 
             int row = index / gridSize;
             int col = index % gridSize;
@@ -373,6 +332,15 @@ public class Texture {
 
     public static Texture getOrDefault(String texName) {
         return TEX_MAP.getOrDefault(texName, Texture.QMARK_TV).texture;
+    }
+
+    public static int getOrDefaultIndex(String texName) {
+        return TEX_MAP.getOrDefault(texName, Texture.QMARK_TV).value;
+    }
+
+    @Override
+    public String toString() {
+        return "Texture{" + "texName=" + texName + ", textureID=" + textureID + ", buffered=" + buffered + '}';
     }
 
     public BufferedImage getImage() {

@@ -41,9 +41,9 @@ public class ModelCritter implements Critter {
 
     protected final Model model;
 
-    public ModelCritter(Model model) {
-        this.model = model;
-        this.predictor = new Vector3f(model.pos);
+    public ModelCritter(Model critterModel) {
+        this.model = critterModel;
+        this.predictor = new Vector3f(critterModel.pos);
     }
 
     private void updateDirectionVectors() {

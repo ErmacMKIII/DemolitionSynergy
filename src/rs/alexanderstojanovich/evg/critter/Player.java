@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.level.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -36,12 +37,12 @@ public class Player extends ModelCritter {
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
-    public static final Model PISTOL = Model.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9");
-    public static final Model SUB_MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9");
-    public static final Model SHOTGUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9");
-    public static final Model ASSAULT_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK");
-    public static final Model MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6");
-    public static final Model SNIPER_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8");
+    public static final Model PISTOL = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9");
+    public static final Model SUB_MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9");
+    public static final Model SHOTGUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9");
+    public static final Model ASSAULT_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK");
+    public static final Model MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6");
+    public static final Model SNIPER_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8");
     public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
 
     static {
@@ -53,8 +54,8 @@ public class Player extends ModelCritter {
         }
     }
 
-    public Player(Camera camera, Model currWeapon, Model model) {
-        super(model);
+    public Player(Camera camera, Model currWeapon, Model critterModel) {
+        super(critterModel);
         this.camera = camera;
         this.currWeapon = currWeapon;
         linkDirectionVectors();
@@ -75,7 +76,7 @@ public class Player extends ModelCritter {
 
     @Override
     public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-//        super.render(lightSrc, shaderProgram);
+        super.render(lightSrc, shaderProgram);
         if (givenControl) {
             if (currWeapon != null) {
                 if (!currWeapon.isBuffered()) {

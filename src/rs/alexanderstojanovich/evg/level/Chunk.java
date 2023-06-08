@@ -283,7 +283,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param block block to update
      */
     protected void updateForRem(Block block) {
-        // check adjacent blocks
+        // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
             TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
@@ -381,7 +381,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // level container also set neighbor bits
         LevelContainer.putBlock(block);
         // update original block with neighbor blocks
-        // check if it's light block
+        // setSafeCheck if it's light block
         LightSource lightSource = new LightSource(block.pos, block.getPrimaryColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
         if (block.getTexName().equals("reflc")
                 && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
@@ -410,7 +410,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // level container also set neighbor bits
             LevelContainer.removeBlock(block);
             // update original block with neighbor blocks
-            // check if it's light block
+            // setSafeCheck if it's light block
             if (block.getTexName().equals("reflc")) {
                 LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
             }
@@ -490,10 +490,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float nx = (pos.x + BOUND) / (float) (BOUND << 1);
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
-        // check which column of the interval
+        // setSafeCheck which column of the interval
         int col = Math.round(nx * (1.0f / STEP - 1.0f));
 
-        // check which rows of the interval
+        // setSafeCheck which rows of the interval
         int row = Math.round(nz * (1.0f / STEP - 1.0f));
 
         // determining chunk id -> row(z) & col(x)

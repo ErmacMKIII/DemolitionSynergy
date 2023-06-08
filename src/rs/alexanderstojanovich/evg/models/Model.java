@@ -16,21 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import org.joml.Matrix4f;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
@@ -38,11 +26,8 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
@@ -66,8 +51,8 @@ public class Model implements Comparable<Model> {
     protected float rY = 0.0f;
     protected float rZ = 0.0f;
 
-    protected IList<Material> materials = new GapList<>();
-    protected IList<Mesh> meshes = new GapList<>();
+    public final IList<Material> materials = new GapList<>();
+    public final IList<Mesh> meshes = new GapList<>();
 
     protected boolean solid = true; // is movement through this model possible
     // fluid models are solid whilst solid ones aren't               
@@ -86,155 +71,84 @@ public class Model implements Comparable<Model> {
         this.solid = solid;
     }
 
-    public static Model readFromObjFile(String dirEntry, String fileName, String texName) {
-        File extern = new File(dirEntry + fileName);
-        File archive = new File(Game.DATA_ZIP);
-        ZipFile zipFile = null;
-        InputStream objInput = null;
-        if (extern.exists()) {
-            try {
-                objInput = new FileInputStream(extern);
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        } else if (archive.exists()) {
-            try {
-                zipFile = new ZipFile(archive);
-                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
-                    if (zipEntry.getName().equals(dirEntry + fileName)) {
-                        objInput = zipFile.getInputStream(zipEntry);
-                        break;
-                    }
-                }
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        } else {
-            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
-        }
-        //----------------------------------------------------------------------
-        if (objInput == null) {
-            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
-            return null;
-        }
+    public Model(Model other) {
+        this.modelFileName = other.modelFileName;
+        this.texName = other.texName;
+        this.pos = other.pos;
 
-        int texIndex = Texture.TEX_MAP.get(texName).getValue();
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+        this.scale = other.scale;
+        this.width = other.width;
+        this.height = other.height;
+        this.depth = other.depth;
 
-        Model result = new Model(fileName, texName);
-        Mesh mesh = new Mesh();
-        BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
-        List<Vector2f> uvs = new ArrayList<>();
-        List<Vector3f> normals = new ArrayList<>();
-        String line;
-        try {
-            while ((line = br.readLine()) != null) {
-                String[] things = line.split(" ");
-                if (things[0].equals("v")) {
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    Vertex vertex = new Vertex(pos);
-                    mesh.vertices.add(vertex);
-                } else if (things[0].equals("vt")) {
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1.0f - Float.parseFloat(things[2]));
-                    uvs.add(uv);
-                } else if (things[0].equals("vn")) {
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    normals.add(normal);
-                } else if (things[0].equals("f")) {
-                    String[] subThings = {things[1], things[2], things[3]};
-                    for (String subThing : subThings) {
-                        String[] data = subThing.split("/");
-                        int index = Integer.parseInt(data[0]) - 1;
-                        mesh.indices.add(index);
-                        Vertex vertex = mesh.vertices.get(index);
-                        if (data.length >= 2 && !data[1].isEmpty()) {
-                            vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                            if (texIndex != -1) {
-                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
-                            }
-                        }
-                        if (data.length >= 3 && !data[2].isEmpty()) {
-                            mesh.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
-                        }
-                    }
-                }
-            }
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } finally {
-            try {
-                objInput.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-            if (zipFile != null) {
-                try {
-                    zipFile.close();
-                } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage(), ex);
-                }
-            }
-        }
+        this.rX = other.rX;
+        this.rY = other.rY;
+        this.rZ = other.rZ;
 
-        Material material = new Material(Texture.TEX_MAP.get(texName).getTexture());
-        material.color = new Vector3f(Vector3fColors.WHITE);
-        result.materials.add(material);
+        this.materials.addAll(other.materials);
+        this.meshes.addAll(other.meshes);
 
-        result.meshes.add(mesh);
-        result.calcDims();
+        this.solid = other.solid;
 
-        return result;
+        this.modelMatrix = new Matrix4f(other.modelMatrix);
     }
 
+    protected boolean safeCheck = false;
+
+    /**
+     * Render model. (Draw all meshes)
+     *
+     * @param lightSources light sources {SUN, PLAYER_WEAPONS, OTHER LIGHT,
+     * BLOCKS etc}
+     * @param shaderProgram shaderProgram for the models
+     */
     public void render(LightSources lightSources, ShaderProgram shaderProgram) {
-        if (meshes.isEmpty() || !meshes.getFirst().buffered || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
+        if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
             return; // this is very critical!!
         }
-
-        final Mesh mesh = meshes.getFirst();
-
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
 
         GL20.glEnableVertexAttribArray(0);
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+        for (Mesh mesh : meshes) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
 
-        if (shaderProgram != null) {
-            shaderProgram.bind();
-            transform(shaderProgram);
-            setAlpha(shaderProgram);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv                      
 
-            lightSources.updateLightsInShader(shaderProgram);
+            if (shaderProgram != null) {
+                shaderProgram.bind();
+                transform(shaderProgram);
+                setAlpha(shaderProgram);
 
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
-            if (primaryTexture != null) { // this is primary texture
-                primaryColor(shaderProgram);
-                primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                lightSources.updateLightsInShader(shaderProgram);
+
+                Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
+                if (primaryTexture != null) { // this is primary texture
+                    primaryColor(shaderProgram);
+                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                }
+
+                if (waterTexture != null) { // this is reflective texture
+                    secondaryColor(shaderProgram);
+                    waterTexture.bind(1, shaderProgram, "modelTexture1");
+                }
             }
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+            Texture.unbind(0);
+            Texture.unbind(1);
+            ShaderProgram.unbind();
 
-            if (waterTexture != null) { // this is reflective texture
-                secondaryColor(shaderProgram);
-                waterTexture.bind(1, shaderProgram, "modelTexture1");
-            }
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
-        GL11.glDrawElements(GL11.GL_TRIANGLES, meshes.getFirst().indices.size(), GL11.GL_UNSIGNED_INT, 0);
-        Texture.unbind(0);
-        Texture.unbind(1);
-        ShaderProgram.unbind();
 
         GL20.glDisableVertexAttribArray(0);
         GL20.glDisableVertexAttribArray(1);
         GL20.glDisableVertexAttribArray(2);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     /**
@@ -243,9 +157,11 @@ public class Model implements Comparable<Model> {
      * @param models models to render
      * @param vbo common vbo
      * @param ibo common ibo
-     * @param lightSources light sources {SUN, PLAYER, OTHER LIGHT BLOCKS etc}
+     * @param lightSources light sources {SUN, PLAYER_WEAPONS, OTHER LIGHT,
+     * BLOCKS etc}
      * @param shaderProgram shaderProgram for the models
      */
+    @Deprecated
     public static void render(List<Model> models, int vbo, int ibo, LightSources lightSources, ShaderProgram shaderProgram) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -267,15 +183,17 @@ public class Model implements Comparable<Model> {
                 model.transform(shaderProgram);
                 model.setAlpha(shaderProgram);
 
-                final Mesh mesh = model.meshes.getFirst();
-
-                Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getTexture();
-                if (primaryTexture != null) { // this is primary texture
-                    model.primaryColor(shaderProgram);
-                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
+                    final Mesh mesh = model.meshes.getFirst();
+                    Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getTexture();
+                    if (primaryTexture != null) { // this is primary texture
+                        model.primaryColor(shaderProgram);
+                        primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                    }
+                    GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                    Texture.unbind(0);
+                    Texture.unbind(1);
                 }
-                GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
-                Texture.unbind(0);
             }
         }
         ShaderProgram.unbind();
@@ -324,7 +242,7 @@ public class Model implements Comparable<Model> {
         shaderProgram.updateUniform(materials.getFirst().alpha, "modelAlpha");
     }
 
-    private void calcDims() {
+    public void calcDims() {
         final Mesh mesh = meshes.getFirst();
         Vector3f vect = mesh.vertices.get(0).getPos();
         float xMin = vect.x;
@@ -716,12 +634,33 @@ public class Model implements Comparable<Model> {
         this.materials.getFirst().alpha = alpha;
     }
 
+    /**
+     * Equivalent of safe check
+     *
+     * @return
+     */
     public boolean isBuffered() {
-        return meshes.getFirst().buffered;
+        return safeCheck;
+    }
+
+    /**
+     * Set to true if this model is allowed for rendering. Otherwise false.
+     */
+    protected void setSafeCheck() {
+        safeCheck = true;
+        meshes.forEach(m -> safeCheck &= m.buffered);
+    }
+
+    /*
+    * Is this model allowed for rendering
+     */
+    public boolean getSafeCheck() {
+        return safeCheck;
     }
 
     public void bufferAll() {
         meshes.forEach(m -> m.bufferAll());
+        setSafeCheck();
     }
 
     public IList<Vertex> getVertices() {

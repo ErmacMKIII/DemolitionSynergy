@@ -47,34 +47,34 @@ public class Vector3fColors { // some of the defined colors
     public static final Vector3f DARK_MAGENTA = new Vector3f(0.5f, 0.0f, 0.5f);
     public static final Vector3f DARK_YELLOW = new Vector3f(0.5f, 0.5f, 0.0f);
 
-    public static final Map<Byte, Vector3f> PALETTE = new HashMap<>();
-    public static final Map<Vector3f, Byte> COLOR_TO_INDEX = new HashMap<>();
-
-    static {
-        PALETTE.put((byte) 0, BLACK);
-        PALETTE.put((byte) 1, WHITE);
-
-        PALETTE.put((byte) 2, RED);
-        PALETTE.put((byte) 3, GREEN);
-        PALETTE.put((byte) 4, BLUE);
-
-        PALETTE.put((byte) 5, CYAN);
-        PALETTE.put((byte) 6, MAGENTA);
-        PALETTE.put((byte) 7, YELLOW);
-
-        PALETTE.put((byte) 8, GRAY);
-
-        PALETTE.put((byte) 9, DARK_RED);
-        PALETTE.put((byte) 10, DARK_GREEN);
-        PALETTE.put((byte) 11, DARK_BLUE);
-
-        PALETTE.put((byte) 12, DARK_CYAN);
-        PALETTE.put((byte) 13, DARK_MAGENTA);
-        PALETTE.put((byte) 14, DARK_YELLOW);
-
-        int i = 0;
-        for (Vector3f color : PALETTE.values()) {
-            COLOR_TO_INDEX.put(color, (byte) i++);
-        }
-    }
+//    public static final Map<Byte, Vector3f> PALETTE = new HashMap<>();
+//    public static final Map<Vector3f, Byte> COLOR_TO_INDEX = new HashMap<>();
+//
+//    static {
+//        PALETTE.put((byte) 0, BLACK);
+//        PALETTE.put((byte) 1, WHITE);
+//
+//        PALETTE.put((byte) 2, RED);
+//        PALETTE.put((byte) 3, GREEN);
+//        PALETTE.put((byte) 4, BLUE);
+//
+//        PALETTE.put((byte) 5, CYAN);
+//        PALETTE.put((byte) 6, MAGENTA);
+//        PALETTE.put((byte) 7, YELLOW);
+//
+//        PALETTE.put((byte) 8, GRAY);
+//
+//        PALETTE.put((byte) 9, DARK_RED);
+//        PALETTE.put((byte) 10, DARK_GREEN);
+//        PALETTE.put((byte) 11, DARK_BLUE);
+//
+//        PALETTE.put((byte) 12, DARK_CYAN);
+//        PALETTE.put((byte) 13, DARK_MAGENTA);
+//        PALETTE.put((byte) 14, DARK_YELLOW);
+//
+//        int i = 0;
+//        for (Vector3f color : PALETTE.values()) {
+//            COLOR_TO_INDEX.put(color, (byte) i++);
+//        }
+//    }
 }
