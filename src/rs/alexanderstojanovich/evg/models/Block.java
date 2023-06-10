@@ -324,15 +324,14 @@ public class Block extends Model {
     @Deprecated
     public boolean canBeSeenByAdv(Vector3f camFront, Vector3f camPos) {
         boolean bool = false;
-
+        Vector3f temp0 = new Vector3f();
+        Vector3f vz = this.pos.sub(camPos, temp0).normalize(temp0);
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
-            Vector3f temp3 = new Vector3f();
-            Vector3f vz = this.pos.sub(camPos, temp3).normalize(temp3);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
+            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
                 bool = true;
                 break;
             }
@@ -361,15 +360,14 @@ public class Block extends Model {
     @Deprecated
     public static boolean canBeSeenByAdv(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
         boolean bool = false;
-
+        Vector3f temp0 = new Vector3f();
+        Vector3f vz = blockPos.sub(camPos, temp0).normalize(temp0);
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            Vector3f temp3 = new Vector3f();
-            Vector3f vz = blockPos.sub(camPos, temp3).normalize(temp3);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
+            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
                 bool = true;
                 break;
             }

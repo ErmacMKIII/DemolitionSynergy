@@ -378,7 +378,7 @@ public class Chunks {
     }
 
     /**
-     * Basic version of optimization for tuples from all the chunks.
+     * Improved version of optimization for tuples from all the chunks.
      *
      * @param queue visible chunkId queue
      * @param camFront camera front (look at vector)
@@ -417,7 +417,7 @@ public class Chunks {
     }
 
     /**
-     * Advanced version of optimization for tuples from all the chunks. Does not
+     * Advanced version of optimization for tuples from all the chunks.Does not
      * clear optimized tuples of the time and does not sort them all the time.
      *
      * @param queue visible chunkId queue
@@ -426,34 +426,39 @@ public class Chunks {
     public void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
         // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
-        optimizedTuples.removeIf(ot -> ((ot.faceBits() & mask & 63) == 0) || ot.blockList.isEmpty());
         for (int faceBits = 1; faceBits <= 63; faceBits++) {
             final int faceBitsCopy = faceBits;
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
-                    Tuple optmTuple = null;
-                    boolean modified = false;
+                    Tuple optmTuple = optimizedTuples.getIf(ot -> ot.faceBits() == faceBitsCopy && ot.texName().equals(tex));
+                    boolean firstTime = true;
                     for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
-                            Tuple tuple = chunk.getTuple(tex, faceBitsCopy);
+                            Tuple tuple = chunk.getTuple(tex, faceBits);
                             if (tuple != null) {
                                 if (optmTuple == null) {
-                                    optmTuple = new Tuple(tex, faceBitsCopy);
+                                    optmTuple = new Tuple(tex, faceBits);
                                 }
 
-                                for (Block blk : tuple.blockList) {
-                                    modified = optmTuple.blockList.addIfAbsent(blk);
+                                if (firstTime) {
+                                    optmTuple.blockList.clear();
+                                    firstTime = false;
                                 }
+                                optmTuple.blockList.addAll(tuple.blockList);
                             }
                         }
                     }
 
                     if (optmTuple != null) {
-                        optmTuple.buffered &= !modified;
+                        optmTuple.buffered = false;
                         boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
                         if (needSort) {
                             optimizedTuples.sort(Tuple.TUPLE_COMP);
+                        }
+
+                        if (optmTuple.blockList.isEmpty()) {
+                            optimizedTuples.remove(optmTuple);
                         }
                     }
                 }

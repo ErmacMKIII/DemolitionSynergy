@@ -529,7 +529,7 @@ public class Game {
 
         int index = 0; // track index
 
-        double timerr = 0.0;
+        double timer = 0.0;
 
         // first time we got nothing
         actionPerformed = false;
@@ -591,11 +591,11 @@ public class Game {
                 upsTicks--;
             }
 
-            if (Game.accumulator - timerr > 10.0) { // optimization every 125ms
+            if (Game.accumulator - timer > 20.0) { // optimization every 250 ms
                 actionPerformed = true;
                 chunksModified = true;
                 needOptimize = true;
-                timerr += 10.0;
+                timer += 20.0;
             }
 
             if (actionPerformed) {
