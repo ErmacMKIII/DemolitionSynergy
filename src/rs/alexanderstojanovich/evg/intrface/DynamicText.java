@@ -40,7 +40,7 @@ public class DynamicText extends Text {
 //    protected int dynamicSize = DYNAMIC_INCREMENT;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected int[] vboEntries = new int[1024];
-    protected static FloatBuffer bigFloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+    protected static FloatBuffer bigFloatBuff = null;
 
     public DynamicText(Texture texture, String content) {
         super(texture, content);
@@ -55,8 +55,10 @@ public class DynamicText extends Text {
     }
 
     public void bufferBigVbo() {
-        bigFloatBuff = MemoryUtil.memAllocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
-        bigFloatBuff.clear();
+        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return;
+        }
 
         int e = 0;
         int offset = 0;
@@ -92,8 +94,10 @@ public class DynamicText extends Text {
 
     public void updateBigVbo() {
         // auto adjust dynamic size of float buff and do it on every 1024 element
-        bigFloatBuff = MemoryUtil.memAllocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
-        bigFloatBuff.clear();
+        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return;
+        }
 
         int e = 0;
         int offset = 0;

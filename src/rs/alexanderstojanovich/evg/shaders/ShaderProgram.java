@@ -46,8 +46,9 @@ public class ShaderProgram {
     private static ShaderProgram intrfaceShader;
     private static ShaderProgram playerShader;
     private static ShaderProgram weaponShader;
+    private static ShaderProgram contourShader;
 
-    public static final int SHADER_COUNT = 7;
+    public static final int SHADER_COUNT = 8;
     public static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[SHADER_COUNT];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
@@ -107,6 +108,16 @@ public class ShaderProgram {
         weaponShaders.add(weaponFragmentShader);
         weaponShader = new ShaderProgram(weaponShaders);
         SHADER_PROGRAMS[6] = weaponShader;
+        // 8. Init contour shader (editor)
+        Shader contourVertexShader = new Shader(Game.EFFECTS_ENTRY, "contourVS.glsl", Shader.VERTEX_SHADER);
+        Shader contourFragmentShader = new Shader(Game.EFFECTS_ENTRY, "contourFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> contourShaders = new ArrayList<>();
+        contourShaders.add(contourVertexShader);
+        contourShaders.add(contourFragmentShader);
+        contourShader = new ShaderProgram(contourShaders);
+        SHADER_PROGRAMS[7] = contourShader;
+        // ---------------------------------------------------------------------
+        DSLogger.reportDebug("Shaders initialized!", null);
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -228,7 +239,10 @@ public class ShaderProgram {
     }
 
     public void updateUniform(Matrix4f mat, String name) {
-        FloatBuffer fb = MemoryUtil.memAllocFloat(4 * 4);
+        FloatBuffer fb = MemoryUtil.memCallocFloat(4 * 4);
+        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            return; // Memory allocation failed
+        }
         mat.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(program, name);
         GL20.glUniformMatrix4fv(uniformLocation, false, fb);
@@ -272,6 +286,10 @@ public class ShaderProgram {
 
     public static ShaderProgram getWeaponShader() {
         return weaponShader;
+    }
+
+    public static ShaderProgram getContourShader() {
+        return contourShader;
     }
 
 }

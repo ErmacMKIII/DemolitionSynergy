@@ -529,8 +529,7 @@ public class Game {
 
         int index = 0; // track index
 
-        double timera = 0.0;
-        double timero = 0.0;
+        double timerr = 0.0;
 
         // first time we got nothing
         actionPerformed = false;
@@ -565,7 +564,6 @@ public class Game {
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
                 GameObject.update((float) TICK_TIME);
-
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -593,39 +591,32 @@ public class Game {
                 upsTicks--;
             }
 
-            if (Game.accumulator - timera > 20.0) { // assumed that player moved on each quarter a second
+            if (Game.accumulator - timerr > 10.0) { // optimization every 125ms
                 actionPerformed = true;
-                timera += 20.0;
-            }
-
-            if (Game.accumulator - timero > 10.0) { // optimization every 125ms
+                chunksModified = true;
                 needOptimize = true;
-                timero += 10.0;
+                timerr += 10.0;
             }
 
             if (actionPerformed) {
                 chunksModified |= GameObject.determineVisibleChunks();
+                if (chunksModified) {
+                    needOptimize |= GameObject.chunkOperations();
+                    if (needOptimize) {
+                        GameObject.optimize();
+                        needOptimize = false;
+                    }
+                    chunksModified = false;
+                }
                 actionPerformed = false;
             }
-
-            if (chunksModified) {
-                needOptimize |= GameObject.chunkOperations();
-                chunksModified = false;
-            }
-
-            if (needOptimize || GameObject.isFirstOptimization()) {
-                // very expensive operation
-                GameObject.optimize();
-                needOptimize = false;
-            }
-
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();
 
         GLFWErrorCallback.createPrint(null).free();
 
-        DSLogger.reportInfo("Main loop ended.", null);
+        DSLogger.reportDebug("Main loop ended.", null);
     }
 
     /**

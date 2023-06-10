@@ -250,7 +250,6 @@ public class Chunks {
         chunk.addBlock(block);
         chunk.unbuffer();
         updateForAdd(block);
-        optimized = false;
     }
 
     /**
@@ -267,7 +266,6 @@ public class Chunks {
             chunk.removeBlock(block);
             chunk.unbuffer();
             updateForRem(block);
-            optimized = false;
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleList().isEmpty()) {
                 chunkList.remove(chunk);
@@ -428,32 +426,31 @@ public class Chunks {
     public void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
         // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
-        for (int faceBits = 1; faceBits <= 64; faceBits++) {
+        optimizedTuples.removeIf(ot -> ((ot.faceBits() & mask & 63) == 0) || ot.blockList.isEmpty());
+        for (int faceBits = 1; faceBits <= 63; faceBits++) {
+            final int faceBitsCopy = faceBits;
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
                     Tuple optmTuple = null;
-                    boolean firstTime = true;
+                    boolean modified = false;
                     for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
-                            Tuple tuple = chunk.getTuple(tex, faceBits);
+                            Tuple tuple = chunk.getTuple(tex, faceBitsCopy);
                             if (tuple != null) {
                                 if (optmTuple == null) {
-                                    optmTuple = new Tuple(tex, faceBits);
+                                    optmTuple = new Tuple(tex, faceBitsCopy);
                                 }
 
-                                if (firstTime) {
-                                    optmTuple.blockList.clear();
-                                    firstTime = false;
+                                for (Block blk : tuple.blockList) {
+                                    modified = optmTuple.blockList.addIfAbsent(blk);
                                 }
-
-                                optmTuple.blockList.addAll(tuple.blockList);
                             }
                         }
                     }
 
                     if (optmTuple != null) {
-                        optmTuple.buffered = false;
+                        optmTuple.buffered &= !modified;
                         boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
                         if (needSort) {
                             optimizedTuples.sort(Tuple.TUPLE_COMP);
@@ -462,7 +459,6 @@ public class Chunks {
                 }
             }
         }
-        optimizedTuples.removeIf(t -> ((t.faceBits() & (mask & 63)) == 0));
         optimized = true;
     }
 
@@ -541,7 +537,7 @@ public class Chunks {
                     .append("\n");
         }
         sb.append("------------------------------------------------------------");
-        DSLogger.reportInfo(sb.toString(), null);
+        DSLogger.reportDebug(sb.toString(), null);
 
         return sb.toString();
     }

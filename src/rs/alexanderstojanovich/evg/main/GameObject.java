@@ -94,7 +94,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------                        
         game = new Game(); // init game with given configuration and game object
         renderer = new GameRenderer(); // init renderer with given game object
-        DSLogger.reportInfo("Game initialized.", null);
+        DSLogger.reportDebug("Game initialized.", null);
         //----------------------------------------------------------------------
         initialized = true;
     }
@@ -120,8 +120,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
         //----------------------------------------------------------------------
         renderer.start();
-        DSLogger.reportInfo("Renderer started.", null);
-        DSLogger.reportInfo("Game will start soon.", null);
+        DSLogger.reportDebug("Renderer started.", null);
+        DSLogger.reportDebug("Game will start soon.", null);
         game.go();
         //----------------------------------------------------------------------
         try {
@@ -297,7 +297,28 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public static void optimize() {
         synchronized (MUTEX) {
+            levelContainer.chunks.setOptimized(false); // this is also hint to not render
             levelContainer.optimize();
+        }
+    }
+
+    /**
+     * Is level container optimized
+     */
+    public static void isOptimized() {
+        synchronized (MUTEX) {
+            levelContainer.chunks.isOptimized();
+        }
+    }
+
+    /**
+     * Set level container optimization flag
+     *
+     * @param optimized optimized flag to set
+     */
+    public static void setOptimized(boolean optimized) {
+        synchronized (MUTEX) {
+            levelContainer.chunks.setOptimized(optimized);
         }
     }
 

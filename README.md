@@ -19,7 +19,7 @@ In order to build the project you are gonna need NetBeans IDE 16 (or later) and 
 1. LWJGL 3.3.2 with JOML 1.10.5,
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
-4. Apache logger (Log4J) (installed),
+4. Apache logger (Log4J) with dependecies (installed),
 
 Download latest library LWJGL (3.3.2 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)

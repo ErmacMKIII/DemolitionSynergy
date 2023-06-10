@@ -37,7 +37,8 @@ public class Configuration {
     private boolean vsync = false;
     private boolean waterEffects = true;
     private float mouseSensitivity = 1.5f;
-    private boolean debug = false;
+    private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
+    private boolean logToFile = false;
     private float musicVolume = 0.2f;
     private float soundFXVolume = 0.2f;
     private int blockDynamicSize = 50;
@@ -70,8 +71,19 @@ public class Configuration {
                 br = new BufferedReader(new FileReader(cfg));
                 String line;
                 while ((line = br.readLine()) != null) {
+                    if (line.startsWith("#")) {
+                        continue; // ignore whole line comments
+                    }
+
+                    // ignore inline comments
+                    if (line.contains("#")) {
+                        line = line.substring(0, line.indexOf("#"));
+                    }
+
                     // replace all white space chars with empty string
-                    String[] words = line.replaceAll("\\s", "").split("=");
+                    String[] words = line.replaceAll("\\s", "")
+                            .trim()
+                            .split("=");
                     int number;
                     float val;
                     if (words.length == 2) {
@@ -112,8 +124,12 @@ public class Configuration {
                                     soundFXVolume = val;
                                 }
                                 break;
-                            case "debug":
-                                debug = Boolean.parseBoolean(words[1].toLowerCase());
+                            case "loglevel":
+                                int logLevelInt = Integer.parseInt(words[1].toLowerCase());
+                                logLevel = DSLogger.DSLogLevel.values()[logLevelInt];
+                                break;
+                            case "logtofile":
+                                logToFile = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                             case "blockdynamicsize":
                                 number = Integer.parseInt(words[1]);
@@ -129,7 +145,7 @@ public class Configuration {
                                 break;
                             case "rendererpasses":
                                 number = Integer.parseInt(words[1]);
-                                if (number > 0 && number <= 3) {
+                                if (number >= 0 && number <= 3) {
                                     rendererPasses = number;
                                 }
                             case "texturesize":
@@ -172,20 +188,29 @@ public class Configuration {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(cfg);
+            pw.println("# Maximum framerate. Depedends on VSync.");
             pw.println("FPSCap = " + fpsCap);
             pw.println("Width = " + width);
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
+            pw.println("# Maximum Framerate set to refresh rate if enabled");
             pw.println("VSync = " + vsync);
+            pw.println("# Water Effects (e.g. water reflections)");
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
-            pw.println("Debug = " + debug);
+            pw.println("# Log Level {ERR=0(default), DEBUG=1, ALL=2}");
+            pw.println("LogLevel = " + logLevel.ordinal());
+            pw.println("# If true generate log file, otherwise print only to console. Used in conjuction with log level.");
+            pw.println("LogToFile = " + logToFile);
             pw.println("BlockDynamicSize = " + blockDynamicSize);
             pw.println("TextDynamicSize = " + textDynamicSize);
+            pw.println("# Renderer strength. May Improve performance. Allowed values 0-3");
             pw.println("RendererPasses = " + rendererPasses);
+            pw.println("# Texture size. Must be power of two, non-zero and lesser or equal than 4096.");
             pw.println("TextureSize = " + textureSize);
+            pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
@@ -252,12 +277,20 @@ public class Configuration {
         this.mouseSensitivity = mouseSensitivity;
     }
 
-    public boolean isDebug() {
-        return debug;
+    public DSLogger.DSLogLevel getLogLevel() {
+        return logLevel;
     }
 
-    public void setDebug(boolean debug) {
-        this.debug = debug;
+    public void setLogLevel(DSLogger.DSLogLevel logLevel) {
+        this.logLevel = logLevel;
+    }
+
+    public boolean isLogToFile() {
+        return logToFile;
+    }
+
+    public void setLogToFile(boolean logToFile) {
+        this.logToFile = logToFile;
     }
 
     public float getMusicVolume() {

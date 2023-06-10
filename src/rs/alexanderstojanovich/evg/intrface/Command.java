@@ -382,7 +382,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         + "_" + now.getHour()
                         + "-" + now.getMinute()
                         + "-" + now.getSecond()
-                        + "-" + now.getNano() / 1E6 // one million
+                        + "-" + Math.round(now.getNano() / (float) 1E6) // one million
                         + ".png");
                 if (screenshot.exists()) {
                     screenshot.delete();

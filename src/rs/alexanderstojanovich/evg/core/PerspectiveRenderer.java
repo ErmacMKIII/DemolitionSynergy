@@ -29,7 +29,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class PerspectiveRenderer {
 
     public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static FloatBuffer floatBuff = MemoryUtil.memAllocFloat(4 * 4);
+    protected static FloatBuffer floatBuff = MemoryUtil.memCallocFloat(4 * 4);
 
     protected static boolean buffered = false;
 
@@ -44,8 +44,7 @@ public class PerspectiveRenderer {
     }
 
     public static void bufferAll() {
-        floatBuff = MemoryUtil.memAllocFloat(16);
-        floatBuff.clear();
+        floatBuff = MemoryUtil.memCallocFloat(16);
         PROJECTION_MATRIX.get(floatBuff);
         for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();

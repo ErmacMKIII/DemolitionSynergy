@@ -21,6 +21,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
 import java.awt.color.ColorSpace;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.ComponentColorModel;
@@ -123,6 +125,65 @@ public class ImageUtils {
                 .getData();
 
         imageBuffer = MemoryUtil.memCalloc(data.length);
+        if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportFatalError("Could not allocate memory address!", null);
+        }
+        imageBuffer.put(data, 0, data.length);
+        imageBuffer.flip();
+
+        return imageBuffer;
+    }
+
+    /**
+     * Gets content of this image as Byte Buffer (for textures)
+     *
+     * @param srcImg source image
+     * @param texSize texture size (power of two)
+     * @return content as byte buffer for creating texture
+     */
+    public static ByteBuffer getImageDataBuffer(BufferedImage srcImg, int texSize) {
+        ByteBuffer imageBuffer;
+        WritableRaster raster;
+        BufferedImage texImage;
+
+        ColorModel glAlphaColorModel = new ComponentColorModel(ColorSpace
+                .getInstance(ColorSpace.CS_sRGB), new int[]{8, 8, 8, 8},
+                true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
+
+        raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
+                texSize, texSize, 4, null);
+        texImage = new BufferedImage(glAlphaColorModel, raster, false,
+                new Hashtable());
+
+        int width = srcImg.getWidth();
+        int height = srcImg.getHeight();
+        double sx = 1.0 / (1.0 + (width - texSize) / (double) texSize);
+        double sy = 1.0 / (1.0 + (height - texSize) / (double) texSize);
+
+        AffineTransform xform = new AffineTransform();
+        xform.scale(sx, sy);
+        AffineTransformOp atOp = new AffineTransformOp(xform, null);
+        final BufferedImage dstImg = atOp.filter(srcImg, null);
+
+        // copy the source image into the produced image
+        Graphics2D g2d = (Graphics2D) texImage.getGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+
+        g2d.setColor(new Color(0.0f, 0.0f, 0.0f, 0.0f));
+        g2d.drawImage(dstImg, 0, 0, null);
+
+        // build a byte buffer from the temporary image
+        // that be used by OpenGL to produce a texture.
+        byte[] data = ((DataBufferByte) texImage.getRaster().getDataBuffer())
+                .getData();
+
+        imageBuffer = MemoryUtil.memCalloc(data.length);
+        if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportFatalError("Could not allocate memory address!", null);
+        }
         imageBuffer.put(data, 0, data.length);
         imageBuffer.flip();
 

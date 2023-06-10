@@ -415,8 +415,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
             }
             updateForRem(block);
-
-            buffered = false;
         }
     }
 

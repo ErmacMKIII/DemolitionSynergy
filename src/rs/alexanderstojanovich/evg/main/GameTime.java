@@ -33,6 +33,7 @@ public class GameTime {
     protected final int hours;
     protected final int minutes;
     protected final int seconds;
+    protected final float time;
 
     /**
      * Get current ingame time fields in HH:mm:ss (in 24 hour format).
@@ -44,17 +45,14 @@ public class GameTime {
 
         final float time = 12.0f + 24.0f * (float) org.joml.Math.toDegrees(sunAngleRadians) / 360.0f;
 
-        int hours = Math.floorMod((int) time, 24);
-        int minutes = Math.floorMod((int) (time * 60f), 60);
-        int seconds = Math.floorMod((int) (time * 3600f), 60);
-
-        return new GameTime(hours, minutes, seconds);
+        return new GameTime(time);
     }
 
-    public GameTime(int hours, int minutes, int seconds) {
-        this.hours = hours;
-        this.minutes = minutes;
-        this.seconds = seconds;
+    public GameTime(float time) {
+        this.time = time;
+        this.hours = Math.floorMod((int) time, 24);
+        this.minutes = Math.floorMod((int) (time * 60f), 60);
+        this.seconds = Math.floorMod((int) (time * 3600f), 60);
     }
 
     public int getHours() {
@@ -67,6 +65,10 @@ public class GameTime {
 
     public int getSeconds() {
         return seconds;
+    }
+
+    public float getTime() {
+        return time;
     }
 
 }

@@ -33,7 +33,7 @@ public class Material {
 
     protected Vector3f color = new Vector3f(Vector3fColors.WHITE);
     protected float alpha = 1.0f;
-    protected final Texture texture;
+    protected Texture texture;
 
     public Material(Texture texture) {
         this.texture = texture;

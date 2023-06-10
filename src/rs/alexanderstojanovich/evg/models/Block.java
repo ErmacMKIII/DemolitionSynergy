@@ -39,6 +39,7 @@ import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -106,8 +107,7 @@ public class Block extends Model {
         super("cubex.txt", texName);
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
-        deepCopyTo(mesh.vertices, texName);
-        mesh.indices.addAll(INDICES);
+        deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
         material.color = new Vector3f(Vector3fColors.WHITE);
@@ -120,8 +120,7 @@ public class Block extends Model {
         this.pos = pos;
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
-        deepCopyTo(mesh.vertices, texName);
-        mesh.indices.addAll(INDICES);
+        deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
         material.color = primaryColor;
@@ -130,16 +129,20 @@ public class Block extends Model {
         width = height = depth = 2.0f;
     }
 
+    public Block(Model other) {
+        super(other);
+    }
+
     // cuz regular shallow copy doesn't work, for List of integers is applicable
-    public static void deepCopyTo(IList<Vertex> vertices, String texName) {
-        int texIndex = Texture.TEX_MAP.get(texName).getValue();
+    public static void deepCopyTo(Mesh mesh, String texName) {
+        int texIndex = Texture.getOrDefaultIndex(texName);
         int row = texIndex / Texture.GRID_SIZE_WORLD;
         int col = texIndex % Texture.GRID_SIZE_WORLD;
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
 
-        vertices.clear();
+        mesh.vertices.clear();
         for (Vertex v : VERTICES) {
-            vertices.add(new Vertex(
+            mesh.vertices.add(new Vertex(
                     new Vector3f(v.getPos()),
                     new Vector3f(v.getNormal()),
                     (texIndex == -1)
@@ -147,6 +150,9 @@ public class Block extends Model {
                             : new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
             );
         }
+        mesh.indices.clear();
+        mesh.indices.addAll(INDICES);
+        mesh.unbuffer();
     }
 
     /**
@@ -174,7 +180,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
+            Texture primaryTexture = Texture.getOrDefault(texName);
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -226,7 +232,7 @@ public class Block extends Model {
 
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
+            Texture primaryTexture = Texture.TEX_STORE.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -657,6 +663,10 @@ public class Block extends Model {
         }
         // storing indices in the buffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
+        if (MemoryUtil.memAddress(intBuff) == MemoryUtil.NULL) {
+            return null;
+        }
+
         for (Integer index : indices) {
             intBuff.put(index);
         }

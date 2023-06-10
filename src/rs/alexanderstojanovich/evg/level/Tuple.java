@@ -49,10 +49,10 @@ public class Tuple extends Blocks {
     public static final int MAT4_SIZE = 16;
 
     protected int vec3Vbo = 0;
-    protected static FloatBuffer vec3FloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * VEC3_SIZE);
+    protected static FloatBuffer vec3FloatBuff = null;
 
     protected int mat4Vbo = 0;
-    protected static FloatBuffer mat4FloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * MAT4_SIZE);
+    protected static FloatBuffer mat4FloatBuff = null;
 
     protected final String name;
 
@@ -142,9 +142,11 @@ public class Tuple extends Blocks {
     }
 
     @Override
-    public void bufferVertices() { // call it before any rendering
-        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
-        bigFloatBuff.clear();
+    public boolean bufferVertices() { // call it before any rendering
+        bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * verticesNum * Vertex.SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
         for (Block block : blockList) {
             for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
@@ -177,13 +179,16 @@ public class Tuple extends Blocks {
         if (bigFloatBuff.capacity() != 0) {
             MemoryUtil.memFree(bigFloatBuff);
         }
+
+        return true;
     }
 
     @Override
-    public void updateVertices() { // call it before any rendering        
-        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * verticesNum * Vertex.SIZE);
-        bigFloatBuff.clear();
-
+    public boolean updateVertices() { // call it before any rendering        
+        bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * verticesNum * Vertex.SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
         int blkIndex = 0;
         for (Block block : blockList) {
             for (Vertex vertex : block.getVertices()) { // for each vertex
@@ -211,12 +216,16 @@ public class Tuple extends Blocks {
         if (bigFloatBuff.capacity() != 0) {
             MemoryUtil.memFree(bigFloatBuff);
         }
+
+        return true;
     }
 
     // buffering colors
-    public void bufferVectors() {
-        vec3FloatBuff = MemoryUtil.memAllocFloat(blockList.size() * VEC3_SIZE);
-        vec3FloatBuff.clear();
+    public boolean bufferColors() {
+        vec3FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * VEC3_SIZE);
+        if (MemoryUtil.memAddress(vec3FloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
 
         for (Block block : blockList) {
             Vector3f color = block.getMaterials().getFirst().getColor();
@@ -239,12 +248,16 @@ public class Tuple extends Blocks {
         if (vec3FloatBuff.capacity() != 0) {
             MemoryUtil.memFree(vec3FloatBuff);
         }
+
+        return true;
     }
 
     // buffering model matrices
-    public void bufferMatrices() {
-        mat4FloatBuff = MemoryUtil.memAllocFloat(blockList.size() * MAT4_SIZE);
-        mat4FloatBuff.clear();
+    public boolean bufferMatrices() {
+        mat4FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * MAT4_SIZE);
+        if (MemoryUtil.memAddress(mat4FloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
 
         for (Block block : blockList) {
             Vector4f[] vectArr = new Vector4f[4];
@@ -273,14 +286,18 @@ public class Tuple extends Blocks {
         if (mat4FloatBuff.capacity() != 0) {
             MemoryUtil.memFree(mat4FloatBuff);
         }
+
+        return true;
     }
 
     @Override
-    public void bufferIndices() {
+    public boolean bufferIndices() {
         // storing indices buffer on the graphics card
         final int faceBits = faceBits();
-        intBuff = Block.createIntBuffer(faceBits);
-        intBuff.clear();
+        intBuff = Block.createIntBuffer(faceBits); // calloc failed
+        if (intBuff == null) {
+            return false;
+        }
 
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
@@ -295,16 +312,14 @@ public class Tuple extends Blocks {
         if (intBuff.capacity() != 0) {
             MemoryUtil.memFree(intBuff);
         }
+
+        return true;
     }
 
     // renderer does this stuff prior to any rendering
     @Override
     public void bufferAll() {
-        bufferVertices();
-        bufferVectors();
-        bufferMatrices();
-        bufferIndices();
-        buffered = true;
+        buffered = bufferVertices() && bufferColors() && bufferMatrices() && bufferIndices();
     }
 
     @Override

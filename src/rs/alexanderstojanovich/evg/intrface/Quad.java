@@ -59,14 +59,14 @@ public class Quad implements ComponentIfc {
         new Vector2f(-1.0f, 1.0f)
     };
 
-    protected static FloatBuffer FLOAT_BUFFER = MemoryUtil.memAllocFloat(VERTEX_COUNT * VERTEX_SIZE);
+    protected static FloatBuffer FLOAT_BUFFER = null;
 
     protected Vector2f[] uvs = new Vector2f[4];
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     // protected static final IntBuffer CONST_INT_BUFFER = MemoryUtil.memAllocInt(6);
     protected int vbo = 0;
 
-    protected static final IntBuffer intBuffer = MemoryUtil.memAllocInt(4 * VERTEX_SIZE);
+    protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
 
     protected boolean buffered = false;
@@ -94,9 +94,11 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public void bufferVertices() {
-        FLOAT_BUFFER = MemoryUtil.memAllocFloat(4 * VERTEX_COUNT);
-        FLOAT_BUFFER.clear();
+    public boolean bufferVertices() {
+        FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
+        if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i = 0; i < 4; i++) {
             FLOAT_BUFFER.put(VERTICES[i].x);
             FLOAT_BUFFER.put(VERTICES[i].y);
@@ -117,12 +119,16 @@ public class Quad implements ComponentIfc {
         if (FLOAT_BUFFER.capacity() != 0) {
             MemoryUtil.memFree(FLOAT_BUFFER);
         }
-        buffered = true;
+
+        return true;
     }
 
     @Override
-    public void updateVertices() {
-        FLOAT_BUFFER.clear();
+    public boolean updateVertices() {
+        FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
+        if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i = 0; i < 4; i++) {
             FLOAT_BUFFER.put(VERTICES[i].x);
             FLOAT_BUFFER.put(VERTICES[i].y);
@@ -131,15 +137,25 @@ public class Quad implements ComponentIfc {
         }
         FLOAT_BUFFER.flip();
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, FLOAT_BUFFER);
-
+        if (FLOAT_BUFFER.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, FLOAT_BUFFER);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (FLOAT_BUFFER.capacity() != 0) {
+            MemoryUtil.memFree(FLOAT_BUFFER);
+        }
+
+        return true;
     }
 
     @Override
-    public void bufferIndices() {
-        intBuffer.clear();
+    public boolean bufferIndices() {
+        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i : INDICES) {
             intBuffer.put(i);
         }
@@ -154,20 +170,22 @@ public class Quad implements ComponentIfc {
             GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuffer, GL15.GL_STATIC_DRAW);
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        return true;
     }
 
     @Override
     public void bufferAll() {
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
+        buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
     public void bufferSmart() {
-        updateVertices();
-        bufferIndices();
-        buffered = true;
+        if (vbo == 0 || ibo == 0) {
+            buffered = bufferVertices() && bufferIndices();
+        } else {
+            buffered = updateVertices() && bufferIndices();
+        }
     }
 
     protected Matrix4f calcModelMatrix() {

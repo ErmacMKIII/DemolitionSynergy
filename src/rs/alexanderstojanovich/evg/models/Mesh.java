@@ -43,10 +43,12 @@ public class Mesh {
 
     protected boolean buffered = false;
 
-    public void bufferVertices() {
+    public boolean bufferVertices() {
         // storing vertices and normals in the buffer
-        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
-        fb.clear();
+        fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
+        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            return false;
+        }
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 fb.put(vertex.getPos().x);
@@ -76,11 +78,15 @@ public class Mesh {
         if (fb.capacity() != 0) {
             MemoryUtil.memFree(fb);
         }
+
+        return true;
     }
 
-    public void updateVertices() {
-        fb = MemoryUtil.memAllocFloat(vertices.size() * Vertex.SIZE);
-        fb.clear();
+    public boolean updateVertices() {
+        fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
+        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            return false;
+        }
         // storing vertices and normals in the buffer        
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
@@ -104,11 +110,16 @@ public class Mesh {
         if (fb.capacity() != 0) {
             MemoryUtil.memFree(fb);
         }
+
+        return true;
     }
 
-    public void bufferIndices() {
-        // storing indices in the buffer
-        ib = MemoryUtil.memAllocInt(indices.size());
+    public boolean bufferIndices() {
+        // storing indices in the buffer        
+        ib = MemoryUtil.memCallocInt(indices.size());
+        if (MemoryUtil.memAddress(ib) == MemoryUtil.NULL) {
+            return false;
+        }
         for (Integer index : indices) {
             ib.put(index);
         }
@@ -124,12 +135,12 @@ public class Mesh {
         if (ib.capacity() != 0) {
             MemoryUtil.memFree(ib);
         }
+
+        return true;
     }
 
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
+    public void bufferAll() { // explicit call to buffer unbuffered before the rendering        
+        buffered = bufferVertices() && bufferIndices();
     }
 
     public void unbuffer() {

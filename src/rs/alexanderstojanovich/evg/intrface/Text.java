@@ -89,11 +89,11 @@ public class Text implements ComponentIfc {
         new Vector2f()
     };
 
-    protected static FloatBuffer floatBuffer = MemoryUtil.memAllocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
+    protected static FloatBuffer floatBuffer = null;
     protected int vbo = 0;
 
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
-    protected static IntBuffer intBuffer = MemoryUtil.memAllocInt(INDICES.length);
+    protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
 
     public Text(Texture texture, String content) {
@@ -119,9 +119,11 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void bufferVertices() {
-        floatBuffer = MemoryUtil.memAllocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
-        floatBuffer.clear();
+    public boolean bufferVertices() {
+        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
+        if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
             floatBuffer.put(VERTICES[i].y);
@@ -142,12 +144,16 @@ public class Text implements ComponentIfc {
         if (floatBuffer.capacity() != 0) {
             MemoryUtil.memFree(floatBuffer);
         }
-        buffered = true;
+
+        return true;
     }
 
     @Override
-    public void updateVertices() {
-        floatBuffer.clear();
+    public boolean updateVertices() {
+        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
+        if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
             floatBuffer.put(VERTICES[i].y);
@@ -156,15 +162,25 @@ public class Text implements ComponentIfc {
         }
         floatBuffer.flip();
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
+        if (floatBuffer.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        if (floatBuffer.capacity() != 0) {
+            MemoryUtil.memFree(floatBuffer);
+        }
+
+        return true;
     }
 
     @Override
-    public void bufferIndices() {
-        intBuffer = MemoryUtil.memAllocInt(INDICES.length);
-        intBuffer.clear();
+    public boolean bufferIndices() {
+        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+            return false;
+        }
         for (int i : INDICES) {
             intBuffer.put(i);
         }
@@ -183,6 +199,8 @@ public class Text implements ComponentIfc {
         if (intBuffer.capacity() != 0) {
             MemoryUtil.memFree(intBuffer);
         }
+
+        return true;
     }
 
     protected void setup() {
@@ -204,21 +222,19 @@ public class Text implements ComponentIfc {
 
     @Override
     public void bufferAll() {
+        buffered = false;
         setup();
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
+        buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
     public void bufferSmart() {
         setup();
         if (vbo == 0) {
-            bufferVertices();
+            buffered = bufferVertices() && bufferIndices();
+        } else {
+            buffered = updateVertices() && bufferIndices();
         }
-        updateVertices();
-        bufferIndices();
-        buffered = true;
     }
 
     @Override

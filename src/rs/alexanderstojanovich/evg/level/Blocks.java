@@ -52,12 +52,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     protected boolean buffered = false;
 
 //    protected static int dynamicSize = DYNAMIC_INCREMENT;
-    protected static FloatBuffer bigFloatBuff = MemoryUtil.memAllocFloat(DYNAMIC_INCREMENT * Block.VERTEX_COUNT * Vertex.SIZE);
+    protected static FloatBuffer bigFloatBuff = null;
 
-    public void bufferVertices() { // call it before any rendering
-        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
-
-        bigFloatBuff.clear();
+    public boolean bufferVertices() { // call it before any rendering
+        bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
         int offset = 0;
         int blkIndex = 0;
         for (Block block : blockList) {
@@ -91,11 +92,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         if (bigFloatBuff.capacity() != 0) {
             MemoryUtil.memFree(bigFloatBuff);
         }
+
+        return true;
     }
 
-    public void updateVertices() { // call it before any rendering           
-        bigFloatBuff = MemoryUtil.memAllocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
-        bigFloatBuff.clear();
+    public boolean updateVertices() { // call it before any rendering           
+        bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
+        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            return false;
+        }
         int offset = 0;
         int blkIndex = 0;
         for (Block block : blockList) {
@@ -128,12 +133,17 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         if (bigFloatBuff.capacity() != 0) {
             MemoryUtil.memFree(bigFloatBuff);
         }
+
+        return true;
     }
 
-    public void bufferIndices() { // call it before any rendering
+    public boolean bufferIndices() { // call it before any rendering
         int blkIndex = 0;
         for (Block block : blockList) {
             IntBuffer intBuff = Block.createIntBuffer(block.getFaceBits());
+            if (intBuff == null) {
+                return false; // failed to create (mem calloc failed)
+            }
             // storing indices buffer on the graphics card
             int ibo = iboMap.getOrDefault(blkIndex, 0);
             if (ibo == 0) {
@@ -151,12 +161,12 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
             blkIndex++;
         }
+
+        return true;
     }
 
     public void bufferAll() { // buffer both, call it before any rendering
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
+        buffered = bufferVertices() && bufferIndices();
     }
 
     public void animate() { // call only for fluid blocks

@@ -23,6 +23,7 @@ import org.lwjgl.opengl.GLCapabilities;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 
 /**
+ * Responsible for primitive rendering. OpenGL initialization happens here.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -62,6 +63,9 @@ public class MasterRenderer {
         GL11.glViewport(0, 0, width, height);
     }
 
+    /**
+     * Render by clearing the color (COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT)
+     */
     public static void render() {
         Vector3f skyColor = LevelContainer.SKYBOX.getMaterials().getFirst().getColor();
         GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);

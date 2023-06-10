@@ -42,6 +42,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
@@ -195,7 +196,7 @@ public class LevelContainer implements GravityEnviroment {
         sb.append("POSITION MAP");
         sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
-        DSLogger.reportInfo(sb.toString(), null);
+        DSLogger.reportDebug(sb.toString(), null);
     }
 
     public void printQueues() {
@@ -210,7 +211,7 @@ public class LevelContainer implements GravityEnviroment {
         sb.append(iChnkIdList);
         sb.append("\n");
         sb.append("---------------------------");
-        DSLogger.reportInfo(sb.toString(), null);
+        DSLogger.reportDebug(sb.toString(), null);
     }
 
     // -------------------------------------------------------------------------    
@@ -341,10 +342,10 @@ public class LevelContainer implements GravityEnviroment {
 
         IList<Block> allBlocks = chunks.getTotalList();
         Predicate predSolid = (Predicate<Block>) (Block t) -> t.isSolid();
-        IList<Block> solidBlocks = (IList<Block>) allBlocks.filteredList(predSolid);
+        IList<Block> solidBlocks = (IList<Block>) allBlocks.filter(predSolid);
 
         Predicate predFluid = (Predicate<Block>) (Block t) -> !t.isSolid();
-        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filteredList(predFluid);
+        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filter(predFluid);
 
         buffer[pos++] = 'S';
         buffer[pos++] = 'O';
@@ -766,9 +767,9 @@ public class LevelContainer implements GravityEnviroment {
             final float gtm = cfg.getGameTimeMultiplier();
             SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
             SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
-            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
+            float factor = MathUtils.expm1(Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f));
             SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
-            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(factor));
+            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(Math.max(factor, 5E-2f)));
             SUNLIGHT.intensity = factor * SUN_INTENSITY;
             cameraInFluid = isCameraInFluid();
 
@@ -794,7 +795,10 @@ public class LevelContainer implements GravityEnviroment {
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+
+        if (SUNLIGHT.intensity != 0.0f) {
+            SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+        }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
@@ -815,20 +819,20 @@ public class LevelContainer implements GravityEnviroment {
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
         }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
+        Block selectedNewWireFrame = Editor.getSelectedNewDecal();
         if (selectedNewWireFrame != null) {
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
             }
-            selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+            selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
         }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
+        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
         if (selectedCurrFrame != null) {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
-            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+            selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
@@ -846,7 +850,10 @@ public class LevelContainer implements GravityEnviroment {
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
+        if (SUNLIGHT.intensity != 0.0f) {
+            SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+        }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
@@ -868,7 +875,7 @@ public class LevelContainer implements GravityEnviroment {
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
         }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
+        Block selectedNewWireFrame = Editor.getSelectedNewDecal();
         if (selectedNewWireFrame != null) {
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
@@ -876,7 +883,7 @@ public class LevelContainer implements GravityEnviroment {
             selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
         }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
+        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
         if (selectedCurrFrame != null) {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();

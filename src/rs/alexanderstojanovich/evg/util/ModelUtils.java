@@ -95,12 +95,12 @@ public class ModelUtils {
             DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return null;
         }
-
+        
         int texIndex = Texture.getOrDefaultIndex(texName);
         int row = texIndex / Texture.GRID_SIZE_WORLD;
         int col = texIndex % Texture.GRID_SIZE_WORLD;
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
-
+        
         Model result = new Model(fileName, texName);
         Mesh mesh = new Mesh();
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
@@ -156,14 +156,14 @@ public class ModelUtils {
                 }
             }
         }
-
-        Material material = new Material(Texture.TEX_MAP.get(texName).getTexture());
+        
+        Material material = new Material(Texture.getOrDefault(texName));
         material.setColor(new Vector3f(Vector3fColors.WHITE));
         result.materials.add(material);
-
+        
         result.meshes.add(mesh);
         result.calcDimsPub();
-
+        
         return result;
     }
 
@@ -208,12 +208,12 @@ public class ModelUtils {
             DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return null;
         }
-
+        
         int texIndex = Texture.getOrDefaultIndex(texName);
         int row = texIndex / Texture.GRID_SIZE_WORLD;
         int col = texIndex % Texture.GRID_SIZE_WORLD;
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
-
+        
         Model result = new Model(fileName, texName);
         Mesh mesh = new Mesh();
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
@@ -269,23 +269,23 @@ public class ModelUtils {
                 }
             }
         }
-
+        
         if (reverseFaces) {
             for (int index = 0; index < mesh.indices.size() - 3; index += 3) {
                 mesh.indices.reverse(index, 3);
             }
         }
-
-        Material material = new Material(Texture.TEX_MAP.get(texName).getTexture());
+        
+        Material material = new Material(Texture.getOrDefault(texName));
         material.setColor(new Vector3f(Vector3fColors.WHITE));
         result.materials.add(material);
-
+        
         result.meshes.add(mesh);
         result.calcDimsPub();
-
+        
         return result;
     }
-
+    
     @Deprecated
     public static Model readFromModelFile(String dirEntry, String fileName, String texName) {
         File extern = new File(dirEntry + fileName);
@@ -318,13 +318,13 @@ public class ModelUtils {
             DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
             return null;
         }
-
+        
         Model result = new Model(fileName, texName);
-
+        
         try {
             byte[] buffer = objInput.readAllBytes();
             objInput.close();
-
+            
             ByteBuffer byteBuffer = MemoryUtil.memCalloc(buffer.length);
             byteBuffer.clear();
             byteBuffer.put(buffer);
@@ -344,7 +344,7 @@ public class ModelUtils {
                 DSLogger.reportError("Error loading model " + dirEntry + fileName + "!", null);
                 return null;
             }
-
+            
             int numMaterials = aiScene.mNumMaterials();
             PointerBuffer aiMaterials = aiScene.mMaterials();
             if (aiMaterials == null) {
@@ -355,19 +355,19 @@ public class ModelUtils {
                 AIMaterial aiMaterial = AIMaterial.create(aiMaterials.get(i));
                 result.materials.add(processMaterial(aiMaterial, texName));
             }
-
+            
             int numMeshes = aiScene.mNumMeshes();
             PointerBuffer aiMeshes = aiScene.mMeshes();
             if (aiMeshes == null) {
                 DSLogger.reportError("Error loading model " + dirEntry + fileName + "!", null);
                 return null;
             }
-
+            
             for (int i = 0; i < numMeshes; i++) {
                 AIMesh aiMesh = AIMesh.create(aiMeshes.get(i));
                 result.meshes.add(processMesh(aiMesh));
             }
-
+            
             if (byteBuffer.capacity() != 0) {
                 MemoryUtil.memFree(byteBuffer);
             }
@@ -380,12 +380,12 @@ public class ModelUtils {
                 DSLogger.reportError(ex.getMessage(), ex);
             }
         }
-
+        
         result.calcDimsPub();
-
+        
         return result;
     }
-
+    
     private static Material processMaterial(AIMaterial aiMaterial, String texName) {
         AIColor4D colour = AIColor4D.create();
 
@@ -400,29 +400,29 @@ public class ModelUtils {
         if (result == 0) {
             ambient = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());
         }
-
+        
         Vector4f diffuse = new Vector4f(Vector3fColors.WHITE, 1.0f);
         result = Assimp.aiGetMaterialColor(aiMaterial, Assimp.AI_MATKEY_COLOR_DIFFUSE, Assimp.aiTextureType_NONE, 0, colour);
         if (result == 0) {
             diffuse = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());
         }
-
+        
         Vector4f specular = new Vector4f(Vector3fColors.WHITE, 1.0f);
         result = Assimp.aiGetMaterialColor(aiMaterial, Assimp.AI_MATKEY_COLOR_SPECULAR, Assimp.aiTextureType_NONE, 0, colour);
         if (result == 0) {
             specular = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());
         }
-
+        
         Material material = new Material(ambient, diffuse, specular, Texture.getOrDefault(texName));
-
-        DSLogger.reportInfo(material.getTexture().toString(), null);
-
+        
+        DSLogger.reportDebug(material.getTexture().toString(), null);
+        
         return material;
     }
-
+    
     private static Mesh processMesh(AIMesh aiMesh) {
         Mesh mesh = new Mesh();
-
+        
         int verticesNum = aiMesh.mNumVertices();
         for (int i = 0; i < verticesNum; i++) {
             AIVector3D.Buffer aiVertices = aiMesh.mVertices();
@@ -430,7 +430,7 @@ public class ModelUtils {
             Vertex v = new Vertex(aiVertex.x(), aiVertex.y(), aiVertex.z());
             mesh.vertices.add(v);
         }
-
+        
         AIVector3D.Buffer aiNormals = aiMesh.mNormals();
         if (aiNormals != null) {
             int index = 0;
@@ -440,7 +440,7 @@ public class ModelUtils {
                 index++;
             }
         }
-
+        
         AIVector3D.Buffer aiTexCoords = aiMesh.mTextureCoords(0);
         if (aiTexCoords != null) {
             int index = 0;
@@ -450,7 +450,7 @@ public class ModelUtils {
                 index++;
             }
         }
-
+        
         int numFaces = aiMesh.mNumFaces();
         AIFace.Buffer aiFaces = aiMesh.mFaces();
         if (aiFaces != null) {
@@ -462,7 +462,7 @@ public class ModelUtils {
                 }
             }
         }
-
+        
         return mesh;
     }
 }

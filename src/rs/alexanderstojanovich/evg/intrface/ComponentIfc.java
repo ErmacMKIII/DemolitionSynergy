@@ -54,11 +54,11 @@ public interface ComponentIfc {
 
     public void unbuffer();
 
-    public void bufferVertices();
+    public boolean bufferVertices();
 
-    public void updateVertices();
+    public boolean updateVertices();
 
-    public void bufferIndices();
+    public boolean bufferIndices();
 
     public void bufferAll();
 

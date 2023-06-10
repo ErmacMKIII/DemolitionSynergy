@@ -19,19 +19,8 @@ package rs.alexanderstojanovich.evg.texture;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
-import java.awt.Transparency;
-import java.awt.color.ColorSpace;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
 import java.nio.ByteBuffer;
-import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +31,7 @@ import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
 
 /**
@@ -55,7 +45,7 @@ public class Texture {
     private int textureID = 0;
     private boolean buffered = false;
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
-    public static final Map<String, TexValue> TEX_MAP = new LinkedHashMap<>();
+    public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
@@ -85,15 +75,18 @@ public class Texture {
     };
     public static final int GRID_SIZE_PLAYER = 4;
 
-    public static final Texture WORLD = Texture.buildTextureAtlas(Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
-    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas(Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER);
+    public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
+    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER);
 
     /**
      * Creates blank Texture (TEXSIZE x TEXSIZE)
+     *
+     * @param texName texture name
      */
-    public Texture() {
+    public Texture(String texName) {
         this.image = new BufferedImage(TEX_SIZE, TEX_SIZE, BufferedImage.TYPE_INT_ARGB);
-        this.texName = "blank";
+        this.texName = texName;
+        Texture.TEX_STORE.put(texName, new TexValue(this, -1));
     }
 
     /**
@@ -105,7 +98,7 @@ public class Texture {
     public Texture(String subDir, String fileName) {
         this.image = ImageUtils.loadImage(subDir, fileName);
         this.texName = fileName.substring(0, fileName.indexOf("."));
-        Texture.TEX_MAP.put(texName, new TexValue(this, -1));
+        Texture.TEX_STORE.put(texName, new TexValue(this, -1));
     }
 
     public void bufferAll() {
@@ -131,6 +124,8 @@ public class Texture {
         ALEX.bufferAll();
         STEVE.bufferAll();
         PLAYER_WEAPONS.bufferAll();
+
+        DSLogger.reportDebug("Textures loaded!", null);
     }
 
     private void loadTexture() {
@@ -144,7 +139,7 @@ public class Texture {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
 
         // get the content as ByteBuffer
-        ByteBuffer imageDataBuffer = getImageDataBuffer(image);
+        ByteBuffer imageDataBuffer = ImageUtils.getImageDataBuffer(image, Texture.TEX_SIZE);
 
         GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, TEX_SIZE, TEX_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageDataBuffer);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
@@ -238,67 +233,16 @@ public class Texture {
     }
 
     /**
-     * Gets content of this image as Byte Buffer (for textures)
-     *
-     * @param srcImg source image
-     * @return content as byte buffer for creating texture
-     */
-    public static ByteBuffer getImageDataBuffer(BufferedImage srcImg) {
-        ByteBuffer imageBuffer;
-        WritableRaster raster;
-        BufferedImage texImage;
-
-        ColorModel glAlphaColorModel = new ComponentColorModel(ColorSpace
-                .getInstance(ColorSpace.CS_sRGB), new int[]{8, 8, 8, 8},
-                true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
-
-        raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                TEX_SIZE, TEX_SIZE, 4, null);
-        texImage = new BufferedImage(glAlphaColorModel, raster, false,
-                new Hashtable());
-
-        int width = srcImg.getWidth();
-        int height = srcImg.getHeight();
-        double sx = 1.0 / (1.0 + (width - TEX_SIZE) / (double) TEX_SIZE);
-        double sy = 1.0 / (1.0 + (height - TEX_SIZE) / (double) TEX_SIZE);
-
-        AffineTransform xform = new AffineTransform();
-        xform.scale(sx, sy);
-        AffineTransformOp atOp = new AffineTransformOp(xform, null);
-        final BufferedImage dstImg = atOp.filter(srcImg, null);
-
-        // copy the source image into the produced image
-        Graphics2D g2d = (Graphics2D) texImage.getGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-
-        g2d.setColor(new Color(0.0f, 0.0f, 0.0f, 0.0f));
-        g2d.drawImage(dstImg, 0, 0, null);
-
-        // build a byte buffer from the temporary image
-        // that be used by OpenGL to produce a texture.
-        byte[] data = ((DataBufferByte) texImage.getRaster().getDataBuffer())
-                .getData();
-
-        imageBuffer = MemoryUtil.memCalloc(data.length);
-        imageBuffer.put(data, 0, data.length);
-        imageBuffer.flip();
-
-        return imageBuffer;
-    }
-
-    /**
      * Build Texture Atlas from various textures.
      *
+     * @param atlasName atlas (texture) name
      * @param subDir Subdirectory in dsynergy.zip
      * @param texNames texture names to build atlas from.
      * @param gridSize must be square root of number of textures.
      * @return Texture Atlas as one big Texture.
      */
-    public static Texture buildTextureAtlas(String subDir, String[] texNames, int gridSize) {
-        Texture result = new Texture();
+    public static Texture buildTextureAtlas(String atlasName, String subDir, String[] texNames, int gridSize) {
+        Texture result = new Texture(atlasName);
         Graphics2D g2d = result.image.createGraphics();
         final int texUnitSize = Math.round(TEX_SIZE / (float) gridSize);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -323,19 +267,32 @@ public class Texture {
 
             g2d.drawImage(image, x, y, texUnitSize, texUnitSize, null);
 
-            TEX_MAP.putIfAbsent(texName, new TexValue(result, index));
+            TexValue texValue = new TexValue(result, index);
+            TEX_STORE.put(texName, texValue);
             index++;
         }
 
         return result;
     }
 
+    /**
+     * Get Texture from Texture Store with texture name.
+     *
+     * @param texName texture name (alias)
+     * @return texture name
+     */
     public static Texture getOrDefault(String texName) {
-        return TEX_MAP.getOrDefault(texName, Texture.QMARK_TV).texture;
+        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).texture;
     }
 
+    /**
+     * Get Texture Index from Texture Store with texture name.
+     *
+     * @param texName texture name (alias)
+     * @return texture index
+     */
     public static int getOrDefaultIndex(String texName) {
-        return TEX_MAP.getOrDefault(texName, Texture.QMARK_TV).value;
+        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).value;
     }
 
     @Override
@@ -357,6 +314,10 @@ public class Texture {
 
     public boolean isBuffered() {
         return buffered;
+    }
+
+    public String getTexName() {
+        return texName;
     }
 
 }

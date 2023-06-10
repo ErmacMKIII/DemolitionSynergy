@@ -26,6 +26,7 @@ import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -125,7 +126,65 @@ public class Model implements Comparable<Model> {
 
                 lightSources.updateLightsInShader(shaderProgram);
 
-                Texture primaryTexture = Texture.TEX_MAP.get(texName).getTexture();
+                Texture primaryTexture = Texture.getOrDefault(texName);
+                if (primaryTexture != null) { // this is primary texture
+                    primaryColor(shaderProgram);
+                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                }
+
+                if (waterTexture != null) { // this is reflective texture
+                    secondaryColor(shaderProgram);
+                    waterTexture.bind(1, shaderProgram, "modelTexture1");
+                }
+            }
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+            GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+            Texture.unbind(0);
+            Texture.unbind(1);
+            ShaderProgram.unbind();
+
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
+
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+    }
+
+    /**
+     * Render model. (Draw all meshes)
+     *
+     * @param lightSources light sources {SUN, PLAYER_WEAPONS, OTHER LIGHT,
+     * BLOCKS etc}
+     * @param shaderProgram shaderProgram for the models
+     */
+    public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
+            return; // this is very critical!!
+        }
+
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
+        for (Mesh mesh : meshes) {
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv                      
+
+            if (shaderProgram != null) {
+                shaderProgram.bind();
+                shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+                shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
+                transform(shaderProgram);
+                setAlpha(shaderProgram);
+
+                lightSources.updateLightsInShader(shaderProgram);
+
+                Texture primaryTexture = Texture.getOrDefault(texName);
                 if (primaryTexture != null) { // this is primary texture
                     primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -185,7 +244,7 @@ public class Model implements Comparable<Model> {
 
                 if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
                     final Mesh mesh = model.meshes.getFirst();
-                    Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getTexture();
+                    Texture primaryTexture = Texture.getOrDefault(model.texName);
                     if (primaryTexture != null) { // this is primary texture
                         model.primaryColor(shaderProgram);
                         primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -600,6 +659,9 @@ public class Model implements Comparable<Model> {
 
     public void setTexName(String texName) {
         this.texName = texName;
+        // copy uvs from atlas
+        Block.deepCopyTo(this.meshes.getFirst(), texName);
+        unbuffer();
     }
 
     public void setWaterTexture(Texture waterTexture) {
@@ -658,6 +720,11 @@ public class Model implements Comparable<Model> {
         return safeCheck;
     }
 
+    public void unbuffer() {
+        meshes.forEach(m -> m.buffered = false);
+        setSafeCheck();
+    }
+
     public void bufferAll() {
         meshes.forEach(m -> m.bufferAll());
         setSafeCheck();
@@ -665,6 +732,10 @@ public class Model implements Comparable<Model> {
 
     public IList<Vertex> getVertices() {
         return meshes.getFirst().vertices;
+    }
+
+    public boolean isSafeCheck() {
+        return safeCheck;
     }
 
 }

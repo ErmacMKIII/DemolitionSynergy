@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
+ * Responsible for rendering the water reflections. Requires more CPU/GPU usage.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -81,6 +82,9 @@ public class WaterRenderer {
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
+    /**
+     * Render the water reflections to water textures
+     */
     public void render() {
         frameBuffer.bind();
         prepare();

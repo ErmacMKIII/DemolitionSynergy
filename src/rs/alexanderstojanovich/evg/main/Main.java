@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
 import rs.alexanderstojanovich.evg.level.CacheModule;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -34,8 +36,23 @@ public class Main {
         CacheModule.deleteCache();
         Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
-        boolean debug = inCfg.isDebug(); // determine debug flag (write in a log file or not)
-        DSLogger.init(debug); // this is important initializing Apache logger
+        IList<String> argsList = new GapList();
+        for (String arg : args) {
+            argsList.add(arg);
+        }
+        final boolean logToFile = (argsList.contains("-logtofile") || inCfg.isLogToFile()); // determine debug flag (write in a log file or not)
+        String arg = argsList.getIf(a -> a.equals("-" + DSLogger.DSLogLevel.ERR.name()) || a.equals("-" + DSLogger.DSLogLevel.DEBUG.name()) || a.equals("-" + DSLogger.DSLogLevel.ALL.name()));
+        final DSLogger.DSLogLevel logLevel;
+        if (arg == null) {
+            logLevel = inCfg.getLogLevel();
+        } else {
+            logLevel = DSLogger.DSLogLevel.valueOf(arg.replaceFirst("-", ""));
+        }
+        DSLogger.init(logLevel, logToFile); // this is important initializing Apache logger        
+        DSLogger.INTERNAL_LOGGER.log(DSLogger.INTERNAL_LOGGER.getLevel(), "Logging level: " + logLevel);
+        if (logToFile) {
+            DSLogger.reportDebug("Logging to file set.", null);
+        }
         MasterAudio.init(); // audio init before game loading            
         //----------------------------------------------------------------------                        
         GameObject.init();
@@ -47,13 +64,14 @@ public class Main {
         GameObject.start();
         //----------------------------------------------------------------------        
         Configuration outCfg = Game.makeConfig(); // makes configuration from ingame settings
-        outCfg.setDebug(debug); // what's on the input carries through the output
         outCfg.writeConfigFile();  // writes configuration to the output file
-        GameObject.destroy(); // destroy window alongside with the OpenGL context
-        MasterAudio.destroy(); // destroy context after writting to the ini file                                
+        DSLogger.reportDebug("Writing configuration done.", null);
+        GameObject.destroy(); // destroy window alongside with the OpenGL context        
+        MasterAudio.destroy(); // destroy context after writting to the ini file 
+        DSLogger.reportDebug("Finalize game & release resources done.", null);
         //---------------------------------------------------------------------- 
         CacheModule.deleteCache();
-        DSLogger.reportInfo("Game finished.", null);
+        DSLogger.reportDebug("Game finished.", null);
     }
 
 }
