@@ -381,11 +381,16 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // level container also set neighbor bits
         LevelContainer.putBlock(block);
         // update original block with neighbor blocks
-        // setSafeCheck if it's light block
-        LightSource lightSource = new LightSource(block.pos, block.getPrimaryColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
-        if (block.getTexName().equals("reflc")
-                && !LevelContainer.LIGHT_SOURCES.getLightSrcList().contains(lightSource)) {
-            LevelContainer.LIGHT_SOURCES.getLightSrcList().add(lightSource);
+        // setSafeCheck if it's light block        
+        if (block.getTexName().equals("reflc")) { // if first add
+            LightSource lightSource = new LightSource(block.pos, block.getPrimaryColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
+            LevelContainer.LIGHT_SOURCES.getLightSrcList().addIfAbsent(lightSource);
+            int lightIndex = LevelContainer.LIGHT_SOURCES.lightSrcList.indexOf(
+                    LevelContainer.LIGHT_SOURCES.lightSrcList.filter(ls -> ls.pos.equals(block.pos))
+            );
+            if (lightIndex != -1) {
+                LevelContainer.LIGHT_SOURCES.modified[lightIndex] = true;
+            }
         }
         updateForAdd(block);
     }

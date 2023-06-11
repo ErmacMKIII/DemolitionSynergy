@@ -28,6 +28,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -77,6 +79,13 @@ public class Texture {
 
     public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
     public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER);
+
+    public static IList<String> LIGHT_TEX_LIST = new GapList<String>() {
+        {
+            add("suntx");
+            add("reflc");
+        }
+    };
 
     /**
      * Creates blank Texture (TEXSIZE x TEXSIZE)
@@ -320,4 +329,7 @@ public class Texture {
         return texName;
     }
 
+    public static boolean isLightSource(String texName) {
+        return LIGHT_TEX_LIST.contains(texName);
+    }
 }

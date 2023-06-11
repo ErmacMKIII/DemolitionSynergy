@@ -233,6 +233,23 @@ public class ShaderProgram {
         }
     }
 
+    public void updateUniform(List<LightSource> lightSrc, boolean[] modified, String name) {
+        int index = 0;
+        for (LightSource ls : lightSrc) {
+            if (modified[index]) {
+                int locPos = GL20.glGetUniformLocation(program, name + "[" + index + "].pos");
+                GL20.glUniform3f(locPos, ls.getPos().x, ls.getPos().y, ls.getPos().z);
+
+                int locCol = GL20.glGetUniformLocation(program, name + "[" + index + "].color");
+                GL20.glUniform3f(locCol, ls.getColor().x, ls.getColor().y, ls.getColor().z);
+
+                int locInt = GL20.glGetUniformLocation(program, name + "[" + index + "].intensity");
+                GL20.glUniform1f(locInt, ls.getIntensity());
+            }
+            index++;
+        }
+    }
+
     public void updateUniform(Vector4f vect, String name) {
         int uniformLocation = GL20.glGetUniformLocation(program, name);
         GL20.glUniform4f(uniformLocation, vect.x, vect.y, vect.z, vect.w);

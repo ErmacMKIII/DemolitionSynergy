@@ -32,6 +32,13 @@ public class LightSource {
     protected Vector3f color;
     protected float intensity;
 
+    /**
+     * Define light source with (pos, color, intensity)
+     *
+     * @param pos VEC3 pos
+     * @param color VEC3 color
+     * @param intensity float intensity
+     */
     public LightSource(Vector3f pos, Vector3f color, float intensity) {
         this.pos = pos;
         this.color = color;

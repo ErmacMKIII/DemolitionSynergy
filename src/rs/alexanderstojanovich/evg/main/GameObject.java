@@ -299,6 +299,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         synchronized (MUTEX) {
             levelContainer.chunks.setOptimized(false); // this is also hint to not render
             levelContainer.optimize();
+            LevelContainer.LIGHT_SOURCES.setAllModified();
         }
     }
 

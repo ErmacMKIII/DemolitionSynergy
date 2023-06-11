@@ -145,7 +145,7 @@ public class Configuration {
                                 break;
                             case "rendererpasses":
                                 number = Integer.parseInt(words[1]);
-                                if (number >= 0 && number <= 3) {
+                                if (number > 0 && number <= Game.TPS * 2) {
                                     rendererPasses = number;
                                 }
                             case "texturesize":
@@ -206,7 +206,7 @@ public class Configuration {
             pw.println("LogToFile = " + logToFile);
             pw.println("BlockDynamicSize = " + blockDynamicSize);
             pw.println("TextDynamicSize = " + textDynamicSize);
-            pw.println("# Renderer strength. May Improve performance. Allowed values 0-3");
+            pw.println("# Renderer strength. May Improve performance. Number passes per ticks. Allowed values 1-160");
             pw.println("RendererPasses = " + rendererPasses);
             pw.println("# Texture size. Must be power of two, non-zero and lesser or equal than 4096.");
             pw.println("TextureSize = " + textureSize);

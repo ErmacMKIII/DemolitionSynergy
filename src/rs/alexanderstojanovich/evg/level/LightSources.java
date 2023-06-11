@@ -16,8 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -27,33 +28,37 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class LightSources {
 
     public static final int MAX_LIGHTS = 256;
-    protected final List<LightSource> lightSrcList = new ArrayList<>(MAX_LIGHTS);
+    protected final IList<LightSource> lightSrcList = new GapList<>(MAX_LIGHTS);
 
-    protected boolean modified = false;
+    public final boolean[] modified = new boolean[MAX_LIGHTS];
 
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
 
-    public boolean updateLightsInShader(ShaderProgram shaderProgram) {
-        boolean uniformsUpdated = false;
-        if (modified) {
-            shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
-            shaderProgram.updateUniform(lightSrcList, MODEL_LIGHT_NAME);
-            uniformsUpdated = true;
-        }
-        return uniformsUpdated;
+    /**
+     * Update lights if modified of any of them is set to true
+     *
+     * @param shaderProgram shader Program where lights are used
+     */
+    public void updateLightsInShader(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(lightSrcList, modified, MODEL_LIGHT_NAME);
     }
 
-    public List<LightSource> getLightSrcList() {
+    public void setAllModified() {
+        Arrays.fill(modified, true);
+    }
+
+    public void resetAllModified() {
+        Arrays.fill(modified, false);
+    }
+
+    public IList<LightSource> getLightSrcList() {
         return lightSrcList;
     }
 
-    public boolean isModified() {
+    public boolean[] getModified() {
         return modified;
-    }
-
-    public void setModified(boolean modified) {
-        this.modified = modified;
     }
 
 }

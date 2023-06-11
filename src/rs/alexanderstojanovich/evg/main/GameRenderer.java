@@ -35,7 +35,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class GameRenderer extends Thread implements Executor {
 
     protected static final Configuration cfg = Configuration.getInstance();
-    public static final int NUM_OF_PASSES_MAX = Game.TPS * cfg.getRendererPasses();
+    public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 

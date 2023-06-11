@@ -124,7 +124,9 @@ public class Model implements Comparable<Model> {
                 transform(shaderProgram);
                 setAlpha(shaderProgram);
 
-                lightSources.updateLightsInShader(shaderProgram);
+                if (Texture.isLightSource(texName)) {
+                    lightSources.updateLightsInShader(shaderProgram);
+                }
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
                 if (primaryTexture != null) { // this is primary texture
@@ -236,11 +238,11 @@ public class Model implements Comparable<Model> {
         if (shaderProgram != null) {
             shaderProgram.bind();
 
-            lightSources.updateLightsInShader(shaderProgram);
-
             for (Model model : models) {
                 model.transform(shaderProgram);
                 model.setAlpha(shaderProgram);
+
+                lightSources.updateLightsInShader(shaderProgram);
 
                 if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
                     final Mesh mesh = model.meshes.getFirst();

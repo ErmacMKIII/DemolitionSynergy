@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -773,10 +774,17 @@ public class LevelContainer implements GravityEnviroment {
             SUNLIGHT.intensity = factor * SUN_INTENSITY;
             cameraInFluid = isCameraInFluid();
 
+            int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
+            if (sunLightIndex != -1) { // should be zero
+                LIGHT_SOURCES.modified[sunLightIndex] = true;
+            }
+
             Camera mainCamera = levelActors.mainCamera();
             levelActors.playerLight.pos = mainCamera.getPos();
-
-            LIGHT_SOURCES.modified = true;
+            int playerLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(levelActors.playerLight);
+            if (playerLightIndex != -1) { // should be one
+                LIGHT_SOURCES.modified[playerLightIndex] = true;
+            }
         }
     }
 
@@ -817,27 +825,26 @@ public class LevelContainer implements GravityEnviroment {
                 editorNew.bufferAll();
             }
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
-        }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewDecal();
-        if (selectedNewWireFrame != null) {
-            if (!selectedNewWireFrame.isBuffered()) {
-                selectedNewWireFrame.bufferAll();
+            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
+            if (selectedNewWireFrame != null) {
+                if (!selectedNewWireFrame.isBuffered()) {
+                    selectedNewWireFrame.bufferAll();
+                }
+                selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
             }
-            selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
-        }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-        if (selectedCurrFrame != null) {
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+            if (selectedCurrFrame != null) {
+                if (!selectedCurrFrame.isBuffered()) {
+                    selectedCurrFrame.bufferAll();
+                }
+                selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
             }
-            selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
-
-        LIGHT_SOURCES.modified = false;
+        LIGHT_SOURCES.resetAllModified();
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
@@ -873,27 +880,27 @@ public class LevelContainer implements GravityEnviroment {
                 editorNew.bufferAll();
             }
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-        }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewDecal();
-        if (selectedNewWireFrame != null) {
-            if (!selectedNewWireFrame.isBuffered()) {
-                selectedNewWireFrame.bufferAll();
+            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
+            if (selectedNewWireFrame != null) {
+                if (!selectedNewWireFrame.isBuffered()) {
+                    selectedNewWireFrame.bufferAll();
+                }
+                selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
             }
-            selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-        }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-        if (selectedCurrFrame != null) {
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+            if (selectedCurrFrame != null) {
+                if (!selectedCurrFrame.isBuffered()) {
+                    selectedCurrFrame.bufferAll();
+                }
+                selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
             }
-            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getWaterBaseShader());
-
-        LIGHT_SOURCES.modified = false;
+        LIGHT_SOURCES.resetAllModified();
     }
 
     // -------------------------------------------------------------------------

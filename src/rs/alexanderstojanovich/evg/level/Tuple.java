@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -380,8 +381,9 @@ public class Tuple extends Blocks {
 
             shaderProgram.bind();
 
+            // -- Lights            
             lightSources.updateLightsInShader(shaderProgram);
-
+            // --
             shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 
             Texture blocksTexture = Texture.getOrDefault(texName);
