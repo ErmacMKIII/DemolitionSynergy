@@ -46,13 +46,13 @@ public class MenuItem {
 
     public void render(ShaderProgram shaderProgram) {
         if (!keyText.isBuffered()) {
-            keyText.bufferAll();
+            keyText.bufferSmart();
         }
         keyText.render(shaderProgram);
 
         if (menuValue != null) {
             if (!menuValue.getValueText().isBuffered()) {
-                menuValue.getValueText().bufferAll();
+                menuValue.getValueText().bufferSmart();
             }
             menuValue.getValueText().render(shaderProgram);
         }

@@ -21,6 +21,7 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -29,22 +30,42 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class PerspectiveRenderer {
 
     public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static FloatBuffer floatBuff = MemoryUtil.memCallocFloat(4 * 4);
+    protected static FloatBuffer floatBuff = null;
 
     protected static boolean buffered = false;
 
+    /**
+     * Load Perspective (projection matrix used in shaders)
+     *
+     * @param fov field of view (in radians)
+     * @param width screen width
+     * @param height screen height
+     * @param zNear nearest point
+     * @param zFar furthest point
+     */
     private static void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
         PROJECTION_MATRIX.setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
-        PROJECTION_MATRIX.get(floatBuff);
     }
 
+    /**
+     * Update perspective to window resolution (dimension)
+     *
+     * @param myWindow window
+     */
     public static void updatePerspective(Window myWindow) {
         loadPerspective((float) (Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20000.0f);
     }
 
-    public static void bufferAll() {
-        floatBuff = MemoryUtil.memCallocFloat(16);
+    /**
+     * Buffer and render to the projection matrix (shaders)
+     */
+    public static void bufferAndRender() {
+        floatBuff = MemoryUtil.memCallocFloat(16); // 4x4
+        if (MemoryUtil.memAddress(floatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            return;
+        }
         PROJECTION_MATRIX.get(floatBuff);
         for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
             shaderProgram.bind();

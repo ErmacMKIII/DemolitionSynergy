@@ -240,7 +240,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             SPLASH_SCREEN.render(ShaderProgram.getIntrfaceShader());
         } else {
             if (!PerspectiveRenderer.isBuffered()) {
-                PerspectiveRenderer.bufferAll(); // it sets perspective matrix accross shaders       
+                PerspectiveRenderer.bufferAndRender(); // it sets perspective matrix accross shaders       
             }
 
             if (!levelContainer.isWorking()) { // working check avoids locking the monitor

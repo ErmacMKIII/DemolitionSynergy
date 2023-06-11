@@ -258,6 +258,7 @@ public class ShaderProgram {
     public void updateUniform(Matrix4f mat, String name) {
         FloatBuffer fb = MemoryUtil.memCallocFloat(4 * 4);
         if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return; // Memory allocation failed
         }
         mat.get(fb);

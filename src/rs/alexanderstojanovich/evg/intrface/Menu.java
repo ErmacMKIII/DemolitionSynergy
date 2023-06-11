@@ -27,7 +27,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -207,14 +206,14 @@ public abstract class Menu {
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.bufferSmart();
             }
             title.render(shaderProgram);
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
                 logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
-                    logo.bufferAll();
+                    logo.bufferSmart();
                 }
                 logo.render(shaderProgram);
             }
@@ -229,7 +228,7 @@ public abstract class Menu {
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferAll();
+                iterator.bufferSmart();
             }
             iterator.render(shaderProgram);
         }

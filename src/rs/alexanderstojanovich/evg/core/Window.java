@@ -137,6 +137,9 @@ public class Window {
         centerTheWindow();
     }
 
+    /**
+     * Centers the window to the center of the monitor screen
+     */
     public void centerTheWindow() {
         // positioning the windowID to the center
         int xpos = (monitorWidth - width) / 2;
@@ -286,11 +289,15 @@ public class Window {
      *
      * @return image with read pixels
      */
-    public BufferedImage getScreen() {
+    public BufferedImage getScreenshot() {
         final int rgba = 4;
 
         GL11.glReadBuffer(GL11.GL_FRONT);
         ByteBuffer buffer = MemoryUtil.memCalloc(width * height * rgba); // RGBA -> 4
+        if (MemoryUtil.memAddress(buffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            return null;
+        }
         GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -305,7 +312,9 @@ public class Window {
             }
         }
 
-        MemoryUtil.memFree(buffer);
+        if (buffer.capacity() != 0) {
+            MemoryUtil.memFree(buffer);
+        }
 
         return image;
     }

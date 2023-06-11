@@ -41,6 +41,9 @@ import rs.alexanderstojanovich.evg.util.Trie;
  */
 public class Command implements Callable<Object> { // its not actually a thread but its used for remote execution (from Executor)
 
+    /**
+     * Command mnemonic (syntax)
+     */
     public static enum Target {
         FPS_MAX,
         RESOLUTION,
@@ -388,7 +391,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                     screenshot.delete();
                 }
                 try {
-                    ImageIO.write(GameObject.MY_WINDOW.getScreen(), "PNG", screenshot);
+                    ImageIO.write(GameObject.MY_WINDOW.getScreenshot(), "PNG", screenshot);
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }

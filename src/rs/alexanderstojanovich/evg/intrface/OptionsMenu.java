@@ -220,7 +220,7 @@ public abstract class OptionsMenu extends Menu {
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.bufferSmart();
             }
             title.render(shaderProgram);
             int index = 0;
@@ -239,7 +239,7 @@ public abstract class OptionsMenu extends Menu {
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferAll();
+                iterator.bufferSmart();
             }
             iterator.render(shaderProgram);
         }

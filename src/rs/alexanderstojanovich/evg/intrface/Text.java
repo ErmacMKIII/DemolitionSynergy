@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -32,6 +31,7 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -122,6 +122,7 @@ public class Text implements ComponentIfc {
     public boolean bufferVertices() {
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
         if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i = 0; i < 4; i++) {
@@ -152,6 +153,7 @@ public class Text implements ComponentIfc {
     public boolean updateVertices() {
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
         if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i = 0; i < 4; i++) {
@@ -179,6 +181,7 @@ public class Text implements ComponentIfc {
     public boolean bufferIndices() {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i : INDICES) {

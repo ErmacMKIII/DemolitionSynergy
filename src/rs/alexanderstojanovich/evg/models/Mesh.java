@@ -25,6 +25,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -47,6 +48,7 @@ public class Mesh {
         // storing vertices and normals in the buffer
         fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
         if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (Vertex vertex : vertices) {
@@ -85,6 +87,7 @@ public class Mesh {
     public boolean updateVertices() {
         fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
         if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         // storing vertices and normals in the buffer        
@@ -118,6 +121,7 @@ public class Mesh {
         // storing indices in the buffer        
         ib = MemoryUtil.memCallocInt(indices.size());
         if (MemoryUtil.memAddress(ib) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (Integer index : indices) {

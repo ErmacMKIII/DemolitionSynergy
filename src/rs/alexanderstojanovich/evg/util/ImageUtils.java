@@ -50,6 +50,13 @@ import rs.alexanderstojanovich.evg.main.Game;
  */
 public class ImageUtils {
 
+    /**
+     * Loads image from zip archive or external content.
+     *
+     * @param dirEntry directory where image is located
+     * @param fileName image filename
+     * @return read image
+     */
     public static BufferedImage loadImage(String dirEntry, String fileName) {
         File extern = new File(dirEntry + fileName);
         File archive = new File(Game.DATA_ZIP);
@@ -127,6 +134,7 @@ public class ImageUtils {
         imageBuffer = MemoryUtil.memCalloc(data.length);
         if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
             DSLogger.reportFatalError("Could not allocate memory address!", null);
+            return null;
         }
         imageBuffer.put(data, 0, data.length);
         imageBuffer.flip();
@@ -183,6 +191,7 @@ public class ImageUtils {
         imageBuffer = MemoryUtil.memCalloc(data.length);
         if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
             DSLogger.reportFatalError("Could not allocate memory address!", null);
+            return null;
         }
         imageBuffer.put(data, 0, data.length);
         imageBuffer.flip();

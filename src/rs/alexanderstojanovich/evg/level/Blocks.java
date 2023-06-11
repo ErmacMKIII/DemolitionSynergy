@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -57,6 +58,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public boolean bufferVertices() { // call it before any rendering
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         int offset = 0;
@@ -99,6 +101,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public boolean updateVertices() { // call it before any rendering           
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         int offset = 0;

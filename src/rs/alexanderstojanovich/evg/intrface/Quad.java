@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -97,6 +98,7 @@ public class Quad implements ComponentIfc {
     public boolean bufferVertices() {
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
         if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i = 0; i < 4; i++) {
@@ -127,6 +129,7 @@ public class Quad implements ComponentIfc {
     public boolean updateVertices() {
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
         if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i = 0; i < 4; i++) {
@@ -154,6 +157,7 @@ public class Quad implements ComponentIfc {
     public boolean bufferIndices() {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (int i : INDICES) {

@@ -146,6 +146,7 @@ public class Tuple extends Blocks {
     public boolean bufferVertices() { // call it before any rendering
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         for (Block block : blockList) {
@@ -188,6 +189,7 @@ public class Tuple extends Blocks {
     public boolean updateVertices() { // call it before any rendering        
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * verticesNum * Vertex.SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
         int blkIndex = 0;
@@ -225,6 +227,7 @@ public class Tuple extends Blocks {
     public boolean bufferColors() {
         vec3FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * VEC3_SIZE);
         if (MemoryUtil.memAddress(vec3FloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
 
@@ -257,6 +260,7 @@ public class Tuple extends Blocks {
     public boolean bufferMatrices() {
         mat4FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * MAT4_SIZE);
         if (MemoryUtil.memAddress(mat4FloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
 

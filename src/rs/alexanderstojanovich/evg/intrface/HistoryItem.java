@@ -84,7 +84,7 @@ public class HistoryItem {
         cmdText.pos.y = pos.y;
 
         if (!cmdText.isBuffered()) {
-            cmdText.bufferAll();
+            cmdText.bufferSmart();
         }
         cmdText.render(shaderProgram);
         // ------------------------------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ public class HistoryItem {
         quad.getPos().y = cmdText.pos.y;
 
         if (!quad.isBuffered()) {
-            quad.bufferAll();
+            quad.bufferSmart();
         }
         quad.color = Console.StatusColor(cmd.status);
         quad.render(shaderProgram);

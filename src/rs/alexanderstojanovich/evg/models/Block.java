@@ -662,6 +662,7 @@ public class Block extends Model {
         // storing indices in the buffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (MemoryUtil.memAddress(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return null;
         }
 

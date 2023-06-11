@@ -28,6 +28,7 @@ import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -57,6 +58,7 @@ public class DynamicText extends Text {
     public void bufferBigVbo() {
         bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return;
         }
 
@@ -96,6 +98,7 @@ public class DynamicText extends Text {
         // auto adjust dynamic size of float buff and do it on every 1024 element
         bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
             return;
         }
 
