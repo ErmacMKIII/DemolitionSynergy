@@ -192,6 +192,7 @@ public class DynamicText extends Text {
 
     @Override
     public void bufferAll() {
+        buffered = false;
         setup();
         buffered = bufferVertices() && bufferIndices();
     }
@@ -199,8 +200,8 @@ public class DynamicText extends Text {
     @Override
     public void bufferSmart() {
         int deltaSize = setup();
-        if (bigFloatBuff != null && bigVbo != 0 && deltaSize == 0) {
-            buffered = updateVertices() && bufferIndices();
+        if (bigFloatBuff != null && bigVbo != 0 && deltaSize == 0 && ibo != 0) {
+            buffered = updateVertices() && updateIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
         }

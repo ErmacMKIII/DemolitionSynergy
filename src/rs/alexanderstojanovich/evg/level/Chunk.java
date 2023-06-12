@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.level;
 import java.util.Arrays;
 import java.util.List;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;

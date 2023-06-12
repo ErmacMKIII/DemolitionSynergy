@@ -212,6 +212,39 @@ public class Quad implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
+        if (intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean updateIndices() {
+        if (ibo == 0) {
+            DSLogger.reportError("Index buffer object is zero!", null);
+            return false;
+        }
+        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            return false;
+        }
+        for (int i : INDICES) {
+            intBuffer.put(i);
+        }
+        intBuffer.flip();
+
+        if (intBuffer.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, intBuffer);
+        }
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        if (intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+        }
+
         return true;
     }
 
@@ -222,8 +255,8 @@ public class Quad implements ComponentIfc {
 
     @Override
     public void bufferSmart() {
-        if (FLOAT_BUFFER != null && vao != 0 && vbo != 0) {
-            buffered = updateVertices() && bufferIndices();
+        if (FLOAT_BUFFER != null && vao != 0 && vbo != 0 && ibo != 0) {
+            buffered = updateVertices() && updateIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
         }

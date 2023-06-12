@@ -148,6 +148,14 @@ public interface ComponentIfc {
     public boolean bufferIndices();
 
     /**
+     * Update indices. Without need to resize the buffer. Faster operation than
+     * buffer indices.
+     *
+     * @return is buffered (if allocation memory fails it is not buffered)
+     */
+    public boolean updateIndices();
+
+    /**
      * Buffer vertices and indices and set buffered flag accordingly.
      */
     public void bufferAll();
