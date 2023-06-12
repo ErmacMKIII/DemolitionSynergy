@@ -20,6 +20,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
+ * Menu item. Used widely in menus.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -30,6 +31,12 @@ public class MenuItem {
     protected final MenuValue menuValue;
     protected final Menu.EditType editType;
 
+    /**
+     *
+     * @param string display text
+     * @param editType editable type {NoValue, SingleValue, MultiValue}
+     * @param menuValue
+     */
     public MenuItem(String string, Menu.EditType editType, MenuValue menuValue) {
         this.keyText = new DynamicText(Texture.FONT, string);
         this.editType = editType;
@@ -44,6 +51,11 @@ public class MenuItem {
         return editType;
     }
 
+    /**
+     * Render this menu item in the menu.
+     *
+     * @param shaderProgram shader program to use.
+     */
     public void render(ShaderProgram shaderProgram) {
         if (!keyText.isBuffered()) {
             keyText.bufferSmart();
@@ -56,6 +68,13 @@ public class MenuItem {
             }
             menuValue.getValueText().render(shaderProgram);
         }
+    }
+
+    /**
+     * Deletes GL buffers used by this menu item. Call from the Renderer.
+     */
+    public void release() {
+        this.keyText.release();
     }
 
 }

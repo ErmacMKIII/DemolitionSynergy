@@ -62,7 +62,7 @@ public class PerspectiveRenderer {
      */
     public static void bufferAndRender() {
         floatBuff = MemoryUtil.memCallocFloat(16); // 4x4
-        if (MemoryUtil.memAddress(floatBuff) == MemoryUtil.NULL) {
+        if (floatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return;
         }

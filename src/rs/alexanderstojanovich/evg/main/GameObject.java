@@ -30,9 +30,9 @@ import rs.alexanderstojanovich.evg.critter.ModelCritter;
 import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -86,7 +86,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface = new Intrface();
         //----------------------------------------------------------------------
         MY_WINDOW.setFullscreen(cfg.isFullscreen());
-        MY_WINDOW.setVSync(cfg.isVsync());
+//        MY_WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         MY_WINDOW.centerTheWindow();
         //----------------------------------------------------------------------
         musicPlayer.setGain(cfg.getMusicVolume());
@@ -123,6 +123,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Renderer started.", null);
         DSLogger.reportDebug("Game will start soon.", null);
         game.go();
+        game.cleanUp();
+        intrface.cleanUp();
         //----------------------------------------------------------------------
         try {
             renderer.join(); // and it's blocked here until it finishes
@@ -228,14 +230,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public static void render() {
-        if (!initialized) {
+        if (!initialized || GameObject.MY_WINDOW.shouldClose()) {
             return;
         }
 
         MasterRenderer.render(); // it clears color bit and depth buffer bit
         if (SPLASH_SCREEN.isEnabled()) {
             if (!SPLASH_SCREEN.isBuffered()) {
-                SPLASH_SCREEN.bufferAll();
+                SPLASH_SCREEN.bufferSmart();
             }
             SPLASH_SCREEN.render(ShaderProgram.getIntrfaceShader());
         } else {
@@ -259,6 +261,24 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         }
 
         MY_WINDOW.render();
+    }
+
+    /*
+    * Release all GL components (by deleting their buffers)
+    *  Call from renderer.
+     */
+    public static void release() {
+        GameObject.SPLASH_SCREEN.release();
+        GameObject.intrface.release();
+        GameObject.waterRenderer.release();
+        GameObject.levelContainer.chunks.getOptimizedTuples().forEach(t -> t.release());
+        DSLogger.reportDebug("Optimized tuples deleted.", null);
+
+//        Quad.globlRelease();
+//        DynamicText.globlRelease();
+//        DSLogger.reportDebug("Global release of the buffers. Done.", null);
+        Texture.releaseAllTextures();
+        DSLogger.reportDebug("Textures deleted.", null);
     }
 
     // -------------------------------------------------------------------------
@@ -358,7 +378,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public static void destroy() {
         ConcurrentDialog.EXECUTOR.shutdown();
-        MY_WINDOW.loadContext();
         MY_WINDOW.destroy();
     }
 

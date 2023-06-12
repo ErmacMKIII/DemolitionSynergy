@@ -211,6 +211,17 @@ public class Texture {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
     }
 
+    public void release() {
+        GL11.glDeleteTextures(textureID);
+    }
+
+    public static void releaseAllTextures() {
+        for (TexValue tv : TEX_STORE.values()) {
+            tv.texture.release();
+        }
+        DSLogger.reportDebug("All textures deleted!", null);
+    }
+
     @Override
     public int hashCode() {
         int hash = 7;

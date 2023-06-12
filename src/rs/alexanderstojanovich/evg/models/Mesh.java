@@ -21,7 +21,10 @@ import java.nio.IntBuffer;
 import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -39,6 +42,7 @@ public class Mesh {
     protected static FloatBuffer fb;
     protected static IntBuffer ib;
 
+    protected int vao = 0; // vertex array object
     protected int vbo = 0; // vertex buffer object
     protected int ibo = 0; // index buffer object  
 
@@ -47,7 +51,7 @@ public class Mesh {
     public boolean bufferVertices() {
         // storing vertices and normals in the buffer
         fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
-        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -66,14 +70,34 @@ public class Mesh {
             }
         }
         fb.flip();
+
+        if (vao == 0) {
+            vao = GL30.glGenVertexArrays();
+        }
+
         // storing vertices and normals buffer on the graphics card
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
         if (fb.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -85,8 +109,16 @@ public class Mesh {
     }
 
     public boolean updateVertices() {
+        if (vao == 0) {
+            DSLogger.reportError("Vertex array object is zero!", null);
+            return false;
+        }
+        if (vbo == 0) {
+            DSLogger.reportError("Vertex buffer object is zero!", null);
+            return false;
+        }
         fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
-        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -106,8 +138,25 @@ public class Mesh {
             }
         }
         fb.flip();
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
+        if (fb.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
         if (fb.capacity() != 0) {
@@ -120,7 +169,7 @@ public class Mesh {
     public boolean bufferIndices() {
         // storing indices in the buffer        
         ib = MemoryUtil.memCallocInt(indices.size());
-        if (MemoryUtil.memAddress(ib) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(ib) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -128,12 +177,15 @@ public class Mesh {
             ib.put(index);
         }
         ib.flip();
-        // storing indices buffer on the graphics card
+        // storing indices buffer on the graphics card                
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+
+        if (ib.capacity() != 0) {
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
         if (ib.capacity() != 0) {

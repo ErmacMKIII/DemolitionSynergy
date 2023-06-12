@@ -56,6 +56,9 @@ public abstract class OptionsMenu extends Menu {
         additionalInit();
     }
 
+    /**
+     * Init additional callbacks (or override existing)
+     */
     private void additionalInit() {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
@@ -242,6 +245,14 @@ public abstract class OptionsMenu extends Menu {
                 iterator.bufferSmart();
             }
             iterator.render(shaderProgram);
+        }
+    }
+
+    @Override
+    public void cleanUp() {
+        super.cleanUp();
+        if (glfwCharCallback != null) {
+            glfwCharCallback.free();
         }
     }
 

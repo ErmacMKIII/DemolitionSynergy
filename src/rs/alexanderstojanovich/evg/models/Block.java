@@ -134,6 +134,24 @@ public class Block extends Model {
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
+    public static void deepCopyTo(IList<Vertex> vertices, String texName) {
+        int texIndex = Texture.getOrDefaultIndex(texName);
+        int row = texIndex / Texture.GRID_SIZE_WORLD;
+        int col = texIndex % Texture.GRID_SIZE_WORLD;
+        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+
+        for (Vertex v : VERTICES) {
+            vertices.add(new Vertex(
+                    new Vector3f(v.getPos()),
+                    new Vector3f(v.getNormal()),
+                    (texIndex == -1)
+                            ? new Vector2f(v.getUv().x, v.getUv().y)
+                            : new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
+            );
+        }
+    }
+
+    // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(Mesh mesh, String texName) {
         int texIndex = Texture.getOrDefaultIndex(texName);
         int row = texIndex / Texture.GRID_SIZE_WORLD;
@@ -174,12 +192,13 @@ public class Block extends Model {
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
-
         if (shaderProgram != null) {
             shaderProgram.bind();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
             Texture primaryTexture = Texture.getOrDefault(texName);
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -226,12 +245,13 @@ public class Block extends Model {
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
-
         if (shaderProgram != null) {
             shaderProgram.bind();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
             Texture primaryTexture = Texture.TEX_STORE.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -661,7 +681,7 @@ public class Block extends Model {
         }
         // storing indices in the buffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
-        if (MemoryUtil.memAddress(intBuff) == MemoryUtil.NULL) {
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return null;
         }

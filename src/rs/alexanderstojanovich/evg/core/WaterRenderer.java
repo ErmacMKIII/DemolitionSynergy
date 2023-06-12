@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Responsible for rendering the water reflections. Requires more CPU/GPU usage.
@@ -97,6 +98,11 @@ public class WaterRenderer {
 //            debugQuad.bufferAll();
 //        }
 //        debugQuad.render(ShaderProgram.getIntrfaceShader());
+    }
+
+    public void release() {
+        DSLogger.reportDebug("Water Renderer released.", null);
+        frameBuffer.getTexture().release();
     }
 
     public FrameBuffer getFrameBuffer() {

@@ -21,6 +21,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
+ * Item used in a console. Of previous command inputs.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -40,6 +41,9 @@ public class HistoryItem {
         cmdText.alignToNextChar();
     }
 
+    /**
+     * Build command text. Constructs text of this item.
+     */
     private void buildCmdText() {
         StringBuilder sb = new StringBuilder();
         if (cmd.target == Command.Target.ERROR) {
@@ -78,6 +82,12 @@ public class HistoryItem {
         cmdText.setContent(sb.toString());
     }
 
+    /**
+     * Renders this history item in the console (in interface).
+     *
+     * @param pos screen GL (VEC2) position
+     * @param shaderProgram shader program to use
+     */
     public void render(Vector2f pos, ShaderProgram shaderProgram) {
         buildCmdText();
         cmdText.pos.x = pos.x;
@@ -96,6 +106,14 @@ public class HistoryItem {
         }
         quad.color = Console.StatusColor(cmd.status);
         quad.render(shaderProgram);
+    }
+
+    /*
+    *  Delete all GL Buffers from this component.
+     */
+    public void release() {
+        this.cmdText.release();
+        this.quad.release();
     }
 
     public DynamicText getCmdText() {

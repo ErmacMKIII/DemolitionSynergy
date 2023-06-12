@@ -614,9 +614,18 @@ public class Game {
         // stops the music        
         GameObject.getMusicPlayer().stop();
 
-        GLFWErrorCallback.createPrint(null).free();
-
         DSLogger.reportDebug("Main loop ended.", null);
+    }
+
+    /*
+    * Frees all the callbacks. Called after the main loop.
+     */
+    public void cleanUp() {
+        defaultCursorCallback.free();
+        defaultKeyCallback.free();
+        defaultMouseButtonCallback.free();
+        GLFWErrorCallback.createPrint(System.err).free();
+        DSLogger.reportDebug("Game cleaned up.", null);
     }
 
     /**

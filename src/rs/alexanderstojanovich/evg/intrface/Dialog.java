@@ -28,6 +28,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
+ * Standard YES/NO dialog from command line interface (CLI). Execution takes
+ * place in the caller thread.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -96,8 +98,10 @@ public abstract class Dialog {
 
     protected abstract boolean execute(String command); // we need to override this upon creation of the dialog  
 
-    // what is happening internally on command
-    protected void onCommand() {
+    /*
+     * What happens on command
+     */
+    protected void onCommand() {// what is happening internally on command
         if (!input.toString().equals("")) {
             boolean execStatus = execute(input.toString());
             if (execStatus) {
@@ -115,6 +119,10 @@ public abstract class Dialog {
         done = true;
     }
 
+    /**
+     * Displays dialog on the screeen. When opened callbacks are set accordingly
+     * (mouse & keyboard input). Enabled is set to true for rendering.
+     */
     public void open() {
         if (input.length() == 0) {
             enabled = true;
@@ -129,6 +137,11 @@ public abstract class Dialog {
         }
     }
 
+    /**
+     * Renders dialog. Rendering takes part in the game interface.
+     *
+     * @param shaderProgram shader program to use.
+     */
     public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             if (!dialog.isBuffered()) {
@@ -136,6 +149,22 @@ public abstract class Dialog {
             }
             dialog.render(shaderProgram);
         }
+    }
+
+    /**
+     * *
+     * Cleans up callbacks from this component.
+     */
+    public void cleanUp() {
+        charCallback.free();
+        keyCallback.free();
+    }
+
+    /**
+     * Release this GL component by deleting GL Buffers.
+     */
+    public void release() {
+        dialog.release();
     }
 
     public Window getMyWindow() {

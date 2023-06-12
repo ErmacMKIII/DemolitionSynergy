@@ -458,27 +458,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
 
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
-            GL20.glEnableVertexAttribArray(3);
-            GL20.glEnableVertexAttribArray(4);
-            GL20.glEnableVertexAttribArray(5);
-            GL20.glEnableVertexAttribArray(6);
-            GL20.glEnableVertexAttribArray(7);
-
             for (Tuple tuple : tupleList) {
                 tuple.renderInstanced(shaderProgram, lightSources, waterTexture);
             }
 
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            GL20.glDisableVertexAttribArray(2);
-            GL20.glDisableVertexAttribArray(3);
-            GL20.glDisableVertexAttribArray(4);
-            GL20.glDisableVertexAttribArray(5);
-            GL20.glDisableVertexAttribArray(6);
-            GL20.glDisableVertexAttribArray(7);
         }
     }
 

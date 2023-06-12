@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
@@ -74,10 +75,16 @@ public class Intrface {
 
     private final Console console = new Console();
 
+    /**
+     * Init interface with all GL components: text, dialogs & menus.
+     */
     public Intrface() {
         initIntrface();
     }
 
+    /**
+     * Long Initialization. All components get their purpose now.
+     */
     private void initIntrface() {
         AudioPlayer musicPlayer = GameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = GameObject.getSoundFXPlayer();
@@ -480,8 +487,14 @@ public class Intrface {
         }
         creditsMenu.iterator.setEnabled(false);
         creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
+        DSLogger.reportDebug("Interface initialized.", null);
     }
 
+    /**
+     * Set collision text w/ color according to collision mode.
+     *
+     * @param mode true/false for collision
+     */
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
@@ -492,6 +505,9 @@ public class Intrface {
         }
     }
 
+    /**
+     * Toggle ingame help, help is displayed as a long text.
+     */
     public void toggleShowHelp() {
         showHelp = !showHelp;
         if (showHelp) {
@@ -503,6 +519,12 @@ public class Intrface {
         }
     }
 
+    /**
+     * Render all the components of the interface
+     *
+     * @param ifcShaderProgram Interface shader program (default - use that
+     * one).
+     */
     public void render(ShaderProgram ifcShaderProgram) {
         saveDialog.render(ifcShaderProgram);
         loadDialog.render(ifcShaderProgram);
@@ -567,13 +589,67 @@ public class Intrface {
         console.render(ifcShaderProgram);
     }
 
-    // update menu components
-    public void update() {
+    /**
+     * Capturing mouse input for menus
+     */
+    public void update() { // update menu components
         mainMenu.update();
         optionsMenu.update();
         editorMenu.update();
         randLvlMenu.update();
         loadLvlMenu.update();
+    }
+
+    /**
+     * Cleanup all callbacks
+     */
+    public void cleanUp() {
+        mainMenu.cleanUp();
+        optionsMenu.cleanUp();
+        editorMenu.cleanUp();
+
+        randLvlMenu.cleanUp();
+        loadLvlMenu.cleanUp();
+
+        creditsMenu.cleanUp();
+
+        saveDialog.cleanUp();
+        loadDialog.cleanUp();
+        randLvlDialog.cleanUp();
+        singlePlayerDialog.cleanUp();
+
+        console.cleanUp();
+
+        DSLogger.reportDebug("Interface cleaned up.", null);
+    }
+
+    /*
+    * Deletes all GL Buffers. Call from Renderer thread
+     */
+    public void release() {
+        mainMenu.release();
+        optionsMenu.release();
+        editorMenu.release();
+
+        randLvlMenu.release();
+        loadLvlMenu.release();
+
+        creditsMenu.release();
+
+        collText.release();
+        helpText.release();
+        progText.release();
+        screenText.release();
+        gameModeText.release();
+
+        saveDialog.release();
+        loadDialog.release();
+        randLvlDialog.release();
+        singlePlayerDialog.release();
+
+        console.release();
+
+        DSLogger.reportDebug("Interface buffers deleted.", null);
     }
 
     public Quad getCrosshair() {

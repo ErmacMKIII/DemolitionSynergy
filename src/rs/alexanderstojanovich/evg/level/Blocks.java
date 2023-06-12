@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.BigList;
@@ -44,6 +45,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
     protected final IList<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
+    protected int vao = 0;
     protected int bigVbo = 0;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
@@ -57,7 +59,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public boolean bufferVertices() { // call it before any rendering
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
-        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+        if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -86,8 +88,23 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
 
         if (bigFloatBuff.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // this is for normal                                        
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // this is for uv   
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -98,9 +115,17 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         return true;
     }
 
-    public boolean updateVertices() { // call it before any rendering           
+    public boolean updateVertices() { // call it before any rendering
+        if (vao == 0) {
+            DSLogger.reportError("Vertex array object is zero!", null);
+            return false;
+        }
+        if (bigVbo == 0) {
+            DSLogger.reportError("Vertex buffer object is zero!", null);
+            return false;
+        }
         bigFloatBuff = MemoryUtil.memCallocFloat(blockList.size() * Block.VERTEX_COUNT * Vertex.SIZE);
-        if (MemoryUtil.memAddress(bigFloatBuff) == MemoryUtil.NULL) {
+        if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -128,8 +153,24 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
 
         if (bigFloatBuff.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
+
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
+
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // this is for pos
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // this is for normal                                        
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // this is for uv   
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -141,6 +182,9 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     public boolean bufferIndices() { // call it before any rendering
+        if (vao == 0) {
+            vao = GL30.glGenVertexArrays();
+        }
         int blkIndex = 0;
         for (Block block : blockList) {
             IntBuffer intBuff = Block.createIntBuffer(block.getFaceBits());
@@ -152,11 +196,13 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             if (ibo == 0) {
                 ibo = GL15.glGenBuffers();
             }
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+            if (intBuff.capacity() != 0) {
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+                GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+                // finally assigning it to the array element
+                iboMap.put(blkIndex, ibo);
+            }
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            // finally assigning it to the array element
-            iboMap.put(blkIndex, ibo);
 
             if (intBuff.capacity() != 0) {
                 MemoryUtil.memFree(intBuff);
@@ -203,19 +249,19 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     // standard render all
     public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL30.glBindVertexArray(vao);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // this is for normal                                        
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // this is for uv                                   
-
             int blkIndex = 0;
             shaderProgram.bind();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
             lightSources.updateLightsInShader(shaderProgram);
             for (Block block : blockList) {
                 block.transform(shaderProgram);
@@ -253,25 +299,26 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
+            GL30.glBindVertexArray(0);
         }
     }
 
     // powerful render if block is visible by camera
     public void renderIf(ShaderProgram shaderProgram, LightSources lightSources, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL30.glBindVertexArray(vao);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // this is for normal                                        
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // this is for uv                                   
-
             int blkIndex = 0;
             shaderProgram.bind();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
             lightSources.updateLightsInShader(shaderProgram);
             for (Block block : blockList) {
                 if (predicate.test(block)) {
@@ -310,17 +357,18 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
+            GL30.glBindVertexArray(0);
         }
     }
 
-    @Deprecated
     public void release() {
-        if (buffered) {
+        if (bigVbo != 0) {
             GL15.glDeleteBuffers(bigVbo);
-            for (Integer ibo : iboMap.values()) {
-                GL15.glDeleteBuffers(ibo);
-            }
         }
+        for (Integer ibo : iboMap.values()) {
+            GL15.glDeleteBuffers(ibo);
+        }
+
         buffered = false;
     }
 

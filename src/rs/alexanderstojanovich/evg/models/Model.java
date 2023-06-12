@@ -23,6 +23,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LightSources;
@@ -108,25 +109,24 @@ public class Model implements Comparable<Model> {
             return; // this is very critical!!
         }
 
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
-
         for (Mesh mesh : meshes) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+            GL30.glBindVertexArray(mesh.vao);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv                      
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
 
             if (shaderProgram != null) {
                 shaderProgram.bind();
+
+                shaderProgram.bindAttribute(0, "pos");
+                shaderProgram.bindAttribute(1, "normal");
+                shaderProgram.bindAttribute(2, "uv");
+
                 transform(shaderProgram);
                 setAlpha(shaderProgram);
 
-                if (Texture.isLightSource(texName)) {
-                    lightSources.updateLightsInShader(shaderProgram);
-                }
+                lightSources.updateLightsInShader(shaderProgram);
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
                 if (primaryTexture != null) { // this is primary texture
@@ -145,13 +145,15 @@ public class Model implements Comparable<Model> {
             Texture.unbind(1);
             ShaderProgram.unbind();
 
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
         }
 
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2);
     }
 
     /**
@@ -166,19 +168,20 @@ public class Model implements Comparable<Model> {
             return; // this is very critical!!
         }
 
-        GL20.glEnableVertexAttribArray(0);
-        GL20.glEnableVertexAttribArray(1);
-        GL20.glEnableVertexAttribArray(2);
-
         for (Mesh mesh : meshes) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+            GL30.glBindVertexArray(mesh.vao);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv                      
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(2);
 
             if (shaderProgram != null) {
                 shaderProgram.bind();
+
+                shaderProgram.bindAttribute(0, "pos");
+                shaderProgram.bindAttribute(1, "normal");
+                shaderProgram.bindAttribute(2, "uv");
+
                 shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
                 shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
                 transform(shaderProgram);
@@ -203,13 +206,15 @@ public class Model implements Comparable<Model> {
             Texture.unbind(1);
             ShaderProgram.unbind();
 
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(2);
+
+            GL30.glBindVertexArray(0);
         }
 
-        GL20.glDisableVertexAttribArray(0);
-        GL20.glDisableVertexAttribArray(1);
-        GL20.glDisableVertexAttribArray(2);
     }
 
     /**
@@ -238,6 +243,10 @@ public class Model implements Comparable<Model> {
         if (shaderProgram != null) {
             shaderProgram.bind();
 
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
             for (Model model : models) {
                 model.transform(shaderProgram);
                 model.setAlpha(shaderProgram);
@@ -256,6 +265,7 @@ public class Model implements Comparable<Model> {
                     Texture.unbind(1);
                 }
             }
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
         ShaderProgram.unbind();
 
@@ -263,8 +273,6 @@ public class Model implements Comparable<Model> {
         GL20.glDisableVertexAttribArray(1);
         GL20.glDisableVertexAttribArray(2);
 
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
 //    @Deprecated

@@ -109,6 +109,9 @@ public abstract class Menu {
 
     protected abstract void execute(); // we don't know the menu functionality
 
+    /**
+     * Initialize menu with callbacks.
+     */
     private void init() {
         glfwCursorPosCallback = new GLFWCursorPosCallback() {
             @Override
@@ -180,6 +183,10 @@ public abstract class Menu {
 
     }
 
+    /**
+     * When open callbacks are changed (take input from keyboard, mouse etc)
+     * Enabled is set to true for rendering.
+     */
     public void open() {
         enabled = true;
         GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
@@ -286,6 +293,35 @@ public abstract class Menu {
             useMouse = false;
         }
         updateIterator();
+    }
+
+    public void cleanUp() {
+        if (glfwCursorPosCallback != null) {
+            glfwCursorPosCallback.free();
+        }
+
+        if (glfwKeyCallback != null) {
+            glfwKeyCallback.free();
+        }
+
+        if (glfwMouseButtonCallback != null) {
+            glfwMouseButtonCallback.free();
+        }
+    }
+
+    /**
+     * Release all GL components. GL Buffers are deleted.
+     */
+    public void release() {
+        if (this.logo != null) {
+            this.logo.release();
+        }
+
+        if (this.title != null) {
+            this.title.release();
+        }
+
+        this.items.forEach(i -> i.release());
     }
 
     public Window getMyWindow() {

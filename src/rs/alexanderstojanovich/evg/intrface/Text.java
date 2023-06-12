@@ -24,6 +24,7 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -35,6 +36,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
+ * Text component of the interface. Contains text. Renders string to the screen.
+ * Widely used.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -89,6 +92,8 @@ public class Text implements ComponentIfc {
         new Vector2f()
     };
 
+    protected int vao = 0;
+
     protected static FloatBuffer floatBuffer = null;
     protected int vbo = 0;
 
@@ -121,7 +126,7 @@ public class Text implements ComponentIfc {
     @Override
     public boolean bufferVertices() {
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
-        if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+        if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -132,13 +137,29 @@ public class Text implements ComponentIfc {
             floatBuffer.put(uvs[i].y);
         }
         floatBuffer.flip();
+
+        if (vao == 0) {
+            vao = GL30.glGenVertexArrays();
+        }
+
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
         if (floatBuffer.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv   
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -151,8 +172,16 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean updateVertices() {
+        if (vao == 0) {
+            DSLogger.reportError("Vertex array object is zero!", null);
+            return false;
+        }
+        if (vbo == 0) {
+            DSLogger.reportError("Vertex buffer object is zero!", null);
+            return false;
+        }
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
-        if (MemoryUtil.memAddress(floatBuffer) == MemoryUtil.NULL) {
+        if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -165,8 +194,19 @@ public class Text implements ComponentIfc {
         floatBuffer.flip();
 
         if (floatBuffer.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv            
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -180,7 +220,7 @@ public class Text implements ComponentIfc {
     @Override
     public boolean bufferIndices() {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
-        if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+        if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -206,7 +246,13 @@ public class Text implements ComponentIfc {
         return true;
     }
 
-    protected void setup() {
+    /**
+     * Character size difference (now & before)
+     *
+     * @return char difference
+     */
+    protected int setup() {
+        int prevSize = txtChList.size();
         txtChList.clear();
         String[] lines = content.split("\n");
         for (int l = 0; l < lines.length; l++) {
@@ -221,6 +267,8 @@ public class Text implements ComponentIfc {
                 txtChList.add(txtCh);
             }
         }
+        int thisSize = txtChList.size();
+        return thisSize - prevSize;
     }
 
     @Override
@@ -232,11 +280,11 @@ public class Text implements ComponentIfc {
 
     @Override
     public void bufferSmart() {
-        setup();
-        if (vbo == 0) {
-            buffered = bufferVertices() && bufferIndices();
-        } else {
+        int deltaSize = setup();
+        if (floatBuffer != null && vbo != 0 && deltaSize == 0) {
             buffered = updateVertices() && bufferIndices();
+        } else {
+            buffered = bufferVertices() && bufferIndices();
         }
     }
 
@@ -247,20 +295,21 @@ public class Text implements ComponentIfc {
 
     @Override
     public void render(ShaderProgram shaderProgram) {
-        if (enabled && buffered) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+        if (enabled && buffered && !txtChList.isEmpty()) {
+            GL30.glBindVertexArray(vao);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
-            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
+
             shaderProgram.bind();
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "uv");
 
             shaderProgram.updateUniform(scale, "scale");
             shaderProgram.updateUniform(color, "color");
             texture.bind(0, shaderProgram, "ifcTexture");
 
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             for (TextCharacter txtCh : txtChList) {
                 uvs = txtCh.uvs;
 
@@ -271,10 +320,33 @@ public class Text implements ComponentIfc {
 
             Texture.unbind(0);
             ShaderProgram.unbind();
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
+
+            GL30.glBindVertexArray(0);
+        }
+    }
+
+    @Override
+    public void release() {
+        if (vbo != 0) {
+            GL20.glDeleteBuffers(vbo);
+        }
+        if (ibo != 0) {
+            GL20.glDeleteBuffers(ibo);
+        }
+    }
+
+    @Deprecated
+    public static void globlRelease() {
+        if (floatBuffer != null && floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) != MemoryUtil.NULL) {
+            MemoryUtil.memFree(floatBuffer);
+        }
+
+        if (intBuffer != null && intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) != MemoryUtil.NULL) {
+            MemoryUtil.memFree(floatBuffer);
         }
     }
 

@@ -257,7 +257,7 @@ public class ShaderProgram {
 
     public void updateUniform(Matrix4f mat, String name) {
         FloatBuffer fb = MemoryUtil.memCallocFloat(4 * 4);
-        if (MemoryUtil.memAddress(fb) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return; // Memory allocation failed
         }
@@ -267,6 +267,25 @@ public class ShaderProgram {
 
         if (fb.capacity() != 0) {
             MemoryUtil.memFree(fb);
+        }
+    }
+
+    /**
+     * Delete program with whole attached shaders.
+     */
+    public void deleteProgram() {
+        for (Shader shader : shaders) {
+            GL20.glDeleteShader(shader.getShader());
+        }
+        GL20.glDeleteProgram(program);
+    }
+
+    /**
+     * Delete all shader programs
+     */
+    public static void deleteAllShaders() {
+        for (ShaderProgram sp : SHADER_PROGRAMS) {
+            sp.deleteProgram();
         }
     }
 

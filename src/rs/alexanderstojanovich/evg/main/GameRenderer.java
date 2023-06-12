@@ -43,13 +43,17 @@ public class GameRenderer extends Thread implements Executor {
 
     protected FutureTask<Object> task;
 
+    /**
+     * Core component. Game renderer. Everything rendered to the screen happens
+     * here.
+     */
     public GameRenderer() {
         super("Renderer");
     }
 
     @Override
     public void run() {
-        MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
+        MasterRenderer.initGL(GameObject.MY_WINDOW, cfg); // loads myWindow context, creates OpenGL context..
         MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
@@ -101,10 +105,21 @@ public class GameRenderer extends Thread implements Executor {
             }
         }
 
+        release();
+
         // renderer is reaching end of life!
         Window.unloadContext();
 
         DSLogger.reportDebug("Renderer exited.", null);
+    }
+
+    /**
+     * Cleans all the buffers from the renderer (optimized tuples contains them,
+     * interface as well).
+     */
+    protected void release() {
+        GameObject.release();
+        DSLogger.reportDebug("Game content resources deleted.", null);
     }
 
     @Override

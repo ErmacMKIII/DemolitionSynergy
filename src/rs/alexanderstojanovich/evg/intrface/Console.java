@@ -74,6 +74,9 @@ public class Console {
         init();
     }
 
+    /**
+     * Initializes console (with callbacks) - main thread
+     */
     private void init() {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
@@ -148,6 +151,10 @@ public class Console {
         };
     }
 
+    /**
+     * When open callbacks are changed (take input from keyboard, mouse etc)
+     * Enabled is set to true for rendering.
+     */
     public void open() {
         if (input.length() == 0) {
             enabled = true;
@@ -162,6 +169,11 @@ public class Console {
         }
     }
 
+    /**
+     * Render in the interface (has to be enabled)
+     *
+     * @param shaderProgram shader program to use
+     */
     public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             panel.setWidth(GameObject.MY_WINDOW.getWidth());
@@ -191,6 +203,28 @@ public class Console {
         }
     }
 
+    /*
+    * Releases all the callbacks by this component.
+     */
+    public void cleanUp() {
+        this.glfwCharCallback.free();
+        this.glfwKeyCallback.free();
+    }
+
+    /*
+    * Delete all the GL Buffers.
+     */
+    public void release() {
+        this.history.forEach(i -> i.release());
+        this.inText.release();
+    }
+
+    /**
+     * Mapping from command status to color
+     *
+     * @param status Command status
+     * @return status color {PENDING = WHITE, FAILED = RED, SUCCEEDED = GREEN }
+     */
     public static Vector3f StatusColor(Command.Status status) {
         switch (status) {
             case PENDING:

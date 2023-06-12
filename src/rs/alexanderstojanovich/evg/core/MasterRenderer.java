@@ -21,6 +21,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.main.Configuration;
 
 /**
  * Responsible for primitive rendering. OpenGL initialization happens here.
@@ -33,19 +34,21 @@ public class MasterRenderer {
 
     // load GL context into this thread  -> important!
     /**
-     * Initializes OpenGL into this thread and configures it. Notice that OpenGL
+     * Initializes OpenGL into this thread and configures it.Notice that OpenGL
      * is being rendered in the Window. Call only from Renderer.
      *
      * @param myWindow window associated with rendering.
+     * @param cfg ingame configuration
      */
-    public static void initGL(Window myWindow) {
+    public static void initGL(Window myWindow, Configuration cfg) {
         // load context
         myWindow.loadContext();
-        // enable/disable vsync
-        myWindow.setVSync(false);
 
         // create openGL context        
         glCaps = GL.createCapabilities();
+
+        // enable/disable vsync
+        myWindow.setVSync(cfg.isVsync());
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);

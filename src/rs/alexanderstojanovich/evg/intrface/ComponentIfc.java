@@ -158,4 +158,8 @@ public interface ComponentIfc {
      */
     public void bufferSmart();
 
+    /**
+     * Release this components. All GL buffers are deleted.
+     */
+    public void release();
 }

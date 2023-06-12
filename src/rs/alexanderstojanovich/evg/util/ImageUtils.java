@@ -132,7 +132,7 @@ public class ImageUtils {
                 .getData();
 
         imageBuffer = MemoryUtil.memCalloc(data.length);
-        if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(imageBuffer) == MemoryUtil.NULL) {
             DSLogger.reportFatalError("Could not allocate memory address!", null);
             return null;
         }
@@ -189,7 +189,7 @@ public class ImageUtils {
                 .getData();
 
         imageBuffer = MemoryUtil.memCalloc(data.length);
-        if (MemoryUtil.memAddress(imageBuffer) == MemoryUtil.NULL) {
+        if (MemoryUtil.memAddressSafe(imageBuffer) == MemoryUtil.NULL) {
             DSLogger.reportFatalError("Could not allocate memory address!", null);
             return null;
         }

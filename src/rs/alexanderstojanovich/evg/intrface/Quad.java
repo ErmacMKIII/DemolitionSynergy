@@ -21,14 +21,15 @@ import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evg.texture.Texture;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
@@ -64,7 +65,8 @@ public class Quad implements ComponentIfc {
 
     protected Vector2f[] uvs = new Vector2f[4];
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
-    // protected static final IntBuffer CONST_INT_BUFFER = MemoryUtil.memAllocInt(6);
+
+    protected int vao = 0;
     protected int vbo = 0;
 
     protected static IntBuffer intBuffer = null;
@@ -97,7 +99,7 @@ public class Quad implements ComponentIfc {
     @Override
     public boolean bufferVertices() {
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
-        if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+        if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -108,13 +110,29 @@ public class Quad implements ComponentIfc {
             FLOAT_BUFFER.put(uvs[i].y);
         }
         FLOAT_BUFFER.flip();
+
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
+        if (vao == 0) {
+            vao = GL30.glGenVertexArrays();
+        }
+
         if (FLOAT_BUFFER.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, FLOAT_BUFFER, GL15.GL_STATIC_DRAW);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                                 
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -127,8 +145,16 @@ public class Quad implements ComponentIfc {
 
     @Override
     public boolean updateVertices() {
+        if (vao == 0) {
+            DSLogger.reportError("Vertex array object is zero!", null);
+            return false;
+        }
+        if (vbo == 0) {
+            DSLogger.reportError("Vertex buffer object is zero!", null);
+            return false;
+        }
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
-        if (MemoryUtil.memAddress(FLOAT_BUFFER) == MemoryUtil.NULL) {
+        if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -141,8 +167,19 @@ public class Quad implements ComponentIfc {
         FLOAT_BUFFER.flip();
 
         if (FLOAT_BUFFER.capacity() != 0) {
+            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, FLOAT_BUFFER);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
+
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -156,7 +193,7 @@ public class Quad implements ComponentIfc {
     @Override
     public boolean bufferIndices() {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
-        if (MemoryUtil.memAddress(intBuffer) == MemoryUtil.NULL) {
+        if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -185,10 +222,10 @@ public class Quad implements ComponentIfc {
 
     @Override
     public void bufferSmart() {
-        if (vbo == 0 || ibo == 0) {
-            buffered = bufferVertices() && bufferIndices();
-        } else {
+        if (FLOAT_BUFFER != null && vao != 0 && vbo != 0) {
             buffered = updateVertices() && bufferIndices();
+        } else {
+            buffered = bufferVertices() && bufferIndices();
         }
     }
 
@@ -209,14 +246,14 @@ public class Quad implements ComponentIfc {
     @Override
     public void render(ShaderProgram shaderProgram) { // used for crosshair
         if (enabled && buffered) {
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            GL30.glBindVertexArray(vao);
 
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
-            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv                                     
+
             shaderProgram.bind();
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "uv");
 
             Matrix4f modelMatrix = calcModelMatrix();
             shaderProgram.updateUniform(modelMatrix, "modelMatrix");
@@ -224,15 +261,37 @@ public class Quad implements ComponentIfc {
             shaderProgram.updateUniform(scale, "scale");
             shaderProgram.updateUniform(color, "color");
             texture.bind(0, shaderProgram, "ifcTexture");
-
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
 
             Texture.unbind(0);
             ShaderProgram.unbind();
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
+
+            GL30.glBindVertexArray(0);
+        }
+    }
+
+    @Override
+    public void release() {
+        if (vbo != 0) {
+            GL20.glDeleteBuffers(vbo);
+        }
+        if (ibo != 0) {
+            GL20.glDeleteBuffers(ibo);
+        }
+    }
+
+    @Deprecated
+    public static void globlRelease() {
+        if (FLOAT_BUFFER != null && FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) != MemoryUtil.NULL) {
+            MemoryUtil.memFree(FLOAT_BUFFER);
+        }
+        if (intBuffer != null && intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) != MemoryUtil.NULL) {
+            MemoryUtil.memFree(intBuffer);
         }
     }
 
