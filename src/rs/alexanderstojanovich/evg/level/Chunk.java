@@ -18,6 +18,8 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.Arrays;
 import java.util.List;
+import org.joml.Intersectionf;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -512,12 +514,34 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     /**
+     * Does camera intersects this chunk
+     *
+     * @param chunkId chunk number
+     * @param dir VEC3 cam direction (front)
+     * @param origin VEC3 cam position
+     * @return intersection bool value
+     */
+    public static boolean intersectsVisionFunc(int chunkId, Vector3f dir, Vector3f origin) {
+        boolean ints = false;
+        final Vector3f chunkPos = invChunkFunc(chunkId);
+
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = chunkPos.sub(LENGTH, VISION * 8.0f, LENGTH, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = chunkPos.add(LENGTH, VISION * 8.0f, LENGTH, temp2);
+        Vector2f result = new Vector2f();
+        ints = Intersectionf.intersectRayAab(origin, dir, min, max, result);
+
+        return ints;
+    }
+
+    /**
      * Determine which chunks are visible by this chunk. If visible put into the
      * V list, otherwise put into the I list.
      *
      * @param vChnkIdList visible chunk queue
      * @param iChnkIdList invisible chunk queue
-     * @param actorPos actor pos (self-expl)
+     * @param actorPos actor pos (self-expl; same as cam pos)
      * @param camFront camera front (vision)
      *
      * @return list of changed chunks
@@ -545,7 +569,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
-                /*
+
+                /* -- NOT USED
                 Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
                 Vector2f result = new Vector2f();
                 Vector3f temp1 = new Vector3f();
@@ -553,7 +578,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Intersectionf.intersectRayAab(actorPos, camFront, chunkPos.add(new Vector3f(LENGTH / 2.0f), temp1), chunkPos.sub(new Vector3f(LENGTH / 2.0f), temp2), result);
                 boolean visible = Math.max(result.x, result.y) <= VISION;
                  */
-                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdList.contains(chunkId)) {
+                boolean intersectsVision = intersectsVisionFunc(chunkId, camFront, actorPos);
+
+                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdList.contains(chunkId) && intersectsVision) {
                     vChnkIdList.add(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
                     iChnkIdList.add(chunkId);

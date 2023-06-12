@@ -591,11 +591,11 @@ public class Game {
                 upsTicks--;
             }
 
-            if (Game.accumulator - timer > 20.0) { // optimization every 250 ms
+            if (Game.accumulator - timer > 80.0) { // optimization every second
                 actionPerformed = true;
                 chunksModified = true;
                 needOptimize = true;
-                timer += 20.0;
+                timer += 80.0;
             }
 
             if (actionPerformed) {

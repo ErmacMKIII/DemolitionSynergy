@@ -255,7 +255,7 @@ public class CacheModule {
 
                 saveMemToDisk(getFileName(id));
 
-                CACHED_CHUNKS.remove(id);
+                CACHED_CHUNKS.remove((Integer) id);
 
                 op = true;
             }

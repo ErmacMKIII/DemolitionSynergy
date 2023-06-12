@@ -170,7 +170,7 @@ public class MathUtils {
         ret = ret - 0.2121144f;
         ret = ret * x;
         ret = ret + 1.5707288f;
-        ret = (float) (ret * Math.sqrt(1.0f - x));
+        ret = (float) (ret * org.joml.Math.sqrt(1.0f - x));
         ret = ret - 2.0f * negate * ret;
         return negate * 3.14159265358979f + ret;
     }
