@@ -28,10 +28,11 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.level.CacheModule;
+import rs.alexanderstojanovich.evg.level.CachedInfo;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
-import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 
@@ -57,6 +58,8 @@ public class Command implements Callable<Object> { // its not actually a thread 
         POSITION,
         SCREENSHOT,
         SIZEOF,
+        CACHE,
+        CLEAR,
         NOP,
         ERROR
     };
@@ -215,13 +218,21 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         command.args.add(Integer.valueOf(things[1]));
                     }
                     break;
+                case "cache":
+                case "cacheinfo":
+                    command.target = Target.CACHE;
+                    break;
+                case "clr":
+                case "clear":
+                    command.target = Target.CLEAR;
+                    break;
                 default:
                     command.target = Target.ERROR;
                     break;
             }
         }
 
-        if (command.args.isEmpty() || command.target == Target.SIZEOF) {
+        if (command.args.isEmpty() && command.target != Target.CLEAR || command.target == Target.SIZEOF) {
             command.mode = Mode.GET;
         } else {
             command.mode = Mode.SET;
@@ -419,19 +430,32 @@ public class Command implements Callable<Object> { // its not actually a thread 
                     case SET:
                         if (command.args.size() == 1) {
                             chunkId = (int) command.args.get(0);
-                            Vector3f newPos = Chunk.invChunkFunc(chunkId);
-                            mainActorPos.x = newPos.x;
-                            mainActorPos.y = newPos.y;
-                            mainActorPos.z = newPos.z;
-                            command.status = Status.SUCCEEDED;
+                            if (chunkId >= 0 && chunkId < Chunk.CHUNK_NUM) {
+                                Vector3f newPos = Chunk.invChunkFunc(chunkId);
+                                mainActorPos.x = newPos.x;
+                                mainActorPos.y = newPos.y;
+                                mainActorPos.z = newPos.z;
+                                command.status = Status.SUCCEEDED;
+                            } else {
+                                command.status = Status.FAILED;
+                                result = "Invalid ChunkId!";
+                            }
                         } else if (command.args.size() == 3) {
                             float newPosx = (float) command.args.get(0);
                             float newPosy = (float) command.args.get(1);
                             float newPosz = (float) command.args.get(2);
-                            mainActorPos.x = newPosx;
-                            mainActorPos.y = newPosy;
-                            mainActorPos.z = newPosz;
-                            command.status = Status.SUCCEEDED;
+
+                            Vector3f newPos = new Vector3f(newPosx, newPosy, newPosz);
+                            chunkId = Chunk.chunkFunc(newPos);
+                            if (chunkId >= 0 && chunkId < Chunk.CHUNK_NUM) {
+                                mainActorPos.x = newPosx;
+                                mainActorPos.y = newPosy;
+                                mainActorPos.z = newPosz;
+                                command.status = Status.SUCCEEDED;
+                            } else {
+                                command.status = Status.FAILED;
+                                result = "Invalid position (must be in chunk bounds)!";
+                            }
                         }
                         break;
                 }
@@ -439,12 +463,18 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int solidSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
-                        result = String.format("Size = %d | TotalChunks = %d", solidSize, Chunk.CHUNK_NUM);
+                        int totalSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
+                        int cachedSize = 0;
+                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
+                            cachedSize += ci.chunkSize;
+                        }
+                        result = String.format("TotalSize= %d | TotalChunks= %d\nCachedChunks= %d | CachedSize= %d",
+                                totalSize, Chunk.CHUNK_NUM, CacheModule.CACHED_CHUNKS.size(), cachedSize);
+                        command.status = Status.SUCCEEDED;
                     } else {
                         chunkId = (int) command.args.get(0);
                         boolean cached = CacheModule.isCached(chunkId);
-                        int size = 0;
+                        int size = -1;
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
@@ -453,8 +483,36 @@ public class Command implements Callable<Object> { // its not actually a thread 
                                 size = chunk.getBlockList().size();
                             }
                         }
-                        result = String.format("Size = %d | Cached = %s", size, cached);
+
+                        if (size != -1) {
+                            result = String.format("Size= %d | Cached= %s", size, cached);
+                            command.status = Status.SUCCEEDED;
+                        } else {
+                            result = "Chunk not exists!";
+                            command.status = Status.FAILED;
+                        }
                     }
+                }
+                break;
+            case CACHE:
+                StringBuilder sb = new StringBuilder();
+                if (command.mode == Mode.GET) {
+                    if (CacheModule.CACHED_CHUNKS.isEmpty()) {
+                        sb.append("<empty>");
+                    } else {
+                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
+                            sb.append(String.format("ChunkId= %d | CachedSize= %d | FileName= %s",
+                                    ci.chunkId, ci.chunkSize, ci.fileName));
+                        }
+                    }
+                }
+                result = sb.toString();
+                command.status = Status.SUCCEEDED;
+                break;
+            case CLEAR:
+                if (command.mode == Mode.SET) {
+                    Console console = GameObject.getIntrface().getConsole();
+                    console.clear();
                 }
                 command.status = Status.SUCCEEDED;
                 break;
@@ -501,13 +559,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
     // game commands
     public boolean isGameCommand() {
         return this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
-                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF;
+                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
         return command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
-                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF;
+                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
     }
 
     // renderer commands need OpenGL whilst other doesn't

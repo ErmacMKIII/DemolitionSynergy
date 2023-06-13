@@ -784,6 +784,8 @@ public class LevelContainer implements GravityEnviroment {
             if (playerLightIndex != -1) { // should be one
                 LIGHT_SOURCES.modified[playerLightIndex] = true;
             }
+
+//            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
         }
     }
 

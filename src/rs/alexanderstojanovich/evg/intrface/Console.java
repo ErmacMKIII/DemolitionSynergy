@@ -17,13 +17,14 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -42,7 +43,7 @@ public class Console {
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final DynamicText inText;
-    private final List<HistoryItem> history = new CopyOnWriteArrayList<>();
+    private final IList<HistoryItem> history = new GapList<>();
     private boolean enabled = false;
     private final DynamicText completes;
 
@@ -99,22 +100,33 @@ public class Console {
                     if (!input.toString().equals("")) {
 //                            for (DynamicText item : history) {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
-//                            }
-                        Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
+//                            }                        
                         Command cmd = Command.getCommand(input.toString());
 // if cmd is invalid it's null
-                        if (cmd.isRendererCommand()) {
-                            FutureTask<Object> consoleTask = new FutureTask<>(cmd);
-                            cmd.status = Command.Status.PENDING;
-                            GameRenderer.TASK_QUEUE.add(consoleTask);
-                        } else if (cmd.isGameCommand()) {
-                            Command.execute(cmd);
+                        synchronized (GameObject.MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                            if (cmd.isRendererCommand()) {
+                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                                cmd.status = Command.Status.PENDING;
+                                GameRenderer.TASK_QUEUE.add(consoleTask);
+                            } else if (cmd.isGameCommand()) {
+                                Command.execute(cmd);
+                            }
                         }
 
-                        history.add(0, new HistoryItem(cmd, quad));
+                        if (cmd.target != Command.Target.CLEAR) {
+                            // shift them
+                            history.forEach(hi -> {
+                                hi.cmdText.pos.y += inText.getRelativeCharHeight() * (inText.numberOfLines() + 1) * Text.LINE_SPACING;
+                            });
 
-                        if (history.size() == HISTORY_CAPACITY) {
-                            history.remove(history.size() - 1);
+                            // add to queue
+                            HistoryItem item = new HistoryItem(0, cmd);
+                            history.addFirst(item);
+
+                            // if over capacity deuque last
+                            if (history.size() > HISTORY_CAPACITY) {
+                                history.removeLast();
+                            }
                         }
 
                         input.setLength(0);
@@ -190,10 +202,9 @@ public class Console {
                 inText.bufferAll();
             }
             inText.render(shaderProgram);
-            int index = 0;
+
             for (HistoryItem item : history) {
-                item.render(new Vector2f(inText.pos.x, inText.pos.y + (index + 1) * inText.getRelativeCharHeight() * 2.0f), shaderProgram);
-                index++;
+                item.render(shaderProgram);
             }
 
             if (!completes.isBuffered()) {
@@ -236,6 +247,14 @@ public class Console {
                 return Vector3fColors.GREEN;
         }
 
+    }
+
+    /*
+    * Clear the history & intext
+     */
+    public void clear() {
+        inText.setContent("");
+        history.clear();
     }
 
     public Window getMyWindow() {

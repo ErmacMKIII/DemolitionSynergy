@@ -159,19 +159,21 @@ public class Chunks {
 
                     int adjChunkId = Chunk.chunkFunc(adjPos);
                     Chunk adjChunk = getChunk(adjChunkId);
-                    Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
-                    if (tuple != null) {
-                        Block adjBlock = null;
-                        adjBlock = Chunk.getBlock(tuple, adjPos);
+                    if (adjChunk != null) {
+                        Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
+                        if (tuple != null) {
+                            Block adjBlock = null;
+                            adjBlock = Chunk.getBlock(tuple, adjPos);
 
-                        if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
-                            int adjFaceBitsBefore = adjBlock.getFaceBits();
-                            adjBlock.setFaceBits(~adjNBits & 63);
-                            int adjFaceBitsAfter = adjBlock.getFaceBits();
-                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                                // if bits changed, i.e. some face(s) got disabled
-                                // tranfer to correct tuple
-                                adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                                int adjFaceBitsBefore = adjBlock.getFaceBits();
+                                adjBlock.setFaceBits(~adjNBits & 63);
+                                int adjFaceBitsAfter = adjBlock.getFaceBits();
+                                if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                                    // if bits changed, i.e. some face(s) got disabled
+                                    // tranfer to correct tuple
+                                    adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                                }
                             }
                         }
                     }
@@ -247,7 +249,6 @@ public class Chunks {
         }
 
         chunk.addBlock(block);
-        chunk.unbuffer();
         updateForAdd(block);
     }
 
@@ -263,7 +264,6 @@ public class Chunks {
 
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block);
-            chunk.unbuffer();
             updateForRem(block);
             // if chunk is empty (with no tuples) -> remove it
             if (chunk.getTupleList().isEmpty()) {
@@ -429,8 +429,13 @@ public class Chunks {
             final int faceBitsCopy = faceBits;
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
+                    // find optimized tuple
                     Tuple optmTuple = optimizedTuples.getIf(ot -> ot.faceBits() == faceBitsCopy && ot.texName().equals(tex));
-                    boolean firstTime = true;
+                    if (optmTuple != null) {
+                        // clear existing optimized tuple
+                        optmTuple.blockList.clear();
+                    }
+                    // iterate through visible chunk list & add all of their blocks
                     for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
@@ -439,16 +444,11 @@ public class Chunks {
                                 if (optmTuple == null) {
                                     optmTuple = new Tuple(tex, faceBits);
                                 }
-
-                                if (firstTime) {
-                                    optmTuple.blockList.clear();
-                                    firstTime = false;
-                                }
                                 optmTuple.blockList.addAll(tuple.blockList);
                             }
                         }
                     }
-
+                    // flag optimized tuple as unbuffered, sort and/or remove if empty
                     if (optmTuple != null) {
                         optmTuple.buffered = false;
                         boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
@@ -477,7 +477,7 @@ public class Chunks {
     }
 
     public void render(IList<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
-        if (!optimized || optimizedTuples.isEmpty()) {
+        if (!optimized || optimizedTuples.isEmpty() || queue.isEmpty()) {
             return;
         }
 

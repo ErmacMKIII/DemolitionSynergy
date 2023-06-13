@@ -283,14 +283,15 @@ public class Text implements ComponentIfc {
     protected int setup() {
         int prevSize = txtChList.size();
         txtChList.clear();
+        final int lineSize = Math.round(relativeLineSize());
         String[] lines = content.split("\n");
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
-                int j = i % 64;
-                int k = i / 64;
+                int j = i % lineSize;
+                int k = i / lineSize;
                 char ch = lines[l].charAt(i);
                 float xinc = (j - content.length() * alignment) * scale * getRelativeCharWidth();
-                float ydec = (k + l * LINE_SPACING) * scale * getRelativeCharHeight();
+                float ydec = (k + l) * LINE_SPACING * scale * getRelativeCharHeight();
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
                 txtChList.add(txtCh);
@@ -404,6 +405,11 @@ public class Text implements ComponentIfc {
         return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
+    public float getRelativeHeight() {
+        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor * numberOfLines() / (float) GameObject.MY_WINDOW.getHeight();
+    }
+
     // it aligns position to next char position (useful if characters are cut out or so)
     // call this method only once!
     public void alignToNextChar() {
@@ -428,6 +434,22 @@ public class Text implements ComponentIfc {
         Matrix4f temp = new Matrix4f();
         Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
         return modelMatrix;
+    }
+
+    public int numberOfLines() {
+        final int lineSize = Math.round(relativeLineSize());
+        int numOfLines = 0;
+        numOfLines += content.codePoints().filter(ch -> (char) ch == '\n').count(); // #include all '\n'
+        String[] parts = content.split("\n", -1);
+        for (String part : parts) {
+            numOfLines += part.length() / lineSize; // #include all word wraps
+        }
+
+        return 1 + numOfLines; // #lines start with 1
+    }
+
+    public float relativeLineSize() {
+        return 2.0f / (float) getRelativeCharWidth();
     }
 
     public IList<TextCharacter> getTxtChList() {

@@ -29,14 +29,16 @@ public class HistoryItem {
 
     protected Command cmd;
     protected final DynamicText cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
-    protected Quad quad;
+    protected Quad quad = new Quad(14, 14, Texture.LIGHT_BULB);
+    protected int index = 0;
 
-    public HistoryItem(Command command, Quad quad) {
+    public HistoryItem(int index, Command command) {
+        this.index = index;
         this.cmd = command;
-        this.quad = quad;
-
-        cmdText.pos.y += (0.5f - cmdText.getRelativeCharHeight()) * Text.LINE_SPACING;
-
+        this.buildCmdText();
+        cmdText.pos.x = -1.0f;
+        // index + 1 is because it is rendered above "] " where in text is
+        cmdText.pos.y = Text.LINE_SPACING * (cmdText.getRelativeCharHeight() + (this.index + this.cmdText.numberOfLines()) * cmdText.getRelativeCharHeight()) * cmdText.scale;
         cmdText.setAlignment(Text.ALIGNMENT_LEFT);
         cmdText.alignToNextChar();
     }
@@ -85,25 +87,20 @@ public class HistoryItem {
     /**
      * Renders this history item in the console (in interface).
      *
-     * @param pos screen GL (VEC2) position
      * @param shaderProgram shader program to use
      */
-    public void render(Vector2f pos, ShaderProgram shaderProgram) {
+    public void render(ShaderProgram shaderProgram) {
         buildCmdText();
-        cmdText.pos.x = pos.x;
-        cmdText.pos.y = pos.y;
-
         if (!cmdText.isBuffered()) {
             cmdText.bufferSmart();
         }
         cmdText.render(shaderProgram);
-        // ------------------------------------------------------------------------------------------------------
-        quad.getPos().x = cmdText.pos.x + cmdText.getRelativeCharWidth() * (cmdText.content.length() + 1);
-        quad.getPos().y = cmdText.pos.y;
-
+        // ------------------------------------------------------------------------------------------------------        
         if (!quad.isBuffered()) {
             quad.bufferSmart();
         }
+        quad.pos.x = cmdText.pos.x + (cmdText.getRelativeWidth() + cmdText.getRelativeCharWidth()) * cmdText.scale;
+        quad.pos.y = cmdText.pos.y;
         quad.color = Console.StatusColor(cmd.status);
         quad.render(shaderProgram);
     }
@@ -138,6 +135,17 @@ public class HistoryItem {
 
     public void setQuad(Quad quad) {
         this.quad = quad;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public void setIndex(int index) {
+        this.index = index;
+        this.buildCmdText();
+        // index + 1 is because it is rendered above "] " where in text is
+        cmdText.pos.y = Text.LINE_SPACING * (cmdText.getRelativeCharHeight() + (this.index + this.cmdText.numberOfLines()) * cmdText.getRelativeCharHeight()) * cmdText.scale;
     }
 
 }
