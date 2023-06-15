@@ -296,7 +296,7 @@ public class Text implements ComponentIfc {
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
                 txtCh.modelMat4 = calcModelMatrix(txtCh); // setup once and don't touch it
-                
+
                 txtChList.add(txtCh);
             }
         }

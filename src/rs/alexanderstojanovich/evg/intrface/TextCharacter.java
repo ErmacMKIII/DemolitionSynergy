@@ -30,8 +30,8 @@ public class TextCharacter {
     protected final Vector2f[] uvs = new Vector2f[4];
     protected final float xadv; // x-advance to the right
     protected final float ydrop; // y-drop (to the below)
-    protected Matrix4f modelMat4 = new Matrix4f();
-    
+    protected Matrix4f modelMat4 = new Matrix4f(); // calculated & set externally (in setup)
+
     /**
      * Create a single character of Text class (& Dynamic Text class)
      *
@@ -86,6 +86,10 @@ public class TextCharacter {
 
     public Vector2f[] getUvs() {
         return uvs;
+    }
+
+    public Matrix4f getModelMat4() {
+        return modelMat4;
     }
 
 }

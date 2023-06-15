@@ -201,7 +201,7 @@ public class DynamicText extends Text {
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {                
+            for (TextCharacter txtCh : txtChList) {
                 ShaderProgram.getIntrfaceShader().updateUniform(txtCh.modelMat4, "modelMatrix");
 
                 GL32.glDrawElementsBaseVertex(
