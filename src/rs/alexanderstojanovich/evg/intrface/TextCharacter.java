@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
 /**
@@ -29,7 +30,8 @@ public class TextCharacter {
     protected final Vector2f[] uvs = new Vector2f[4];
     protected final float xadv; // x-advance to the right
     protected final float ydrop; // y-drop (to the below)
-
+    protected Matrix4f modelMat4 = new Matrix4f();
+    
     /**
      * Create a single character of Text class (& Dynamic Text class)
      *

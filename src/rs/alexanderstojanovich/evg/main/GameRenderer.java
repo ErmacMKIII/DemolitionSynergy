@@ -105,6 +105,7 @@ public class GameRenderer extends Thread implements Executor {
             }
         }
 
+        // clean up resources from GL side
         release();
 
         // renderer is reaching end of life!

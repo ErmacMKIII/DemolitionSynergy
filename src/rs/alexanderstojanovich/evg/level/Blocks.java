@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.level;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.lwjgl.opengl.GL11;
@@ -49,9 +50,8 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     protected int bigVbo = 0;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    protected final Map<Integer, Integer> vboEntries = new HashMap<>();
     // --------------blkIndex---ibo-----------------------------
-    protected final Map<Integer, Integer> iboMap = new HashMap<>();
+    protected final Map<Integer, Integer> iboMap = new LinkedHashMap<>();
     protected boolean buffered = false;
 
 //    protected static int dynamicSize = DYNAMIC_INCREMENT;
@@ -63,10 +63,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
-        int offset = 0;
-        int blkIndex = 0;
         for (Block block : blockList) {
-            vboEntries.put(blkIndex, offset);
             for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
@@ -77,10 +74,8 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                     bigFloatBuff.put(vertex.getNormal().z);
                     bigFloatBuff.put(vertex.getUv().x);
                     bigFloatBuff.put(vertex.getUv().y);
-                    offset++;
                 }
             }
-            blkIndex++;
         }
         bigFloatBuff.flip();
         if (bigVbo == 0) {
@@ -132,7 +127,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         int offset = 0;
         int blkIndex = 0;
         for (Block block : blockList) {
-            vboEntries.put(blkIndex, offset);
             for (Vertex vertex : block.getVertices()) { // for each vertex
                 if (vertex.isEnabled()) {
                     bigFloatBuff.put(vertex.getPos().x);
@@ -282,7 +276,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                         Block.INDICES_COUNT,
                         GL11.GL_UNSIGNED_INT,
                         0,
-                        vboEntries.get(blkIndex)
+                        blkIndex * Vertex.SIZE
                 );
 
                 Texture.unbind(0);
@@ -340,7 +334,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
                             Block.INDICES_COUNT,
                             GL11.GL_UNSIGNED_INT,
                             0,
-                            vboEntries.get(blkIndex)
+                            blkIndex * Vertex.SIZE
                     );
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
                     Texture.unbind(0);

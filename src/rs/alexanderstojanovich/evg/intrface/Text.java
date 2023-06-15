@@ -295,6 +295,8 @@ public class Text implements ComponentIfc {
                 float ydec = (k + l) * scale * getRelativeCharHeight() * Text.LINE_SPACING;
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
+                txtCh.modelMat4 = calcModelMatrix(txtCh); // setup once and don't touch it
+                
                 txtChList.add(txtCh);
             }
         }
@@ -344,8 +346,7 @@ public class Text implements ComponentIfc {
             for (TextCharacter txtCh : txtChList) {
                 uvs = txtCh.uvs;
 
-                Matrix4f modelMatrix = calcModelMatrix(txtCh.xadv, txtCh.ydrop);
-                shaderProgram.updateUniform(modelMatrix, "modelMatrix");
+                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
                 GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
             }
 

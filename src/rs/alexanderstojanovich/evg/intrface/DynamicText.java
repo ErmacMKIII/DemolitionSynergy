@@ -44,7 +44,6 @@ public class DynamicText extends Text {
 
 //    protected int dynamicSize = DYNAMIC_INCREMENT;
     protected int bigVbo = 0; // vbo containing all the quads (characters)
-    protected int[] vboEntries = new int[1024];
     protected static FloatBuffer bigFloatBuff = null;
 
     public DynamicText(Texture texture, String content) {
@@ -67,16 +66,12 @@ public class DynamicText extends Text {
             return false;
         }
 
-        int e = 0;
-        int offset = 0;
         for (TextCharacter txtCh : txtChList) {
-            vboEntries[e++] = offset;
             for (int v = 0; v < 4; v++) {
                 bigFloatBuff.put(VERTICES[v].x);
                 bigFloatBuff.put(VERTICES[v].y);
                 bigFloatBuff.put(txtCh.uvs[v].x);
                 bigFloatBuff.put(txtCh.uvs[v].y);
-                offset++;
             }
         }
 
@@ -135,16 +130,12 @@ public class DynamicText extends Text {
             return false;
         }
 
-        int e = 0;
-        int offset = 0;
         for (TextCharacter txtCh : txtChList) {
-            vboEntries[e++] = offset;
             for (int v = 0; v < 4; v++) {
                 bigFloatBuff.put(VERTICES[v].x);
                 bigFloatBuff.put(VERTICES[v].y);
                 bigFloatBuff.put(txtCh.uvs[v].x);
                 bigFloatBuff.put(txtCh.uvs[v].y);
-                offset++;
             }
         }
 
@@ -210,16 +201,15 @@ public class DynamicText extends Text {
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {
-                Matrix4f modelMat4 = calcModelMatrix(txtCh);
-                ShaderProgram.getIntrfaceShader().updateUniform(modelMat4, "modelMatrix");
+            for (TextCharacter txtCh : txtChList) {                
+                ShaderProgram.getIntrfaceShader().updateUniform(txtCh.modelMat4, "modelMatrix");
 
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,
                         INDICES.length,
                         GL11.GL_UNSIGNED_INT,
                         0,
-                        vboEntries[index++]
+                        index++ << 2 // vertex size is 4
                 );
             }
 
@@ -251,13 +241,6 @@ public class DynamicText extends Text {
 
     public int getBigVbo() {
         return bigVbo;
-    }
-
-//    public int getDynamicSize() {
-//        return dynamicSize;
-//    }
-    public int[] getVboEntries() {
-        return vboEntries;
     }
 
     public FloatBuffer getBigFloatBuff() {
