@@ -118,6 +118,7 @@ public class Text implements ComponentIfc {
     public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         this.texture = texture;
         this.content = content;
+        this.pos = pos;
         this.enabled = true;
         this.charWidth = charWidth;
         this.charHeight = charHeight;
@@ -290,8 +291,8 @@ public class Text implements ComponentIfc {
                 int j = i % lineSize;
                 int k = i / lineSize;
                 char ch = lines[l].charAt(i);
-                float xinc = (j - content.length() * alignment) * scale * getRelativeCharWidth();
-                float ydec = (k + l) * LINE_SPACING * scale * getRelativeCharHeight();
+                float xinc = Math.round(j - content.length() * alignment) * scale * getRelativeCharWidth();
+                float ydec = (k + l) * scale * getRelativeCharHeight() * Text.LINE_SPACING;
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
                 txtChList.add(txtCh);
@@ -425,6 +426,19 @@ public class Text implements ComponentIfc {
 
     protected Matrix4f calcModelMatrix(float xinc, float ydec) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y - ydec, 0.0f);
+        Matrix4f rotationMatrix = new Matrix4f().identity();
+
+        float sx = getRelativeCharWidth();
+        float sy = getRelativeCharHeight();
+        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
+
+        Matrix4f temp = new Matrix4f();
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
+    }
+
+    protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
+        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
         float sx = getRelativeCharWidth();

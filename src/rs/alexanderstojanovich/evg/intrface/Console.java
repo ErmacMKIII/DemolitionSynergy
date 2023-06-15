@@ -114,14 +114,20 @@ public class Console {
                         }
 
                         if (cmd.target != Command.Target.CLEAR) {
+                            // add to queue
+                            HistoryItem item = new HistoryItem(cmd);
+                            history.addFirst(item);
+
                             // shift them
                             history.forEach(hi -> {
-                                hi.cmdText.pos.y += inText.getRelativeCharHeight() * (inText.numberOfLines() + 1) * Text.LINE_SPACING;
-                            });
+                                hi.buildCmdText();
+                                hi.cmdText.pos.x = -1.0f;
+                                hi.cmdText.pos.y += ((inText.getRelativeHeight() + inText.getRelativeCharHeight()) * inText.scale + (hi.cmdText.getRelativeCharHeight() + hi.cmdText.getRelativeHeight()) * hi.cmdText.scale) * Text.LINE_SPACING;
+                                hi.cmdText.alignToNextChar();
 
-                            // add to queue
-                            HistoryItem item = new HistoryItem(0, cmd);
-                            history.addFirst(item);
+                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth() + hi.cmdText.getRelativeCharWidth()) * hi.cmdText.scale;
+                                hi.quad.pos.y = hi.cmdText.pos.y;
+                            });
 
                             // if over capacity deuque last
                             if (history.size() > HISTORY_CAPACITY) {

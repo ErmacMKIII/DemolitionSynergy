@@ -100,7 +100,8 @@ public abstract class Menu {
             item.keyText.setScale(itemScale);
             item.keyText.setAlignment(alignmentAmount);
             item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-            item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+            item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+            item.keyText.alignToNextChar();
             index++;
         }
     }
@@ -211,7 +212,7 @@ public abstract class Menu {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
+            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
                 title.bufferSmart();
             }
@@ -228,7 +229,7 @@ public abstract class Menu {
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
                 item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
 
                 item.render(shaderProgram);
                 index++;

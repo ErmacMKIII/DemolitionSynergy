@@ -30,23 +30,15 @@ public class HistoryItem {
     protected Command cmd;
     protected final DynamicText cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
     protected Quad quad = new Quad(14, 14, Texture.LIGHT_BULB);
-    protected int index = 0;
 
-    public HistoryItem(int index, Command command) {
-        this.index = index;
+    public HistoryItem(Command command) {
         this.cmd = command;
-        this.buildCmdText();
-        cmdText.pos.x = -1.0f;
-        // index + 1 is because it is rendered above "] " where in text is
-        cmdText.pos.y = Text.LINE_SPACING * (cmdText.getRelativeCharHeight() + (this.index + this.cmdText.numberOfLines()) * cmdText.getRelativeCharHeight()) * cmdText.scale;
-        cmdText.setAlignment(Text.ALIGNMENT_LEFT);
-        cmdText.alignToNextChar();
     }
 
     /**
      * Build command text. Constructs text of this item.
      */
-    private void buildCmdText() {
+    protected void buildCmdText() {
         StringBuilder sb = new StringBuilder();
         if (cmd.target == Command.Target.ERROR) {
             sb.append(cmd.input);
@@ -99,8 +91,6 @@ public class HistoryItem {
         if (!quad.isBuffered()) {
             quad.bufferSmart();
         }
-        quad.pos.x = cmdText.pos.x + (cmdText.getRelativeWidth() + cmdText.getRelativeCharWidth()) * cmdText.scale;
-        quad.pos.y = cmdText.pos.y;
         quad.color = Console.StatusColor(cmd.status);
         quad.render(shaderProgram);
     }
@@ -135,17 +125,6 @@ public class HistoryItem {
 
     public void setQuad(Quad quad) {
         this.quad = quad;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
-        this.buildCmdText();
-        // index + 1 is because it is rendered above "] " where in text is
-        cmdText.pos.y = Text.LINE_SPACING * (cmdText.getRelativeCharHeight() + (this.index + this.cmdText.numberOfLines()) * cmdText.getRelativeCharHeight()) * cmdText.scale;
     }
 
 }

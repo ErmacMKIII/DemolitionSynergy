@@ -221,7 +221,7 @@ public abstract class OptionsMenu extends Menu {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
+            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
                 title.bufferSmart();
             }
@@ -230,7 +230,7 @@ public abstract class OptionsMenu extends Menu {
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
                 item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
 
                 if (item.menuValue != null && item.menuValue.getValueText() != null) {
                     item.menuValue.getValueText().getPos().x = item.keyText.getPos().x + itemScale * (item.keyText.getRelativeWidth() + item.keyText.getRelativeCharWidth()) * (1.0f - alignmentAmount);

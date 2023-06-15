@@ -177,19 +177,6 @@ public class DynamicText extends Text {
         return true;
     }
 
-    protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
-        Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
-        Matrix4f rotationMatrix = new Matrix4f().identity();
-
-        float sx = getRelativeCharWidth();
-        float sy = getRelativeCharHeight();
-        Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
-
-        Matrix4f temp = new Matrix4f();
-        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
-        return modelMatrix;
-    }
-
     @Override
     public void bufferAll() {
         buffered = false;

@@ -86,6 +86,8 @@ public class Intrface {
      * Long Initialization. All components get their purpose now.
      */
     private void initIntrface() {
+        final float menuScale = 2.0f;
+
         AudioPlayer musicPlayer = GameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = GameObject.getSoundFXPlayer();
 
@@ -104,14 +106,12 @@ public class Intrface {
 
         collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
-        helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), Vector3fColors.WHITE, new Vector2f(-1.0f, 0.9f));
-        helpText.setScale(0.625f);
+        helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
         helpText.alignToNextChar();
         helpText.setEnabled(false);
         progText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(-1.0f, -0.9f));
         progText.alignToNextChar();
-        screenText = new DynamicText(Texture.FONT, "", Vector3fColors.WHITE, new Vector2f(-1.0f, -0.7f));
-        screenText.setScale(0.625f);
+        screenText = new DynamicText(Texture.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
         screenText.alignToNextChar();
         gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
         gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
@@ -130,7 +130,7 @@ public class Intrface {
         mainMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
         mainMenuItems.add(new MenuItem("CREDITS", Menu.EditType.EditNoValue, null));
         mainMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
-        mainMenu = new Menu("", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        mainMenu = new Menu("", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
             @Override
             protected void leave() {
 
@@ -158,8 +158,9 @@ public class Intrface {
                 }
             }
         };
-        Quad logo = new Quad(232, 100, Texture.LOGO);
-        logo.setColor(new Vector3f(1.0f, 0.7f, 0.1f));
+        Quad logo = new Quad(120, 90, Texture.LOGO);
+        logo.setColor(new Vector3f(Vector3fColors.YELLOW));
+        logo.setScale(1.5f);
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
@@ -205,7 +206,7 @@ public class Intrface {
             loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
         }
 
-        loadLvlMenu = new Menu("LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        loadLvlMenu = new Menu("LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
             @Override
             protected void leave() {
                 editorMenu.open();
@@ -243,7 +244,7 @@ public class Intrface {
         randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
         randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
 
-        randLvlMenu = new OptionsMenu("GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        randLvlMenu = new OptionsMenu("GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -279,7 +280,7 @@ public class Intrface {
             }
 
         };
-        randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(2.0f);
+        randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
 
         singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
             @Override
@@ -298,7 +299,7 @@ public class Intrface {
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
         Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
-        Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
+        Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
         Object[] volume = new Float[21];
         int k = 0;
         for (float i = 0.0f; i < 1.05f; i += 0.05f) {
@@ -318,7 +319,7 @@ public class Intrface {
         optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
         optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
 
-        optionsMenu = new OptionsMenu("OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        optionsMenu = new OptionsMenu("OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -419,7 +420,7 @@ public class Intrface {
         editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
         editorMenuPairs.add(new MenuItem("LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
 
-        editorMenu = new Menu("EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        editorMenu = new Menu("EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -463,7 +464,7 @@ public class Intrface {
         creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
         creditsMenuPairs.add(new MenuItem("Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
 
-        creditsMenu = new Menu("CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        creditsMenu = new Menu("CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
             @Override
             protected void leave() {
                 mainMenu.open();
