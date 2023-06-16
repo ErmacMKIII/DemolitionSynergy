@@ -569,4 +569,8 @@ public class RandomLevelGenerator {
         this.random = new Random(seed);
     }
 
+    public Random getRandom() {
+        return random;
+    }
+    
 }

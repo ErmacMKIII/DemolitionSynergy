@@ -305,6 +305,43 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
+    public boolean generateSinglePlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+        if (working) {
+            return false;
+        }
+        working = true;
+        levelActors.freeze();
+
+        boolean success = false;
+        progress = 0.0f;
+        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+
+        chunks.clear();
+
+        ALL_BLOCK_MAP.init();
+
+        LIGHT_SOURCES.lightSrcList.clear();
+        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
+        LIGHT_SOURCES.lightSrcList.add(levelActors.playerLight);
+
+        CacheModule.deleteCache();
+
+        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_BLOCKS) {
+            randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
+            randomLevelGenerator.generate();
+            success = true;
+        }
+
+//        solidChunks.updateSolids(this);
+//        fluidChunks.updateFluids(this);
+        progress = 100.0f;
+        working = false;
+
+        levelActors.unfreeze();
+        GameObject.getMusicPlayer().stop();
+        return success;
+    }
+    
     private boolean storeLevelToBuffer() {
         working = true;
         boolean success = false;

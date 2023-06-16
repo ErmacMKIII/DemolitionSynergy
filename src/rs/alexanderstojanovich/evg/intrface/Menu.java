@@ -22,6 +22,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -42,7 +43,7 @@ public abstract class Menu {
     private Quad logo; // only basic menus have logo
     protected DynamicText title;
 
-    protected final List<MenuItem> items;
+    protected final IList<MenuItem> items;
     protected boolean enabled = false;
 
     protected Vector2f pos = new Vector2f();
@@ -64,7 +65,7 @@ public abstract class Menu {
     protected GLFWKeyCallback glfwKeyCallback;
     protected GLFWMouseButtonCallback glfwMouseButtonCallback;
 
-    public Menu(String title, List<MenuItem> items, String textureFileName) {
+    public Menu(String title, IList<MenuItem> items, String textureFileName) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setColor(Vector3fColors.YELLOW);
         this.items = items;
@@ -76,7 +77,7 @@ public abstract class Menu {
         init();
     }
 
-    public Menu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
+    public Menu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(Vector3fColors.YELLOW);
@@ -397,7 +398,7 @@ public abstract class Menu {
         return itemScale;
     }
 
-    public List<MenuItem> getItems() {
+    public IList<MenuItem> getItems() {
         return items;
     }
 

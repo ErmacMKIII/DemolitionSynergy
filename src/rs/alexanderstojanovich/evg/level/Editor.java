@@ -274,7 +274,7 @@ public class Editor {
         if (selectedNew != null) {
             synchronized (GameObject.MUTEX) {
                 String texName = Texture.TEX_WORLD[texValue];
-                selectedNew.setTexName(texName);
+                selectedNew.setTexNameWithDeepCopy(texName);
             }
         }
     }
@@ -299,30 +299,9 @@ public class Editor {
 
     public static void cycleBlockColor() {
         if (selectedNew != null) {
-            switch (blockColorNum) {
-                case 0:
-                    selectedNew.setPrimaryColor(Vector3fColors.RED); // RED                
-                    break;
-                case 1:
-                    selectedNew.setPrimaryColor(Vector3fColors.GREEN); // GREEN
-                    break;
-                case 2:
-                    selectedNew.setPrimaryColor(Vector3fColors.BLUE); // BLUE
-                    break;
-                case 3:
-                    selectedNew.setPrimaryColor(Vector3fColors.CYAN); // CYAN
-                    break;
-                case 4:
-                    selectedNew.setPrimaryColor(Vector3fColors.MAGENTA); // MAGENTA
-                    break;
-                case 5:
-                    selectedNew.setPrimaryColor(Vector3fColors.YELLOW); // YELLOW
-                    break;
-                case 6:
-                    selectedNew.setPrimaryColor(Vector3fColors.WHITE); // WHITE
-                    break;
-            }
-            if (blockColorNum < 6) {
+            selectedNew.setPrimaryColor(Vector3fColors.NAME_TO_COLOR.get(Vector3fColors.ColorName.values()[blockColorNum]));
+            
+            if (blockColorNum < Vector3fColors.ColorName.values().length) {
                 blockColorNum++;
             } else {
                 blockColorNum = 0;

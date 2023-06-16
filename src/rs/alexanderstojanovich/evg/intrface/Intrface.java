@@ -21,10 +21,16 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.FutureTask;
+import org.joml.Random;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -68,11 +74,13 @@ public class Intrface {
     private Menu creditsMenu;
     private OptionsMenu randLvlMenu;
     private Menu loadLvlMenu;
-
+    
     private int numBlocks = 0;
 
-    public static final String FONT_IMG = "font.png"; // modified Hack font
-
+    public static final String FONT_IMG = "font.png"; // modified JetBrains font
+    
+    public OptionsMenu singlPlayerMenu;
+    
     private final Console console = new Console();
 
     /**
@@ -123,7 +131,7 @@ public class Intrface {
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         crosshair.setColor(Vector3fColors.WHITE);
-        List<MenuItem> mainMenuItems = new ArrayList<>();
+        IList<MenuItem> mainMenuItems = new GapList<>();
         mainMenuItems.add(new MenuItem("SINGLE PLAYER", Menu.EditType.EditNoValue, null));
         mainMenuItems.add(new MenuItem("MULTIPLAYER", Menu.EditType.EditNoValue, null));
         mainMenuItems.add(new MenuItem("EDITOR", Menu.EditType.EditNoValue, null));
@@ -141,7 +149,7 @@ public class Intrface {
                 String s = mainMenu.items.get(mainMenu.getSelected()).keyText.content;
                 switch (s) {
                     case "SINGLE PLAYER":
-                        singlePlayerDialog.open();
+                        singlPlayerMenu.open();
                         break;
                     case "EDITOR":
                         editorMenu.open();
@@ -201,7 +209,7 @@ public class Intrface {
             }
         });
 
-        List<MenuItem> loadLvlMenuPairs = new ArrayList<>();
+        IList<MenuItem> loadLvlMenuPairs = new GapList<>();
         for (String datFile : datFileList) {
             loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
         }
@@ -237,7 +245,7 @@ public class Intrface {
         };
         randLvlDialog.dialog.alignToNextChar();
 
-        List<MenuItem> randLvlMenuItems = new ArrayList<>();
+        IList<MenuItem> randLvlMenuItems = new GapList<>();
         randLvlMenuItems.add(new MenuItem("SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
         randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
         randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
@@ -288,8 +296,18 @@ public class Intrface {
                 boolean ok = false;
                 if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
-                    Game.setCurrentMode(Mode.SINGLE_PLAYER);
-                    ok = true;
+                    ok |= GameObject.generateSinglePlayerLevel(numBlocks);  
+                    if (ok) {
+                        LevelContainer levelContainer = GameObject.getLevelContainer();
+                        Player player = levelContainer.levelActors.player;
+                        Random random = GameObject.getRandomLevelGenerator().getRandom();
+                        int chunkId = Chunk.GRID_SIZE + random.nextInt(Chunk.GRID_SIZE) << random.nextInt(2);
+                        Vector3f invChunkFunc = Chunk.invChunkFunc(chunkId);
+                        player.model.setPos(invChunkFunc);
+                        player.model.pos.x += Math.round(random.nextFloat()) & 0xFFFFFFFE;
+                        player.model.pos.z += Math.round(random.nextFloat()) & 0xFFFFFFFE;
+                        Game.setCurrentMode(Mode.SINGLE_PLAYER);  
+                    }
                 }
                 return ok;
             }
@@ -306,7 +324,7 @@ public class Intrface {
             volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
         }
 
-        List<MenuItem> optionsMenuPairs = new ArrayList<>();
+        IList<MenuItem> optionsMenuPairs = new GapList<>();
         optionsMenuPairs.add(new MenuItem("FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
         optionsMenuPairs.add(new MenuItem("RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
                 resolutions,
@@ -414,7 +432,7 @@ public class Intrface {
 
         optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
 
-        List<MenuItem> editorMenuPairs = new ArrayList<>();
+        IList<MenuItem> editorMenuPairs = new GapList<>();
         editorMenuPairs.add(new MenuItem("START NEW LEVEL", Menu.EditType.EditNoValue, null));
         editorMenuPairs.add(new MenuItem("GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
         editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
@@ -453,7 +471,7 @@ public class Intrface {
         };
         editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
-        List<MenuItem> creditsMenuPairs = new ArrayList<>();
+        IList<MenuItem> creditsMenuPairs = new GapList<>();
         creditsMenuPairs.add(new MenuItem("Programmer", Menu.EditType.EditNoValue, null));
         creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
         creditsMenuPairs.add(new MenuItem("Testers", Menu.EditType.EditNoValue, null));
@@ -488,6 +506,55 @@ public class Intrface {
         }
         creditsMenu.iterator.setEnabled(false);
         creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
+        
+        IList<MenuItem> singlPlayerMenuItems = new GapList<>();
+        singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[] {"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+        singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(Vector3fColors.ColorName.names(), MenuValue.Type.STRING, Vector3fColors.ColorName.WHITE.name())));
+        singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[] {"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
+        singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+        singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
+        
+        
+        singlPlayerMenu = new OptionsMenu("SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            @Override
+            protected void leave() {
+                mainMenu.open();
+            }
+
+            @Override
+            protected void execute() {
+                // set player character model & color
+                if (singlPlayerMenu.selected == 4) {
+                    Player player = GameObject.getLevelContainer().levelActors.player;
+                    player.getModel().texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                    player.getModel().setPrimaryColor(Vector3fColors.getColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()));
+                    // set level size & seed
+                    String levelSize = singlPlayerMenu.items.get(2).menuValue.toString().toUpperCase();
+                    switch (levelSize) {
+                        default:
+                        case "SMALL":
+                            numBlocks = 25000;
+                            break;
+                        case "MEDIUM":
+                            numBlocks = 50000;
+                            break;
+                        case "LARGE":
+                            numBlocks = 100000;
+                            break;
+                        case "HUGE":
+                            numBlocks = 131070;
+                            break;                                            
+                    } 
+                    long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
+                    GameObject.getRandomLevelGenerator().setSeed(seedValue);
+                    singlePlayerDialog.open();
+                }
+                
+            }
+            
+        };
+        singlPlayerMenu.items.getLast().keyText.color = Vector3fColors.CYAN;
+        singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
         DSLogger.reportDebug("Interface initialized.", null);
     }
 
@@ -579,7 +646,8 @@ public class Intrface {
         creditsMenu.render(ifcShaderProgram);
         randLvlMenu.render(ifcShaderProgram);
         loadLvlMenu.render(ifcShaderProgram);
-
+        singlPlayerMenu.render(ifcShaderProgram);
+        
         if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
                 && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
             if (!crosshair.isBuffered()) {
@@ -599,6 +667,7 @@ public class Intrface {
         editorMenu.update();
         randLvlMenu.update();
         loadLvlMenu.update();
+        singlPlayerMenu.update();
     }
 
     /**
@@ -611,7 +680,8 @@ public class Intrface {
 
         randLvlMenu.cleanUp();
         loadLvlMenu.cleanUp();
-
+        singlPlayerMenu.cleanUp();
+        
         creditsMenu.cleanUp();
 
         saveDialog.cleanUp();

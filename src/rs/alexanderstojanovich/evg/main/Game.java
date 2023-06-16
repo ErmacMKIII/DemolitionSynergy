@@ -392,34 +392,14 @@ public class Game {
     }
 
     private void cycleCrosshairColor() {
-        switch (crosshairColorNum) {
-            case 0:
-                setCrosshairColor(Vector3fColors.RED); // RED                
-                break;
-            case 1:
-                setCrosshairColor(Vector3fColors.GREEN); // GREEN
-                break;
-            case 2:
-                setCrosshairColor(Vector3fColors.BLUE); // BLUE
-                break;
-            case 3:
-                setCrosshairColor(Vector3fColors.CYAN); // CYAN
-                break;
-            case 4:
-                setCrosshairColor(Vector3fColors.MAGENTA); // MAGENTA
-                break;
-            case 5:
-                setCrosshairColor(Vector3fColors.YELLOW); // YELLOW
-                break;
-            case 6:
-                setCrosshairColor(Vector3fColors.WHITE); // WHITE
-                break;
-        }
-        if (crosshairColorNum < 6) {
+        setCrosshairColor(Vector3fColors.NAME_TO_COLOR.get(Vector3fColors.ColorName.values()[crosshairColorNum]));
+            
+        if (crosshairColorNum < Vector3fColors.ColorName.values().length) {
             crosshairColorNum++;
         } else {
             crosshairColorNum = 0;
         }
+        
     }
 
     /**

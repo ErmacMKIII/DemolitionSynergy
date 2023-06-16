@@ -39,7 +39,7 @@ public class ModelCritter implements Critter {
 
     protected boolean givenControl = false;
 
-    protected final Model model;
+    public final Model model;
 
     public ModelCritter(Model critterModel) {
         this.model = critterModel;

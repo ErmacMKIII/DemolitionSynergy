@@ -367,6 +367,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return ok;
     }
 
+    // Called from concurrent thread
+    public static boolean generateSinglePlayerLevel(int numberOfBlocks) {
+        boolean ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        return ok;
+    }
+    
+    // TODO: Not implemented..
+    public static boolean generateMultiPlayerLevel(int numberOfBlocks) {
+        return false;
+    }
+    
     // Checked from main and Renderer
     public static boolean isWorking() {
         return levelContainer.isWorking();

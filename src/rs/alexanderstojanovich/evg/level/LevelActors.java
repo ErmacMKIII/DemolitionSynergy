@@ -35,9 +35,9 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class LevelActors {
 
-    protected final Observer observer = new Observer(new Vector3f());
-    protected final Player player = new Player(observer.getCamera(), null, ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true));
-    protected final LightSource playerLight = new LightSource(observer.getCamera().getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+    public final Observer observer = new Observer(new Vector3f());
+    public final Player player = new Player(observer.getCamera(), null, ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true));
+    public final LightSource playerLight = new LightSource(observer.getCamera().getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
 
     protected final List<NPC> npcList = new GapList<>();
 

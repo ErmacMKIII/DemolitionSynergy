@@ -39,7 +39,7 @@ public class Model implements Comparable<Model> {
 
     protected String modelFileName;
 
-    protected String texName;
+    public String texName;
     protected Texture waterTexture;
 
     protected float width; // X axis dimension
@@ -668,6 +668,10 @@ public class Model implements Comparable<Model> {
     }
 
     public void setTexName(String texName) {
+        this.texName = texName;
+    }
+    
+    public void setTexNameWithDeepCopy(String texName) {
         this.texName = texName;
         // copy uvs from atlas
         Block.deepCopyTo(this.meshes.getFirst(), texName);

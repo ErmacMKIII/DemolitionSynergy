@@ -22,6 +22,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.magicwerk.brownies.collections.IList;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditNoValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditSingleValue;
@@ -46,12 +47,12 @@ public abstract class OptionsMenu extends Menu {
 
     protected GLFWCharCallback glfwCharCallback;
 
-    public OptionsMenu(String title, List<MenuItem> items, String textureFileName) {
+    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName) {
         super(title, items, textureFileName);
         additionalInit();
     }
 
-    public OptionsMenu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
+    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         super(title, items, textureFileName, pos, scale);
         additionalInit();
     }
