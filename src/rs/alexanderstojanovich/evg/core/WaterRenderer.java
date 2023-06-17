@@ -42,12 +42,7 @@ public class WaterRenderer {
 
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
     public WaterRenderer(LevelContainer levelContainer) {
-        this.camera = new Camera() {
-            @Override
-            public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-
-            }
-        };
+        this.camera = new Camera();
         this.levelContainer = levelContainer;
 //        this.debugQuad.setScale(0.25f);
     }

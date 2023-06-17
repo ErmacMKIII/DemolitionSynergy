@@ -30,10 +30,10 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public abstract class Camera implements Observer { // is 3D looking camera
+public class Camera implements Observer { // is 3D looking camera
 
-    protected Vector3f pos; // is camera position in space; it's uniform
-    protected final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
+    public Vector3f pos; // is camera position in space; it's uniform
+    public final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
 
     public static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -152,6 +152,28 @@ public abstract class Camera implements Observer { // is 3D looking camera
     }
 
     /**
+     * Move camera up (towards positive Y-axis)
+     *
+     * @param amount to move up.
+     */
+    @Override
+    public void ascend(float amount) {
+        Vector3f temp = new Vector3f();
+        pos = pos.add(up.mul(amount, temp), temp);
+    }
+
+    /**
+     * Move camera down (towards negative Y-axis)
+     *
+     * @param amount to move down.
+     */
+    @Override
+    public void descend(float amount) {
+        Vector3f temp = new Vector3f();
+        pos = pos.sub(up.mul(amount, temp), temp);
+    }
+
+    /**
      * Turn left specified by angle from the game.
      *
      * @param angle angle to turn left (in radians)
@@ -233,6 +255,7 @@ public abstract class Camera implements Observer { // is 3D looking camera
      *
      * @param shaderPrograms multiple shader programs (array)
      */
+    @Override
     public void render(ShaderProgram[] shaderPrograms) {
         calcViewMatrix();
         for (ShaderProgram shaderProgram : shaderPrograms) {

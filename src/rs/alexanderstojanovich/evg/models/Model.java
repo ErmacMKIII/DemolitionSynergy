@@ -35,7 +35,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Model implements Comparable<Model> {
+public class Model implements Renderable, Comparable<Model> {
 
     protected String modelFileName;
 
@@ -104,6 +104,7 @@ public class Model implements Comparable<Model> {
      * BLOCKS etc}
      * @param shaderProgram shaderProgram for the models
      */
+    @Override
     public void render(LightSources lightSources, ShaderProgram shaderProgram) {
         if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
             return; // this is very critical!!
@@ -163,6 +164,7 @@ public class Model implements Comparable<Model> {
      * BLOCKS etc}
      * @param shaderProgram shaderProgram for the models
      */
+    @Override
     public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
         if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
             return; // this is very critical!!

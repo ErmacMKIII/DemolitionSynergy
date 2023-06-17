@@ -63,4 +63,11 @@ public interface Predictable {
      * @return VEC3 Prediction vector
      */
     public Vector3f getPredictor();
+
+    /**
+     * Set collision prediction vector (predictor)
+     *
+     * @param pos new predictor vector
+     */
+    public void setPredictor(Vector3f pos);
 }

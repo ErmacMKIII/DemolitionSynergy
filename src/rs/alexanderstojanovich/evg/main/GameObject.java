@@ -154,7 +154,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             synchronized (MUTEX) {
                 levelContainer.update(deltaTime);
             }
-            Vector3f pos = levelContainer.levelActors.mainActor().getPos();
+            Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
@@ -246,9 +246,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 PerspectiveRenderer.bufferAndRender(); // it sets perspective matrix accross shaders       
             }
 
-            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                Camera mainCamera = levelContainer.getLevelActors().mainCamera();
-                mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor                
                 synchronized (MUTEX) {
                     levelContainer.render();
                     if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {

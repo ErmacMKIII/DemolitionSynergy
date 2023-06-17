@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.joml.Random;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -37,6 +38,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -256,7 +258,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        levelActors.configureMainActor(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
+        levelActors.configureMainObserver(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
 //        NPC npc = new NPC(levelActors.player.getModel());
 //        npc.getModel().setPos(new Vector3f(0f, 20f, 0f));
@@ -276,7 +278,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         levelActors.freeze();
 
-        levelActors.configureMainActor(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
+        levelActors.configureMainObserver(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
         boolean success = false;
         progress = 0.0f;
@@ -335,8 +337,6 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
 
-//        solidChunks.updateSolids(this);
-//        fluidChunks.updateFluids(this);
         progress = 100.0f;
         working = false;
 
@@ -485,7 +485,7 @@ public class LevelContainer implements GravityEnviroment {
             Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
             pos += rightArr.length;
 
-            levelActors.configureMainActor(campos, camfront, camup, camright);
+            levelActors.configureMainObserver(campos, camfront, camup, camright);
 
             char[] solid = new char[5];
             for (int i = 0; i < solid.length; i++) {

@@ -18,60 +18,14 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
- * Capabilities moving & observing. Can move in 3D space and observe.
+ * Capabilities observing. Can move in 3D space and observe.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public interface Observer {
-
-    /**
-     * Move camera forward (towards positive Z-axis).
-     *
-     * @param amount amount added forward
-     */
-    public void moveForward(float amount);
-
-    /**
-     * Move camera backward (towards negative Z-axis).
-     *
-     * @param amount amount subtracted backward
-     */
-    public void moveBackward(float amount);
-
-    /**
-     * Move camera left (towards negative X-axis).
-     *
-     * @param amount to move left.
-     */
-    public void moveLeft(float amount);
-
-    /**
-     * Move camera left (towards positive X-axis).
-     *
-     * @param amount to move right.
-     */
-    public void moveRight(float amount);
-
-    //--------------------------------------------------------------------------
-    /**
-     * Turn this critter left side for given angle. To turn critter has to have
-     * give control (set to true).
-     *
-     * @param angle radian angle to turn critter to the left.
-     */
-    public void turnLeft(float angle);
-
-    /**
-     * Turn this critter right side for given angle. To turn critter has to have
-     * give control (set to true).
-     *
-     * @param angle radian angle to turn critter to the right.
-     */
-    public void turnRight(float angle);
+public interface Observer extends Moveable {
 
     /**
      * Look for xoffset, yoffset using Euler angles.Requires given control (set
@@ -93,12 +47,18 @@ public interface Observer {
     public void lookAtAngle(float yaw, float pitch);
 
     /**
-     * Render this critter. To render needs to be buffered.
+     * Render this critter.
      *
-     * @param lightSrc list of light sources
      * @param shaderProgram shader program used for rendering
      */
-    public void render(LightSources lightSrc, ShaderProgram shaderProgram);
+    public void render(ShaderProgram shaderProgram);
+
+    /**
+     * Render across multiple shaders
+     *
+     * @param shaderPrograms multiple shader programs (array)
+     */
+    public void render(ShaderProgram[] shaderPrograms);
 
     //--------------------------------------------------------------------------    
     /**

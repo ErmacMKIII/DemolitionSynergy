@@ -25,7 +25,10 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
@@ -233,7 +236,7 @@ public class Intrface {
                 boolean ok = false;
                 if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
-                    ok = GameObject.generateRandomLevel(numBlocks);
+                    ok |= GameObject.generateRandomLevel(numBlocks);
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
                     }
@@ -295,19 +298,26 @@ public class Intrface {
                 if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
                     ok |= GameObject.generateSinglePlayerLevel(numBlocks);
-                    if (ok) {
+                    Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                    if (ok) {                        
                         LevelContainer levelContainer = GameObject.getLevelContainer();
                         Player player = levelContainer.levelActors.player;
                         Random random = GameObject.getRandomLevelGenerator().getRandom();
-                        int chunkId = Chunk.GRID_SIZE + random.nextInt(Chunk.GRID_SIZE) << random.nextInt(2);
-                        Vector3f invChunkFunc = Chunk.invChunkFunc(chunkId);
-                        player.setPos(new Vector3f(invChunkFunc.x, Chunk.BOUND, invChunkFunc.z));
-                        while (!levelContainer.hasCollisionWithEnvironment(player)) {
-                            player.getPos().y -= 1.0f;
-                        }
-                        Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                        // choosing random player location
+                        Vector3f populatedLocation = new Vector3f(Float.NaN);
+                        do {
+                            int chunkId = Chunk.GRID_SIZE + random.nextInt(Chunk.GRID_SIZE) << random.nextInt(2);
+                            IList<Vector3f> populatedLocations = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(chunkId, loc -> loc.isSolid());
+                            if (!populatedLocations.isEmpty()) {
+                                populatedLocation = populatedLocations.get(random.nextInt(populatedLocations.size()));
+                            }
+                        } while (!LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(populatedLocation, true));
+                        
+                        Vector3f playerLocation = new Vector3f(populatedLocation.x, populatedLocation.y + player.body.getHeight() + 2.1f, populatedLocation.z);
+                        player.setPos(playerLocation);                        
                     }
                 }
+
                 return ok;
             }
         };

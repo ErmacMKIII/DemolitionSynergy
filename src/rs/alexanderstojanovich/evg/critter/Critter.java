@@ -17,32 +17,37 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.core.Camera;
-import static rs.alexanderstojanovich.evg.core.Camera.X_AXIS;
-import static rs.alexanderstojanovich.evg.core.Camera.Y_AXIS;
-import static rs.alexanderstojanovich.evg.core.Camera.Z_AXIS;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
- * Critter is interface of living things. Has generic observation. Is collision
- * predicatable.
+ * Critter is class of living things. Has capabilities moving. Is collision
+ * predictable. However no observation. Renders with body in some shader.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public abstract class Critter implements Predictable, Observer {
+public class Critter implements Predictable, Moveable, Renderable {
 
     public final Model body;
-    protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
+    protected Vector3f predictor = new Vector3f(Float.NaN);
 
     // three vectors determining exact camera position aka camera vectors
-    protected Vector3f front = Z_AXIS;
-    protected Vector3f up = Y_AXIS;
-    protected Vector3f right = X_AXIS;
+    protected Vector3f front = new Vector3f(Float.NaN);
+    protected Vector3f up = new Vector3f(Float.NaN);
+    protected Vector3f right = new Vector3f(Float.NaN);
 
+    /**
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
+     *
+     * @param body
+     */
     public Critter(Model body) {
         this.body = body;
+        this.body.pos = new Vector3f(Float.NaN);
+        this.predictor = new Vector3f(body.pos); // separate predictor from the body
     }
 
     @Override
@@ -80,22 +85,38 @@ public abstract class Critter implements Predictable, Observer {
 
     @Override
     public void moveForward(float amount) {
-        predictor = body.pos.add(front.mul(amount));
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.add(front.mul(amount, temp));
     }
 
     @Override
     public void moveBackward(float amount) {
-        predictor = body.pos.sub(front.mul(amount));
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.sub(front.mul(amount, temp));
     }
 
     @Override
     public void moveLeft(float amount) {
-        predictor = body.pos.sub(right.mul(amount));
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.sub(right.mul(amount, temp));
     }
 
     @Override
     public void moveRight(float amount) {
-        predictor = body.pos.add(right.mul(amount));
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.add(right.mul(amount, temp));
+    }
+
+    @Override
+    public void ascend(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.add(up.mul(amount, temp));
+    }
+
+    @Override
+    public void descend(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.sub(up.mul(amount, temp));
     }
 
     @Override
@@ -114,11 +135,10 @@ public abstract class Critter implements Predictable, Observer {
     }
 
     @Override
-    public Camera getCamera() {
-        return null;
+    public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        body.renderContour(lightSources, shaderProgram);
     }
 
-    @Override
     public Vector3f getPos() {
         return body.pos;
     }
@@ -126,4 +146,14 @@ public abstract class Critter implements Predictable, Observer {
     public void setPos(Vector3f pos) {
         predictor = body.pos = new Vector3f(pos);
     }
+
+    @Override
+    public void setPredictor(Vector3f predictor) {
+        this.predictor = predictor;
+    }
+
+    public Model getBody() {
+        return body;
+    }
+
 }

@@ -30,17 +30,11 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Player extends Critter {
+public class Player extends Critter implements Observer {
 
 //    private Model currWeapon;
-    private final Camera camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right) {
-        @Override
-        public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-            super.render(shaderProgram);
-            body.render(lightSrc, shaderProgram);
-        }
-    };
-    public final LightSource light = new LightSource(getCamera().getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+    private final Camera camera;
+    public final LightSource light;
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
@@ -62,14 +56,16 @@ public class Player extends Critter {
 //    }
     public Player(Model body) {
         super(body);
+        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right);
+        this.light = new LightSource(this.camera.getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {
 //        currWeapon = WEAPONS[num - 1];
 //    }
     @Override
-    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-        camera.render(lightSrc, shaderProgram);
+    public void render(ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
     }
 
     @Override
@@ -84,31 +80,76 @@ public class Player extends Critter {
 
     @Override
     public void moveForward(float amount) {
-        light.pos = predictor = body.pos.add(front.mul(amount));
+        super.moveForward(amount);
+        camera.moveForward(amount);
+        light.pos = body.pos;
     }
 
     @Override
     public void moveBackward(float amount) {
-        light.pos = predictor = body.pos.sub(front.mul(amount));
+        super.moveBackward(amount);
+        camera.moveBackward(amount);
+        light.pos = body.pos;
     }
 
     @Override
     public void moveLeft(float amount) {
-        light.pos = predictor = body.pos.sub(right.mul(amount));
+        super.moveLeft(amount);
+        camera.moveLeft(amount);
+        light.pos = body.pos;
     }
 
     @Override
     public void moveRight(float amount) {
-        light.pos = predictor = body.pos.add(right.mul(amount));
+        super.moveRight(amount);
+        camera.moveRight(amount);
+        light.pos = body.pos;
     }
 
+    @Override
+    public void descend(float amount) {
+        super.descend(amount);
+        camera.descend(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void ascend(float amount) {
+        super.ascend(amount);
+        camera.ascend(amount);
+        light.pos = body.pos;
+    }
+    
     @Override
     public Camera getCamera() {
         return camera;
     }
 
+    @Override
+    public void setPos(Vector3f pos) {
+        super.setPos(pos);
+        camera.pos = pos;
+    }   
+    
     public LightSource getLight() {
         return light;
+    }
+
+    @Override
+    public void render(ShaderProgram[] shaderPrograms) {
+        camera.render(shaderPrograms);
+    }
+
+    @Override
+    public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
+        super.renderContour(lightSources, shaderProgram);
+    }
+
+    @Override
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
+        super.render(lightSrc, shaderProgram);
     }
 
 }

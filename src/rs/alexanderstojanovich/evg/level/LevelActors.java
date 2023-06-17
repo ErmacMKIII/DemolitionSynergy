@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -24,23 +23,20 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
+ * Define all the level observers & critters. Present in the level container.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LevelActors {
 
-    public final Camera spectator = new Camera() {
-        @Override
-        public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-
-        }
-    };
+    public Camera spectator = new Camera(); // spectator is separate camera from player instance
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
 
@@ -66,11 +62,11 @@ public class LevelActors {
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }
-
-        mainActor().render(lightSrc, mainActorShader);
+        mainObserver().render(ShaderProgram.SHADER_PROGRAMS);
+        player.render(lightSrc, mainActorShader);
     }
 
-    public Observer mainActor() {
+    public Observer mainObserver() {
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
                 || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
             return player;
@@ -81,15 +77,15 @@ public class LevelActors {
         return null;
     }
 
-    public void configureMainActor(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
-        mainActor().setPos(pos);
-        mainActor().getCamera().setFront(front);
-        mainActor().getCamera().setUp(up);
-        mainActor().getCamera().setRight(right);
+    public void configureMainObserver(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
+        mainObserver().setPos(pos);
+        mainObserver().getCamera().setFront(front);
+        mainObserver().getCamera().setUp(up);
+        mainObserver().getCamera().setRight(right);
     }
 
     public Camera mainCamera() {
-        Observer mainActor = mainActor();
+        Observer mainActor = mainObserver();
         return mainActor.getCamera();
     }
 
