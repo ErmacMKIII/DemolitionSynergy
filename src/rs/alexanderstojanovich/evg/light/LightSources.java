@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.level;
+package rs.alexanderstojanovich.evg.light;
 
 import java.util.Arrays;
 import org.magicwerk.brownies.collections.GapList;
@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class LightSources {
 
     public static final int MAX_LIGHTS = 256;
-    protected final IList<LightSource> lightSrcList = new GapList<>(MAX_LIGHTS);
+    public final IList<LightSource> lightSrcList = new GapList<>(MAX_LIGHTS);
 
     public final boolean[] modified = new boolean[MAX_LIGHTS];
 

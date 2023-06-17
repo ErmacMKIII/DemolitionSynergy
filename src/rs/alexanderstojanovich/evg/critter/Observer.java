@@ -18,149 +18,107 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
+ * Capabilities moving & observing. Can move in 3D space and observe.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Observer implements Critter {
+public interface Observer {
 
-    protected final Camera camera;
-    protected boolean givenControl = false;
-    protected Vector3f predictor = new Vector3f(Float.NaN, Float.NaN, Float.NaN);
+    /**
+     * Move camera forward (towards positive Z-axis).
+     *
+     * @param amount amount added forward
+     */
+    public void moveForward(float amount);
 
-    public Observer(Vector3f pos) {
-        this.camera = new Camera(pos);
-    }
+    /**
+     * Move camera backward (towards negative Z-axis).
+     *
+     * @param amount amount subtracted backward
+     */
+    public void moveBackward(float amount);
 
-    @Override
-    public void moveForward(float amount) {
-        if (givenControl) {
-            camera.moveForward(amount);
-        }
-    }
+    /**
+     * Move camera left (towards negative X-axis).
+     *
+     * @param amount to move left.
+     */
+    public void moveLeft(float amount);
 
-    @Override
-    public void moveBackward(float amount) {
-        if (givenControl) {
-            camera.moveBackward(amount);
-        }
-    }
-
-    @Override
-    public void moveLeft(float amount) {
-        if (givenControl) {
-            camera.moveLeft(amount);
-        }
-    }
-
-    @Override
-    public void moveRight(float amount) {
-        if (givenControl) {
-            camera.moveRight(amount);
-        }
-    }
+    /**
+     * Move camera left (towards positive X-axis).
+     *
+     * @param amount to move right.
+     */
+    public void moveRight(float amount);
 
     //--------------------------------------------------------------------------
-    @Override
-    public void movePredictorForward(float amount) {
-        Vector3f temp1 = new Vector3f();
-        predictor = camera.getPos().add(camera.getFront().mul(amount, temp1), temp1);
-    }
+    /**
+     * Turn this critter left side for given angle. To turn critter has to have
+     * give control (set to true).
+     *
+     * @param angle radian angle to turn critter to the left.
+     */
+    public void turnLeft(float angle);
 
-    @Override
-    public void movePredictorBackward(float amount) {
-        Vector3f temp1 = new Vector3f();
-        predictor = camera.getPos().sub(camera.getFront().mul(amount, temp1), temp1);
-    }
+    /**
+     * Turn this critter right side for given angle. To turn critter has to have
+     * give control (set to true).
+     *
+     * @param angle radian angle to turn critter to the right.
+     */
+    public void turnRight(float angle);
 
-    @Override
-    public void movePredictorLeft(float amount) {
-        Vector3f temp1 = new Vector3f();
-        predictor = camera.getPos().sub(camera.getRight().mul(amount, temp1), temp1);
-    }
+    /**
+     * Look for xoffset, yoffset using Euler angles.Requires given control (set
+     * to true)
+     *
+     * @param sensitivity mouse sensitivity - multiplier
+     * @param xoffset X-axis offset
+     * @param yoffset Y-axis offset
+     */
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset);
 
-    @Override
-    public void movePredictorRight(float amount) {
-        Vector3f temp1 = new Vector3f();
-        predictor = camera.getPos().add(camera.getRight().mul(amount, temp1), temp1);
-    }
+    /**
+     * Look at exactly yaw & pitch angle using Euler angles.Requires given
+     * control (set to true)
+     *
+     * @param yaw sideways angle
+     * @param pitch up & down angle
+     */
+    public void lookAtAngle(float yaw, float pitch);
 
-    //--------------------------------------------------------------------------
-    @Override
-    public void turnLeft(float angle) {
-        if (givenControl) {
-            camera.turnLeft(angle);
-        }
-    }
+    /**
+     * Render this critter. To render needs to be buffered.
+     *
+     * @param lightSrc list of light sources
+     * @param shaderProgram shader program used for rendering
+     */
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram);
 
-    @Override
-    public void turnRight(float angle) {
-        if (givenControl) {
-            camera.turnRight(angle);
-        }
-    }
+    //--------------------------------------------------------------------------    
+    /**
+     * Get Camera using to observe
+     *
+     * @return camera using to observer
+     */
+    public Camera getCamera();
 
-    @Override
-    public void lookAtAngle(float yaw, float pitch) {
-        if (givenControl) {
-            camera.lookAt(yaw, pitch);
-        }
-    }
+    /**
+     * Observer VEC3 position
+     *
+     * @return observer position
+     */
+    public Vector3f getPos();
 
-    @Override
-    public void lookAtOffset(float mouseSensitivity, float xoffset, float yoffset) {
-        if (givenControl) {
-            camera.lookAt(mouseSensitivity, xoffset, yoffset);
-        }
-    }
-
-    @Override
-    public boolean isBuffered() {
-        return true;
-    }
-
-    @Override
-    public void bufferAll() {
-
-    }
-
-    @Override
-    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-        if (givenControl) {
-            camera.render(shaderProgram);
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "Observer{" + "camera=" + camera + ", givenControl=" + givenControl + ", predictor=" + predictor + '}';
-    }
-
-    @Override
-    public boolean isGivenControl() {
-        return givenControl;
-    }
-
-    @Override
-    public void setGivenControl(boolean givenControl) {
-        this.givenControl = givenControl;
-    }
-
-    @Override
-    public Vector3f getPredictor() {
-        return predictor;
-    }
-
-    public Camera getCamera() {
-        return camera;
-    }
-
-    @Override
-    public Vector3f getPosition() {
-        return camera.getPos();
-    }
-
+    /**
+     * Set observer VEC3 position
+     *
+     * @param pos new obsserver position
+     */
+    public void setPos(Vector3f pos);
 }

@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import java.util.Arrays;
 import java.util.List;
 import org.joml.Intersectionf;

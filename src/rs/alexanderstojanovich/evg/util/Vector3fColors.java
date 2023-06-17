@@ -28,14 +28,14 @@ import org.joml.Vector3f;
 public class Vector3fColors { // some of the defined colors
 
     public static enum ColorName {
-        WHITE, RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, GRAY, 
+        WHITE, RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, GRAY,
         DARK_RED, DARK_GREEN, DARK_BLUE, DARK_CYAN, DARK_MAGENTA, DARK_YELLOW;
-        
+
         public static String[] names() {
-            return Arrays.toString(ColorName.values()).replaceAll("^.|.$", "").split(", "); 
-        }   
+            return Arrays.toString(ColorName.values()).replaceAll("^.|.$", "").split(", ");
+        }
     }
-    
+
     public static final Vector3f BLACK = new Vector3f();
     public static final Vector3f WHITE = new Vector3f(1.0f, 1.0f, 1.0f);
 
@@ -79,13 +79,13 @@ public class Vector3fColors { // some of the defined colors
 
         NAME_TO_COLOR.put(ColorName.DARK_CYAN, DARK_CYAN);
         NAME_TO_COLOR.put(ColorName.DARK_MAGENTA, DARK_MAGENTA);
-        NAME_TO_COLOR.put(ColorName.DARK_YELLOW, DARK_YELLOW);        
+        NAME_TO_COLOR.put(ColorName.DARK_YELLOW, DARK_YELLOW);
     }
-    
+
     public static final Vector3f getColorOrDefault(String colorName) {
         return NAME_TO_COLOR.getOrDefault(ColorName.valueOf(colorName), WHITE);
     }
-    
+
     public static final Vector3f getColorOrDefault(ColorName colorName) {
         return NAME_TO_COLOR.getOrDefault(colorName, WHITE);
     }

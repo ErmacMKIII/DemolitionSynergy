@@ -19,13 +19,24 @@ package rs.alexanderstojanovich.evg.critter;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
+ * Is non-player capabilities. Doesn't have camera.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class NPC extends ModelCritter {
+public class NPC extends Critter {
 
-    public NPC(Model model) {
-        super(model);
+    public NPC(Model body) {
+        super(body);
+    }
+
+    @Override
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public void lookAtAngle(float yaw, float pitch) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

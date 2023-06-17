@@ -18,17 +18,19 @@ package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
- * Represents 3D, first person looking camera. Yaw (sideways rotation) and Pitch
- * (looking up and down) is available. Uses Euler angles instead of Quaternions.
+ * Represents 3D, first person abstract looking camera. Yaw (sideways rotation)
+ * and Pitch (looking up and down) is available. Uses Euler angles instead of
+ * Quaternions.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Camera { // is 3D looking camera
+public abstract class Camera implements Observer { // is 3D looking camera
 
     protected Vector3f pos; // is camera position in space; it's uniform
     protected final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
@@ -42,8 +44,8 @@ public class Camera { // is 3D looking camera
     protected Vector3f up = Y_AXIS;
     protected Vector3f right = X_AXIS;
 
-    private float yaw = (float) (-Math.PI / 2.0); // sideways look angle
-    private float pitch = (float) (-Math.PI); // up and down look angle
+    private float yaw = (float) (-org.joml.Math.PI / 2.0); // sideways look angle
+    private float pitch = (float) (-org.joml.Math.PI); // up and down look angle
 
     public Camera() {
         this.pos = new Vector3f();
@@ -106,6 +108,7 @@ public class Camera { // is 3D looking camera
      *
      * @param amount amount added forward
      */
+    @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.add(front.mul(amount, temp), temp);
@@ -117,6 +120,7 @@ public class Camera { // is 3D looking camera
      *
      * @param amount amount subtracted backward
      */
+    @Override
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.sub(front.mul(amount, temp), temp);
@@ -128,6 +132,7 @@ public class Camera { // is 3D looking camera
      *
      * @param amount to move left.
      */
+    @Override
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.sub(right.mul(amount, temp), temp);
@@ -139,6 +144,7 @@ public class Camera { // is 3D looking camera
      *
      * @param amount to move right.
      */
+    @Override
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.add(right.mul(amount, temp), temp);
@@ -150,8 +156,9 @@ public class Camera { // is 3D looking camera
      *
      * @param angle angle to turn left (in radians)
      */
+    @Override
     public void turnLeft(float angle) {
-        lookAt((float) (yaw - angle), pitch);
+        lookAtAngle((float) (yaw - angle), pitch);
     }
 
     /**
@@ -159,8 +166,9 @@ public class Camera { // is 3D looking camera
      *
      * @param angle angle to turn right (in radians)
      */
+    @Override
     public void turnRight(float angle) {
-        lookAt((float) (yaw + angle), pitch);
+        lookAtAngle((float) (yaw + angle), pitch);
     }
 
     /**
@@ -170,22 +178,23 @@ public class Camera { // is 3D looking camera
      * @param xoffset offset on X-axis
      * @param yoffset offset on Y-axis
      */
-    public void lookAt(float sensitivity, float xoffset, float yoffset) {
+    @Override
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         yaw += sensitivity * xoffset;
-        while (yaw >= 2.0 * Math.PI) {
-            yaw -= 2.0 * Math.PI;
+        while (yaw >= 2.0 * org.joml.Math.PI) {
+            yaw -= 2.0 * org.joml.Math.PI;
         }
         pitch += sensitivity * yoffset;
-        if (pitch > Math.PI / 2.1) {
-            pitch = (float) (Math.PI / 2.1);
+        if (pitch > org.joml.Math.PI / 2.1) {
+            pitch = (float) (org.joml.Math.PI / 2.1);
         }
-        if (pitch < -Math.PI / 2.1) {
-            pitch = (float) (-Math.PI / 2.1);
+        if (pitch < -org.joml.Math.PI / 2.1) {
+            pitch = (float) (-org.joml.Math.PI / 2.1);
         }
 
-        front.x = (float) (Math.cos(yaw) * Math.cos(pitch));
-        front.y = (float) Math.sin(pitch);
-        front.z = (float) (-Math.sin(yaw) * Math.cos(pitch));
+        front.x = (float) (org.joml.Math.cos(yaw) * org.joml.Math.cos(pitch));
+        front.y = (float) org.joml.Math.sin(pitch);
+        front.z = (float) (-org.joml.Math.sin(yaw) * org.joml.Math.cos(pitch));
         calcViewMatrix();
     }
 
@@ -195,12 +204,13 @@ public class Camera { // is 3D looking camera
      * @param yaw sideways angle
      * @param pitch up & down angle
      */
-    public void lookAt(float yaw, float pitch) {
+    @Override
+    public void lookAtAngle(float yaw, float pitch) {
         this.yaw = yaw;
         this.pitch = pitch;
-        front.x = (float) (Math.cos(this.yaw) * Math.cos(this.pitch));
-        front.y = (float) Math.sin(this.pitch);
-        front.z = (float) (-Math.sin(this.yaw) * Math.cos(this.pitch));
+        front.x = (float) (org.joml.Math.cos(this.yaw) * org.joml.Math.cos(this.pitch));
+        front.y = (float) org.joml.Math.sin(this.pitch);
+        front.z = (float) (-org.joml.Math.sin(this.yaw) * org.joml.Math.cos(this.pitch));
         calcViewMatrix();
     }
 
@@ -263,10 +273,12 @@ public class Camera { // is 3D looking camera
         return "Camera{" + "pos=" + pos + ", front=" + front + ", up=" + up + ", right=" + right + '}';
     }
 
+    @Override
     public Vector3f getPos() {
         return pos;
     }
 
+    @Override
     public void setPos(Vector3f pos) {
         this.pos = pos;
     }
@@ -313,6 +325,11 @@ public class Camera { // is 3D looking camera
 
     public void setRight(Vector3f right) {
         this.right = right;
+    }
+
+    @Override
+    public Camera getCamera() {
+        return this;
     }
 
 }

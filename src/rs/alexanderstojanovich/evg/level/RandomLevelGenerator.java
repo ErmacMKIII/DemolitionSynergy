@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
@@ -85,8 +86,8 @@ public class RandomLevelGenerator {
 
     private boolean repeatCondition(Vector3f pos) {
         return LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(pos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(pos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(pos)
+                || levelContainer.getLevelActors().getPlayer().body.containsInsideEqually(pos)
+                || levelContainer.getLevelActors().spectator.getPos().equals(pos)
                 || levelContainer.getMyWindow().shouldClose();
     }
 
@@ -572,5 +573,5 @@ public class RandomLevelGenerator {
     public Random getRandom() {
         return random;
     }
-    
+
 }

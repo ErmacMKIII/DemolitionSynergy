@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.Comparator;
 import java.util.List;
 import org.joml.Vector3f;

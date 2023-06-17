@@ -300,7 +300,7 @@ public class Editor {
     public static void cycleBlockColor() {
         if (selectedNew != null) {
             selectedNew.setPrimaryColor(Vector3fColors.NAME_TO_COLOR.get(Vector3fColors.ColorName.values()[blockColorNum]));
-            
+
             if (blockColorNum < Vector3fColors.ColorName.values().length) {
                 blockColorNum++;
             } else {

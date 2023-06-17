@@ -182,8 +182,8 @@ public class BlockLocation {
      *
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocations() {
-        List<Vector3f> result = new GapList<>();
+    public IList<Vector3f> getPopulatedLocations() {
+        IList<Vector3f> result = new GapList<>();
 
         for (int j = 0; j < Chunk.BOUND; j++) {
             float y = 2.0f * j - Chunk.BOUND;
@@ -202,8 +202,8 @@ public class BlockLocation {
      * @param predicate predicate
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocations(Predicate<TexByte> predicate) {
-        List<Vector3f> result = new GapList<>();
+    public IList<Vector3f> getPopulatedLocations(Predicate<TexByte> predicate) {
+        IList<Vector3f> result = new GapList<>();
 
         for (int j = 0; j < Chunk.BOUND; j++) {
             float y = 2.0f * j - Chunk.BOUND;
@@ -234,8 +234,8 @@ public class BlockLocation {
      * @param predicate predicate
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocations(int chunkId, Predicate<TexByte> predicate) {
-        List<Vector3f> result = new GapList<>();
+    public IList<Vector3f> getPopulatedLocations(int chunkId, Predicate<TexByte> predicate) {
+        IList<Vector3f> result = new GapList<>();
 
         float lYBound = -Chunk.BOUND + 2.0f;
         float rYBound = Chunk.BOUND - 2.0f;
@@ -273,8 +273,8 @@ public class BlockLocation {
      * @param predicate predicate
      * @return List of Vector3f of populated locationMap(s)
      */
-    public List<Vector3f> getPopulatedLocations(IList<Integer> chunkIdList, Predicate<TexByte> predicate) {
-        List<Vector3f> result = new GapList<>();
+    public IList<Vector3f> getPopulatedLocations(IList<Integer> chunkIdList, Predicate<TexByte> predicate) {
+        IList<Vector3f> result = new GapList<>();
         for (int chunkId : chunkIdList) {
             float lYBound = -Chunk.BOUND + 2.0f;
             float rYBound = Chunk.BOUND - 2.0f;
@@ -392,4 +392,5 @@ public class BlockLocation {
         }
         return bits;
     }
+
 }

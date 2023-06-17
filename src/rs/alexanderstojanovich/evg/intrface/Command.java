@@ -415,7 +415,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
-                Vector3f mainActorPos = GameObject.getLevelContainer().levelActors.getMainActor().getPosition();
+                Vector3f mainActorPos = GameObject.getLevelContainer().levelActors.mainActor().getPos();
                 int chunkId;
                 switch (command.mode) {
                     case GET:

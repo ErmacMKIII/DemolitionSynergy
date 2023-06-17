@@ -26,7 +26,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -670,7 +670,7 @@ public class Model implements Comparable<Model> {
     public void setTexName(String texName) {
         this.texName = texName;
     }
-    
+
     public void setTexNameWithDeepCopy(String texName) {
         this.texName = texName;
         // copy uvs from atlas

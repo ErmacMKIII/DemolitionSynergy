@@ -26,7 +26,8 @@ import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
@@ -153,7 +154,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             synchronized (MUTEX) {
                 levelContainer.update(deltaTime);
             }
-            Vector3f pos = levelContainer.levelActors.getMainActor().getPosition();
+            Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
@@ -372,12 +373,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
         return ok;
     }
-    
+
     // TODO: Not implemented..
     public static boolean generateMultiPlayerLevel(int numberOfBlocks) {
         return false;
     }
-    
+
     // Checked from main and Renderer
     public static boolean isWorking() {
         return levelContainer.isWorking();
@@ -392,14 +393,37 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         MY_WINDOW.destroy();
     }
 
-    // collision detection - critter against solid obstacles
-    public static boolean hasCollisionWithCritter(Critter critter) {
-        return levelContainer.hasCollisionWithEnvironment(critter);
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters.
+     *
+     * @param preditable Predictable to have collision with environment
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Predictable preditable) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(preditable);
     }
 
-    // collision detection - critter against solid obstacles
-    public static boolean hasCollisionWithCritter(ModelCritter livingCritter) {
-        return levelContainer.hasCollisionWithEnvironment(livingCritter);
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters. (virtually) => 0.07f dimension
+     *
+     * @param observer Predictable to have collision with environment
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Observer observer) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(observer);
+    }
+
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters.
+     *
+     * @param critter critter (implements predictable). Has (model) body.
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Critter critter) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(critter);
     }
 
     // prints general and detailed information about solid and fluid chunks
