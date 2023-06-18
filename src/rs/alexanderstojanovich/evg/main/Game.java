@@ -119,7 +119,7 @@ public class Game {
     }
 
     /**
-     * Handles input for observer
+     * Handles input for observer Collision detection is being handle in.
      *
      * @param amount movement amount
      *
@@ -141,7 +141,7 @@ public class Game {
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
-            if (causingCollision |= GameObject.hasCollisionWith(obs)) {
+            if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
                 obs.moveBackward(amount);
@@ -151,7 +151,7 @@ public class Game {
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
-            if (causingCollision |= GameObject.hasCollisionWith(obs)) {
+            if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
                 obs.moveLeft(amount);
@@ -161,10 +161,30 @@ public class Game {
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
             Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
-            if (causingCollision |= GameObject.hasCollisionWith(obs)) {
+            if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
                 obs.moveRight(amount);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
+            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+                obs.descend(AMOUNT);
+            } else {
+                obs.ascend(amount);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
+            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+                obs.ascend(AMOUNT);
+            } else {
+                obs.descend(amount);
                 changed = true;
             }
         }
@@ -187,7 +207,8 @@ public class Game {
     }
 
     /**
-     * Handles input for editor (when in editor mode)
+     * Handles input for editor (when in editor mode) Collision detection is
+     * being handle in.
      *
      * @return did editor do something..
      */
@@ -327,6 +348,29 @@ public class Game {
                 changed = true;
             }
         }
+
+        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+            Player player = GameObject.getLevelContainer().getLevelActors().player;
+            player.movePredictorUp(amount);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorDown(amount);
+            } else {
+                player.ascend(amount);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+            Player player = GameObject.getLevelContainer().getLevelActors().player;
+            player.movePredictorDown(amount);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorUp(amount);
+            } else {
+                player.descend(amount);
+                changed = true;
+            }
+        }
+
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             GameObject.getLevelContainer().getLevelActors().player.turnLeft(ANGLE);
             changed = true;

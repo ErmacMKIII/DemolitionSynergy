@@ -786,6 +786,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
+        DSLogger.reportInfo(String.valueOf(coll), null);
         return coll;
     }
 

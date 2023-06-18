@@ -299,7 +299,7 @@ public class Intrface {
                     Editor.deselect();
                     ok |= GameObject.generateSinglePlayerLevel(numBlocks);
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
-                    if (ok) {                        
+                    if (ok) {
                         LevelContainer levelContainer = GameObject.getLevelContainer();
                         Player player = levelContainer.levelActors.player;
                         Random random = GameObject.getRandomLevelGenerator().getRandom();
@@ -312,9 +312,9 @@ public class Intrface {
                                 populatedLocation = populatedLocations.get(random.nextInt(populatedLocations.size()));
                             }
                         } while (!LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(populatedLocation, true));
-                        
+
                         Vector3f playerLocation = new Vector3f(populatedLocation.x, populatedLocation.y + player.body.getHeight() + 2.1f, populatedLocation.z);
-                        player.setPos(playerLocation);                        
+                        player.setPos(playerLocation);
                     }
                 }
 

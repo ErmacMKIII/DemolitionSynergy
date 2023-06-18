@@ -58,6 +58,20 @@ public interface Predictable {
     public void movePredictorRight(float amount);
 
     /**
+     * Move this critter prediction up (ascending, but critter stays)
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorUp(float amount);
+
+    /**
+     * Move this critter prediction up (ascending, but critter stays)
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorDown(float amount);
+
+    /**
      * Get collision prediction vector (predictor)
      *
      * @return VEC3 Prediction vector
@@ -70,4 +84,5 @@ public interface Predictable {
      * @param pos new predictor vector
      */
     public void setPredictor(Vector3f pos);
+
 }

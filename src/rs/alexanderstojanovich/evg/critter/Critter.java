@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
@@ -31,22 +32,21 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class Critter implements Predictable, Moveable, Renderable {
 
     public final Model body;
-    protected Vector3f predictor = new Vector3f(Float.NaN);
+    protected Vector3f predictor;
 
     // three vectors determining exact camera position aka camera vectors
-    protected Vector3f front = new Vector3f(Float.NaN);
-    protected Vector3f up = new Vector3f(Float.NaN);
-    protected Vector3f right = new Vector3f(Float.NaN);
+    protected Vector3f front = new Vector3f(Camera.Z_AXIS);
+    protected Vector3f up = new Vector3f(Camera.Y_AXIS);
+    protected Vector3f right = new Vector3f(Camera.X_AXIS);
 
     /**
      * Create new instance of the critter. If instanced in anonymous class
      * specify the camera
      *
-     * @param body
+     * @param body body model
      */
     public Critter(Model body) {
         this.body = body;
-        this.body.pos = new Vector3f(Float.NaN);
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
     }
 
@@ -79,6 +79,20 @@ public class Critter implements Predictable, Moveable, Renderable {
     }
 
     @Override
+    public void movePredictorUp(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.add(up.mul(amount, temp1), temp2);
+    }
+
+    @Override
+    public void movePredictorDown(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.sub(up.mul(amount, temp1), temp2);
+    }
+
+    @Override
     public Vector3f getPredictor() {
         return predictor;
     }
@@ -86,6 +100,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
+        movePredictorForward(amount);
         predictor = body.pos.add(front.mul(amount, temp));
     }
 
@@ -116,6 +131,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void descend(float amount) {
         Vector3f temp = new Vector3f();
+        movePredictorDown(amount);
         predictor = body.pos.sub(up.mul(amount, temp));
     }
 

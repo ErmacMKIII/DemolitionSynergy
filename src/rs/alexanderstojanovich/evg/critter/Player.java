@@ -119,7 +119,7 @@ public class Player extends Critter implements Observer {
         camera.ascend(amount);
         light.pos = body.pos;
     }
-    
+
     @Override
     public Camera getCamera() {
         return camera;
@@ -129,8 +129,8 @@ public class Player extends Critter implements Observer {
     public void setPos(Vector3f pos) {
         super.setPos(pos);
         camera.pos = pos;
-    }   
-    
+    }
+
     public LightSource getLight() {
         return light;
     }

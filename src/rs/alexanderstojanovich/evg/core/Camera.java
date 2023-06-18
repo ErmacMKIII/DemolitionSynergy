@@ -241,6 +241,7 @@ public class Camera implements Observer { // is 3D looking camera
      *
      * @param shaderProgram single shader program
      */
+    @Override
     public void render(ShaderProgram shaderProgram) {
         calcViewMatrix();
         shaderProgram.bind();
@@ -251,7 +252,7 @@ public class Camera implements Observer { // is 3D looking camera
     }
 
     /**
-     * Render accross multiple shaders
+     * Render across multiple shaders
      *
      * @param shaderPrograms multiple shader programs (array)
      */

@@ -77,6 +77,13 @@ public class LevelActors {
         return null;
     }
 
+    public void configureMainObserver(Vector3f pos) {
+        mainObserver().setPos(pos);
+        mainObserver().getCamera().setFront(Camera.Z_AXIS);
+        mainObserver().getCamera().setUp(Camera.Y_AXIS);
+        mainObserver().getCamera().setRight(Camera.X_AXIS);
+    }
+
     public void configureMainObserver(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
         mainObserver().setPos(pos);
         mainObserver().getCamera().setFront(front);
