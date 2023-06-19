@@ -1,5 +1,5 @@
 # DemolitionSynergy
-Voxel Engine (Incomplete Game) using latest LWJGL.
+Voxel Engine using latest LWJGL.
 Audio material was provided from freesound.org by Erokia.
 
 Verbose Description:
@@ -8,7 +8,7 @@ Features: Lighting, Water Reflections, Voxel based.
 Has it's own Console & ingame commands. 
 Has ambient soundtracks. 
 Random level building & manual level building via Editor.
-Many tweaked optimizations in rendering.
+Many tweaked optimizations in rendering. Instanced rendering.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Doom Underwater")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Small")

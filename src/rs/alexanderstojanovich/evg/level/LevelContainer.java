@@ -16,8 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.light.LightSource;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -28,7 +26,6 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
-import org.joml.Random;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -38,8 +35,9 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
-import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.critter.Predictable;
+import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -191,8 +189,8 @@ public class LevelContainer implements GravityEnviroment {
         this.cacheModule = new CacheModule(this);
 
         LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
         LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
+        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
     }
 
     public static void printPositionMaps() {
@@ -235,9 +233,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.npcList.clear();
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
         CacheModule.deleteCache();
 
@@ -288,9 +284,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
         CacheModule.deleteCache();
 
@@ -325,9 +319,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
         CacheModule.deleteCache();
 
@@ -458,9 +450,7 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.lightSrcList.clear();
-            LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-            LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
+            LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
             CacheModule.deleteCache();
 
@@ -888,6 +878,7 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
@@ -932,6 +923,8 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
+
         LIGHT_SOURCES.resetAllModified();
     }
 
@@ -987,7 +980,9 @@ public class LevelContainer implements GravityEnviroment {
 
         }
 
-        levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getWaterBaseShader());
+        levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
+
         LIGHT_SOURCES.resetAllModified();
     }
 

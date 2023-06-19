@@ -426,14 +426,8 @@ public class Game {
     }
 
     private void cycleCrosshairColor() {
-        setCrosshairColor(Vector3fColors.NAME_TO_COLOR.get(Vector3fColors.ColorName.values()[crosshairColorNum]));
-
-        if (crosshairColorNum < Vector3fColors.ColorName.values().length) {
-            crosshairColorNum++;
-        } else {
-            crosshairColorNum = 0;
-        }
-
+        Vector3fColors.ColorName[] values = Vector3fColors.ColorName.values();
+        setCrosshairColor(Vector3fColors.getColorOrDefault(values[++crosshairColorNum % values.length]));
     }
 
     /**

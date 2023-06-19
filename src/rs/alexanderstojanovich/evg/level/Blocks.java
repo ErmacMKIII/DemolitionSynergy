@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.level;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -257,7 +256,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
 
-            lightSources.updateLightsInShader(shaderProgram);
+            lightSources.updateLightsInShaderIfModified(shaderProgram);
             for (Block block : blockList) {
                 block.transform(shaderProgram);
                 Texture primaryTexture = Texture.getOrDefault(block.getTexName());
@@ -314,7 +313,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
 
-            lightSources.updateLightsInShader(shaderProgram);
+            lightSources.updateLightsInShaderIfModified(shaderProgram);
             for (Block block : blockList) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);

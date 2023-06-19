@@ -493,7 +493,7 @@ public class Tuple extends Blocks {
             shaderProgram.bindAttribute(6, "column2");
             shaderProgram.bindAttribute(7, "column3");
             // -- Lights            
-            lightSources.updateLightsInShader(shaderProgram);
+            lightSources.updateLightsInShaderIfModified(shaderProgram);
             // --
             shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 

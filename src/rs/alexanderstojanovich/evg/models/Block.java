@@ -204,7 +204,7 @@ public class Block extends Model {
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            lightSrc.updateLightsInShader(shaderProgram);
+            lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
@@ -257,7 +257,7 @@ public class Block extends Model {
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            lightSrc.updateLightsInShader(shaderProgram);
+            lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
             for (Block block : blocks) {
                 if (predicate.test(block)) {

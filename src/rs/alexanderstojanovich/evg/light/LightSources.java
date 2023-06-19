@@ -19,7 +19,10 @@ package rs.alexanderstojanovich.evg.light;
 import java.util.Arrays;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -35,14 +38,38 @@ public class LightSources {
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
 
+    public final LightOverlay lightOverlay = new LightOverlay(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), new Texture("loverlay"));
+
     /**
-     * Update lights if modified of any of them is set to true
+     * Update lights unconditionally.
      *
      * @param shaderProgram shader Program where lights are used
      */
     public void updateLightsInShader(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(lightSrcList, MODEL_LIGHT_NAME);
+    }
+
+    /**
+     * Update lights only if modified of any of them is set to true
+     *
+     * @param shaderProgram shader Program where lights are used
+     */
+    public void updateLightsInShaderIfModified(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
         shaderProgram.updateUniform(lightSrcList, modified, MODEL_LIGHT_NAME);
+    }
+
+    /**
+     * Project lights to the screen.Makes feel of light environment.
+     *
+     * @param camera camera (3D)
+     * @param lightSources Light Sources
+     * @param shaderProgram light shader program
+     */
+    public static void render(Camera camera, LightSources lightSources, ShaderProgram shaderProgram) {
+        lightSources.lightOverlay.bufferSmart();
+        lightSources.lightOverlay.render(camera, lightSources, shaderProgram); // has shader bind
     }
 
     public void setAllModified() {

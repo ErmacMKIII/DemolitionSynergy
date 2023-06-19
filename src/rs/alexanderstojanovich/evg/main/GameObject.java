@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -246,7 +247,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 PerspectiveRenderer.bufferAndRender(); // it sets perspective matrix accross shaders       
             }
 
-            if (!levelContainer.isWorking()) { // working check avoids locking the monitor                
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor                                
                 synchronized (MUTEX) {
                     levelContainer.render();
                     if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {

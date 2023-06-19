@@ -127,7 +127,7 @@ public class Model implements Renderable, Comparable<Model> {
                 transform(shaderProgram);
                 setAlpha(shaderProgram);
 
-                lightSources.updateLightsInShader(shaderProgram);
+                lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
                 if (primaryTexture != null) { // this is primary texture
@@ -189,7 +189,7 @@ public class Model implements Renderable, Comparable<Model> {
                 transform(shaderProgram);
                 setAlpha(shaderProgram);
 
-                lightSources.updateLightsInShader(shaderProgram);
+                lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
                 if (primaryTexture != null) { // this is primary texture
@@ -253,7 +253,7 @@ public class Model implements Renderable, Comparable<Model> {
                 model.transform(shaderProgram);
                 model.setAlpha(shaderProgram);
 
-                lightSources.updateLightsInShader(shaderProgram);
+                lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
                     final Mesh mesh = model.meshes.getFirst();
