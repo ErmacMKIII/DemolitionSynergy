@@ -39,6 +39,12 @@ struct LightSource {
 
 const float AMBIENT_LIGHT = 0.15;
 
+const vec3[6] lightDirX = vec3[](
+	vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),
+	vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0),	
+	vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0)
+);
+
 uniform LightSource[256] modelLights;
 uniform int modelLightNumber;
 
@@ -76,7 +82,7 @@ void main() {
     varUV = uv;    
 	
 	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);
-	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos, 1.0)).xyz) * normal);
+	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos + normal, 1.0)).xyz) + normal);
 	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);
 	float light = 0.0;

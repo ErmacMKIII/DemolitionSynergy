@@ -34,6 +34,12 @@ struct LightSource {
 
 const float AMBIENT_LIGHT = 0.15;
 
+const vec3[6] lightDirX = vec3[](
+	vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),
+	vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0),	
+	vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0)
+);
+
 uniform LightSource[256] modelLights;
 uniform int modelLightNumber;
 
@@ -71,20 +77,24 @@ void main() {
     varUV = uv;    
 	
 	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);
-	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos, 1.0)).xyz) * normal);
+	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos + normal, 1.0)).xyz) + normal);
 	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);	
 	float light = 0.0;
 	int i, j;	
 	for (i = 0; i < modelLightNumber; i++) {
+		light = 0.0;
 		LightSource modelLight = modelLights[i]; 	
-		vec3 lightDir = normalize(modelLight.pos - varModelPos.xyz);		    		
-		light += diffuseLight(lightDir, normalX) 			
-				+ specularLight(lightDir, normalX);														
+		vec3 lightDir = normalize(modelLight.pos - varModelPos.xyz);
+		for (j = 0; j < 6; j++) {
+			vec3 lightDirX = normalize(lightDir * lightDirX[j]);
+			light += diffuseLight(lightDirX, varNormal) 			
+						+ specularLight(lightDirX, varNormal);								
+		}
 		light *= modelLight.intensity;
-		light *= attenuation(modelLight.pos, varModelPos);
+		light *= attenuation(modelLight.pos, varModelPos);				
 		lightColor += light * modelLight.color;
-    }
+	}
 	
 	//varLightColor = vec4(lightColor, 1.0);
 	varColor.rgb *= lightColor;

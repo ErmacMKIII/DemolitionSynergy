@@ -36,6 +36,12 @@ struct LightSource {
 
 const float AMBIENT_LIGHT = 0.15;
 
+const vec3[6] lightDirX = vec3[](
+	vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),
+	vec3(0.0, 1.0, 0.0), vec3(0.0, -1.0, 0.0),	
+	vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, -1.0)
+);
+
 uniform LightSource[256] modelLights;
 uniform int modelLightNumber;
 uniform float modelAlpha;
@@ -83,19 +89,22 @@ void main() {
 		
 	float fresnel = dot(normalize(cameraPos), varNormal);
 	varWaterColor = fresnel * vec4(modelColor1, modelAlpha);
-	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);
-	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos, 1.0)).xyz) * normal);
-		
+	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);	
+	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);
 	float light = 0.0;
-	int i, j;		
+	int i, j;	
 	for (i = 0; i < modelLightNumber; i++) {
+		light = 0.0;
 		LightSource modelLight = modelLights[i]; 	
 		vec3 lightDir = normalize(modelLight.pos - varModelPos.xyz);
-		light += diffuseLight(lightDir, normalX);			
-				+ specularLight(lightDir, normalX);
+		for (j = 0; j < 6; j++) {
+			vec3 lightDirX = normalize(lightDir * lightDirX[j]);
+			light += diffuseLight(lightDirX, varNormal) 			
+						+ specularLight(lightDirX, varNormal);								
+		}
 		light *= modelLight.intensity;
-		light *= attenuation(modelLight.pos, varModelPos);		
+		light *= attenuation(modelLight.pos, varModelPos);				
 		lightColor += light * modelLight.color;
 	}
 	
