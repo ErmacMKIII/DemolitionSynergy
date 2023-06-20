@@ -61,7 +61,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
     public static final float SUN_SCALE = 20.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 28);
+    public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);

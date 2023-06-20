@@ -1,4 +1,4 @@
-Download lastest library LWJGL (3.3.2 at this time) from:
+Download latest library LWJGL (3.3.2 at this time) from:
 https://www.lwjgl.org/customize
 
 Put MoveAllFiles.bat inside the directory with downloaded & extracted zip content.
