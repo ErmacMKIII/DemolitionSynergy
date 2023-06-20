@@ -20,7 +20,6 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -28,7 +27,6 @@ import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
 
@@ -57,6 +55,10 @@ public class Window {
     public static final int MIN_HEIGHT = 480;
 
     private static Window instance;
+
+    protected GLFWImage icon;
+    protected GLFWImage.Buffer images;
+    protected GLFWImage glfwArrowImage;
 
     /**
      * Gets one instance of the window (creates the window if not exists).
@@ -107,23 +109,24 @@ public class Window {
             DSLogger.reportFatalError("Failed to create the GLFW window!", null);
             throw new RuntimeException("Failed to create the GLFW window!");
         }
-        // setting the icon
-        GLFWImage icon = GLFWImage.malloc();
-        BufferedImage ds_image1 = Texture.loadImage(Game.INTRFACE_ENTRY, "ds_icon.png");
+        // setting the icon        
+        BufferedImage ds_image1 = ImageUtils.loadImage(Game.INTRFACE_ENTRY, "ds_icon.png");
         ByteBuffer dataBuffer1 = ImageUtils.getImageDataBuffer(ds_image1);
+        icon = GLFWImage.createSafe(MemoryUtil.memAddressSafe(dataBuffer1));
         icon.set(ds_image1.getWidth(), ds_image1.getHeight(), dataBuffer1);
-        GLFWImage.Buffer buffer = GLFWImage.malloc(1);
-        buffer.put(0, icon);
-        GLFW.glfwSetWindowIcon(windowID, buffer);
+        images = GLFWImage.calloc(1);
+        images.put(0, icon);
+        GLFW.glfwSetWindowIcon(windowID, images);
         if (dataBuffer1.capacity() != 0) {
             MemoryUtil.memFree(dataBuffer1);
         }
 
         // setting the cursor (arrow)
-        GLFWImage glfwArrowImage = GLFWImage.malloc();
-        BufferedImage ds_image2 = Texture.loadImage(Game.INTRFACE_ENTRY, "arrow.png");
+        BufferedImage ds_image2 = ImageUtils.loadImage(Game.INTRFACE_ENTRY, "arrow.png");
         ByteBuffer dataBuffer2 = ImageUtils.getImageDataBuffer(ds_image2);
+        glfwArrowImage = GLFWImage.createSafe(MemoryUtil.memAddressSafe(dataBuffer2));
         glfwArrowImage.set(ds_image2.getWidth(), ds_image2.getHeight(), dataBuffer2);
+
         long arrowId = GLFW.glfwCreateCursor(glfwArrowImage, 0, 0);
         GLFW.glfwSetCursor(windowID, arrowId);
         //calculating the monitor
@@ -138,6 +141,9 @@ public class Window {
         centerTheWindow();
     }
 
+    /**
+     * Centers the window to the center of the monitor screen
+     */
     public void centerTheWindow() {
         // positioning the windowID to the center
         int xpos = (monitorWidth - width) / 2;
@@ -248,7 +254,8 @@ public class Window {
      * Destroy window with context alltogether
      */
     public void destroy() {
-        Callbacks.glfwFreeCallbacks(windowID);
+        images.free();
+//        Callbacks.glfwFreeCallbacks(windowID); <= Causing errors
         GLFW.glfwDestroyWindow(windowID);
         GLFW.glfwTerminate();
     }
@@ -274,10 +281,18 @@ public class Window {
         return res.toArray();
     }
 
+    /**
+     * Should window be close & game finalized.
+     *
+     * @return is game set to end.
+     */
     public boolean shouldClose() {
         return GLFW.glfwWindowShouldClose(windowID);
     }
 
+    /**
+     * Request game end or closing the window
+     */
     public void close() {
         GLFW.glfwSetWindowShouldClose(windowID, true);
     }
@@ -287,11 +302,15 @@ public class Window {
      *
      * @return image with read pixels
      */
-    public BufferedImage getScreen() {
+    public BufferedImage getScreenshot() {
         final int rgba = 4;
 
         GL11.glReadBuffer(GL11.GL_FRONT);
         ByteBuffer buffer = MemoryUtil.memCalloc(width * height * rgba); // RGBA -> 4
+        if (buffer.capacity() != 0 && MemoryUtil.memAddressSafe(buffer) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            return null;
+        }
         GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -306,7 +325,9 @@ public class Window {
             }
         }
 
-        MemoryUtil.memFree(buffer);
+        if (buffer.capacity() != 0) {
+            MemoryUtil.memFree(buffer);
+        }
 
         return image;
     }

@@ -22,12 +22,12 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
@@ -43,7 +43,7 @@ public abstract class Menu {
     private Quad logo; // only basic menus have logo
     protected DynamicText title;
 
-    protected final List<MenuItem> items;
+    protected final IList<MenuItem> items;
     protected boolean enabled = false;
 
     protected Vector2f pos = new Vector2f();
@@ -65,7 +65,7 @@ public abstract class Menu {
     protected GLFWKeyCallback glfwKeyCallback;
     protected GLFWMouseButtonCallback glfwMouseButtonCallback;
 
-    public Menu(String title, List<MenuItem> items, String textureFileName) {
+    public Menu(String title, IList<MenuItem> items, String textureFileName) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setColor(Vector3fColors.YELLOW);
         this.items = items;
@@ -77,7 +77,7 @@ public abstract class Menu {
         init();
     }
 
-    public Menu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
+    public Menu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(Vector3fColors.YELLOW);
@@ -101,7 +101,8 @@ public abstract class Menu {
             item.keyText.setScale(itemScale);
             item.keyText.setAlignment(alignmentAmount);
             item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-            item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+            item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+            item.keyText.alignToNextChar();
             index++;
         }
     }
@@ -110,6 +111,9 @@ public abstract class Menu {
 
     protected abstract void execute(); // we don't know the menu functionality
 
+    /**
+     * Initialize menu with callbacks.
+     */
     private void init() {
         glfwCursorPosCallback = new GLFWCursorPosCallback() {
             @Override
@@ -181,6 +185,10 @@ public abstract class Menu {
 
     }
 
+    /**
+     * When open callbacks are changed (take input from keyboard, mouse etc)
+     * Enabled is set to true for rendering.
+     */
     public void open() {
         enabled = true;
         GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
@@ -205,16 +213,16 @@ public abstract class Menu {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
+            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.bufferSmart();
             }
             title.render(shaderProgram);
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
                 logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
-                    logo.bufferAll();
+                    logo.bufferSmart();
                 }
                 logo.render(shaderProgram);
             }
@@ -222,14 +230,14 @@ public abstract class Menu {
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
                 item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
 
                 item.render(shaderProgram);
                 index++;
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferAll();
+                iterator.bufferSmart();
             }
             iterator.render(shaderProgram);
         }
@@ -287,6 +295,35 @@ public abstract class Menu {
             useMouse = false;
         }
         updateIterator();
+    }
+
+    public void cleanUp() {
+        if (glfwCursorPosCallback != null) {
+            glfwCursorPosCallback.free();
+        }
+
+        if (glfwKeyCallback != null) {
+            glfwKeyCallback.free();
+        }
+
+        if (glfwMouseButtonCallback != null) {
+            glfwMouseButtonCallback.free();
+        }
+    }
+
+    /**
+     * Release all GL components. GL Buffers are deleted.
+     */
+    public void release() {
+        if (this.logo != null) {
+            this.logo.release();
+        }
+
+        if (this.title != null) {
+            this.title.release();
+        }
+
+        this.items.forEach(i -> i.release());
     }
 
     public Window getMyWindow() {
@@ -361,7 +398,7 @@ public abstract class Menu {
         return itemScale;
     }
 
-    public List<MenuItem> getItems() {
+    public IList<MenuItem> getItems() {
         return items;
     }
 

@@ -29,13 +29,11 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
-import rs.alexanderstojanovich.evg.models.Chunks;
-import rs.alexanderstojanovich.evg.models.Tuple;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
+ * Cache Module is used for caching chunks to not overweight Game Renderer.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -44,7 +42,7 @@ public class CacheModule {
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
     private final LevelContainer levelContainer;
-    public static final IList<Integer> CACHED_CHUNKS = new GapList<>();
+    public static final IList<CachedInfo> CACHED_CHUNKS = new GapList<>();
 
     public CacheModule(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
@@ -97,15 +95,9 @@ public class CacheModule {
     public static int cachedSize(int id) { // for debugging purposes
         int size = 0;
         if (CacheModule.isCached(id)) {
-            try {
-                FileInputStream fos = new FileInputStream(getFileName(id));
-                byte[] bytes = new byte[3];
-                fos.read(bytes, 0, 3);
-                size = ((bytes[2] & 0xFF) << 8) | (bytes[1] & 0xFF);
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
-            } catch (IOException ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
+            CachedInfo info = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
+            if (info != null) {
+                size = info.chunkSize;
             }
         }
         return size;
@@ -245,21 +237,24 @@ public class CacheModule {
                     byte[] somePos = Vector3fUtils.vec3fToByteArray(block.getPos());
                     System.arraycopy(somePos, 0, MEMORY, pos, somePos.length);
                     pos += somePos.length;
-                    Vector3f primCol = block.getPrimaryColor();
+                    Vector3f primCol = block.getMaterials().getFirst().getColor();
                     byte[] someCol = Vector3fUtils.vec3fToByteArray(primCol);
                     System.arraycopy(someCol, 0, MEMORY, pos, someCol.length);
                     pos += someCol.length;
                 }
+                final int chunkSize = pos;
 
                 File cacheDir = new File(Game.CACHE);
                 if (!cacheDir.exists()) {
                     cacheDir.mkdir();
                 }
 
-                saveMemToDisk(getFileName(id));
+                String fileName = getFileName(id);
+                saveMemToDisk(fileName);
 
-                CACHED_CHUNKS.remove(id);
-
+                // ADD TO CACHED
+                CACHED_CHUNKS.add(new CachedInfo(id, chunkSize, fileName));
+                DSLogger.reportDebug("ChunkId=" + id + " cached to " + fileName, null);
                 op = true;
             }
         }
@@ -278,7 +273,8 @@ public class CacheModule {
         // IF ITS NOT CACHED TO DISK
         if (CacheModule.isCached(id)) {
             // LOAD INTO MEMORY
-            loadDiskToMem(getFileName(id));
+            String fileName = getFileName(id);
+            loadDiskToMem(fileName);
             pos = 1;
             // INIT BLOCK ARRAY
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
@@ -311,7 +307,9 @@ public class CacheModule {
                 levelContainer.chunks.addBlock(block);
             }
 
-            CACHED_CHUNKS.add(id);
+            // REMOVE FROM CACHED
+            CACHED_CHUNKS.removeIf(ci -> ci.chunkId == id);
+            DSLogger.reportDebug("ChunkId=" + id + " restored from " + fileName, null);
 
             op = true;
         }
@@ -340,7 +338,7 @@ public class CacheModule {
      * @return is chunk cached or not cached (loaded)
      */
     public static boolean isCached(int chunkId) {
-        return CACHED_CHUNKS.contains((Integer) chunkId);
+        return CACHED_CHUNKS.containsIf(ci -> ci.chunkId == chunkId);
     }
 
     public static int getPos() {
@@ -351,7 +349,7 @@ public class CacheModule {
         return levelContainer;
     }
 
-    public static IList<Integer> getCACHED_CHUNKS() {
+    public static IList<CachedInfo> getCACHED_CHUNKS() {
         return CACHED_CHUNKS;
     }
 

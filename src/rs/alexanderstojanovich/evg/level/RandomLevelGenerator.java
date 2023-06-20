@@ -16,11 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
@@ -86,8 +86,8 @@ public class RandomLevelGenerator {
 
     private boolean repeatCondition(Vector3f pos) {
         return LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(pos)
-                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(pos)
-                || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(pos)
+                || levelContainer.getLevelActors().getPlayer().body.containsInsideEqually(pos)
+                || levelContainer.getLevelActors().spectator.getPos().equals(pos)
                 || levelContainer.getMyWindow().shouldClose();
     }
 
@@ -104,7 +104,7 @@ public class RandomLevelGenerator {
 
             randPos = new Vector3f(posx, posy, posz);
             randomAttempts++;
-//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
         } while (repeatCondition(randPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
 
         if (randomAttempts == RAND_MAX_ATTEMPTS) {
@@ -143,7 +143,7 @@ public class RandomLevelGenerator {
 
             randPos = new Vector3f(posx, posy, posz);
             randomAttempts++;
-//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
         } while (repeatCondition(randPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
 
         if (randomAttempts == RAND_MAX_ATTEMPTS) {
@@ -196,7 +196,7 @@ public class RandomLevelGenerator {
                     break;
             }
             randomAttempts++;
-//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
         } while (repeatCondition(adjPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
 
         if (randomAttempts == RAND_MAX_ATTEMPTS) {
@@ -254,7 +254,7 @@ public class RandomLevelGenerator {
                     break;
             }
             randomAttempts++;
-//            DSLogger.reportInfo("randomAttemps = " + randomAttempts, null);
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
         } while (repeatCondition(adjPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
 
         if (randomAttempts == RAND_MAX_ATTEMPTS) {
@@ -277,7 +277,7 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
     private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
-//        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
+//        DSLogger.reportDebug("By Noise: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // make "stone" terrain
         noiseMain:
         for (int x = posMin; x <= posMax; x += 2) {
@@ -371,7 +371,7 @@ public class RandomLevelGenerator {
     }
 
     private void generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
-//        DSLogger.reportInfo("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
+//        DSLogger.reportDebug("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // 2. Random part
         //beta 
         float beta = random.nextFloat();
@@ -449,7 +449,7 @@ public class RandomLevelGenerator {
     }
 
     private void generateFluidSeries(int solidBlocks) {
-//        DSLogger.reportInfo("By Noise: solidBlks = " + solidBlocks, null);
+//        DSLogger.reportDebug("By Noise: solidBlks = " + solidBlocks, null);
         levelContainer.setProgress(0.0f);
         List<Block> totalFldBlkList = levelContainer.chunks.getTotalList();
         for (Block fluidBlock : totalFldBlkList) {
@@ -481,7 +481,7 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
-            DSLogger.reportInfo("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
+            DSLogger.reportDebug("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
             // define alpha: solid to fluid ratio
             final float alpha = 0.48676294f;
             int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_BLOCKS / 2);
@@ -528,25 +528,25 @@ public class RandomLevelGenerator {
                 final int hRMin = posR_Min >> 1;
                 final int hRMax = posR_Max >> 1;
 
-                DSLogger.reportInfo(String.format("Generating Part I - Noise (%d blocks)", solidBlocksN + fluidBlocksN), null);
+                DSLogger.reportDebug(String.format("Generating Part I - Noise (%d blocks)", solidBlocksN + fluidBlocksN), null);
                 // 1. Noise Part                                   
                 generateByNoise(solidBlocksN1, fluidBlocksN, totalAmount, posN_Min, posN_Max, hNMin, hNMax);
-                DSLogger.reportInfo("Done.", null);
+                DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
                 //--------------------------------------------------------------------------------------------------------------------------- 
-                DSLogger.reportInfo(String.format("Generating Part II - Random (%d blocks)", solidBlocksR + solidBlocksR), null);
+                DSLogger.reportDebug(String.format("Generating Part II - Random (%d blocks)", solidBlocksR + solidBlocksR), null);
                 // 2. Random Part                 
                 generateByRandom(solidBlocksR1, fluidBlocksR, totalAmount, posR_Min, posR_Max, hRMin, hRMax);
-                DSLogger.reportInfo("Done.", null);
+                DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
-                DSLogger.reportInfo("Generating Part III - Fluid Series", null);
+                DSLogger.reportDebug("Generating Part III - Fluid Series", null);
                 // 3. Fluid Series
                 generateFluidSeries(solidBlocksN2 + solidBlocksR2);
-                DSLogger.reportInfo("Done.", null);
+                DSLogger.reportDebug("Done.", null);
             }
         }
 
-        DSLogger.reportInfo("All finished!", null);
+        DSLogger.reportDebug("All finished!", null);
     }
 
     public LevelContainer getLevelContainer() {
@@ -568,6 +568,10 @@ public class RandomLevelGenerator {
     public void setSeed(long seed) {
         this.seed = seed;
         this.random = new Random(seed);
+    }
+
+    public Random getRandom() {
+        return random;
     }
 
 }

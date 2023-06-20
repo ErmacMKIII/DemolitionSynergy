@@ -16,9 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
 /**
+ * Single character of Text & DynamicText class.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -26,9 +28,17 @@ public class TextCharacter {
 
     protected final char value;
     protected final Vector2f[] uvs = new Vector2f[4];
-    protected final float xadv;
-    protected final float ydrop;
+    protected final float xadv; // x-advance to the right
+    protected final float ydrop; // y-drop (to the below)
+    protected Matrix4f modelMat4 = new Matrix4f(); // calculated & set externally (in setup)
 
+    /**
+     * Create a single character of Text class (& Dynamic Text class)
+     *
+     * @param xadv x-advance to the right
+     * @param ydrop y-drop (to the below)
+     * @param value character value
+     */
     public TextCharacter(float xadv, float ydrop, char value) {
         this.xadv = xadv;
         this.ydrop = ydrop;
@@ -36,6 +46,9 @@ public class TextCharacter {
         init();
     }
 
+    /**
+     * Init with texture atlas accordingly.
+     */
     private void init() {
         for (int i = 0; i < uvs.length; i++) {
             uvs[i] = new Vector2f();
@@ -73,6 +86,10 @@ public class TextCharacter {
 
     public Vector2f[] getUvs() {
         return uvs;
+    }
+
+    public Matrix4f getModelMat4() {
+        return modelMat4;
     }
 
 }

@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.level;
+package rs.alexanderstojanovich.evg.light;
 
 import java.util.Objects;
 import org.joml.Vector3f;
@@ -25,13 +25,20 @@ import org.joml.Vector3f;
  */
 public class LightSource {
 
-    public static final float DEFAULT_LIGHT_INTENSITY = 16.0f;
-    public static final float PLAYER_LIGHT_INTENSITY = 4.0f;
+    public static final float DEFAULT_LIGHT_INTENSITY = 8.0f;
+    public static final float PLAYER_LIGHT_INTENSITY = 2.0f;
 
-    protected Vector3f pos;
+    public Vector3f pos;
     protected Vector3f color;
     protected float intensity;
 
+    /**
+     * Define light source with (pos, color, intensity)
+     *
+     * @param pos VEC3 pos
+     * @param color VEC3 color
+     * @param intensity float intensity
+     */
     public LightSource(Vector3f pos, Vector3f color, float intensity) {
         this.pos = pos;
         this.color = color;
@@ -78,6 +85,18 @@ public class LightSource {
             return false;
         }
         return Objects.equals(this.color, other.color);
+    }
+
+    public void setPos(Vector3f pos) {
+        this.pos = pos;
+    }
+
+    public void setColor(Vector3f color) {
+        this.color = color;
+    }
+
+    public void setIntensity(float intensity) {
+        this.intensity = intensity;
     }
 
 }

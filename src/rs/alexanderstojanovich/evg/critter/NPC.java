@@ -19,13 +19,14 @@ package rs.alexanderstojanovich.evg.critter;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
+ * Is non-player capabilities. Doesn't have camera.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class NPC extends ModelCritter {
+public class NPC extends Critter {
 
-    public NPC(Model model) {
-        super(model);
+    public NPC(Model body) {
+        super(body);
     }
 
 }

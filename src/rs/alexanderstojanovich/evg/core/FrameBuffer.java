@@ -20,8 +20,10 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Class responsible for "Rendering to Texture"
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -29,18 +31,22 @@ public class FrameBuffer {
 
     private final Window myWindow;
     private static int fbo;
-    private final Texture texture = new Texture();
+    private final Texture texture = new Texture("FrameBuffer");
 
     public FrameBuffer(Window window) {
         this.myWindow = window;
     }
 
-    // requires OpenGL context
-    public void init() {
+    /**
+     * Call initilzation of this from Game Renderer (requires OpenGL context to
+     * be in that thread)
+     */
+    public void init() { // requires OpenGL context
         texture.bufferAll(); // loads empty texture to graphics card
         createFrameBuffer();
         createDepthBuffer();
         configureFrameBuffer();
+        DSLogger.reportDebug("Water renderer initialized!", null);
     }
 
     private void createFrameBuffer() {

@@ -17,13 +17,14 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -42,7 +43,7 @@ public class Console {
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final DynamicText inText;
-    private final List<HistoryItem> history = new CopyOnWriteArrayList<>();
+    private final IList<HistoryItem> history = new GapList<>();
     private boolean enabled = false;
     private final DynamicText completes;
 
@@ -74,6 +75,9 @@ public class Console {
         init();
     }
 
+    /**
+     * Initializes console (with callbacks) - main thread
+     */
     private void init() {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
@@ -96,22 +100,39 @@ public class Console {
                     if (!input.toString().equals("")) {
 //                            for (DynamicText item : history) {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
-//                            }
-                        Quad quad = new Quad(18, 18, Texture.LIGHT_BULB);
+//                            }                        
                         Command cmd = Command.getCommand(input.toString());
 // if cmd is invalid it's null
-                        if (cmd.isRendererCommand()) {
-                            FutureTask<Object> consoleTask = new FutureTask<>(cmd);
-                            cmd.status = Command.Status.PENDING;
-                            GameRenderer.TASK_QUEUE.add(consoleTask);
-                        } else if (cmd.isGameCommand()) {
-                            Command.execute(cmd);
+                        synchronized (GameObject.MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                            if (cmd.isRendererCommand()) {
+                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                                cmd.status = Command.Status.PENDING;
+                                GameRenderer.TASK_QUEUE.add(consoleTask);
+                            } else if (cmd.isGameCommand()) {
+                                Command.execute(cmd);
+                            }
                         }
 
-                        history.add(0, new HistoryItem(cmd, quad));
+                        if (cmd.target != Command.Target.CLEAR) {
+                            // add to queue
+                            HistoryItem item = new HistoryItem(cmd);
+                            history.addFirst(item);
 
-                        if (history.size() == HISTORY_CAPACITY) {
-                            history.remove(history.size() - 1);
+                            // shift them
+                            history.forEach(hi -> {
+                                hi.buildCmdText();
+                                hi.cmdText.pos.x = -1.0f;
+                                hi.cmdText.pos.y += ((inText.getRelativeHeight() + inText.getRelativeCharHeight()) * inText.scale + (hi.cmdText.getRelativeCharHeight() + hi.cmdText.getRelativeHeight()) * hi.cmdText.scale) * Text.LINE_SPACING;
+                                hi.cmdText.alignToNextChar();
+
+                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth() + hi.cmdText.getRelativeCharWidth()) * hi.cmdText.scale;
+                                hi.quad.pos.y = hi.cmdText.pos.y;
+                            });
+
+                            // if over capacity deuque last
+                            if (history.size() > HISTORY_CAPACITY) {
+                                history.removeLast();
+                            }
                         }
 
                         input.setLength(0);
@@ -148,6 +169,10 @@ public class Console {
         };
     }
 
+    /**
+     * When open callbacks are changed (take input from keyboard, mouse etc)
+     * Enabled is set to true for rendering.
+     */
     public void open() {
         if (input.length() == 0) {
             enabled = true;
@@ -162,6 +187,11 @@ public class Console {
         }
     }
 
+    /**
+     * Render in the interface (has to be enabled)
+     *
+     * @param shaderProgram shader program to use
+     */
     public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             panel.setWidth(GameObject.MY_WINDOW.getWidth());
@@ -178,10 +208,9 @@ public class Console {
                 inText.bufferAll();
             }
             inText.render(shaderProgram);
-            int index = 0;
+
             for (HistoryItem item : history) {
-                item.render(new Vector2f(inText.pos.x, inText.pos.y + (index + 1) * inText.getRelativeCharHeight() * 2.0f), shaderProgram);
-                index++;
+                item.render(shaderProgram);
             }
 
             if (!completes.isBuffered()) {
@@ -191,6 +220,28 @@ public class Console {
         }
     }
 
+    /*
+    * Releases all the callbacks by this component.
+     */
+    public void cleanUp() {
+        this.glfwCharCallback.free();
+        this.glfwKeyCallback.free();
+    }
+
+    /*
+    * Delete all the GL Buffers.
+     */
+    public void release() {
+        this.history.forEach(i -> i.release());
+        this.inText.release();
+    }
+
+    /**
+     * Mapping from command status to color
+     *
+     * @param status Command status
+     * @return status color {PENDING = WHITE, FAILED = RED, SUCCEEDED = GREEN }
+     */
     public static Vector3f StatusColor(Command.Status status) {
         switch (status) {
             case PENDING:
@@ -202,6 +253,14 @@ public class Console {
                 return Vector3fColors.GREEN;
         }
 
+    }
+
+    /*
+    * Clear the history & intext
+     */
+    public void clear() {
+        inText.setContent("");
+        history.clear();
     }
 
     public Window getMyWindow() {

@@ -16,7 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.joml.Vector3f;
 
@@ -25,6 +26,15 @@ import org.joml.Vector3f;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Vector3fColors { // some of the defined colors
+
+    public static enum ColorName {
+        WHITE, RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, GRAY,
+        DARK_RED, DARK_GREEN, DARK_BLUE, DARK_CYAN, DARK_MAGENTA, DARK_YELLOW;
+
+        public static String[] names() {
+            return Arrays.toString(ColorName.values()).replaceAll("^.|.$", "").split(", ");
+        }
+    }
 
     public static final Vector3f BLACK = new Vector3f();
     public static final Vector3f WHITE = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -47,34 +57,36 @@ public class Vector3fColors { // some of the defined colors
     public static final Vector3f DARK_MAGENTA = new Vector3f(0.5f, 0.0f, 0.5f);
     public static final Vector3f DARK_YELLOW = new Vector3f(0.5f, 0.5f, 0.0f);
 
-    public static final Map<Byte, Vector3f> PALETTE = new HashMap<>();
-    public static final Map<Vector3f, Byte> COLOR_TO_INDEX = new HashMap<>();
+    public static final Map<ColorName, Vector3f> NAME_TO_COLOR = new LinkedHashMap<>();
 
     static {
-        PALETTE.put((byte) 0, BLACK);
-        PALETTE.put((byte) 1, WHITE);
+//        NAME_TO_COLOR.put(ColorName.BLACK, BLACK);
+        NAME_TO_COLOR.put(ColorName.WHITE, WHITE);
 
-        PALETTE.put((byte) 2, RED);
-        PALETTE.put((byte) 3, GREEN);
-        PALETTE.put((byte) 4, BLUE);
+        NAME_TO_COLOR.put(ColorName.RED, RED);
+        NAME_TO_COLOR.put(ColorName.GREEN, GREEN);
+        NAME_TO_COLOR.put(ColorName.BLUE, BLUE);
 
-        PALETTE.put((byte) 5, CYAN);
-        PALETTE.put((byte) 6, MAGENTA);
-        PALETTE.put((byte) 7, YELLOW);
+        NAME_TO_COLOR.put(ColorName.CYAN, CYAN);
+        NAME_TO_COLOR.put(ColorName.MAGENTA, MAGENTA);
+        NAME_TO_COLOR.put(ColorName.YELLOW, YELLOW);
 
-        PALETTE.put((byte) 8, GRAY);
+        NAME_TO_COLOR.put(ColorName.GRAY, GRAY);
 
-        PALETTE.put((byte) 9, DARK_RED);
-        PALETTE.put((byte) 10, DARK_GREEN);
-        PALETTE.put((byte) 11, DARK_BLUE);
+        NAME_TO_COLOR.put(ColorName.DARK_RED, DARK_RED);
+        NAME_TO_COLOR.put(ColorName.DARK_GREEN, DARK_GREEN);
+        NAME_TO_COLOR.put(ColorName.DARK_BLUE, DARK_BLUE);
 
-        PALETTE.put((byte) 12, DARK_CYAN);
-        PALETTE.put((byte) 13, DARK_MAGENTA);
-        PALETTE.put((byte) 14, DARK_YELLOW);
+        NAME_TO_COLOR.put(ColorName.DARK_CYAN, DARK_CYAN);
+        NAME_TO_COLOR.put(ColorName.DARK_MAGENTA, DARK_MAGENTA);
+        NAME_TO_COLOR.put(ColorName.DARK_YELLOW, DARK_YELLOW);
+    }
 
-        int i = 0;
-        for (Vector3f color : PALETTE.values()) {
-            COLOR_TO_INDEX.put(color, (byte) i++);
-        }
+    public static final Vector3f getColorOrDefault(String colorName) {
+        return NAME_TO_COLOR.getOrDefault(ColorName.valueOf(colorName), WHITE);
+    }
+
+    public static final Vector3f getColorOrDefault(ColorName colorName) {
+        return NAME_TO_COLOR.getOrDefault(colorName, WHITE);
     }
 }

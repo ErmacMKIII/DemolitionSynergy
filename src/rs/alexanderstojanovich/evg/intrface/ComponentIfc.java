@@ -21,47 +21,153 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
+ * Interface component 2D
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public interface ComponentIfc {
 
+    /**
+     * Component width in pixels
+     *
+     * @return component width
+     */
     public int getWidth();
 
+    /**
+     * Component height in pixels
+     *
+     * @return component height
+     */
     public int getHeight();
 
+    /**
+     * Component position on the screen (in GL coordinates)
+     *
+     * @return position on the screen
+     */
     public Vector2f getPos();
 
+    /**
+     * Set component position on the screen (in GL coordinates)
+     *
+     * @param pos must be position on the screen
+     */
     public void setPos(Vector2f pos);
 
+    /**
+     * RGB Color in OpenGL notation (scaled from 0 to 1)
+     *
+     * @return VEC3 RGB Color
+     */
     public Vector3f getColor();
 
+    /**
+     * Set RGB Color in OpenGL notation (scaled from 0 to 1)
+     *
+     * @param color VEC# RGB Color
+     */
     public void setColor(Vector3f color);
 
+    /**
+     * Additional scaling to standard width & height (default is 1.0)
+     *
+     * @return scale (decimal number)
+     */
     public float getScale();
 
+    /**
+     * Is component enabled - only if enabled it is visible and rendered.
+     *
+     * @return is component visible
+     */
     public boolean isEnabled();
 
+    /**
+     * Set Component enabled - only if enabled it is visible and rendered.
+     *
+     * @param enabled component visibility
+     */
     public void setEnabled(boolean enabled);
 
+    /**
+     * Is component allowed to be rendered (to be drawn)
+     *
+     * @return is component buffered (allowed to be drawn)
+     */
     public boolean isBuffered();
 
+    /**
+     * Get vertex buffer object.
+     *
+     * @return vertex buffer object
+     */
     public int getVbo();
 
+    /**
+     * Get index buffer object.
+     *
+     * @return vertex buffer object
+     */
     public int getIbo();
 
+    /**
+     * Render using the shader program
+     *
+     * @param shaderProgram shader program to use
+     */
     public void render(ShaderProgram shaderProgram);
 
+    /**
+     * Set this component to disallow rendering unless it is buffered again
+     */
     public void unbuffer();
 
-    public void bufferVertices();
+    /**
+     * Buffer vertices. The part of buffering. Indices need additionally to be
+     * buffered.
+     *
+     * @return is buffered (if allocation memory fails it is not buffered)
+     */
+    public boolean bufferVertices();
 
-    public void updateVertices();
+    /**
+     * Just update vertices without need to resize the buffer. Faster operation
+     * than buffer vertices.
+     *
+     * @return is buffered (if allocation memory fails it is not buffered)
+     */
+    public boolean updateVertices();
 
-    public void bufferIndices();
+    /**
+     * Buffer indices. The part of buffering. Vertices need additionally to be
+     * buffered.
+     *
+     * @return is buffered (if allocation memory fails it is not buffered)
+     */
+    public boolean bufferIndices();
 
+    /**
+     * Update indices. Without need to resize the buffer. Faster operation than
+     * buffer indices.
+     *
+     * @return is buffered (if allocation memory fails it is not buffered)
+     */
+    public boolean updateIndices();
+
+    /**
+     * Buffer vertices and indices and set buffered flag accordingly.
+     */
     public void bufferAll();
 
+    /**
+     * Buffer/update vertices & indices depending if it is first time and/or
+     * vertex buffer the same size as prior.
+     */
     public void bufferSmart();
 
+    /**
+     * Release this components. All GL buffers are deleted.
+     */
+    public void release();
 }

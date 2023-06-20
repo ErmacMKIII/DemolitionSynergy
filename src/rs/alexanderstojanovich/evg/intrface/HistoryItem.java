@@ -21,6 +21,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
+ * Item used in a console. Of previous command inputs.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -28,19 +29,16 @@ public class HistoryItem {
 
     protected Command cmd;
     protected final DynamicText cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
-    protected Quad quad;
+    protected Quad quad = new Quad(14, 14, Texture.LIGHT_BULB);
 
-    public HistoryItem(Command command, Quad quad) {
+    public HistoryItem(Command command) {
         this.cmd = command;
-        this.quad = quad;
-
-        cmdText.pos.y += (0.5f - cmdText.getRelativeCharHeight()) * Text.LINE_SPACING;
-
-        cmdText.setAlignment(Text.ALIGNMENT_LEFT);
-        cmdText.alignToNextChar();
     }
 
-    private void buildCmdText() {
+    /**
+     * Build command text. Constructs text of this item.
+     */
+    protected void buildCmdText() {
         StringBuilder sb = new StringBuilder();
         if (cmd.target == Command.Target.ERROR) {
             sb.append(cmd.input);
@@ -78,24 +76,31 @@ public class HistoryItem {
         cmdText.setContent(sb.toString());
     }
 
-    public void render(Vector2f pos, ShaderProgram shaderProgram) {
+    /**
+     * Renders this history item in the console (in interface).
+     *
+     * @param shaderProgram shader program to use
+     */
+    public void render(ShaderProgram shaderProgram) {
         buildCmdText();
-        cmdText.pos.x = pos.x;
-        cmdText.pos.y = pos.y;
-
         if (!cmdText.isBuffered()) {
-            cmdText.bufferAll();
+            cmdText.bufferSmart();
         }
         cmdText.render(shaderProgram);
-        // ------------------------------------------------------------------------------------------------------
-        quad.getPos().x = cmdText.pos.x + cmdText.getRelativeCharWidth() * (cmdText.content.length() + 1);
-        quad.getPos().y = cmdText.pos.y;
-
+        // ------------------------------------------------------------------------------------------------------        
         if (!quad.isBuffered()) {
-            quad.bufferAll();
+            quad.bufferSmart();
         }
         quad.color = Console.StatusColor(cmd.status);
         quad.render(shaderProgram);
+    }
+
+    /*
+    *  Delete all GL Buffers from this component.
+     */
+    public void release() {
+        this.cmdText.release();
+        this.quad.release();
     }
 
     public DynamicText getCmdText() {

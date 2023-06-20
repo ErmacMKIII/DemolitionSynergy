@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -35,9 +36,7 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     public MultiValue(Object[] valueArray, Type type) {
         this.type = type;
         this.valueText = new DynamicText(Texture.FONT, "");
-        for (Object object : valueArray) {
-            values.add(object);
-        }
+        values.addAll(Arrays.asList(valueArray));
     }
 
     public MultiValue(Object[] valueArray, Type type, int selected) {
@@ -52,9 +51,7 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     public MultiValue(Object[] valueArray, Type type, Object currentValue) {
         this.type = type;
         this.valueText = new DynamicText(Texture.FONT, String.valueOf(currentValue));
-        for (Object object : valueArray) {
-            values.add(object);
-        }
+        values.addAll(Arrays.asList(valueArray));
         this.selected = values.indexOf(currentValue);
     }
 

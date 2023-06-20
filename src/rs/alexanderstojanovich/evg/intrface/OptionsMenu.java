@@ -22,6 +22,7 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.magicwerk.brownies.collections.IList;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditNoValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditSingleValue;
@@ -46,16 +47,19 @@ public abstract class OptionsMenu extends Menu {
 
     protected GLFWCharCallback glfwCharCallback;
 
-    public OptionsMenu(String title, List<MenuItem> items, String textureFileName) {
+    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName) {
         super(title, items, textureFileName);
         additionalInit();
     }
 
-    public OptionsMenu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
+    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         super(title, items, textureFileName, pos, scale);
         additionalInit();
     }
 
+    /**
+     * Init additional callbacks (or override existing)
+     */
     private void additionalInit() {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
@@ -218,16 +222,16 @@ public abstract class OptionsMenu extends Menu {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
             title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = DynamicText.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
+            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.bufferSmart();
             }
             title.render(shaderProgram);
             int index = 0;
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
                 item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -DynamicText.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
 
                 if (item.menuValue != null && item.menuValue.getValueText() != null) {
                     item.menuValue.getValueText().getPos().x = item.keyText.getPos().x + itemScale * (item.keyText.getRelativeWidth() + item.keyText.getRelativeCharWidth()) * (1.0f - alignmentAmount);
@@ -239,9 +243,17 @@ public abstract class OptionsMenu extends Menu {
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferAll();
+                iterator.bufferSmart();
             }
             iterator.render(shaderProgram);
+        }
+    }
+
+    @Override
+    public void cleanUp() {
+        super.cleanUp();
+        if (glfwCharCallback != null) {
+            glfwCharCallback.free();
         }
     }
 

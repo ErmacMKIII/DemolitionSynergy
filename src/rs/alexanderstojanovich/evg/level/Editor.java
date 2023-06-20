@@ -21,7 +21,6 @@ import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
@@ -32,8 +31,6 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class Editor {
 
-    private static Block loaded = null;
-
     private static Block selectedNew = null;
     private static int blockColorNum = 0;
 
@@ -41,22 +38,16 @@ public class Editor {
     private static int selectedCurrIndex = -1;
 
     private static int texValue = 0; // value about which texture to use
-    private static final int MIN_VAL = 0;
-    private static final int MAX_VAL = Texture.TEX_WORLD.length - 1;
 
-    private static Block selectedNewWireFrame = null;
-    private static Block selectedCurrWireFrame = null;
+    private static Block selectedNewDecal = null;
+    private static Block selectedCurrDecal = null;
 
     public static void selectNew() {
         deselect();
-        if (loaded == null) // first time it's null
-        {
-            loaded = new Block("crate");
-            texValue = 0;
-            selectLoadedTexture();
+        if (selectedNew == null) {
+            selectedNew = new Block("crate");
         }
-        selectedNew = loaded;
-
+        selectTexture();
         // fetching..
         Camera camera = GameObject.getLevelContainer().levelActors.mainCamera();
         Vector3f pos = camera.getPos();
@@ -70,7 +61,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace()) {
-            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, true);
+            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, true);
         }
 
         GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -103,7 +94,7 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = chunk.getBlockList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
+                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
             }
         }
 
@@ -136,7 +127,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getBlockList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrWireFrame = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
+                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
             }
         }
     }
@@ -144,21 +135,18 @@ public class Editor {
     public static void deselect() {
         selectedNew = selectedCurr = null;
         selectedCurrIndex = -1;
-        selectedNewWireFrame = null;
-        selectedCurrWireFrame = null;
+        selectedNewDecal = null;
+        selectedCurrDecal = null;
     }
 
     public static void selectAdjacentSolid(int position) {
         deselect();
         selectCurrSolid();
         if (selectedCurr != null) {
-            if (loaded == null) // first time it's null
-            {
-                loaded = new Block("crate");
-                texValue = 0;
-                selectLoadedTexture();
+            if (selectedNew == null) {
+                selectedNew = new Block("crate");
             }
-            selectedNew = loaded;
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -187,7 +175,7 @@ public class Editor {
             }
 
             if (!cannotPlace()) {
-                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
+                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
             }
         }
     }
@@ -196,12 +184,10 @@ public class Editor {
         deselect();
         selectCurrFluid();
         if (selectedCurr != null) {
-            if (loaded == null) // first time it's null
-            {
-                loaded = new Block("crate");
-                selectLoadedTexture();
+            if (selectedNew == null) {
+                selectedNew = new Block("crate");
             }
-            selectedNew = loaded;
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -230,7 +216,7 @@ public class Editor {
             }
 
             if (!cannotPlace()) {
-                selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
+                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
             }
         }
     }
@@ -256,7 +242,7 @@ public class Editor {
             cant = GameObject.getLevelContainer().maxCountReached() || placeOccupied || intersects || leavesSkybox;
         }
         if (cant) {
-            selectedNewWireFrame = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, true);
+            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, true);
         }
         return cant;
     }
@@ -264,9 +250,11 @@ public class Editor {
     public static void add() {
         if (selectedNew != null) {
             if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
-                GameObject.getLevelContainer().chunks.addBlock(selectedNew);
+                synchronized (GameObject.MUTEX) { // potentially dangerous
+                    GameObject.getLevelContainer().chunks.addBlock(selectedNew);
+                }
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                loaded = new Block(Texture.TEX_WORLD[texValue]);
+                selectedNew = new Block(Texture.TEX_WORLD[texValue]);
             }
         }
         deselect();
@@ -274,70 +262,45 @@ public class Editor {
 
     public static void remove() {
         if (selectedCurr != null) {
-            GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
+            synchronized (GameObject.MUTEX) { // potentially dangerous
+                GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
+            }
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
     }
 
-    private static void selectLoadedTexture() {
-        if (loaded != null) {
-            String texName = Texture.TEX_WORLD[texValue];
-            loaded.setTexName(texName);
-            loaded.setSolid(!texName.equals("water"));
-            Block.deepCopyTo(loaded.getVertices(), Texture.TEX_WORLD[texValue]);
-            loaded.unbuffer();
+    private static void selectTexture() {
+        if (selectedNew != null) {
+            synchronized (GameObject.MUTEX) {
+                String texName = Texture.TEX_WORLD[texValue];
+                selectedNew.setTexNameWithDeepCopy(texName);
+            }
         }
     }
 
     public static void selectPrevTexture() {
-        if (loaded != null) {
-            if (texValue > MIN_VAL) {
+        if (selectedNew != null) {
+            if (texValue > 0) {
                 texValue--;
-                selectLoadedTexture();
+                selectTexture();
             }
         }
     }
 
     public static void selectNextTexture() {
-        if (loaded != null) {
-            if (texValue < MAX_VAL) {
+        if (selectedNew != null) {
+            if (texValue < Texture.TEX_WORLD.length - 1) {
                 texValue++;
-                selectLoadedTexture();
+                selectTexture();
             }
         }
     }
 
     public static void cycleBlockColor() {
         if (selectedNew != null) {
-            switch (blockColorNum) {
-                case 0:
-                    selectedNew.setPrimaryColor(Vector3fColors.RED); // RED                
-                    break;
-                case 1:
-                    selectedNew.setPrimaryColor(Vector3fColors.GREEN); // GREEN
-                    break;
-                case 2:
-                    selectedNew.setPrimaryColor(Vector3fColors.BLUE); // BLUE
-                    break;
-                case 3:
-                    selectedNew.setPrimaryColor(Vector3fColors.CYAN); // CYAN
-                    break;
-                case 4:
-                    selectedNew.setPrimaryColor(Vector3fColors.MAGENTA); // MAGENTA
-                    break;
-                case 5:
-                    selectedNew.setPrimaryColor(Vector3fColors.YELLOW); // YELLOW
-                    break;
-                case 6:
-                    selectedNew.setPrimaryColor(Vector3fColors.WHITE); // WHITE
-                    break;
-            }
-            if (blockColorNum < 6) {
-                blockColorNum++;
-            } else {
-                blockColorNum = 0;
-            }
+            Vector3fColors.ColorName[] values = Vector3fColors.ColorName.values();
+            selectedNew.setPrimaryColor(Vector3fColors.getColorOrDefault(values[++blockColorNum % values.length]));
         }
     }
 
@@ -357,12 +320,12 @@ public class Editor {
         return selectedCurrIndex;
     }
 
-    public static Block getSelectedNewWireFrame() {
-        return selectedNewWireFrame;
+    public static Block getSelectedNewDecal() {
+        return selectedNewDecal;
     }
 
-    public static Block getSelectedCurrWireFrame() {
-        return selectedCurrWireFrame;
+    public static Block getSelectedCurrDecal() {
+        return selectedCurrDecal;
     }
 
 }

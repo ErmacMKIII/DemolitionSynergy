@@ -17,171 +17,159 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
- * Critter is interface of living things. Critters are considered no model
- * Observer and Model Critters. Model Critter is Player and NPCs. Only player
- * has camera.
+ * Critter is class of living things. Has capabilities moving. Is collision
+ * predictable. However no observation. Renders with body in some shader.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public interface Critter { // interface for Observer, Player and NPC
+public class Critter implements Predictable, Moveable, Renderable {
+
+    public final Model body;
+    protected Vector3f predictor;
+
+    // three vectors determining exact camera position aka camera vectors
+    protected Vector3f front = new Vector3f(Camera.Z_AXIS);
+    protected Vector3f up = new Vector3f(Camera.Y_AXIS);
+    protected Vector3f right = new Vector3f(Camera.X_AXIS);
 
     /**
-     * Get Position of this critter.
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
      *
-     * @return position of this critter
+     * @param body body model
      */
-    public Vector3f getPosition();
+    public Critter(Model body) {
+        this.body = body;
+        this.predictor = new Vector3f(body.pos); // separate predictor from the body
+    }
 
-    /**
-     * Move this critter in front direction for amount. Also to move critter has
-     * to have give control (set to true).
-     *
-     * @param amount amount to move this critter
-     */
-    public void moveForward(float amount);
-
-    /**
-     * Move this critter in back direction for amount. Also to move critter has
-     * to have give control (set to true).
-     *
-     * @param amount amount to move this critter
-     */
-    public void moveBackward(float amount);
-
-    /**
-     * Move this critter in left direction for amount. Also to move critter has
-     * to have give control (set to true).
-     *
-     * @param amount amount to move this critter
-     */
-    public void moveLeft(float amount);
-
-    /**
-     * Move this critter in right direction for amount. Also to move critter has
-     * to have give control (set to true).
-     *
-     * @param amount amount to move this critter
-     */
-    public void moveRight(float amount);
-
-    //--------------------------------------------------------------------------
-    /**
-     * Move this critter prediction forward (but critter stays). Used for
-     * collision testing.
-     *
-     * @param amount amount to move this critter predictor
-     */
-    public void movePredictorForward(float amount);
-
-    /**
-     * Move this critter prediction backward (but critter stays). Used for
-     * collision testing.
-     *
-     * @param amount amount to move this critter predictor
-     */
-    public void movePredictorBackward(float amount);
-
-    /**
-     * Move this critter prediction left (but critter stays). Used for collision
-     * testing.
-     *
-     * @param amount amount to move this critter predictor
-     */
-    public void movePredictorLeft(float amount);
-
-    /**
-     * Move this critter prediction right (but critter stays). Used for
-     * collision testing.
-     *
-     * @param amount amount to move this critter predictor
-     */
-    public void movePredictorRight(float amount);
-
-    //--------------------------------------------------------------------------
-    /**
-     * Turn this critter left side for given angle. To turn critter has to have
-     * give control (set to true).
-     *
-     * @param angle radian angle to turn critter to the left.
-     */
-    public void turnLeft(float angle);
-
-    /**
-     * Turn this critter right side for given angle. To turn critter has to have
-     * give control (set to true).
-     *
-     * @param angle radian angle to turn critter to the right.
-     */
-    public void turnRight(float angle);
-
-    /**
-     * Look for xoffset, yoffset using Euler angles.Requires given control (set
-     * to true)
-     *
-     * @param sensitivity mouse sensitivity - multiplier
-     * @param xoffset X-axis offset
-     * @param yoffset Y-axis offset
-     */
-    public void lookAtOffset(float sensitivity, float xoffset, float yoffset);
-
-    /**
-     * Look at exactly yaw & pitch angle using Euler angles.Requires given
-     * control (set to true)
-     *
-     * @param yaw sideways angle
-     * @param pitch up & down angle
-     */
-    public void lookAtAngle(float yaw, float pitch);
-
-    /**
-     * Render this critter. To render needs to be buffered.
-     *
-     * @param lightSrc list of light sources
-     * @param shaderProgram shader program used for rendering
-     */
-    public void render(LightSources lightSrc, ShaderProgram shaderProgram);
-
-    //--------------------------------------------------------------------------
-    /**
-     * Checks if rendering is allowed (buffered into the memory).
-     *
-     * @return buffered flag.
-     */
-    public boolean isBuffered();
-
-    /**
-     * Buffer this critter, allowing it to be rendered.
-     */
-    public void bufferAll();
-
-    //--------------------------------------------------------------------------
     @Override
-    public String toString();
+    public void movePredictorForward(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.add(front.mul(amount, temp1), temp2);
+    }
 
-    /**
-     * Is it given control to perform movement or turning.
-     *
-     * @return given control flag
-     */
-    public boolean isGivenControl();
+    @Override
+    public void movePredictorBackward(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.sub(front.mul(amount, temp1), temp2);
+    }
 
-    /**
-     * Set given control flag to perform movement or turning.
-     *
-     * @param givenControl desired given control flag (true - allows, false -
-     * disallows)
-     */
-    public void setGivenControl(boolean givenControl);
+    @Override
+    public void movePredictorLeft(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.sub(right.mul(amount, temp1), temp2);
+    }
 
-    /**
-     * Gets predictor used for collision testing.
-     *
-     * @return critter predictor
-     */
-    public Vector3f getPredictor();
+    @Override
+    public void movePredictorRight(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.add(right.mul(amount, temp1), temp2);
+    }
+
+    @Override
+    public void movePredictorUp(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.add(up.mul(amount, temp1), temp2);
+    }
+
+    @Override
+    public void movePredictorDown(float amount) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = body.pos.sub(up.mul(amount, temp1), temp2);
+    }
+
+    @Override
+    public Vector3f getPredictor() {
+        return predictor;
+    }
+
+    @Override
+    public void moveForward(float amount) {
+        Vector3f temp = new Vector3f();
+        movePredictorForward(amount);
+        predictor = body.pos.add(front.mul(amount, temp));
+    }
+
+    @Override
+    public void moveBackward(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.sub(front.mul(amount, temp));
+    }
+
+    @Override
+    public void moveLeft(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.sub(right.mul(amount, temp));
+    }
+
+    @Override
+    public void moveRight(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.add(right.mul(amount, temp));
+    }
+
+    @Override
+    public void ascend(float amount) {
+        Vector3f temp = new Vector3f();
+        predictor = body.pos.add(up.mul(amount, temp));
+    }
+
+    @Override
+    public void descend(float amount) {
+        Vector3f temp = new Vector3f();
+        movePredictorDown(amount);
+        predictor = body.pos.sub(up.mul(amount, temp));
+    }
+
+    @Override
+    public void turnLeft(float angle) {
+        body.setrX(-angle);
+    }
+
+    @Override
+    public void turnRight(float angle) {
+        body.setrX(-angle);
+    }
+
+    @Override
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
+        body.render(lightSrc, shaderProgram);
+    }
+
+    @Override
+    public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        body.renderContour(lightSources, shaderProgram);
+    }
+
+    public Vector3f getPos() {
+        return body.pos;
+    }
+
+    public void setPos(Vector3f pos) {
+        predictor = body.pos = new Vector3f(pos);
+    }
+
+    @Override
+    public void setPredictor(Vector3f predictor) {
+        this.predictor = predictor;
+    }
+
+    public Model getBody() {
+        return body;
+    }
 
 }

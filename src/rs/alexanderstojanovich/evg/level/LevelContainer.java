@@ -34,16 +34,19 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Predictable;
+import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
-import rs.alexanderstojanovich.evg.models.Chunks;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
@@ -55,10 +58,10 @@ public class LevelContainer implements GravityEnviroment {
 
     protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
-    public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
+    public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
     public static final float SUN_SCALE = 20.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 29);
+    public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);
@@ -67,7 +70,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
-    public static final int LIST_CAPACITY = 8;
+    public static final int LIST_CAPACITY = 9;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -186,8 +189,8 @@ public class LevelContainer implements GravityEnviroment {
         this.cacheModule = new CacheModule(this);
 
         LIGHT_SOURCES.lightSrcList.clear();
+        LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
         LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.playerLight);
     }
 
     public static void printPositionMaps() {
@@ -196,7 +199,7 @@ public class LevelContainer implements GravityEnviroment {
         sb.append("POSITION MAP");
         sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
         sb.append("---------------------------");
-        DSLogger.reportInfo(sb.toString(), null);
+        DSLogger.reportDebug(sb.toString(), null);
     }
 
     public void printQueues() {
@@ -211,7 +214,7 @@ public class LevelContainer implements GravityEnviroment {
         sb.append(iChnkIdList);
         sb.append("\n");
         sb.append("---------------------------");
-        DSLogger.reportInfo(sb.toString(), null);
+        DSLogger.reportDebug(sb.toString(), null);
     }
 
     // -------------------------------------------------------------------------    
@@ -227,12 +230,10 @@ public class LevelContainer implements GravityEnviroment {
         GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         chunks.clear();
-
+        levelActors.npcList.clear();
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.playerLight);
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
         CacheModule.deleteCache();
 
@@ -253,8 +254,11 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        levelActors.configureMainActor(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
+        levelActors.configureMainObserver(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
+//        NPC npc = new NPC(levelActors.player.getModel());
+//        npc.getModel().setPos(new Vector3f(0f, 20f, 0f));
+//        levelActors.npcList.add(npc);
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
@@ -270,7 +274,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         levelActors.freeze();
 
-        levelActors.configureMainActor(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
+        levelActors.configureMainObserver(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
         boolean success = false;
         progress = 0.0f;
@@ -280,9 +284,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-        LIGHT_SOURCES.lightSrcList.add(levelActors.playerLight);
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
         CacheModule.deleteCache();
 
@@ -294,6 +296,39 @@ public class LevelContainer implements GravityEnviroment {
 
 //        solidChunks.updateSolids(this);
 //        fluidChunks.updateFluids(this);
+        progress = 100.0f;
+        working = false;
+
+        levelActors.unfreeze();
+        GameObject.getMusicPlayer().stop();
+        return success;
+    }
+
+    public boolean generateSinglePlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+        if (working) {
+            return false;
+        }
+        working = true;
+        levelActors.freeze();
+
+        boolean success = false;
+        progress = 0.0f;
+        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+
+        chunks.clear();
+
+        ALL_BLOCK_MAP.init();
+
+        LIGHT_SOURCES.lightSrcList.retain(0, 2);
+
+        CacheModule.deleteCache();
+
+        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_BLOCKS) {
+            randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
+            randomLevelGenerator.generate();
+            success = true;
+        }
+
         progress = 100.0f;
         working = false;
 
@@ -339,10 +374,10 @@ public class LevelContainer implements GravityEnviroment {
 
         IList<Block> allBlocks = chunks.getTotalList();
         Predicate predSolid = (Predicate<Block>) (Block t) -> t.isSolid();
-        IList<Block> solidBlocks = (IList<Block>) allBlocks.filteredList(predSolid);
+        IList<Block> solidBlocks = (IList<Block>) allBlocks.filter(predSolid);
 
         Predicate predFluid = (Predicate<Block>) (Block t) -> !t.isSolid();
-        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filteredList(predFluid);
+        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filter(predFluid);
 
         buffer[pos++] = 'S';
         buffer[pos++] = 'O';
@@ -415,9 +450,7 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.lightSrcList.clear();
-            LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
-            LIGHT_SOURCES.lightSrcList.add(levelActors.playerLight);
+            LIGHT_SOURCES.lightSrcList.retain(0, 2);
 
             CacheModule.deleteCache();
 
@@ -442,7 +475,7 @@ public class LevelContainer implements GravityEnviroment {
             Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
             pos += rightArr.length;
 
-            levelActors.configureMainActor(campos, camfront, camup, camright);
+            levelActors.configureMainObserver(campos, camfront, camup, camright);
 
             char[] solid = new char[5];
             for (int i = 0; i < solid.length; i++) {
@@ -611,9 +644,100 @@ public class LevelContainer implements GravityEnviroment {
         return yea;
     }
 
-    public boolean hasCollisionWithEnvironment(Critter critter) {
+    public static boolean hasCollisionWithEnvironment(Predictable predictable) {
         boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor()));
+        coll = (!SKYBOX.containsInsideExactly(predictable.getPredictor()));
+
+        if (!coll) {
+            final float stepAmount = 0.1f;
+
+            Vector3f predAlign = new Vector3f(
+                    Math.round(predictable.getPredictor().x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(predictable.getPredictor().y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(predictable.getPredictor().z + 0.5f) & 0xFFFFFFFE
+            );
+
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
+
+            if (!coll) {
+                OUTER:
+                for (int j = 0; j <= 5; j++) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                        Vector3f adjPos = Block.getAdjacentPos(predictable.getPredictor(), j, amount);
+                        Vector3f adjAlign = new Vector3f(
+                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                        );
+
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
+
+                        if (solidOnLoc) {
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictable.getPredictor())
+                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictable.getPredictor(), 0.075f, 0.075f, 0.075f);
+                            if (coll) {
+                                break OUTER;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return coll;
+    }
+
+    public static boolean hasCollisionWithEnvironment(Observer observer) {
+        boolean coll;
+        coll = (!SKYBOX.containsInsideExactly(observer.getPos())
+                || !SKYBOX.intersectsExactly(observer.getPos(), 0.07f, 0.07f, 0.07f));
+
+        if (!coll) {
+            final float stepAmount = 0.1f;
+
+            Vector3f predAlign = new Vector3f(
+                    Math.round(observer.getPos().x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(observer.getPos().y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(observer.getPos().z + 0.5f) & 0xFFFFFFFE
+            );
+
+            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
+
+            if (!coll) {
+                OUTER:
+                for (int j = 0; j <= 5; j++) {
+                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                        Vector3f adjPos = Block.getAdjacentPos(observer.getPos(), j, amount);
+                        Vector3f adjAlign = new Vector3f(
+                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                        );
+
+                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
+
+                        if (solidOnLoc) {
+                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, observer.getPos())
+                                    || Block.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                                            observer.getPos(), 0.07f, 0.07f, 0.07f);
+
+                            if (coll) {
+                                break OUTER;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return coll;
+    }
+
+    public static boolean hasCollisionWithEnvironment(Critter critter) {
+        boolean coll;
+        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                        critter.body.getHeight(), critter.body.getDepth()));
 
         if (!coll) {
             final float stepAmount = 0.1f;
@@ -641,52 +765,7 @@ public class LevelContainer implements GravityEnviroment {
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
-                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor(), 0.075f, 0.075f, 0.075f);
-                            if (coll) {
-                                break OUTER;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return coll;
-    }
-
-    public boolean hasCollisionWithEnvironment(ModelCritter livingCritter) {
-        boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(livingCritter.getPredictor())
-                || !SKYBOX.intersectsExactly(livingCritter.getPredictor(), livingCritter.getModel().getWidth(),
-                        livingCritter.getModel().getHeight(), livingCritter.getModel().getDepth()));
-
-        if (!coll) {
-            final float stepAmount = 0.1f;
-
-            Vector3f predAlign = new Vector3f(
-                    Math.round(livingCritter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
-                    Math.round(livingCritter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
-                    Math.round(livingCritter.getPredictor().z + 0.5f) & 0xFFFFFFFE
-            );
-
-            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
-
-            if (!coll) {
-                OUTER:
-                for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
-                        Vector3f adjPos = Block.getAdjacentPos(livingCritter.getPredictor(), j, amount);
-                        Vector3f adjAlign = new Vector3f(
-                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                        );
-
-                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
-
-                        if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, livingCritter.getPredictor())
-                                    || livingCritter.getModel().intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
+                                    || critter.body.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
 
                             if (coll) {
                                 break OUTER;
@@ -764,16 +843,25 @@ public class LevelContainer implements GravityEnviroment {
             final float gtm = cfg.getGameTimeMultiplier();
             SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
             SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
-            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
+            float factor = MathUtils.expm1(Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f));
             SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
-            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(factor));
-            SUNLIGHT.intensity = factor * SUN_INTENSITY;
+            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(Math.max(factor, 5E-2f)));
+            SUNLIGHT.setIntensity(factor * SUN_INTENSITY);
             cameraInFluid = isCameraInFluid();
 
-            Camera mainCamera = levelActors.mainCamera();
-            levelActors.playerLight.pos = mainCamera.getPos();
+            int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
+            if (sunLightIndex != -1) { // should be zero
+                LIGHT_SOURCES.modified[sunLightIndex] = true;
+            }
 
-            LIGHT_SOURCES.modified = true;
+            Camera mainCamera = levelActors.mainCamera();
+            levelActors.player.light.pos = mainCamera.getPos();
+            int playerlightIndex = LIGHT_SOURCES.lightSrcList.indexOf(levelActors.player.light);
+            if (playerlightIndex != -1) { // should be one
+                LIGHT_SOURCES.modified[playerlightIndex] = true;
+            }
+
+//            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
         }
     }
 
@@ -789,10 +877,14 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
+
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+
+        if (SUNLIGHT.getIntensity() != 0.0f) {
+            SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+        }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
@@ -811,30 +903,31 @@ public class LevelContainer implements GravityEnviroment {
                 editorNew.bufferAll();
             }
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
-        }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
-        if (selectedNewWireFrame != null) {
-            if (!selectedNewWireFrame.isBuffered()) {
-                selectedNewWireFrame.bufferAll();
+            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
+            if (selectedNewWireFrame != null) {
+                if (!selectedNewWireFrame.isBuffered()) {
+                    selectedNewWireFrame.bufferAll();
+                }
+                selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
             }
-            selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
-        }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
-        if (selectedCurrFrame != null) {
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+            if (selectedCurrFrame != null) {
+                if (!selectedCurrFrame.isBuffered()) {
+                    selectedCurrFrame.bufferAll();
+                }
+                selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
             }
-            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
         }
 
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 
-        LIGHT_SOURCES.modified = false;
+        LIGHT_SOURCES.resetAllModified();
     }
 
-    public synchronized void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -844,7 +937,10 @@ public class LevelContainer implements GravityEnviroment {
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
-        SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
+        if (SUNLIGHT.getIntensity() != 0.0f) {
+            SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+        }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
@@ -860,34 +956,33 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(camera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
             editorNew.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-        }
 
-        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
-        if (selectedNewWireFrame != null) {
-            selectedNewWireFrame.setLight(camera.getPos());
-            if (!selectedNewWireFrame.isBuffered()) {
-                selectedNewWireFrame.bufferAll();
+            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
+            if (selectedNewWireFrame != null) {
+                if (!selectedNewWireFrame.isBuffered()) {
+                    selectedNewWireFrame.bufferAll();
+                }
+                selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
             }
-            selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-        }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
-        if (selectedCurrFrame != null) {
-            selectedCurrFrame.setLight(camera.getPos());
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+            if (selectedCurrFrame != null) {
+                if (!selectedCurrFrame.isBuffered()) {
+                    selectedCurrFrame.bufferAll();
+                }
+                selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
             }
-            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+
         }
 
-        levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getWaterBaseShader());
+        levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 
-        LIGHT_SOURCES.modified = false;
+        LIGHT_SOURCES.resetAllModified();
     }
 
     // -------------------------------------------------------------------------

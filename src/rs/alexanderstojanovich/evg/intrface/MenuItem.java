@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 coas9
+ * Copyright (C) 2022 coas91@rocketmail.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
+ * Menu item. Used widely in menus.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -30,6 +31,12 @@ public class MenuItem {
     protected final MenuValue menuValue;
     protected final Menu.EditType editType;
 
+    /**
+     *
+     * @param string display text
+     * @param editType editable type {NoValue, SingleValue, MultiValue}
+     * @param menuValue
+     */
     public MenuItem(String string, Menu.EditType editType, MenuValue menuValue) {
         this.keyText = new DynamicText(Texture.FONT, string);
         this.editType = editType;
@@ -44,18 +51,30 @@ public class MenuItem {
         return editType;
     }
 
+    /**
+     * Render this menu item in the menu.
+     *
+     * @param shaderProgram shader program to use.
+     */
     public void render(ShaderProgram shaderProgram) {
         if (!keyText.isBuffered()) {
-            keyText.bufferAll();
+            keyText.bufferSmart();
         }
         keyText.render(shaderProgram);
 
         if (menuValue != null) {
             if (!menuValue.getValueText().isBuffered()) {
-                menuValue.getValueText().bufferAll();
+                menuValue.getValueText().bufferSmart();
             }
             menuValue.getValueText().render(shaderProgram);
         }
+    }
+
+    /**
+     * Deletes GL buffers used by this menu item. Call from the Renderer.
+     */
+    public void release() {
+        this.keyText.release();
     }
 
 }

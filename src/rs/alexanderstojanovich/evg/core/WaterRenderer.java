@@ -21,10 +21,13 @@ import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.level.Chunk;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Responsible for rendering the water reflections. Requires more CPU/GPU usage.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -32,13 +35,14 @@ public class WaterRenderer {
 
     private final LevelContainer levelContainer;
     private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
-    private final Camera camera = new Camera();
+    private final Camera camera;
 
     public static final int TOP_MASK = 1 << Block.TOP;
     public static final int BOTTOM_MASK = 1 << Block.BOTTOM;
 
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
     public WaterRenderer(LevelContainer levelContainer) {
+        this.camera = new Camera();
         this.levelContainer = levelContainer;
 //        this.debugQuad.setScale(0.25f);
     }
@@ -70,7 +74,7 @@ public class WaterRenderer {
         camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
         camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
         camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
-        camera.lookAt(levelContainer.getLevelActors().getPlayer().getCamera().getYaw(), -levelContainer.getLevelActors().getPlayer().getCamera().getPitch());
+        camera.lookAtAngle(levelContainer.getLevelActors().getPlayer().getCamera().getYaw(), -levelContainer.getLevelActors().getPlayer().getCamera().getPitch());
     }
 
     private void capture(float waterHeight) {
@@ -81,6 +85,9 @@ public class WaterRenderer {
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
+    /**
+     * Render the water reflections to water textures
+     */
     public void render() {
         frameBuffer.bind();
         prepare();
@@ -93,6 +100,11 @@ public class WaterRenderer {
 //            debugQuad.bufferAll();
 //        }
 //        debugQuad.render(ShaderProgram.getIntrfaceShader());
+    }
+
+    public void release() {
+        DSLogger.reportDebug("Water Renderer released.", null);
+        frameBuffer.getTexture().release();
     }
 
     public FrameBuffer getFrameBuffer() {

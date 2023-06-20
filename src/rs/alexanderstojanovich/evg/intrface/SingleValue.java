@@ -57,7 +57,7 @@ public final class SingleValue implements MenuValue {
     @Override
     public void render(ShaderProgram shaderProgram) {
         if (!valueText.isBuffered()) {
-            valueText.bufferAll();
+            valueText.bufferSmart();
         }
         valueText.render(shaderProgram);
     }

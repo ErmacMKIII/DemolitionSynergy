@@ -18,191 +18,138 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Vector3fColors;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Player extends ModelCritter {
+public class Player extends Critter implements Observer {
 
-    private double hitPoints = 100.0;
-    private Model currWeapon;
+//    private Model currWeapon;
     private final Camera camera;
+    public final LightSource light;
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
-    public static final Model PISTOL = Model.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9");
-    public static final Model SUB_MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9");
-    public static final Model SHOTGUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9");
-    public static final Model ASSAULT_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK");
-    public static final Model MACHINE_GUN = Model.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6");
-    public static final Model SNIPER_RIFLE = Model.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8");
+    public static final Model PISTOL = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9", true);
+    public static final Model SUB_MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9", true);
+    public static final Model SHOTGUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9", true);
+    public static final Model ASSAULT_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK", true);
+    public static final Model MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6", true);
+    public static final Model SNIPER_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8", true);
     public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
 
-    static {
-        for (Model weapon : WEAPONS) {
-            weapon.pos = WEAPON_POS;
-            weapon.setPrimaryColor(Vector3fColors.WHITE);
-            weapon.setScale(6.0f);
-            weapon.setrY((float) (-Math.PI / 2.0f));
-        }
+//    static {
+//        for (Model weapon : WEAPONS) {
+//            weapon.pos = WEAPON_POS;
+//            weapon.setPrimaryColor(Vector3fColors.WHITE);
+//            weapon.setScale(6.0f);
+//            weapon.setrY((float) (-Math.PI / 2.0f));
+//        }
+//    }
+    public Player(Model body) {
+        super(body);
+        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right);
+        this.light = new LightSource(this.camera.getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
-    public Player(Camera camera, Model currWeapon, Model model) {
-        super(model);
-        this.camera = camera;
-        this.currWeapon = currWeapon;
-        linkDirectionVectors();
-    }
-
-    private void linkDirectionVectors() {
-        this.yaw = camera.getYaw();
-        this.pitch = camera.getPitch();
-
-        this.front = camera.getFront();
-        this.right = camera.getRight();
-        this.up = camera.getUp();
-    }
-
-    public void switchWeapon(int num) {
-        currWeapon = WEAPONS[num - 1];
+//    public void switchWeapon(int num) {
+//        currWeapon = WEAPONS[num - 1];
+//    }
+    @Override
+    public void render(ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
     }
 
     @Override
-    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
-//        super.render(lightSrc, shaderProgram);
-        if (givenControl) {
-            if (currWeapon != null) {
-                if (!currWeapon.isBuffered()) {
-                    currWeapon.bufferAll();
-                }
-                currWeapon.render(lightSrc, ShaderProgram.getWeaponShader());
-            }
-            camera.render(shaderProgram);
-        }
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
+        camera.lookAtOffset(sensitivity, xoffset, yoffset);
     }
 
-    public double getHitPoints() {
-        return hitPoints;
+    @Override
+    public void lookAtAngle(float yaw, float pitch) {
+        camera.lookAtAngle(yaw, pitch);
     }
 
-    public Model getCurrWeapon() {
-        return currWeapon;
+    @Override
+    public void moveForward(float amount) {
+        super.moveForward(amount);
+        camera.moveForward(amount);
+        light.pos = body.pos;
     }
 
-    public void setCurrWeapon(Model currWeapon) {
-        this.currWeapon = currWeapon;
+    @Override
+    public void moveBackward(float amount) {
+        super.moveBackward(amount);
+        camera.moveBackward(amount);
+        light.pos = body.pos;
     }
 
+    @Override
+    public void moveLeft(float amount) {
+        super.moveLeft(amount);
+        camera.moveLeft(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void moveRight(float amount) {
+        super.moveRight(amount);
+        camera.moveRight(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void descend(float amount) {
+        super.descend(amount);
+        camera.descend(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void ascend(float amount) {
+        super.ascend(amount);
+        camera.ascend(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
     public Camera getCamera() {
         return camera;
     }
 
     @Override
-    public void turnRight(float angle) {
-        super.turnRight(angle);
-        if (givenControl) {
-            camera.turnRight(angle);
-            linkDirectionVectors();
-        }
+    public void setPos(Vector3f pos) {
+        super.setPos(pos);
+        camera.pos = pos;
+    }
+
+    public LightSource getLight() {
+        return light;
     }
 
     @Override
-    public void turnLeft(float angle) {
-        super.turnLeft(angle);
-        if (givenControl) {
-            camera.turnLeft(angle);
-            linkDirectionVectors();
-        }
+    public void render(ShaderProgram[] shaderPrograms) {
+        camera.render(shaderPrograms);
     }
 
     @Override
-    public void moveRight(float amount) {
-        if (givenControl) {
-            super.moveRight(amount);
-            camera.moveRight(amount);
-            linkDirectionVectors();
-        }
+    public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
+        super.renderContour(lightSources, shaderProgram);
     }
 
     @Override
-    public void moveLeft(float amount) {
-        if (givenControl) {
-            super.moveLeft(amount);
-            camera.moveLeft(amount);
-            linkDirectionVectors();
-        }
-    }
-
-    @Override
-    public void moveBackward(float amount) {
-        if (givenControl) {
-            super.moveBackward(amount);
-            camera.moveBackward(amount);
-            linkDirectionVectors();
-        }
-    }
-
-    @Override
-    public void moveForward(float amount) {
-        if (givenControl) {
-            super.moveForward(amount);
-            camera.moveForward(amount);
-            linkDirectionVectors();
-        }
-    }
-
-    @Override
-    public void setPitch(float pitch) {
-        super.setPitch(pitch);
-        linkDirectionVectors();
-    }
-
-    @Override
-    public void setYaw(float yaw) {
-        super.setYaw(yaw);
-        linkDirectionVectors();
-    }
-
-    @Override
-    public void lookAtAngle(float yaw, float pitch) {
-        super.lookAtAngle(yaw, pitch);
-        if (givenControl) {
-            camera.lookAt(yaw, pitch);
-            linkDirectionVectors();
-        }
-    }
-
-    @Override
-    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
-        super.lookAtOffset(sensitivity, xoffset, yoffset);
-        if (givenControl) {
-            camera.lookAt(sensitivity, xoffset, yoffset);
-            linkDirectionVectors();
-        }
-    }
-
-    @Override
-    public void setRight(Vector3f right) {
-        super.setRight(right);
-        linkDirectionVectors();
-    }
-
-    @Override
-    public void setUp(Vector3f up) {
-        super.setUp(up);
-        linkDirectionVectors();
-    }
-
-    @Override
-    public void setFront(Vector3f front) {
-        super.setFront(front);
-        linkDirectionVectors();
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
+        camera.render(shaderProgram);
+        super.render(lightSrc, shaderProgram);
     }
 
 }

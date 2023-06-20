@@ -16,11 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.models;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,19 +27,21 @@ import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.level.LightSources;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.level.TexByte;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
+import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -103,33 +100,46 @@ public class Block extends Model {
     };
 
     static {
-        readFromTxtFileMK2("cubex.txt");
+        BlockUtils.readFromTxtFileMK2("cubex.txt");
     }
 
     public Block(String texName) {
         super("cubex.txt", texName);
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices, texName);
-        indices.addAll(INDICES);
-        calcDims();
+        final Mesh mesh = new Mesh();
+        deepCopyTo(mesh, texName);
+        meshes.add(mesh);
+        Material material = new Material(Texture.getOrDefault(texName));
+        material.color = new Vector3f(Vector3fColors.WHITE);
+        materials.add(material);
+        width = height = depth = 2.0f;
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("cubex.txt", texName, pos, primaryColor, solid);
+        super("cubex.txt", texName);
+        this.pos = pos;
         Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices, texName);
-        indices.addAll(INDICES);
-        calcDims();
+        final Mesh mesh = new Mesh();
+        deepCopyTo(mesh, texName);
+        meshes.add(mesh);
+        Material material = new Material(Texture.getOrDefault(texName));
+        material.color = primaryColor;
+        materials.add(material);
+        this.solid = solid;
+        width = height = depth = 2.0f;
+    }
+
+    public Block(Model other) {
+        super(other);
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
-    public static void deepCopyTo(List<Vertex> vertices, String texName) {
-        int texIndex = Texture.TEX_MAP.get(texName).getValue();
+    public static void deepCopyTo(IList<Vertex> vertices, String texName) {
+        int texIndex = Texture.getOrDefaultIndex(texName);
         int row = texIndex / Texture.GRID_SIZE_WORLD;
         int col = texIndex % Texture.GRID_SIZE_WORLD;
         final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
 
-        vertices.clear();
         for (Vertex v : VERTICES) {
             vertices.add(new Vertex(
                     new Vector3f(v.getPos()),
@@ -141,143 +151,26 @@ public class Block extends Model {
         }
     }
 
-    @Deprecated
-    private static void readFromTxtFile(String fileName) {
-        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
-        if (in == null) {
-            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
-            return;
+    // cuz regular shallow copy doesn't work, for List of integers is applicable
+    public static void deepCopyTo(Mesh mesh, String texName) {
+        int texIndex = Texture.getOrDefaultIndex(texName);
+        int row = texIndex / Texture.GRID_SIZE_WORLD;
+        int col = texIndex % Texture.GRID_SIZE_WORLD;
+        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+
+        mesh.vertices.clear();
+        for (Vertex v : VERTICES) {
+            mesh.vertices.add(new Vertex(
+                    new Vector3f(v.getPos()),
+                    new Vector3f(v.getNormal()),
+                    (texIndex == -1)
+                            ? new Vector2f(v.getUv().x, v.getUv().y)
+                            : new Vector2f((v.getUv().x + row) * oneOver, (v.getUv().y + col) * oneOver))
+            );
         }
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(in));
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("v:")) {
-                    String[] things = line.replace("v:", "").trim().split(",|->", -1);
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[0]), Float.parseFloat(things[1]), Float.parseFloat(things[2]));
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[3]), Float.parseFloat(things[4]), Float.parseFloat(things[5]));
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[6]), Float.parseFloat(things[7]));
-                    Vertex v = new Vertex(pos, normal, uv);
-                    VERTICES.add(v);
-                } else if (line.startsWith("i:")) {
-                    String[] things = line.replace("i:", "").trim().split(" ", -1);
-                    INDICES.add(Integer.valueOf(things[0]));
-                    INDICES.add(Integer.valueOf(things[1]));
-                    INDICES.add(Integer.valueOf(things[2]));
-                }
-            }
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-    }
-
-    private static void readFromTxtFileMK2(String fileName) {
-        VERTICES.clear();
-        INDICES.clear();
-
-        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
-        if (in == null) {
-            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
-            return;
-        }
-        BufferedReader br = null;
-        try {
-            br = new BufferedReader(new InputStreamReader(in));
-            List<Vector3f> positions = new ArrayList<>();
-            List<Vector2f> uvs = new ArrayList<>();
-            List<Vector3f> normals = new ArrayList<>();
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.startsWith("v:")) {
-                    String[] things = line.split("\\s+");
-                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    positions.add(pos);
-                } else if (line.startsWith("t:")) {
-                    String[] things = line.split("\\s+");
-                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), Float.parseFloat(things[2]));
-                    uvs.add(uv);
-                } else if (line.startsWith("n:")) {
-                    String[] things = line.split("\\s+");
-                    Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
-                    normals.add(normal);
-                } else if (line.startsWith("i:")) {
-                    String[] things = line.split("\\s+");
-                    for (String thing : things) {
-                        if (thing.equals("i:")) {
-                            continue;
-                        }
-
-                        String[] subThings = thing.split("/");
-
-                        int indexOfVertex = Integer.parseInt(subThings[0]);
-                        Vector3f pos = new Vector3f(positions.get(indexOfVertex));
-
-                        int indexOfUv = Integer.parseInt(subThings[1]);
-                        Vector2f uv = new Vector2f(uvs.get(indexOfUv));
-
-                        int indexOfNormal = Integer.parseInt(subThings[2]);
-                        Vector3f normal = new Vector3f(normals.get(indexOfNormal));
-
-                        Vertex vertex = new Vertex(pos, normal, uv);
-
-                        if (!VERTICES.contains(vertex)) {
-                            VERTICES.add(vertex);
-                        }
-
-                        INDICES.add(VERTICES.lastIndexOf(vertex));
-                    }
-
-                }
-            }
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (br != null) {
-            try {
-                br.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-    }
-
-    @Override
-    public void bufferIndices() {
-        // storing indices in the buffer
-        IntBuffer ib = createIntBuffer(getFaceBits());
-        // storing indices buffer on the graphics card
-        if (ibo == 0) {
-            ibo = GL15.glGenBuffers();
-        }
-
-        if (ib.capacity() != 0) {
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
-        }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        if (ib.capacity() != 0) {
-            MemoryUtil.memFree(ib);
-        }
-    }
-
-    @Override
-    public void bufferAll() { // explicit call to buffer unbuffered before the rendering
-        bufferVertices();
-        bufferIndices();
-        buffered = true;
+        mesh.indices.clear();
+        mesh.indices.addAll(INDICES);
+        mesh.unbuffer();
     }
 
     /**
@@ -299,22 +192,22 @@ public class Block extends Model {
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
-
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
+            Texture primaryTexture = Texture.getOrDefault(texName);
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            lightSrc.updateLightsInShader(shaderProgram);
+            lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
-                block.useLight(shaderProgram);
                 block.setAlpha(shaderProgram);
                 block.primaryColor(shaderProgram);
 
@@ -352,23 +245,23 @@ public class Block extends Model {
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
-
         if (shaderProgram != null) {
             shaderProgram.bind();
-            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
+
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
+            Texture primaryTexture = Texture.TEX_STORE.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            lightSrc.updateLightsInShader(shaderProgram);
+            lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
             for (Block block : blocks) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    block.useLight(shaderProgram);
                     block.setAlpha(shaderProgram);
                     block.primaryColor(shaderProgram);
 
@@ -387,18 +280,14 @@ public class Block extends Model {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    private void calcDims() {
+    @Override
+    public void calcDims() {
         final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
         final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
 
         width = Math.abs(maxv.x - minv.x) * scale;
         height = Math.abs(maxv.y - minv.y) * scale;
         depth = Math.abs(maxv.z - minv.z) * scale;
-    }
-
-    @Override
-    public String toString() {
-        return "Block{" + "texture=" + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
@@ -455,15 +344,14 @@ public class Block extends Model {
     @Deprecated
     public boolean canBeSeenByAdv(Vector3f camFront, Vector3f camPos) {
         boolean bool = false;
-
+        Vector3f temp0 = new Vector3f();
+        Vector3f vz = this.pos.sub(camPos, temp0).normalize(temp0);
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
-            Vector3f temp3 = new Vector3f();
-            Vector3f vz = this.pos.sub(camPos, temp3).normalize(temp3);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
+            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
                 bool = true;
                 break;
             }
@@ -492,15 +380,14 @@ public class Block extends Model {
     @Deprecated
     public static boolean canBeSeenByAdv(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
         boolean bool = false;
-
+        Vector3f temp0 = new Vector3f();
+        Vector3f vz = blockPos.sub(camPos, temp0).normalize(temp0);
         for (Vector3f normal : FACE_NORMALS) {
             Vector3f temp1 = new Vector3f();
             Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            Vector3f temp3 = new Vector3f();
-            Vector3f vz = blockPos.sub(camPos, temp3).normalize(temp3);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && vz.dot(camFront) > -5E-3f) {
+            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
                 bool = true;
                 break;
             }
@@ -531,6 +418,7 @@ public class Block extends Model {
     }
 
     public void disableFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
             subVertex.setEnabled(false);
         }
@@ -538,6 +426,7 @@ public class Block extends Model {
     }
 
     public void enableFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
             subVertex.setEnabled(true);
         }
@@ -545,6 +434,7 @@ public class Block extends Model {
     }
 
     public void enableAllFaces() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             vertex.setEnabled(true);
         }
@@ -552,6 +442,7 @@ public class Block extends Model {
     }
 
     public void disableAllFaces() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             vertex.setEnabled(false);
         }
@@ -559,6 +450,7 @@ public class Block extends Model {
     }
 
     public void reverseFaceVertexOrder() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (int faceNum = 0; faceNum <= 5; faceNum++) {
             Collections.reverse(getFaceVertices(vertices, faceNum));
         }
@@ -573,6 +465,7 @@ public class Block extends Model {
 
     public void setUVsForSkybox() {
         revertGroupsOfVertices();
+        IList<Vertex> vertices = meshes.getFirst().vertices;
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
         vertices.get(4 * LEFT).getUv().y = 1.0f / 3.0f;
@@ -614,14 +507,16 @@ public class Block extends Model {
     }
 
     public void nullifyNormalsForFace(int faceNum) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         List<Vertex> faceVertices = Block.getFaceVertices(vertices, faceNum);
         for (Vertex fv : faceVertices) {
             fv.getNormal().zero();
         }
-        buffered = false;
+        meshes.getFirst().buffered = false;
     }
 
     private void revertGroupsOfVertices() {
+        IList<Vertex> vertices = meshes.getFirst().vertices;
         Collections.reverse(vertices.subList(4 * LEFT, 4 * LEFT + 3));
         Collections.reverse(vertices.subList(4 * RIGHT, 4 * RIGHT + 3));
         Collections.reverse(vertices.subList(4 * BOTTOM, 4 * BOTTOM + 3));
@@ -653,6 +548,7 @@ public class Block extends Model {
 
     public int getNumOfEnabledVertices() {
         int num = 0;
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 num++;
@@ -785,6 +681,11 @@ public class Block extends Model {
         }
         // storing indices in the buffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            return null;
+        }
+
         for (Integer index : indices) {
             intBuff.put(index);
         }
@@ -974,7 +875,7 @@ public class Block extends Model {
         byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
         System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
         offset += posArr.length;
-        byte[] colArr = Vector3fUtils.vec3fToByteArray(primaryColor);
+        byte[] colArr = Vector3fUtils.vec3fToByteArray(materials.getFirst().color);
         System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
 
         return byteArray;
@@ -1000,6 +901,16 @@ public class Block extends Model {
         Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(super.toString());
+        sb.append("Block{");
+        sb.append("enabledFaces=").append(enabledFaces);
+        sb.append(", verticesReversed=").append(verticesReversed);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

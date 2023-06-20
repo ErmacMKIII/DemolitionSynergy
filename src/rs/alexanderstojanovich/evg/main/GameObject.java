@@ -26,13 +26,15 @@ import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.critter.ModelCritter;
+import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.models.Chunk;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -50,7 +52,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v33D";
+    public static final String TITLE = "Demolition Synergy - v34FOX";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -69,6 +71,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static Quad SPLASH_SCREEN;
 
+    public static final Object MUTEX = new Object();
+
     /**
      * Init this game container.
      */
@@ -84,7 +88,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface = new Intrface();
         //----------------------------------------------------------------------
         MY_WINDOW.setFullscreen(cfg.isFullscreen());
-        MY_WINDOW.setVSync(cfg.isVsync());
+//        MY_WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         MY_WINDOW.centerTheWindow();
         //----------------------------------------------------------------------
         musicPlayer.setGain(cfg.getMusicVolume());
@@ -92,7 +96,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------                        
         game = new Game(); // init game with given configuration and game object
         renderer = new GameRenderer(); // init renderer with given game object
-        DSLogger.reportInfo("Game initialized.", null);
+        DSLogger.reportDebug("Game initialized.", null);
         //----------------------------------------------------------------------
         initialized = true;
     }
@@ -118,9 +122,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
         //----------------------------------------------------------------------
         renderer.start();
-        DSLogger.reportInfo("Renderer started.", null);
-        DSLogger.reportInfo("Game will start soon.", null);
+        DSLogger.reportDebug("Renderer started.", null);
+        DSLogger.reportDebug("Game will start soon.", null);
         game.go();
+        game.cleanUp();
+        intrface.cleanUp();
         //----------------------------------------------------------------------
         try {
             renderer.join(); // and it's blocked here until it finishes
@@ -145,9 +151,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
-            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
-            levelContainer.update(deltaTime);
-            Vector3f pos = levelContainer.levelActors.getMainActor().getPosition();
+            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
+            synchronized (MUTEX) {
+                levelContainer.update(deltaTime);
+            }
+            Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
@@ -186,7 +194,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             GameObject.getLevelContainer().setProgress(0.0f);
         }
 
-        intrface.update();
+        synchronized (MUTEX) {
+            intrface.update();
+        }
     }
 
     public static void assertCheckCollision(boolean collision) {
@@ -222,34 +232,53 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public static void render() {
-        if (!initialized) {
+        if (!initialized || GameObject.MY_WINDOW.shouldClose()) {
             return;
         }
 
         MasterRenderer.render(); // it clears color bit and depth buffer bit
         if (SPLASH_SCREEN.isEnabled()) {
             if (!SPLASH_SCREEN.isBuffered()) {
-                SPLASH_SCREEN.bufferAll();
+                SPLASH_SCREEN.bufferSmart();
             }
             SPLASH_SCREEN.render(ShaderProgram.getIntrfaceShader());
         } else {
             if (!PerspectiveRenderer.isBuffered()) {
-                PerspectiveRenderer.bufferAll(); // it sets perspective matrix accross shaders       
+                PerspectiveRenderer.bufferAndRender(); // it sets perspective matrix accross shaders       
             }
 
-            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                Camera mainCamera = levelContainer.getLevelActors().mainCamera();
-                mainCamera.render(ShaderProgram.SHADER_PROGRAMS);
-
-                levelContainer.render();
-                if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                    waterRenderer.render();
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor                                
+                synchronized (MUTEX) {
+                    levelContainer.render();
+                    if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                        waterRenderer.render();
+                    }
                 }
             }
-            intrface.render(ShaderProgram.getIntrfaceShader());
+            synchronized (MUTEX) {
+                intrface.render(ShaderProgram.getIntrfaceShader());
+            }
         }
 
         MY_WINDOW.render();
+    }
+
+    /*
+    * Release all GL components (by deleting their buffers)
+    *  Call from renderer.
+     */
+    public static void release() {
+        GameObject.SPLASH_SCREEN.release();
+        GameObject.intrface.release();
+        GameObject.waterRenderer.release();
+        GameObject.levelContainer.chunks.getOptimizedTuples().forEach(t -> t.release());
+        DSLogger.reportDebug("Optimized tuples deleted.", null);
+
+//        Quad.globlRelease();
+//        DynamicText.globlRelease();
+//        DSLogger.reportDebug("Global release of the buffers. Done.", null);
+        Texture.releaseAllTextures();
+        DSLogger.reportDebug("Textures deleted.", null);
     }
 
     // -------------------------------------------------------------------------
@@ -268,7 +297,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return did chunk operations modify anything (something changed).
      */
     public static boolean chunkOperations() {
-        return levelContainer.chunkOperations();
+        synchronized (MUTEX) {
+            return levelContainer.chunkOperations();
+        }
     }
 
     /**
@@ -276,14 +307,40 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public static void animate() {
-        levelContainer.animate();
+        synchronized (MUTEX) {
+            levelContainer.animate();
+        }
     }
 
     /**
      * Optimize with special tuples
      */
     public static void optimize() {
-        levelContainer.optimize();
+        synchronized (MUTEX) {
+            levelContainer.chunks.setOptimized(false); // this is also hint to not render
+            levelContainer.optimize();
+            LevelContainer.LIGHT_SOURCES.setAllModified();
+        }
+    }
+
+    /**
+     * Is level container optimized
+     */
+    public static void isOptimized() {
+        synchronized (MUTEX) {
+            levelContainer.chunks.isOptimized();
+        }
+    }
+
+    /**
+     * Set level container optimization flag
+     *
+     * @param optimized optimized flag to set
+     */
+    public static void setOptimized(boolean optimized) {
+        synchronized (MUTEX) {
+            levelContainer.chunks.setOptimized(optimized);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -310,6 +367,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return ok;
     }
 
+    // Called from concurrent thread
+    public static boolean generateSinglePlayerLevel(int numberOfBlocks) {
+        boolean ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        return ok;
+    }
+
+    // TODO: Not implemented..
+    public static boolean generateMultiPlayerLevel(int numberOfBlocks) {
+        return false;
+    }
+
     // Checked from main and Renderer
     public static boolean isWorking() {
         return levelContainer.isWorking();
@@ -321,18 +389,40 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public static void destroy() {
         ConcurrentDialog.EXECUTOR.shutdown();
-        MY_WINDOW.loadContext();
         MY_WINDOW.destroy();
     }
 
-    // collision detection - critter against solid obstacles
-    public static boolean hasCollisionWithCritter(Critter critter) {
-        return levelContainer.hasCollisionWithEnvironment(critter);
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters.
+     *
+     * @param preditable Predictable to have collision with environment
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Predictable preditable) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(preditable);
     }
 
-    // collision detection - critter against solid obstacles
-    public static boolean hasCollisionWithCritter(ModelCritter livingCritter) {
-        return levelContainer.hasCollisionWithEnvironment(livingCritter);
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters. (virtually) => 0.07f dimension
+     *
+     * @param observer Predictable to have collision with environment
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Observer observer) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(observer);
+    }
+
+    /**
+     * Test collision with Environment. Must not leave the SKYBOX and not
+     * collide with solid objects or critters.
+     *
+     * @param critter critter (implements predictable). Has (model) body.
+     * @return test true/false
+     */
+    public static boolean hasCollisionWith(Critter critter) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(critter);
     }
 
     // prints general and detailed information about solid and fluid chunks
