@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.light.LightSources;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
@@ -31,6 +30,8 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
+import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
@@ -49,14 +50,16 @@ public class Tuple extends Blocks {
     // like model matrices, color and texture name, and enabled faces in 6-bit represenation
     // iboMap is not used here
 
+    public static final int VEC2_SIZE = 2;
     public static final int VEC3_SIZE = 3;
+    public static final int VEC4_SIZE = 4;
     public static final int MAT4_SIZE = 16;
 
-    protected int vec3Vbo = 0;
-    protected static FloatBuffer vec3FloatBuff = null;
+    protected int vec4Vbo = 0; // color
+    protected static FloatBuffer vec4FloatColorBuff = null;
 
-    protected int mat4Vbo = 0;
-    protected static FloatBuffer mat4FloatBuff = null;
+    protected int mat4Vbo = 0; // model matrix [col0, col1, col2, col3]
+    protected static FloatBuffer mat4FloatModelBuff = null;
 
     protected final String name;
 
@@ -254,9 +257,9 @@ public class Tuple extends Blocks {
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
+            GL20.glVertexAttribPointer(0, VEC3_SIZE, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos            
+            GL20.glVertexAttribPointer(1, VEC3_SIZE, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal                                        
+            GL20.glVertexAttribPointer(2, VEC2_SIZE, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv 
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
@@ -283,33 +286,34 @@ public class Tuple extends Blocks {
             return false;
         }
 
-        vec3FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * VEC3_SIZE);
-        if (vec3FloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(vec3FloatBuff) == MemoryUtil.NULL) {
+        vec4FloatColorBuff = MemoryUtil.memCallocFloat(blockList.size() * VEC4_SIZE);
+        if (vec4FloatColorBuff.capacity() != 0 && MemoryUtil.memAddressSafe(vec4FloatColorBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
 
         for (Block block : blockList) {
-            Vector3f color = block.getMaterials().getFirst().getColor();
-            vec3FloatBuff.put(color.x);
-            vec3FloatBuff.put(color.y);
-            vec3FloatBuff.put(color.z);
+            Vector4f color = block.getPrimaryRGBAColor();
+            vec4FloatColorBuff.put(color.x);
+            vec4FloatColorBuff.put(color.y);
+            vec4FloatColorBuff.put(color.z);
+            vec4FloatColorBuff.put(color.w);
         }
-        vec3FloatBuff.flip();
+        vec4FloatColorBuff.flip();
 
-        if (vec3Vbo == 0) {
-            vec3Vbo = GL15.glGenBuffers();
+        if (vec4Vbo == 0) {
+            vec4Vbo = GL15.glGenBuffers();
         }
 
-        if (vec3FloatBuff.capacity() != 0) {
+        if (vec4FloatColorBuff.capacity() != 0) {
             GL30.glBindVertexArray(vao); //**
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec3Vbo);
-            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec3FloatBuff, GL15.GL_STATIC_DRAW);
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vec4Vbo);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vec4FloatColorBuff, GL15.GL_STATIC_DRAW);
 
             GL20.glEnableVertexAttribArray(3);
 
             GL20.glEnableVertexAttribArray(3);
-            GL20.glVertexAttribPointer(3, 3, GL11.GL_FLOAT, false, VEC3_SIZE * 4, 0); // this is for color
+            GL20.glVertexAttribPointer(3, VEC4_SIZE, GL11.GL_FLOAT, false, VEC4_SIZE * 4, 0); // this is for color
             GL33.glVertexAttribDivisor(3, 1);
             GL20.glDisableVertexAttribArray(3);
 
@@ -318,8 +322,8 @@ public class Tuple extends Blocks {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (vec3FloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(vec3FloatBuff);
+        if (vec4FloatColorBuff.capacity() != 0) {
+            MemoryUtil.memFree(vec4FloatColorBuff);
         }
 
         return true;
@@ -336,8 +340,8 @@ public class Tuple extends Blocks {
             return false;
         }
 
-        mat4FloatBuff = MemoryUtil.memCallocFloat(blockList.size() * MAT4_SIZE);
-        if (mat4FloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(mat4FloatBuff) == MemoryUtil.NULL) {
+        mat4FloatModelBuff = MemoryUtil.memCallocFloat(blockList.size() * MAT4_SIZE);
+        if (mat4FloatModelBuff.capacity() != 0 && MemoryUtil.memAddressSafe(mat4FloatModelBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             return false;
         }
@@ -348,22 +352,22 @@ public class Tuple extends Blocks {
                 vectArr[i] = new Vector4f();
                 Matrix4f modelMatrix = block.calcModelMatrix();
                 modelMatrix.getColumn(i, vectArr[i]);
-                mat4FloatBuff.put(vectArr[i].x);
-                mat4FloatBuff.put(vectArr[i].y);
-                mat4FloatBuff.put(vectArr[i].z);
-                mat4FloatBuff.put(vectArr[i].w);
+                mat4FloatModelBuff.put(vectArr[i].x);
+                mat4FloatModelBuff.put(vectArr[i].y);
+                mat4FloatModelBuff.put(vectArr[i].z);
+                mat4FloatModelBuff.put(vectArr[i].w);
             }
         }
-        mat4FloatBuff.flip();
+        mat4FloatModelBuff.flip();
 
         if (mat4Vbo == 0) {
             mat4Vbo = GL15.glGenBuffers();
         }
 
-        if (mat4FloatBuff.capacity() != 0) {
+        if (mat4FloatModelBuff.capacity() != 0) {
             GL30.glBindVertexArray(vao); //**
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mat4Vbo);
-            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatBuff, GL15.GL_STATIC_DRAW);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mat4FloatModelBuff, GL15.GL_STATIC_DRAW);
 
             GL20.glEnableVertexAttribArray(4);
             GL20.glEnableVertexAttribArray(5);
@@ -388,8 +392,8 @@ public class Tuple extends Blocks {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (mat4FloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(mat4FloatBuff);
+        if (mat4FloatModelBuff.capacity() != 0) {
+            MemoryUtil.memFree(mat4FloatModelBuff);
         }
 
         return true;
@@ -536,6 +540,89 @@ public class Tuple extends Blocks {
         }
     }
 
+    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture) {
+        if (!tuples.isEmpty()) {
+            shaderProgram.bind();
+
+            /**
+             * layout (location = 0) in vec3 pos; layout (location = 1) in vec3
+             * normal; layout (location = 2) in vec2 uv; layout (location = 3)
+             * in vec3 color; layout (location = 4) in vec4 column0; layout
+             * (location = 5) in vec4 column1; layout (location = 6) in vec4
+             * column2; layout (location = 7) in vec4 column3;
+             */
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "normal");
+            shaderProgram.bindAttribute(2, "uv");
+
+            shaderProgram.bindAttribute(3, "color");
+
+            shaderProgram.bindAttribute(4, "column0");
+            shaderProgram.bindAttribute(5, "column1");
+            shaderProgram.bindAttribute(6, "column2");
+            shaderProgram.bindAttribute(7, "column3");
+
+            // -- Lights            
+            lightSources.updateLightsInShaderIfModified(shaderProgram);
+            // --
+            Texture blocksTexture = Texture.WORLD;
+            if (blocksTexture != null) {
+                blocksTexture.bind(0, shaderProgram, "modelTexture0");
+            }
+
+            if (waterTexture != null && Game.isWaterEffects()) {
+                shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+                waterTexture.bind(1, shaderProgram, "modelTexture1");
+            }
+
+            for (Tuple tuple : tuples) {
+                if (!tuple.isBuffered()) {
+                    tuple.bufferAll();
+                }
+
+                if (!tuple.blockList.isEmpty() && tuple.faceBits() > 0) {
+                    GL30.glBindVertexArray(tuple.vao);
+
+                    GL20.glEnableVertexAttribArray(0);
+                    GL20.glEnableVertexAttribArray(1);
+                    GL20.glEnableVertexAttribArray(2);
+                    GL20.glEnableVertexAttribArray(3);
+                    GL20.glEnableVertexAttribArray(4);
+                    GL20.glEnableVertexAttribArray(5);
+                    GL20.glEnableVertexAttribArray(6);
+                    GL20.glEnableVertexAttribArray(7);
+
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, tuple.ibo);
+                    GL32.glDrawElementsInstancedBaseVertex(
+                            GL11.GL_TRIANGLES,
+                            tuple.indicesNum,
+                            GL11.GL_UNSIGNED_INT,
+                            0,
+                            tuple.blockList.size(),
+                            0
+                    );
+
+                    GL20.glDisableVertexAttribArray(0);
+                    GL20.glDisableVertexAttribArray(1);
+                    GL20.glDisableVertexAttribArray(2);
+                    GL20.glDisableVertexAttribArray(3);
+                    GL20.glDisableVertexAttribArray(4);
+                    GL20.glDisableVertexAttribArray(5);
+                    GL20.glDisableVertexAttribArray(6);
+                    GL20.glDisableVertexAttribArray(7);
+
+                    GL30.glBindVertexArray(0);
+
+                    GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+                }
+            }
+            Texture.unbind(0);
+            Texture.unbind(1);
+
+            ShaderProgram.unbind();
+        }
+    }
+
     @Override
     public void release() {
         super.release();
@@ -587,8 +674,8 @@ public class Tuple extends Blocks {
         return !texName().equals("water");
     }
 
-    public int getVec3Vbo() {
-        return vec3Vbo;
+    public int getVec4Vbo() {
+        return vec4Vbo;
     }
 
     public int getMat4Vbo() {
@@ -603,12 +690,12 @@ public class Tuple extends Blocks {
         return ibo;
     }
 
-    public FloatBuffer getVec3FloatBuff() {
-        return vec3FloatBuff;
+    public FloatBuffer getVec4FloatColorBuff() {
+        return vec4FloatColorBuff;
     }
 
-    public FloatBuffer getMat4FloatBuff() {
-        return mat4FloatBuff;
+    public FloatBuffer getMat4FloatModelBuff() {
+        return mat4FloatModelBuff;
     }
 
     public IntBuffer getIntBuff() {

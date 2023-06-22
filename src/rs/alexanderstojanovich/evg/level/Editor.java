@@ -17,13 +17,14 @@
 package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -61,7 +62,7 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace()) {
-            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.GREEN, true);
+            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.GREEN, true);
         }
 
         GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -94,7 +95,7 @@ public class Editor {
             if (solidTargetIndex != -1) {
                 selectedCurr = chunk.getBlockList().get(solidTargetIndex);
                 selectedCurrIndex = solidBlkIndex;
-                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
+                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW, true);
             }
         }
 
@@ -127,7 +128,7 @@ public class Editor {
             if (fluidTargetIndex != -1) {
                 selectedCurr = currFluidChunk.getBlockList().get(fluidTargetIndex);
                 selectedCurrIndex = fluidBlkIndex;
-                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), Vector3fColors.YELLOW, true);
+                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW, true);
             }
         }
     }
@@ -175,7 +176,7 @@ public class Editor {
             }
 
             if (!cannotPlace()) {
-                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
+                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE, true);
             }
         }
     }
@@ -216,7 +217,7 @@ public class Editor {
             }
 
             if (!cannotPlace()) {
-                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.BLUE, true);
+                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE, true);
             }
         }
     }
@@ -242,7 +243,7 @@ public class Editor {
             cant = GameObject.getLevelContainer().maxCountReached() || placeOccupied || intersects || leavesSkybox;
         }
         if (cant) {
-            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), Vector3fColors.RED, true);
+            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.RED, true);
         }
         return cant;
     }
@@ -299,8 +300,8 @@ public class Editor {
 
     public static void cycleBlockColor() {
         if (selectedNew != null) {
-            Vector3fColors.ColorName[] values = Vector3fColors.ColorName.values();
-            selectedNew.setPrimaryColor(Vector3fColors.getColorOrDefault(values[++blockColorNum % values.length]));
+            GlobalColors.ColorName[] values = GlobalColors.ColorName.values();
+            selectedNew.setPrimaryColor(new Vector4f(GlobalColors.getRGBColorOrDefault(values[++blockColorNum % values.length]), selectedNew.isSolid() ? 1.0f : 0.5f));
         }
     }
 

@@ -17,7 +17,7 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import org.joml.Vector2f;
-import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -56,18 +56,18 @@ public interface ComponentIfc {
     public void setPos(Vector2f pos);
 
     /**
-     * RGB Color in OpenGL notation (scaled from 0 to 1)
+     * RGBA Color in OpenGL notation (scaled from 0 to 1)
      *
-     * @return VEC3 RGB Color
+     * @return VEC4 RGBA Color
      */
-    public Vector3f getColor();
+    public Vector4f getColor();
 
     /**
-     * Set RGB Color in OpenGL notation (scaled from 0 to 1)
+     * Set RGBA Color in OpenGL notation (scaled from 0 to 1)
      *
-     * @param color VEC# RGB Color
+     * @param color VEC4 RGBA Color
      */
-    public void setColor(Vector3f color);
+    public void setColor(Vector4f color);
 
     /**
      * Additional scaling to standard width & height (default is 1.0)

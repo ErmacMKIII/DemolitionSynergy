@@ -237,7 +237,7 @@ public class CacheModule {
                     byte[] somePos = Vector3fUtils.vec3fToByteArray(block.getPos());
                     System.arraycopy(somePos, 0, MEMORY, pos, somePos.length);
                     pos += somePos.length;
-                    Vector3f primCol = block.getMaterials().getFirst().getColor();
+                    Vector3f primCol = block.getPrimaryRGBColor();
                     byte[] someCol = Vector3fUtils.vec3fToByteArray(primCol);
                     System.arraycopy(someCol, 0, MEMORY, pos, someCol.length);
                     pos += someCol.length;

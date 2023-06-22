@@ -19,8 +19,9 @@ package rs.alexanderstojanovich.evg.intrface;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.joml.Vector2f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -47,10 +48,10 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
                 boolean execStatus = execute(input.toString());
                 if (execStatus) {
                     dialog.setContent(success);
-                    dialog.color = Vector3fColors.GREEN;
+                    dialog.color = new Vector4f(GlobalColors.GREEN, 1.0f);
                 } else {
                     dialog.setContent(fail);
-                    dialog.color = Vector3fColors.RED;
+                    dialog.color = new Vector4f(GlobalColors.RED, 1.0f);
                 }
             } else {
                 dialog.setContent("");

@@ -10,7 +10,7 @@ in vec4 varGLPos;
 in vec3 varModelPos;
 in vec4 varColor;
 
-uniform vec3 modelColor0;
+uniform vec4 modelColor0;
 uniform float modelAlpha;
 uniform sampler2D modelTexture0; // this is primary texture
 uniform sampler2D modelTexture1; // this is water texture

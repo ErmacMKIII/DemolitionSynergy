@@ -11,8 +11,8 @@ in vec3 varModelPos;
 in vec4 varColor;
 in vec4 varLightColor;
 
-uniform vec3 modelColor0;
-uniform vec3 modelColor1;
+uniform vec4 modelColor0;
+uniform vec4 modelColor1;
 
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
@@ -34,5 +34,5 @@ vec4 fog(vec3 posPoint, vec3 posOrigin, vec4 color, vec4 fogColor, float fogDens
 void main() {    
 	vec4 texColor = texture2D(modelTexture0, varUV);
 	vec4 primColor = varColor * texColor;
-	gl_FragColor = varLightColor * fog(cameraPos, varModelPos.xyz, primColor, FOG_COLOR, FOG_DENS);	 
+	gl_FragColor = varLightColor * fog(cameraPos, varModelPos.xyz, primColor, FOG_COLOR, FOG_DENS);	
 }

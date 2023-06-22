@@ -64,10 +64,10 @@ void main() {
 	float cvet = cvet(varUV);
 	
 	if (texColor.a == 1.0) {
-		gl_FragColor.rgb = 4.0 * varLightColor.rgb * primColor.rgb * cvet;
+		gl_FragColor.rgb = 2.0 * primColor.rgb * cvet;
 		gl_FragColor.a = 1.0;
 	} else if (texColor.a < 1.0 && check > 0.0) {
-		gl_FragColor.rgb = 4.0 * varLightColor.rgb * varColor.rgb * cvet;
+		gl_FragColor.rgb = 2.0 * varColor.rgb * cvet;
 		gl_FragColor.a = 1.0;
 	} else {
 		gl_FragColor = vec4(0.0);	

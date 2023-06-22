@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -59,12 +60,14 @@ public class LevelContainer implements GravityEnviroment {
     protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
+    public static final Vector4f SUN_COLOR = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
+    public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
+
     public static final float SUN_SCALE = 20.0f;
     public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
-            = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);
+            = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
 
     public final Chunks chunks = new Chunks();
 
@@ -98,7 +101,9 @@ public class LevelContainer implements GravityEnviroment {
     public static final float BASE = 20.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
-    public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
+
+    public static final Vector3f SKYBOX_COLOR_RGB = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
+    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 0.15f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_BLOCKS = 131070;
 
@@ -239,16 +244,16 @@ public class LevelContainer implements GravityEnviroment {
 
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block("doom0");
-                entity.getPos().x = (4 * i) & 0xFFFFFFFE;
-                entity.getPos().y = (4 * j) & 0xFFFFFFFE;
-                entity.getPos().z = 3 & 0xFFFFFFFE;
+                Block blk = new Block("doom0");
+                blk.getPos().x = (4 * i) & 0xFFFFFFFE;
+                blk.getPos().y = (4 * j) & 0xFFFFFFFE;
+                blk.getPos().z = 3 & 0xFFFFFFFE;
 
-                entity.getPrimaryColor().x = 0.5f * i + 0.25f;
-                entity.getPrimaryColor().y = 0.5f * j + 0.25f;
-                entity.getPrimaryColor().z = 0.0f;
+                blk.getPrimaryRGBColor().x = 0.5f * i + 0.25f;
+                blk.getPrimaryRGBColor().y = 0.5f * j + 0.25f;
+                blk.getPrimaryRGBColor().z = 0.0f;
 
-                chunks.addBlock(entity);
+                chunks.addBlock(blk);
 
                 progress += 100.0f / 9.0f;
             }
@@ -844,8 +849,8 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
             SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
             float factor = MathUtils.expm1(Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f));
-            SUN.setPrimaryColor(new Vector3f(SUN_COLOR).mul(factor));
-            SKYBOX.setPrimaryColor(new Vector3f(SKYBOX_COLOR).mul(Math.max(factor, 5E-2f)));
+            SUN.setPrimaryColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(factor), 1.0f));
+            SKYBOX.setPrimaryColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(factor, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(factor * SUN_INTENSITY);
             cameraInFluid = isCameraInFluid();
 
@@ -895,7 +900,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.render(vChnkIdList, ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
+        chunks.renderOptimizedReduced(ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -952,7 +957,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         chunks.prepareOptimized(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.render(vChnkIdList, ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
+        chunks.renderOptimizedReduced(ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {

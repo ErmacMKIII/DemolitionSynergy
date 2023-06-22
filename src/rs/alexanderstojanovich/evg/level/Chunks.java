@@ -477,8 +477,8 @@ public class Chunks {
         }
     }
 
-    public void render(IList<Integer> queue, ShaderProgram shaderProgram, LightSources lightSources) {
-        if (!optimized || optimizedTuples.isEmpty() || queue.isEmpty()) {
+    public void renderOptimized(ShaderProgram shaderProgram, LightSources lightSources) {
+        if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -489,6 +489,14 @@ public class Chunks {
 
             tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
         }
+    }
+
+    public void renderOptimizedReduced(ShaderProgram shaderProgram, LightSources lightSources) {
+        if (!optimized || optimizedTuples.isEmpty()) {
+            return;
+        }
+
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, GameObject.getWaterRenderer().getFrameBuffer().getTexture());
     }
 
     // all blocks from all the chunks in one big list

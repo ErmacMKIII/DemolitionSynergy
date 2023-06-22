@@ -13,6 +13,7 @@ out vec2 varUV;
 out vec4 varGLPos;
 out vec3 varModelPos;
 out vec4 varColor;
+out vec4 varLightColor;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
@@ -21,10 +22,8 @@ uniform mat4 projectionMatrix;
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
 
-uniform vec3 modelColor0;
-uniform vec3 modelColor1;
-
-uniform float modelAlpha;
+uniform vec4 modelColor0;
+uniform vec4 modelColor1;
 
 struct LightSource {
 	vec3 pos;
@@ -76,7 +75,7 @@ void main() {
     varNormal = normal;
     varUV = uv;    
 	
-	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);
+	varColor = fog(cameraPos, varModelPos.xyz, modelColor0, FOG_COLOR, FOG_DENS);
 	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos + normal, 1.0)).xyz) + normal);
 	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);	
@@ -96,6 +95,5 @@ void main() {
 		lightColor += light * modelLight.color;
 	}
 	
-	//varLightColor = vec4(lightColor, 1.0);
-	varColor.rgb *= lightColor;
+	varLightColor = vec4(lightColor, 1.0);
 }

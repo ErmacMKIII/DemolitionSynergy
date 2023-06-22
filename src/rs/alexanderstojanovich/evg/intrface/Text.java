@@ -21,6 +21,7 @@ import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -33,7 +34,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Text component of the interface. Contains text. Renders string to the screen.
@@ -71,7 +72,7 @@ public class Text implements ComponentIfc {
 
     protected Vector2f pos = new Vector2f();
     protected float scale = 1.0f;
-    protected Vector3f color = Vector3fColors.WHITE;
+    protected Vector4f color = new Vector4f(GlobalColors.WHITE, 1.0f);
 
     protected int charWidth = STD_FONT_WIDTH;
     protected int charHeight = STD_FONT_HEIGHT;
@@ -107,7 +108,7 @@ public class Text implements ComponentIfc {
         this.enabled = true;
     }
 
-    public Text(Texture texture, String content, Vector3f color, Vector2f pos) {
+    public Text(Texture texture, String content, Vector4f color, Vector2f pos) {
         this.texture = texture;
         this.content = content;
         this.color = color;
@@ -560,16 +561,6 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public Vector3f getColor() {
-        return color;
-    }
-
-    @Override
-    public void setColor(Vector3f color) {
-        this.color = color;
-    }
-
-    @Override
     public void setPos(Vector2f pos) {
         this.pos = pos;
         buffered = false;
@@ -578,6 +569,16 @@ public class Text implements ComponentIfc {
     public void setScale(float scale) {
         this.scale = scale;
         buffered = false;
+    }
+
+    @Override
+    public Vector4f getColor() {
+        return color;
+    }
+
+    @Override
+    public void setColor(Vector4f color) {
+        this.color = color;
     }
 
 }

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -125,8 +126,8 @@ public class Model implements Renderable, Comparable<Model> {
                 shaderProgram.bindAttribute(2, "uv");
 
                 transform(shaderProgram);
-                setAlpha(shaderProgram);
 
+                primaryColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
@@ -187,8 +188,8 @@ public class Model implements Renderable, Comparable<Model> {
                 shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
                 shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
                 transform(shaderProgram);
-                setAlpha(shaderProgram);
 
+                primaryColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 Texture primaryTexture = Texture.getOrDefault(texName);
@@ -251,8 +252,7 @@ public class Model implements Renderable, Comparable<Model> {
 
             for (Model model : models) {
                 model.transform(shaderProgram);
-                model.setAlpha(shaderProgram);
-
+                model.primaryColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
@@ -306,11 +306,7 @@ public class Model implements Renderable, Comparable<Model> {
     }
 
     public void secondaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
-    }
-
-    protected void setAlpha(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(materials.getFirst().alpha, "modelAlpha");
+        shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor1");
     }
 
     public void calcDims() {
@@ -658,7 +654,7 @@ public class Model implements Renderable, Comparable<Model> {
 
     public void setSolid(boolean solid) {
         this.solid = solid;
-        this.materials.getFirst().alpha = (solid) ? 1.0f : 0.5f;
+        this.materials.getFirst().color.w = (solid) ? 1.0f : 0.5f;
     }
 
     public void setPos(Vector3f pos) {
@@ -696,20 +692,25 @@ public class Model implements Renderable, Comparable<Model> {
         return meshes;
     }
 
-    public Vector3f getPrimaryColor() {
+    public Vector3f getPrimaryRGBColor() {
+        Vector4f color = this.getMaterials().getFirst().color;
+        return new Vector3f(color.x, color.y, color.z);
+    }
+
+    public Vector4f getPrimaryRGBAColor() {
         return this.getMaterials().getFirst().color;
     }
 
-    public void setPrimaryColor(Vector3f color) {
+    public void setPrimaryColor(Vector4f color) {
         this.materials.getFirst().color = color;
     }
 
     public float getPrimaryColorAlpha() {
-        return this.materials.getFirst().alpha;
+        return this.materials.getFirst().color.w;
     }
 
     public void setPrimaryColorAlpha(float alpha) {
-        this.materials.getFirst().alpha = alpha;
+        this.materials.getFirst().color.w = alpha;
     }
 
     /**

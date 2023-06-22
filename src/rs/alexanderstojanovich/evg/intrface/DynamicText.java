@@ -17,9 +17,8 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
-import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -50,7 +49,7 @@ public class DynamicText extends Text {
         super(texture, content);
     }
 
-    public DynamicText(Texture texture, String content, Vector3f color, Vector2f pos) {
+    public DynamicText(Texture texture, String content, Vector4f color, Vector2f pos) {
         super(texture, content, color, pos);
     }
 

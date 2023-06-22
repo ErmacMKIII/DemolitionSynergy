@@ -1,12 +1,11 @@
 #version 330 core
 
-in vec2 uvOut;
+in vec2 varUV;
 
-uniform vec3 color;
+uniform vec4 color;
 uniform sampler2D ifcTexture;
 
 void main() {    
-	vec4 texColor = texture2D(ifcTexture, uvOut);
-    gl_FragColor.rgb = color * texColor.rgb;  
-	gl_FragColor.a = texColor.a;
+	vec4 texColor = texture2D(ifcTexture, varUV);
+    gl_FragColor = color * texColor;  
 }

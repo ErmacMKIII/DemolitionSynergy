@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -34,14 +35,14 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.level.TexByte;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
 import rs.alexanderstojanovich.evg.util.Vector3fUtils;
 
 /**
@@ -105,25 +106,27 @@ public class Block extends Model {
 
     public Block(String texName) {
         super("cubex.txt", texName);
+        this.solid = !texName.equals("water");
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
-        material.color = new Vector3f(Vector3fColors.WHITE);
+        material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         width = height = depth = 2.0f;
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super("cubex.txt", texName);
+        this.solid = !texName.equals("water");
         this.pos = pos;
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
-        material.color = primaryColor;
+        material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         this.solid = solid;
         width = height = depth = 2.0f;
@@ -208,7 +211,6 @@ public class Block extends Model {
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
-                block.setAlpha(shaderProgram);
                 block.primaryColor(shaderProgram);
 
                 GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
@@ -262,7 +264,6 @@ public class Block extends Model {
             for (Block block : blocks) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    block.setAlpha(shaderProgram);
                     block.primaryColor(shaderProgram);
 
                     GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
@@ -875,7 +876,7 @@ public class Block extends Model {
         byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
         System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
         offset += posArr.length;
-        byte[] colArr = Vector3fUtils.vec3fToByteArray(materials.getFirst().color);
+        byte[] colArr = Vector3fUtils.vec3fToByteArray(this.getPrimaryRGBColor());
         System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
 
         return byteArray;

@@ -20,7 +20,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
@@ -34,11 +33,10 @@ import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -52,7 +50,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v34FOX";
+    public static final String TITLE = "Demolition Synergy - v35G";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -79,7 +77,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static void init() {
         MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
         SPLASH_SCREEN = new Quad(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), Texture.CONSOLE, true);
-        SPLASH_SCREEN.setColor(Vector3fColors.YELLOW);
+        SPLASH_SCREEN.setColor(GlobalColors.YELLOW_RGBA);
         levelContainer = new LevelContainer();
         randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         waterRenderer = new WaterRenderer(levelContainer);

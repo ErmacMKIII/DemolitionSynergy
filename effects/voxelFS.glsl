@@ -12,20 +12,10 @@ in vec4 varColor;
 in vec4 varWaterColor;
 in vec4 varLightColor;
 
-struct LightSource {
-	vec3 pos;
-	vec3 color;
-	float intensity;
-};
-
-uniform LightSource[256] modelLights;
-uniform int modelLightNumber;
-
 uniform sampler2D modelTexture0; // this is primary texture
 uniform sampler2D modelTexture1; // this is reflective texture
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
-uniform float modelAlpha;
 
 vec2 reflUV() {
     vec2 ndc = (varGLPos.xy / varGLPos.w) / 2.0 + 0.5;
@@ -47,6 +37,6 @@ void main() {
 	vec4 texColor1 = texture2D(modelTexture1, reflUV());
 	vec4 reflColor = varWaterColor * texColor1;
 		
-	gl_FragColor.rgb = varLightColor.rgb * (fog(cameraPos, varModelPos, primColor, FOG_COLOR, FOG_DENS).rgb + reflColor.rgb);
-	gl_FragColor.a = modelAlpha;
+	gl_FragColor = varLightColor * fog(cameraPos, varModelPos, primColor, FOG_COLOR, FOG_DENS);
+	gl_FragColor += reflColor;
 }

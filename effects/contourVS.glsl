@@ -22,10 +22,8 @@ uniform mat4 projectionMatrix;
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
 
-uniform vec3 modelColor0;
-uniform vec3 modelColor1;
-
-uniform float modelAlpha;
+uniform vec4 modelColor0;
+uniform vec4 modelColor1;
 
 uniform float gameTicks;
 uniform float unit;
@@ -77,25 +75,30 @@ vec4 fog(vec3 posPoint, vec3 posOrigin, vec4 color, vec4 fogColor, float fogDens
 void main() {      
     varGLPos = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
     varModelPos = (modelMatrix * vec4(pos, 1.0)).xyz;  
+	varColor = modelColor0;
     gl_Position = varGLPos;        
     varNormal = normal;
     varUV = uv;    
 	
-	varColor = fog(cameraPos, varModelPos.xyz, vec4(modelColor0, modelAlpha), FOG_COLOR, FOG_DENS);
+	varColor = fog(cameraPos, varModelPos.xyz, modelColor0, FOG_COLOR, FOG_DENS);
 	vec3 normalX = normalize(((modelMatrix * vec4(-varModelPos + normal, 1.0)).xyz) + normal);
 	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);
 	float light = 0.0;
 	int i, j;	
 	for (i = 0; i < modelLightNumber; i++) {
+		light = 0.0;
 		LightSource modelLight = modelLights[i]; 	
-		vec3 lightDir = normalize(modelLight.pos - varModelPos.xyz);		    		
-		light += diffuseLight(lightDir, normalX) 			
-				+ specularLight(lightDir, normalX);														
+		vec3 lightDir = normalize(modelLight.pos - varModelPos.xyz);
+		for (j = 0; j < 6; j++) {
+			vec3 lightDirX = normalize(lightDir * lightDirX[j]);
+			light += diffuseLight(lightDirX, varNormal) 			
+						+ specularLight(lightDirX, varNormal);								
+		}
 		light *= modelLight.intensity;
-		light *= attenuation(modelLight.pos, varModelPos);
+		light *= attenuation(modelLight.pos, varModelPos);				
 		lightColor += light * modelLight.color;
-    }
+	}
+	
 	varLightColor = vec4(lightColor, 1.0);
-	varColor.rgb *= lightColor;
 }

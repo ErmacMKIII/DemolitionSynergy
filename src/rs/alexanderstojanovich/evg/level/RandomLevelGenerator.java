@@ -23,7 +23,7 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -467,7 +467,7 @@ public class RandomLevelGenerator {
                     continue;
                 }
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
-                Block solidBlock = new Block("stone", spos, Vector3fColors.WHITE, true);
+                Block solidBlock = new Block("stone", spos, GlobalColors.WHITE, true);
                 levelContainer.chunks.addBlock(solidBlock);
                 solidBlocks--;
                 if (solidBlocks == 0) {

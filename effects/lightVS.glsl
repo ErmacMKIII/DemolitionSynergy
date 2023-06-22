@@ -13,7 +13,7 @@ uniform vec3 cameraPos;
 uniform vec3 cameraFront;
 uniform mat4 modelMatrix;
 
-uniform vec3 color;
+uniform vec4 color;
 
 struct LightSource {
 	vec3 pos;
@@ -64,5 +64,5 @@ void main() {
 		lightColor += light * modelLight.color;							
     }
 	
-	varLightColor = vec4(lightColor * color, 0.3);
+	varLightColor = vec4(lightColor, 0.3);
 }

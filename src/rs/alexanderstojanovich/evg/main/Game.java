@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -33,7 +34,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -421,13 +422,13 @@ public class Game {
         return changed;
     }
 
-    private void setCrosshairColor(Vector3f color) {
+    private void setCrosshairColor(Vector4f color) {
         GameObject.getIntrface().getCrosshair().setColor(color);
     }
 
     private void cycleCrosshairColor() {
-        Vector3fColors.ColorName[] values = Vector3fColors.ColorName.values();
-        setCrosshairColor(Vector3fColors.getColorOrDefault(values[++crosshairColorNum % values.length]));
+        GlobalColors.ColorName[] values = GlobalColors.ColorName.values();
+        setCrosshairColor(GlobalColors.getRGBAColorOrDefault(values[++crosshairColorNum % values.length]));
     }
 
     /**

@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.models;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -27,12 +27,11 @@ import rs.alexanderstojanovich.evg.util.Vector3fColors;
  */
 public class Material {
 
-    protected Vector4f ambient = new Vector4f(Vector3fColors.WHITE, 1.0f);
-    protected Vector4f diffuse = new Vector4f(Vector3fColors.WHITE, 1.0f);
-    protected Vector4f specular = new Vector4f(Vector3fColors.WHITE, 1.0f);
+    protected Vector4f ambient = new Vector4f(GlobalColors.WHITE, 1.0f);
+    protected Vector4f diffuse = new Vector4f(GlobalColors.WHITE, 1.0f);
+    protected Vector4f specular = new Vector4f(GlobalColors.WHITE, 1.0f);
 
-    protected Vector3f color = new Vector3f(Vector3fColors.WHITE);
-    protected float alpha = 1.0f;
+    protected Vector4f color = new Vector4f(new Vector3f(GlobalColors.WHITE), 1.0f);
     protected Texture texture;
 
     public Material(Texture texture) {
@@ -46,7 +45,19 @@ public class Material {
         this.texture = texture;
     }
 
-    public Vector3f getColor() {
+    public Vector4f getAmbient() {
+        return ambient;
+    }
+
+    public Vector4f getDiffuse() {
+        return diffuse;
+    }
+
+    public Vector4f getSpecular() {
+        return specular;
+    }
+
+    public Vector4f getColor() {
         return color;
     }
 
@@ -54,16 +65,24 @@ public class Material {
         return texture;
     }
 
-    public float getAlpha() {
-        return alpha;
+    public void setAmbient(Vector4f ambient) {
+        this.ambient = ambient;
     }
 
-    public void setColor(Vector3f color) {
+    public void setDiffuse(Vector4f diffuse) {
+        this.diffuse = diffuse;
+    }
+
+    public void setSpecular(Vector4f specular) {
+        this.specular = specular;
+    }
+
+    public void setColor(Vector4f color) {
         this.color = color;
     }
 
-    public void setAlpha(float alpha) {
-        this.alpha = alpha;
+    public void setTexture(Texture texture) {
+        this.texture = texture;
     }
 
 }

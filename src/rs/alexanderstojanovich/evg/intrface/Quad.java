@@ -20,7 +20,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -31,7 +31,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -46,7 +46,7 @@ public class Quad implements ComponentIfc {
     protected int height;
     protected Texture texture;
 
-    protected Vector3f color = Vector3fColors.WHITE;
+    protected Vector4f color = new Vector4f(GlobalColors.WHITE, 1.0f);
     protected float scale = 1.0f;
 
     protected Vector2f pos = new Vector2f();
@@ -369,12 +369,12 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public Vector3f getColor() {
+    public Vector4f getColor() {
         return color;
     }
 
     @Override
-    public void setColor(Vector3f color) {
+    public void setColor(Vector4f color) {
         this.color = color;
     }
 

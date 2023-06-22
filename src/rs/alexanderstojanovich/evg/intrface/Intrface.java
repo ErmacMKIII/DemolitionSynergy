@@ -22,13 +22,11 @@ import java.util.concurrent.FutureTask;
 import org.joml.Random;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.critter.Critter;
-import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
-import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.level.Chunk;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
@@ -40,7 +38,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -100,38 +98,38 @@ public class Intrface {
         AudioPlayer musicPlayer = GameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = GameObject.getSoundFXPlayer();
 
-        updText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 1.0f));
+        updText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
         updText.alignToNextChar();
-        fpsText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
+        fpsText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
         fpsText.alignToNextChar();
 
-        posText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -1.0f));
+        posText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
         posText.setAlignment(Text.ALIGNMENT_RIGHT);
         posText.alignToNextChar();
 
-        chunkText = new DynamicText(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -0.85f));
+        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
         chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
         chunkText.alignToNextChar();
 
-        collText = new DynamicText(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
+        collText = new DynamicText(Texture.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
         helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
         helpText.alignToNextChar();
         helpText.setEnabled(false);
-        progText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(-1.0f, -0.9f));
+        progText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
         progText.alignToNextChar();
         screenText = new DynamicText(Texture.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
         screenText.alignToNextChar();
-        gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
+        gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
         gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
         gameModeText.alignToNextChar();
 
-        gameTimeText = new DynamicText(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(0.0f, 1.0f));
+        gameTimeText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
         gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
         gameTimeText.alignToNextChar();
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
-        crosshair.setColor(Vector3fColors.WHITE);
+        crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
         IList<MenuItem> mainMenuItems = new GapList<>();
         mainMenuItems.add(new MenuItem("SINGLE PLAYER", Menu.EditType.EditNoValue, null));
         mainMenuItems.add(new MenuItem("MULTIPLAYER", Menu.EditType.EditNoValue, null));
@@ -168,7 +166,7 @@ public class Intrface {
             }
         };
         Quad logo = new Quad(120, 90, Texture.LOGO);
-        logo.setColor(new Vector3f(Vector3fColors.YELLOW));
+        logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         logo.setScale(1.5f);
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
@@ -508,7 +506,7 @@ public class Intrface {
         for (MenuItem item : creditsMenu.items) {
             if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
                 item.keyText.scale = 1.0f;
-                item.keyText.setColor(Vector3fColors.WHITE);
+                item.keyText.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
                 item.keyText.setBuffered(false);
             }
             index++;
@@ -518,7 +516,7 @@ public class Intrface {
 
         IList<MenuItem> singlPlayerMenuItems = new GapList<>();
         singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
-        singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(Vector3fColors.ColorName.names(), MenuValue.Type.STRING, Vector3fColors.ColorName.WHITE.name())));
+        singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
         singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
         singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
         singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
@@ -535,7 +533,7 @@ public class Intrface {
                 if (singlPlayerMenu.selected == 4) {
                     Player player = GameObject.getLevelContainer().levelActors.player;
                     player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
-                    player.body.setPrimaryColor(Vector3fColors.getColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()));
+                    player.body.setPrimaryColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                     // set level size & seed
                     String levelSize = singlPlayerMenu.items.get(2).menuValue.toString().toUpperCase();
                     switch (levelSize) {
@@ -561,7 +559,7 @@ public class Intrface {
             }
 
         };
-        singlPlayerMenu.items.getLast().keyText.color = Vector3fColors.CYAN;
+        singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
         singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
         DSLogger.reportDebug("Interface initialized.", null);
     }
@@ -574,10 +572,10 @@ public class Intrface {
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.setColor(Vector3fColors.RED);
+            collText.setColor(GlobalColors.RED_RGBA);
         } else {
             collText.setContent("No Collision");
-            collText.setColor(Vector3fColors.GREEN);
+            collText.setColor(GlobalColors.GREEN_RGBA);
         }
     }
 

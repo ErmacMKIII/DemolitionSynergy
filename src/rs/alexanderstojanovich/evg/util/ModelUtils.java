@@ -158,7 +158,7 @@ public class ModelUtils {
         }
 
         Material material = new Material(Texture.getOrDefault(texName));
-        material.setColor(new Vector3f(Vector3fColors.WHITE));
+        material.setColor(new Vector4f(GlobalColors.WHITE_RGBA));
         result.materials.add(material);
 
         result.meshes.add(mesh);
@@ -277,7 +277,7 @@ public class ModelUtils {
         }
 
         Material material = new Material(Texture.getOrDefault(texName));
-        material.setColor(new Vector3f(Vector3fColors.WHITE));
+        material.setColor(new Vector4f(GlobalColors.WHITE_RGBA));
         result.materials.add(material);
 
         result.meshes.add(mesh);
@@ -395,19 +395,19 @@ public class ModelUtils {
 //        if (textPath != null && textPath.length() > 0) {
 //            texture = new Texture(dirEntry, textPath);
 //        }
-        Vector4f ambient = new Vector4f(Vector3fColors.WHITE, 1.0f);
+        Vector4f ambient = new Vector4f(GlobalColors.WHITE, 1.0f);
         int result = Assimp.aiGetMaterialColor(aiMaterial, Assimp.AI_MATKEY_COLOR_AMBIENT, Assimp.aiTextureType_NONE, 0, colour);
         if (result == 0) {
             ambient = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());
         }
 
-        Vector4f diffuse = new Vector4f(Vector3fColors.WHITE, 1.0f);
+        Vector4f diffuse = new Vector4f(GlobalColors.WHITE, 1.0f);
         result = Assimp.aiGetMaterialColor(aiMaterial, Assimp.AI_MATKEY_COLOR_DIFFUSE, Assimp.aiTextureType_NONE, 0, colour);
         if (result == 0) {
             diffuse = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());
         }
 
-        Vector4f specular = new Vector4f(Vector3fColors.WHITE, 1.0f);
+        Vector4f specular = new Vector4f(GlobalColors.WHITE, 1.0f);
         result = Assimp.aiGetMaterialColor(aiMaterial, Assimp.AI_MATKEY_COLOR_SPECULAR, Assimp.aiTextureType_NONE, 0, colour);
         if (result == 0) {
             specular = new Vector4f(colour.r(), colour.g(), colour.b(), colour.a());

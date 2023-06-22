@@ -10,16 +10,14 @@ in vec4 varGLPos;
 in vec3 varModelPos;
 in vec4 varColor;
 
-uniform vec3 modelColor0;
-uniform vec3 modelColor1;
+uniform vec4 modelColor0;
+uniform vec4 modelColor1;
 
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
 
 uniform sampler2D modelTexture0; // this is primary texture
 uniform sampler2D modelTexture1; // this is water texture
-
-uniform float modelAlpha;
 
 vec4 fog(vec3 posPoint, vec3 posOrigin, vec4 color, vec4 fogColor, float fogDensity) {
 	float distance = distance(posPoint, posOrigin);
