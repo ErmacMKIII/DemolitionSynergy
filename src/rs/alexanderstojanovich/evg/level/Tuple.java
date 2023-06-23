@@ -38,7 +38,7 @@ import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
@@ -103,7 +103,7 @@ public class Tuple extends Blocks {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        String key = Vector3fUtils.blockSpecsToUniqueString(isSolid(), this.texName(), pos);
+        String key = VectorFloatUtils.blockSpecsToUniqueString(isSolid(), this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -111,7 +111,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -129,7 +129,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;

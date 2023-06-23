@@ -466,7 +466,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         int totalSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
                         int cachedSize = 0;
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
-                            cachedSize += ci.chunkSize;
+                            cachedSize += ci.cachedSize;
                         }
                         result = String.format("TotalSize= %d | TotalChunks= %d\nCachedChunks= %d | CachedSize= %d",
                                 totalSize, Chunk.CHUNK_NUM, CacheModule.CACHED_CHUNKS.size(), cachedSize);
@@ -501,8 +501,8 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         sb.append("<empty>");
                     } else {
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
-                            sb.append(String.format("ChunkId= %d | CachedSize= %d | FileName= %s",
-                                    ci.chunkId, ci.chunkSize, ci.fileName));
+                            sb.append(String.format("ChunkId= %d | BlockSize= %d| CachedSize= %d | FileName= %s",
+                                    ci.chunkId, ci.blockSize, ci.cachedSize, ci.fileName));
                         }
                     }
                 }

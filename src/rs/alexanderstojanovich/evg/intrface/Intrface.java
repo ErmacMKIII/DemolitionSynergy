@@ -533,7 +533,7 @@ public class Intrface {
                 if (singlPlayerMenu.selected == 4) {
                     Player player = GameObject.getLevelContainer().levelActors.player;
                     player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
-                    player.body.setPrimaryColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
+                    player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                     // set level size & seed
                     String levelSize = singlPlayerMenu.items.get(2).menuValue.toString().toUpperCase();
                     switch (levelSize) {

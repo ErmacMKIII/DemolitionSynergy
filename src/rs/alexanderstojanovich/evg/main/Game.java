@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
@@ -107,9 +106,7 @@ public class Game {
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
     protected static boolean actionPerformed = false;
-    protected static boolean chunksModified = false;
     protected static boolean causingCollision = false;
-    protected static boolean needOptimize = false;
 
     /**
      * Construct new game view
@@ -542,9 +539,7 @@ public class Game {
 
         // first time we got nothing
         actionPerformed = false;
-        chunksModified = false;
         causingCollision = false;
-        needOptimize = false;
 
         GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
 
@@ -598,26 +593,6 @@ public class Game {
 
                 ups++;
                 upsTicks--;
-            }
-
-            if (Game.accumulator - timer > 80.0) { // optimization every second
-                actionPerformed = true;
-                chunksModified = true;
-                needOptimize = true;
-                timer += 80.0;
-            }
-
-            if (actionPerformed) {
-                chunksModified |= GameObject.determineVisibleChunks();
-                if (chunksModified) {
-                    needOptimize |= GameObject.chunkOperations();
-                    if (needOptimize) {
-                        GameObject.optimize();
-                        needOptimize = false;
-                    }
-                    chunksModified = false;
-                }
-                actionPerformed = false;
             }
         }
         // stops the music        
@@ -753,10 +728,6 @@ public class Game {
 
     public static boolean isActionPerformed() {
         return actionPerformed;
-    }
-
-    public static boolean isNeedOptimize() {
-        return needOptimize;
     }
 
 }

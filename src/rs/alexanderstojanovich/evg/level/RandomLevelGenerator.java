@@ -20,6 +20,7 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
@@ -124,7 +125,7 @@ public class RandomLevelGenerator {
             tex = randomSolidTexture(true);
         }
 
-        Block solidBlock = new Block(tex, pos, color, true);
+        Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
 
         levelContainer.chunks.addBlock(solidBlock);
         return solidBlock;
@@ -156,7 +157,7 @@ public class RandomLevelGenerator {
             Vector3f temp = new Vector3f();
             color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), temp);
         }
-        Block fluidBlock = new Block("water", pos, color, false);
+        Block fluidBlock = new Block("water", pos, new Vector4f(color, 0.5f), false);
 
         levelContainer.chunks.addBlock(fluidBlock);
         return fluidBlock;
@@ -214,7 +215,7 @@ public class RandomLevelGenerator {
             adjTex = randomSolidTexture(random.nextFloat() <= 0.5f);
         }
 
-        Block solidAdjBlock = new Block(adjTex, adjPos, color, true);
+        Block solidAdjBlock = new Block(adjTex, adjPos, new Vector4f(color, 1.0f), true);
 
         levelContainer.chunks.addBlock(solidAdjBlock);
         return solidAdjBlock;
@@ -267,7 +268,7 @@ public class RandomLevelGenerator {
             Vector3f temp = new Vector3f();
             color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), temp);
         }
-        Block fluidAdjBlock = new Block(adjTexture, adjPos, color, false);
+        Block fluidAdjBlock = new Block(adjTexture, adjPos, new Vector4f(color, 0.5f), false);
 
         levelContainer.chunks.addBlock(fluidAdjBlock);
         return fluidAdjBlock;
@@ -312,7 +313,7 @@ public class RandomLevelGenerator {
                                 tex = randomSolidTexture(random.nextFloat() <= 0.5f);
                             }
 
-                            Block solidBlock = new Block(tex, pos, color, true);
+                            Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
                             levelContainer.chunks.addBlock(solidBlock);
                             levelContainer.incProgress(100.0f / (float) totalAmount);
                             solidBlocks--;
@@ -355,7 +356,7 @@ public class RandomLevelGenerator {
                         if (fluidBlocks > 0 && tbits != 0) {
                             String tex = "water";
 
-                            Block fluidBlock = new Block(tex, pos, color, false);
+                            Block fluidBlock = new Block(tex, pos, new Vector4f(color, 0.5f), false);
                             levelContainer.chunks.addBlock(fluidBlock);
                             levelContainer.incProgress(100.0f / (float) totalAmount);
                             fluidBlocks--;
@@ -467,7 +468,7 @@ public class RandomLevelGenerator {
                     continue;
                 }
                 Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
-                Block solidBlock = new Block("stone", spos, GlobalColors.WHITE, true);
+                Block solidBlock = new Block("stone", spos, GlobalColors.WHITE_RGBA, true);
                 levelContainer.chunks.addBlock(solidBlock);
                 solidBlocks--;
                 if (solidBlocks == 0) {

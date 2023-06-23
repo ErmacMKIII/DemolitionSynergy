@@ -25,12 +25,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  * Cache Module is used for caching chunks to not overweight Game Renderer.
@@ -38,6 +39,11 @@ import rs.alexanderstojanovich.evg.util.Vector3fUtils;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class CacheModule {
+
+    public static final int TEX_LEN = 5; // 5 B
+    public static final int VEC3_LEN = 12; // 12 B
+    public static final int VEC4_LEN = 16; // 16 B
+    public static final int BOOL_LEN = 1; // 1 B
 
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
@@ -49,7 +55,7 @@ public class CacheModule {
     }
 
     /**
-     * Size of the chunk when is loaded.
+     * Size of the chunk (in blocks) when is loaded.
      *
      * @param id chunk id
      *
@@ -69,7 +75,7 @@ public class CacheModule {
     }
 
     /**
-     * Size of the chunk when is loaded.
+     * Size of the chunk (in blocks) when is loaded.
      *
      * @param chunk chunk itself
      *
@@ -86,7 +92,7 @@ public class CacheModule {
     }
 
     /**
-     * Size of the chunk when is cached.
+     * Size of the chunk in blocks when is cached.
      *
      * @param id chunk id
      *
@@ -97,7 +103,7 @@ public class CacheModule {
         if (CacheModule.isCached(id)) {
             CachedInfo info = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
             if (info != null) {
-                size = info.chunkSize;
+                size = info.blockSize;
             }
         }
         return size;
@@ -170,14 +176,15 @@ public class CacheModule {
      * Load Memory Buffer from Disk (SSD or HardDrive)
      *
      * @param filename filename of cached file to load
+     *
      */
-    private void loadDiskToMem(String filename) {
+    private void loadDiskToMem(String filename, int length) {
         File file = new File(filename);
         if (file.exists()) {
             BufferedInputStream bis = null;
             try {
                 bis = new BufferedInputStream(new FileInputStream(file));
-                bis.read(MEMORY);
+                bis.read(MEMORY, 0, length);
             } catch (FileNotFoundException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             } catch (IOException ex) {
@@ -232,17 +239,21 @@ public class CacheModule {
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
                 for (Block block : blocks) {
                     byte[] texName = block.getTexName().getBytes();
-                    System.arraycopy(texName, 0, MEMORY, pos, 5);
-                    pos += 5;
-                    byte[] somePos = Vector3fUtils.vec3fToByteArray(block.getPos());
-                    System.arraycopy(somePos, 0, MEMORY, pos, somePos.length);
-                    pos += somePos.length;
-                    Vector3f primCol = block.getPrimaryRGBColor();
-                    byte[] someCol = Vector3fUtils.vec3fToByteArray(primCol);
-                    System.arraycopy(someCol, 0, MEMORY, pos, someCol.length);
-                    pos += someCol.length;
+                    System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
+                    pos += TEX_LEN;
+                    VectorFloatUtils.vec3fToByteArray(block.pos, MEMORY, pos);
+                    pos += VEC3_LEN;
+                    Vector4f primCol = block.getPrimaryRGBAColor();
+                    VectorFloatUtils.vec4fToByteArray(primCol, MEMORY, pos);
+                    pos += VEC4_LEN;
+                    if (block.isSolid()) {
+                        MEMORY[pos] = (byte) 0xFF;
+                    } else {
+                        MEMORY[pos] = (byte) 0x00;
+                    }
+                    pos++;
                 }
-                final int chunkSize = pos;
+                final int cachedSize = pos;
 
                 File cacheDir = new File(Game.CACHE);
                 if (!cacheDir.exists()) {
@@ -251,9 +262,10 @@ public class CacheModule {
 
                 String fileName = getFileName(id);
                 saveMemToDisk(fileName);
+                DSLogger.reportInfo("pos=" + pos, null);
 
                 // ADD TO CACHED
-                CACHED_CHUNKS.add(new CachedInfo(id, chunkSize, fileName));
+                CACHED_CHUNKS.add(new CachedInfo(id, blocks.size(), cachedSize, fileName));
                 DSLogger.reportDebug("ChunkId=" + id + " cached to " + fileName, null);
                 op = true;
             }
@@ -274,36 +286,30 @@ public class CacheModule {
         if (CacheModule.isCached(id)) {
             // LOAD INTO MEMORY
             String fileName = getFileName(id);
-            loadDiskToMem(fileName);
+            loadDiskToMem(fileName, CACHED_CHUNKS.getIf(ci -> ci.chunkId == id).cachedSize);
+            DSLogger.reportInfo("pos=" + pos, null);
             pos = 1;
             // INIT BLOCK ARRAY
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
-            Block[] blocks = new Block[len];
             pos += 2;
             // READ BLOCK ARRAY
             for (int i = 0; i < len; i++) {
-                char[] texNameArr = new char[5];
+                char[] texNameArr = new char[TEX_LEN];
                 for (int k = 0; k < texNameArr.length; k++) {
                     texNameArr[k] = (char) MEMORY[pos++];
                 }
                 String texName = String.valueOf(texNameArr);
 
-                byte[] blockPosArr = new byte[12];
-                System.arraycopy(MEMORY, pos, blockPosArr, 0, blockPosArr.length);
-                Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                pos += blockPosArr.length;
+                Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(MEMORY, pos);
+                pos += VEC3_LEN;
 
-                byte[] blockPosCol = new byte[12];
-                System.arraycopy(MEMORY, pos, blockPosCol, 0, blockPosCol.length);
-                Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                pos += blockPosCol.length;
+                Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(MEMORY, pos);
+                pos += VEC4_LEN;
 
-                Block block = new Block(texName, blockPos, blockCol, !texName.equals("water"));
-                blocks[i] = block;
-            }
-
-            // PUT ALL BLOCK WHERE THEY BELONG TO
-            for (Block block : blocks) {
+                boolean solid = MEMORY[pos] != (byte) 0x00;
+                pos++;
+                Block block = new Block(texName, blockPos, blockCol, solid);
+                // PUT ALL BLOCK WHERE THEY BELONG TO
                 levelContainer.chunks.addBlock(block);
             }
 

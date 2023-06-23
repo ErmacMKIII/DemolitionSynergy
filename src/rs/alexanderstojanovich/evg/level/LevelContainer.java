@@ -49,7 +49,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
@@ -177,13 +177,13 @@ public class LevelContainer implements GravityEnviroment {
 
     static {
         // setting SKYBOX     
-        SKYBOX.setPrimaryColor(SKYBOX_COLOR);
+        SKYBOX.setPrimaryRGBColor(SKYBOX_COLOR_RGB);
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
-        SUN.setPrimaryColor(SUN_COLOR);
+        SUN.setPrimaryRGBColor(SUN_COLOR_RGB);
         SUN.pos = new Vector3f(0.0f, 16384.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
@@ -361,19 +361,19 @@ public class LevelContainer implements GravityEnviroment {
             return false;
         }
 
-        byte[] campos = Vector3fUtils.vec3fToByteArray(camera.getPos());
+        byte[] campos = VectorFloatUtils.vec3fToByteArray(camera.getPos());
         System.arraycopy(campos, 0, buffer, pos, campos.length);
         pos += campos.length;
 
-        byte[] camfront = Vector3fUtils.vec3fToByteArray(camera.getFront());
+        byte[] camfront = VectorFloatUtils.vec3fToByteArray(camera.getFront());
         System.arraycopy(camfront, 0, buffer, pos, camfront.length);
         pos += camfront.length;
 
-        byte[] camup = Vector3fUtils.vec3fToByteArray(camera.getUp());
+        byte[] camup = VectorFloatUtils.vec3fToByteArray(camera.getUp());
         System.arraycopy(camup, 0, buffer, pos, camup.length);
         pos += camup.length;
 
-        byte[] camright = Vector3fUtils.vec3fToByteArray(camera.getRight());
+        byte[] camright = VectorFloatUtils.vec3fToByteArray(camera.getRight());
         System.arraycopy(camup, 0, buffer, pos, camright.length);
         pos += camright.length;
 
@@ -462,22 +462,22 @@ public class LevelContainer implements GravityEnviroment {
             pos += 2;
             byte[] posArr = new byte[12];
             System.arraycopy(buffer, pos, posArr, 0, posArr.length);
-            Vector3f campos = Vector3fUtils.vec3fFromByteArray(posArr);
+            Vector3f campos = VectorFloatUtils.vec3fFromByteArray(posArr);
             pos += posArr.length;
 
             byte[] frontArr = new byte[12];
             System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
-            Vector3f camfront = Vector3fUtils.vec3fFromByteArray(frontArr);
+            Vector3f camfront = VectorFloatUtils.vec3fFromByteArray(frontArr);
             pos += frontArr.length;
 
             byte[] upArr = new byte[12];
             System.arraycopy(buffer, pos, frontArr, 0, upArr.length);
-            Vector3f camup = Vector3fUtils.vec3fFromByteArray(upArr);
+            Vector3f camup = VectorFloatUtils.vec3fFromByteArray(upArr);
             pos += upArr.length;
 
             byte[] rightArr = new byte[12];
             System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
-            Vector3f camright = Vector3fUtils.vec3fFromByteArray(rightArr);
+            Vector3f camright = VectorFloatUtils.vec3fFromByteArray(rightArr);
             pos += rightArr.length;
 
             levelActors.configureMainObserver(campos, camfront, camup, camright);
@@ -516,6 +516,106 @@ public class LevelContainer implements GravityEnviroment {
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
                         chunks.addBlock(fluidBlock);
                         pos += 29;
+                        progress += 50.0f / fluidNum;
+                    }
+
+//                    fluidChunks.updateFluids();
+                    char[] end = new char[3];
+                    for (int i = 0; i < end.length; i++) {
+                        end[i] = (char) buffer[pos++];
+                    }
+                    String strEnd = String.valueOf(end);
+                    if (strEnd.equals("END")) {
+                        success = true;
+                    }
+                }
+
+            }
+
+        }
+        levelActors.unfreeze();
+        progress = 100.0f;
+        working = false;
+        GameObject.getMusicPlayer().stop();
+        return success;
+    }
+
+    private boolean loadLevelFromBufferAsNewFormat() {
+        working = true;
+        boolean success = false;
+        if (progress > 0.0f) {
+            return false;
+        }
+        progress = 0.0f;
+        levelActors.freeze();
+        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        pos = 0;
+        if (buffer[0] == 'D' && buffer[1] == 'S' && buffer[2] == 'X') {
+            chunks.clear();
+
+            ALL_BLOCK_MAP.init();
+
+            LIGHT_SOURCES.lightSrcList.retain(0, 2);
+
+            CacheModule.deleteCache();
+
+            pos += 3;
+            byte[] posArr = new byte[12];
+            System.arraycopy(buffer, pos, posArr, 0, posArr.length);
+            Vector3f campos = VectorFloatUtils.vec3fFromByteArray(posArr);
+            pos += posArr.length;
+
+            byte[] frontArr = new byte[12];
+            System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
+            Vector3f camfront = VectorFloatUtils.vec3fFromByteArray(frontArr);
+            pos += frontArr.length;
+
+            byte[] upArr = new byte[12];
+            System.arraycopy(buffer, pos, frontArr, 0, upArr.length);
+            Vector3f camup = VectorFloatUtils.vec3fFromByteArray(upArr);
+            pos += upArr.length;
+
+            byte[] rightArr = new byte[12];
+            System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
+            Vector3f camright = VectorFloatUtils.vec3fFromByteArray(rightArr);
+            pos += rightArr.length;
+
+            levelActors.configureMainObserver(campos, camfront, camup, camright);
+
+            char[] solid = new char[5];
+            for (int i = 0; i < solid.length; i++) {
+                solid[i] = (char) buffer[pos++];
+            }
+            String strSolid = String.valueOf(solid);
+
+            if (strSolid.equals("SOLID")) {
+                int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                pos += 2;
+                for (int i = 0; i < solidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                    byte[] byteArraySolid = new byte[40];
+                    System.arraycopy(buffer, pos, byteArraySolid, 0, 30);
+                    Block solidBlock = Block.fromNewByteArray(byteArraySolid);
+                    chunks.addBlock(solidBlock);
+                    pos += 30;
+                    progress += 50.0f / solidNum;
+                }
+
+//                solidChunks.updateSolids();
+                char[] fluid = new char[5];
+                for (int i = 0; i < fluid.length; i++) {
+                    fluid[i] = (char) buffer[pos++];
+                }
+                String strFluid = String.valueOf(fluid);
+
+                if (strFluid.equals("FLUID")) {
+                    int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                    pos += 2;
+                    for (int i = 0; i < fluidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                        byte[] byteArrayFluid = new byte[30];
+                        System.arraycopy(buffer, pos, byteArrayFluid, 0, 30);
+                        Block fluidBlock = Block.fromNewByteArray(byteArrayFluid);
+                        chunks.addBlock(fluidBlock);
+                        pos += 30;
                         progress += 50.0f / fluidNum;
                     }
 
@@ -849,8 +949,8 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
             SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
             float factor = MathUtils.expm1(Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f));
-            SUN.setPrimaryColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(factor), 1.0f));
-            SKYBOX.setPrimaryColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(factor, 0.15f)), 0.15f));
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(factor), 1.0f));
+            SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(factor, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(factor * SUN_INTENSITY);
             cameraInFluid = isCameraInFluid();
 
@@ -917,15 +1017,15 @@ public class LevelContainer implements GravityEnviroment {
                 selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
             }
 
-            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-            if (selectedCurrFrame != null) {
-                if (!selectedCurrFrame.isBuffered()) {
-                    selectedCurrFrame.bufferAll();
-                }
-                selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
-            }
         }
 
+        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+        if (selectedCurrFrame != null) {
+            if (!selectedCurrFrame.isBuffered()) {
+                selectedCurrFrame.bufferAll();
+            }
+            selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
+        }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
         LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 
@@ -974,16 +1074,15 @@ public class LevelContainer implements GravityEnviroment {
                 selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
             }
 
-            Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-            if (selectedCurrFrame != null) {
-                if (!selectedCurrFrame.isBuffered()) {
-                    selectedCurrFrame.bufferAll();
-                }
-                selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
-            }
-
         }
 
+        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
+        if (selectedCurrFrame != null) {
+            if (!selectedCurrFrame.isBuffered()) {
+                selectedCurrFrame.bufferAll();
+            }
+            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+        }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
         LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 

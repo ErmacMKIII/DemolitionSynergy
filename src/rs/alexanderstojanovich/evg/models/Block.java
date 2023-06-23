@@ -43,7 +43,7 @@ import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
@@ -81,8 +81,8 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            String s1 = Vector3fUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
-            String s2 = Vector3fUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
+            String s1 = VectorFloatUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
+            String s2 = VectorFloatUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
             return s1.compareTo(s2);
         }
     };
@@ -117,16 +117,14 @@ public class Block extends Model {
         width = height = depth = 2.0f;
     }
 
-    public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("cubex.txt", texName);
-        this.solid = !texName.equals("water");
-        this.pos = pos;
+    public Block(String texName, Vector3f pos, Vector4f primaryRGBAColor, boolean solid) {
+        super("cubex.txt", texName, pos, solid);
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
-        material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
+        material.color = primaryRGBAColor;
         materials.add(material);
         this.solid = solid;
         width = height = depth = 2.0f;
@@ -873,11 +871,28 @@ public class Block extends Model {
         byte[] texNameArr = texName.getBytes();
         System.arraycopy(texNameArr, 0, byteArray, offset, 5);
         offset += 5;
-        byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
         System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
         offset += posArr.length;
-        byte[] colArr = Vector3fUtils.vec3fToByteArray(this.getPrimaryRGBColor());
+        Vector3f primaryRGBColor = getPrimaryRGBColor();
+        byte[] colArr = VectorFloatUtils.vec3fToByteArray(primaryRGBColor);
         System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
+        return byteArray;
+    }
+
+    public byte[] toNewByteArray() {
+        byte[] byteArray = new byte[35];
+        int offset = 0;
+        byte[] texNameArr = texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5); // 5B
+        offset += 5;
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        Vector4f primaryRGBAColor = getPrimaryRGBAColor();
+        byte[] colArr = VectorFloatUtils.vec4fToByteArray(primaryRGBAColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 16 B
 
         return byteArray;
     }
@@ -892,13 +907,37 @@ public class Block extends Model {
 
         byte[] blockPosArr = new byte[12];
         System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
-        Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+        Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(blockPosArr);
         offset += blockPosArr.length;
 
         byte[] blockPosCol = new byte[12];
         System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
-        Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+        Vector3f blockCol = VectorFloatUtils.vec3fFromByteArray(blockPosCol);
 
+        Block block = new Block(texName, blockPos, new Vector4f(blockCol, solid ? 1.0f : 0.5f), solid);
+
+        return block;
+    }
+
+    public static Block fromNewByteArray(byte[] byteArray) {
+        int offset = 0;
+        char[] texNameArr = new char[5];
+        for (int k = 0; k < texNameArr.length; k++) {
+            texNameArr[k] = (char) byteArray[offset++];
+        }
+        String texName = String.valueOf(texNameArr);
+
+        byte[] blockPosArr = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
+        Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(blockPosArr);
+        offset += blockPosArr.length;
+
+        byte[] blockColArr = new byte[16];
+        System.arraycopy(byteArray, offset, blockColArr, 0, blockColArr.length);
+        Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(blockColArr);
+        offset += blockColArr.length;
+
+        boolean solid = byteArray[offset] != (byte) 0x00;
         Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;

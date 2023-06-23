@@ -25,19 +25,22 @@ package rs.alexanderstojanovich.evg.level;
 public class CachedInfo {
 
     public final int chunkId;
-    public final int chunkSize;
+    public final int blockSize;
+    public final int cachedSize;
     public final String fileName;
 
     /**
      * Create new cached chunk (descriptor) info
      *
      * @param chunkId which chunk id to cache
-     * @param chunkSize info about cached size
+     * @param blockSize
+     * @param cachedSize info about cached size
      * @param fileName file name (binary) which contains cache
      */
-    public CachedInfo(int chunkId, int chunkSize, String fileName) {
+    public CachedInfo(int chunkId, int blockSize, int cachedSize, String fileName) {
         this.chunkId = chunkId;
-        this.chunkSize = chunkSize;
+        this.blockSize = blockSize;
+        this.cachedSize = cachedSize;
         this.fileName = fileName;
     }
 
@@ -45,12 +48,16 @@ public class CachedInfo {
         return chunkId;
     }
 
-    public int getChunkSize() {
-        return chunkSize;
+    public int getCachedSize() {
+        return cachedSize;
     }
 
     public String getFileName() {
         return fileName;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
     }
 
 }

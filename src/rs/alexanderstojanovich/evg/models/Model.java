@@ -693,16 +693,23 @@ public class Model implements Renderable, Comparable<Model> {
     }
 
     public Vector3f getPrimaryRGBColor() {
-        Vector4f color = this.getMaterials().getFirst().color;
-        return new Vector3f(color.x, color.y, color.z);
+        return new Vector3f(this.getMaterials().getFirst().color.x, this.getMaterials().getFirst().color.y, this.getMaterials().getFirst().color.z);
     }
 
     public Vector4f getPrimaryRGBAColor() {
         return this.getMaterials().getFirst().color;
     }
 
-    public void setPrimaryColor(Vector4f color) {
+    public void setPrimaryRGBColor(Vector3f color) {
+        this.materials.getFirst().color = new Vector4f(color, 1.0f);
+    }
+
+    public void setPrimaryRGBAColor(Vector4f color) {
         this.materials.getFirst().color = color;
+    }
+
+    public void setPrimaryRGBAColor(Vector3f color, float alpha) {
+        this.materials.getFirst().color = new Vector4f(color, alpha);
     }
 
     public float getPrimaryColorAlpha() {

@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
@@ -135,14 +135,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        String key = Vector3fUtils.blockSpecsToUniqueString(tuple.isSolid(), tuple.texName(), pos);
+        String key = VectorFloatUtils.blockSpecsToUniqueString(tuple.isSolid(), tuple.texName(), pos);
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -160,7 +160,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            String candInt = Vector3fUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -396,6 +396,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
         }
         updateForAdd(block);
+        GameObject.setModified(true);
     }
 
     /**
@@ -423,6 +424,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
             }
             updateForRem(block);
+            GameObject.setModified(true);
         }
     }
 

@@ -70,6 +70,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static Quad SPLASH_SCREEN;
 
     public static final Object MUTEX = new Object();
+    protected static boolean modified = false;
 
     /**
      * Init this game container.
@@ -118,6 +119,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
         };
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
+
+        Timer timer2 = new Timer("Chunk Utils");
+        TimerTask task2 = new TimerTask() {
+            @Override
+            public void run() {
+                modified |= GameObject.determineVisibleChunks();
+
+                if (modified) {
+                    GameObject.chunkOperations();
+                }
+
+                if (modified || isFirstOptimization()) {
+                    GameObject.optimize();
+                }
+
+                modified = false;
+            }
+        };
+        timer2.scheduleAtFixedRate(task2, 250L, 250L);
+
         //----------------------------------------------------------------------
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
@@ -132,6 +153,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             DSLogger.reportError(ex.getMessage(), ex);
         }
         timer1.cancel();
+        timer2.cancel();
     }
 
     // -------------------------------------------------------------------------
@@ -286,7 +308,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return is changed
      */
     public static boolean determineVisibleChunks() {
-        return levelContainer.determineVisible();
+        synchronized (MUTEX) {
+            return levelContainer.determineVisible();
+        }
     }
 
     /**
@@ -466,6 +490,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static GameRenderer getRenderer() {
         return renderer;
+    }
+
+    public static boolean isModified() {
+        return modified;
+    }
+
+    public static void setModified(boolean modified) {
+        GameObject.modified = modified;
     }
 
 }
