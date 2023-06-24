@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.joml.FrustumIntersection;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -34,6 +35,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -323,76 +325,43 @@ public class Block extends Model {
         return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
-    public boolean canBeSeenBy(Vector3f front) {
-        boolean bool = false;
+    /**
+     * Can block be seen by camera. It is assumed that block dimension is 2.1 x
+     * 2.1 x 2.1
+     *
+     * @param camera (observer) camera
+     * @return intersection with this block
+     */
+    public boolean canBeSeenBy(Camera camera) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
 
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
+        Vector3f min = pos.sub(1.05f, 1.05f, 1.05f, temp1);
+        Vector3f max = pos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        return bool;
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+
+        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
 
-    @Deprecated
-    public boolean canBeSeenByAdv(Vector3f camFront, Vector3f camPos) {
-        boolean bool = false;
-        Vector3f temp0 = new Vector3f();
-        Vector3f vz = this.pos.sub(camPos, temp0).normalize(temp0);
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
+    /**
+     * Can block be seen by camera.It is assumed that block dimension is 2.1 x
+     * 2.1 x 2.1
+     *
+     * @param camera (observer) camera
+     * @param blkPos block position
+     * @return intersection with this block
+     */
+    public static boolean canBeSeenBy(Vector3f blkPos, Camera camera) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
 
-        return bool;
-    }
+        Vector3f min = blkPos.sub(1.05f, 1.05f, 1.05f, temp1);
+        Vector3f max = blkPos.add(1.05f, 1.05f, 1.05f, temp2);
 
-    public static boolean canBeSeenBy(Vector3f blockPos, Vector3f camFront) {
-        boolean bool = false;
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
 
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
-
-        return bool;
-    }
-
-    @Deprecated
-    public static boolean canBeSeenByAdv(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
-        boolean bool = false;
-        Vector3f temp0 = new Vector3f();
-        Vector3f vz = blockPos.sub(camPos, temp0).normalize(temp0);
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
-
-        return bool;
+        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
 
     /**

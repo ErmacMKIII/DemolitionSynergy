@@ -16,16 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.light.LightSource;
 import java.util.Arrays;
 import java.util.List;
-import org.joml.Intersectionf;
-import org.joml.Vector2f;
+import org.joml.FrustumIntersection;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -41,7 +41,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 512;
     public static final float VISION = 256.0f; // determines visibility
-    public static final int GRID_SIZE = 4;
+    public static final int GRID_SIZE = 8;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -521,43 +521,40 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * Does camera intersects this chunk
      *
      * @param chunkId chunk number
-     * @param dir VEC3 cam direction (front)
-     * @param origin VEC3 cam position
+     * @param camera (obsever) camera
      * @return intersection bool value
      */
-    public static boolean intersectsVisionFunc(int chunkId, Vector3f dir, Vector3f origin) {
-        boolean ints = false;
+    public static boolean intersectsVisionFunc(int chunkId, Camera camera) {
         final Vector3f chunkPos = invChunkFunc(chunkId);
 
-        Vector3f temp1 = new Vector3f();
-        Vector3f min = chunkPos.sub(LENGTH, VISION * 8.0f, LENGTH, temp1);
-        Vector3f temp2 = new Vector3f();
-        Vector3f max = chunkPos.add(LENGTH, VISION * 8.0f, LENGTH, temp2);
-        Vector2f result = new Vector2f();
-        ints = Intersectionf.intersectRayAab(origin, dir, min, max, result);
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
 
-        return ints;
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = chunkPos.sub(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = chunkPos.add(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp2);
+
+        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
 
     /**
-     * Determine which chunks are visible by this chunk. If visible put into the
+     * Determine which chunks are visible by this chunk.If visible put into the
      * V list, otherwise put into the I list.
      *
      * @param vChnkIdList visible chunk queue
      * @param iChnkIdList invisible chunk queue
-     * @param actorPos actor pos (self-expl; same as cam pos)
-     * @param camFront camera front (vision)
+     * @param camera (Observer) camera
      *
      * @return list of changed chunks
      */
-    public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Vector3f actorPos, Vector3f camFront) {
+    public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Camera camera) {
         final Object[] before = vChnkIdList.toArray();
 
         vChnkIdList.clear();
         iChnkIdList.clear();
 
         // current chunk where player is        
-        int currChunkId = chunkFunc(actorPos);
+        int currChunkId = chunkFunc(camera.pos);
         int currCol = currChunkId % GRID_SIZE;
         int currRow = currChunkId / GRID_SIZE;
 
@@ -574,15 +571,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
 
-                /* -- NOT USED
-                Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
-                Vector2f result = new Vector2f();
-                Vector3f temp1 = new Vector3f();
-                Vector3f temp2 = new Vector3f();
-                Intersectionf.intersectRayAab(actorPos, camFront, chunkPos.add(new Vector3f(LENGTH / 2.0f), temp1), chunkPos.sub(new Vector3f(LENGTH / 2.0f), temp2), result);
-                boolean visible = Math.max(result.x, result.y) <= VISION;
-                 */
-                boolean intersectsVision = intersectsVisionFunc(chunkId, camFront, actorPos);
+                boolean intersectsVision = intersectsVisionFunc(chunkId, camera);
 
                 if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdList.contains(chunkId) && intersectsVision) {
                     vChnkIdList.add(chunkId);

@@ -249,9 +249,9 @@ public class LevelContainer implements GravityEnviroment {
                 blk.getPos().y = (4 * j) & 0xFFFFFFFE;
                 blk.getPos().z = 3 & 0xFFFFFFFE;
 
-                blk.getPrimaryRGBColor().x = 0.5f * i + 0.25f;
-                blk.getPrimaryRGBColor().y = 0.5f * j + 0.25f;
-                blk.getPrimaryRGBColor().z = 0.0f;
+                blk.getPrimaryRGBAColor().x = 0.5f * i + 0.25f;
+                blk.getPrimaryRGBAColor().y = 0.5f * j + 0.25f;
+                blk.getPrimaryRGBAColor().z = 0.0f;
 
                 chunks.addBlock(blk);
 
@@ -922,8 +922,7 @@ public class LevelContainer implements GravityEnviroment {
 
     // method for determining visible chunks
     public boolean determineVisible() {
-        Camera mainCamera = levelActors.mainCamera();
-        boolean changed = Chunk.determineVisible(vChnkIdList, iChnkIdList, mainCamera.getPos(), mainCamera.getFront());
+        boolean changed = Chunk.determineVisible(vChnkIdList, iChnkIdList, levelActors.mainCamera());
 
         return changed;
     }
@@ -973,8 +972,9 @@ public class LevelContainer implements GravityEnviroment {
     public void optimize() {
         if (!working) {
             Camera mainCamera = levelActors.mainCamera();
-            Vector3f camFront = mainCamera.getFront();
-            chunks.optimizeSuper(vChnkIdList, camFront);
+            // provide visible chunk id(entifier) list, camera view eye and camera position
+            // where all the blocks are pulled into optimized tuples
+            chunks.optimizeSuper(vChnkIdList, mainCamera);
         }
     }
 

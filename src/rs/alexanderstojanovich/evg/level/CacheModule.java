@@ -262,7 +262,7 @@ public class CacheModule {
 
                 String fileName = getFileName(id);
                 saveMemToDisk(fileName);
-                DSLogger.reportInfo("pos=" + pos, null);
+//                DSLogger.reportInfo("pos=" + pos, null);
 
                 // ADD TO CACHED
                 CACHED_CHUNKS.add(new CachedInfo(id, blocks.size(), cachedSize, fileName));
@@ -287,7 +287,7 @@ public class CacheModule {
             // LOAD INTO MEMORY
             String fileName = getFileName(id);
             loadDiskToMem(fileName, CACHED_CHUNKS.getIf(ci -> ci.chunkId == id).cachedSize);
-            DSLogger.reportInfo("pos=" + pos, null);
+//            DSLogger.reportInfo("pos=" + pos, null);
             pos = 1;
             // INIT BLOCK ARRAY
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);

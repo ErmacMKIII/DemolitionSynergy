@@ -535,8 +535,6 @@ public class Game {
 
         int index = 0; // track index
 
-        double timer = 0.0;
-
         // first time we got nothing
         actionPerformed = false;
         causingCollision = false;

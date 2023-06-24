@@ -16,13 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.light.LightSources;
 import java.util.Comparator;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -421,11 +422,11 @@ public class Chunks {
      * clear optimized tuples of the time and does not sort them all the time.
      *
      * @param queue visible chunkId queue
-     * @param camFront camera front (look at vector)
+     * @param camera (observer) camera
      */
-    public void optimizeSuper(IList<Integer> queue, Vector3f camFront) {
+    public void optimizeSuper(IList<Integer> queue, Camera camera) {
         // starting from one, cuz zero is not rendered               
-        final int mask = Block.getVisibleFaceBits(camFront);
+        final int mask = Block.getVisibleFaceBits(camera.getFront());
         for (int faceBits = 1; faceBits <= 63; faceBits++) {
             final int faceBitsCopy = faceBits;
             if ((faceBits & (mask & 63)) != 0) {
@@ -445,7 +446,11 @@ public class Chunks {
                                 if (optmTuple == null) {
                                     optmTuple = new Tuple(tex, faceBits);
                                 }
-                                optmTuple.blockList.addAll(tuple.blockList);
+                                for (Block blk : tuple.blockList) {
+                                    if (blk.canBeSeenBy(camera)) {
+                                        optmTuple.blockList.add(blk);
+                                    }
+                                }
                             }
                         }
                     }

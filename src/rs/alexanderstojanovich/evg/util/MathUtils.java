@@ -104,16 +104,17 @@ public class MathUtils {
 
         // add successively smaller, higher-frequency terms
         for (int i = 0; i < numOfOctaves; i++) {
-            noise += SimplexNoise.noise(x * freq, y * freq) * amp;
+            noise = Math.fma(SimplexNoise.noise(x * freq, y * freq), amp, noise);
             maxAmp += amp;
             amp *= persistence;
             freq *= lacunarity;
         }
+
         // take the average value of the iterations
         noise /= maxAmp;
 
         // normalize the result
-        noise = noise * (high - low) / 2.0f + (high + low) / 2.0f;
+        noise = Math.fma(noise, high - low, high + low) / 2.0f;
 
         return noise;
     }
@@ -140,16 +141,17 @@ public class MathUtils {
 
         // add successively smaller, higher-frequency terms
         for (int i = 0; i < numOfOctaves; i++) {
-            noise += SimplexNoise.noise(x * freq, y * freq, z * freq) * amp;
+            noise = Math.fma(SimplexNoise.noise(x * freq, y * freq, z * freq), amp, noise);
             maxAmp += amp;
             amp *= persistence;
             freq *= lacunarity;
         }
+
         // take the average value of the iterations
         noise /= maxAmp;
 
         // normalize the result
-        noise = noise * (high - low) / 2.0f + (high + low) / 2.0f;
+        noise = Math.fma(noise, high - low, high + low) / 2.0f;
 
         return noise;
     }
