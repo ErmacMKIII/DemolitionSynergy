@@ -19,6 +19,8 @@ package rs.alexanderstojanovich.evg.util;
 import org.joml.SimplexNoise;
 
 /**
+ * Humble Math Utilities. Towards Fast Approximation. Taken from various
+ * sources.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -34,14 +36,43 @@ public class MathUtils {
         return (1.0 - alpha) * a + alpha * b;
     }
 
-    // Taylor series approximation
-    public static float expm1(float x) {
-        return x * (1.0f + 0.5f * x * (1.0f + x * (1.0f + 0.25f * x * (1.0f + 0.2f * x)) / 3.0f));
+    /**
+     * C macro that does a good job at exploiting the IEEE 754 floating-point
+     * representation to calculate e^x. Source:
+     * https://martin.ankerl.com/2007/02/11/optimized-exponential-functions-for-java/
+     *
+     * @param x argument
+     * @return e^x.
+     */
+    public static double exp(double x) {
+        final long tmp = (long) (org.joml.Math.fma(1512775, x, 1072632447));
+        return Double.longBitsToDouble(tmp << 32);
     }
 
-    // Taylor series approximation
-    public static double expm1(double x) {
-        return x * (1.0 + 0.5 * x * (1.0 + x * (1.0 + 0.25 * x * (1.0 + 0.2 * x)) / 3.0));
+    /**
+     * Approximation of natural logarithm. Approximation is not very good. Gets
+     * worse the larger the values are. Source:
+     * https://martin.ankerl.com/2007/02/11/optimized-exponential-functions-for-java/
+     *
+     * @param x argument
+     * @return log(x) for base e.
+     */
+    public static double log(double x) {
+        return 6 * (x - 1) / (x + 1 + 4 * (org.joml.Math.sqrt(x)));
+    }
+
+    /**
+     * Return approximate value of a^b. Source:
+     * https://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/
+     *
+     * @param a base
+     * @param b exponent
+     * @return a^b
+     */
+    public static double pow(double a, double b) {
+        final int x = (int) (Double.doubleToLongBits(a) >> 32);
+        final int y = (int) (org.joml.Math.fma(b, x - 1072632447, 1072632447));
+        return Double.longBitsToDouble(((long) y) << 32);
     }
 
     /**
@@ -97,7 +128,6 @@ public class MathUtils {
      * @return noise
      */
     public static float noise2(int numOfOctaves, float x, float y, float persistence, float scale, float low, float high, float lacunarity) {
-        float maxAmp = 0.0f;
         float amp = 1.0f;
         float freq = scale;
         float noise = 0.0f;
@@ -105,10 +135,12 @@ public class MathUtils {
         // add successively smaller, higher-frequency terms
         for (int i = 0; i < numOfOctaves; i++) {
             noise = Math.fma(SimplexNoise.noise(x * freq, y * freq), amp, noise);
-            maxAmp += amp;
             amp *= persistence;
             freq *= lacunarity;
         }
+
+        // put outside the loop
+        float maxAmp = 1.0f - (float) MathUtils.pow(persistence, numOfOctaves) / (1.0f - persistence);
 
         // take the average value of the iterations
         noise /= maxAmp;
@@ -134,7 +166,6 @@ public class MathUtils {
      * @return noise
      */
     public static float noise3(int numOfOctaves, float x, float y, float z, float persistence, float scale, float low, float high, float lacunarity) {
-        float maxAmp = 0.0f;
         float amp = 1.0f;
         float freq = scale;
         float noise = 0.0f;
@@ -142,10 +173,12 @@ public class MathUtils {
         // add successively smaller, higher-frequency terms
         for (int i = 0; i < numOfOctaves; i++) {
             noise = Math.fma(SimplexNoise.noise(x * freq, y * freq, z * freq), amp, noise);
-            maxAmp += amp;
             amp *= persistence;
             freq *= lacunarity;
         }
+
+        // put outside the loop
+        float maxAmp = 1.0f - (float) MathUtils.pow(persistence, numOfOctaves) / (1.0f - persistence);
 
         // take the average value of the iterations
         noise /= maxAmp;
@@ -157,10 +190,10 @@ public class MathUtils {
     }
 
     /**
-     * Arc-cosine (cos^-1) from radian angle x
+     * Arc-cosine (cos^-1) from radian angle x Error value of +/- 15 degrees.
      *
      * @param x in [-1, 1]
-     * @return angle
+     * @return angle [0, Pi]
      */
     public static float acos(float x) {
         float negate = Math.signum(x);

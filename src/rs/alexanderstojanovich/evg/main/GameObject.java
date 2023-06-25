@@ -130,7 +130,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     GameObject.chunkOperations();
                 }
 
-                if (modified || isFirstOptimization()) {
+                if (modified || isFirstOptimization() || Game.getUpsTicks() < 1.0) {
                     GameObject.optimize();
                 }
 

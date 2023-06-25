@@ -46,7 +46,6 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
@@ -947,7 +946,7 @@ public class LevelContainer implements GravityEnviroment {
             final float gtm = cfg.getGameTimeMultiplier();
             SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
             SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
-            float factor = MathUtils.expm1(Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f));
+            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
             SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(factor), 1.0f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(factor, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(factor * SUN_INTENSITY);

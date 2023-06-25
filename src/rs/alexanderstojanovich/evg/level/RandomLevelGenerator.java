@@ -42,6 +42,7 @@ public class RandomLevelGenerator {
     public static final float QUADRATIC = -8.0E-10f;
     public static final float LINEAR = 2.67E-4f;
     public static final float CONST = 23.0f;
+    public static final float CONST2 = 7.0f;
 
     protected long seed = 0x123456789L;
     protected Random random = new Random(seed);
@@ -485,13 +486,13 @@ public class RandomLevelGenerator {
             DSLogger.reportDebug("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
             // define alpha: solid to fluid ratio
             final float alpha = 0.48676294f;
-            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_BLOCKS / 2);
-            int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_BLOCKS / 2);
+            int solidBlocks = Math.min(Math.round(alpha * numberOfBlocks), LevelContainer.MAX_NUM_OF_BLOCKS);
+            int fluidBlocks = Math.min(numberOfBlocks - solidBlocks, LevelContainer.MAX_NUM_OF_BLOCKS);
 
             final int totalAmount = solidBlocks + fluidBlocks;
 
             numOfLights = 0;
-            maxNumOfLights = Math.round(0.19f * LightSources.MAX_LIGHTS * totalAmount / 25000.0f);
+            maxNumOfLights = Math.round(LightSources.MAX_LIGHTS * totalAmount / 200000.0f);
 
             if (totalAmount > 0) {
                 //---------------------------------------------------------------------------------------------------------------------------
@@ -513,7 +514,7 @@ public class RandomLevelGenerator {
 
                 // define gamma: random fluid to series solid ratio
                 //---------------------------------------------------------------------------------------------------------------------------
-                float valueK = 1.5f * MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, solidBlocksN + fluidBlocksN);
+                float valueK = 1.4f * MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST, solidBlocksN + fluidBlocksN);
                 int valueK0 = Math.round(valueK) & 0xFFFFFFFE;
 
                 final int posN_Min = -valueK0;
@@ -522,7 +523,7 @@ public class RandomLevelGenerator {
                 final int hNMin = posN_Min >> 1;
                 final int hNMax = posN_Max >> 1;
 
-                float valueR = 2.0f * MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST / 4.0f, solidBlocksR + fluidBlocksR);
+                float valueR = 1.7f * MathUtils.polynomial(CUBIC, QUADRATIC, LINEAR, CONST2, solidBlocksR + fluidBlocksR);
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 
