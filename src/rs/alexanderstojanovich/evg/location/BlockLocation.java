@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.level;
+package rs.alexanderstojanovich.evg.location;
 
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -311,7 +312,7 @@ public class BlockLocation {
      *
      * @return was location previously populated
      */
-    protected boolean removeLocation(Vector3f pos) {
+    public boolean removeLocation(Vector3f pos) {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);

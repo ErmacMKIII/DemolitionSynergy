@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;

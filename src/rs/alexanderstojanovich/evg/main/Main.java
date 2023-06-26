@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
-import rs.alexanderstojanovich.evg.level.CacheModule;
+import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**

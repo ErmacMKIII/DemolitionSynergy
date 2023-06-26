@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.level;
+package rs.alexanderstojanovich.evg.location;
 
 import java.util.Objects;
 
@@ -25,8 +25,8 @@ import java.util.Objects;
 public class TexByte {
 
     protected String texName;
-    protected byte byteValue;
-    protected boolean solid;
+    public byte byteValue;
+    public boolean solid;
 
     public TexByte(String texName, byte byteValue, boolean solid) {
         this.texName = texName;

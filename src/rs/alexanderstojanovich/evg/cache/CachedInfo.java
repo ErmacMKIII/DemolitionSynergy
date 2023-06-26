@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package rs.alexanderstojanovich.evg.level;
+package rs.alexanderstojanovich.evg.cache;
 
 /**
  * Contains info about cached chunk. Most of the info can be read from this

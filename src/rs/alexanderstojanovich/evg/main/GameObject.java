@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
-import rs.alexanderstojanovich.evg.level.Chunk;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
