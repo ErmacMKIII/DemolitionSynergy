@@ -252,7 +252,7 @@ public class Editor {
     public static void add() {
         if (selectedNew != null) {
             if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (GameObject.MUTEX) { // potentially dangerous
+                synchronized (GameObject.RENDER_MUTEX) { // potentially dangerous
                     GameObject.getLevelContainer().chunks.addBlock(selectedNew);
                 }
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
@@ -264,7 +264,7 @@ public class Editor {
 
     public static void remove() {
         if (selectedCurr != null) {
-            synchronized (GameObject.MUTEX) { // potentially dangerous
+            synchronized (GameObject.RENDER_MUTEX) { // potentially dangerous
                 GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
             }
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
@@ -274,7 +274,7 @@ public class Editor {
 
     private static void selectTexture() {
         if (selectedNew != null) {
-            synchronized (GameObject.MUTEX) {
+            synchronized (GameObject.RENDER_MUTEX) {
                 String texName = Texture.TEX_WORLD[texValue];
                 selectedNew.setTexNameWithDeepCopy(texName);
             }

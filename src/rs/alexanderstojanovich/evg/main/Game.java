@@ -573,7 +573,7 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.MUTEX) {
+                        synchronized (GameObject.UPDATE_MUTEX) {
                             actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
                             actionPerformed |= editorDo();
                         }
@@ -581,7 +581,7 @@ public class Game {
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.MUTEX) {
+                        synchronized (GameObject.UPDATE_MUTEX) {
                             actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         }
                         break;
