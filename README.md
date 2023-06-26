@@ -37,6 +37,7 @@ Add library to the project.
 Done.
 
 # Source Code Structure
+```
 └───rs
     └───alexanderstojanovich
         └───evg
@@ -55,6 +56,7 @@ Done.
             ├───shaders
             ├───texture
             └───util
+```
 
 - audio		=> music/soundFX effects.
 - cache 	=> contains chunk ssd/hdd disk caching.
@@ -65,7 +67,7 @@ Done.
 - level 	=> level container, level actors, level editor, random level generator.
 - light 	=> light projection on the screen, light source(s).
 - location 	=> block location matrix 512x512x512 on X,Z & Y axis.
-- main 		=> main inependable classes, Game (main loop), Game Renderer (separate thread) & Game Object links them together.
+- main 		=> main independent classes, `Game` (main loop), `GameRenderer` (separate thread) & `GameObject` links them together.
 - models 	=> 3D looking models and their part(s) - vertex, mesh, material.
 - resources => ingame block (models) cube.txt (deprecated) & cubex.txt.
 - shaders 	=> Shader - Vertex & Fragment GLSL, Shader Program - binds them together.
