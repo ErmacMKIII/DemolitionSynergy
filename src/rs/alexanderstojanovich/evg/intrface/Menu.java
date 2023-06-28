@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.List;
 import org.joml.Vector2f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -67,7 +67,7 @@ public abstract class Menu {
 
     public Menu(String title, IList<MenuItem> items, String textureFileName) {
         this.title = new DynamicText(Texture.FONT, title);
-        this.title.setColor(Vector3fColors.YELLOW);
+        this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
         Texture mngTexture = Texture.MINIGUN;
         iterator = new Quad(24, 24, mngTexture);
@@ -80,7 +80,7 @@ public abstract class Menu {
     public Menu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         this.title = new DynamicText(Texture.FONT, title);
         this.title.setScale(scale);
-        this.title.setColor(Vector3fColors.YELLOW);
+        this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
         this.enabled = false;
         this.pos = pos;
@@ -97,7 +97,7 @@ public abstract class Menu {
         int index = 0;
         int longestWord = longestWord();
         for (MenuItem item : items) {
-            item.keyText.color = Vector3fColors.GREEN;
+            item.keyText.color = new Vector4f(GlobalColors.GREEN, 1.0f);
             item.keyText.setScale(itemScale);
             item.keyText.setAlignment(alignmentAmount);
             item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;

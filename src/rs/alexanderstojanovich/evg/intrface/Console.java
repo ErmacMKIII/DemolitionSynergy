@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.intrface;
 import java.util.List;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -32,7 +32,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -55,12 +55,12 @@ public class Console {
     public Console() {
         this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
                 GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
-        this.panel.setColor(LevelContainer.SKYBOX_COLOR);
+        this.panel.setColor(new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
         this.inText = new DynamicText(Texture.FONT, "]_", new Vector2f(), 18, 18);
-        this.inText.setColor(Vector3fColors.GREEN);
+        this.inText.setColor(new Vector4f(GlobalColors.GREEN, 1.0f));
         this.inText.pos.x = -1.0f;
         this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
 
@@ -68,7 +68,7 @@ public class Console {
         this.inText.alignToNextChar();
 
         this.completes = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
-        this.completes.color = Vector3fColors.YELLOW;
+        this.completes.color = new Vector4f(GlobalColors.YELLOW, 1.0f);
         this.completes.pos.x = -1.0f;
         this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
         this.completes.alignToNextChar();
@@ -103,7 +103,7 @@ public class Console {
 //                            }                        
                         Command cmd = Command.getCommand(input.toString());
 // if cmd is invalid it's null
-                        synchronized (GameObject.MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                        synchronized (GameObject.UPDATE_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
                             if (cmd.isRendererCommand()) {
                                 FutureTask<Object> consoleTask = new FutureTask<>(cmd);
                                 cmd.status = Command.Status.PENDING;
@@ -242,15 +242,15 @@ public class Console {
      * @param status Command status
      * @return status color {PENDING = WHITE, FAILED = RED, SUCCEEDED = GREEN }
      */
-    public static Vector3f StatusColor(Command.Status status) {
+    public static Vector4f StatusColor(Command.Status status) {
         switch (status) {
             case PENDING:
-                return Vector3fColors.WHITE;
+                return new Vector4f(GlobalColors.WHITE, 1.0f);
             default:
             case FAILED:
-                return Vector3fColors.RED;
+                return new Vector4f(GlobalColors.RED, 1.0f);
             case SUCCEEDED:
-                return Vector3fColors.GREEN;
+                return new Vector4f(GlobalColors.GREEN, 1.0f);
         }
 
     }

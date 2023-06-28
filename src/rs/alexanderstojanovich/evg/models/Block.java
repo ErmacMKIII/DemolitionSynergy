@@ -24,25 +24,28 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.joml.FrustumIntersection;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.level.TexByte;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
-import rs.alexanderstojanovich.evg.util.Vector3fUtils;
+import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
@@ -80,8 +83,8 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            String s1 = Vector3fUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
-            String s2 = Vector3fUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
+            String s1 = VectorFloatUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
+            String s2 = VectorFloatUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
             return s1.compareTo(s2);
         }
     };
@@ -105,25 +108,25 @@ public class Block extends Model {
 
     public Block(String texName) {
         super("cubex.txt", texName);
+        this.solid = !texName.equals("water");
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
-        material.color = new Vector3f(Vector3fColors.WHITE);
+        material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         width = height = depth = 2.0f;
     }
 
-    public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("cubex.txt", texName);
-        this.pos = pos;
+    public Block(String texName, Vector3f pos, Vector4f primaryRGBAColor, boolean solid) {
+        super("cubex.txt", texName, pos, solid);
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
         Material material = new Material(Texture.getOrDefault(texName));
-        material.color = primaryColor;
+        material.color = primaryRGBAColor;
         materials.add(material);
         this.solid = solid;
         width = height = depth = 2.0f;
@@ -208,7 +211,6 @@ public class Block extends Model {
 
             for (Block block : blocks) {
                 block.transform(shaderProgram);
-                block.setAlpha(shaderProgram);
                 block.primaryColor(shaderProgram);
 
                 GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
@@ -262,7 +264,6 @@ public class Block extends Model {
             for (Block block : blocks) {
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
-                    block.setAlpha(shaderProgram);
                     block.primaryColor(shaderProgram);
 
                     GL11.glDrawElements(GL11.GL_TRIANGLES, indicesNum, GL11.GL_UNSIGNED_INT, 0);
@@ -324,76 +325,43 @@ public class Block extends Model {
         return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
-    public boolean canBeSeenBy(Vector3f front) {
-        boolean bool = false;
+    /**
+     * Can block be seen by camera. It is assumed that block dimension is 2.1 x
+     * 2.1 x 2.1
+     *
+     * @param camera (observer) camera
+     * @return intersection with this block
+     */
+    public boolean canBeSeenBy(Camera camera) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
 
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
+        Vector3f min = pos.sub(1.05f, 1.05f, 1.05f, temp1);
+        Vector3f max = pos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        return bool;
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+
+        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
 
-    @Deprecated
-    public boolean canBeSeenByAdv(Vector3f camFront, Vector3f camPos) {
-        boolean bool = false;
-        Vector3f temp0 = new Vector3f();
-        Vector3f vz = this.pos.sub(camPos, temp0).normalize(temp0);
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(camPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
+    /**
+     * Can block be seen by camera.It is assumed that block dimension is 2.1 x
+     * 2.1 x 2.1
+     *
+     * @param camera (observer) camera
+     * @param blkPos block position
+     * @return intersection with this block
+     */
+    public static boolean canBeSeenBy(Vector3f blkPos, Camera camera) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
 
-        return bool;
-    }
+        Vector3f min = blkPos.sub(1.05f, 1.05f, 1.05f, temp1);
+        Vector3f max = blkPos.add(1.05f, 1.05f, 1.05f, temp2);
 
-    public static boolean canBeSeenBy(Vector3f blockPos, Vector3f camFront) {
-        boolean bool = false;
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
 
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
-
-        return bool;
-    }
-
-    @Deprecated
-    public static boolean canBeSeenByAdv(Vector3f blockPos, Vector3f camFront, Vector3f camPos) {
-        boolean bool = false;
-        Vector3f temp0 = new Vector3f();
-        Vector3f vz = blockPos.sub(camPos, temp0).normalize(temp0);
-        for (Vector3f normal : FACE_NORMALS) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f vx = normal.add(blockPos, temp1).normalize(temp1);
-            Vector3f temp2 = new Vector3f();
-            Vector3f vy = camFront.add(blockPos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.15f && Math.abs(vz.dot(camFront)) >= 0.15f) {
-                bool = true;
-                break;
-            }
-        }
-
-        return bool;
+        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
 
     /**
@@ -872,11 +840,28 @@ public class Block extends Model {
         byte[] texNameArr = texName.getBytes();
         System.arraycopy(texNameArr, 0, byteArray, offset, 5);
         offset += 5;
-        byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
         System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
         offset += posArr.length;
-        byte[] colArr = Vector3fUtils.vec3fToByteArray(materials.getFirst().color);
+        Vector3f primaryRGBColor = getPrimaryRGBColor();
+        byte[] colArr = VectorFloatUtils.vec3fToByteArray(primaryRGBColor);
         System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
+        return byteArray;
+    }
+
+    public byte[] toNewByteArray() {
+        byte[] byteArray = new byte[35];
+        int offset = 0;
+        byte[] texNameArr = texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5); // 5B
+        offset += 5;
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        Vector4f primaryRGBAColor = getPrimaryRGBAColor();
+        byte[] colArr = VectorFloatUtils.vec4fToByteArray(primaryRGBAColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 16 B
 
         return byteArray;
     }
@@ -891,13 +876,37 @@ public class Block extends Model {
 
         byte[] blockPosArr = new byte[12];
         System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
-        Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+        Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(blockPosArr);
         offset += blockPosArr.length;
 
         byte[] blockPosCol = new byte[12];
         System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
-        Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+        Vector3f blockCol = VectorFloatUtils.vec3fFromByteArray(blockPosCol);
 
+        Block block = new Block(texName, blockPos, new Vector4f(blockCol, solid ? 1.0f : 0.5f), solid);
+
+        return block;
+    }
+
+    public static Block fromNewByteArray(byte[] byteArray) {
+        int offset = 0;
+        char[] texNameArr = new char[5];
+        for (int k = 0; k < texNameArr.length; k++) {
+            texNameArr[k] = (char) byteArray[offset++];
+        }
+        String texName = String.valueOf(texNameArr);
+
+        byte[] blockPosArr = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
+        Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(blockPosArr);
+        offset += blockPosArr.length;
+
+        byte[] blockColArr = new byte[16];
+        System.arraycopy(byteArray, offset, blockColArr, 0, blockColArr.length);
+        Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(blockColArr);
+        offset += blockColArr.length;
+
+        boolean solid = byteArray[offset] != (byte) 0x00;
         Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;

@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -33,7 +33,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -106,9 +106,7 @@ public class Game {
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
     protected static boolean actionPerformed = false;
-    protected static boolean chunksModified = false;
     protected static boolean causingCollision = false;
-    protected static boolean needOptimize = false;
 
     /**
      * Construct new game view
@@ -421,13 +419,13 @@ public class Game {
         return changed;
     }
 
-    private void setCrosshairColor(Vector3f color) {
+    private void setCrosshairColor(Vector4f color) {
         GameObject.getIntrface().getCrosshair().setColor(color);
     }
 
     private void cycleCrosshairColor() {
-        Vector3fColors.ColorName[] values = Vector3fColors.ColorName.values();
-        setCrosshairColor(Vector3fColors.getColorOrDefault(values[++crosshairColorNum % values.length]));
+        GlobalColors.ColorName[] values = GlobalColors.ColorName.values();
+        setCrosshairColor(GlobalColors.getRGBAColorOrDefault(values[++crosshairColorNum % values.length]));
     }
 
     /**
@@ -537,13 +535,9 @@ public class Game {
 
         int index = 0; // track index
 
-        double timer = 0.0;
-
         // first time we got nothing
         actionPerformed = false;
-        chunksModified = false;
         causingCollision = false;
-        needOptimize = false;
 
         GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
 
@@ -579,7 +573,7 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.MUTEX) {
+                        synchronized (GameObject.UPDATE_MUTEX) {
                             actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
                             actionPerformed |= editorDo();
                         }
@@ -587,7 +581,7 @@ public class Game {
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.MUTEX) {
+                        synchronized (GameObject.UPDATE_MUTEX) {
                             actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         }
                         break;
@@ -597,26 +591,6 @@ public class Game {
 
                 ups++;
                 upsTicks--;
-            }
-
-            if (Game.accumulator - timer > 80.0) { // optimization every second
-                actionPerformed = true;
-                chunksModified = true;
-                needOptimize = true;
-                timer += 80.0;
-            }
-
-            if (actionPerformed) {
-                chunksModified |= GameObject.determineVisibleChunks();
-                if (chunksModified) {
-                    needOptimize |= GameObject.chunkOperations();
-                    if (needOptimize) {
-                        GameObject.optimize();
-                        needOptimize = false;
-                    }
-                    chunksModified = false;
-                }
-                actionPerformed = false;
             }
         }
         // stops the music        
@@ -752,10 +726,6 @@ public class Game {
 
     public static boolean isActionPerformed() {
         return actionPerformed;
-    }
-
-    public static boolean isNeedOptimize() {
-        return needOptimize;
     }
 
 }

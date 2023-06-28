@@ -25,7 +25,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Standard YES/NO dialog from command line interface (CLI). Execution takes
@@ -106,10 +106,10 @@ public abstract class Dialog {
             boolean execStatus = execute(input.toString());
             if (execStatus) {
                 dialog.setContent(success);
-                dialog.color = Vector3fColors.GREEN;
+                dialog.color = GlobalColors.GREEN_RGBA;
             } else {
                 dialog.setContent(fail);
-                dialog.color = Vector3fColors.RED;
+                dialog.color = GlobalColors.RED_RGBA;
             }
         } else {
             dialog.setContent("");
@@ -128,7 +128,7 @@ public abstract class Dialog {
             enabled = true;
             done = false;
             dialog.setContent(question + "_");
-            dialog.color = Vector3fColors.WHITE;
+            dialog.color = GlobalColors.WHITE_RGBA;
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
             GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), keyCallback);

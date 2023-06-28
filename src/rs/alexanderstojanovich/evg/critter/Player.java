@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
-import rs.alexanderstojanovich.evg.util.Vector3fColors;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -49,7 +49,7 @@ public class Player extends Critter implements Observer {
 //    static {
 //        for (Model weapon : WEAPONS) {
 //            weapon.pos = WEAPON_POS;
-//            weapon.setPrimaryColor(Vector3fColors.WHITE);
+//            weapon.setPrimaryColor(GlobalColors.WHITE);
 //            weapon.setScale(6.0f);
 //            weapon.setrY((float) (-Math.PI / 2.0f));
 //        }
@@ -57,7 +57,7 @@ public class Player extends Critter implements Observer {
     public Player(Model body) {
         super(body);
         this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right);
-        this.light = new LightSource(this.camera.getPos(), Vector3fColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+        this.light = new LightSource(this.camera.getPos(), GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {

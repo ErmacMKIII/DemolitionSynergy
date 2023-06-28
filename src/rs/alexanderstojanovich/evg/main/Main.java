@@ -16,10 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.Arrays;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.MasterAudio;
-import rs.alexanderstojanovich.evg.level.CacheModule;
+import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -37,9 +38,7 @@ public class Main {
         Configuration inCfg = Configuration.getInstance();
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
         IList<String> argsList = new GapList();
-        for (String arg : args) {
-            argsList.add(arg);
-        }
+        argsList.addAll(Arrays.asList(args));
         final boolean logToFile = (argsList.contains("-logtofile") || inCfg.isLogToFile()); // determine debug flag (write in a log file or not)
         String arg = argsList.getIf(a -> a.equals("-" + DSLogger.DSLogLevel.ERR.name()) || a.equals("-" + DSLogger.DSLogLevel.DEBUG.name()) || a.equals("-" + DSLogger.DSLogLevel.ALL.name()));
         final DSLogger.DSLogLevel logLevel;

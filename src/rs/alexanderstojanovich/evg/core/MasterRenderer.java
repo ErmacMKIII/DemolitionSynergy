@@ -70,7 +70,7 @@ public class MasterRenderer {
      * Render by clearing the color (COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT)
      */
     public static void render() {
-        Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryColor();
+        Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryRGBColor();
         GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
