@@ -5,14 +5,15 @@ Audio material was provided from freesound.org by Erokia.
 # Verbose Description
 Lightwight Game Engine writen in Java. 
 Features: Lighting, Water Reflections, Voxel based. 
-Has it's own Console & ingame commands. 
+With it's own Console & ingame commands. 
 Has ambient soundtracks. 
 Random level building & manual level building via Editor.
 Many tweaked optimizations in rendering. Instanced rendering.
+Highly modular and support visual & GLSL modifications.
 
-![Alt text](/misc/DSynergy1.png?raw=true "Doom Underwater")
-![Alt text](/misc/DSynergy2.png?raw=true "Random Level Small")
-![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
+![Alt text](/misc/DSynergy1.png?raw=true "Light trough air")
+![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")
+![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge from above")
 
 # How To Build
 Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
@@ -35,7 +36,7 @@ by specifying classpath, sources & javadocs in that order.
 Add library to the project.
 
 Done.
-
+```
 # Source Code Structure
 └───rs
     └───alexanderstojanovich
@@ -55,7 +56,7 @@ Done.
             ├───shaders
             ├───texture
             └───util
-
+```
 - audio		=> music/soundFX effects.
 - cache 	=> contains chunk ssd/hdd disk caching.
 - chunk 	=> series of blocks for instanced rendering.
@@ -65,8 +66,8 @@ Done.
 - level 	=> level container, level actors, level editor, random level generator.
 - light 	=> light projection on the screen, light source(s).
 - location 	=> block location matrix 512x512x512 on X,Z & Y axis.
-- main 		=> main inependable classes, Game (main loop), Game Renderer (separate thread) & Game Object links them together.
-- models 	=> 3D looking models and their part(s) - vertex, mesh, material.
+- main 		=> main inependable classes, `Game` (main loop), `GameRenderer` (separate thread) & `GameObject` links them together.
+- models 	=> 3d looking models and their part(s) - vertex, mesh, material.
 - resources => ingame block (models) cube.txt (deprecated) & cubex.txt.
 - shaders 	=> Shader - Vertex & Fragment GLSL, Shader Program - binds them together.
 - texture 	=> ingame textures & texture store hashmap.
