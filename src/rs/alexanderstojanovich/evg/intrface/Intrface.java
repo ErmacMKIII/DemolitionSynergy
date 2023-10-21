@@ -302,7 +302,7 @@ public class Intrface {
                         Player player = levelContainer.levelActors.player;
                         Random random = GameObject.getRandomLevelGenerator().getRandom();
                         // choosing random player location
-                        Vector3f populatedLocation = new Vector3f(Float.NaN);
+                        Vector3f populatedLocation = new Vector3f();
                         do {
                             int chunkId = Chunk.GRID_SIZE + random.nextInt(Chunk.GRID_SIZE) << random.nextInt(2);
                             IList<Vector3f> populatedLocations = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(chunkId, loc -> loc.isSolid());

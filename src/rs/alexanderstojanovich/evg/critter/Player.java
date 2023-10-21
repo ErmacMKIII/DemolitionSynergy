@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.core.RPGCamera;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -56,7 +57,7 @@ public class Player extends Critter implements Observer {
 //    }
     public Player(Model body) {
         super(body);
-        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right);
+        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y, body.pos.z));
         this.light = new LightSource(this.camera.getPos(), GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
@@ -118,6 +119,18 @@ public class Player extends Critter implements Observer {
         super.ascend(amount);
         camera.ascend(amount);
         light.pos = body.pos;
+    }
+
+    @Override
+    public void turnLeft(float angle) {
+        body.setrY(-angle);
+        camera.turnLeft(angle);
+    }
+
+    @Override
+    public void turnRight(float angle) {
+        body.setrY(+angle);
+        camera.turnRight(angle);
     }
 
     @Override

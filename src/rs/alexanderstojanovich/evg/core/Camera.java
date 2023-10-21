@@ -44,8 +44,8 @@ public class Camera implements Observer { // is 3D looking camera
     protected Vector3f up = Y_AXIS;
     protected Vector3f right = X_AXIS;
 
-    private float yaw = (float) (-org.joml.Math.PI / 2.0); // sideways look angle
-    private float pitch = (float) (-org.joml.Math.PI); // up and down look angle
+    protected float yaw = (float) (-org.joml.Math.PI / 2.0); // sideways look angle
+    protected float pitch = (float) (-org.joml.Math.PI); // up and down look angle
 
     public Camera() {
         this.pos = new Vector3f();
@@ -78,7 +78,7 @@ public class Camera implements Observer { // is 3D looking camera
         shaderProgram.updateUniform(viewMatrix, "viewMatrix");
     }
 
-    private void updateCameraVectors() {
+    protected void updateCameraVectors() {
         Vector3f temp1 = new Vector3f();
         front = front.normalize(temp1);
         Vector3f temp2 = new Vector3f();
@@ -90,9 +90,7 @@ public class Camera implements Observer { // is 3D looking camera
     private void calcViewMatrix() {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
-//        if (pos.isFinite() && !front.equals(temp) && !up.equals(temp)) {
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
-//        }
     }
 
     public void updateCameraPosition(ShaderProgram shaderProgram) {

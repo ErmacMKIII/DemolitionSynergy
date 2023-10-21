@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Critter implements Predictable, Moveable, Renderable {
 
+    public Vector3f pos = new Vector3f();
     public final Model body;
     protected Vector3f predictor;
 
@@ -48,6 +49,18 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
+    }
+
+    /**
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
+     *
+     * @param pos initial position of the critter
+     * @param body body model
+     */
+    public Critter(Vector3f pos, Model body) {
+        this.body = body;
+        this.pos = this.predictor = new Vector3f(body.pos); // separate predictor from the body
     }
 
     @Override
@@ -100,49 +113,47 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
-        movePredictorForward(amount);
-        predictor = body.pos.add(front.mul(amount, temp));
+        pos = body.pos = body.pos.add(front.mul(amount, temp));
     }
 
     @Override
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.sub(front.mul(amount, temp));
+        pos = body.pos = body.pos.sub(front.mul(amount, temp));
     }
 
     @Override
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.sub(right.mul(amount, temp));
+        pos = body.pos = body.pos.sub(right.mul(amount, temp));
     }
 
     @Override
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.add(right.mul(amount, temp));
+        pos = body.pos = body.pos.add(right.mul(amount, temp));
     }
 
     @Override
     public void ascend(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.add(up.mul(amount, temp));
+        pos = body.pos = body.pos.add(up.mul(amount, temp));
     }
 
     @Override
     public void descend(float amount) {
         Vector3f temp = new Vector3f();
-        movePredictorDown(amount);
-        predictor = body.pos.sub(up.mul(amount, temp));
+        pos = body.pos = body.pos.sub(up.mul(amount, temp));
     }
 
     @Override
     public void turnLeft(float angle) {
-        body.setrX(-angle);
+        body.setrY(-angle);
     }
 
     @Override
     public void turnRight(float angle) {
-        body.setrX(-angle);
+        body.setrY(+angle);
     }
 
     @Override
@@ -156,11 +167,11 @@ public class Critter implements Predictable, Moveable, Renderable {
     }
 
     public Vector3f getPos() {
-        return body.pos;
+        return this.pos;
     }
 
     public void setPos(Vector3f pos) {
-        predictor = body.pos = new Vector3f(pos);
+        this.pos = predictor = body.pos;
     }
 
     @Override
@@ -170,6 +181,18 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public Model getBody() {
         return body;
+    }
+
+    public Vector3f getFront() {
+        return front;
+    }
+
+    public Vector3f getUp() {
+        return up;
+    }
+
+    public Vector3f getRight() {
+        return right;
     }
 
 }
