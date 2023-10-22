@@ -47,17 +47,17 @@ public class RPGCamera extends Camera {
     }
 
     private float horizontalDistance() {
-        return this.distanceFromTarget * org.joml.Math.sin(angleAroundTarget());
+        return this.distanceFromTarget * org.joml.Math.sin(pitch);
     }
 
     private float verticalDistance() {
-        return this.distanceFromTarget * org.joml.Math.cos(angleAroundTarget());
+        return this.distanceFromTarget * org.joml.Math.cos(pitch);
     }
 
     protected void calcCameraPos() {
-        pos.x = this.target.pos.x + horizontalDistance() * org.joml.Math.sin(yaw + angleAroundTarget());
+        pos.x = this.target.pos.x + horizontalDistance() * org.joml.Math.sin(angleAroundTarget());
         pos.y = this.target.pos.y + verticalDistance();
-        pos.z = this.target.pos.z + horizontalDistance() * org.joml.Math.cos(yaw + angleAroundTarget());
+        pos.z = this.target.pos.z + horizontalDistance() * org.joml.Math.cos(angleAroundTarget());
     }
 
     private void calcViewMatrix() {

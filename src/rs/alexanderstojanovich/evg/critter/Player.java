@@ -72,11 +72,13 @@ public class Player extends Critter implements Observer {
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         camera.lookAtOffset(sensitivity, xoffset, yoffset);
+        body.setrY(camera.getYaw());
     }
 
     @Override
     public void lookAtAngle(float yaw, float pitch) {
         camera.lookAtAngle(yaw, pitch);
+        body.setrY(camera.getYaw());
     }
 
     @Override
