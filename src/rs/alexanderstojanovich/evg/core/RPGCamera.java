@@ -17,7 +17,7 @@
 package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.models.Model;
 
 /**
  *
@@ -25,42 +25,45 @@ import rs.alexanderstojanovich.evg.critter.Observer;
  */
 public class RPGCamera extends Camera {
 
-    private final Observer target;
-    private final float distanceFromTarget = 50.0f;
-    private float angleAroundTarget = 0.0f;
+    private final Model target;
+    private final float distanceFromTarget = 10.0f;
 
-    public RPGCamera(Observer target) {
+    public RPGCamera(Model target) {
         this.target = target;
     }
 
-    public RPGCamera(Observer target, Vector3f pos) {
+    public RPGCamera(Model target, Vector3f pos) {
         super(pos);
         this.target = target;
     }
 
-    public RPGCamera(Observer target, Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
+    public RPGCamera(Model target, Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
         super(pos, front, up, right);
         this.target = target;
     }
 
+    private float angleAroundTarget() {
+        return target.getrY();
+    }
+
     private float horizontalDistance() {
-        return this.distanceFromTarget * this.target.getFront().angleCos(this.target.getRight());
+        return this.distanceFromTarget * org.joml.Math.sin(angleAroundTarget());
     }
 
     private float verticalDistance() {
-        Vector3f pi = new Vector3f((float) org.joml.Math.PI);
-        Vector3f temp = new Vector3f();
-        return this.distanceFromTarget * this.target.getFront().angleCos(pi.sub(this.target.getRight(), temp));
+        return this.distanceFromTarget * org.joml.Math.cos(angleAroundTarget());
     }
 
     protected void calcCameraPos() {
-        pos.x = target.getPos().x - horizontalDistance() * org.joml.Math.sin(angleAroundTarget);
-        pos.y = target.getPos().y + verticalDistance();
-        pos.z = target.getPos().z - horizontalDistance() * org.joml.Math.cos(angleAroundTarget);
+        pos.x = this.target.pos.x + horizontalDistance() * org.joml.Math.sin(yaw + angleAroundTarget());
+        pos.y = this.target.pos.y + verticalDistance();
+        pos.z = this.target.pos.z + horizontalDistance() * org.joml.Math.cos(yaw + angleAroundTarget());
     }
 
     private void calcViewMatrix() {
+        calcCameraPos();
         updateCameraVectors();
+
         Vector3f temp = new Vector3f();
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
     }
@@ -75,12 +78,10 @@ public class RPGCamera extends Camera {
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         yaw += sensitivity * xoffset;
-        this.angleAroundTarget += sensitivity * xoffset;
+
         while (yaw >= 2.0 * org.joml.Math.PI) {
             yaw -= 2.0 * org.joml.Math.PI;
         }
-
-        yaw = (float) org.joml.Math.PI - (this.yaw + this.angleAroundTarget);
 
         pitch += sensitivity * yoffset;
         if (pitch > org.joml.Math.PI / 2.1) {
@@ -90,9 +91,9 @@ public class RPGCamera extends Camera {
             pitch = (float) (-org.joml.Math.PI / 2.1);
         }
 
-        front.x = (float) (org.joml.Math.cos(yaw) * org.joml.Math.cos(this.pitch));
+        front.x = (float) (org.joml.Math.cos(org.joml.Math.PI + (yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
         front.y = (float) org.joml.Math.sin(this.pitch);
-        front.z = (float) (-org.joml.Math.sin(yaw) * org.joml.Math.cos(this.pitch));
+        front.z = (float) (-org.joml.Math.sin(org.joml.Math.PI + (yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
         calcViewMatrix();
     }
 
@@ -104,25 +105,20 @@ public class RPGCamera extends Camera {
      */
     @Override
     public void lookAtAngle(float yaw, float pitch) {
-        this.yaw = (float) org.joml.Math.PI - (this.yaw + this.angleAroundTarget);
-        this.angleAroundTarget += 0.5f * yaw;
+        this.yaw = yaw;
         this.pitch = pitch;
-        front.x = (float) (org.joml.Math.cos(yaw) * org.joml.Math.cos(this.pitch));
+        front.x = (float) (org.joml.Math.cos(org.joml.Math.PI + (this.yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
         front.y = (float) org.joml.Math.sin(this.pitch);
-        front.z = (float) (-org.joml.Math.sin(yaw) * org.joml.Math.cos(this.pitch));
+        front.z = (float) (-org.joml.Math.sin(org.joml.Math.PI + (this.yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
         calcViewMatrix();
     }
 
-    public Observer getTarget() {
+    public Model getTarget() {
         return target;
     }
 
     public float getDistanceFromTarget() {
         return distanceFromTarget;
-    }
-
-    public float getAngleAroundTarget() {
-        return angleAroundTarget;
     }
 
 }

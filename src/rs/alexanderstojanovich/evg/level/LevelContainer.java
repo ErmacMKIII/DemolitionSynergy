@@ -828,7 +828,7 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, observer.getPos())
                                     || Block.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
-                                            observer.getPos(), 0.07f, 0.07f, 0.07f);
+                                            observer.getPos(), 0.075f, 0.075f, 0.075f);
 
                             if (coll) {
                                 break OUTER;
@@ -874,8 +874,8 @@ public class LevelContainer implements GravityEnviroment {
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
-                                    || critter.body.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f);
-
+                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                                            critter.getPredictor(), critter.body.getWidth(), critter.getBody().getHeight(), critter.getBody().getDepth());
                             if (coll) {
                                 break OUTER;
                             }

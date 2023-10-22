@@ -57,7 +57,7 @@ public class Player extends Critter implements Observer {
 //    }
     public Player(Model body) {
         super(body);
-        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y, body.pos.z));
+        this.camera = new RPGCamera(this.body, new Vector3f(body.pos.x, body.pos.y, body.pos.z));
         this.light = new LightSource(this.camera.getPos(), GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
@@ -123,14 +123,14 @@ public class Player extends Critter implements Observer {
 
     @Override
     public void turnLeft(float angle) {
-        body.setrY(-angle);
         camera.turnLeft(angle);
+        body.setrY(-angle);
     }
 
     @Override
     public void turnRight(float angle) {
-        body.setrY(+angle);
         camera.turnRight(angle);
+        body.setrY(+angle);
     }
 
     @Override

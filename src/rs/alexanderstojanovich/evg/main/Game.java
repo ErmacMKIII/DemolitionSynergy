@@ -683,21 +683,6 @@ public class Game {
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
-//        switch (currentMode) {
-//            case FREE:
-//                // nobody has control
-//                GameObject.levelContainer.levelActors.mainActor().setGivenControl(false);
-//                break;
-//            case EDITOR:
-//                // observer has control
-//                GameObject.levelContainer.levelActors.mainActor().setGivenControl(true);
-//                break;
-//            case SINGLE_PLAYER:
-//            case MULTIPLAYER:
-//                // player has control
-//                GameObject.levelContainer.levelActors.getPlayer().setGivenControl(true);
-//                break;
-//        }
     }
 
     public static float getLastX() {

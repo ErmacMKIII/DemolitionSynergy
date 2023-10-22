@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.location;
 
-import rs.alexanderstojanovich.evg.chunk.Chunk;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +24,7 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.models.Block;
 
 /**
@@ -208,17 +208,20 @@ public class BlockLocation {
 
         for (int j = 0; j < Chunk.BOUND; j++) {
             float y = 2.0f * j - Chunk.BOUND;
-            for (Vector2f xz : planes.get(y)) {
-                int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
-                int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
-                TexByte value = locationMap[i][j][k];
+            List<Vector2f> yCoords = planes.get((float) y);
+            if (yCoords != null) {
+                for (Vector2f xz : planes.get(y)) {
+                    int i = Math.round((xz.x + Chunk.BOUND) / 2.0f);
+                    int k = Math.round((xz.y + Chunk.BOUND) / 2.0f);
+                    TexByte value = locationMap[i][j][k];
 
-                if (!safeCheck(i, j, k)) {
-                    continue;
-                }
+                    if (!safeCheck(i, j, k)) {
+                        continue;
+                    }
 
-                if (value != null && predicate.test(value)) {
-                    result.add(new Vector3f(xz.x, y, xz.y));
+                    if (value != null && predicate.test(value)) {
+                        result.add(new Vector3f(xz.x, y, xz.y));
+                    }
                 }
             }
         }
