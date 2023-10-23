@@ -57,8 +57,8 @@ public class Player extends Critter implements Observer {
 //    }
     public Player(Model body) {
         super(body);
-        this.camera = new RPGCamera(this.body, new Vector3f(body.pos.x, body.pos.y, body.pos.z));
-        this.light = new LightSource(this.camera.getPos(), GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+        this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
+        this.light = new LightSource(this.body.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {
@@ -72,13 +72,13 @@ public class Player extends Critter implements Observer {
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         camera.lookAtOffset(sensitivity, xoffset, yoffset);
-        body.setrY(camera.getYaw());
+        body.setrY(body.getrY() + sensitivity * xoffset);
     }
 
     @Override
     public void lookAtAngle(float yaw, float pitch) {
         camera.lookAtAngle(yaw, pitch);
-        body.setrY(camera.getYaw());
+        body.setrY(yaw);
     }
 
     @Override
@@ -165,6 +165,21 @@ public class Player extends Critter implements Observer {
     public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
         super.render(lightSrc, shaderProgram);
+    }
+
+    @Override
+    public Vector3f getFront() {
+        return this.camera.getFront();
+    }
+
+    @Override
+    public Vector3f getUp() {
+        return this.camera.getUp();
+    }
+
+    @Override
+    public Vector3f getRight() {
+        return this.camera.getRight();
     }
 
 }

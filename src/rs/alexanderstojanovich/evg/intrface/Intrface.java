@@ -51,6 +51,8 @@ public class Intrface {
     private DynamicText updText; // displays updates
     private DynamicText fpsText; // displays framerates
     private DynamicText posText; // display position
+    private DynamicText viewText; // display view
+
     private DynamicText chunkText; // display current chunk (player)
     private DynamicText gameTimeText;
 
@@ -108,7 +110,11 @@ public class Intrface {
         posText.setAlignment(Text.ALIGNMENT_RIGHT);
         posText.alignToNextChar();
 
-        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+        viewText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+        viewText.setAlignment(Text.ALIGNMENT_RIGHT);
+        viewText.alignToNextChar();
+
+        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
         chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
         chunkText.alignToNextChar();
 
@@ -167,7 +173,7 @@ public class Intrface {
             }
         };
         Quad logo = new Quad(120, 90, Texture.LOGO);
-        logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
+        logo.setColor(new Vector4f(LevelContainer.SUN_COLOR_RGB, 1.0f));
         logo.setScale(1.5f);
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
@@ -624,6 +630,10 @@ public class Intrface {
             chunkText.bufferSmart();
         }
         chunkText.render(ifcShaderProgram);
+        if (!viewText.isBuffered()) {
+            viewText.bufferSmart();
+        }
+        viewText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
             collText.bufferSmart();
         }
@@ -716,6 +726,12 @@ public class Intrface {
         loadLvlMenu.release();
 
         creditsMenu.release();
+
+        updText.release();
+        fpsText.release();
+        viewText.release();
+        posText.release();
+        chunkText.release();
 
         collText.release();
         helpText.release();
@@ -831,6 +847,10 @@ public class Intrface {
 
     public DynamicText getGameTimeText() {
         return gameTimeText;
+    }
+
+    public DynamicText getViewText() {
+        return viewText;
     }
 
 }

@@ -73,6 +73,7 @@ public interface Observer extends Moveable {
      *
      * @return observer position
      */
+    @Override
     public Vector3f getPos();
 
     /**
@@ -80,6 +81,7 @@ public interface Observer extends Moveable {
      *
      * @param pos new obsserver position
      */
+    @Override
     public void setPos(Vector3f pos);
 
     /**

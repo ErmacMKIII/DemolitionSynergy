@@ -36,7 +36,6 @@ import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -80,7 +79,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static void init() {
         MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
         SPLASH_SCREEN = new Quad(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), Texture.CONSOLE, true);
-        SPLASH_SCREEN.setColor(GlobalColors.YELLOW_RGBA);
+        SPLASH_SCREEN.setColor(LevelContainer.SUN_COLOR_RGBA);
         levelContainer = new LevelContainer();
         randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         waterRenderer = new WaterRenderer(levelContainer);
@@ -178,8 +177,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 levelContainer.update(deltaTime);
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
+            Vector3f view = levelContainer.levelActors.mainObserver().getFront();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
+            intrface.getViewText().setContent(String.format("view: (%.2f,%.2f,%.2f)", view.x, view.y, view.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
             GameTime now = GameTime.Now();

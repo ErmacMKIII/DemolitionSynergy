@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
@@ -27,45 +28,78 @@ public class RPGCamera extends Camera {
 
     private final Model target;
     private final float distanceFromTarget = 10.0f;
+    private float angleAroundTarget = 0.0f;
+    private final float tiltAngleTarget = (float) org.joml.Math.PI / 4.0f;
 
     public RPGCamera(Model target) {
+        super();
         this.target = target;
+        initViewMatrix();
     }
 
     public RPGCamera(Model target, Vector3f pos) {
         super(pos);
         this.target = target;
+        initViewMatrix();
     }
 
     public RPGCamera(Model target, Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
         super(pos, front, up, right);
         this.target = target;
-    }
-
-    private float angleAroundTarget() {
-        return target.getrY();
+        initViewMatrix();
     }
 
     private float horizontalDistance() {
-        return this.distanceFromTarget * org.joml.Math.sin(pitch);
+        return this.distanceFromTarget * org.joml.Math.sin(-this.pitch + 3.0f * (float) org.joml.Math.PI / 2.0f);
     }
 
     private float verticalDistance() {
-        return this.distanceFromTarget * org.joml.Math.cos(pitch);
+        return this.distanceFromTarget * org.joml.Math.cos(-this.pitch + 3.0f * (float) org.joml.Math.PI / 2.0f);
     }
 
     protected void calcCameraPos() {
-        pos.x = this.target.pos.x + horizontalDistance() * org.joml.Math.sin(angleAroundTarget());
-        pos.y = this.target.pos.y + verticalDistance();
-        pos.z = this.target.pos.z + horizontalDistance() * org.joml.Math.cos(angleAroundTarget());
+        pos.x = target.pos.x + horizontalDistance() * org.joml.Math.sin(-(target.getrY() + angleAroundTarget)); //* org.joml.Math.sin(tiltAngleTarget);
+        pos.y = target.pos.y + verticalDistance(); //* org.joml.Math.cos(tiltAngleTarget);
+        pos.z = target.pos.z + horizontalDistance() * org.joml.Math.cos(-(target.getrY() + angleAroundTarget));// * org.joml.Math.sin(tiltAngleTarget);
     }
 
-    private void calcViewMatrix() {
-        calcCameraPos();
+    private void initViewMatrix() {
         updateCameraVectors();
-
         Vector3f temp = new Vector3f();
+        calcCameraPos();
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
+    }
+
+    @Override
+    protected void calcViewMatrix() {
+        updateCameraVectors();
+        Vector3f temp = new Vector3f();
+        calcCameraPos();
+        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
+    }
+
+    /**
+     * Turn left specified by angle from the game.
+     *
+     * @param angle angle to turn left (in radians)
+     */
+    @Override
+    public void turnLeft(float angle) {
+        super.turnLeft(angle);
+        target.setrY(-angle);
+        this.angleAroundTarget -= angle * 0.05f;
+    }
+
+    /**
+     * Turn right specified by angle from the game.
+     *
+     * @param angle angle to turn right (in radians)
+     */
+    @Override
+    public void turnRight(float angle) {
+        super.turnRight(angle);
+        target.setrY(+angle);
+        this.angleAroundTarget += angle * 0.05f;
     }
 
     /**
@@ -78,11 +112,10 @@ public class RPGCamera extends Camera {
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         yaw += sensitivity * xoffset;
-
+        this.angleAroundTarget += sensitivity * xoffset / 2.0f;
         while (yaw >= 2.0 * org.joml.Math.PI) {
             yaw -= 2.0 * org.joml.Math.PI;
         }
-
         pitch += sensitivity * yoffset;
         if (pitch > org.joml.Math.PI / 2.1) {
             pitch = (float) (org.joml.Math.PI / 2.1);
@@ -91,10 +124,9 @@ public class RPGCamera extends Camera {
             pitch = (float) (-org.joml.Math.PI / 2.1);
         }
 
-        front.x = (float) (org.joml.Math.cos(org.joml.Math.PI + (yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
-        front.y = (float) org.joml.Math.sin(this.pitch);
-        front.z = (float) (-org.joml.Math.sin(org.joml.Math.PI + (yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
-        calcViewMatrix();
+        front.x = (float) (org.joml.Math.cos(-this.yaw - this.angleAroundTarget + (float) org.joml.Math.PI) * org.joml.Math.cos(pitch));
+        front.y = (float) org.joml.Math.sin(pitch);
+        front.z = (float) (-org.joml.Math.sin(-this.yaw - this.angleAroundTarget + (float) org.joml.Math.PI) * org.joml.Math.cos(pitch));
     }
 
     /**
@@ -107,10 +139,42 @@ public class RPGCamera extends Camera {
     public void lookAtAngle(float yaw, float pitch) {
         this.yaw = yaw;
         this.pitch = pitch;
-        front.x = (float) (org.joml.Math.cos(org.joml.Math.PI + (this.yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
+        this.angleAroundTarget = yaw * 0.05f;
+        front.x = (float) (org.joml.Math.cos(-this.yaw - this.angleAroundTarget + (float) org.joml.Math.PI) * org.joml.Math.cos(this.pitch));
         front.y = (float) org.joml.Math.sin(this.pitch);
-        front.z = (float) (-org.joml.Math.sin(org.joml.Math.PI + (this.yaw + angleAroundTarget())) * org.joml.Math.cos(this.pitch));
+        front.z = (float) (-org.joml.Math.sin(-this.yaw - this.angleAroundTarget + (float) org.joml.Math.PI) * org.joml.Math.cos(this.pitch));
+    }
+
+    /**
+     * Render accross single shader
+     *
+     * @param shaderProgram single shader program
+     */
+    @Override
+    public void render(ShaderProgram shaderProgram) {
         calcViewMatrix();
+        shaderProgram.bind();
+        updateViewMatrix(shaderProgram);
+        updateCameraPosition(shaderProgram);
+        updateCameraFront(shaderProgram);
+        ShaderProgram.unbind();
+    }
+
+    /**
+     * Render across multiple shaders
+     *
+     * @param shaderPrograms multiple shader programs (array)
+     */
+    @Override
+    public void render(ShaderProgram[] shaderPrograms) {
+        calcViewMatrix();
+        for (ShaderProgram shaderProgram : shaderPrograms) {
+            shaderProgram.bind();
+            updateViewMatrix(shaderProgram);
+            updateCameraPosition(shaderProgram);
+            updateCameraFront(shaderProgram);
+            ShaderProgram.unbind();
+        }
     }
 
     public Model getTarget() {
@@ -119,6 +183,14 @@ public class RPGCamera extends Camera {
 
     public float getDistanceFromTarget() {
         return distanceFromTarget;
+    }
+
+    public float getAngleAroundTarget() {
+        return angleAroundTarget;
+    }
+
+    public float getTiltAngleTarget() {
+        return tiltAngleTarget;
     }
 
 }

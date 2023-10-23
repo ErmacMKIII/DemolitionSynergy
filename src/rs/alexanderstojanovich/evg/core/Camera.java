@@ -44,7 +44,7 @@ public class Camera implements Observer { // is 3D looking camera
     protected Vector3f up = Y_AXIS;
     protected Vector3f right = X_AXIS;
 
-    protected float yaw = (float) (-org.joml.Math.PI / 2.0); // sideways look angle
+    protected float yaw = (float) (-org.joml.Math.PI) / 2.0f; // sideways look angle
     protected float pitch = (float) (-org.joml.Math.PI); // up and down look angle
 
     public Camera() {
@@ -53,7 +53,7 @@ public class Camera implements Observer { // is 3D looking camera
         this.front = Z_AXIS;
         this.up = Y_AXIS;
         this.right = X_AXIS;
-        calcViewMatrix();
+        initViewMatrix();
     }
 
     public Camera(Vector3f pos) {
@@ -62,7 +62,7 @@ public class Camera implements Observer { // is 3D looking camera
         this.front = Z_AXIS;
         this.up = Y_AXIS;
         this.right = X_AXIS;
-        calcViewMatrix();
+        initViewMatrix();
     }
 
     public Camera(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
@@ -71,7 +71,7 @@ public class Camera implements Observer { // is 3D looking camera
         this.front = front;
         this.up = up;
         this.right = right;
-        calcViewMatrix();
+        initViewMatrix();
     }
 
     public void updateViewMatrix(ShaderProgram shaderProgram) {
@@ -87,7 +87,13 @@ public class Camera implements Observer { // is 3D looking camera
         up = front.cross(right, temp3).normalize(temp3);
     }
 
-    private void calcViewMatrix() {
+    private void initViewMatrix() {
+        updateCameraVectors();
+        Vector3f temp = new Vector3f();
+        viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
+    }
+
+    protected void calcViewMatrix() {
         updateCameraVectors();
         Vector3f temp = new Vector3f();
         viewMatrix.setLookAt(pos, pos.sub(front, temp), up);
@@ -110,7 +116,6 @@ public class Camera implements Observer { // is 3D looking camera
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.add(front.mul(amount, temp), temp);
-        calcViewMatrix();
     }
 
     /**
@@ -122,7 +127,6 @@ public class Camera implements Observer { // is 3D looking camera
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.sub(front.mul(amount, temp), temp);
-        calcViewMatrix();
     }
 
     /**
@@ -134,7 +138,6 @@ public class Camera implements Observer { // is 3D looking camera
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.sub(right.mul(amount, temp), temp);
-        calcViewMatrix();
     }
 
     /**
@@ -146,7 +149,6 @@ public class Camera implements Observer { // is 3D looking camera
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
         pos = pos.add(right.mul(amount, temp), temp);
-        calcViewMatrix();
     }
 
     /**
@@ -215,7 +217,6 @@ public class Camera implements Observer { // is 3D looking camera
         front.x = (float) (org.joml.Math.cos(yaw) * org.joml.Math.cos(pitch));
         front.y = (float) org.joml.Math.sin(pitch);
         front.z = (float) (-org.joml.Math.sin(yaw) * org.joml.Math.cos(pitch));
-        calcViewMatrix();
     }
 
     /**
@@ -231,7 +232,6 @@ public class Camera implements Observer { // is 3D looking camera
         front.x = (float) (org.joml.Math.cos(this.yaw) * org.joml.Math.cos(this.pitch));
         front.y = (float) org.joml.Math.sin(this.pitch);
         front.z = (float) (-org.joml.Math.sin(this.yaw) * org.joml.Math.cos(this.pitch));
-        calcViewMatrix();
     }
 
     /**

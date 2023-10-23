@@ -34,11 +34,6 @@ public class Critter implements Predictable, Moveable, Renderable {
     public final Model body;
     protected Vector3f predictor;
 
-    // three vectors determining exact camera position aka camera vectors
-    protected Vector3f front = new Vector3f(Camera.Z_AXIS);
-    protected Vector3f up = new Vector3f(Camera.Y_AXIS);
-    protected Vector3f right = new Vector3f(Camera.X_AXIS);
-
     /**
      * Create new instance of the critter. If instanced in anonymous class
      * specify the camera
@@ -66,42 +61,42 @@ public class Critter implements Predictable, Moveable, Renderable {
     public void movePredictorForward(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.add(front.mul(amount, temp1), temp2);
+        predictor = body.pos.add(Camera.Z_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
     public void movePredictorBackward(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.sub(front.mul(amount, temp1), temp2);
+        predictor = body.pos.sub(Camera.Z_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
     public void movePredictorLeft(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.sub(right.mul(amount, temp1), temp2);
+        predictor = body.pos.sub(Camera.X_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
     public void movePredictorRight(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.add(right.mul(amount, temp1), temp2);
+        predictor = body.pos.add(Camera.X_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
     public void movePredictorUp(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.add(up.mul(amount, temp1), temp2);
+        predictor = body.pos.add(Camera.Y_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
     public void movePredictorDown(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        predictor = body.pos.sub(up.mul(amount, temp1), temp2);
+        predictor = body.pos.sub(Camera.Y_AXIS.mul(amount, temp1), temp2);
     }
 
     @Override
@@ -112,37 +107,37 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(front.mul(amount, temp));
+        body.pos = body.pos.add(Camera.Z_AXIS.mul(amount, temp));
     }
 
     @Override
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(front.mul(amount, temp));
+        body.pos = body.pos.sub(Camera.Z_AXIS.mul(amount, temp));
     }
 
     @Override
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(right.mul(amount, temp));
+        body.pos = body.pos.sub(Camera.X_AXIS.mul(amount, temp));
     }
 
     @Override
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(right.mul(amount, temp));
+        body.pos = body.pos.add(Camera.X_AXIS.mul(amount, temp));
     }
 
     @Override
     public void ascend(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(up.mul(amount, temp));
+        body.pos = body.pos.add(Camera.Y_AXIS.mul(amount, temp));
     }
 
     @Override
     public void descend(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(up.mul(amount, temp));
+        body.pos = body.pos.sub(Camera.Y_AXIS.mul(amount, temp));
     }
 
     @Override
@@ -188,18 +183,6 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public Model getBody() {
         return body;
-    }
-
-    public Vector3f getFront() {
-        return front;
-    }
-
-    public Vector3f getUp() {
-        return up;
-    }
-
-    public Vector3f getRight() {
-        return right;
     }
 
 }
