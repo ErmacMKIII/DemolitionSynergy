@@ -36,6 +36,7 @@ import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -79,7 +80,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static void init() {
         MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
         SPLASH_SCREEN = new Quad(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), Texture.CONSOLE, true);
-        SPLASH_SCREEN.setColor(LevelContainer.SUN_COLOR_RGBA);
+        SPLASH_SCREEN.setColor(GlobalColors.YELLOW_RGBA);
         levelContainer = new LevelContainer();
         randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         waterRenderer = new WaterRenderer(levelContainer);
