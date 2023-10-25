@@ -16,7 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
@@ -238,27 +238,19 @@ public class VectorFloatUtils {
     }
 
     /**
-     * Convert block specs {solid, texName, VEC3} to unique string.
+     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
      *
      * @param solid is block solid
      * @param texName texName[5] string,
-     * @param vector float3(x,y,z) vector
+     * @param pos float3(x,y,z) vector
      *
-     * @return unique string
+     * @return unique int
      */
-    public static String blockSpecsToUniqueString(boolean solid, String texName, Vector3f vector) {
-        StringBuilder sb = new StringBuilder();
+    public static int blockSpecsToUniqueInt(boolean solid, String texName, Vector3f pos) {
         char s = solid ? 'S' : 'F';
-        sb.append(s);
+        int hash = Objects.hash(s, texName, pos.x, pos.y, pos.z, MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
 
-        sb.append(texName.toUpperCase());
-
-        byte[] bytesVect = vec3fToByteArray(vector);
-        String strVect = new String(bytesVect, StandardCharsets.US_ASCII);
-
-        sb.append(strVect);
-//        DSLogger.reportInfo(sb.toString(), null);
-        return sb.toString();
+        return hash;
     }
 
 }

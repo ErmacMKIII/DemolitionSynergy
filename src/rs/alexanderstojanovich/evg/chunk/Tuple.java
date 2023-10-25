@@ -103,7 +103,7 @@ public class Tuple extends Blocks {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        String key = VectorFloatUtils.blockSpecsToUniqueString(isSolid(), this.texName(), pos);
+        Integer key = VectorFloatUtils.blockSpecsToUniqueInt(isSolid(), this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -111,7 +111,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -129,7 +129,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;

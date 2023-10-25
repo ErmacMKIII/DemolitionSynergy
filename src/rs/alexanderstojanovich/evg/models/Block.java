@@ -37,8 +37,8 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
@@ -83,9 +83,9 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            String s1 = VectorFloatUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
-            String s2 = VectorFloatUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
-            return s1.compareTo(s2);
+            Integer a = VectorFloatUtils.blockSpecsToUniqueInt(o1.solid, o1.texName, o1.pos);
+            Integer b = VectorFloatUtils.blockSpecsToUniqueInt(o2.solid, o2.texName, o2.pos);
+            return a.compareTo(b);
         }
     };
 
