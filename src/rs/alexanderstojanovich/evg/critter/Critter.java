@@ -142,12 +142,12 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     @Override
     public void turnLeft(float angle) {
-        body.setrY(-angle);
+        body.setrY(body.getrY() - angle);
     }
 
     @Override
     public void turnRight(float angle) {
-        body.setrY(+angle);
+        body.setrY(body.getrY() + angle);
     }
 
     @Override
