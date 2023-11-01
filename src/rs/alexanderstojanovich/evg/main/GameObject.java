@@ -139,7 +139,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 modified = false;
             }
         };
-        timer2.scheduleAtFixedRate(task2, 250L, 250L);
+        timer2.scheduleAtFixedRate(task2, 5000L, 5000L);
 
         //----------------------------------------------------------------------
         renderer.start();

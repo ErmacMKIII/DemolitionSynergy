@@ -157,7 +157,7 @@ public class RPGCamera extends Camera {
 
         final float totalAngle = totalAngle();
 
-        front.x = (float) (-org.joml.Math.cos(totalAngle) * org.joml.Math.cos(pitch));
+        front.x = (float) (org.joml.Math.cos(totalAngle) * org.joml.Math.cos(pitch));
         front.y = (float) org.joml.Math.sin(pitch);
         front.z = (float) (-org.joml.Math.sin(totalAngle) * org.joml.Math.cos(pitch));
     }
@@ -176,7 +176,7 @@ public class RPGCamera extends Camera {
 
         final float totalAngle = totalAngle();
 
-        front.x = (float) (-org.joml.Math.cos(totalAngle) * org.joml.Math.cos(this.pitch));
+        front.x = (float) (org.joml.Math.cos(totalAngle) * org.joml.Math.cos(this.pitch));
         front.y = (float) org.joml.Math.sin(this.pitch);
         front.z = (float) (-org.joml.Math.sin(totalAngle) * org.joml.Math.cos(this.pitch));
     }

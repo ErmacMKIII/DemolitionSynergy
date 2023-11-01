@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -546,7 +547,7 @@ public class Game {
             deltaTime = currTime - lastTime;
             // hunger time
             accumulator += deltaTime * Game.TPS;
-            upsTicks += deltaTime * Game.TPS;
+            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.125);
             lastTime = currTime;
 
             // Detecting critical status

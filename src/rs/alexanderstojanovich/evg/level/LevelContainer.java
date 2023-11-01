@@ -47,6 +47,7 @@ import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -68,7 +69,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 12.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 28);
+    public static final float SUN_INTENSITY = (float) (1 << 27);
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
@@ -188,7 +189,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
         SUN.setPrimaryRGBColor(SUN_COLOR_RGB);
-        SUN.pos = new Vector3f(0.0f, 12288.0f, 0.0f);
+        SUN.pos = new Vector3f(12288.0f, 0.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
         SUN.setPrimaryColorAlpha(1.0f);
@@ -949,12 +950,15 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             final float gtm = cfg.getGameTimeMultiplier();
-            SKYBOX.setrY(SKYBOX.getrY() + gtm * deltaTime / 16.0f);
-            SUN.pos.rotateZ(gtm * deltaTime / 16.0f);
-            float factor = Math.max(SUN.pos.angleCos(Camera.Y_AXIS), 0.0f);
-            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(factor), 1.0f));
-            SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(factor, 0.15f)), 0.15f));
-            SUNLIGHT.setIntensity(factor * SUN_INTENSITY);
+            final float dt = gtm * deltaTime / 16.0f;
+            SKYBOX.setrY(SKYBOX.getrY() + dt);
+            SUN.pos.rotateZ(dt);
+
+            float dx = (float) org.joml.Math.PI * (GameTime.Now().getTime()) / 24.0f;
+            float dy = org.joml.Math.max(org.joml.Math.sin(dx), 0.0f);
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(dy), 1.0f));
+            SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(dy, 0.15f)), 0.15f));
+            SUNLIGHT.setIntensity(dy * SUN_INTENSITY);
             cameraInFluid = isCameraInFluid();
 
             int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
@@ -991,7 +995,7 @@ public class LevelContainer implements GravityEnviroment {
             SUN.bufferAll();
         }
 
-        if (SUNLIGHT.getIntensity() != 0.0f) {
+        if (SUNLIGHT.getIntensity() > 0.0f) {
             SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
         }
 
@@ -1047,7 +1051,7 @@ public class LevelContainer implements GravityEnviroment {
             SUN.bufferAll();
         }
 
-        if (SUNLIGHT.getIntensity() != 0.0f) {
+        if (SUNLIGHT.getIntensity() > 0.0f) {
             SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
         }
 

@@ -26,6 +26,14 @@ import org.joml.SimplexNoise;
  */
 public class MathUtils {
 
+    public static float smoothstep(float t) {
+        return t * t * (3.0f - 2.0f * t);
+    }
+
+    public static double smoothstep(double t) {
+        return t * t * (3.0 - 2.0 * t);
+    }
+
     // linear interpolation for floats
     public static float lerp(float a, float b, float alpha) {
         return (1.0f - alpha) * a + alpha * b;
