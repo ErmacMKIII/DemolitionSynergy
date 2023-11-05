@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -72,7 +73,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static final Object UPDATE_MUTEX = new Object();
     public static final Object RENDER_MUTEX = new Object();
 
-    protected static boolean modified = false;
+    protected static int currentFaceBitMask = 0x00;
 
     /**
      * Init this game container.
@@ -126,18 +127,19 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
-                modified |= levelContainer.isCameraInFluid();
-                modified |= GameObject.determineVisibleChunks();
+                int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
+                boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
+                currentFaceBitMask = facebitsMask;
 
-                if (modified) {
+                boolean chunksModified = GameObject.determineVisibleChunks();
+
+                if (chunksModified) {
                     GameObject.chunkOperations();
                 }
 
-                if (modified || isFirstOptimization()) {
+                if (faceBitsModified || isFirstOptimization()) {
                     GameObject.optimize();
                 }
-
-                modified = false;
             }
         };
         timer2.scheduleAtFixedRate(task2, 125L, 125L);
@@ -507,14 +509,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static GameRenderer getRenderer() {
         return renderer;
-    }
-
-    public static boolean isModified() {
-        return modified;
-    }
-
-    public static void setModified(boolean modified) {
-        GameObject.modified = modified;
     }
 
 }

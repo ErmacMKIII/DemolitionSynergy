@@ -399,7 +399,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
         }
         updateForAdd(block);
-        GameObject.setModified(true);
     }
 
     /**
@@ -427,7 +426,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
             }
             updateForRem(block);
-            GameObject.setModified(true);
         }
     }
 
