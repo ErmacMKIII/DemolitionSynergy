@@ -53,6 +53,13 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
  */
 public class Block extends Model {
 
+    public static final int Z_MASK = 0x20;
+    public static final int ZNEG_MASK = 0x10;
+    public static final int Y_MASK = 0x08;
+    public static final int YNEG_MASK = 0x04;
+    public static final int X_MASK = 0x02;
+    public static final int XNEG_MASK = 0x01;
+
     public static final int NONE = -1;
     public static final int LEFT = 0;
     public static final int RIGHT = 1;
@@ -376,12 +383,33 @@ public class Block extends Model {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f normal = FACE_NORMALS[j];
             float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
-            float angle = (float) Math.toDegrees(MathUtils.acos(dotProduct));
+            float angle = (float) org.joml.Math.toDegrees(MathUtils.acos(dotProduct));
             if (angle <= 177.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }
         }
+        return result;
+    }
+
+    /**
+     * Returns visible bits based on faces which can seen by camera front.
+     * Faster version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
+     */
+    public static int getVisibleFaceBitsFast(Vector3f camFront) {
+        int result = 0;
+        int zPos = Math.round(1.75f * camFront.z) & Z_MASK;
+        int zNeg = Math.round(1.75f * -camFront.z) & ZNEG_MASK;
+        int yPos = Math.round(1.75f * camFront.y) & Y_MASK;
+        int yNeg = Math.round(1.75f * -camFront.y) & YNEG_MASK;
+        int xPos = Math.round(1.75f * camFront.x) & X_MASK;
+        int xNeg = Math.round(1.75f * -camFront.x) & XNEG_MASK;
+
+        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
         return result;
     }
 

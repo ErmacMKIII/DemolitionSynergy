@@ -126,20 +126,21 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
+                modified |= levelContainer.isCameraInFluid();
                 modified |= GameObject.determineVisibleChunks();
 
                 if (modified) {
                     GameObject.chunkOperations();
                 }
 
-                if (modified || isFirstOptimization() || Game.getUpsTicks() < 1.0) {
+                if (modified || isFirstOptimization()) {
                     GameObject.optimize();
                 }
 
                 modified = false;
             }
         };
-        timer2.scheduleAtFixedRate(task2, 5000L, 5000L);
+        timer2.scheduleAtFixedRate(task2, 125L, 125L);
 
         //----------------------------------------------------------------------
         renderer.start();

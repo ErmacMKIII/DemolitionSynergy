@@ -78,7 +78,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
-    public static final int LIST_CAPACITY = 9;
+    public static final int LIST_CAPACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -982,7 +982,7 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            chunks.optimizeSuper(vChnkIdList, mainCamera);
+            chunks.optimizeFast(vChnkIdList, mainCamera);
         }
     }
 

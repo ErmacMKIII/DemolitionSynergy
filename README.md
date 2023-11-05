@@ -15,6 +15,7 @@ Highly modular and support visual & GLSL modifications.
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")
 ![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge from above")
 ![Alt text](/misc/DSynergy4.png?raw=true "3rd Person Camera")
+![Alt text](/misc/DSynergy5.png?raw=true "Random Level Huge deep waters")
 
 # How To Build
 Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
