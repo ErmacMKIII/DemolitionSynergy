@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -310,9 +311,11 @@ public class Chunks {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && !tuple.isSolid()) {
-                tuple.animate();
+        if (Game.getUpsTicks() < 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.animate();
+                }
             }
         }
     }
@@ -340,9 +343,11 @@ public class Chunks {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && !tuple.isSolid()) {
-                tuple.prepare(cameraInFluid);
+        if (Game.getUpsTicks() >= 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.prepare(cameraInFluid);
+                }
             }
         }
     }
