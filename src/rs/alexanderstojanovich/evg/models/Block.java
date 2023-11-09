@@ -401,12 +401,12 @@ public class Block extends Model {
      */
     public static int getVisibleFaceBitsFast(Vector3f camFront) {
         int result = 0;
-        int zPos = Math.round(1.75f * camFront.z) & Z_MASK;
-        int zNeg = Math.round(1.75f * -camFront.z) & ZNEG_MASK;
-        int yPos = Math.round(1.75f * camFront.y) & Y_MASK;
-        int yNeg = Math.round(1.75f * -camFront.y) & YNEG_MASK;
-        int xPos = Math.round(1.75f * camFront.x) & X_MASK;
-        int xNeg = Math.round(1.75f * -camFront.x) & XNEG_MASK;
+        int zPos = ~(Math.round(camFront.z + 0.83f) - 1) & Z_MASK;
+        int zNeg = ~(Math.round(camFront.z - 0.83f) + 1) & ZNEG_MASK;
+        int yPos = ~(Math.round(camFront.y + 0.83f) - 1) & Y_MASK;
+        int yNeg = ~(Math.round(camFront.y - 0.83f) + 1) & YNEG_MASK;
+        int xPos = ~(Math.round(camFront.x + 0.83f) - 1) & X_MASK;
+        int xNeg = ~(Math.round(camFront.x - 0.83f) + 1) & XNEG_MASK;
 
         result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
 
@@ -592,17 +592,30 @@ public class Block extends Model {
         return bits;
     }
 
-    // set faces based on faceBits representation
-    public void setFaceBits(int faceBits) {
+    /**
+     * Set facebits to block. Faces will be enabled/disabled on bit
+     * representation. Bit 6 = don't care Bit 7 = Don't care Bit 5 = FRONT (+Z)
+     * Bit 4 = BACK (-Z) Bit 3 = TOP (+Y) Bit 2 = BOTTOM (-Y) Bit 1 = RIGHT (+X)
+     * Bit 0 = LEFT (-X)
+     *
+     * @param faceBits set facebits (0-63)
+     * @return number of enabled faces (number of ones in face bit
+     * representation)
+     */
+    public int setFaceBits(int faceBits) {
+        int counter = 0;
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
             if (bit == 1) {
+                counter++;
                 enableFace(j);
             } else {
                 disableFace(j);
             }
         }
+
+        return counter;
     }
 
     public static void setFaceBits(List<Vertex> vertices, int faceBits) {

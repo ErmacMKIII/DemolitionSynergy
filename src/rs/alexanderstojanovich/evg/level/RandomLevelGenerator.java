@@ -123,8 +123,8 @@ public class RandomLevelGenerator {
         }
 
         String tex = "stone";
-        if (random.nextFloat() >= 0.5f) {
-            tex = randomSolidTexture(true);
+        if (random.nextFloat() >= 0.95f) {
+            tex = randomSolidTexture(random.nextFloat() <= 0.5f);
         }
 
         Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
@@ -213,7 +213,7 @@ public class RandomLevelGenerator {
         }
 
         String adjTex = "stone";
-        if (random.nextFloat() >= 0.5f) {
+        if (random.nextFloat() >= 0.95f) {
             adjTex = randomSolidTexture(random.nextFloat() <= 0.5f);
         }
 
@@ -343,7 +343,7 @@ public class RandomLevelGenerator {
 //        DSLogger.reportDebug("By Random: solidBlks = " + solidBlocks + ", fluidBlks = " + fluidBlocks, null);
         // 2. Random part
         //beta 
-        float beta = random.nextFloat();
+        float beta = 0.83f + 0.17f * random.nextFloat();
         int maxSolidBatchSize = (int) ((1.0f - beta) * solidBlocks);
         int maxFluidBatchSize = (int) (beta * fluidBlocks);
 
@@ -373,7 +373,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(2) == 0) {
+                        if (random.nextInt(3) != 0) {
                             solidBlock = solidAdjBlock;
                         } else {
                             solidBlock = null;
@@ -406,7 +406,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(2) == 0) {
+                        if (random.nextInt(3) != 0) {
                             fluidBlock = fluidAdjBlock;
                         } else {
                             fluidBlock = null;
@@ -455,7 +455,7 @@ public class RandomLevelGenerator {
             final float alpha = 0.56f;
 
             // define beta: random to noise ratio
-            final float beta = 0.01f;
+            final float beta = 0.05f;
 
             // define gamma: fluid III series ratio
             final float gamma = 0.84f * (1.0f - alpha);
@@ -486,7 +486,7 @@ public class RandomLevelGenerator {
                 final int hNMin = posN_Min >> 1;
                 final int hNMax = posN_Max >> 1;
 
-                float valueR = (float) MathUtils.pow(totalRandom, 0.33f) * 2.0f;
+                float valueR = (float) MathUtils.pow(totalRandom, 0.33f) * 3.0f;
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 

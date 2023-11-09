@@ -220,6 +220,42 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     /**
+     * Transfer block between two tuples. Block will be transfered from tuple
+     * with formFaceBits to tuple with current facebits.
+     *
+     * @param blocks blocks to transfer
+     * @param formFaceBits face bits before
+     * @param currFaceBits face bits current (after the change)
+     */
+    public void transfer(IList<Block> blocks, IList<Integer> formFaceBits, IList<Integer> currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
+        int index = 0;
+        for (Block block : blocks) {
+            String texture = block.getTexName();
+
+            Tuple srcTuple = getTuple(texture, formFaceBits.get(index));
+            if (srcTuple != null) { // lazy aaah!
+                srcTuple.blockList.remove(block);
+                if (srcTuple.getBlockList().isEmpty()) {
+                    tupleList.remove(srcTuple);
+                }
+            }
+
+            Tuple dstTuple = getTuple(texture, currFaceBits.get(index));
+            if (dstTuple == null) {
+                dstTuple = new Tuple(texture, currFaceBits.get(index));
+                tupleList.add(dstTuple);
+                tupleList.sort(Tuple.TUPLE_COMP);
+            }
+            List<Block> blockList = dstTuple.blockList;
+            blockList.add(block);
+            blockList.sort(Block.UNIQUE_BLOCK_CMP);
+
+            index++;
+        }
+        buffered = false;
+    }
+
+    /**
      * Updates blocks faces of both original block and adjacent blocks.
      *
      * Used after add operation.
@@ -237,13 +273,18 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             int faceBitsBefore = block.getFaceBits();
             // -------------------------------------------------------------------
             // this logic updates facebits of this block
-            // & transfers it to correct tuple 
-            // -------------------------------------------------------------------                    
+            // & transfers it to correct tuple
+            // -------------------------------------------------------------------
             block.setFaceBits(~nbits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
                 transfer(block, faceBitsBefore, faceBitsAfter);
             }
+
+            IList<Block> blocks = new GapList<>();
+            IList<Integer> bitsBefore = new GapList<>();
+            IList<Integer> bitsAfter = new GapList<>();
+
             // query all neighbors and update this block and adjacent blocks accordingly
             for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                 // -------------------------------------------------------------------
@@ -273,10 +314,17 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                         if (adjFaceBitsBefore != adjFaceBitsAfter) {
                             // if bits changed, i.e. some face(s) got disabled
                             // tranfer to correct tuple
-                            transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            blocks.add(adjBlock);
+                            bitsBefore.add(adjFaceBitsBefore);
+                            bitsAfter.add(adjFaceBitsAfter);
                         }
                     }
                 }
+
+            }
+
+            if (!blocks.isEmpty()) {
+                transfer(blocks, bitsBefore, bitsAfter);
             }
         }
     }
@@ -289,6 +337,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param block block to update
      */
     protected void updateForRem(Block block) {
+        IList<Block> blocks = new GapList<>();
+        IList<Integer> bitsBefore = new GapList<>();
+        IList<Integer> bitsAfter = new GapList<>();
         // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
@@ -317,10 +368,17 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     if (adjFaceBitsBefore != adjFaceBitsAfter) {
                         // if bits changed, i.e. some face(s) got disabled
                         // tranfer to correct tuple
-                        transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                        blocks.add(adjBlock);
+                        bitsBefore.add(adjFaceBitsBefore);
+                        bitsAfter.add(adjFaceBitsAfter);
                     }
                 }
             }
+
+        }
+
+        if (!blocks.isEmpty()) {
+            transfer(blocks, bitsBefore, bitsAfter);
         }
     }
 
