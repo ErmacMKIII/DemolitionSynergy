@@ -547,7 +547,7 @@ public class Game {
             deltaTime = currTime - lastTime;
             // hunger time
             accumulator += deltaTime * Game.TPS;
-            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.0025);
+            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.02);
             lastTime = currTime;
 
             // Detecting critical status
@@ -566,7 +566,7 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update((float) TICK_TIME);
+                GameObject.update();
                 switch (currentMode) {
                     case FREE:
                         // nobody has control

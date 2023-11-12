@@ -74,7 +74,7 @@ public class GameRenderer extends Thread implements Executor {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
-            fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 2.5E-3);
+            fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
             lastTime = currTime;
 
             // Detecting critical status
@@ -85,7 +85,8 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX) {
+            // also avoid rendering when game is updating 
+            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX && Game.getUpsTicks() < 1.0) {
                 GameObject.render();
                 fps++;
                 numOfPasses++;
@@ -94,7 +95,7 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - timer1 > 20.0) {
-                if (!GameObject.isWorking()) {
+                if (!GameObject.isWorking() && Game.getUpsTicks() < 1.0) {
                     GameObject.animate();
                 }
                 timer1 += 20.0;

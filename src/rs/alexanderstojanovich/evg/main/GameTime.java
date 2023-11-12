@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.main;
 
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 
 /**
  *
@@ -25,6 +24,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
  */
 public class GameTime {
 
+    protected static final Configuration cfg = Configuration.getInstance();
     public static float PI = (float) org.joml.Math.PI;
 
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -34,6 +34,7 @@ public class GameTime {
     protected final int minutes;
     protected final int seconds;
     protected final float time;
+    protected int days = 0;
 
     /**
      * Get current ingame time fields in HH:mm:ss (in 24 hour format).
@@ -41,18 +42,42 @@ public class GameTime {
      * @return GameTime
      */
     public static GameTime Now() {
-        final float sunAngleRadians = -PI / 2.0f + org.joml.Math.atan2(LevelContainer.SUN.pos.y, LevelContainer.SUN.pos.x);
+        final float gtm = cfg.getGameTimeMultiplier();
+        final float dt = gtm * (float) (Game.accumulator * Game.TICK_TIME / 16.0);
+        final int days = (int) (1.0f + dt / (2.0f * PI));
 
-        final float time = 12.0f + 24.0f * (float) org.joml.Math.toDegrees(sunAngleRadians) / 360.0f;
+        final float sin = org.joml.Math.sin(dt);
+        final float cos = org.joml.Math.cosFromSin(sin, dt);
 
-        return new GameTime(time);
+        float x = cos - sin;
+        float y = sin + cos;
+
+        final float internalAngle = org.joml.Math.atan2(y, x); // replacing sun angle with internal angle
+        final float time = 21.0f + 24.0f * (float) org.joml.Math.toDegrees(internalAngle) / 360.0f;
+
+        return new GameTime(days, time);
     }
 
-    public GameTime(float time) {
+    public GameTime(int days, float time) {
+        this.days = days;
         this.time = time;
+
         this.hours = Math.floorMod((int) time, 24);
         this.minutes = Math.floorMod((int) (time * 60f), 60);
         this.seconds = Math.floorMod((int) (time * 3600f), 60);
+    }
+
+    public Configuration getCfg() {
+        return cfg;
+    }
+
+    /**
+     * Get Elapsed days since the start of the game.
+     *
+     * @return ingame time days
+     */
+    public int getDays() {
+        return days;
     }
 
     public int getHours() {

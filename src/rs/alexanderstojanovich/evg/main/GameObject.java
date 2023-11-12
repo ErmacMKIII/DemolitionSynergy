@@ -127,18 +127,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
-                int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
-                boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
-                currentFaceBitMask = facebitsMask;
+                if (Game.getUpsTicks() < 1.0) {
+                    int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
+                    boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
+                    currentFaceBitMask = facebitsMask;
 
-                boolean chunksModified = GameObject.determineVisibleChunks();
+                    boolean chunksModified = GameObject.determineVisibleChunks();
 
-                if (chunksModified) {
-                    GameObject.chunkOperations();
-                }
+                    if (chunksModified) {
+                        GameObject.chunkOperations();
+                    }
 
-                if (faceBitsModified || isFirstOptimization()) {
-                    GameObject.optimize();
+                    if (faceBitsModified || isFirstOptimization()) {
+                        GameObject.optimize();
+                    }
                 }
             }
         };
@@ -165,9 +167,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Update Game Object stuff, like Environment (call only from main)
      *
-     * @param deltaTime game object environment update time
      */
-    public static void update(float deltaTime) {
+    public static void update() {
         if (!initialized) {
             return;
         }
@@ -178,7 +179,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } else { // working check avoids locking the monitor
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
             synchronized (UPDATE_MUTEX) {
-                levelContainer.update(deltaTime);
+                levelContainer.update();
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
             Vector3f view = levelContainer.levelActors.mainObserver().getFront();
@@ -188,7 +189,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
             GameTime now = GameTime.Now();
-            intrface.getGameTimeText().setContent(String.format("%02d:%02d:%02d", now.hours, now.minutes, now.seconds));
+            intrface.getGameTimeText().setContent(String.format("Day %d %02d:%02d:%02d", now.days, now.hours, now.minutes, now.seconds));
         }
 
         if (intrface.getSaveDialog().isDone()) {

@@ -45,7 +45,7 @@ public class Configuration {
     private int textDynamicSize = 10;
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
-    private int rendererPasses = 40;
+    private int rendererPasses = 10;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 

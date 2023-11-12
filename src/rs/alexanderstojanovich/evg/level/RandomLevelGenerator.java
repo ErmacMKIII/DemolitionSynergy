@@ -167,6 +167,10 @@ public class RandomLevelGenerator {
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
         List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
+        if (random.nextInt(3) != 0) {
+            possibleFaces.remove((Integer) Block.BOTTOM);
+            possibleFaces.remove((Integer) Block.TOP);
+        }
         if (possibleFaces.isEmpty()) {
             return null;
         }
@@ -225,6 +229,10 @@ public class RandomLevelGenerator {
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
         List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
+        if (random.nextInt(3) != 0) {
+            possibleFaces.remove((Integer) Block.BOTTOM);
+            possibleFaces.remove((Integer) Block.TOP);
+        }
         if (possibleFaces.isEmpty()) {
             return null;
         }
@@ -292,47 +300,45 @@ public class RandomLevelGenerator {
                 int yMid = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, hMin, hMax, 2.0f)) & 0xFFFFFFFE;
                 int yTop = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, yMid, hMax, 2.0f)) & 0xFFFFFFFE;
                 int yBottom = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, hMin, yMid, 2.0f)) & 0xFFFFFFFE;
-                int yHalf = Math.round((yTop - yBottom) / 2.0f);
-                // make "stone" terrain
-                if (solidBlocks > 0 || fluidBlocks > 0) {
-                    // solid generating
-                    noiseInner:
-                    for (int y = yBottom; y <= yTop; y += 2) {
-                        Vector3f pos = new Vector3f(x, y, z);
-                        if (repeatCondition(pos)) {
-                            continue;
-                        }
+                int yHalf = (yTop - yBottom) >> 1;
 
-                        // color chance
-                        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                // solid generating
+                noiseInner:
+                for (int y = yBottom; y <= yTop; y += 2) {
+                    Vector3f pos = new Vector3f(x, y, z);
+                    if (repeatCondition(pos)) {
+                        continue;
+                    }
+
+                    // color chance
+                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                    if (random.nextFloat() >= 0.95f) {
+                        Vector3f tempc = new Vector3f();
+                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                    }
+
+                    if (solidBlocks > 0 && y >= yHalf && boundary) {
+                        String tex = "stone"; // make "stone" terrain
+
                         if (random.nextFloat() >= 0.95f) {
-                            Vector3f tempc = new Vector3f();
-                            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                            tex = randomSolidTexture(random.nextFloat() <= 0.5f);
                         }
 
-                        if (solidBlocks > 0 && y >= yHalf && boundary) {
-                            String tex = "stone";
+                        Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
+                        levelContainer.chunks.addBlock(solidBlock);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
+                        solidBlocks--;
+                    } else if (fluidBlocks > 0 && y < yHalf && !boundary) {
+                        String tex = "water"; // make water terrain
 
-                            if (random.nextFloat() >= 0.95f) {
-                                tex = randomSolidTexture(random.nextFloat() <= 0.5f);
-                            }
+                        Block fluidBlock = new Block(tex, pos, new Vector4f(color, 0.5f), false);
+                        levelContainer.chunks.addBlock(fluidBlock);
+                        levelContainer.incProgress(100.0f / (float) totalAmount);
+                        fluidBlocks--;
+                    }
 
-                            Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
-                            levelContainer.chunks.addBlock(solidBlock);
-                            levelContainer.incProgress(100.0f / (float) totalAmount);
-                            solidBlocks--;
-                        } else if (fluidBlocks > 0 && y < yHalf && !boundary) {
-                            String tex = "water";
-
-                            Block fluidBlock = new Block(tex, pos, new Vector4f(color, 0.5f), false);
-                            levelContainer.chunks.addBlock(fluidBlock);
-                            levelContainer.incProgress(100.0f / (float) totalAmount);
-                            fluidBlocks--;
-                        }
-
-                        if (solidBlocks == 0 && fluidBlocks == 0) {
-                            break noiseInner;
-                        }
+                    if (solidBlocks == 0 && fluidBlocks == 0) {
+                        break noiseInner;
                     }
                 }
             }
@@ -455,7 +461,7 @@ public class RandomLevelGenerator {
             final float alpha = 0.56f;
 
             // define beta: random to noise ratio
-            final float beta = 0.05f;
+            final float beta = 0.098f;
 
             // define gamma: fluid III series ratio
             final float gamma = 0.84f * (1.0f - alpha);
@@ -486,7 +492,7 @@ public class RandomLevelGenerator {
                 final int hNMin = posN_Min >> 1;
                 final int hNMax = posN_Max >> 1;
 
-                float valueR = (float) MathUtils.pow(totalRandom, 0.33f) * 3.0f;
+                float valueR = (float) MathUtils.pow(totalRandom, 0.33f) * 2.0f;
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 
