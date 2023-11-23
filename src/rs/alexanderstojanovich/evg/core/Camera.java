@@ -235,7 +235,7 @@ public class Camera implements Observer { // is 3D looking camera
     }
 
     /**
-     * Render accross single shader
+     * Render across single shader
      *
      * @param shaderProgram single shader program
      */
