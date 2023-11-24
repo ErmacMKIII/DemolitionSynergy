@@ -203,10 +203,8 @@ public class Camera implements Observer { // is 3D looking camera
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         yaw += sensitivity * xoffset;
-        while (yaw >= 2.0 * org.joml.Math.PI) {
-            yaw -= 2.0 * org.joml.Math.PI;
-        }
         pitch += sensitivity * yoffset;
+
         if (pitch > org.joml.Math.PI / 2.1) {
             pitch = (float) (org.joml.Math.PI / 2.1);
         }
