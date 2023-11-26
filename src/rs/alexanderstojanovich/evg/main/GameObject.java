@@ -133,12 +133,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     currentFaceBitMask = facebitsMask;
 
                     boolean chunksModified = GameObject.determineVisibleChunks();
+                    boolean chunkTransfer = false;
 
                     if (chunksModified) {
-                        GameObject.chunkOperations();
+                        chunkTransfer = GameObject.chunkOperations();
                     }
 
-                    if (faceBitsModified || isFirstOptimization()) {
+                    if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
                         GameObject.optimize();
                     }
                 }
@@ -276,12 +277,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             synchronized (UPDATE_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                    synchronized (RENDER_MUTEX) {
-                        levelContainer.render();
-                        if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                            waterRenderer.render();
-                        }
+//                    synchronized (RENDER_MUTEX) {
+                    levelContainer.render();
+                    if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                        waterRenderer.render();
                     }
+//                    }
                 }
                 intrface.render(ShaderProgram.getIntrfaceShader());
             }

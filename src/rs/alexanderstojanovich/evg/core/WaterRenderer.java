@@ -16,13 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.chunk.Chunk;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -47,22 +47,23 @@ public class WaterRenderer {
 //        this.debugQuad.setScale(0.25f);
     }
 
-    private float findHeightMax() { // call this in update (renderer)
-        float hMax = -Chunk.BOUND;
-        if (!levelContainer.isWorking()) {
-            Camera actCam = levelContainer.getLevelActors().mainCamera();
-            float chMax = Math.round(actCam.pos.y + 0.5f) & 0xFFFFFFFE;
-            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
-                if (y > hMax && y <= chMax) {
-                    hMax = y;
-                }
+    private Collection<Float> renderedHeights() { // call this in update (renderer)
+        Camera actCam = levelContainer.levelActors.mainCamera();
+        final float chPosY = actCam.pos.y;
+
+        final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
+        for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
+            float delta = 2.0f * y - chPosY;
+            if (delta > 0.0f && delta <= 64.0f && y < chPosY) {
+                deltaMap.putIfAbsent(delta, y);
             }
         }
 
-        return hMax;
+        return deltaMap.values();
     }
 
     private void prepare() {
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
@@ -71,10 +72,12 @@ public class WaterRenderer {
     }
 
     private void updateCamera(float waterHeight) {
-        camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
-        camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
-        camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
-        camera.lookAtAngle(levelContainer.getLevelActors().getPlayer().getCamera().getYaw(), -levelContainer.getLevelActors().getPlayer().getCamera().getPitch());
+        Camera mainCamera = levelContainer.levelActors.mainCamera();
+
+        camera.getPos().x = mainCamera.pos.x;
+        camera.getPos().y = 2.0f * waterHeight - mainCamera.pos.y;
+        camera.getPos().z = mainCamera.pos.z;
+        camera.lookAtAngle(mainCamera.yaw, -mainCamera.pitch);
     }
 
     private void capture(float waterHeight) {
@@ -91,9 +94,9 @@ public class WaterRenderer {
     public void render() {
         frameBuffer.bind();
         prepare();
-        if (!levelContainer.isWorking()) {
-            float hMax = findHeightMax();
-            capture(hMax);
+        Collection<Float> renderedHeights = renderedHeights();
+        for (float waterHeight : renderedHeights) {
+            capture(waterHeight);
         }
         frameBuffer.unbind();
 //        if (!debugQuad.isBuffered()) {

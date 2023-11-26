@@ -499,7 +499,6 @@ public class Tuple extends Blocks {
             // -- Lights            
             lightSources.updateLightsInShaderIfModified(shaderProgram);
             // --
-            shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 
             Texture blocksTexture = Texture.getOrDefault(texName);
             if (blocksTexture != null) {
@@ -507,7 +506,7 @@ public class Tuple extends Blocks {
             }
 
             if (waterTexture != null && Game.isWaterEffects()) {
-                shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 
@@ -571,7 +570,7 @@ public class Tuple extends Blocks {
             }
 
             if (waterTexture != null && Game.isWaterEffects()) {
-                shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 
