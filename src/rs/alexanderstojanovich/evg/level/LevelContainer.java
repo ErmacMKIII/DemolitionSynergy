@@ -198,8 +198,8 @@ public class LevelContainer implements GravityEnviroment {
         this.cacheModule = new CacheModule(this);
 
         LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.add(levelActors.player.light);
-        LIGHT_SOURCES.lightSrcList.add(SUNLIGHT);
+        LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
+        LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
     }
 
     public static void printPositionMaps() {
@@ -961,17 +961,24 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
             cameraInFluid = isCameraInFluid();
-
-            int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
-            if (sunLightIndex != -1) { // should be zero
-                LIGHT_SOURCES.modified[sunLightIndex] = true;
-            }
-
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
+
             int playerlightIndex = LIGHT_SOURCES.lightSrcList.indexOf(levelActors.player.light);
-            if (playerlightIndex != -1) { // should be one
+            if (playerlightIndex == 0) { // should be zero
                 LIGHT_SOURCES.modified[playerlightIndex] = true;
+            } else {
+                LIGHT_SOURCES.lightSrcList.clear();
+                LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
+                LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
+            }
+            int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
+            if (sunLightIndex == 1) { // should be one
+                LIGHT_SOURCES.modified[sunLightIndex] = true;
+            } else {
+                LIGHT_SOURCES.lightSrcList.clear();
+                LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
+                LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
             }
 
 //            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
@@ -1036,8 +1043,8 @@ public class LevelContainer implements GravityEnviroment {
             selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
         }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
-        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
         LIGHT_SOURCES.resetAllModified();
     }
 
@@ -1093,8 +1100,8 @@ public class LevelContainer implements GravityEnviroment {
             selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
         }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
-        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
 
+        LightSources.render(camera, LIGHT_SOURCES, ShaderProgram.getLightShader());
         LIGHT_SOURCES.resetAllModified();
     }
 

@@ -336,6 +336,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         break;
                     case SET:
                         GameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
+                        command.status = Status.SUCCEEDED;
                         break;
                 }
                 break;
