@@ -96,8 +96,6 @@ public class Game {
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
 
-    private static boolean waterEffects = cfg.isWaterEffects();
-
     protected static double upsTicks = 0.0;
     protected static double accumulator = 0.0;
 
@@ -623,7 +621,7 @@ public class Game {
         cfg.setHeight(GameObject.MY_WINDOW.getHeight());
         cfg.setFullscreen(GameObject.MY_WINDOW.isFullscreen());
         cfg.setVsync(GameObject.MY_WINDOW.isVsync());
-        cfg.setWaterEffects(waterEffects);
+        cfg.setWaterEffects(GameObject.waterRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(GameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(GameObject.getSoundFXPlayer().getGain());
@@ -664,14 +662,6 @@ public class Game {
 
     public static void setMouseSensitivity(float mouseSensitivity) {
         Game.mouseSensitivity = mouseSensitivity;
-    }
-
-    public static boolean isWaterEffects() {
-        return waterEffects;
-    }
-
-    public static void setWaterEffects(boolean waterEffects) {
-        Game.waterEffects = waterEffects;
     }
 
     public static double getUpsTicks() {

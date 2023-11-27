@@ -31,8 +31,10 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -505,7 +507,7 @@ public class Tuple extends Blocks {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (waterTexture != null && Game.isWaterEffects()) {
+            if (waterTexture != null && GameObject.getWaterRenderer().getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
@@ -569,7 +571,7 @@ public class Tuple extends Blocks {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (waterTexture != null && Game.isWaterEffects()) {
+            if (waterTexture != null && GameObject.getWaterRenderer().getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }

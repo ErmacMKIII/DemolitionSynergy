@@ -27,6 +27,7 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
@@ -334,6 +335,7 @@ public class Intrface {
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
         Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
+        Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
         Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
         Object[] volume = new Float[21];
         int k = 0;
@@ -349,7 +351,7 @@ public class Intrface {
                 String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()))));
         optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF")));
         optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF")));
-        optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, Game.isWaterEffects() ? "ON" : "OFF")));
+        optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, GameObject.getWaterRenderer().getEffectsQuality().toString())));
         optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
         optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
         optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
@@ -413,14 +415,8 @@ public class Intrface {
                     case 4:
                         String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
                         command = Command.getCommand(Command.Target.WATER_EFFECTS);
-                        switch (waterEffects) {
-                            case "ON":
-                                command.getArgs().add(true);
-                                break;
-                            case "OFF":
-                                command.getArgs().add(false);
-                                break;
-                        }
+                        String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
+                        command.getArgs().add(waterFX);
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;

@@ -35,7 +35,7 @@ public class Configuration {
     private int height = 480;
     private boolean fullscreen = false;
     private boolean vsync = false;
-    private boolean waterEffects = true;
+    private int waterEffects = 0;
     private float mouseSensitivity = 1.5f;
     private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
     private boolean logToFile = false;
@@ -104,7 +104,7 @@ public class Configuration {
                                 vsync = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                             case "watereffects":
-                                waterEffects = Boolean.parseBoolean(words[1].toLowerCase());
+                                waterEffects = Integer.parseInt(words[1].toLowerCase());
                                 break;
                             case "mousesensitivity":
                                 val = Float.parseFloat(words[1]);
@@ -195,7 +195,7 @@ public class Configuration {
             pw.println("Fullscreen = " + fullscreen);
             pw.println("# Maximum Framerate set to refresh rate if enabled");
             pw.println("VSync = " + vsync);
-            pw.println("# Water Effects (e.g. water reflections)");
+            pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
@@ -261,11 +261,11 @@ public class Configuration {
         this.vsync = vsync;
     }
 
-    public boolean isWaterEffects() {
+    public int getWaterEffects() {
         return waterEffects;
     }
 
-    public void setWaterEffects(boolean waterEffects) {
+    public void setWaterEffects(int waterEffects) {
         this.waterEffects = waterEffects;
     }
 

@@ -30,6 +30,7 @@ import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -169,7 +170,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 case "water_effects":
                     command.target = Target.WATER_EFFECTS;
                     if (things.length == 2) {
-                        command.args.add(Boolean.valueOf(things[1]));
+                        command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
                     }
                     break;
                 case "msens":
@@ -330,12 +331,11 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case WATER_EFFECTS:
                 switch (command.mode) {
                     case GET:
-                        result = Game.isWaterEffects();
+                        result = GameObject.getWaterRenderer().getEffectsQuality();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        Game.setWaterEffects((boolean) command.args.get(0));
-                        command.status = Status.SUCCEEDED;
+                        GameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
                         break;
                 }
                 break;

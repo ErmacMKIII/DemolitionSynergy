@@ -181,6 +181,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
             synchronized (UPDATE_MUTEX) {
                 levelContainer.update();
+                waterRenderer.updateHeights();
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
             Vector3f view = levelContainer.levelActors.mainObserver().getFront();
@@ -277,12 +278,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             synchronized (UPDATE_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-//                    synchronized (RENDER_MUTEX) {
-                    levelContainer.render();
-                    if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                        waterRenderer.render();
+                    synchronized (RENDER_MUTEX) {
+                        levelContainer.render();
+                        if (GameObject.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
+                                && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                            waterRenderer.render();
+                        }
                     }
-//                    }
                 }
                 intrface.render(ShaderProgram.getIntrfaceShader());
             }

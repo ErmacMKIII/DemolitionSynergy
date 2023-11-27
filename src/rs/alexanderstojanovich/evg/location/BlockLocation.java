@@ -34,7 +34,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 public class BlockLocation {
 
     protected final TexByte[][][] locationMap = new TexByte[Chunk.BOUND][Chunk.BOUND][Chunk.BOUND];
-    protected final Map<Float, List<Vector2f>> planes = new LinkedHashMap<>();
+    protected final Map<Float, IList<Vector2f>> planes = new LinkedHashMap<>();
 
     protected int population = 0;
 
@@ -79,7 +79,7 @@ public class BlockLocation {
 
         locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid);
 
-        List<Vector2f> yCoords = planes.get(pos.y);
+        IList<Vector2f> yCoords = planes.get(pos.y);
         if (yCoords == null) {
             yCoords = new GapList<>();
         }
@@ -106,7 +106,7 @@ public class BlockLocation {
 
         locationMap[i][j][k] = texByte;
 
-        List<Vector2f> yCoords = planes.get(pos.y);
+        IList<Vector2f> yCoords = planes.get(pos.y);
         if (yCoords == null) {
             yCoords = new GapList<>();
         }
@@ -365,7 +365,7 @@ public class BlockLocation {
      *
      * @return XZ Planes Where one Y maps into several XZ
      */
-    public Map<Float, List<Vector2f>> getPlanes() {
+    public Map<Float, IList<Vector2f>> getPlanes() {
         return planes;
     }
 
