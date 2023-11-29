@@ -61,6 +61,9 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
+    public static int PLAYER_LIGHT_INDEX = 0;
+    public static int SUNLIGHT_INDEX = 0;
+
     protected final Configuration cfg = Configuration.getInstance();
     public static final Block SKYBOX = new Block("night");
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
@@ -197,9 +200,8 @@ public class LevelContainer implements GravityEnviroment {
     public LevelContainer() {
         this.cacheModule = new CacheModule(this);
 
-        LIGHT_SOURCES.lightSrcList.clear();
-        LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
-        LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
+        LIGHT_SOURCES.addLight(levelActors.player.light);
+        LIGHT_SOURCES.addLight(SUNLIGHT);
     }
 
     public static void printPositionMaps() {
@@ -242,7 +244,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.npcList.clear();
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.retain(0, 2);
+        LIGHT_SOURCES.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -293,7 +295,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.retain(0, 2);
+        LIGHT_SOURCES.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -328,7 +330,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.lightSrcList.retain(0, 2);
+        LIGHT_SOURCES.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -459,7 +461,7 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.lightSrcList.retain(0, 2);
+            LIGHT_SOURCES.retainLights(2);
 
             CacheModule.deleteCache();
 
@@ -559,7 +561,7 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.lightSrcList.retain(0, 2);
+            LIGHT_SOURCES.retainLights(2);
 
             CacheModule.deleteCache();
 
@@ -964,21 +966,8 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-            int playerlightIndex = LIGHT_SOURCES.lightSrcList.indexOf(levelActors.player.light);
-            if (playerlightIndex == 0) { // should be zero
-                LIGHT_SOURCES.modified[playerlightIndex] = true;
-            } else {
-                LIGHT_SOURCES.lightSrcList.clear();
-                LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
-                LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
-            }
-            int sunLightIndex = LIGHT_SOURCES.lightSrcList.indexOf(SUNLIGHT);
-            if (sunLightIndex == 1) { // should be one
-                LIGHT_SOURCES.modified[sunLightIndex] = true;
-            } else {
-                LIGHT_SOURCES.lightSrcList.clear();
-                LIGHT_SOURCES.lightSrcList.addFirst(levelActors.player.light);
-                LIGHT_SOURCES.lightSrcList.addLast(SUNLIGHT);
+            for (int i = 0; i <= 1; i++) {
+                LIGHT_SOURCES.setModified(i, true);
             }
 
 //            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
@@ -1044,8 +1033,8 @@ public class LevelContainer implements GravityEnviroment {
         }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
 
-        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
         LIGHT_SOURCES.resetAllModified();
+        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
     }
 
     public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
@@ -1101,8 +1090,8 @@ public class LevelContainer implements GravityEnviroment {
         }
         levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
 
-        LightSources.render(camera, LIGHT_SOURCES, ShaderProgram.getLightShader());
         LIGHT_SOURCES.resetAllModified();
+        LightSources.render(camera, LIGHT_SOURCES, ShaderProgram.getLightShader());
     }
 
     // -------------------------------------------------------------------------

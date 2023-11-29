@@ -448,13 +448,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // setSafeCheck if it's light block        
         if (block.getTexName().equals("reflc")) { // if first add
             LightSource lightSource = new LightSource(block.pos, block.getPrimaryRGBColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
-            LevelContainer.LIGHT_SOURCES.getLightSrcList().addIfAbsent(lightSource);
-            int lightIndex = LevelContainer.LIGHT_SOURCES.lightSrcList.indexOf(
-                    LevelContainer.LIGHT_SOURCES.lightSrcList.filter(ls -> ls.pos.equals(block.pos))
-            );
-            if (lightIndex != -1) {
-                LevelContainer.LIGHT_SOURCES.modified[lightIndex] = true;
-            }
+            LevelContainer.LIGHT_SOURCES.addLight(lightSource);
+            LevelContainer.LIGHT_SOURCES.setModified(block.pos, true);
         }
         updateForAdd(block);
     }
@@ -481,7 +476,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // update original block with neighbor blocks
             // setSafeCheck if it's light block
             if (block.getTexName().equals("reflc")) {
-                LevelContainer.LIGHT_SOURCES.getLightSrcList().removeIf(ls -> ls.getPos().equals(block.pos));
+                LevelContainer.LIGHT_SOURCES.removeLight(block.pos);
             }
             updateForRem(block);
         }
