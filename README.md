@@ -13,17 +13,19 @@ Highly modular and support visual & GLSL modifications.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Light trough air")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")
-![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge from above")
+![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
+![Alt text](/misc/DSynergy4.png?raw=true "RPG Camera #1")
+![Alt text](/misc/DSynergy5.png?raw=true "RPG Camera #2")
 
 # How To Build
 Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
 In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
-1. LWJGL 3.3.2 with JOML 1.10.5,
+1. LWJGL 3.3.3 with JOML 1.10.5,
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) with dependecies (installed),
 
-Download latest library LWJGL (3.3.2 at this time) from:
+Download latest library LWJGL (3.3.3 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)
 
 Put [MoveAllFiles.bat](/utils/MoveAllFiles.bat) inside the directory with downloaded & extracted zip content.

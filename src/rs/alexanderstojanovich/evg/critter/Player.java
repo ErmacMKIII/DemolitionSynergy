@@ -18,13 +18,14 @@ package rs.alexanderstojanovich.evg.critter;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.core.RPGCamera;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  *
@@ -56,8 +57,9 @@ public class Player extends Critter implements Observer {
 //    }
     public Player(Model body) {
         super(body);
-        this.camera = new Camera(new Vector3f(body.pos.x, body.pos.y + body.getHeight() / 2.0f, body.pos.z), front, up, right);
-        this.light = new LightSource(this.camera.getPos(), GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+//        this.camera = new Camera(new Vector3f(this.body.pos));
+        this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
+        this.light = new LightSource(this.body.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {
@@ -70,12 +72,16 @@ public class Player extends Critter implements Observer {
 
     @Override
     public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
+        body.setrY(body.getrY() + sensitivity * xoffset);
         camera.lookAtOffset(sensitivity, xoffset, yoffset);
+        updateCameraVectors(camera.getFront());
     }
 
     @Override
     public void lookAtAngle(float yaw, float pitch) {
+        body.setrY((body.getrY() + yaw));
         camera.lookAtAngle(yaw, pitch);
+        updateCameraVectors(camera.getFront());
     }
 
     @Override
@@ -150,6 +156,33 @@ public class Player extends Critter implements Observer {
     public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
         super.render(lightSrc, shaderProgram);
+    }
+
+    @Override
+    public void turnRight(float angle) {
+        super.turnRight(angle);
+        camera.turnRight(angle);
+    }
+
+    @Override
+    public void turnLeft(float angle) {
+        super.turnLeft(angle);
+        camera.turnLeft(angle);
+    }
+
+    @Override
+    public Vector3f getFront() {
+        return this.camera.getFront();
+    }
+
+    @Override
+    public Vector3f getUp() {
+        return this.camera.getUp();
+    }
+
+    @Override
+    public Vector3f getRight() {
+        return this.camera.getRight();
     }
 
 }

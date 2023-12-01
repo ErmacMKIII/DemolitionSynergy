@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -94,8 +95,6 @@ public class Game {
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
-
-    private static boolean waterEffects = cfg.isWaterEffects();
 
     protected static double upsTicks = 0.0;
     protected static double accumulator = 0.0;
@@ -546,7 +545,7 @@ public class Game {
             deltaTime = currTime - lastTime;
             // hunger time
             accumulator += deltaTime * Game.TPS;
-            upsTicks += deltaTime * Game.TPS;
+            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.02);
             lastTime = currTime;
 
             // Detecting critical status
@@ -565,7 +564,7 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update((float) TICK_TIME);
+                GameObject.update();
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -622,7 +621,7 @@ public class Game {
         cfg.setHeight(GameObject.MY_WINDOW.getHeight());
         cfg.setFullscreen(GameObject.MY_WINDOW.isFullscreen());
         cfg.setVsync(GameObject.MY_WINDOW.isVsync());
-        cfg.setWaterEffects(waterEffects);
+        cfg.setWaterEffects(GameObject.waterRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(GameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(GameObject.getSoundFXPlayer().getGain());
@@ -665,14 +664,6 @@ public class Game {
         Game.mouseSensitivity = mouseSensitivity;
     }
 
-    public static boolean isWaterEffects() {
-        return waterEffects;
-    }
-
-    public static void setWaterEffects(boolean waterEffects) {
-        Game.waterEffects = waterEffects;
-    }
-
     public static double getUpsTicks() {
         return upsTicks;
     }
@@ -683,21 +674,6 @@ public class Game {
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
-//        switch (currentMode) {
-//            case FREE:
-//                // nobody has control
-//                GameObject.levelContainer.levelActors.mainActor().setGivenControl(false);
-//                break;
-//            case EDITOR:
-//                // observer has control
-//                GameObject.levelContainer.levelActors.mainActor().setGivenControl(true);
-//                break;
-//            case SINGLE_PLAYER:
-//            case MULTIPLAYER:
-//                // player has control
-//                GameObject.levelContainer.levelActors.getPlayer().setGivenControl(true);
-//                break;
-//        }
     }
 
     public static float getLastX() {

@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -58,10 +59,11 @@ public class GameRenderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context          
-        GameObject.render();
+        GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context
+        do {
+            GameObject.render(); // render splash screen
+        } while (Game.upsTicks == 0.0);
         GameObject.SPLASH_SCREEN.setEnabled(false);
-
         double timer1 = 0.0;
 
         fps = 0;
@@ -73,7 +75,7 @@ public class GameRenderer extends Thread implements Executor {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = currTime - lastTime;
-            fpsTicks += deltaTime * Game.getFpsMax();
+            fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
             lastTime = currTime;
 
             // Detecting critical status
@@ -84,7 +86,8 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             int numOfPasses = 0;
-            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX) {
+            // also avoid rendering when game is updating 
+            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX && Game.getUpsTicks() < 1.0) {
                 GameObject.render();
                 fps++;
                 numOfPasses++;
@@ -93,7 +96,7 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - timer1 > 20.0) {
-                if (!GameObject.isWorking()) {
+                if (!GameObject.isWorking() && Game.getUpsTicks() < 1.0) {
                     GameObject.animate();
                 }
                 timer1 += 20.0;

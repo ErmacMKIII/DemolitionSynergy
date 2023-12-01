@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -50,7 +51,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v35G";
+    public static final String TITLE = "Demolition Synergy - v36G";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -72,7 +73,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static final Object UPDATE_MUTEX = new Object();
     public static final Object RENDER_MUTEX = new Object();
 
-    protected static boolean modified = false;
+    protected static int currentFaceBitMask = 0x00;
 
     /**
      * Init this game container.
@@ -126,20 +127,25 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
-                modified |= GameObject.determineVisibleChunks();
+                if (Game.getUpsTicks() < 1.0) {
+                    int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
+                    boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
+                    currentFaceBitMask = facebitsMask;
 
-                if (modified) {
-                    GameObject.chunkOperations();
+                    boolean chunksModified = GameObject.determineVisibleChunks();
+                    boolean chunkTransfer = false;
+
+                    if (chunksModified) {
+                        chunkTransfer = GameObject.chunkOperations();
+                    }
+
+                    if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+                        GameObject.optimize();
+                    }
                 }
-
-                if (modified || isFirstOptimization() || Game.getUpsTicks() < 1.0) {
-                    GameObject.optimize();
-                }
-
-                modified = false;
             }
         };
-        timer2.scheduleAtFixedRate(task2, 250L, 250L);
+        timer2.scheduleAtFixedRate(task2, 125L, 125L);
 
         //----------------------------------------------------------------------
         renderer.start();
@@ -162,9 +168,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Update Game Object stuff, like Environment (call only from main)
      *
-     * @param deltaTime game object environment update time
      */
-    public static void update(float deltaTime) {
+    public static void update() {
         if (!initialized) {
             return;
         }
@@ -175,15 +180,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } else { // working check avoids locking the monitor
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
             synchronized (UPDATE_MUTEX) {
-                levelContainer.update(deltaTime);
+                levelContainer.update();
+                waterRenderer.updateHeights();
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
+            Vector3f view = levelContainer.levelActors.mainObserver().getFront();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
+            intrface.getViewText().setContent(String.format("view: (%.2f,%.2f,%.2f)", view.x, view.y, view.z));
             intrface.getChunkText().setContent(String.format("chunkId: %d", chunkId));
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
             GameTime now = GameTime.Now();
-            intrface.getGameTimeText().setContent(String.format("%02d:%02d:%02d", now.hours, now.minutes, now.seconds));
+            intrface.getGameTimeText().setContent(String.format("Day %d %02d:%02d:%02d", now.days, now.hours, now.minutes, now.seconds));
         }
 
         if (intrface.getSaveDialog().isDone()) {
@@ -272,7 +280,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
                     synchronized (RENDER_MUTEX) {
                         levelContainer.render();
-                        if (Game.isWaterEffects() && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                        if (GameObject.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
+                                && !levelContainer.getChunks().getChunkList().isEmpty()) {
                             waterRenderer.render();
                         }
                     }
@@ -504,14 +513,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static GameRenderer getRenderer() {
         return renderer;
-    }
-
-    public static boolean isModified() {
-        return modified;
-    }
-
-    public static void setModified(boolean modified) {
-        GameObject.modified = modified;
     }
 
 }

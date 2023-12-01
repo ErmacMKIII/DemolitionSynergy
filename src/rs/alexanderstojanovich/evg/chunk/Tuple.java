@@ -31,8 +31,10 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -103,7 +105,7 @@ public class Tuple extends Blocks {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        String key = VectorFloatUtils.blockSpecsToUniqueString(isSolid(), this.texName(), pos);
+        Integer key = VectorFloatUtils.blockSpecsToUniqueInt(isSolid(), this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -111,7 +113,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -129,7 +131,7 @@ public class Tuple extends Blocks {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            String candInt = VectorFloatUtils.blockSpecsToUniqueString(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -499,15 +501,14 @@ public class Tuple extends Blocks {
             // -- Lights            
             lightSources.updateLightsInShaderIfModified(shaderProgram);
             // --
-            shaderProgram.updateUniform(!texName.equals("water") ? 1.0f : 0.5f, "modelAlpha");
 
             Texture blocksTexture = Texture.getOrDefault(texName);
             if (blocksTexture != null) {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (waterTexture != null && Game.isWaterEffects()) {
-                shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+            if (waterTexture != null && GameObject.getWaterRenderer().getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 
@@ -570,8 +571,8 @@ public class Tuple extends Blocks {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (waterTexture != null && Game.isWaterEffects()) {
-                shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor1");
+            if (waterTexture != null && GameObject.getWaterRenderer().getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 0.95f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 

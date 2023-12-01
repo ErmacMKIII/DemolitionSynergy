@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import org.joml.Vector3f;
+
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
@@ -80,4 +82,16 @@ public interface Moveable {
      * @param angle radian angle to turn critter to the right.
      */
     public void turnRight(float angle);
+
+    /*
+    *Get position.
+     */
+    public Vector3f getPos();
+
+    /**
+     * Assign position to one (moveable)
+     *
+     * @param pos new position
+     */
+    public void setPos(Vector3f pos);
 }

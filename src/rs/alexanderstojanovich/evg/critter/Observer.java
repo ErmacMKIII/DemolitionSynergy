@@ -73,6 +73,7 @@ public interface Observer extends Moveable {
      *
      * @return observer position
      */
+    @Override
     public Vector3f getPos();
 
     /**
@@ -80,5 +81,27 @@ public interface Observer extends Moveable {
      *
      * @param pos new obsserver position
      */
+    @Override
     public void setPos(Vector3f pos);
+
+    /**
+     * Get Z-Positive axis vector
+     *
+     * @return Z-Axis look at vector
+     */
+    public Vector3f getFront();
+
+    /**
+     * Get Y-Positive axis vector
+     *
+     * @return Y-Axis look at vector
+     */
+    public Vector3f getUp();
+
+    /**
+     * Get X-Positive axis vector
+     *
+     * @return X-Axis look at vector
+     */
+    public Vector3f getRight();
 }

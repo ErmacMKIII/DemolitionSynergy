@@ -37,8 +37,8 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
@@ -52,6 +52,13 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Block extends Model {
+
+    public static final int Z_MASK = 0x20;
+    public static final int ZNEG_MASK = 0x10;
+    public static final int Y_MASK = 0x08;
+    public static final int YNEG_MASK = 0x04;
+    public static final int X_MASK = 0x02;
+    public static final int XNEG_MASK = 0x01;
 
     public static final int NONE = -1;
     public static final int LEFT = 0;
@@ -83,9 +90,9 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            String s1 = VectorFloatUtils.blockSpecsToUniqueString(o1.solid, o1.texName, o1.pos);
-            String s2 = VectorFloatUtils.blockSpecsToUniqueString(o2.solid, o2.texName, o2.pos);
-            return s1.compareTo(s2);
+            Integer a = VectorFloatUtils.blockSpecsToUniqueInt(o1.solid, o1.texName, o1.pos);
+            Integer b = VectorFloatUtils.blockSpecsToUniqueInt(o2.solid, o2.texName, o2.pos);
+            return a.compareTo(b);
         }
     };
 
@@ -376,12 +383,33 @@ public class Block extends Model {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f normal = FACE_NORMALS[j];
             float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
-            float angle = (float) Math.toDegrees(MathUtils.acos(dotProduct));
+            float angle = (float) org.joml.Math.toDegrees(MathUtils.acos(dotProduct));
             if (angle <= 177.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }
         }
+        return result;
+    }
+
+    /**
+     * Returns visible bits based on faces which can seen by camera front.
+     * Faster version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
+     */
+    public static int getVisibleFaceBitsFast(Vector3f camFront) {
+        int result = 0;
+        int zPos = ~(Math.round(camFront.z + 0.83f) - 1) & Z_MASK;
+        int zNeg = ~(Math.round(camFront.z - 0.83f) + 1) & ZNEG_MASK;
+        int yPos = ~(Math.round(camFront.y + 0.83f) - 1) & Y_MASK;
+        int yNeg = ~(Math.round(camFront.y - 0.83f) + 1) & YNEG_MASK;
+        int xPos = ~(Math.round(camFront.x + 0.83f) - 1) & X_MASK;
+        int xNeg = ~(Math.round(camFront.x - 0.83f) + 1) & XNEG_MASK;
+
+        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
         return result;
     }
 
@@ -564,17 +592,30 @@ public class Block extends Model {
         return bits;
     }
 
-    // set faces based on faceBits representation
-    public void setFaceBits(int faceBits) {
+    /**
+     * Set facebits to block. Faces will be enabled/disabled on bit
+     * representation. Bit 6 = don't care Bit 7 = Don't care Bit 5 = FRONT (+Z)
+     * Bit 4 = BACK (-Z) Bit 3 = TOP (+Y) Bit 2 = BOTTOM (-Y) Bit 1 = RIGHT (+X)
+     * Bit 0 = LEFT (-X)
+     *
+     * @param faceBits set facebits (0-63)
+     * @return number of enabled faces (number of ones in face bit
+     * representation)
+     */
+    public int setFaceBits(int faceBits) {
+        int counter = 0;
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
             if (bit == 1) {
+                counter++;
                 enableFace(j);
             } else {
                 disableFace(j);
             }
         }
+
+        return counter;
     }
 
     public static void setFaceBits(List<Vertex> vertices, int faceBits) {

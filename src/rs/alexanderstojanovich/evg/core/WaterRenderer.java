@@ -16,13 +16,16 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.LinkedHashMap;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.chunk.Chunk;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -37,32 +40,85 @@ public class WaterRenderer {
     private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
     private final Camera camera;
 
-    public static final int TOP_MASK = 1 << Block.TOP;
-    public static final int BOTTOM_MASK = 1 << Block.BOTTOM;
+    public static enum WaterEffectsQuality {
+        NONE, LOW, MEDIUM, HIGH, ULTRA
+    };
+    private WaterEffectsQuality effectsQuality = WaterEffectsQuality.values()[Configuration.getInstance().getWaterEffects()];
+    private int maxWaterDepthSize = 3;
 
+    public static final IList<Float> WATER_HEIGHTS = new GapList<>();
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+
     public WaterRenderer(LevelContainer levelContainer) {
         this.camera = new Camera();
         this.levelContainer = levelContainer;
-//        this.debugQuad.setScale(0.25f);
+        this.setDepthByQuality();
     }
 
-    private float findHeightMax() { // call this in update (renderer)
-        float hMax = -Chunk.BOUND;
-        if (!levelContainer.isWorking()) {
-            Camera actCam = levelContainer.getLevelActors().mainCamera();
-            float chMax = Math.round(actCam.pos.y + 0.5f) & 0xFFFFFFFE;
-            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
-                if (y > hMax && y <= chMax) {
-                    hMax = y;
+    private void setDepthByQuality() {
+        switch (effectsQuality) {
+            case LOW:
+                maxWaterDepthSize = 3;
+                break;
+            case MEDIUM:
+                maxWaterDepthSize = 5;
+                break;
+            case HIGH:
+                maxWaterDepthSize = 8;
+                break;
+            case ULTRA:
+                maxWaterDepthSize = 12;
+                break;
+        }
+    }
+
+    public void updateHeights() { // call this in update (renderer)
+        if (effectsQuality == WaterEffectsQuality.NONE) {
+            return;
+        }
+
+        Camera actCam = levelContainer.levelActors.mainCamera();
+        final float chPosY = actCam.pos.y;
+
+        synchronized (WATER_HEIGHTS) {
+            WATER_HEIGHTS.clear();
+        }
+
+        final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
+        OUTER:
+        for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
+            float delta = 2.0f * y - chPosY;
+            if (delta > 0.0f && delta <= 64.0f && y < chPosY) {
+                IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
+                for (Vector2f xz : xzVals) {
+                    float x = xz.x;
+                    float z = xz.y;
+                    Vector3f value = new Vector3f(x, y, z);
+                    float angleCos = actCam.pos.angleCos(value);
+                    if (angleCos > 0.1f && angleCos <= 0.5f && deltaMap.size() <= maxWaterDepthSize) {
+                        deltaMap.putIfAbsent(delta, y);
+                    }
+
+                    if (deltaMap.size() >= maxWaterDepthSize) {
+                        break OUTER;
+                    }
                 }
+            }
+
+            if (deltaMap.size() >= maxWaterDepthSize) {
+                break OUTER;
             }
         }
 
-        return hMax;
+        synchronized (WATER_HEIGHTS) {
+            WATER_HEIGHTS.addAll(deltaMap.values());
+        }
+
+//        System.err.println(WATER_HEIGHTS.size());
     }
 
     private void prepare() {
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
@@ -71,10 +127,12 @@ public class WaterRenderer {
     }
 
     private void updateCamera(float waterHeight) {
-        camera.getPos().x = levelContainer.getLevelActors().getPlayer().getCamera().getPos().x;
-        camera.getPos().y = 2.0f * waterHeight - levelContainer.getLevelActors().getPlayer().getCamera().getPos().y;
-        camera.getPos().z = levelContainer.getLevelActors().getPlayer().getCamera().getPos().z;
-        camera.lookAtAngle(levelContainer.getLevelActors().getPlayer().getCamera().getYaw(), -levelContainer.getLevelActors().getPlayer().getCamera().getPitch());
+        Camera mainCamera = levelContainer.levelActors.mainCamera();
+
+        camera.getPos().x = mainCamera.pos.x;
+        camera.getPos().y = 2.0f * waterHeight - mainCamera.pos.y;
+        camera.getPos().z = mainCamera.pos.z;
+        camera.lookAtAngle(mainCamera.yaw, -mainCamera.pitch);
     }
 
     private void capture(float waterHeight) {
@@ -89,11 +147,16 @@ public class WaterRenderer {
      * Render the water reflections to water textures
      */
     public void render() {
+        if (effectsQuality == WaterEffectsQuality.NONE) {
+            return;
+        }
+
         frameBuffer.bind();
         prepare();
-        if (!levelContainer.isWorking()) {
-            float hMax = findHeightMax();
-            capture(hMax);
+        synchronized (WATER_HEIGHTS) {
+            for (float waterHeight : WATER_HEIGHTS) {
+                capture(waterHeight);
+            }
         }
         frameBuffer.unbind();
 //        if (!debugQuad.isBuffered()) {
@@ -117,6 +180,15 @@ public class WaterRenderer {
 
     public LevelContainer getLevelContainer() {
         return levelContainer;
+    }
+
+    public WaterEffectsQuality getEffectsQuality() {
+        return effectsQuality;
+    }
+
+    public void setEffectsQuality(WaterEffectsQuality effectsQuality) {
+        this.effectsQuality = effectsQuality;
+        this.setDepthByQuality();
     }
 
 }

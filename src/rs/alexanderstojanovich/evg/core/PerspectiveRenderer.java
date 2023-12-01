@@ -54,7 +54,7 @@ public class PerspectiveRenderer {
      * @param myWindow window
      */
     public static void updatePerspective(Window myWindow) {
-        loadPerspective((float) (org.joml.Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20000.0f);
+        loadPerspective((float) (org.joml.Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20480.0f);
     }
 
     /**

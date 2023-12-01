@@ -16,17 +16,18 @@
  */
 package rs.alexanderstojanovich.evg.chunk;
 
-import rs.alexanderstojanovich.evg.cache.CacheModule;
 import java.util.Comparator;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.location.TexByte;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -310,9 +311,11 @@ public class Chunks {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && !tuple.isSolid()) {
-                tuple.animate();
+        if (Game.getUpsTicks() < 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.animate();
+                }
             }
         }
     }
@@ -340,9 +343,11 @@ public class Chunks {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && !tuple.isSolid()) {
-                tuple.prepare(cameraInFluid);
+        if (Game.getUpsTicks() >= 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.prepare(cameraInFluid);
+                }
             }
         }
     }
@@ -384,10 +389,10 @@ public class Chunks {
     /**
      * Improved version of optimization for tuples from all the chunks.
      *
-     * @param queue visible chunkId queue
+     * @param vqueue visible chunkId queue
      * @param camFront camera front (look at vector)
      */
-    public void optimize(IList<Integer> queue, Vector3f camFront) {
+    public void optimize(IList<Integer> vqueue, Vector3f camFront) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBits(camFront);
@@ -395,7 +400,7 @@ public class Chunks {
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
                     Tuple optmTuple = null;
-                    for (int chunkId : queue) {
+                    for (int chunkId : vqueue) {
                         Chunk chunk = getChunk(chunkId);
                         if (chunk != null) {
                             Tuple tuple = chunk.getTuple(tex, faceBits);
@@ -427,9 +432,9 @@ public class Chunks {
      * @param queue visible chunkId queue
      * @param camera (observer) camera
      */
-    public void optimizeSuper(IList<Integer> queue, Camera camera) {
+    public void optimizeFast(IList<Integer> queue, Camera camera) {
         // starting from one, cuz zero is not rendered               
-        final int mask = Block.getVisibleFaceBits(camera.getFront());
+        final int mask = Block.getVisibleFaceBitsFast(camera.getFront());
         for (int faceBits = 1; faceBits <= 63; faceBits++) {
             final int faceBitsCopy = faceBits;
             if ((faceBits & (mask & 63)) != 0) {

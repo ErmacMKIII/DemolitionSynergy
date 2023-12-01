@@ -26,8 +26,10 @@ import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
+import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -37,8 +39,8 @@ import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.PlainTextReader;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.PlainTextReader;
 
 /**
  *
@@ -50,6 +52,8 @@ public class Intrface {
     private DynamicText updText; // displays updates
     private DynamicText fpsText; // displays framerates
     private DynamicText posText; // display position
+    private DynamicText viewText; // display view
+
     private DynamicText chunkText; // display current chunk (player)
     private DynamicText gameTimeText;
 
@@ -107,7 +111,11 @@ public class Intrface {
         posText.setAlignment(Text.ALIGNMENT_RIGHT);
         posText.alignToNextChar();
 
-        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+        viewText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+        viewText.setAlignment(Text.ALIGNMENT_RIGHT);
+        viewText.alignToNextChar();
+
+        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
         chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
         chunkText.alignToNextChar();
 
@@ -296,23 +304,26 @@ public class Intrface {
                 if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
                     ok |= GameObject.generateSinglePlayerLevel(numBlocks);
-                    Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     if (ok) {
+                        Game.setCurrentMode(Mode.SINGLE_PLAYER);
                         LevelContainer levelContainer = GameObject.getLevelContainer();
-                        Player player = levelContainer.levelActors.player;
+                        Player player = (Player) levelContainer.levelActors.player;
                         Random random = GameObject.getRandomLevelGenerator().getRandom();
                         // choosing random player location
-                        Vector3f populatedLocation = new Vector3f(Float.NaN);
-                        do {
-                            int chunkId = Chunk.GRID_SIZE + random.nextInt(Chunk.GRID_SIZE) << random.nextInt(2);
-                            IList<Vector3f> populatedLocations = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(chunkId, loc -> loc.isSolid());
-                            if (!populatedLocations.isEmpty()) {
-                                populatedLocation = populatedLocations.get(random.nextInt(populatedLocations.size()));
+                        final float hMax = Chunk.BOUND;
+                        IList<Vector3f> solidPopLoc = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(loc -> loc.isSolid());
+                        Vector3f playerPos = solidPopLoc.get(random.nextInt(solidPopLoc.size()));
+                        playerPos.y = hMax;
+                        player.setPos(new Vector3f(playerPos.x, playerPos.y, playerPos.z));
+                        while (true) {
+                            float delta = 2.0f * (float) Game.getUpsTicks();
+                            player.movePredictorDown(delta);
+                            if (!LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                                player.descend(delta);
+                            } else {
+                                break;
                             }
-                        } while (!LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(populatedLocation, true));
-
-                        Vector3f playerLocation = new Vector3f(populatedLocation.x, populatedLocation.y + player.body.getHeight() + 2.1f, populatedLocation.z);
-                        player.setPos(playerLocation);
+                        }
                     }
                 }
 
@@ -324,6 +335,7 @@ public class Intrface {
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
         Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
+        Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
         Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
         Object[] volume = new Float[21];
         int k = 0;
@@ -339,7 +351,7 @@ public class Intrface {
                 String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()))));
         optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF")));
         optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF")));
-        optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, Game.isWaterEffects() ? "ON" : "OFF")));
+        optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, GameObject.getWaterRenderer().getEffectsQuality().toString())));
         optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
         optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
         optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
@@ -403,14 +415,8 @@ public class Intrface {
                     case 4:
                         String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
                         command = Command.getCommand(Command.Target.WATER_EFFECTS);
-                        switch (waterEffects) {
-                            case "ON":
-                                command.getArgs().add(true);
-                                break;
-                            case "OFF":
-                                command.getArgs().add(false);
-                                break;
-                        }
+                        String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
+                        command.getArgs().add(waterFX);
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
@@ -530,12 +536,15 @@ public class Intrface {
             @Override
             protected void execute() {
                 // set player character model & color
+                if (singlPlayerMenu.selected == 1) {
+                    singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                }
                 if (singlPlayerMenu.selected == 4) {
                     Player player = GameObject.getLevelContainer().levelActors.player;
                     player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                     player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                     // set level size & seed
-                    String levelSize = singlPlayerMenu.items.get(2).menuValue.toString().toUpperCase();
+                    String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
                     switch (levelSize) {
                         default:
                         case "SMALL":
@@ -620,6 +629,10 @@ public class Intrface {
             chunkText.bufferSmart();
         }
         chunkText.render(ifcShaderProgram);
+        if (!viewText.isBuffered()) {
+            viewText.bufferSmart();
+        }
+        viewText.render(ifcShaderProgram);
         if (!collText.isBuffered()) {
             collText.bufferSmart();
         }
@@ -712,6 +725,12 @@ public class Intrface {
         loadLvlMenu.release();
 
         creditsMenu.release();
+
+        updText.release();
+        fpsText.release();
+        viewText.release();
+        posText.release();
+        chunkText.release();
 
         collText.release();
         helpText.release();
@@ -827,6 +846,10 @@ public class Intrface {
 
     public DynamicText getGameTimeText() {
         return gameTimeText;
+    }
+
+    public DynamicText getViewText() {
+        return viewText;
     }
 
 }

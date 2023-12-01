@@ -33,11 +33,9 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public final Model body;
     protected Vector3f predictor;
-
-    // three vectors determining exact camera position aka camera vectors
-    protected Vector3f front = new Vector3f(Camera.Z_AXIS);
-    protected Vector3f up = new Vector3f(Camera.Y_AXIS);
-    protected Vector3f right = new Vector3f(Camera.X_AXIS);
+    protected Vector3f front = Camera.Z_AXIS;
+    protected Vector3f up = Camera.Y_AXIS;
+    protected Vector3f right = Camera.X_AXIS;
 
     /**
      * Create new instance of the critter. If instanced in anonymous class
@@ -46,6 +44,18 @@ public class Critter implements Predictable, Moveable, Renderable {
      * @param body body model
      */
     public Critter(Model body) {
+        this.body = body;
+        this.predictor = new Vector3f(body.pos); // separate predictor from the body
+    }
+
+    /**
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
+     *
+     * @param pos initial position of the critter
+     * @param body body model
+     */
+    public Critter(Vector3f pos, Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
     }
@@ -100,67 +110,98 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
-        movePredictorForward(amount);
-        predictor = body.pos.add(front.mul(amount, temp));
+        body.pos = body.pos.add(front.mul(amount, temp), temp);
     }
 
     @Override
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.sub(front.mul(amount, temp));
+        body.pos = body.pos.sub(front.mul(amount, temp), temp);
     }
 
     @Override
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.sub(right.mul(amount, temp));
+        body.pos = body.pos.sub(right.mul(amount, temp), temp);
     }
 
     @Override
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.add(right.mul(amount, temp));
+        body.pos = body.pos.add(right.mul(amount, temp), temp);
     }
 
     @Override
     public void ascend(float amount) {
         Vector3f temp = new Vector3f();
-        predictor = body.pos.add(up.mul(amount, temp));
+        body.pos = body.pos.add(up.mul(amount, temp), temp);
     }
 
     @Override
     public void descend(float amount) {
         Vector3f temp = new Vector3f();
-        movePredictorDown(amount);
-        predictor = body.pos.sub(up.mul(amount, temp));
+        body.pos = body.pos.sub(up.mul(amount, temp), temp);
+    }
+
+    protected void updateCameraVectors() {
+        Vector3f temp1 = new Vector3f();
+        front = front.normalize(temp1);
+        Vector3f temp2 = new Vector3f();
+        right = Camera.Y_AXIS.cross(front, temp2).normalize(temp2);
+        Vector3f temp3 = new Vector3f();
+        up = front.cross(right, temp3).normalize(temp3);
+    }
+
+    protected void updateCameraVectors(Vector3f front) {
+        this.front = front;
+        Vector3f temp1 = new Vector3f();
+        front = front.normalize(temp1);
+        Vector3f temp2 = new Vector3f();
+        right = Camera.Y_AXIS.cross(front, temp2).normalize(temp2);
+        Vector3f temp3 = new Vector3f();
+        up = front.cross(right, temp3).normalize(temp3);
     }
 
     @Override
     public void turnLeft(float angle) {
-        body.setrX(-angle);
+        body.setrY(body.getrY() - angle);
+        Vector3f temp = new Vector3f();
+        front = front.rotateY(-angle, temp);
+        updateCameraVectors();
     }
 
     @Override
     public void turnRight(float angle) {
-        body.setrX(-angle);
+        body.setrY(body.getrY() + angle);
+        Vector3f temp = new Vector3f();
+        front = front.rotateY(angle, temp);
+        updateCameraVectors();
     }
 
     @Override
     public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
+        if (!body.isBuffered()) {
+            body.bufferAll();
+        }
         body.render(lightSrc, shaderProgram);
     }
 
     @Override
     public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
+        if (!body.isBuffered()) {
+            body.bufferAll();
+        }
         body.renderContour(lightSources, shaderProgram);
     }
 
+    @Override
     public Vector3f getPos() {
         return body.pos;
     }
 
+    @Override
     public void setPos(Vector3f pos) {
-        predictor = body.pos = new Vector3f(pos);
+        predictor = body.pos = pos;
     }
 
     @Override

@@ -25,11 +25,13 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.core.MasterRenderer;
+import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
+import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -168,7 +170,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 case "water_effects":
                     command.target = Target.WATER_EFFECTS;
                     if (things.length == 2) {
-                        command.args.add(Boolean.valueOf(things[1]));
+                        command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
                     }
                     break;
                 case "msens":
@@ -329,11 +331,11 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case WATER_EFFECTS:
                 switch (command.mode) {
                     case GET:
-                        result = Game.isWaterEffects();
+                        result = GameObject.getWaterRenderer().getEffectsQuality();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        Game.setWaterEffects((boolean) command.args.get(0));
+                        GameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -415,13 +417,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
-                Vector3f mainActorPos = GameObject.getLevelContainer().levelActors.mainObserver().getPos();
+                Observer mainActor = GameObject.getLevelContainer().levelActors.mainObserver();
                 int chunkId;
                 switch (command.mode) {
                     case GET:
                         final StringBuilder sb = new StringBuilder();
-                        sb.append(String.format("pos: (%.1f,%.1f,%.1f)", mainActorPos.x, mainActorPos.y, mainActorPos.z));
-                        chunkId = Chunk.chunkFunc(mainActorPos);
+                        sb.append(String.format("pos: (%.1f,%.1f,%.1f)", mainActor.getPos().x, mainActor.getPos().y, mainActor.getPos().z));
+                        chunkId = Chunk.chunkFunc(mainActor.getPos());
                         sb.append(" | ");
                         sb.append(String.format("chunkId: %d", chunkId));
                         result = sb.toString();
@@ -432,9 +434,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                             chunkId = (int) command.args.get(0);
                             if (chunkId >= 0 && chunkId < Chunk.CHUNK_NUM) {
                                 Vector3f newPos = Chunk.invChunkFunc(chunkId);
-                                mainActorPos.x = newPos.x;
-                                mainActorPos.y = newPos.y;
-                                mainActorPos.z = newPos.z;
+                                mainActor.setPos(newPos);
                                 command.status = Status.SUCCEEDED;
                             } else {
                                 command.status = Status.FAILED;
@@ -448,9 +448,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                             Vector3f newPos = new Vector3f(newPosx, newPosy, newPosz);
                             chunkId = Chunk.chunkFunc(newPos);
                             if (chunkId >= 0 && chunkId < Chunk.CHUNK_NUM) {
-                                mainActorPos.x = newPosx;
-                                mainActorPos.y = newPosy;
-                                mainActorPos.z = newPosz;
+                                mainActor.setPos(newPos);
                                 command.status = Status.SUCCEEDED;
                             } else {
                                 command.status = Status.FAILED;

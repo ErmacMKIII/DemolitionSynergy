@@ -17,6 +17,10 @@
 package rs.alexanderstojanovich.evg.light;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
@@ -31,14 +35,14 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 public class LightSources {
 
     public static final int MAX_LIGHTS = 256;
-    public final IList<LightSource> lightSrcList = new GapList<>(MAX_LIGHTS);
-
+    public final IList<LightSource> lightSource = new GapList<>();
     public final boolean[] modified = new boolean[MAX_LIGHTS];
 
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
 
     public final LightOverlay lightOverlay = new LightOverlay(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), new Texture("loverlay"));
+    public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
     /**
      * Update lights unconditionally.
@@ -46,8 +50,8 @@ public class LightSources {
      * @param shaderProgram shader Program where lights are used
      */
     public void updateLightsInShader(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
-        shaderProgram.updateUniform(lightSrcList, MODEL_LIGHT_NAME);
+        shaderProgram.updateUniform(lightSource.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(lightSource, MODEL_LIGHT_NAME);
     }
 
     /**
@@ -56,8 +60,8 @@ public class LightSources {
      * @param shaderProgram shader Program where lights are used
      */
     public void updateLightsInShaderIfModified(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(lightSrcList.size(), MODEL_LIGHT_NUMBER_NAME);
-        shaderProgram.updateUniform(lightSrcList, modified, MODEL_LIGHT_NAME);
+        shaderProgram.updateUniform(lightSource.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(lightSource, modified, MODEL_LIGHT_NAME);
     }
 
     /**
@@ -72,6 +76,89 @@ public class LightSources {
         lightSources.lightOverlay.render(camera, lightSources, shaderProgram); // has shader bind
     }
 
+    public void clearLights() {
+        lightSource.clear();
+        lightMap.clear();
+    }
+
+    /**
+     * Adds a light source.
+     *
+     * @param ls light source
+     */
+    public void addLight(LightSource ls) {
+        lightSource.add(ls);
+        lightMap.put(ls.pos, ls);
+    }
+
+    /**
+     * Removes a light source.
+     *
+     * @param ls light source
+     */
+    public void removeLight(LightSource ls) {
+        lightSource.remove(ls);
+        lightMap.remove(ls.pos);
+    }
+
+    /**
+     * Retain lights
+     *
+     * @param indexLastExclusive last index to keep
+     */
+    public void retainLights(int indexLastExclusive) {
+        lightSource.retain(0, indexLastExclusive);
+        Set<Vector3f> keySet = lightMap.keySet();
+        for (Vector3f pos : keySet) {
+            LightSource light = lightSource.filter(ls -> ls.pos.equals(pos)).getFirstOrNull();
+            if (light != null && lightSource.indexOf(light) >= indexLastExclusive) {
+                lightSource.remove(light);
+                lightMap.remove(pos);
+            }
+        }
+    }
+
+    /**
+     * Removes a light source.
+     *
+     * @param pos light source position
+     */
+    public void removeLight(Vector3f pos) {
+        LightSource ls = lightMap.get(pos);
+        if (ls != null) {
+            lightSource.remove(ls);
+            lightMap.remove(ls.pos);
+        } else {
+            lightSource.removeIf(lsx -> lsx.pos.equals(pos));
+        }
+    }
+
+    /**
+     * Set light source to modified.
+     *
+     * @param index index of light source
+     * @param modified modified boolean
+     */
+    public void setModified(int index, boolean modified) {
+        this.modified[index] = modified;
+    }
+
+    /**
+     * Set light source to modified.
+     *
+     * @param pos position of the light
+     * @param modified modified boolean
+     */
+    public void setModified(Vector3f pos, boolean modified) {
+        LightSource ls = lightMap.get(pos);
+        if (ls != null) {
+            int index = lightSource.indexOf(ls);
+            if (index != -1) {
+                this.modified[index] = modified;
+            }
+        }
+    }
+
     public void setAllModified() {
         Arrays.fill(modified, true);
     }
@@ -80,8 +167,16 @@ public class LightSources {
         Arrays.fill(modified, false);
     }
 
-    public IList<LightSource> getLightSrcList() {
-        return lightSrcList;
+    public IList<LightSource> getLightSource() {
+        return lightSource;
+    }
+
+    public Map<Vector3f, LightSource> getLightMap() {
+        return lightMap;
+    }
+
+    public LightOverlay getLightOverlay() {
+        return lightOverlay;
     }
 
     public boolean[] getModified() {
