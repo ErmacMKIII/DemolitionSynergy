@@ -527,7 +527,7 @@ public class Game {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
-        accumulator = 0.0;
+        accumulator = cfg.getGameTicks();
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
@@ -638,6 +638,10 @@ public class Game {
 
     public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
         return defaultMouseButtonCallback;
+    }
+
+    public static void setAccumulator(double accumulator) {
+        Game.accumulator = accumulator;
     }
 
     public static int getUps() {

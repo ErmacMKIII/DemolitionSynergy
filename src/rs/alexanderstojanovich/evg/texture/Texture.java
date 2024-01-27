@@ -64,6 +64,7 @@ public class Texture {
     public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
     public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
+    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
 
     public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png");
@@ -117,6 +118,7 @@ public class Texture {
 
     public static void bufferAllTextures() {
         // intrface
+        SPLASH.bufferAll();
         LOGO.bufferAll();
         CROSSHAIR.bufferAll();
         MINIGUN.bufferAll();

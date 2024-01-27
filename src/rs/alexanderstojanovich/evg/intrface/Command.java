@@ -48,6 +48,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
      * Command mnemonic (syntax)
      */
     public static enum Target {
+        GAME_TICKS,
         FPS_MAX,
         RESOLUTION,
         FULLSCREEN,
@@ -138,6 +139,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
         String[] things = input.split(" ");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
+                case "game_ticks":
+                case "gameticks":
+                    command.target = Target.GAME_TICKS;
+                    if (things.length == 2) {
+                        command.args.add(Float.valueOf(things[1]));
+                    }
+                    break;
                 case "fps_max":
                 case "fpsmax":
                     command.target = Target.FPS_MAX;
@@ -255,6 +263,22 @@ public class Command implements Callable<Object> { // its not actually a thread 
         Object result = null;
         command.status = Status.PENDING;
         switch (command.target) {
+            case GAME_TICKS:
+                switch (command.mode) {
+                    case GET:
+                        result = Game.getAccumulator();
+                        command.status = Status.SUCCEEDED;
+                        break;
+                    case SET:
+                        float ticks = (float) command.args.get(0);
+                        if (ticks >= 0.0f) {
+                            Game.setAccumulator(ticks);
+                            GameRenderer.setAnimationTimer(ticks);
+                            command.status = Status.SUCCEEDED;
+                        }
+                        break;
+                }
+                break;
             case FPS_MAX:
                 switch (command.mode) {
                     case GET:
@@ -266,6 +290,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         if (fpsMax > 0 && fpsMax <= 1E6) {
                             GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0);
+                            GameRenderer.setAnimationTimer(0.0);
                             Game.setFpsMax(fpsMax);
                             command.status = Status.SUCCEEDED;
                         }
@@ -556,13 +581,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
 
     // game commands
     public boolean isGameCommand() {
-        return this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
+        return this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
-        return command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
+        return command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
     }
 

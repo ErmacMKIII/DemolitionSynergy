@@ -148,7 +148,40 @@ public class MathUtils {
         }
 
         // put outside the loop
-        float maxAmp = 1.0f - (float) MathUtils.pow(persistence, numOfOctaves) / (1.0f - persistence);
+        float maxAmp = (1.0f - (float) MathUtils.pow(persistence, numOfOctaves)) / (1.0f - persistence);
+
+        // take the average value of the iterations
+        noise /= maxAmp;
+
+        // normalize the result
+        noise = Math.fma(noise, high - low, high + low) / 2.0f;
+
+        return noise;
+    }
+
+    /**
+     * Generate noise using given number of iterations (or octaves)
+     *
+     * @param numOfOctaves iterations num
+     * @param x x-coord
+     * @param y y-coord
+     * @param persistence amplitude multiplier
+     * @param low minimum output
+     * @param high maximum output
+     * @param frequencies noise args
+     * @param amplitudes noise amplitude multiplier
+     * @return noise
+     */
+    public static float noise2(int numOfOctaves, float x, float y, float persistence, float low, float high, float[] frequencies, float[] amplitudes) {
+        float noise = 0.0f;
+
+        // add successively smaller, higher-frequency terms
+        for (int i = 0; i < numOfOctaves; i++) {
+            noise = Math.fma(SimplexNoise.noise(x * frequencies[i], y * frequencies[i]), amplitudes[i], noise);
+        }
+
+        // put outside the loop
+        float maxAmp = (1.0f - (float) MathUtils.pow(persistence, numOfOctaves)) / (1.0f - persistence);
 
         // take the average value of the iterations
         noise /= maxAmp;
@@ -186,7 +219,41 @@ public class MathUtils {
         }
 
         // put outside the loop
-        float maxAmp = 1.0f - (float) MathUtils.pow(persistence, numOfOctaves) / (1.0f - persistence);
+        float maxAmp = (1.0f - (float) MathUtils.pow(persistence, numOfOctaves)) / (1.0f - persistence);
+
+        // take the average value of the iterations
+        noise /= maxAmp;
+
+        // normalize the result
+        noise = Math.fma(noise, high - low, high + low) / 2.0f;
+
+        return noise;
+    }
+
+    /**
+     * Generate noise using given number of iterations (or octaves)
+     *
+     * @param numOfOctaves iterations num
+     * @param x x-coord
+     * @param y y-coord
+     * @param z y-coord
+     * @param persistence amplitude multiplier
+     * @param low minimum output
+     * @param high maximum output
+     * @param frequencies noise args
+     * @param amplitudes noise amplitude multiplier
+     * @return noise
+     */
+    public static float noise3(int numOfOctaves, float x, float y, float z, float persistence, float low, float high, float[] frequencies, float[] amplitudes) {
+        float noise = 0.0f;
+
+        // add successively smaller, higher-frequency terms
+        for (int i = 0; i < numOfOctaves; i++) {
+            noise = Math.fma(SimplexNoise.noise(x * frequencies[i], y * frequencies[i], z * frequencies[i]), amplitudes[i], noise);
+        }
+
+        // put outside the loop
+        float maxAmp = (1.0f - (float) MathUtils.pow(persistence, numOfOctaves)) / (1.0f - persistence);
 
         // take the average value of the iterations
         noise /= maxAmp;

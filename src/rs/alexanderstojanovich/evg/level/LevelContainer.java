@@ -47,6 +47,7 @@ import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -129,6 +130,8 @@ public class LevelContainer implements GravityEnviroment {
     protected final CacheModule cacheModule;
 
     protected static boolean cameraInFluid = false;
+
+    protected float lastTime = 0.0f;
 
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -950,11 +953,14 @@ public class LevelContainer implements GravityEnviroment {
 
     public void update() { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!   
-            final float gtm = cfg.getGameTimeMultiplier();
-            final float dt = gtm * (float) Game.TICK_TIME / 16.0f;
+            final float now = GameTime.Now().getTime();
+            float dtime = now - lastTime;
+            lastTime = now;
 
-            SKYBOX.setrY(SKYBOX.getrY() + dt);
-            SUN.pos.rotateZ(dt);
+            final float dangle = org.joml.Math.toRadians(dtime * 360.0f / 24.0f);
+
+            SKYBOX.setrY(SKYBOX.getrY() + dangle);
+            SUN.pos.rotateZ(dangle);
 
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
             float inten = org.joml.Math.max(org.joml.Math.sin(sunAngle), 0.0f);
