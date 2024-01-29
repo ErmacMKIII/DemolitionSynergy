@@ -26,8 +26,10 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
@@ -39,6 +41,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -338,8 +341,39 @@ public class LevelContainer implements GravityEnviroment {
         CacheModule.deleteCache();
 
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_BLOCKS) {
+            // generate blocks
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
+
+            // place player on his/her position
+            LevelContainer levelContainer = GameObject.getLevelContainer();
+            Player player = (Player) levelContainer.levelActors.player;
+            Random random = GameObject.getRandomLevelGenerator().getRandom();
+
+            // random on elements in the center
+            final int halfDim = Chunk.GRID_SIZE / 2;
+            final int ldim = Math.max(halfDim - 1, 0);
+            final int rdim = Math.min(halfDim + 1, Chunk.CHUNK_NUM - 1);
+
+            int attempts = 0;
+            IList<Vector3f> solidPopLoc;
+            do {
+                // choosing random solid location                            
+                int randCol = ldim + random.nextInt(rdim - ldim);
+                int randRow = ldim + random.nextInt(rdim - ldim);
+                int chunkId = randRow * Chunk.GRID_SIZE + randCol;
+                solidPopLoc = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(chunkId, loc -> loc.solid && ((loc.byteValue & (~Block.Y_MASK & 63))) != 0);
+                attempts++;
+            } while (solidPopLoc.isEmpty() && attempts < Chunk.GRID_SIZE);
+
+            do {
+                int rindex = random.nextInt(solidPopLoc.size());
+                Vector3f solidLoc = solidPopLoc.get(rindex);
+                Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.1f, solidLoc.z);
+                player.setPos(playerLoc);
+            } while (LevelContainer.hasCollisionWithEnvironment((Critter) player));
+            player.ascend(0.0f); // Stop player changing location work            
+
             success = true;
         }
 
@@ -763,7 +797,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(predictable.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.1f;
+            final float stepAmount = 0.125f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(predictable.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -776,7 +810,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= 2.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(predictable.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -807,7 +841,7 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(observer.getPos(), 0.07f, 0.07f, 0.07f));
 
         if (!coll) {
-            final float stepAmount = 0.1f;
+            final float stepAmount = 0.125f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(observer.getPos().x + 0.5f) & 0xFFFFFFFE,
@@ -820,7 +854,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 5; j++) {
-                    for (float amount = 0.0f; amount <= Game.AMOUNT * Game.TPS; amount += stepAmount) {
+                    for (float amount = 0.0f; amount <= 2.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(observer.getPos(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -854,7 +888,7 @@ public class LevelContainer implements GravityEnviroment {
                         critter.body.getHeight(), critter.body.getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.1f;
+            final float stepAmount = 0.125f;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -899,34 +933,19 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
-        /*
-        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 
-        List<Vector3f> populatedFluidLocations = ALL_BLOCK_MAP.getPopulatedLocations(vChnkIdList, i -> !i.solid);
-        for (Vector3f fluidLoc : populatedFluidLocations) {
-            for (int j = 0; j <= 5; j++) {
-                if (j != Block.TOP) {
-                    Vector3f adjFluidLoc = Block.getAdjacentPos(fluidLoc, j);
-                    if (!ALL_BLOCK_MAP.isLocationPopulated(adjFluidLoc)) {
-                        TexByte texByte = ALL_BLOCK_MAP.getLocation(fluidLoc);
-                        int chunkId = Chunk.chunkFunc(fluidLoc);
-                        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
-                        if (fluidChunk != null) {
-                            Tuple tuple = fluidChunk.getTuple(texByte.texName, ~texByte.byteValue & 63);
-                            if (tuple != null) {
-                                Block fluidBlk = tuple.getBlock(fluidLoc);
-                                if (fluidBlk != null) {
-                                    for (Vertex v : fluidBlk.getVertices()) {
-                                        v.getPos().y -= value;
-                                    }
-                                    fluidChunk.unbuffer();
-                                }
-                            }
-                        }
-                    }
-                }
+        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+
+        IList<Block> blocks = chunks.getTotalList();
+        for (Block blk : blocks) {
+            Vector3f bottomPos = Block.getAdjacentPos(blk.pos, Block.BOTTOM);
+            TexByte locInfo = ALL_BLOCK_MAP.getLocation(blk.pos);
+            if (locInfo != null && !ALL_BLOCK_MAP.isLocationPopulated(bottomPos)) {
+                Vector3f oldValue = new Vector3f(blk.pos);
+                Vector3f newValue = new Vector3f(blk.pos.x, blk.pos.y - deltaHeight, blk.pos.z);
+                ALL_BLOCK_MAP.updateLocation(oldValue, newValue, locInfo);
             }
-        }*/
+        }
     }
 
     // method for determining visible chunks

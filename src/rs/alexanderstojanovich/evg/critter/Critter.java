@@ -201,7 +201,8 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     @Override
     public void setPos(Vector3f pos) {
-        predictor = body.pos = pos;
+        body.pos = pos;
+        predictor = new Vector3f(pos);
     }
 
     @Override

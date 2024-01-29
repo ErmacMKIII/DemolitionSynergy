@@ -24,7 +24,7 @@ import java.util.Objects;
  */
 public class TexByte {
 
-    protected String texName;
+    public String texName;
     public byte byteValue;
     public boolean solid;
 

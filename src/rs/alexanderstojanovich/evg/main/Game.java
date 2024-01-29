@@ -127,7 +127,7 @@ public class Game {
         causingCollision = false;
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveBackward(AMOUNT);
             } else {
@@ -137,7 +137,7 @@ public class Game {
         }
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
@@ -147,7 +147,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
@@ -157,7 +157,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
@@ -167,7 +167,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.descend(AMOUNT);
             } else {
@@ -177,7 +177,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
+            Observer obs = GameObject.getLevelContainer().levelActors.spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.ascend(AMOUNT);
             } else {
@@ -187,15 +187,15 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().getLevelActors().spectator.turnLeft(ANGLE);
+            GameObject.getLevelContainer().levelActors.spectator.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().getLevelActors().spectator.turnRight(ANGLE);
+            GameObject.getLevelContainer().levelActors.spectator.turnRight(ANGLE);
             changed = true;
         }
         if (moveMouse) {
-            GameObject.getLevelContainer().getLevelActors().spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            GameObject.getLevelContainer().levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -304,8 +304,8 @@ public class Game {
         boolean changed = false;
         causingCollision = false;
 
-        if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorForward(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorBackward(amount);
@@ -314,8 +314,9 @@ public class Game {
                 changed = true;
             }
         }
-        if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorBackward(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorForward(amount);
@@ -325,8 +326,9 @@ public class Game {
             }
 
         }
-        if (keys[GLFW.GLFW_KEY_A]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+
+        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorLeft(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorRight(amount);
@@ -335,8 +337,9 @@ public class Game {
                 changed = true;
             }
         }
-        if (keys[GLFW.GLFW_KEY_D]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+
+        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorRight(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorLeft(amount);
@@ -346,8 +349,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+        if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorUp(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorDown(amount);
@@ -357,8 +360,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
+            Player player = GameObject.getLevelContainer().levelActors.player;
             player.movePredictorDown(amount);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorUp(amount);
@@ -369,16 +372,16 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().getLevelActors().player.turnLeft(ANGLE);
+            GameObject.getLevelContainer().levelActors.player.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().getLevelActors().player.turnRight(ANGLE);
+            GameObject.getLevelContainer().levelActors.player.turnRight(ANGLE);
             changed = true;
         }
 
         if (moveMouse) {
-            GameObject.getLevelContainer().getLevelActors().player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            GameObject.getLevelContainer().levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -388,27 +391,27 @@ public class Game {
         }
 
 //        if (keys[GLFW.GLFW_KEY_1]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(1);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_2]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(2);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_3]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(3);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_4]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(4);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_5]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(5);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_6]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(6);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
 //            changed = true;
 //        }
         if (keys[GLFW.GLFW_KEY_R]) {
@@ -564,15 +567,15 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update();
+                GameObject.update((float) TICK_TIME);
+                actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
-                        actionPerformed = false;
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.UPDATE_MUTEX) {
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
                             actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
                             actionPerformed |= editorDo();
                         }
@@ -580,7 +583,7 @@ public class Game {
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.UPDATE_MUTEX) {
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
                             actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
                         }
                         break;
@@ -706,6 +709,14 @@ public class Game {
 
     public static boolean isActionPerformed() {
         return actionPerformed;
+    }
+
+    public static void setActionPerformed(boolean actionPerformed) {
+        Game.actionPerformed = actionPerformed;
+    }
+
+    public static void setCausingCollision(boolean causingCollision) {
+        Game.causingCollision = causingCollision;
     }
 
 }

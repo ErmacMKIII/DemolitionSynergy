@@ -70,8 +70,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public static Quad SPLASH_SCREEN;
 
-    public static final Object UPDATE_MUTEX = new Object();
-    public static final Object RENDER_MUTEX = new Object();
+    public static final Object UPDATE_RENDER_MUTEX = new Object();
 
     protected static int currentFaceBitMask = 0x00;
 
@@ -127,25 +126,28 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         TimerTask task2 = new TimerTask() {
             @Override
             public void run() {
-                if (Game.getUpsTicks() < 1.0) {
-                    int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
-                    boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
-                    currentFaceBitMask = facebitsMask;
+                int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
+                boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
+                currentFaceBitMask = facebitsMask;
 
-                    boolean chunksModified = GameObject.determineVisibleChunks();
-                    boolean chunkTransfer = false;
+                boolean chunksModified = GameObject.determineVisibleChunks();
+                boolean chunkTransfer = false;
 
-                    if (chunksModified) {
+                if (chunksModified) {
+                    synchronized (UPDATE_RENDER_MUTEX) {
                         chunkTransfer = GameObject.chunkOperations();
                     }
+                }
 
-                    if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+                if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+                    synchronized (UPDATE_RENDER_MUTEX) {
                         GameObject.optimize();
                     }
                 }
+
             }
         };
-        timer2.scheduleAtFixedRate(task2, 125L, 125L);
+        timer2.scheduleAtFixedRate(task2, 250L, 250L);
 
         //----------------------------------------------------------------------
         renderer.start();
@@ -168,8 +170,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Update Game Object stuff, like Environment (call only from main)
      *
+     * @param deltaTime delta time
      */
-    public static void update() {
+    public static void update(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -179,8 +182,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
-            synchronized (UPDATE_MUTEX) {
+            synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
+//                levelContainer.gravityDo(deltaTime);
                 waterRenderer.updateHeights();
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
@@ -224,7 +228,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             GameObject.getLevelContainer().setProgress(0.0f);
         }
 
-        synchronized (UPDATE_MUTEX) {
+        synchronized (UPDATE_RENDER_MUTEX) {
             intrface.update();
         }
     }
@@ -276,14 +280,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             if (!PerspectiveRenderer.isBuffered()) {
                 PerspectiveRenderer.bufferAndRender(); // it sets perspective matrix accross shaders       
             }
-            synchronized (UPDATE_MUTEX) {
+            synchronized (UPDATE_RENDER_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                    synchronized (RENDER_MUTEX) {
-                        levelContainer.render();
-                        if (GameObject.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
-                                && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                            waterRenderer.render();
-                        }
+                    levelContainer.render();
+                    if (GameObject.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
+                            && !levelContainer.getChunks().getChunkList().isEmpty()) {
+                        waterRenderer.render();
                     }
                 }
                 intrface.render(ShaderProgram.getIntrfaceShader());
@@ -318,9 +320,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return is changed
      */
     public static boolean determineVisibleChunks() {
-        synchronized (RENDER_MUTEX) {
-            return levelContainer.determineVisible();
-        }
+        return levelContainer.determineVisible();
     }
 
     /**
@@ -329,9 +329,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return did chunk operations modify anything (something changed).
      */
     public static boolean chunkOperations() {
-        synchronized (RENDER_MUTEX) {
-            return levelContainer.chunkOperations();
-        }
+        return levelContainer.chunkOperations();
     }
 
     /**
@@ -339,7 +337,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public static void animate() {
-        synchronized (RENDER_MUTEX) {
+        synchronized (UPDATE_RENDER_MUTEX) {
             levelContainer.animate();
         }
     }
@@ -348,20 +346,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with special tuples
      */
     public static void optimize() {
-        synchronized (RENDER_MUTEX) {
-            levelContainer.chunks.setOptimized(false); // this is also hint to not render
-            levelContainer.optimize();
-            LevelContainer.LIGHT_SOURCES.setAllModified();
-        }
+        levelContainer.chunks.setOptimized(false); // this is also hint to not render
+        levelContainer.optimize();
+        LevelContainer.LIGHT_SOURCES.setAllModified();
     }
 
     /**
      * Is level container optimized
      */
     public static void isOptimized() {
-        synchronized (RENDER_MUTEX) {
-            levelContainer.chunks.isOptimized();
-        }
+        levelContainer.chunks.isOptimized();
     }
 
     /**
@@ -370,9 +364,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param optimized optimized flag to set
      */
     public static void setOptimized(boolean optimized) {
-        synchronized (RENDER_MUTEX) {
-            levelContainer.chunks.setOptimized(optimized);
-        }
+        levelContainer.chunks.setOptimized(optimized);
     }
 
     // -------------------------------------------------------------------------
@@ -384,9 +376,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public static boolean loadLevelFromFile(String fileName) {
         boolean ok;
-        synchronized (RENDER_MUTEX) {
-            ok = levelContainer.loadLevelFromFile(fileName);
-        }
+
+        ok = levelContainer.loadLevelFromFile(fileName);
 
         return ok;
     }
@@ -394,27 +385,21 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public static boolean saveLevelToFile(String fileName) {
         boolean ok;
-        synchronized (RENDER_MUTEX) {
-            ok = levelContainer.saveLevelToFile(fileName);
-        }
+        ok = levelContainer.saveLevelToFile(fileName);
         return ok;
     }
 
     // Called from concurrent thread
     public static boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok;
-        synchronized (RENDER_MUTEX) {
-            ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-        }
+        ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
         return ok;
     }
 
     // Called from concurrent thread
     public static boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok;
-        synchronized (RENDER_MUTEX) {
-            ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
-        }
+        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
         return ok;
     }
 

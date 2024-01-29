@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
@@ -80,14 +81,16 @@ public class Editor {
         int solidTargetIndex = -1;
         if (chunk != null) {
             int solidBlkIndex = 0;
+            Vector3f trgPos = null;
             for (Block blk : chunk.getBlockList()) {
                 if (blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
                             blk.getPos().x, blk.getPos().y, blk.getPos().z);
                     if (distance < minDistanceOfSolid
-                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.getPos(), 2.0f, 2.0f, 2.0f)) {
+                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.pos, 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfSolid = distance;
                         solidTargetIndex = solidBlkIndex;
+                        trgPos = blk.pos;
                     }
                 }
                 solidBlkIndex++;
@@ -95,6 +98,7 @@ public class Editor {
 
             if (solidTargetIndex != -1) {
                 selectedCurr = chunk.getBlockList().get(solidTargetIndex);
+                DSLogger.reportInfo("" + LevelContainer.ALL_BLOCK_MAP.getLocation(trgPos).byteValue, null);
                 selectedCurrIndex = solidBlkIndex;
                 selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW_RGBA, true);
             }
@@ -252,7 +256,7 @@ public class Editor {
     public static void add() {
         if (selectedNew != null) {
             if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (GameObject.RENDER_MUTEX) { // potentially dangerous
+                synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
                     GameObject.getLevelContainer().chunks.addBlock(selectedNew);
                 }
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
@@ -264,7 +268,7 @@ public class Editor {
 
     public static void remove() {
         if (selectedCurr != null) {
-            synchronized (GameObject.RENDER_MUTEX) { // potentially dangerous
+            synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
                 GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
             }
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
@@ -274,7 +278,7 @@ public class Editor {
 
     private static void selectTexture() {
         if (selectedNew != null) {
-            synchronized (GameObject.RENDER_MUTEX) {
+            synchronized (GameObject.UPDATE_RENDER_MUTEX) {
                 String texName = Texture.TEX_WORLD[texValue];
                 selectedNew.setTexNameWithDeepCopy(texName);
             }
