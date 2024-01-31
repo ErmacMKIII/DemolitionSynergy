@@ -139,7 +139,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     }
                 }
 
-                if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+                if (faceBitsModified || isFirstOptimization() || chunkTransfer || Game.getUpsTicks() < 1.0) {
                     synchronized (UPDATE_RENDER_MUTEX) {
                         GameObject.optimize();
                     }
@@ -184,7 +184,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
             synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
-//                levelContainer.gravityDo(deltaTime);
+                if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
+                    levelContainer.gravityDo(deltaTime);
+                }
                 waterRenderer.updateHeights();
             }
             Vector3f pos = levelContainer.levelActors.mainObserver().getPos();

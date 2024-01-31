@@ -94,4 +94,48 @@ public interface Moveable {
      * @param pos new position
      */
     public void setPos(Vector3f pos);
+
+    //--------------------------------------------------------------------------
+    /**
+     * Move camera forward (towards positive Z-axis) on XZ plane.
+     *
+     * @param amount amount added forward
+     */
+    public void moveXZForward(float amount);
+
+    /**
+     * Move camera backward (towards negative Z-axis) on XZ plane.
+     *
+     * @param amount amount subtracted backward
+     */
+    public void moveXZBackward(float amount);
+
+    /**
+     * Move camera left (towards negative X-axis) on XZ plane..
+     *
+     * @param amount to move left.
+     */
+    public void moveXZLeft(float amount);
+
+    /**
+     * Move camera left (towards positive X-axis) on XZ plane.
+     *
+     * @param amount to move right.
+     */
+    public void moveXZRight(float amount);
+
+    /**
+     * Move camera up (towards positive Y-axis) separated from XZ plane.
+     *
+     * @param amount
+     */
+    public void jumpY(float amount);
+
+    /**
+     * Move camera down (towards negative Y-axis) separated from XZ plane.
+     *
+     * @param amount
+     */
+    public void sinkY(float amount);
+
 }
