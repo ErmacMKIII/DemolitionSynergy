@@ -256,4 +256,46 @@ public class Critter implements Predictable, Moveable, Renderable {
         body.pos = body.pos.sub(0.0f, amountXYZ.y, 0.0f, temp);
     }
 
+    @Override
+    public void movePredictorXZForward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = front.mul(amount, temp);
+        predictor = body.pos.add(amountXYZ.x, 0.0f, amountXYZ.z, temp);
+    }
+
+    @Override
+    public void movePredictorXZBackward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = front.mul(amount, temp);
+        predictor = body.pos.sub(amountXYZ.x, 0.0f, amountXYZ.z, temp);
+    }
+
+    @Override
+    public void movePredictorXZLeft(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = right.mul(amount, temp);
+        predictor = body.pos.sub(amountXYZ.x, 0.0f, amountXYZ.z, temp);
+    }
+
+    @Override
+    public void movePredictorXZRight(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = right.mul(amount, temp);
+        predictor = body.pos.add(amountXYZ.x, 0.0f, amountXYZ.z, temp);
+    }
+
+    @Override
+    public void movePredictorYUp(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        predictor = body.pos.add(0.0f, amountXYZ.y, 0.0f, temp);
+    }
+
+    @Override
+    public void movePredictorYDown(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        predictor = body.pos.sub(0.0f, amountXYZ.y, 0.0f, temp);
+    }
+
 }

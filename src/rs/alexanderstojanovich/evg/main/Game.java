@@ -293,70 +293,72 @@ public class Game {
     /**
      * Handle input for player (Single player mode & Multiplayer mode)
      *
-     * @param amount movement amount
+     * @param amountXZ movement amount on XZ plane
+     * @param amountY movement amount on Y-axis
+     *
      * @return did player do something..
      */
-    public boolean playerDo(float amount) {
+    public boolean playerDo(float amountXZ, float amountY) {
         boolean changed = false;
         causingCollision = false;
         Player player = GameObject.getLevelContainer().levelActors.player;
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
-            player.movePredictorForward(amount);
+            player.movePredictorXZForward(amountXZ);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorBackward(amount);
+                player.movePredictorXZBackward(amountXZ);
             } else {
-                player.moveXZForward(amount);
+                player.moveXZForward(amountXZ);
                 changed = true;
             }
         }
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
-            player.movePredictorBackward(amount);
+            player.movePredictorXZBackward(amountXZ);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorForward(amount);
+                player.movePredictorXZForward(amountXZ);
             } else {
-                player.moveXZBackward(amount);
+                player.moveXZBackward(amountXZ);
                 changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
-            player.movePredictorLeft(amount);
+            player.movePredictorXZLeft(amountXZ);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorRight(amount);
+                player.movePredictorXZRight(amountXZ);
             } else {
-                player.moveXZLeft(amount);
+                player.moveXZLeft(amountXZ);
                 changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
-            player.movePredictorRight(amount);
+            player.movePredictorXZRight(amountXZ);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorLeft(amount);
+                player.movePredictorXZLeft(amountXZ);
             } else {
-                player.moveXZRight(amount);
+                player.moveXZRight(amountXZ);
                 changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision) {
-            player.movePredictorUp(amount);
+            player.movePredictorYUp(amountY);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorDown(amount);
+                player.movePredictorYDown(amountY);
             } else {
-                player.jumpY(amount);
+                player.jumpY(amountY);
                 changed = true;
             }
         }
 
         if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
-            player.movePredictorDown(amount);
+            player.movePredictorYDown(amountY);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorUp(amount);
+                player.movePredictorYUp(amountY);
             } else {
-                player.sinkY(amount);
+                player.sinkY(amountY);
                 changed = true;
             }
         }
@@ -557,7 +559,7 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update((float) TICK_TIME);
+                GameObject.update();
                 actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
@@ -574,7 +576,7 @@ public class Game {
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= playerDo(1.05f * AMOUNT * (float) TICK_TIME, 2.1f * AMOUNT * (float) TICK_TIME);
                         }
                         break;
                 }

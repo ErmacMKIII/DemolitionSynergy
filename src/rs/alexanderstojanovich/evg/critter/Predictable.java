@@ -72,6 +72,54 @@ public interface Predictable {
     public void movePredictorDown(float amount);
 
     /**
+     * Move this critter prediction forward (but critter stays). Used for
+     * collision testing. On XZ plane..
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorXZForward(float amount);
+
+    /**
+     * Move this critter prediction backward (but critter stays). Used for
+     * collision testing. On XZ plane..
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorXZBackward(float amount);
+
+    /**
+     * Move this critter prediction left (but critter stays). Used for collision
+     * testing. On XZ plane..
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorXZLeft(float amount);
+
+    /**
+     * Move this critter prediction right (but critter stays). Used for
+     * collision testing. On XZ plane..
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorXZRight(float amount);
+
+    /**
+     * Move this critter prediction up (ascending, but critter stays). Separated
+     * from XZ plane.
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorYUp(float amount);
+
+    /**
+     * Move this critter prediction up (ascending, but critter stays). Separated
+     * from XZ plane.
+     *
+     * @param amount amount to move this critter predictor
+     */
+    public void movePredictorYDown(float amount);
+
+    /**
      * Get collision prediction vector (predictor)
      *
      * @return VEC3 Prediction vector
