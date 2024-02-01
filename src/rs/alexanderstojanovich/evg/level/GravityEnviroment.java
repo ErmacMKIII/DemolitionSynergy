@@ -22,9 +22,9 @@ package rs.alexanderstojanovich.evg.level;
  */
 public interface GravityEnviroment {
 
-    public static final float GRAVITY_CONSTANT = 784.0f;
+    public static final float GRAVITY_CONSTANT = 784f;
 
     // thats what gravity does, object fells down if they don't have support below it (sky or other object)
-    public void gravityDo();
+    public void gravityDo(float deltaTime);
 
 }

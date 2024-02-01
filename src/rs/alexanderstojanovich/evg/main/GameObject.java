@@ -169,8 +169,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
     /**
      * Update Game Object stuff, like Environment (call only from main)
+     *
+     * @param deltaTime deltaTime in ticks
      */
-    public static void update() {
+    public static void update(float deltaTime) {
         if (!initialized) {
             return;
         }
@@ -183,7 +185,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
-                    levelContainer.gravityDo();
+                    levelContainer.gravityDo(deltaTime);
                 }
                 waterRenderer.updateHeights();
             }

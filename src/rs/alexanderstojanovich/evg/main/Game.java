@@ -559,7 +559,7 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update();
+                GameObject.update((float) TICK_TIME);
                 actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
@@ -576,7 +576,7 @@ public class Game {
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(1.05f * AMOUNT * (float) TICK_TIME, 2.1f * AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2.8f * AMOUNT * (float) TICK_TIME);
                         }
                         break;
                 }
