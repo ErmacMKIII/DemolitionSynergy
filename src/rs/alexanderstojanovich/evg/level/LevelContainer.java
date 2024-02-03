@@ -933,8 +933,16 @@ public class LevelContainer implements GravityEnviroment {
             return false;
         }
 
+        float thrustHeight = 0.0f;
+        if (cameraInFluid) {
+            final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
+            final float mass = 2.5f;
+            final float accel = thrustForce / mass;
+            thrustHeight = accel * deltaTime * deltaTime / 2.0f;
+        }
+
         boolean collision = false;
-        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime - 5E-4f * thrustHeight) / 2.0f;
         final float stepAmount = 0.0125f;
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
@@ -981,14 +989,14 @@ public class LevelContainer implements GravityEnviroment {
         float thrustHeight = 0.0f;
         if (cameraInFluid) {
             final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
-            final float mass = 25.0f;
+            final float mass = 2.5f;
             final float accel = thrustForce / mass;
             thrustHeight = accel * deltaTime * deltaTime / 2.0f;
         }
 
         float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
 
-        float height1 = Math.max(height0 + thrustHeight - deltaHeight, 0.0f);
+        float height1 = Math.max(height0 + 5E-2f * thrustHeight - deltaHeight, 0.0f);
 
         final float stepAmount = 0.0125f;
 

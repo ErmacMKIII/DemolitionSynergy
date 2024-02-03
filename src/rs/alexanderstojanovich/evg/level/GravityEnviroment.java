@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evg.critter.Critter;
  */
 public interface GravityEnviroment {
 
-    public static final float WATER_DENSITY = 500f;
+    public static final float WATER_DENSITY = 100f;
     public static final float GRAVITY_CONSTANT = 784f;
 
     /**
