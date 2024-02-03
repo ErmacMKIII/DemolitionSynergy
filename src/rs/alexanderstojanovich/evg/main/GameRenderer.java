@@ -63,7 +63,7 @@ public class GameRenderer extends Thread implements Executor {
         GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context
         do {
             GameObject.render(); // render splash screen
-        } while (Game.upsTicks == 0.0);
+        } while (Game.upsTicks < 1.0);
         GameObject.SPLASH_SCREEN.setEnabled(false);
         animationTimer = 0.0;
 

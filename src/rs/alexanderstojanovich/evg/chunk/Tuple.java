@@ -33,7 +33,6 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
@@ -629,6 +628,12 @@ public class Tuple extends Blocks {
         super.release();
         if (ibo != 0) {
             GL15.glDeleteBuffers(ibo);
+        }
+        if (mat4Vbo != 0) {
+            GL15.glDeleteBuffers(mat4Vbo);
+        }
+        if (vec4Vbo != 0) {
+            GL15.glDeleteBuffers(vec4Vbo);
         }
         buffered = false;
     }

@@ -104,8 +104,9 @@ public class Game {
     };
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
-    protected static boolean actionPerformed = false;
-    protected static boolean causingCollision = false;
+    protected static boolean actionPerformed = false; // movement for all actors (critters)
+    protected static boolean jumpPerformed = false; // jump for player
+    protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
     /**
      * Construct new game view
@@ -294,14 +295,41 @@ public class Game {
      * Handle input for player (Single player mode & Multiplayer mode)
      *
      * @param amountXZ movement amount on XZ plane
-     * @param amountY movement amount on Y-axis
+     * @param amountY vertical movement amount on Y-axis when jump,
+     * @param amountYNeg vertical movement amount on Y-axis when sink,
+     * @param deltaTime tick time
      *
      * @return did player do something..
      */
-    public boolean playerDo(float amountXZ, float amountY) {
+    public boolean playerDo(float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
-        Player player = GameObject.getLevelContainer().levelActors.player;
+        final LevelContainer levelContainer = GameObject.getLevelContainer();
+        final Player player = levelContainer.levelActors.player;
+
+        if (levelContainer.isCameraInFluid()) {
+            jumpPerformed = false;
+        }
+
+        if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision && !jumpPerformed) {
+            player.movePredictorYUp(amountY);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorYDown(amountY);
+            } else {
+                jumpPerformed |= levelContainer.jump(player, amountY, deltaTime);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
+            player.movePredictorYDown(amountYNeg);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorYUp(amountYNeg);
+            } else {
+                player.sinkY(amountYNeg);
+                changed = true;
+            }
+        }
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
             player.movePredictorXZForward(amountXZ);
@@ -339,26 +367,6 @@ public class Game {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
-                changed = true;
-            }
-        }
-
-        if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision) {
-            player.movePredictorYUp(amountY);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorYDown(amountY);
-            } else {
-                player.jumpY(amountY);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
-            player.movePredictorYDown(amountY);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorYUp(amountY);
-            } else {
-                player.sinkY(amountY);
                 changed = true;
             }
         }
@@ -576,8 +584,14 @@ public class Game {
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2.8f * AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 3000.0f * Game.AMOUNT * (float) TICK_TIME, 2.2f * AMOUNT, (float) TICK_TIME);
                         }
+
+                        if (keys[GLFW.GLFW_KEY_SPACE]
+                                && !GameObject.getLevelContainer().levelActors.player.isUnderGravity()) {
+                            jumpPerformed = false;
+                        }
+
                         break;
                 }
 
@@ -586,6 +600,7 @@ public class Game {
                 ups++;
                 upsTicks--;
             }
+
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();

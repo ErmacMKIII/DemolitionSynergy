@@ -16,15 +16,34 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import rs.alexanderstojanovich.evg.critter.Critter;
+
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public interface GravityEnviroment {
 
+    public static final float WATER_DENSITY = 500f;
     public static final float GRAVITY_CONSTANT = 784f;
 
-    // thats what gravity does, object fells down if they don't have support below it (sky or other object)
-    public void gravityDo(float deltaTime);
+    /**
+     * Affect Environment with gravity. Object not supported from bottom will
+     * fall. Critter not supported from bottom will fall.
+     *
+     * @param deltaTime delta time
+     * @return did gravity affect
+     */
+    public boolean gravityDo(float deltaTime);
 
+    /**
+     * Affect Environment with jump against gravity. Assuming that critter will
+     * not hit ceilings.
+     *
+     * @param critter level actor critter (player or npc)
+     * @param amountY amount Y-axis multiplier (velocity)
+     * @param deltaTime delta time
+     * @return did critter jump
+     */
+    public boolean jump(Critter critter, float amountY, float deltaTime);
 }
