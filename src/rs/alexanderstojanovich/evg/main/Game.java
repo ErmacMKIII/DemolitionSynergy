@@ -104,8 +104,9 @@ public class Game {
     };
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
-    protected static boolean actionPerformed = false;
-    protected static boolean causingCollision = false;
+    protected static boolean actionPerformed = false; // movement for all actors (critters)
+    protected static boolean jumpPerformed = false; // jump for player
+    protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
     /**
      * Construct new game view
@@ -126,8 +127,9 @@ public class Game {
         boolean changed = false;
         causingCollision = false;
 
+        Observer obs = GameObject.getLevelContainer().levelActors.spectator;
+
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveBackward(AMOUNT);
             } else {
@@ -137,7 +139,6 @@ public class Game {
         }
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
@@ -147,7 +148,6 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
@@ -157,7 +157,6 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
@@ -167,7 +166,6 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.descend(AMOUNT);
             } else {
@@ -177,7 +175,6 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
-            Observer obs = GameObject.getLevelContainer().getLevelActors().spectator;
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
                 obs.ascend(AMOUNT);
             } else {
@@ -187,15 +184,15 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().getLevelActors().spectator.turnLeft(ANGLE);
+            GameObject.getLevelContainer().levelActors.spectator.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().getLevelActors().spectator.turnRight(ANGLE);
+            GameObject.getLevelContainer().levelActors.spectator.turnRight(ANGLE);
             changed = true;
         }
         if (moveMouse) {
-            GameObject.getLevelContainer().getLevelActors().spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            GameObject.getLevelContainer().levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -297,88 +294,94 @@ public class Game {
     /**
      * Handle input for player (Single player mode & Multiplayer mode)
      *
-     * @param amount movement amount
+     * @param amountXZ movement amount on XZ plane
+     * @param amountY vertical movement amount on Y-axis when jump,
+     * @param amountYNeg vertical movement amount on Y-axis when sink,
+     * @param deltaTime tick time
+     *
      * @return did player do something..
      */
-    public boolean playerDo(float amount) {
+    public boolean playerDo(float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
+        final LevelContainer levelContainer = GameObject.getLevelContainer();
+        final Player player = levelContainer.levelActors.player;
 
-        if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorForward(amount);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorBackward(amount);
-            } else {
-                player.moveForward(amount);
-                changed = true;
-            }
+        if (levelContainer.isCameraInFluid()) {
+            jumpPerformed = false;
         }
-        if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorBackward(amount);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorForward(amount);
-            } else {
-                player.moveBackward(amount);
-                changed = true;
-            }
 
-        }
-        if (keys[GLFW.GLFW_KEY_A]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorLeft(amount);
+        if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision && !jumpPerformed) {
+            player.movePredictorYUp(amountY);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorRight(amount);
+                player.movePredictorYDown(amountY);
             } else {
-                player.moveLeft(amount);
-                changed = true;
-            }
-        }
-        if (keys[GLFW.GLFW_KEY_D]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorRight(amount);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorLeft(amount);
-            } else {
-                player.moveRight(amount);
+                jumpPerformed |= levelContainer.jump(player, amountY, deltaTime);
                 changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorUp(amount);
+        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
+            player.movePredictorYDown(amountYNeg);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorDown(amount);
+                player.movePredictorYUp(amountYNeg);
             } else {
-                player.ascend(amount);
+                player.sinkY(amountYNeg);
                 changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
-            Player player = GameObject.getLevelContainer().getLevelActors().player;
-            player.movePredictorDown(amount);
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
+            player.movePredictorXZForward(amountXZ);
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorUp(amount);
+                player.movePredictorXZBackward(amountXZ);
             } else {
-                player.descend(amount);
+                player.moveXZForward(amountXZ);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
+            player.movePredictorXZBackward(amountXZ);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorXZForward(amountXZ);
+            } else {
+                player.moveXZBackward(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
+            player.movePredictorXZLeft(amountXZ);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorXZRight(amountXZ);
+            } else {
+                player.moveXZLeft(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
+            player.movePredictorXZRight(amountXZ);
+            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+                player.movePredictorXZLeft(amountXZ);
+            } else {
+                player.moveXZRight(amountXZ);
                 changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().getLevelActors().player.turnLeft(ANGLE);
+            GameObject.getLevelContainer().levelActors.player.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().getLevelActors().player.turnRight(ANGLE);
+            GameObject.getLevelContainer().levelActors.player.turnRight(ANGLE);
             changed = true;
         }
 
         if (moveMouse) {
-            GameObject.getLevelContainer().getLevelActors().player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            GameObject.getLevelContainer().levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -388,27 +391,27 @@ public class Game {
         }
 
 //        if (keys[GLFW.GLFW_KEY_1]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(1);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_2]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(2);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_3]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(3);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_4]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(4);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_5]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(5);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_6]) {
-//            GameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(6);
+//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
 //            changed = true;
 //        }
         if (keys[GLFW.GLFW_KEY_R]) {
@@ -527,7 +530,7 @@ public class Game {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
-        accumulator = 0.0;
+        accumulator = cfg.getGameTicks();
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
@@ -562,17 +565,19 @@ public class Game {
                 }
             }
 
+            // update with delta time like gravity
+            GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update();
+                actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
-                        actionPerformed = false;
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.UPDATE_MUTEX) {
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
                             actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
                             actionPerformed |= editorDo();
                         }
@@ -580,17 +585,25 @@ public class Game {
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.UPDATE_MUTEX) {
-                            actionPerformed |= playerDo(AMOUNT * (float) TICK_TIME);
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
+                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
                         }
+
+                        if (keys[GLFW.GLFW_KEY_SPACE]
+                                && !GameObject.getLevelContainer().levelActors.player.isUnderGravity()) {
+                            jumpPerformed = false;
+                        }
+
                         break;
                 }
 
+                // display collision text
                 GameObject.assertCheckCollision(causingCollision);
 
                 ups++;
                 upsTicks--;
             }
+
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();
@@ -638,6 +651,10 @@ public class Game {
 
     public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
         return defaultMouseButtonCallback;
+    }
+
+    public static void setAccumulator(double accumulator) {
+        Game.accumulator = accumulator;
     }
 
     public static int getUps() {
@@ -702,6 +719,14 @@ public class Game {
 
     public static boolean isActionPerformed() {
         return actionPerformed;
+    }
+
+    public static void setActionPerformed(boolean actionPerformed) {
+        Game.actionPerformed = actionPerformed;
+    }
+
+    public static void setCausingCollision(boolean causingCollision) {
+        Game.causingCollision = causingCollision;
     }
 
 }

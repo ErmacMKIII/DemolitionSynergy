@@ -19,19 +19,14 @@ package rs.alexanderstojanovich.evg.intrface;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.concurrent.FutureTask;
-import org.joml.Random;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
-import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
-import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -245,6 +240,8 @@ public class Intrface {
                     ok |= GameObject.generateRandomLevel(numBlocks);
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
+                    } else {
+                        Game.setCurrentMode(Mode.FREE);
                     }
                 }
                 return ok;
@@ -306,24 +303,8 @@ public class Intrface {
                     ok |= GameObject.generateSinglePlayerLevel(numBlocks);
                     if (ok) {
                         Game.setCurrentMode(Mode.SINGLE_PLAYER);
-                        LevelContainer levelContainer = GameObject.getLevelContainer();
-                        Player player = (Player) levelContainer.levelActors.player;
-                        Random random = GameObject.getRandomLevelGenerator().getRandom();
-                        // choosing random player location
-                        final float hMax = Chunk.BOUND;
-                        IList<Vector3f> solidPopLoc = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(loc -> loc.isSolid());
-                        Vector3f playerPos = solidPopLoc.get(random.nextInt(solidPopLoc.size()));
-                        playerPos.y = hMax;
-                        player.setPos(new Vector3f(playerPos.x, playerPos.y, playerPos.z));
-                        while (true) {
-                            float delta = 2.0f * (float) Game.getUpsTicks();
-                            player.movePredictorDown(delta);
-                            if (!LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
-                                player.descend(delta);
-                            } else {
-                                break;
-                            }
-                        }
+                    } else {
+                        Game.setCurrentMode(Mode.FREE);
                     }
                 }
 

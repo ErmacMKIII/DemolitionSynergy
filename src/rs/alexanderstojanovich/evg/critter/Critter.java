@@ -36,6 +36,8 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected Vector3f front = Camera.Z_AXIS;
     protected Vector3f up = Camera.Y_AXIS;
     protected Vector3f right = Camera.X_AXIS;
+    protected boolean underGravity = false;
+    protected boolean inJump = false;
 
     /**
      * Create new instance of the critter. If instanced in anonymous class
@@ -201,7 +203,8 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     @Override
     public void setPos(Vector3f pos) {
-        predictor = body.pos = pos;
+        body.pos = pos;
+        predictor = new Vector3f(pos);
     }
 
     @Override
@@ -211,6 +214,130 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public Model getBody() {
         return body;
+    }
+
+    @Override
+    public void moveXZForward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        body.pos = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZBackward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        body.pos = body.pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZLeft(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        body.pos = body.pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZRight(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        body.pos = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void jumpY(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        body.pos = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void sinkY(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        body.pos = body.pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorXZForward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        predictor = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorXZBackward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        predictor = body.pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorXZLeft(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        predictor = body.pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorXZRight(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        predictor = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorYUp(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        predictor = body.pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void movePredictorYDown(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        predictor = body.pos.sub(amountXYZ, temp);
+    }
+
+    public boolean isUnderGravity() {
+        return underGravity;
+    }
+
+    public void setUnderGravity(boolean underGravity) {
+        this.underGravity = underGravity;
+    }
+
+    public boolean isInJump() {
+        return inJump;
+    }
+
+    public void setIsInJump(boolean isJump) {
+        this.inJump = isJump;
     }
 
 }

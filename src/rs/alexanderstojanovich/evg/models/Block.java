@@ -67,6 +67,17 @@ public class Block extends Model {
     public static final int TOP = 3;
     public static final int BACK = 4;
     public static final int FRONT = 5;
+
+    public static final int LEFT_BOTTOM = 6;
+    public static final int RIGHT_BOTTOM = 7;
+    public static final int LEFT_TOP = 8;
+    public static final int RIGHT_TOP = 9;
+
+    public static final int BOTTOM_BACK = 10;
+    public static final int BOTTOM_FRONT = 11;
+    public static final int TOP_BACK = 12;
+    public static final int TOP_FRONT = 13;
+
     // which faces we enabled for rendering and which we disabled
     private final boolean[] enabledFaces = new boolean[6];
 
@@ -145,11 +156,11 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(IList<Vertex> vertices, String texName) {
+        int texGridSize = Texture.getOrDefaultGridSize(texName);
         int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
-
+        int row = texIndex / texGridSize;
+        int col = texIndex % texGridSize;
+        final float oneOver = 1.0f / (float) texGridSize;
         for (Vertex v : VERTICES) {
             vertices.add(new Vertex(
                     new Vector3f(v.getPos()),
@@ -163,10 +174,11 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(Mesh mesh, String texName) {
+        int texGridSize = Texture.getOrDefaultGridSize(texName);
         int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+        int row = texIndex / texGridSize;
+        int col = texIndex % texGridSize;
+        final float oneOver = 1.0f / (float) texGridSize;
 
         mesh.vertices.clear();
         for (Vertex v : VERTICES) {
@@ -761,6 +773,38 @@ public class Block extends Model {
             case Block.FRONT:
                 result.z += 2.0f;
                 break;
+            case Block.LEFT_BOTTOM:
+                result.x -= 2.0f;
+                result.y -= 2.0f;
+                break;
+            case Block.RIGHT_BOTTOM:
+                result.x += 2.0f;
+                result.y -= 2.0f;
+                break;
+            case Block.LEFT_TOP:
+                result.x -= 2.0f;
+                result.y += 2.0f;
+                break;
+            case Block.RIGHT_TOP:
+                result.x += 2.0f;
+                result.y += 2.0f;
+                break;
+            case Block.BOTTOM_BACK:
+                result.y -= 2.0f;
+                result.z -= 2.0f;
+                break;
+            case Block.BOTTOM_FRONT:
+                result.y -= 2.0f;
+                result.z += 2.0f;
+                break;
+            case Block.TOP_BACK:
+                result.y -= 2.0f;
+                result.z += 2.0f;
+                break;
+            case Block.TOP_FRONT:
+                result.y += 2.0f;
+                result.z += 2.0f;
+                break;
             default:
                 break;
         }
@@ -794,6 +838,38 @@ public class Block extends Model {
             case Block.FRONT:
                 result.z += 2.0f;
                 break;
+            case Block.LEFT_BOTTOM:
+                result.x -= 2.0f;
+                result.y -= 2.0f;
+                break;
+            case Block.RIGHT_BOTTOM:
+                result.x += 2.0f;
+                result.y -= 2.0f;
+                break;
+            case Block.LEFT_TOP:
+                result.x -= 2.0f;
+                result.y += 2.0f;
+                break;
+            case Block.RIGHT_TOP:
+                result.x += 2.0f;
+                result.y += 2.0f;
+                break;
+            case Block.BOTTOM_BACK:
+                result.y -= 2.0f;
+                result.z -= 2.0f;
+                break;
+            case Block.BOTTOM_FRONT:
+                result.y -= 2.0f;
+                result.z += 2.0f;
+                break;
+            case Block.TOP_BACK:
+                result.y -= 2.0f;
+                result.z += 2.0f;
+                break;
+            case Block.TOP_FRONT:
+                result.y += 2.0f;
+                result.z += 2.0f;
+                break;
             default:
                 break;
         }
@@ -825,6 +901,38 @@ public class Block extends Model {
                 result.z -= amount;
                 break;
             case Block.FRONT:
+                result.z += amount;
+                break;
+            case Block.LEFT_BOTTOM:
+                result.x -= amount;
+                result.y -= amount;
+                break;
+            case Block.RIGHT_BOTTOM:
+                result.x += amount;
+                result.y -= amount;
+                break;
+            case Block.LEFT_TOP:
+                result.x -= amount;
+                result.y += amount;
+                break;
+            case Block.RIGHT_TOP:
+                result.x += amount;
+                result.y += amount;
+                break;
+            case Block.BOTTOM_BACK:
+                result.y -= amount;
+                result.z -= amount;
+                break;
+            case Block.BOTTOM_FRONT:
+                result.y -= amount;
+                result.z += amount;
+                break;
+            case Block.TOP_BACK:
+                result.y -= amount;
+                result.z += amount;
+                break;
+            case Block.TOP_FRONT:
+                result.y += amount;
                 result.z += amount;
                 break;
             default:

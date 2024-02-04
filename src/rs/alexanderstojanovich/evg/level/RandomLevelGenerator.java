@@ -45,7 +45,7 @@ public class RandomLevelGenerator {
     public static final float CONST = 23.0f;
     public static final float CONST2 = 7.0f;
 
-    protected long seed = 0x123456789L;
+    protected long seed = 0x12345678L;
     protected Random random = new Random(seed);
     public static final int RAND_MAX_ATTEMPTS = 1000;
 
@@ -288,6 +288,23 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
     private void generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
+        final int numOctaves = 16;
+        final float scale = 0.007f;
+        final float lacunarity = 2.0f;
+        final float persistence = 0.5f;
+
+        float[] frequencies = new float[numOctaves];
+        float[] amplitudes = new float[numOctaves];
+
+        float frequency = scale;
+        float amplitude = 1.0f;
+        for (int i = 0; i < numOctaves; i++) {
+            frequencies[i] = frequency;
+            amplitudes[i] = amplitude;
+            frequency *= lacunarity;
+            amplitude *= persistence;
+        }
+
         noiseMain:
         for (int x = posMin; x <= posMax; x += 2) {
             for (int z = posMin; z <= posMax; z += 2) {
@@ -297,9 +314,9 @@ public class RandomLevelGenerator {
 
                 boolean boundary = (x == posMin || x == posMax || z == posMin || z == posMax);
 
-                int yMid = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, hMin, hMax, 2.0f)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, yMid, hMax, 2.0f)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise2(16, x, z, 0.5f, 0.007f, hMin, yMid, 2.0f)) & 0xFFFFFFFE;
+                int yMid = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, hMin, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
+                int yTop = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, yMid, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
+                int yBottom = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, hMin, yMid, frequencies, amplitudes)) & 0xFFFFFFFE;
                 int yHalf = (yTop - yBottom) >> 1;
 
                 // solid generating
@@ -379,7 +396,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(3) != 0) {
+                        if (random.nextInt(3) == 0) {
                             solidBlock = solidAdjBlock;
                         } else {
                             solidBlock = null;
@@ -412,7 +429,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(3) != 0) {
+                        if (random.nextInt(3) == 0) {
                             fluidBlock = fluidAdjBlock;
                         } else {
                             fluidBlock = null;

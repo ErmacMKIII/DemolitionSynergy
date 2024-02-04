@@ -343,6 +343,51 @@ public class BlockLocation {
     }
 
     /**
+     * Updates new location with (pos, value) while removing old location.
+     *
+     * @param oldPos oldPosition (to remove)
+     * @param newPos newPosition (to update)
+     * @param value value on new position
+     * @return did update succeeded
+     */
+    public boolean updateLocation(Vector3f oldPos, Vector3f newPos, TexByte value) {
+        int i0 = Math.round((oldPos.x + Chunk.BOUND) / 2.0f);
+        int j0 = Math.round((oldPos.z + Chunk.BOUND) / 2.0f);
+        int k0 = Math.round((oldPos.y + Chunk.BOUND) / 2.0f);
+
+        if (safeCheck(i0, j0, k0)) {
+            locationMap[i0][j0][k0] = null;
+            List<Vector2f> yCoords = planes.get((float) oldPos.y);
+            if (yCoords != null) {
+                yCoords.remove(new Vector2f(oldPos.x, oldPos.z));
+                if (yCoords.isEmpty()) {
+                    planes.remove(oldPos.y);
+                }
+            }
+        } else {
+            return false;
+        }
+
+        int i1 = Math.round((newPos.x + Chunk.BOUND) / 2.0f);
+        int j1 = Math.round((newPos.z + Chunk.BOUND) / 2.0f);
+        int k1 = Math.round((newPos.y + Chunk.BOUND) / 2.0f);
+
+        if (safeCheck(i1, j1, k1)) {
+            locationMap[i1][j1][k1] = value;
+            IList<Vector2f> yCoords = planes.get(newPos.y);
+            if (yCoords == null) {
+                yCoords = new GapList<>();
+            }
+            yCoords.add(new Vector2f(newPos.x, newPos.z));
+            planes.put(newPos.y, yCoords);
+        } else {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Get Location Map of all the blocks
      *
      * @return location map [i,j,k] => (x,z,y)

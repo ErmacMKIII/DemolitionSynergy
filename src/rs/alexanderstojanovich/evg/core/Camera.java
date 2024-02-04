@@ -356,4 +356,58 @@ public class Camera implements Observer { // is 3D looking camera
         return this;
     }
 
+    @Override
+    public void moveXZForward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        pos = pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZBackward(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front);
+        frontXZ.y = 0.0f;
+        Vector3f amountXYZ = frontXZ.mul(amount, temp);
+        pos = pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZLeft(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        pos = pos.sub(amountXYZ, temp);
+    }
+
+    @Override
+    public void moveXZRight(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right);
+        rightXZ.y = 0.0f;
+        Vector3f amountXYZ = rightXZ.mul(amount, temp);
+        pos = pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void jumpY(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        pos = pos.add(amountXYZ, temp);
+    }
+
+    @Override
+    public void sinkY(float amount) {
+        Vector3f temp = new Vector3f();
+        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
+        amountXYZ.x = 0.0f;
+        amountXYZ.z = 0.0f;
+        pos = pos.sub(amountXYZ, temp);
+    }
+
 }

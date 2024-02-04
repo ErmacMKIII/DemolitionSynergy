@@ -46,6 +46,7 @@ public class Configuration {
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 10;
+    private double gameTicks = 0.0;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -155,6 +156,12 @@ public class Configuration {
                                     textureSize = number;
                                 }
                                 break;
+                            case "gameticks":
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.0f) {
+                                    gameTicks = val;
+                                }
+                                break;
                             case "gametimemultiplier":
                                 val = Float.parseFloat(words[1]);
                                 if (val >= 0.0f && val <= 5.0f) {
@@ -210,6 +217,8 @@ public class Configuration {
             pw.println("RendererPasses = " + rendererPasses);
             pw.println("# Texture size. Must be power of two, non-zero and lesser or equal than 4096.");
             pw.println("TextureSize = " + textureSize);
+            pw.println("# Game Ticks (decimal). Must be greater or equal zero");
+            pw.println("GameTicks = " + gameTicks);
             pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
         } catch (FileNotFoundException ex) {
@@ -327,6 +336,10 @@ public class Configuration {
 
     public int getRendererPasses() {
         return rendererPasses;
+    }
+
+    public double getGameTicks() {
+        return gameTicks;
     }
 
 }

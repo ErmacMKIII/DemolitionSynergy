@@ -43,6 +43,7 @@ public class GameRenderer extends Thread implements Executor {
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     protected FutureTask<Object> task;
+    protected static double animationTimer = 0.0;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -62,9 +63,9 @@ public class GameRenderer extends Thread implements Executor {
         GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context
         do {
             GameObject.render(); // render splash screen
-        } while (Game.upsTicks == 0.0);
+        } while (Game.upsTicks < 1.0);
         GameObject.SPLASH_SCREEN.setEnabled(false);
-        double timer1 = 0.0;
+        animationTimer = 0.0;
 
         fps = 0;
 
@@ -74,7 +75,7 @@ public class GameRenderer extends Thread implements Executor {
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
-            deltaTime = currTime - lastTime;
+            deltaTime = Math.max(currTime - lastTime, 0.0);
             fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
             lastTime = currTime;
 
@@ -95,11 +96,12 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // update text which animates water every quarter of the second
-            if (Game.accumulator - timer1 > 20.0) {
+            if (Game.accumulator - animationTimer > 20.0) {
                 if (!GameObject.isWorking() && Game.getUpsTicks() < 1.0) {
                     GameObject.animate();
                 }
-                timer1 += 20.0;
+
+                animationTimer += 20.0;
             }
 
             // lastly it executes the console tasks
@@ -149,6 +151,18 @@ public class GameRenderer extends Thread implements Executor {
 
     public static void setFps(int fps) {
         GameRenderer.fps = fps;
+    }
+
+    public static Configuration getCfg() {
+        return cfg;
+    }
+
+    public static double getAnimationTimer() {
+        return animationTimer;
+    }
+
+    public static void setAnimationTimer(double animationTimer) {
+        GameRenderer.animationTimer = animationTimer;
     }
 
 }

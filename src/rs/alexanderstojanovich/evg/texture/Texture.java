@@ -54,7 +54,7 @@ public class Texture {
 
     public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
     public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
-    public static final TexValue QMARK_TV = new TexValue(QMARK, -1);
+    public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
 
     public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png");
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
@@ -64,6 +64,7 @@ public class Texture {
     public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
     public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
+    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png");
     public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
 
     public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png");
@@ -95,7 +96,7 @@ public class Texture {
     public Texture(String texName) {
         this.image = new BufferedImage(TEX_SIZE, TEX_SIZE, BufferedImage.TYPE_INT_ARGB);
         this.texName = texName;
-        Texture.TEX_STORE.put(texName, new TexValue(this, -1));
+        Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
     }
 
     /**
@@ -107,7 +108,7 @@ public class Texture {
     public Texture(String subDir, String fileName) {
         this.image = ImageUtils.loadImage(subDir, fileName);
         this.texName = fileName.substring(0, fileName.indexOf("."));
-        Texture.TEX_STORE.put(texName, new TexValue(this, -1));
+        Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
     }
 
     public void bufferAll() {
@@ -117,6 +118,7 @@ public class Texture {
 
     public static void bufferAllTextures() {
         // intrface
+        SPLASH.bufferAll();
         LOGO.bufferAll();
         CROSSHAIR.bufferAll();
         MINIGUN.bufferAll();
@@ -287,7 +289,7 @@ public class Texture {
 
             g2d.drawImage(image, x, y, texUnitSize, texUnitSize, null);
 
-            TexValue texValue = new TexValue(result, index);
+            TexValue texValue = new TexValue(result, index, gridSize);
             TEX_STORE.put(texName, texValue);
             index++;
         }
@@ -313,6 +315,16 @@ public class Texture {
      */
     public static int getOrDefaultIndex(String texName) {
         return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).value;
+    }
+
+    /**
+     * Get Texture grid gridSize from Texture Store with texture name.
+     *
+     * @param texName texture name (alias)
+     * @return texture index
+     */
+    public static int getOrDefaultGridSize(String texName) {
+        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).gridSize;
     }
 
     @Override

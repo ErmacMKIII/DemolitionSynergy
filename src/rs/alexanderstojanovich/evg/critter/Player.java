@@ -185,4 +185,46 @@ public class Player extends Critter implements Observer {
         return this.camera.getRight();
     }
 
+    @Override
+    public void sinkY(float amount) {
+        super.sinkY(amount);
+        camera.sinkY(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void jumpY(float amount) {
+        super.jumpY(amount);
+        camera.jumpY(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void moveXZRight(float amount) {
+        super.moveXZRight(amount);
+        camera.moveXZRight(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void moveXZLeft(float amount) {
+        super.moveXZLeft(amount);
+        camera.moveXZLeft(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void moveXZBackward(float amount) {
+        super.moveXZBackward(amount);
+        camera.moveXZBackward(amount);
+        light.pos = body.pos;
+    }
+
+    @Override
+    public void moveXZForward(float amount) {
+        super.moveXZForward(amount);
+        camera.moveXZForward(amount);
+        light.pos = body.pos;
+    }
+
 }
