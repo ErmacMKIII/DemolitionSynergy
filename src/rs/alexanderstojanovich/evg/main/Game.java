@@ -565,9 +565,11 @@ public class Game {
                 }
             }
 
+            // update with delta time like gravity
+            GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                GameObject.update((float) TICK_TIME);
                 actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
@@ -584,7 +586,7 @@ public class Game {
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 3000.0f * Game.AMOUNT * (float) TICK_TIME, 2.2f * AMOUNT, (float) TICK_TIME);
+                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
                         }
 
                         if (keys[GLFW.GLFW_KEY_SPACE]
@@ -595,6 +597,7 @@ public class Game {
                         break;
                 }
 
+                // display collision text
                 GameObject.assertCheckCollision(causingCollision);
 
                 ups++;

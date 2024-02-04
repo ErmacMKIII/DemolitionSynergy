@@ -24,18 +24,24 @@ public class TexValue {
 
     protected final Texture texture;
     protected final int value;
+    protected final int gridSize;
 
-    public TexValue(Texture texture, int value) {
+    public TexValue(Texture texture, int value, int gridSize) {
         this.texture = texture;
         this.value = value;
+        this.gridSize = gridSize;
+    }
+
+    public Texture getTexture() {
+        return texture;
     }
 
     public int getValue() {
         return value;
     }
 
-    public Texture getTexture() {
-        return texture;
+    public int getGridSize() {
+        return gridSize;
     }
 
 }

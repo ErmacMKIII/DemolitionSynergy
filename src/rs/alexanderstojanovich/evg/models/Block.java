@@ -156,11 +156,11 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(IList<Vertex> vertices, String texName) {
+        int texGridSize = Texture.getOrDefaultGridSize(texName);
         int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
-
+        int row = texIndex / texGridSize;
+        int col = texIndex % texGridSize;
+        final float oneOver = 1.0f / (float) texGridSize;
         for (Vertex v : VERTICES) {
             vertices.add(new Vertex(
                     new Vector3f(v.getPos()),
@@ -174,10 +174,11 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(Mesh mesh, String texName) {
+        int texGridSize = Texture.getOrDefaultGridSize(texName);
         int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+        int row = texIndex / texGridSize;
+        int col = texIndex % texGridSize;
+        final float oneOver = 1.0f / (float) texGridSize;
 
         mesh.vertices.clear();
         for (Vertex v : VERTICES) {

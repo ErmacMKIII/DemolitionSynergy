@@ -48,8 +48,9 @@ public class ShaderProgram {
     private static ShaderProgram playerShader; // renders spectator & player
     private static ShaderProgram weaponShader; // renders player weaponry
     private static ShaderProgram contourShader; // renders model decals in editor
+    private static ShaderProgram skyboxShader; // skybox model shader (gradient in sky)
 
-    public static final int SHADER_COUNT = 9;
+    public static final int SHADER_COUNT = 10;
     public static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[SHADER_COUNT];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
@@ -125,6 +126,14 @@ public class ShaderProgram {
         contourShaders.add(contourFragmentShader);
         contourShader = new ShaderProgram(contourShaders);
         SHADER_PROGRAMS[8] = contourShader;
+        // 10. Skybox model shader (gradient in sky)
+        Shader skyboxVertexShader = new Shader(Game.EFFECTS_ENTRY, "skyboxVS.glsl", Shader.VERTEX_SHADER);
+        Shader skyboxFragmentShader = new Shader(Game.EFFECTS_ENTRY, "skyboxFS.glsl", Shader.FRAGMENT_SHADER);
+        IList<Shader> skyboxShaders = new GapList<>();
+        skyboxShaders.add(skyboxVertexShader);
+        skyboxShaders.add(skyboxFragmentShader);
+        skyboxShader = new ShaderProgram(skyboxShaders);
+        SHADER_PROGRAMS[9] = skyboxShader;
         // ---------------------------------------------------------------------
         DSLogger.reportDebug("Shaders initialized!", null);
     }
@@ -357,6 +366,10 @@ public class ShaderProgram {
 
     public static ShaderProgram getContourShader() {
         return contourShader;
+    }
+
+    public static ShaderProgram getSkyboxShader() {
+        return skyboxShader;
     }
 
 }

@@ -45,7 +45,7 @@ public class RandomLevelGenerator {
     public static final float CONST = 23.0f;
     public static final float CONST2 = 7.0f;
 
-    protected long seed = 0x123456789L;
+    protected long seed = 0x12345678L;
     protected Random random = new Random(seed);
     public static final int RAND_MAX_ATTEMPTS = 1000;
 
@@ -396,7 +396,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(3) != 0) {
+                        if (random.nextInt(3) == 0) {
                             solidBlock = solidAdjBlock;
                         } else {
                             solidBlock = null;
@@ -429,7 +429,7 @@ public class RandomLevelGenerator {
                             break;
                         }
                         //--------------------------------------------------
-                        if (random.nextInt(3) != 0) {
+                        if (random.nextInt(3) == 0) {
                             fluidBlock = fluidAdjBlock;
                         } else {
                             fluidBlock = null;
