@@ -409,6 +409,7 @@ public class Chunks {
                                     optmTuple = new Tuple(tex, faceBits);
                                 }
                                 optmTuple.blockList.addAll(tuple.blockList);
+                                optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                             }
                         }
                     }
