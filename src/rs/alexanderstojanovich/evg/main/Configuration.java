@@ -47,6 +47,7 @@ public class Configuration {
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 10;
     private double gameTicks = 0.0;
+    private int blocksPerRun = 1000;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -167,6 +168,14 @@ public class Configuration {
                                 if (val >= 0.0f && val <= 5.0f) {
                                     gameTimeMultiplier = val;
                                 }
+                                break;
+                            case "blocksperrun":
+                                number = Integer.parseInt(words[1]);
+                                // block per cache loading run
+                                if (number > 0 && number <= 25000) {
+                                    blocksPerRun = number;
+                                }
+                                break;
                         }
                     }
                 }
@@ -221,6 +230,8 @@ public class Configuration {
             pw.println("GameTicks = " + gameTicks);
             pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
+            pw.println("# Block number load per cache run. Must be metween (0, 25000]");
+            pw.println("BlocksPerRun = " + blocksPerRun);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -340,6 +351,10 @@ public class Configuration {
 
     public double getGameTicks() {
         return gameTicks;
+    }
+
+    public int getBlocksPerRun() {
+        return blocksPerRun;
     }
 
 }

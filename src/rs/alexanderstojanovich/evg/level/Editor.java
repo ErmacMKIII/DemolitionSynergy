@@ -16,16 +16,15 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import rs.alexanderstojanovich.evg.chunk.Chunk;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
@@ -81,7 +80,6 @@ public class Editor {
         int solidTargetIndex = -1;
         if (chunk != null) {
             int solidBlkIndex = 0;
-            Vector3f trgPos = null;
             for (Block blk : chunk.getBlockList()) {
                 if (blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
                     float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
@@ -90,7 +88,6 @@ public class Editor {
                             && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.pos, 2.0f, 2.0f, 2.0f)) {
                         minDistanceOfSolid = distance;
                         solidTargetIndex = solidBlkIndex;
-                        trgPos = blk.pos;
                     }
                 }
                 solidBlkIndex++;
@@ -98,7 +95,6 @@ public class Editor {
 
             if (solidTargetIndex != -1) {
                 selectedCurr = chunk.getBlockList().get(solidTargetIndex);
-                DSLogger.reportInfo("" + LevelContainer.ALL_BLOCK_MAP.getLocation(trgPos).byteValue, null);
                 selectedCurrIndex = solidBlkIndex;
                 selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW_RGBA, true);
             }

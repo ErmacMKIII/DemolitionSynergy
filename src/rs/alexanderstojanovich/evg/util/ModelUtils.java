@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.joml.Vector2f;
@@ -464,5 +465,22 @@ public class ModelUtils {
         }
 
         return mesh;
+    }
+
+    /**
+     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
+     *
+     * @param solid is block solid
+     * @param texName texName[5] string,
+     * @param facebits
+     * @param pos float3(x,y,z) vector
+     *
+     * @return unique int
+     */
+    public static int blockSpecsToUniqueInt(boolean solid, String texName, int facebits, Vector3f pos) {
+        char s = solid ? 'S' : 'F';
+        int hash = Objects.hash(s, texName, facebits, MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
+
+        return hash;
     }
 }

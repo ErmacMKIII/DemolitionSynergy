@@ -55,8 +55,7 @@ public class GameRenderer extends Thread implements Executor {
 
     @Override
     public void run() {
-        MasterRenderer.initGL(GameObject.MY_WINDOW, cfg); // loads myWindow context, creates OpenGL context..
-        MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
+        MasterRenderer.initGL(GameObject.MY_WINDOW, cfg); // loads myWindow context, creates OpenGL context..        
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
@@ -65,6 +64,9 @@ public class GameRenderer extends Thread implements Executor {
             GameObject.render(); // render splash screen
         } while (Game.upsTicks < 1.0);
         GameObject.SPLASH_SCREEN.setEnabled(false);
+        MasterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
+        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+        PerspectiveRenderer.setBuffered(false);
         animationTimer = 0.0;
 
         fps = 0;
@@ -105,8 +107,10 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // lastly it executes the console tasks
-            if ((task = TASK_QUEUE.poll()) != null) {
-                execute(task);
+            if (Game.getUpsTicks() < 1.0) {
+                if ((task = TASK_QUEUE.poll()) != null) {
+                    execute(task);
+                }
             }
         }
 

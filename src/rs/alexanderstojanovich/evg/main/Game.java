@@ -600,10 +600,15 @@ public class Game {
                 // display collision text
                 GameObject.assertCheckCollision(causingCollision);
 
+                // determine visible chunks (can be altered with player position)
+                GameObject.determineVisibleChunks();
+
                 ups++;
                 upsTicks--;
             }
 
+            // call utility functions (chunking, optimizing etc.)
+            GameObject.util();
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();

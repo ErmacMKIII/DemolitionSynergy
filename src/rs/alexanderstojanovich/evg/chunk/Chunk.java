@@ -33,7 +33,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
+import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  *
@@ -138,14 +138,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        Integer key = VectorFloatUtils.blockSpecsToUniqueInt(tuple.isSolid(), tuple.texName(), pos);
+        Integer key = ModelUtils.blockSpecsToUniqueInt(tuple.isSolid(), tuple.texName(), tuple.faceBits(), pos);
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = candidate.getId();
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -163,7 +163,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = VectorFloatUtils.blockSpecsToUniqueInt(candidate.isSolid(), candidate.getTexName(), candidate.pos);
+            Integer candInt = candidate.getId();
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -301,7 +301,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                             : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(adjPos);
                     int k = ((j & 1) == 0 ? j + 1 : j - 1);
                     int mask = 1 << k;
-                    int tupleBits = adjNBits ^ (~mask & 63);
+                    int tupleBits = adjNBits & (~mask & 63);
                     Tuple tuple = getTuple(tupleTexName, tupleBits);
                     Block adjBlock = null;
                     if (tuple != null) {
@@ -354,7 +354,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
                 //(looking for old bits i.e. current tuple)
-                int tupleBits = nBits ^ (~mask & 63);
+                int tupleBits = nBits & (~mask & 63);
 
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
@@ -625,9 +625,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
 
-                boolean intersectsVision = intersectsVisionFunc(chunkId, camera);
-
-                if (deltaCol <= 1 && deltaRow <= 1 && !vChnkIdList.contains(chunkId) && intersectsVision) {
+                if (deltaCol <= 1 && deltaRow <= 1) {
                     vChnkIdList.add(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
                     iChnkIdList.add(chunkId);

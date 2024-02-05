@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.FrustumIntersection;
@@ -83,6 +84,8 @@ public class Block extends Model {
 
     private boolean verticesReversed = false;
 
+    protected int id = 0;
+
     public static final Vector3f[] FACE_NORMALS = {
         new Vector3f(-1.0f, 0.0f, 0.0f),
         new Vector3f(1.0f, 0.0f, 0.0f),
@@ -101,8 +104,8 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            Integer a = VectorFloatUtils.blockSpecsToUniqueInt(o1.solid, o1.texName, o1.pos);
-            Integer b = VectorFloatUtils.blockSpecsToUniqueInt(o2.solid, o2.texName, o2.pos);
+            Integer a = o1.id;
+            Integer b = o2.id;
             return a.compareTo(b);
         }
     };
@@ -135,6 +138,7 @@ public class Block extends Model {
         material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         width = height = depth = 2.0f;
+        id = genId();
     }
 
     public Block(String texName, Vector3f pos, Vector4f primaryRGBAColor, boolean solid) {
@@ -148,6 +152,7 @@ public class Block extends Model {
         materials.add(material);
         this.solid = solid;
         width = height = depth = 2.0f;
+        id = genId();
     }
 
     public Block(Model other) {
@@ -413,12 +418,17 @@ public class Block extends Model {
      */
     public static int getVisibleFaceBitsFast(Vector3f camFront) {
         int result = 0;
-        int zPos = ~(Math.round(camFront.z + 0.83f) - 1) & Z_MASK;
-        int zNeg = ~(Math.round(camFront.z - 0.83f) + 1) & ZNEG_MASK;
-        int yPos = ~(Math.round(camFront.y + 0.83f) - 1) & Y_MASK;
-        int yNeg = ~(Math.round(camFront.y - 0.83f) + 1) & YNEG_MASK;
-        int xPos = ~(Math.round(camFront.x + 0.83f) - 1) & X_MASK;
-        int xNeg = ~(Math.round(camFront.x - 0.83f) + 1) & XNEG_MASK;
+
+        final float cos3 = 0.99863f; // cosine of 3 degrees
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cos3) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cos3) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cos3) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cos3) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cos3) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cos3) ? XNEG_MASK : 0;
 
         result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
 
@@ -627,9 +637,12 @@ public class Block extends Model {
             }
         }
 
+        this.id = genId();
+
         return counter;
     }
 
+    @Deprecated
     public static void setFaceBits(List<Vertex> vertices, int faceBits) {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
@@ -1069,6 +1082,52 @@ public class Block extends Model {
         sb.append(", verticesReversed=").append(verticesReversed);
         sb.append('}');
         return sb.toString();
+    }
+
+    /**
+     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
+     *
+     *
+     * @return unique int
+     */
+    private int genId() {
+        char s = solid ? 'S' : 'F';
+        int hash = Objects.hash(s, texName, getFaceBits(), MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
+
+        return hash;
+    }
+
+    /**
+     * Get unique id of this block
+     *
+     * @return unique (int) id
+     */
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public void setTexNameWithDeepCopy(String texName) {
+        super.setTexNameWithDeepCopy(texName);
+        id = genId();
+    }
+
+    @Override
+    public void setTexName(String texName) {
+        super.setTexName(texName);
+        id = genId();
+    }
+
+    @Override
+    public void setPos(Vector3f pos) {
+        super.setPos(pos);
+        id = genId();
+    }
+
+    @Override
+    public void setSolid(boolean solid) {
+        super.setSolid(solid);
+        id = genId();
     }
 
 }

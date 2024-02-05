@@ -51,7 +51,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private static final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v37";
+    public static final String TITLE = "Demolition Synergy - v38";
 
     // makes default window -> Renderer sets resolution from config
     public static Window MY_WINDOW;
@@ -121,34 +121,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
         };
         timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
-
-        Timer timer2 = new Timer("Chunk Utils");
-        TimerTask task2 = new TimerTask() {
-            @Override
-            public void run() {
-                int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
-                boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
-                currentFaceBitMask = facebitsMask;
-
-                boolean chunksModified = GameObject.determineVisibleChunks();
-                boolean chunkTransfer = false;
-
-                if (chunksModified) {
-                    synchronized (UPDATE_RENDER_MUTEX) {
-                        chunkTransfer = GameObject.chunkOperations();
-                    }
-                }
-
-                if (faceBitsModified || isFirstOptimization() || chunkTransfer || Game.getUpsTicks() < 1.0) {
-                    synchronized (UPDATE_RENDER_MUTEX) {
-                        GameObject.optimize();
-                    }
-                }
-
-            }
-        };
-        timer2.scheduleAtFixedRate(task2, 250L, 250L);
-
         //----------------------------------------------------------------------
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
@@ -163,7 +135,31 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             DSLogger.reportError(ex.getMessage(), ex);
         }
         timer1.cancel();
-        timer2.cancel();
+    }
+
+    // -------------------------------------------------------------------------
+    /**
+     * Perform chunking & optimization (of chunks)
+     */
+    public static void util() {
+        if (Game.getUpsTicks() <= 0.5f) {
+            boolean chunkTransfer = false;
+            synchronized (UPDATE_RENDER_MUTEX) {
+                chunkTransfer = GameObject.chunkOperations();
+            }
+
+//            DSLogger.reportInfo("OldMethod=" + Block.getVisibleFaceBits(levelContainer.levelActors.mainCamera().getFront()), null);
+            int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
+//            DSLogger.reportInfo("NewMethod=" + facebitsMask, null);
+            boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
+            currentFaceBitMask = facebitsMask;
+
+            if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+                synchronized (UPDATE_RENDER_MUTEX) {
+                    GameObject.optimize();
+                }
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -182,8 +178,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
             PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders     
+            levelContainer.update();
             synchronized (UPDATE_RENDER_MUTEX) {
-                levelContainer.update();
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
                     boolean underGravity = levelContainer.gravityDo(deltaTime);
                     levelContainer.levelActors.player.setUnderGravity(underGravity);

@@ -392,11 +392,11 @@ public class Chunks {
      * @param vqueue visible chunkId queue
      * @param camFront camera front (look at vector)
      */
-    public void optimize(IList<Integer> vqueue, Vector3f camFront) {
+    public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
         optimizedTuples.clear();
-        int faceBits = 1; // starting from one, cuz zero is not rendered               
-        final int mask = Block.getVisibleFaceBits(camFront);
-        while (faceBits <= 63) {
+        final int mask = Block.getVisibleFaceBitsFast(camFront);
+        // starting from one, cuz zero is not rendered
+        for (int faceBits = 1; faceBits <= 63; faceBits++) {
             if ((faceBits & (mask & 63)) != 0) {
                 for (String tex : Texture.TEX_WORLD) {
                     Tuple optmTuple = null;
@@ -419,7 +419,6 @@ public class Chunks {
                     }
                 }
             }
-            faceBits++;
         }
 
         optimized = true;
@@ -432,7 +431,8 @@ public class Chunks {
      * @param queue visible chunkId queue
      * @param camera (observer) camera
      */
-    public void optimizeFast(IList<Integer> queue, Camera camera) {
+    @Deprecated
+    public void optimizeEfficient(IList<Integer> queue, Camera camera) {
         // starting from one, cuz zero is not rendered               
         final int mask = Block.getVisibleFaceBitsFast(camera.getFront());
         for (int faceBits = 1; faceBits <= 63; faceBits++) {
@@ -441,10 +441,7 @@ public class Chunks {
                 for (String tex : Texture.TEX_WORLD) {
                     // find optimized tuple
                     Tuple optmTuple = optimizedTuples.getIf(ot -> ot.faceBits() == faceBitsCopy && ot.texName().equals(tex));
-                    if (optmTuple != null) {
-                        // clear existing optimized tuple
-                        optmTuple.blockList.clear();
-                    }
+                    boolean optmModified = false;
                     // iterate through visible chunk list & add all of their blocks
                     for (int chunkId : queue) {
                         Chunk chunk = getChunk(chunkId);
@@ -456,14 +453,16 @@ public class Chunks {
                                 }
                                 for (Block blk : tuple.blockList) {
                                     if (blk.canBeSeenBy(camera)) {
-                                        optmTuple.blockList.add(blk);
+                                        optmModified |= optmTuple.blockList.addIfAbsent(blk);
+                                    } else {
+                                        optmModified |= optmTuple.blockList.remove((Block) blk);
                                     }
                                 }
                             }
                         }
                     }
                     // flag optimized tuple as unbuffered, sort and/or remove if empty
-                    if (optmTuple != null) {
+                    if (optmTuple != null && optmModified) {
                         optmTuple.buffered = false;
                         boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
                         if (needSort) {

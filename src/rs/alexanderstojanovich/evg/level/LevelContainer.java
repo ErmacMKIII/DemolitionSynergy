@@ -1083,6 +1083,11 @@ public class LevelContainer implements GravityEnviroment {
             cameraInFluid = isCameraInFluid();
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
+
+            for (int i = 0; i < 2; i++) {
+                LIGHT_SOURCES.setModified(i, true);
+            }
+
 //            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
         }
     }
@@ -1092,7 +1097,7 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            chunks.optimizeFast(vChnkIdList, mainCamera);
+            chunks.optimizeFast(vChnkIdList, mainCamera.getFront());
         }
     }
 
