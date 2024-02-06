@@ -24,6 +24,7 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
@@ -509,7 +510,8 @@ public class Chunks {
             return;
         }
 
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+        WaterRenderer.WaterEffectsQuality effectsQuality = GameObject.getWaterRenderer().getEffectsQuality();
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
     }
 
     // all blocks from all the chunks in one big list

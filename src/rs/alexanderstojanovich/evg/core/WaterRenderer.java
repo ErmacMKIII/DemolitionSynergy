@@ -26,8 +26,10 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  * Responsible for rendering the water reflections. Requires more CPU/GPU usage.
@@ -78,42 +80,75 @@ public class WaterRenderer {
         }
 
         Camera actCam = levelContainer.levelActors.mainCamera();
+        Vector3f temp = new Vector3f();
+        final Vector3f frontNeg = actCam.front.negate(temp);
         final float chPosY = actCam.pos.y;
 
-        synchronized (WATER_HEIGHTS) {
-            WATER_HEIGHTS.clear();
+        // player must notice that water heights are updating!
+        if (GameRenderer.getNumOfPasses() > GameRenderer.NUM_OF_PASSES_MAX) {
+            synchronized (WATER_HEIGHTS) {
+                WATER_HEIGHTS.clear();
+            }
         }
 
-        final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
-        OUTER:
-        for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
-            float delta = 2.0f * y - chPosY;
-            if (delta > 0.0f && delta <= 64.0f && y < chPosY) {
-                IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
-                for (Vector2f xz : xzVals) {
-                    float x = xz.x;
-                    float z = xz.y;
-                    Vector3f value = new Vector3f(x, y, z);
-                    float angleCos = actCam.pos.angleCos(value);
-                    if (angleCos > 0.1f && angleCos <= 0.5f && deltaMap.size() <= maxWaterDepthSize) {
-                        deltaMap.putIfAbsent(delta, y);
-                    }
+        float dotYAxis = frontNeg.dot(Camera.Y_AXIS);
+        if (GameRenderer.getNumOfPasses() <= GameRenderer.NUM_OF_PASSES_MAX && dotYAxis >= -0.5f) {
+            final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
+            OUTER:
+            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
+                float delta = 2.0f * y - chPosY;
+                if (delta > 0.0f && delta <= 128f) {
+                    IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
+                    for (Vector2f xz : xzVals) {
+                        float x = xz.x;
+                        float z = xz.y;
+                        Vector3f value = new Vector3f(x, y, z);
+                        float angleCos = actCam.pos.angleCos(value);
+                        float angleDeg = MathUtils.toDegrees(MathUtils.acos(angleCos));
+                        if (angleDeg > 0.0f && angleDeg <= 90.0f && deltaMap.size() <= 2 * maxWaterDepthSize) {
+                            deltaMap.putIfAbsent(delta, y);
+                        }
 
-                    if (deltaMap.size() >= maxWaterDepthSize) {
-                        break OUTER;
+                        if (deltaMap.size() >= 2 * maxWaterDepthSize) {
+                            break OUTER;
+                        }
                     }
+                }
+
+                if (deltaMap.size() >= 2 * maxWaterDepthSize) {
+                    break OUTER;
                 }
             }
 
-            if (deltaMap.size() >= maxWaterDepthSize) {
-                break OUTER;
+            float avgWaterHeight;
+            float sum = 0.0f;
+
+            IList<Float> values = new GapList<>(deltaMap.values());
+            for (float value : values) {
+                sum += value;
+            }
+            avgWaterHeight = sum / (float) values.size();
+
+            if (values.size() == 1) {
+                WATER_HEIGHTS.addIfAbsent(values.getFirst());
+            } else if (values.size() > 1) {
+                for (int i = 0; i <= values.size() - 2; i += 2) {
+                    float a = values.get(i);
+                    float b = values.get(i + 1);
+                    float halftwo = (a + b) / 2.0f;
+                    float absDelta = halftwo - avgWaterHeight;
+                    if (absDelta >= -0.5f && absDelta <= 0.5f) {
+                        synchronized (WATER_HEIGHTS) {
+                            WATER_HEIGHTS.addIfAbsent(halftwo);
+                        }
+                    } else {
+                        synchronized (WATER_HEIGHTS) {
+                            WATER_HEIGHTS.addIfAbsent(Math.max(a, b));
+                        }
+                    }
+                }
             }
         }
-
-        synchronized (WATER_HEIGHTS) {
-            WATER_HEIGHTS.addAll(deltaMap.values());
-        }
-
 //        System.err.println(WATER_HEIGHTS.size());
     }
 

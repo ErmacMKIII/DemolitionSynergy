@@ -39,6 +39,7 @@ public class GameRenderer extends Thread implements Executor {
     public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
     private static int fps = 0;
+    private static int numOfPasses = 0;
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
@@ -88,7 +89,7 @@ public class GameRenderer extends Thread implements Executor {
                 break;
             }
 
-            int numOfPasses = 0;
+            numOfPasses = 0;
             // also avoid rendering when game is updating 
             while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX && Game.getUpsTicks() < 1.0) {
                 GameObject.render();
@@ -167,6 +168,10 @@ public class GameRenderer extends Thread implements Executor {
 
     public static void setAnimationTimer(double animationTimer) {
         GameRenderer.animationTimer = animationTimer;
+    }
+
+    public static int getNumOfPasses() {
+        return numOfPasses;
     }
 
 }

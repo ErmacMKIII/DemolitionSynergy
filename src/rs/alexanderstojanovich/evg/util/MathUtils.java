@@ -26,6 +26,8 @@ import org.joml.SimplexNoise;
  */
 public class MathUtils {
 
+    public static final float PI = (float) org.joml.Math.PI;
+
     public static float smoothstep(float t) {
         return t * t * (3.0f - 2.0f * t);
     }
@@ -285,6 +287,12 @@ public class MathUtils {
         return negate * 3.14159265358979f + ret;
     }
 
+    /**
+     * Compute fast inverse square root (Quake 3 engine).
+     *
+     * @param x float argument
+     * @return approximation of inverse square root.
+     */
     public static float invSqrt(float x) {
         float xhalf = 0.5f * x;
         int i = Float.floatToIntBits(x);
@@ -296,6 +304,12 @@ public class MathUtils {
         return x;
     }
 
+    /**
+     * Compute fast inverse square root (Quake 3 engine).
+     *
+     * @param x double argument
+     * @return approximation of inverse square root.
+     */
     public static double invSqrt(double x) {
         double xhalf = 0.5d * x;
         long i = Double.doubleToLongBits(x);
@@ -306,4 +320,15 @@ public class MathUtils {
 
         return x;
     }
+
+    /**
+     * Convert angle to degrees from radians
+     *
+     * @param angleRadians angle in radians
+     * @return angle degrees
+     */
+    public static float toDegrees(float angleRadians) {
+        return 180.0f * angleRadians / PI;
+    }
+
 }

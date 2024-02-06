@@ -154,7 +154,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
             currentFaceBitMask = facebitsMask;
 
-            if (faceBitsModified || isFirstOptimization() || chunkTransfer) {
+            if (faceBitsModified || isFirstOptimization() || chunkTransfer || Game.getUpsTicks() == 0.0f) {
                 synchronized (UPDATE_RENDER_MUTEX) {
                     GameObject.optimize();
                 }
