@@ -44,14 +44,14 @@ public class Editor {
     private static Block selectedNewDecal = null;
     private static Block selectedCurrDecal = null;
 
-    public static void selectNew() {
+    public static void selectNew(LevelContainer lc) {
         deselect();
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }
         selectTexture();
         // fetching..
-        Camera camera = GameObject.getLevelContainer().levelActors.mainCamera();
+        Camera camera = lc.levelActors.mainCamera();
         Vector3f pos = camera.getPos();
         Vector3f front = camera.getFront();
 
@@ -62,20 +62,20 @@ public class Editor {
         selectedNew.getPos().y = (Math.round(8.0f * front.y) + Math.round(pos.y) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
 
-        if (!cannotPlace()) {
+        if (!cannotPlace(lc)) {
             selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.GREEN_RGBA, true);
         }
 
         GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
     }
 
-    public static void selectCurrSolid() {
+    public static void selectCurrSolid(LevelContainer lc) {
         deselect();
-        Vector3f cameraPos = GameObject.getLevelContainer().levelActors.mainCamera().getPos();
-        Vector3f cameraFront = GameObject.getLevelContainer().levelActors.mainCamera().getFront();
+        Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
+        Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
         float minDistanceOfSolid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk chunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
+        Chunk chunk = lc.chunks.getChunk(currChunkId);
 
         int solidTargetIndex = -1;
         if (chunk != null) {
@@ -102,13 +102,13 @@ public class Editor {
 
     }
 
-    public static void selectCurrFluid() {
+    public static void selectCurrFluid(LevelContainer lc) {
         deselect();
-        Vector3f cameraPos = GameObject.getLevelContainer().levelActors.mainCamera().getPos();
-        Vector3f cameraFront = GameObject.getLevelContainer().levelActors.mainCamera().getFront();
+        Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
+        Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
         float minDistanceOfFluid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currFluidChunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
+        Chunk currFluidChunk = lc.chunks.getChunk(currChunkId);
 
         int fluidTargetIndex = -1;
         if (currFluidChunk != null) {
@@ -141,9 +141,9 @@ public class Editor {
         selectedCurrDecal = null;
     }
 
-    public static void selectAdjacentSolid(int position) {
+    public static void selectAdjacentSolid(LevelContainer lc, int position) {
         deselect();
-        selectCurrSolid();
+        selectCurrSolid(lc);
         if (selectedCurr != null) {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
@@ -176,15 +176,15 @@ public class Editor {
                     break;
             }
 
-            if (!cannotPlace()) {
+            if (!cannotPlace(lc)) {
                 selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE_RGBA, true);
             }
         }
     }
 
-    public static void selectAdjacentFluid(int position) {
+    public static void selectAdjacentFluid(LevelContainer lc, int position) {
         deselect();
-        selectCurrFluid();
+        selectCurrFluid(lc);
         if (selectedCurr != null) {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
@@ -217,19 +217,19 @@ public class Editor {
                     break;
             }
 
-            if (!cannotPlace()) {
+            if (!cannotPlace(lc)) {
                 selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE_RGBA, true);
             }
         }
     }
 
-    private static boolean cannotPlace() {
+    private static boolean cannotPlace(LevelContainer lc) {
         boolean cant = false;
         boolean placeOccupied = LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(selectedNew.pos);
         //----------------------------------------------------------------------
         boolean intersects = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
-        Chunk currSolidChunk = GameObject.getLevelContainer().chunks.getChunk(currChunkId);
+        Chunk currSolidChunk = lc.chunks.getChunk(currChunkId);
         if (currSolidChunk != null) {
             for (Block solidBlock : currSolidChunk.getBlockList()) {
                 intersects = selectedNew.intersectsExactly(solidBlock);
@@ -241,7 +241,7 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean leavesSkybox = !LevelContainer.SKYBOX.intersectsEqually(selectedNew);
         if (selectedNew.isSolid()) {
-            cant = GameObject.getLevelContainer().maxCountReached() || placeOccupied || intersects || leavesSkybox;
+            cant = lc.maxCountReached() || placeOccupied || intersects || leavesSkybox;
         }
         if (cant) {
             selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.RED_RGBA, true);
@@ -249,11 +249,11 @@ public class Editor {
         return cant;
     }
 
-    public static void add() {
+    public static void add(LevelContainer lc) {
         if (selectedNew != null) {
-            if (!cannotPlace() && !GameObject.getLevelContainer().levelActors.mainCamera().intersects(selectedNew)) {
+            if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
                 synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
-                    GameObject.getLevelContainer().chunks.addBlock(selectedNew);
+                    lc.chunks.addBlock(selectedNew);
                 }
                 GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 selectedNew = new Block(Texture.TEX_WORLD[texValue]);
@@ -262,10 +262,10 @@ public class Editor {
         deselect();
     }
 
-    public static void remove() {
+    public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
             synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
-                GameObject.getLevelContainer().chunks.removeBlock(selectedCurr);
+                lc.chunks.removeBlock(selectedCurr);
             }
             GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }

@@ -82,6 +82,7 @@ public class LevelContainer implements GravityEnviroment {
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
 
     public final Chunks chunks = new Chunks();
+    public final BlockEnvironment blockEnvironment = new BlockEnvironment(chunks);
 
     public static final LightSources LIGHT_SOURCES = new LightSources();
 
@@ -754,13 +755,13 @@ public class LevelContainer implements GravityEnviroment {
 
     public void animate() {
         if (!working) {
-            chunks.animate();
+            blockEnvironment.animate();
         }
     }
 
     public boolean isCameraInFluid() {
         boolean yea = false;
-        Vector3f camPos = levelActors.mainCamera().getPos();
+        Vector3f camPos = levelActors.mainActor().getPos();
 
         Vector3f obsCamPosAlign = new Vector3f(
                 Math.round(camPos.x + 0.5f) & 0xFFFFFFFE,
@@ -791,6 +792,45 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         return yea;
+    }
+
+    public static boolean isCameraInFluid(LevelContainer lc) {
+        boolean yea = false;
+        Vector3f camPos = lc.levelActors.mainActor().getPos();
+
+        Vector3f obsCamPosAlign = new Vector3f(
+                Math.round(camPos.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(camPos.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
+        );
+
+        yea = ALL_BLOCK_MAP.isLocationPopulated(obsCamPosAlign, false);
+
+        if (!yea) {
+            for (int j = 0; j <= 5; j++) {
+                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.83f);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                );
+
+                boolean fluidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, false);
+
+                if (fluidOnLoc) {
+                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
+                    if (yea) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return yea;
+    }
+
+    public static void updateCameraInFluid(LevelContainer lc) {
+        cameraInFluid = isCameraInFluid(lc);
     }
 
     public static boolean hasCollisionWithEnvironment(Predictable predictable) {
@@ -1080,15 +1120,12 @@ public class LevelContainer implements GravityEnviroment {
             SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
-            cameraInFluid = isCameraInFluid();
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
             for (int i = 0; i < 2; i++) {
                 LIGHT_SOURCES.setModified(i, true);
             }
-
-//            chunks.getChunkList().forEach(ch -> ch.decTimeToLive(deltaTime));
         }
     }
 
@@ -1097,11 +1134,12 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            chunks.optimizeFast(vChnkIdList, mainCamera.getFront());
+//            chunks.optimize(vChnkIdList);
+            blockEnvironment.optimizeFast(vChnkIdList, mainCamera.getFront());
         }
     }
 
-    public void render() { // render for regular level rendering
+    public void render() { // renderStatic for regular level rendering
         if (working) {
             return;
         }
@@ -1121,9 +1159,9 @@ public class LevelContainer implements GravityEnviroment {
 
         // only visible & uncached are in chunk list      
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
-        chunks.prepareOptimized(cameraInFluid);
+        blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.renderOptimizedReduced(ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -1155,7 +1193,7 @@ public class LevelContainer implements GravityEnviroment {
         LIGHT_SOURCES.resetAllModified();
     }
 
-    public void render(Camera camera) { // render for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -1178,9 +1216,9 @@ public class LevelContainer implements GravityEnviroment {
         camera.render(ShaderProgram.getWaterVoxelShader());
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
-        chunks.prepareOptimized(cameraInFluid);
+        blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        chunks.renderOptimizedReduced(ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
+        blockEnvironment.renderStatic(ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {

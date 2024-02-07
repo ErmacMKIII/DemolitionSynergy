@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -247,7 +248,10 @@ public class CacheModule {
                 MEMORY[pos++] = (byte) blocks.size();
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
                 for (Block block : blocks) {
-                    LevelContainer.ALL_BLOCK_MAP.removeLocation(block.pos);
+                    TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
+                    if (location != null) {
+                        location.byteValue = 0;
+                    }
 
                     byte[] texName = block.getTexName().getBytes();
                     System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
@@ -329,7 +333,7 @@ public class CacheModule {
                 boolean solid = MEMORY[pos] != (byte) 0x00;
                 pos++;
                 Block block = new Block(texName, blockPos, blockCol, solid);
-                // PUT ALL BLOCK WHERE THEY BELONG TO
+                // PUT ALL BLOCK WHERE THEY BELONG TO                
                 levelContainer.chunks.addBlock(block);
 
                 cachedInfo.readBytes += BLOCK_SIZE;

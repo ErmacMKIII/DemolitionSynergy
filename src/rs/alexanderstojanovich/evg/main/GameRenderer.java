@@ -91,7 +91,7 @@ public class GameRenderer extends Thread implements Executor {
 
             numOfPasses = 0;
             // also avoid rendering when game is updating 
-            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX && Game.getUpsTicks() < 1.0) {
+            while (fpsTicks >= 1.0 && couldRender()) {
                 GameObject.render();
                 fps++;
                 numOfPasses++;
@@ -100,7 +100,7 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - animationTimer > 20.0) {
-                if (!GameObject.isWorking() && Game.getUpsTicks() < 1.0) {
+                if (!GameObject.isWorking() && couldAnimate()) {
                     GameObject.animate();
                 }
 
@@ -108,7 +108,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // lastly it executes the console tasks
-            if (Game.getUpsTicks() < 1.0) {
+            if (!couldRender()) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task);
                 }
@@ -122,6 +122,25 @@ public class GameRenderer extends Thread implements Executor {
         Window.unloadContext();
 
         DSLogger.reportDebug("Renderer exited.", null);
+    }
+
+    /**
+     * Should or Could Game Render render. Game can be rendered (again) if
+     * lesser than enough passes and if is not updating.
+     *
+     * @return could render bool
+     */
+    public static boolean couldRender() {
+        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (((int) Game.getUpsTicks()) & 79) == 0;
+    }
+
+    /**
+     * Could Game Render animate.
+     *
+     * @return could render bool
+     */
+    public static boolean couldAnimate() {
+        return fpsTicks < 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (((int) Game.getUpsTicks()) & 19) == 0;
     }
 
     /**

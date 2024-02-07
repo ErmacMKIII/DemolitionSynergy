@@ -23,16 +23,12 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
-import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -46,13 +42,6 @@ public class Chunks {
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final IList<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
-
-    protected final IList<Tuple> optimizedTuples = new GapList<>(63 * Texture.TEX_WORLD.length);
-    protected boolean optimized = false;
-
-    public Chunks() {
-
-    }
 
     public static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override
@@ -305,23 +294,6 @@ public class Chunks {
     }
 
     /**
-     * Animate water (call only for fluid blocks)
-     */
-    public void animate() { // call only for fluid blocks
-        if (!optimized) {
-            return;
-        }
-
-        if (Game.getUpsTicks() < 1.0) {
-            for (Tuple tuple : optimizedTuples) {
-                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                    tuple.animate();
-                }
-            }
-        }
-    }
-
-    /**
      * Reorder group of vertices if underwater
      *
      * @param cameraInFluid is camera in fluid (checked by level container
@@ -333,154 +305,6 @@ public class Chunks {
         }
     }
 
-    /**
-     * Reorder group of vertices of optimized tuples if underwater
-     *
-     * @param cameraInFluid is camera in fluid (checked by level container
-     * externally)
-     */
-    public void prepareOptimized(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (!optimized) {
-            return;
-        }
-
-        if (Game.getUpsTicks() >= 1.0) {
-            for (Tuple tuple : optimizedTuples) {
-                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                    tuple.prepare(cameraInFluid);
-                }
-            }
-        }
-    }
-
-    /**
-     * Basic version of optimization for tuples from all the chunks.
-     *
-     * @param queue visible chunkId queue
-     */
-    public void optimize(IList<Integer> queue) {
-        optimizedTuples.clear();
-        int faceBits = 1; // starting from one, cuz zero is not rendered               
-        while (faceBits <= 63) {
-            for (String tex : Texture.TEX_WORLD) {
-                Tuple optmTuple = null;
-                for (int chunkId : queue) {
-                    Chunk chunk = getChunk(chunkId);
-                    if (chunk != null) {
-                        Tuple tuple = chunk.getTuple(tex, faceBits);
-                        if (tuple != null) {
-                            if (optmTuple == null) {
-                                optmTuple = new Tuple(tex, faceBits);
-                            }
-                            optmTuple.blockList.addAll(tuple.blockList);
-                        }
-                    }
-                }
-
-                if (optmTuple != null) {
-                    optimizedTuples.add(optmTuple);
-                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-                }
-            }
-            faceBits++;
-        }
-
-    }
-
-    /**
-     * Improved version of optimization for tuples from all the chunks.
-     *
-     * @param vqueue visible chunkId queue
-     * @param camFront camera front (look at vector)
-     */
-    public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
-        optimizedTuples.clear();
-        final int mask = Block.getVisibleFaceBitsFast(camFront);
-        // starting from one, cuz zero is not rendered
-        for (int faceBits = 1; faceBits <= 63; faceBits++) {
-            if ((faceBits & (mask & 63)) != 0) {
-                for (String tex : Texture.TEX_WORLD) {
-                    Tuple optmTuple = null;
-                    for (int chunkId : vqueue) {
-                        Chunk chunk = getChunk(chunkId);
-                        if (chunk != null) {
-                            Tuple tuple = chunk.getTuple(tex, faceBits);
-                            if (tuple != null) {
-                                if (optmTuple == null) {
-                                    optmTuple = new Tuple(tex, faceBits);
-                                }
-                                optmTuple.blockList.addAll(tuple.blockList);
-                                optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                            }
-                        }
-                    }
-
-                    if (optmTuple != null) {
-                        optimizedTuples.add(optmTuple);
-                        optimizedTuples.sort(Tuple.TUPLE_COMP);
-                    }
-                }
-            }
-        }
-
-        optimized = true;
-    }
-
-    /**
-     * Advanced version of optimization for tuples from all the chunks.Does not
-     * clear optimized tuples of the time and does not sort them all the time.
-     *
-     * @param queue visible chunkId queue
-     * @param camera (observer) camera
-     */
-    @Deprecated
-    public void optimizeEfficient(IList<Integer> queue, Camera camera) {
-        // starting from one, cuz zero is not rendered               
-        final int mask = Block.getVisibleFaceBitsFast(camera.getFront());
-        for (int faceBits = 1; faceBits <= 63; faceBits++) {
-            final int faceBitsCopy = faceBits;
-            if ((faceBits & (mask & 63)) != 0) {
-                for (String tex : Texture.TEX_WORLD) {
-                    // find optimized tuple
-                    Tuple optmTuple = optimizedTuples.getIf(ot -> ot.faceBits() == faceBitsCopy && ot.texName().equals(tex));
-                    boolean optmModified = false;
-                    // iterate through visible chunk list & add all of their blocks
-                    for (int chunkId : queue) {
-                        Chunk chunk = getChunk(chunkId);
-                        if (chunk != null) {
-                            Tuple tuple = chunk.getTuple(tex, faceBits);
-                            if (tuple != null) {
-                                if (optmTuple == null) {
-                                    optmTuple = new Tuple(tex, faceBits);
-                                }
-                                for (Block blk : tuple.blockList) {
-                                    if (blk.canBeSeenBy(camera)) {
-                                        optmModified |= optmTuple.blockList.addIfAbsent(blk);
-                                    } else {
-                                        optmModified |= optmTuple.blockList.remove((Block) blk);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // flag optimized tuple as unbuffered, sort and/or remove if empty
-                    if (optmTuple != null && optmModified) {
-                        optmTuple.buffered = false;
-                        boolean needSort = optimizedTuples.addIfAbsent(optmTuple);
-                        if (needSort) {
-                            optimizedTuples.sort(Tuple.TUPLE_COMP);
-                        }
-
-                        if (optmTuple.blockList.isEmpty()) {
-                            optimizedTuples.remove(optmTuple);
-                        }
-                    }
-                }
-            }
-        }
-        optimized = true;
-    }
-
     // for each instanced rendering
     public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         for (Chunk chunk : chunkList) {
@@ -489,29 +313,6 @@ public class Chunks {
             }
             chunk.render(shaderProgram, lightSources);
         }
-    }
-
-    public void renderOptimized(ShaderProgram shaderProgram, LightSources lightSources) {
-        if (!optimized || optimizedTuples.isEmpty()) {
-            return;
-        }
-
-        for (Tuple tuple : optimizedTuples) {
-            if (!tuple.isBuffered()) {
-                tuple.bufferAll();
-            }
-
-            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
-        }
-    }
-
-    public void renderOptimizedReduced(ShaderProgram shaderProgram, LightSources lightSources) {
-        if (!optimized || optimizedTuples.isEmpty()) {
-            return;
-        }
-
-        WaterRenderer.WaterEffectsQuality effectsQuality = GameObject.getWaterRenderer().getEffectsQuality();
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? null : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
     }
 
     // all blocks from all the chunks in one big list
@@ -555,23 +356,10 @@ public class Chunks {
 
     public void clear() {
         this.chunkList.forEach(c -> c.clear());
-        this.optimizedTuples.clear();
     }
 
     public List<Chunk> getChunkList() {
         return chunkList;
-    }
-
-    public boolean isOptimized() {
-        return optimized;
-    }
-
-    public void setOptimized(boolean optimized) {
-        this.optimized = optimized;
-    }
-
-    public IList<Tuple> getOptimizedTuples() {
-        return optimizedTuples;
     }
 
 }

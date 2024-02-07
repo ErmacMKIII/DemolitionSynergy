@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -442,7 +443,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
-                Observer mainActor = GameObject.getLevelContainer().levelActors.mainObserver();
+                Observer mainActor = GameObject.getLevelContainer().levelActors.mainActor();
                 int chunkId;
                 switch (command.mode) {
                     case GET:

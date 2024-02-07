@@ -49,6 +49,7 @@ public class Texture {
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
     public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
+    public static final Texture EMPTY = new Texture("EMPTY");
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
 
@@ -117,6 +118,8 @@ public class Texture {
     }
 
     public static void bufferAllTextures() {
+        // EMPTY Texture (Water etc)
+        EMPTY.bufferAll();
         // intrface
         SPLASH.bufferAll();
         LOGO.bufferAll();

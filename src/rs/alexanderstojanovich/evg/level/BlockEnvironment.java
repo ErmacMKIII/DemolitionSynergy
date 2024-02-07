@@ -1,0 +1,216 @@
+/*
+ * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package rs.alexanderstojanovich.evg.level;
+
+import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.chunk.Chunks;
+import rs.alexanderstojanovich.evg.chunk.Tuple;
+import rs.alexanderstojanovich.evg.core.WaterRenderer;
+import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
+
+/**
+ * Module with blocks from all the chunks. Effectively ready for rendering after
+ * optimization.
+ *
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
+ */
+public class BlockEnvironment {
+
+    public final IList<Tuple> optimizedTuples = new GapList<>();
+    protected boolean optimized = false;
+    protected final Chunks chunks;
+
+    public BlockEnvironment(Chunks chunks) {
+        this.chunks = chunks;
+    }
+
+    /**
+     * Basic version of optimization for tuples from all the chunks. (Deprecated
+     * as clear/new operations are used constantly)
+     *
+     * @param queue visible chunkId queue
+     */
+    @Deprecated
+    public void optimize(IList<Integer> queue) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
+        while (faceBits <= 63) {
+            for (String tex : Texture.TEX_WORLD) {
+                Tuple optmTuple = null;
+                for (int chunkId : queue) {
+                    Chunk chunk = chunks.getChunk(chunkId);
+                    if (chunk != null) {
+                        Tuple tuple = chunk.getTuple(tex, faceBits);
+                        if (tuple != null) {
+                            if (optmTuple == null) {
+                                optmTuple = new Tuple(tex, faceBits);
+                            }
+                            optmTuple.blockList.addAll(tuple.blockList);
+                        }
+                    }
+                }
+
+                if (optmTuple != null) {
+                    optimizedTuples.add(optmTuple);
+                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                }
+            }
+            faceBits++;
+        }
+
+        optimized = true;
+    }
+
+    /**
+     * Improved version of optimization for tuples from all the chunks.
+     *
+     * @param vqueue visible chunkId queue
+     * @param camFront camera front (look at vector)
+     */
+    public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
+        final int mask = Block.getVisibleFaceBitsFast(camFront);
+        optimizedTuples.removeIf(ot -> (ot.faceBits() & mask) == 0);
+        // starting from one, cuz zero is not rendered
+        for (int faceBits = 1; faceBits <= 63; faceBits++) {
+            if ((faceBits & (mask & 63)) != 0) {
+                final int faceBitsCopy = faceBits;
+                for (String tex : Texture.TEX_WORLD) {
+                    final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().endsWith(tex) && ot.faceBits() == faceBitsCopy);
+                    if (optmTuple == null) {
+                        optimizedTuples.add(new Tuple(tex, faceBits));
+                        optimizedTuples.sort(Tuple.TUPLE_COMP);
+                    } else {
+                        for (int chunkId : vqueue) {
+                            Chunk chunk = chunks.getChunk(chunkId);
+                            if (chunk != null) {
+                                Tuple tuple = chunk.getTuple(tex, faceBits);
+                                if (tuple != null) {
+                                    tuple.blockList.forEach(blk -> {
+                                        boolean modified = optmTuple.blockList.addIfAbsent(blk);
+                                        if (modified) {
+                                            optmTuple.setBuffered(false);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                    }
+                }
+            }
+        }
+
+        optimized = true;
+    }
+
+    /**
+     * Reorder group of vertices of optimized tuples if underwater
+     *
+     * @param cameraInFluid is camera in fluid (checked by level container
+     * externally)
+     */
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
+        if (!optimized) {
+            return;
+        }
+
+        if (Game.getUpsTicks() >= 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.prepare(cameraInFluid);
+                }
+            }
+        }
+    }
+
+    /**
+     * Animate water (call only for fluid blocks)
+     */
+    public void animate() { // call only for fluid blocks
+        if (!optimized) {
+            return;
+        }
+
+        if (Game.getUpsTicks() < 1.0) {
+            for (Tuple tuple : optimizedTuples) {
+                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                    tuple.animate();
+                }
+            }
+        }
+    }
+
+    /**
+     * Standard render (slow)
+     *
+     * @param shaderProgram voxel shader
+     * @param lightSources light sources
+     */
+    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
+        if (!optimized || optimizedTuples.isEmpty()) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            if (!tuple.isBuffered()) {
+                tuple.bufferAll();
+            }
+
+            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? Texture.EMPTY : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+        }
+    }
+
+    /**
+     * Static render (faster)
+     *
+     * @param shaderProgram voxel shader
+     * @param lightSources light sources
+     */
+    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources) {
+        if (!optimized || optimizedTuples.isEmpty()) {
+            return;
+        }
+
+        WaterRenderer.WaterEffectsQuality effectsQuality = GameObject.getWaterRenderer().getEffectsQuality();
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? Texture.EMPTY : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+    }
+
+    public IList<Tuple> getOptimizedTuples() {
+        return optimizedTuples;
+    }
+
+    public boolean isOptimized() {
+        return optimized;
+    }
+
+    public void setOptimized(boolean optimized) {
+        this.optimized = optimized;
+    }
+
+    public Chunks getChunks() {
+        return chunks;
+    }
+
+}

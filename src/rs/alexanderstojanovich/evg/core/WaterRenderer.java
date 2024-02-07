@@ -25,9 +25,9 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 
@@ -39,7 +39,7 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
 public class WaterRenderer {
 
     private final LevelContainer levelContainer;
-    private final FrameBuffer frameBuffer = new FrameBuffer(GameObject.MY_WINDOW);
+    private final FrameBuffer frameBuffer = new FrameBuffer();
     private final Camera camera;
 
     public static enum WaterEffectsQuality {
@@ -75,8 +75,13 @@ public class WaterRenderer {
     }
 
     public void updateHeights() { // call this in update (renderer)
-        if (effectsQuality == WaterEffectsQuality.NONE) {
+        if (effectsQuality == WaterEffectsQuality.NONE || GameRenderer.couldRender()) {
             return;
+        }
+
+        // player must notice that water heights are updating!
+        synchronized (WATER_HEIGHTS) {
+            WATER_HEIGHTS.clear();
         }
 
         Camera actCam = levelContainer.levelActors.mainCamera();
@@ -84,15 +89,8 @@ public class WaterRenderer {
         final Vector3f frontNeg = actCam.front.negate(temp);
         final float chPosY = actCam.pos.y;
 
-        // player must notice that water heights are updating!
-        if (GameRenderer.getNumOfPasses() > GameRenderer.NUM_OF_PASSES_MAX) {
-            synchronized (WATER_HEIGHTS) {
-                WATER_HEIGHTS.clear();
-            }
-        }
-
         float dotYAxis = frontNeg.dot(Camera.Y_AXIS);
-        if (GameRenderer.getNumOfPasses() <= GameRenderer.NUM_OF_PASSES_MAX && dotYAxis >= -0.5f) {
+        if (dotYAxis >= -0.5f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
             for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
@@ -136,8 +134,8 @@ public class WaterRenderer {
                     float a = values.get(i);
                     float b = values.get(i + 1);
                     float halftwo = (a + b) / 2.0f;
-                    float absDelta = halftwo - avgWaterHeight;
-                    if (absDelta >= -0.5f && absDelta <= 0.5f) {
+                    float delta = halftwo - avgWaterHeight;
+                    if (delta >= -2.0f && delta <= 2.0f) {
                         synchronized (WATER_HEIGHTS) {
                             WATER_HEIGHTS.addIfAbsent(halftwo);
                         }
@@ -193,7 +191,7 @@ public class WaterRenderer {
                 capture(waterHeight);
             }
         }
-        frameBuffer.unbind();
+        FrameBuffer.unbind();
 //        if (!debugQuad.isBuffered()) {
 //            debugQuad.bufferAll();
 //        }
@@ -226,4 +224,7 @@ public class WaterRenderer {
         this.setDepthByQuality();
     }
 
+    public Texture getTexture() {
+        return frameBuffer.getTexture();
+    }
 }

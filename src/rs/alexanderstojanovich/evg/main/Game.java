@@ -55,8 +55,6 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    public static final float EPSILON = 0.005f;
-
     private static int ups; // current update per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
@@ -108,10 +106,15 @@ public class Game {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
+    public final LevelContainer levelContainer;
+
     /**
      * Construct new game view
+     *
+     * @param levelContainer level (environment) container
      */
-    public Game() {
+    public Game(LevelContainer levelContainer) {
+        this.levelContainer = levelContainer;
         Arrays.fill(keys, false);
         initCallbacks();
     }
@@ -123,11 +126,11 @@ public class Game {
      *
      * @return did observer do something.. (changes on input)
      */
-    private boolean observerDo(float amount) {
+    private boolean observerDo(LevelContainer lc, float amount) {
         boolean changed = false;
         causingCollision = false;
 
-        Observer obs = GameObject.getLevelContainer().levelActors.spectator;
+        Observer obs = lc.levelActors.spectator;
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
             if (causingCollision = GameObject.hasCollisionWith(obs)) {
@@ -184,15 +187,15 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().levelActors.spectator.turnLeft(ANGLE);
+            lc.levelActors.spectator.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().levelActors.spectator.turnRight(ANGLE);
+            lc.levelActors.spectator.turnRight(ANGLE);
             changed = true;
         }
         if (moveMouse) {
-            GameObject.getLevelContainer().levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            lc.levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -206,71 +209,71 @@ public class Game {
      *
      * @return did editor do something..
      */
-    private boolean editorDo() {
+    private boolean editorDo(LevelContainer lc) {
         boolean changed = false;
 
         if (keys[GLFW.GLFW_KEY_N]) {
-            Editor.selectNew();
+            Editor.selectNew(lc);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrSolid();
+            Editor.selectCurrSolid(lc);
             changed = true;
         }
 
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrFluid();
+            Editor.selectCurrFluid(lc);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.LEFT);
+            Editor.selectAdjacentSolid(lc, Block.LEFT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.RIGHT);
+            Editor.selectAdjacentSolid(lc, Block.RIGHT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.BOTTOM);
+            Editor.selectAdjacentSolid(lc, Block.BOTTOM);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.TOP);
+            Editor.selectAdjacentSolid(lc, Block.TOP);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.BACK);
+            Editor.selectAdjacentSolid(lc, Block.BACK);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.FRONT);
+            Editor.selectAdjacentSolid(lc, Block.FRONT);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.LEFT);
+            Editor.selectAdjacentFluid(lc, Block.LEFT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.RIGHT);
+            Editor.selectAdjacentFluid(lc, Block.RIGHT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.BOTTOM);
+            Editor.selectAdjacentFluid(lc, Block.BOTTOM);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.TOP);
+            Editor.selectAdjacentFluid(lc, Block.TOP);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.BACK);
+            Editor.selectAdjacentFluid(lc, Block.BACK);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.FRONT);
+            Editor.selectAdjacentFluid(lc, Block.FRONT);
             changed = true;
 
         }
@@ -280,11 +283,11 @@ public class Game {
             changed = true;
         }
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
-            Editor.add();
+            Editor.add(lc);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_R]) {
-            Editor.remove();
+            Editor.remove(lc);
             changed = true;
         }
 
@@ -294,6 +297,7 @@ public class Game {
     /**
      * Handle input for player (Single player mode & Multiplayer mode)
      *
+     * @param lc level (environment) container
      * @param amountXZ movement amount on XZ plane
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
@@ -301,13 +305,13 @@ public class Game {
      *
      * @return did player do something..
      */
-    public boolean playerDo(float amountXZ, float amountY, float amountYNeg, float deltaTime) {
+    public boolean playerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
         final LevelContainer levelContainer = GameObject.getLevelContainer();
-        final Player player = levelContainer.levelActors.player;
+        final Player player = lc.levelActors.player;
 
-        if (levelContainer.isCameraInFluid()) {
+        if (lc.isCameraInFluid()) {
             jumpPerformed = false;
         }
 
@@ -372,16 +376,16 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().levelActors.player.turnLeft(ANGLE);
+            lc.levelActors.player.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().levelActors.player.turnRight(ANGLE);
+            lc.levelActors.player.turnRight(ANGLE);
             changed = true;
         }
 
         if (moveMouse) {
-            GameObject.getLevelContainer().levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -565,8 +569,10 @@ public class Game {
                 }
             }
 
-            // update with delta time like gravity
-            GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+            if (upsTicks >= 1.0) {
+                // update with delta time like gravity
+                GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+            }
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
@@ -578,22 +584,29 @@ public class Game {
                     case EDITOR:
                         // observer has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
-                            actionPerformed |= editorDo();
+                            actionPerformed |= observerDo(levelContainer, AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= editorDo(levelContainer);
+                        }
+
+                        if (actionPerformed) {
+                            LevelContainer.updateCameraInFluid(levelContainer);
                         }
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+                            actionPerformed |= playerDo(levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+                        }
+
+                        if (actionPerformed) {
+                            LevelContainer.updateCameraInFluid(levelContainer);
                         }
 
                         if (keys[GLFW.GLFW_KEY_SPACE]
-                                && !GameObject.getLevelContainer().levelActors.player.isUnderGravity()) {
+                                && !levelContainer.levelActors.player.isUnderGravity()) {
                             jumpPerformed = false;
                         }
-
                         break;
                 }
 
@@ -603,12 +616,13 @@ public class Game {
                 // determine visible chunks (can be altered with player position)
                 GameObject.determineVisibleChunks();
 
+                // call utility functions (chunking, optimizing etc.)
+                GameObject.util();
+
                 ups++;
                 upsTicks--;
             }
 
-            // call utility functions (chunking, optimizing etc.)
-            GameObject.util();
         }
         // stops the music        
         GameObject.getMusicPlayer().stop();

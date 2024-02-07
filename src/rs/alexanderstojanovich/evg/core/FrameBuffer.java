@@ -16,10 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import rs.alexanderstojanovich.evg.texture.Texture;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
+import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -29,13 +30,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class FrameBuffer {
 
-    private final Window myWindow;
     private static int fbo;
     private final Texture texture = new Texture("FrameBuffer");
-
-    public FrameBuffer(Window window) {
-        this.myWindow = window;
-    }
 
     /**
      * Call initilzation of this from Game Renderer (requires OpenGL context to
@@ -76,14 +72,10 @@ public class FrameBuffer {
         GL11.glViewport(0, 0, texture.getImage().getWidth(), texture.getImage().getHeight()); // Render on the whole framebuffer, complete from the lower left corner to the upper right
     }
 
-    public void unbind() {
+    public static void unbind() {
         // render to the screen
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-        GL11.glViewport(0, 0, myWindow.getWidth(), myWindow.getHeight());
-    }
-
-    public Window getMyWindow() {
-        return myWindow;
+        GL11.glViewport(0, 0, GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
     }
 
     public int getFbo() {

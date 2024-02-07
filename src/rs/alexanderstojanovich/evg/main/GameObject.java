@@ -33,7 +33,6 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -95,7 +94,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         musicPlayer.setGain(cfg.getMusicVolume());
         soundFXPlayer.setGain(cfg.getSoundFXVolume());
         //----------------------------------------------------------------------                        
-        game = new Game(); // init game with given configuration and game object
+        game = new Game(levelContainer); // init game with given configuration and game object
+        // game interacts with the whole game container
         renderer = new GameRenderer(); // init renderer with given game object
         DSLogger.reportDebug("Game initialized.", null);
         //----------------------------------------------------------------------
@@ -142,22 +142,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Perform chunking & optimization (of chunks)
      */
     public static void util() {
-        if (Game.getUpsTicks() <= 0.5f) {
-            boolean chunkTransfer = false;
+        boolean chunkTransfer = false;
+        synchronized (UPDATE_RENDER_MUTEX) {
+            chunkTransfer = GameObject.chunkOperations();
+        }
+
+        if (isFirstOptimization() || chunkTransfer || !GameRenderer.couldAnimate()) {
             synchronized (UPDATE_RENDER_MUTEX) {
-                chunkTransfer = GameObject.chunkOperations();
-            }
-
-//            DSLogger.reportInfo("OldMethod=" + Block.getVisibleFaceBits(levelContainer.levelActors.mainCamera().getFront()), null);
-            int facebitsMask = Block.getVisibleFaceBitsFast(levelContainer.levelActors.mainCamera().getFront());
-//            DSLogger.reportInfo("NewMethod=" + facebitsMask, null);
-            boolean faceBitsModified = (currentFaceBitMask != facebitsMask);
-            currentFaceBitMask = facebitsMask;
-
-            if (faceBitsModified || isFirstOptimization() || chunkTransfer || Game.getUpsTicks() == 0.0f) {
-                synchronized (UPDATE_RENDER_MUTEX) {
-                    GameObject.optimize();
-                }
+                GameObject.optimize();
             }
         }
     }
@@ -186,8 +178,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
                 waterRenderer.updateHeights();
             }
-            Vector3f pos = levelContainer.levelActors.mainObserver().getPos();
-            Vector3f view = levelContainer.levelActors.mainObserver().getFront();
+            Vector3f pos = levelContainer.levelActors.mainActor().getPos();
+            Vector3f view = levelContainer.levelActors.mainActor().getFront();
             int chunkId = Chunk.chunkFunc(pos);
             intrface.getPosText().setContent(String.format("pos: (%.1f,%.1f,%.1f)", pos.x, pos.y, pos.z));
             intrface.getViewText().setContent(String.format("view: (%.2f,%.2f,%.2f)", view.x, view.y, view.z));
@@ -244,7 +236,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public static boolean isFirstOptimization() {
         return !GameObject.levelContainer.chunks.getChunkList().isEmpty()
-                && GameObject.levelContainer.chunks.getOptimizedTuples().isEmpty();
+                && GameObject.levelContainer.blockEnvironment.optimizedTuples.isEmpty();
     }
 
     /**
@@ -289,7 +281,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         GameObject.SPLASH_SCREEN.release();
         GameObject.intrface.release();
         GameObject.waterRenderer.release();
-        GameObject.levelContainer.chunks.getOptimizedTuples().forEach(t -> t.release());
+        GameObject.levelContainer.blockEnvironment.optimizedTuples.forEach(t -> t.release());
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
 //        Quad.globlRelease();
@@ -331,8 +323,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Optimize with special tuples
      */
-    public static void optimize() {
-        levelContainer.chunks.setOptimized(false); // this is also hint to not render
+    private static void optimize() {
+        levelContainer.blockEnvironment.setOptimized(false); // this is also hint to not render
         levelContainer.optimize();
         LevelContainer.LIGHT_SOURCES.setAllModified();
     }
@@ -341,7 +333,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Is level container optimized
      */
     public static void isOptimized() {
-        levelContainer.chunks.isOptimized();
+        levelContainer.blockEnvironment.isOptimized();
     }
 
     /**
@@ -350,7 +342,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param optimized optimized flag to set
      */
     public static void setOptimized(boolean optimized) {
-        levelContainer.chunks.setOptimized(optimized);
+        levelContainer.blockEnvironment.setOptimized(optimized);
     }
 
     // -------------------------------------------------------------------------
