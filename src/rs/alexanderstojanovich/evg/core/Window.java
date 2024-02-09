@@ -20,12 +20,19 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
@@ -55,6 +62,8 @@ public class Window {
     public static final int MIN_HEIGHT = 480;
 
     private static Window instance;
+
+    protected IList<Long> monitors;
 
     protected GLFWImage icon;
     protected GLFWImage.Buffer images;
@@ -129,11 +138,38 @@ public class Window {
 
         long arrowId = GLFW.glfwCreateCursor(glfwArrowImage, 0, 0);
         GLFW.glfwSetCursor(windowID, arrowId);
-        //calculating the monitor
-        monitorID = GLFW.glfwGetPrimaryMonitor();
+
+        // get monitor(s)
+        PointerBuffer glfwMonitors = GLFW.glfwGetMonitors();
+        int pos = 0;
+        Long[] buffer = new Long[8];
+        if (glfwMonitors != null) {
+            while (glfwMonitors.hasRemaining()) {
+                buffer[pos++] = glfwMonitors.get();
+            }
+        }
+        List<Long> localMonitors = Arrays.asList(buffer);
+        monitors = new GapList<>(localMonitors.stream().filter(Objects::nonNull).collect(Collectors.toList()));
+
+        int monitorIndex = Configuration.getInstance().getMonitor();
+
+        if (monitorIndex < 0 || (monitorIndex + 1) > monitors.size()) {
+            DSLogger.reportFatalError("Invalid MonitorID was specified!", null);
+            throw new RuntimeException("Invalid MonitorID was specified!");
+        }
+
+        monitorID = monitors.get(monitorIndex);
+
+        if (monitorID == 0L) {
+            monitorID = GLFW.glfwGetPrimaryMonitor();
+        }
+
         GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
-        monitorWidth = vidmode.width();
-        monitorHeight = vidmode.height();
+        if (vidmode != null) {
+            monitorWidth = vidmode.width();
+            monitorHeight = vidmode.height();
+        }
+
         if (dataBuffer2.capacity() != 0) {
             MemoryUtil.memFree(dataBuffer2);
         }
@@ -330,6 +366,14 @@ public class Window {
         }
 
         return image;
+    }
+
+    public static Window getInstance() {
+        return instance;
+    }
+
+    public List<Long> getMonitors() {
+        return monitors;
     }
 
     public int getWidth() {

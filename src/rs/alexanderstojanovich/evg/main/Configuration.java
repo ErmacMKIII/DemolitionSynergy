@@ -30,6 +30,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Configuration {
 
+    private int monitor = 0;
     private int fpsCap = 100;
     private int width = 640;
     private int height = 480;
@@ -91,6 +92,9 @@ public class Configuration {
                     float val;
                     if (words.length == 2) {
                         switch (words[0].toLowerCase()) {
+                            case "monitor":
+                                monitor = Integer.parseInt(words[1]);
+                                break;
                             case "fpscap":
                                 fpsCap = Integer.parseInt(words[1]);
                                 break;
@@ -210,6 +214,8 @@ public class Configuration {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(cfg);
+            pw.println("# Monitor (0 - Window; !=0 avaliable monitors)");
+            pw.println("Monitor = " + monitor);
             pw.println("# Maximum framerate. Depedends on VSync.");
             pw.println("FPSCap = " + fpsCap);
             pw.println("Width = " + width);
@@ -247,6 +253,10 @@ public class Configuration {
                 pw.close();
             }
         }
+    }
+
+    public int getMonitor() {
+        return monitor;
     }
 
     public int getFpsCap() {

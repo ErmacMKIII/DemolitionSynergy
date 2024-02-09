@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Observer;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -49,6 +48,8 @@ public class Command implements Callable<Object> { // its not actually a thread 
      * Command mnemonic (syntax)
      */
     public static enum Target {
+        MONITOR_GET,
+        MONITOR_ID,
         GAME_TICKS,
         FPS_MAX,
         RESOLUTION,
@@ -140,6 +141,14 @@ public class Command implements Callable<Object> { // its not actually a thread 
         String[] things = input.split(" ");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
+                case "monitor_get":
+                case "monitorget":
+                    command.target = Target.MONITOR_GET;
+                    break;
+                case "monitorid":
+                case "monitor_id":
+                    command.target = Target.MONITOR_ID;
+                    break;
                 case "game_ticks":
                 case "gameticks":
                     command.target = Target.GAME_TICKS;
@@ -264,6 +273,25 @@ public class Command implements Callable<Object> { // its not actually a thread 
         Object result = null;
         command.status = Status.PENDING;
         switch (command.target) {
+            case MONITOR_ID:
+                switch (command.mode) {
+                    case GET:
+                        result = Long.toHexString(GameObject.MY_WINDOW.getMonitorID());
+                        command.status = Status.SUCCEEDED;
+                        break;
+                }
+                break;
+            case MONITOR_GET:
+                switch (command.mode) {
+                    case GET:
+                        StringBuilder sb = new StringBuilder();
+                        GameObject.MY_WINDOW.getMonitors().forEach(monitor -> sb.append(Long.toHexString(monitor)).append(","));
+                        sb.setLength(sb.length() - 1);
+                        result = sb.toString();
+                        command.status = Status.SUCCEEDED;
+                        break;
+                }
+                break;
             case GAME_TICKS:
                 switch (command.mode) {
                     case GET:
@@ -582,13 +610,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
 
     // game commands
     public boolean isGameCommand() {
-        return this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
+        return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
-        return command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
+        return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
     }
 
