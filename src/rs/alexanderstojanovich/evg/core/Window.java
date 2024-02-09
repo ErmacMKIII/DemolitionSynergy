@@ -153,15 +153,15 @@ public class Window {
 
         int monitorIndex = Configuration.getInstance().getMonitor();
 
-        if (monitorIndex < 0 || (monitorIndex + 1) > monitors.size()) {
+        if (monitorIndex < 0 || monitorIndex > monitors.size()) {
             DSLogger.reportFatalError("Invalid MonitorID was specified!", null);
             throw new RuntimeException("Invalid MonitorID was specified!");
         }
 
-        monitorID = monitors.get(monitorIndex);
-
-        if (monitorID == 0L) {
+        if (monitorIndex == 0) {
             monitorID = GLFW.glfwGetPrimaryMonitor();
+        } else {
+            monitorID = monitors.get(monitorIndex - 1);
         }
 
         GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
