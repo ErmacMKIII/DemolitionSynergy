@@ -24,6 +24,7 @@ import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -41,6 +42,10 @@ public class BlockEnvironment {
     public final IList<Tuple> optimizedTuples = new GapList<>();
     protected boolean optimized = false;
     protected final Chunks chunks;
+    protected int texProcIndex = 0;
+
+    protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
+    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
     public BlockEnvironment(Chunks chunks) {
         this.chunks = chunks;
@@ -84,40 +89,52 @@ public class BlockEnvironment {
     }
 
     /**
-     * Improved version of optimization for tuples from all the chunks.
+     * Improved version of optimization for tuples from all the chunks. World is
+     * being built incrementally.
      *
      * @param vqueue visible chunkId queue
      * @param camFront camera front (look at vector)
      */
     public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
+        // determine lastFaceBits mask
         final int mask = Block.getVisibleFaceBitsFast(camFront);
         optimizedTuples.removeIf(ot -> (ot.faceBits() & mask) == 0);
-        // starting from one, cuz zero is not rendered
-        for (int faceBits = 1; faceBits <= 63; faceBits++) {
+
+        // determine texture type to process - split
+        if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
+            texProcIndex = 0;
+        }
+        final String tex = Texture.TEX_WORLD[texProcIndex];
+
+        for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
+            // assign last value & increment to next value with limit to 63
+            final int faceBits = (++lastFaceBits) & 63;
+
             if ((faceBits & (mask & 63)) != 0) {
-                final int faceBitsCopy = faceBits;
-                for (String tex : Texture.TEX_WORLD) {
-                    final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().endsWith(tex) && ot.faceBits() == faceBitsCopy);
-                    if (optmTuple == null) {
-                        optimizedTuples.add(new Tuple(tex, faceBits));
-                        optimizedTuples.sort(Tuple.TUPLE_COMP);
-                    } else {
-                        for (int chunkId : vqueue) {
-                            Chunk chunk = chunks.getChunk(chunkId);
-                            if (chunk != null) {
-                                Tuple tuple = chunk.getTuple(tex, faceBits);
-                                if (tuple != null) {
-                                    tuple.blockList.forEach(blk -> {
-                                        boolean modified = optmTuple.blockList.addIfAbsent(blk);
-                                        if (modified) {
-                                            optmTuple.setBuffered(false);
-                                        }
-                                    });
-                                }
+                final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                if (optmTuple == null) {
+                    optimizedTuples.add(new Tuple(tex, faceBits));
+                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                } else {
+                    // remove non-existing blocks
+                    optmTuple.blockList.removeIf(blk -> !LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(blk.pos));
+
+                    for (int chunkId : vqueue) {
+                        Chunk chunk = chunks.getChunk(chunkId);
+                        if (chunk != null) {
+                            Tuple tuple = chunk.getTuple(tex, faceBits);
+                            if (tuple != null) {
+                                // add absent ones
+                                tuple.blockList.forEach(blk -> {
+                                    boolean modified = optmTuple.blockList.addIfAbsent(blk);
+                                    if (modified) {
+                                        optmTuple.setBuffered(false);
+                                    }
+                                });
                             }
                         }
-                        optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                     }
+                    optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                 }
             }
         }
@@ -197,6 +214,14 @@ public class BlockEnvironment {
         Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? Texture.EMPTY : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
     }
 
+    /**
+     * Clear optimization tuples
+     */
+    public void clear() {
+        optimizedTuples.clear();
+        optimized = false;
+    }
+
     public IList<Tuple> getOptimizedTuples() {
         return optimizedTuples;
     }
@@ -211,6 +236,14 @@ public class BlockEnvironment {
 
     public Chunks getChunks() {
         return chunks;
+    }
+
+    public int getTexProcIndex() {
+        return texProcIndex;
+    }
+
+    public int getBitPos() {
+        return lastFaceBits;
     }
 
 }

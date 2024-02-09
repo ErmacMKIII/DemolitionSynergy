@@ -569,9 +569,9 @@ public class Game {
                 }
             }
 
+            // update with delta time like gravity
             if (upsTicks >= 1.0) {
-                // update with delta time like gravity
-                GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+                GameObject.update((float) (Game.upsTicks * TICK_TIME));
             }
 
             while (upsTicks >= 1.0) {
@@ -604,7 +604,7 @@ public class Game {
                         }
 
                         if (keys[GLFW.GLFW_KEY_SPACE]
-                                && !levelContainer.levelActors.player.isUnderGravity()) {
+                                && !levelContainer.levelActors.player.isUnderGravity() && actionPerformed) {
                             jumpPerformed = false;
                         }
                         break;

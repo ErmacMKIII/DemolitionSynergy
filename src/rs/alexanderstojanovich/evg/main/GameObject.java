@@ -139,6 +139,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     /**
+     * Clear optimization
+     */
+    public static void clear() {
+        if (!GameRenderer.couldRender()) {
+            levelContainer.blockEnvironment.clear();
+        }
+    }
+
+    /**
      * Perform chunking & optimization (of chunks)
      */
     public static void util() {
@@ -147,7 +156,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             chunkTransfer = GameObject.chunkOperations();
         }
 
-        if (isFirstOptimization() || chunkTransfer || !GameRenderer.couldAnimate()) {
+        if (isFirstOptimization() || chunkTransfer || (!GameRenderer.couldRender())) {
             synchronized (UPDATE_RENDER_MUTEX) {
                 GameObject.optimize();
             }
@@ -325,7 +334,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     private static void optimize() {
         levelContainer.blockEnvironment.setOptimized(false); // this is also hint to not render
-        levelContainer.optimize();
+        synchronized (UPDATE_RENDER_MUTEX) {
+            levelContainer.optimize();
+        }
         LevelContainer.LIGHT_SOURCES.setAllModified();
     }
 

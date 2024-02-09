@@ -25,6 +25,7 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -75,13 +76,15 @@ public class WaterRenderer {
     }
 
     public void updateHeights() { // call this in update (renderer)
-        if (effectsQuality == WaterEffectsQuality.NONE || GameRenderer.couldRender()) {
+        if (effectsQuality == WaterEffectsQuality.NONE) {
             return;
         }
 
         // player must notice that water heights are updating!
-        synchronized (WATER_HEIGHTS) {
-            WATER_HEIGHTS.clear();
+        if (!GameRenderer.couldRender()) {
+            synchronized (WATER_HEIGHTS) {
+                WATER_HEIGHTS.clear();
+            }
         }
 
         Camera actCam = levelContainer.levelActors.mainCamera();
@@ -135,7 +138,7 @@ public class WaterRenderer {
                     float b = values.get(i + 1);
                     float halftwo = (a + b) / 2.0f;
                     float delta = halftwo - avgWaterHeight;
-                    if (delta >= -2.0f && delta <= 2.0f) {
+                    if (delta >= 0.5f && delta <= 0.5f) {
                         synchronized (WATER_HEIGHTS) {
                             WATER_HEIGHTS.addIfAbsent(halftwo);
                         }

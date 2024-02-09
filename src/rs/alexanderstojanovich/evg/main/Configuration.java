@@ -46,6 +46,7 @@ public class Configuration {
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 10;
+    private int optimizationPasses = 8;
     private double gameTicks = 0.0;
     private int blocksPerRun = 1000;
 
@@ -150,6 +151,11 @@ public class Configuration {
                                 if (number > 0 && number <= Game.TPS * 2) {
                                     rendererPasses = number;
                                 }
+                            case "optimizationpasses":
+                                number = Integer.parseInt(words[1]);
+                                if (number >= 1 && number <= 64) {
+                                    optimizationPasses = number;
+                                }
                             case "texturesize":
                                 number = Integer.parseInt(words[1]);
                                 // if tex size is a non-zero power of two
@@ -224,6 +230,8 @@ public class Configuration {
             pw.println("TextDynamicSize = " + textDynamicSize);
             pw.println("# Renderer strength. May Improve performance. Number passes per ticks. Allowed values 1-160");
             pw.println("RendererPasses = " + rendererPasses);
+            pw.println("# Optimization strength. May Improve performance. Number passes per optimization run. Allowed values 1-64");
+            pw.println("OptimizationPasses = " + optimizationPasses);
             pw.println("# Texture size. Must be power of two, non-zero and lesser or equal than 4096.");
             pw.println("TextureSize = " + textureSize);
             pw.println("# Game Ticks (decimal). Must be greater or equal zero");
@@ -355,6 +363,10 @@ public class Configuration {
 
     public int getBlocksPerRun() {
         return blocksPerRun;
+    }
+
+    public int getOptimizationPasses() {
+        return optimizationPasses;
     }
 
 }

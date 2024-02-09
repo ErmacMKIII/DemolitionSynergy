@@ -72,7 +72,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
 
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
+    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.05f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 12.0f;
@@ -138,6 +138,8 @@ public class LevelContainer implements GravityEnviroment {
 
     protected float lastCycledDayTime = 0.0f;
 
+    protected float fallVelocity = 0.0f;
+
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -202,7 +204,7 @@ public class LevelContainer implements GravityEnviroment {
         SUN.pos = new Vector3f(0.0f, -12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
-        SUN.setPrimaryColorAlpha(1.0f);
+        SUN.setPrimaryColorAlpha(1.05f);
     }
 
     public LevelContainer() {
@@ -275,6 +277,7 @@ public class LevelContainer implements GravityEnviroment {
 
         levelActors.configureMainObserver(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
+        blockEnvironment.clear();
 //        NPC npc = new NPC(critter.getModel());
 //        npc.getModel().setPos(new Vector3f(0f, 20f, 0f));
 //        levelActors.npcList.add(npc);
@@ -315,6 +318,8 @@ public class LevelContainer implements GravityEnviroment {
 
 //        solidChunks.updateSolids(this);
 //        fluidChunks.updateFluids(this);
+        blockEnvironment.clear();
+
         progress = 100.0f;
         working = false;
 
@@ -379,6 +384,8 @@ public class LevelContainer implements GravityEnviroment {
 
             success = true;
         }
+
+        blockEnvironment.clear();
 
         progress = 100.0f;
         working = false;
@@ -580,6 +587,8 @@ public class LevelContainer implements GravityEnviroment {
 
         }
         levelActors.unfreeze();
+        blockEnvironment.clear();
+
         progress = 100.0f;
         working = false;
         GameObject.getMusicPlayer().stop();
@@ -680,6 +689,8 @@ public class LevelContainer implements GravityEnviroment {
 
         }
         levelActors.unfreeze();
+        blockEnvironment.clear();
+
         progress = 100.0f;
         working = false;
         GameObject.getMusicPlayer().stop();
@@ -838,7 +849,7 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(predictable.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = 0.0125f;
+            final float stepAmount = (float) Game.TICK_TIME;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(predictable.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -882,7 +893,7 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(observer.getPos(), 0.07f, 0.07f, 0.07f));
 
         if (!coll) {
-            final float stepAmount = 0.0125f;
+            final float stepAmount = (float) Game.TICK_TIME;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(observer.getPos().x + 0.5f) & 0xFFFFFFFE,
@@ -929,7 +940,7 @@ public class LevelContainer implements GravityEnviroment {
                         critter.body.getHeight(), critter.body.getDepth()));
 
         if (!coll) {
-            final float stepAmount = 0.0125f;
+            final float stepAmount = (float) Game.TICK_TIME;
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -955,7 +966,7 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
                                     || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
-                                            critter.getPredictor(), 1.0f * critter.body.getWidth(), 1.0f * critter.body.getHeight(), 1.0f * critter.body.getDepth());
+                                            critter.getPredictor(), 1.05f * critter.body.getWidth(), 1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth());
                             if (coll) {
                                 break OUTER;
                             }
@@ -975,51 +986,65 @@ public class LevelContainer implements GravityEnviroment {
             return false;
         }
 
-        float thrustHeight = 0.0f;
-        if (cameraInFluid) {
-            final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
-            final float mass = 2.5f;
-            final float accel = thrustForce / mass;
-            thrustHeight = accel * deltaTime * deltaTime / 2.1f;
-        }
-
         boolean collision = false;
-        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime - 8E-4f * thrustHeight) / 2.1f;
-        final float stepAmount = 0.0125f;
+
+        final float precision = 32.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
         SCAN:
-        for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // quad-precision
+        for (float tstTime = 0.0f; tstTime <= deltaTime; tstTime += stepAmount) { // quad-precision
             for (int i = 0; i < testSides.length; i++) {
-                Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), testSides[i], amount);
-                Vector3f adjBottomAlign = new Vector3f(
-                        Math.round(adjBottom.x + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjBottom.y + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
-                );
+                float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                for (float eps = 0.0f; eps <= 2.0f; eps += 0.125f) {
+                    Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), testSides[i], tstHeight + eps);
+                    Vector3f adjBottomAlign = new Vector3f(
+                            Math.round(adjBottom.x + 0.5f) & 0xFFFFFFFE,
+                            Math.round(adjBottom.y + 0.5f) & 0xFFFFFFFE,
+                            Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
+                    );
 
-                boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjBottomAlign, true);
-                if (solidOnLoc) {
-                    levelActors.player.movePredictorYDown(deltaHeight);
-                    // solid object collision
-                    collision |= Block.containsInsideEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f, levelActors.player.getPredictor())
-                            || Model.intersectsEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f,
-                                    levelActors.player.getPredictor(), 1.0f * levelActors.player.body.getWidth(), 1.0f * levelActors.player.body.getHeight(), 1.0f * levelActors.player.body.getDepth());
-                    // skybox collision
-                    collision |= (!SKYBOX.containsInsideExactly(levelActors.player.getPredictor())
-                            || !SKYBOX.intersectsExactly(levelActors.player.getPredictor(), levelActors.player.body.getWidth(),
-                                    levelActors.player.body.getHeight(), levelActors.player.body.getDepth()));
-                    levelActors.player.movePredictorYUp(deltaHeight);
-                    if (collision) {
-                        break SCAN;
+                    boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjBottomAlign, true);
+                    if (solidOnLoc) {
+                        levelActors.player.movePredictorYDown(tstHeight);
+                        // solid object collision
+                        collision |= Block.containsInsideEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f, levelActors.player.getPredictor())
+                                || Model.intersectsEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f,
+                                        levelActors.player.getPredictor(), 1.05f * levelActors.player.body.getWidth(), 1.05f * levelActors.player.body.getHeight(), 1.05f * levelActors.player.body.getDepth());
+                        // skybox collision
+                        collision |= (!SKYBOX.containsInsideExactly(levelActors.player.getPredictor())
+                                || !SKYBOX.intersectsExactly(levelActors.player.getPredictor(), levelActors.player.body.getWidth(),
+                                        levelActors.player.body.getHeight(), levelActors.player.body.getDepth()));
+                        levelActors.player.movePredictorYUp(tstHeight);
+                        if (collision) {
+                            fallVelocity = 0.0f;
+                            break SCAN;
+                        }
                     }
                 }
             }
         }
 
         if (!collision) {
+            float height0 = fallVelocity * deltaTime;
+            float height1 = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+
+            float heightThrust = 0.0f;
+
+            if (cameraInFluid) {
+                final float resistConst = 5E-6f;
+                final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
+                final float mass = 75f;
+                final float accel = thrustForce * resistConst / mass;
+                heightThrust = accel * deltaTime * deltaTime / 2.0f;
+            }
+
+            float deltaHeight = height0 + height1 - heightThrust;
+
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.sinkY(deltaHeight);
+
+            fallVelocity += GRAVITY_CONSTANT * deltaTime;
         }
 
         return !collision;
@@ -1027,25 +1052,30 @@ public class LevelContainer implements GravityEnviroment {
 
     @Override
     public boolean jump(Critter critter, float amountY, float deltaTime) {
-        float height0 = amountY * deltaTime;
-        float thrustHeight = 0.0f;
-        if (cameraInFluid) {
-            final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
-            final float mass = 2.5f;
-            final float accel = thrustForce / mass;
-            thrustHeight = accel * deltaTime * deltaTime / 2.1f;
+        if (working) {
+            return false;
         }
 
-        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.1f;
+        float height0 = amountY * deltaTime;
+        float heightThrust = 0.0f;
+        if (cameraInFluid) {
+            final float resistConst = 5E-6f;
+            final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
+            final float mass = 75f;
+            final float accel = thrustForce * resistConst / mass;
+            heightThrust = accel * deltaTime * deltaTime / 2.0f;
+        }
 
-        float height1 = Math.max(height0 + 5E-4f * thrustHeight - deltaHeight, 0.0f);
+        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+        float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
-        final float stepAmount = 0.0125f;
+        final float precision = 16.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
 
         boolean collision = false;
         int[] testSides = {Block.TOP, Block.LEFT_TOP, Block.RIGHT_TOP, Block.TOP_BACK, Block.TOP_FRONT};
         SCAN:
-        for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // quad-precision
+        for (float amount = 0.0f; amount <= precision * Game.AMOUNT; amount += stepAmount) { // quad-precision
             for (int i = 0; i < testSides.length; i++) {
                 Vector3f adjTop = Block.getAdjacentPos(critter.getPos(), testSides[i], amount);
                 Vector3f adjTopAlign = new Vector3f(
@@ -1060,7 +1090,7 @@ public class LevelContainer implements GravityEnviroment {
                     // solid object collision
                     collision |= Block.containsInsideEqually(adjTopAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
                             || Model.intersectsEqually(adjTopAlign, 2.1f, 2.1f, 2.1f,
-                                    critter.getPredictor(), 1.0f * critter.body.getWidth(), 1.0f * critter.body.getHeight(), 1.0f * critter.body.getDepth());
+                                    critter.getPredictor(), 1.05f * critter.body.getWidth(), 1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth());
                     // skybox collision
                     collision |= (!SKYBOX.containsInsideExactly(critter.getPredictor())
                             || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
@@ -1117,7 +1147,7 @@ public class LevelContainer implements GravityEnviroment {
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
             float inten = org.joml.Math.max(org.joml.Math.sin(sunAngle), 0.0f);
 
-            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.05f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
             Camera mainCamera = levelActors.mainCamera();
@@ -1308,6 +1338,19 @@ public class LevelContainer implements GravityEnviroment {
 
     public LevelActors getLevelActors() {
         return levelActors;
+    }
+
+    public Configuration getCfg() {
+        return cfg;
+    }
+
+    public float getLastCycledDayTime() {
+        return lastCycledDayTime;
+    }
+
+    @Override
+    public float getFallVelocity() {
+        return fallVelocity;
     }
 
 }

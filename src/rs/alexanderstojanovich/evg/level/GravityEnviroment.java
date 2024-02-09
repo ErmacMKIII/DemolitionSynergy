@@ -24,8 +24,8 @@ import rs.alexanderstojanovich.evg.critter.Critter;
  */
 public interface GravityEnviroment {
 
-    public static final float WATER_DENSITY = 300f;
-    public static final float GRAVITY_CONSTANT = 98f;
+    public static final float WATER_DENSITY = 1000f;
+    public static final float GRAVITY_CONSTANT = 9.8f; // apply only if Game.upsTicks >= 1.0
 
     /**
      * Affect Environment with gravity. Object not supported from bottom will
@@ -46,4 +46,11 @@ public interface GravityEnviroment {
      * @return did critter jump
      */
     public boolean jump(Critter critter, float amountY, float deltaTime);
+
+    /**
+     * Get falling velocity
+     *
+     * @return falling velocity
+     */
+    public float getFallVelocity();
 }
