@@ -308,7 +308,6 @@ public class Game {
     public boolean playerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
-        final LevelContainer levelContainer = GameObject.getLevelContainer();
         final Player player = lc.levelActors.player;
 
         if (lc.isCameraInFluid()) {
@@ -320,7 +319,7 @@ public class Game {
             if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
                 player.movePredictorYDown(amountY);
             } else {
-                jumpPerformed |= levelContainer.jump(player, amountY, deltaTime);
+                jumpPerformed |= lc.jump(player, amountY, deltaTime);
                 changed = true;
             }
         }
@@ -605,7 +604,7 @@ public class Game {
                             LevelContainer.updateCameraInFluid(levelContainer);
                         }
 
-                        if (keys[GLFW.GLFW_KEY_SPACE]
+                        if (keys[GLFW.GLFW_KEY_SPACE] // prevent repeat jumping (while not in water)
                                 && !levelContainer.levelActors.player.isUnderGravity() && actionPerformed) {
                             jumpPerformed = false;
                         }
