@@ -25,8 +25,6 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
-import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -81,10 +79,8 @@ public class WaterRenderer {
         }
 
         // player must notice that water heights are updating!
-        if (!GameRenderer.couldRender()) {
-            synchronized (WATER_HEIGHTS) {
-                WATER_HEIGHTS.clear();
-            }
+        synchronized (WATER_HEIGHTS) {
+            WATER_HEIGHTS.clear();
         }
 
         Camera actCam = levelContainer.levelActors.mainCamera();
@@ -125,32 +121,31 @@ public class WaterRenderer {
             float sum = 0.0f;
 
             IList<Float> values = new GapList<>(deltaMap.values());
-            for (float value : values) {
-                sum += value;
-            }
-            avgWaterHeight = sum / (float) values.size();
 
-            if (values.size() == 1) {
-                WATER_HEIGHTS.addIfAbsent(values.getFirst());
-            } else if (values.size() > 1) {
+            while (values.size() > maxWaterDepthSize) {
+                for (float value : values) {
+                    sum += value;
+                }
+                avgWaterHeight = sum / (float) values.size();
+                IList<Float> tmpList = new GapList<>();
                 for (int i = 0; i <= values.size() - 2; i += 2) {
                     float a = values.get(i);
                     float b = values.get(i + 1);
                     float halftwo = (a + b) / 2.0f;
                     float delta = halftwo - avgWaterHeight;
                     if (delta >= 0.5f && delta <= 0.5f) {
-                        synchronized (WATER_HEIGHTS) {
-                            WATER_HEIGHTS.addIfAbsent(halftwo);
-                        }
+                        tmpList.addIfAbsent(halftwo);
                     } else {
-                        synchronized (WATER_HEIGHTS) {
-                            WATER_HEIGHTS.addIfAbsent(Math.max(a, b));
-                        }
+                        tmpList.addIfAbsent(Math.max(a, b));
                     }
                 }
+                values = new GapList<>(tmpList);
+            }
+
+            synchronized (WATER_HEIGHTS) {
+                WATER_HEIGHTS.addAll(values);
             }
         }
-//        System.err.println(WATER_HEIGHTS.size());
     }
 
     private void prepare() {
