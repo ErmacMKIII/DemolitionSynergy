@@ -33,24 +33,24 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     private int selected = -1;
     protected Type type;
 
-    public MultiValue(Object[] valueArray, Type type) {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(Texture.FONT, "");
+        this.valueText = new DynamicText(intrface, Texture.FONT, "");
         values.addAll(Arrays.asList(valueArray));
     }
 
-    public MultiValue(Object[] valueArray, Type type, int selected) {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type, int selected) throws Exception {
         this.type = type;
         this.selected = selected;
-        this.valueText = new DynamicText(Texture.FONT, String.valueOf(valueArray[selected]));
+        this.valueText = new DynamicText(intrface, Texture.FONT, String.valueOf(valueArray[selected]));
         for (Object object : valueArray) {
             values.add(object);
         }
     }
 
-    public MultiValue(Object[] valueArray, Type type, Object currentValue) {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type, Object currentValue) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(Texture.FONT, String.valueOf(currentValue));
+        this.valueText = new DynamicText(intrface, Texture.FONT, String.valueOf(currentValue));
         values.addAll(Arrays.asList(valueArray));
         this.selected = values.indexOf(currentValue);
     }

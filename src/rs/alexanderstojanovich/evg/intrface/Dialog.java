@@ -47,9 +47,12 @@ public abstract class Dialog {
     protected final GLFWCharCallback charCallback;
     protected final GLFWKeyCallback keyCallback;
 
-    public Dialog(Texture texture, Vector2f pos,
-            String question, String success, String fail) {
-        this.dialog = new DynamicText(texture, "");
+    protected final Intrface intrface;
+
+    public Dialog(Intrface intrface, Texture texture, Vector2f pos,
+            String question, String success, String fail) throws Exception {
+        this.intrface = intrface;
+        this.dialog = new DynamicText(intrface, texture, "");
         this.dialog.setPos(pos);
         this.enabled = false;
         this.done = false;
@@ -129,11 +132,11 @@ public abstract class Dialog {
             done = false;
             dialog.setContent(question + "_");
             dialog.color = GlobalColors.WHITE_RGBA;
-            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), keyCallback);
+            GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), keyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), charCallback);
+            GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), charCallback);
         }
     }
 
@@ -165,10 +168,6 @@ public abstract class Dialog {
      */
     public void release() {
         dialog.release();
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     public DynamicText getDialog() {

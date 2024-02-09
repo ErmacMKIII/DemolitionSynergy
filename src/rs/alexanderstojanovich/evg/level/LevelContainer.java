@@ -64,6 +64,7 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
+    public final GameObject gameObject;
     public static int PLAYER_LIGHT_INDEX = 0;
     public static int SUNLIGHT_INDEX = 0;
 
@@ -82,9 +83,8 @@ public class LevelContainer implements GravityEnviroment {
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
 
     public final Chunks chunks = new Chunks();
-    public final BlockEnvironment blockEnvironment = new BlockEnvironment(chunks);
-
-    public static final LightSources LIGHT_SOURCES = new LightSources();
+    public final BlockEnvironment blockEnvironment;
+    public final LightSources lightSources;
 
     public static final int LIST_CAPACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
@@ -207,11 +207,14 @@ public class LevelContainer implements GravityEnviroment {
         SUN.setPrimaryColorAlpha(1.05f);
     }
 
-    public LevelContainer() {
+    public LevelContainer(GameObject gameObject) throws Exception {
+        this.gameObject = gameObject;
+        this.blockEnvironment = new BlockEnvironment(gameObject, chunks);
         this.cacheModule = new CacheModule(this);
+        this.lightSources = new LightSources(gameObject);
 
-        LIGHT_SOURCES.addLight(levelActors.player.light);
-        LIGHT_SOURCES.addLight(SUNLIGHT);
+        lightSources.addLight(levelActors.player.light);
+        lightSources.addLight(SUNLIGHT);
     }
 
     public static void printPositionMaps() {
@@ -248,13 +251,13 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         chunks.clear();
         levelActors.npcList.clear();
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.retainLights(2);
+        lightSources.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -285,7 +288,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -300,13 +303,13 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
         chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.retainLights(2);
+        lightSources.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -324,7 +327,7 @@ public class LevelContainer implements GravityEnviroment {
         working = false;
 
         levelActors.unfreeze();
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -337,13 +340,13 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        GameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
 
         chunks.clear();
 
         ALL_BLOCK_MAP.init();
 
-        LIGHT_SOURCES.retainLights(2);
+        lightSources.retainLights(2);
 
         CacheModule.deleteCache();
 
@@ -353,9 +356,9 @@ public class LevelContainer implements GravityEnviroment {
             randomLevelGenerator.generate();
 
             // place player on his/her position
-            LevelContainer levelContainer = GameObject.getLevelContainer();
+            LevelContainer levelContainer = gameObject.getLevelContainer();
             Player player = (Player) levelContainer.levelActors.player;
-            Random random = GameObject.getRandomLevelGenerator().getRandom();
+            Random random = gameObject.getRandomLevelGenerator().getRandom();
 
             // random on elements in the center
             final int halfDim = Chunk.GRID_SIZE / 2;
@@ -391,7 +394,7 @@ public class LevelContainer implements GravityEnviroment {
         working = false;
 
         levelActors.unfreeze();
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -403,7 +406,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -449,7 +452,7 @@ public class LevelContainer implements GravityEnviroment {
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (gameObject.WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArraySolid = solidBlock.toByteArray();
@@ -469,7 +472,7 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
+            if (gameObject.WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArrayFluid = fluidBlock.toByteArray();
@@ -485,11 +488,11 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
 
-        if (progress == 100.0f && !GameObject.MY_WINDOW.shouldClose()) {
+        if (progress == 100.0f && !gameObject.WINDOW.shouldClose()) {
             success = true;
         }
         working = false;
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -501,14 +504,14 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             chunks.clear();
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.retainLights(2);
+            lightSources.retainLights(2);
 
             CacheModule.deleteCache();
 
@@ -544,7 +547,7 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !gameObject.WINDOW.shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[29];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
@@ -563,7 +566,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !gameObject.WINDOW.shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[29];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
@@ -591,7 +594,7 @@ public class LevelContainer implements GravityEnviroment {
 
         progress = 100.0f;
         working = false;
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -603,14 +606,14 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        GameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S' && buffer[2] == 'X') {
             chunks.clear();
 
             ALL_BLOCK_MAP.init();
 
-            LIGHT_SOURCES.retainLights(2);
+            lightSources.retainLights(2);
 
             CacheModule.deleteCache();
 
@@ -646,7 +649,7 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !gameObject.WINDOW.shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[40];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 30);
                     Block solidBlock = Block.fromNewByteArray(byteArraySolid);
@@ -665,7 +668,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !gameObject.WINDOW.shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[30];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 30);
                         Block fluidBlock = Block.fromNewByteArray(byteArrayFluid);
@@ -693,7 +696,7 @@ public class LevelContainer implements GravityEnviroment {
 
         progress = 100.0f;
         working = false;
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
         return success;
     }
 
@@ -1154,7 +1157,7 @@ public class LevelContainer implements GravityEnviroment {
             levelActors.player.light.pos = mainCamera.getPos();
 
             for (int i = 0; i < 2; i++) {
-                LIGHT_SOURCES.setModified(i, true);
+                lightSources.setModified(i, true);
             }
         }
     }
@@ -1179,33 +1182,33 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         if (SUNLIGHT.getIntensity() > 0.0f) {
-            SUN.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+            SUN.render(lightSources, ShaderProgram.getMainShader());
         }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.renderContour(LIGHT_SOURCES, ShaderProgram.getSkyboxShader());
+        SKYBOX.renderContour(lightSources, ShaderProgram.getSkyboxShader());
 
         // only visible & uncached are in chunk list      
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), LIGHT_SOURCES);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), lightSources);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
-            editorNew.render(LIGHT_SOURCES, ShaderProgram.getMainShader());
+            editorNew.render(lightSources, ShaderProgram.getMainShader());
 
             Block selectedNewWireFrame = Editor.getSelectedNewDecal();
             if (selectedNewWireFrame != null) {
                 if (!selectedNewWireFrame.isBuffered()) {
                     selectedNewWireFrame.bufferAll();
                 }
-                selectedNewWireFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
+                selectedNewWireFrame.renderContour(lightSources, ShaderProgram.getContourShader());
             }
 
         }
@@ -1215,12 +1218,12 @@ public class LevelContainer implements GravityEnviroment {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
-            selectedCurrFrame.renderContour(LIGHT_SOURCES, ShaderProgram.getContourShader());
+            selectedCurrFrame.renderContour(lightSources, ShaderProgram.getContourShader());
         }
-        levelActors.render(LIGHT_SOURCES, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
 
-        LightSources.render(levelActors.mainCamera(), LIGHT_SOURCES, ShaderProgram.getLightShader());
-        LIGHT_SOURCES.resetAllModified();
+        LightSources.render(levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
+        lightSources.resetAllModified();
     }
 
     public void render(Camera camera) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
@@ -1235,34 +1238,34 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         if (SUNLIGHT.getIntensity() > 0.0f) {
-            SUN.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+            SUN.render(lightSources, ShaderProgram.getWaterBaseShader());
         }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+        SKYBOX.render(lightSources, ShaderProgram.getWaterBaseShader());
 
         camera.render(ShaderProgram.getWaterVoxelShader());
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getWaterVoxelShader(), LIGHT_SOURCES);
+        blockEnvironment.renderStatic(ShaderProgram.getWaterVoxelShader(), lightSources);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
-            editorNew.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+            editorNew.render(lightSources, ShaderProgram.getWaterBaseShader());
 
             Block selectedNewWireFrame = Editor.getSelectedNewDecal();
             if (selectedNewWireFrame != null) {
                 if (!selectedNewWireFrame.isBuffered()) {
                     selectedNewWireFrame.bufferAll();
                 }
-                selectedNewWireFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+                selectedNewWireFrame.render(lightSources, ShaderProgram.getWaterBaseShader());
             }
 
         }
@@ -1272,12 +1275,12 @@ public class LevelContainer implements GravityEnviroment {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
-            selectedCurrFrame.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader());
+            selectedCurrFrame.render(lightSources, ShaderProgram.getWaterBaseShader());
         }
-        levelActors.render(LIGHT_SOURCES, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
+        levelActors.render(lightSources, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
 
-        LightSources.render(camera, LIGHT_SOURCES, ShaderProgram.getLightShader());
-        LIGHT_SOURCES.resetAllModified();
+        LightSources.render(camera, lightSources, ShaderProgram.getLightShader());
+        lightSources.resetAllModified();
     }
 
     // -------------------------------------------------------------------------
@@ -1293,7 +1296,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
+        return gameObject.WINDOW;
     }
 
     public float getProgress() {
@@ -1333,7 +1336,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public AudioPlayer getMusicPlayer() {
-        return GameObject.getMusicPlayer();
+        return gameObject.getMusicPlayer();
     }
 
     public LevelActors getLevelActors() {

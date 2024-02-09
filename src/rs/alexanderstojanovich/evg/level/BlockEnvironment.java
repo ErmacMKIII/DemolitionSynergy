@@ -39,6 +39,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class BlockEnvironment {
 
+    private final GameObject gameObject;
+
     public final IList<Tuple> optimizedTuples = new GapList<>();
     protected boolean optimized = false;
     protected final Chunks chunks;
@@ -47,7 +49,8 @@ public class BlockEnvironment {
     protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
     public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
-    public BlockEnvironment(Chunks chunks) {
+    public BlockEnvironment(GameObject gameObject, Chunks chunks) {
+        this.gameObject = gameObject;
         this.chunks = chunks;
     }
 
@@ -195,7 +198,7 @@ public class BlockEnvironment {
                 tuple.bufferAll();
             }
 
-            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? Texture.EMPTY : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? Texture.EMPTY : gameObject.getWaterRenderer().getFrameBuffer().getTexture());
         }
     }
 
@@ -210,8 +213,8 @@ public class BlockEnvironment {
             return;
         }
 
-        WaterRenderer.WaterEffectsQuality effectsQuality = GameObject.getWaterRenderer().getEffectsQuality();
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? Texture.EMPTY : GameObject.getWaterRenderer().getFrameBuffer().getTexture());
+        WaterRenderer.WaterEffectsQuality effectsQuality = gameObject.getWaterRenderer().getEffectsQuality();
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? Texture.EMPTY : gameObject.getWaterRenderer().getFrameBuffer().getTexture());
     }
 
     /**

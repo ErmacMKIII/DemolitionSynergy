@@ -28,8 +28,6 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -42,7 +40,8 @@ import rs.alexanderstojanovich.evg.util.Trie;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Command implements Callable<Object> { // its not actually a thread but its used for remote execution (from Executor)
+public class Command implements Callable<Object> {
+// its not actually a thread but its used for remote execution (from Executor)
 
     /**
      * Command mnemonic (syntax)
@@ -266,17 +265,18 @@ public class Command implements Callable<Object> { // its not actually a thread 
      * that commands which directly affect window or OpenGL are being called
      * from the GameRenderer, whilst other can be called from the main method
      *
+     * @param gameObject gameObject instance
      * @param command chosen command
      * @return execution status (true if successful, otherwise false)
      */
-    public static Object execute(Command command) {
+    public static Object execute(GameObject gameObject, Command command) {
         Object result = null;
         command.status = Status.PENDING;
         switch (command.target) {
             case MONITOR_ID:
                 switch (command.mode) {
                     case GET:
-                        result = Long.toHexString(GameObject.MY_WINDOW.getMonitorID());
+                        result = Long.toHexString(gameObject.WINDOW.getMonitorID());
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -285,7 +285,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 switch (command.mode) {
                     case GET:
                         StringBuilder sb = new StringBuilder();
-                        GameObject.MY_WINDOW.getMonitors().forEach(monitor -> sb.append(Long.toHexString(monitor)).append(","));
+                        gameObject.WINDOW.getMonitors().forEach(monitor -> sb.append(Long.toHexString(monitor)).append(","));
                         sb.setLength(sb.length() - 1);
                         result = sb.toString();
                         command.status = Status.SUCCEEDED;
@@ -330,23 +330,23 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case RESOLUTION:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.MY_WINDOW.getWidth() + "x" + GameObject.MY_WINDOW.getHeight();
+                        result = gameObject.WINDOW.getWidth() + "x" + gameObject.WINDOW.getHeight();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         // changing resolution if necessary
                         int width = (int) command.args.get(0);
                         int height = (int) command.args.get(1);
-                        boolean status = GameObject.MY_WINDOW.setResolution(width, height);
+                        boolean status = gameObject.WINDOW.setResolution(width, height);
                         if (status) {
-                            MasterRenderer.setResolution(width, height);
-                            PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
-                            PerspectiveRenderer.setBuffered(false);
+                            gameObject.masterRenderer.setResolution(width, height);
+                            gameObject.perspectiveRenderer.updatePerspective();
+                            gameObject.perspectiveRenderer.setBuffered(false);
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;
                         }
-                        GameObject.MY_WINDOW.centerTheWindow();
+                        gameObject.WINDOW.centerTheWindow();
                         break;
                 }
 
@@ -354,30 +354,30 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case FULLSCREEN:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.MY_WINDOW.isFullscreen();
+                        result = gameObject.WINDOW.isFullscreen();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         boolean bool = (boolean) command.args.get(0);
-                        GameObject.MY_WINDOW.setFullscreen(bool);
-                        GameObject.MY_WINDOW.centerTheWindow();
+                        gameObject.WINDOW.setFullscreen(bool);
+                        gameObject.WINDOW.centerTheWindow();
                         break;
                 }
                 break;
 //            case WINDOWED:
-//                GameObject.MY_WINDOW.windowed();
-//                GameObject.MY_WINDOW.centerTheWindow();
+//                GameObject.WINDOW.windowed();
+//                GameObject.WINDOW.centerTheWindow();
 //                command.status = Status.SUCCEEDED;
 //                break;
             case VSYNC: // OpenGL
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.MY_WINDOW.isVsync();
+                        result = gameObject.WINDOW.isVsync();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         boolean bool = (boolean) command.args.get(0);
-                        GameObject.MY_WINDOW.setVSync(bool);
+                        gameObject.WINDOW.setVSync(bool);
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -385,11 +385,11 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case WATER_EFFECTS:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.getWaterRenderer().getEffectsQuality();
+                        result = gameObject.getWaterRenderer().getEffectsQuality();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        GameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
+                        gameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -412,13 +412,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case MUSIC_VOLUME:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.getMusicPlayer().getGain();
+                        result = gameObject.getMusicPlayer().getGain();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float music = (float) command.args.get(0);
                         if (music >= 0.0f && music <= 1.0f) {
-                            GameObject.getMusicPlayer().setGain(music);
+                            gameObject.getMusicPlayer().setGain(music);
                             command.status = Status.SUCCEEDED;
                         }
                         break;
@@ -427,13 +427,13 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case SOUND_VOLUME:
                 switch (command.mode) {
                     case GET:
-                        result = GameObject.getSoundFXPlayer().getGain();
+                        result = gameObject.getSoundFXPlayer().getGain();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float sound = (float) command.args.get(0);
                         if (sound >= 0.0f && sound <= 1.0f) {
-                            GameObject.getSoundFXPlayer().setGain(sound);
+                            gameObject.getSoundFXPlayer().setGain(sound);
                             command.status = Status.SUCCEEDED;
                         }
                         break;
@@ -458,20 +458,20 @@ public class Command implements Callable<Object> { // its not actually a thread 
                     screenshot.delete();
                 }
                 try {
-                    ImageIO.write(GameObject.MY_WINDOW.getScreenshot(), "PNG", screenshot);
+                    ImageIO.write(gameObject.WINDOW.getScreenshot(), "PNG", screenshot);
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
-                GameObject.getIntrface().getScreenText().setEnabled(true);
-                GameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
+                gameObject.getIntrface().getScreenText().setEnabled(true);
+                gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 command.status = Status.SUCCEEDED;
                 break;
             case EXIT:
-                GameObject.MY_WINDOW.close();
+                gameObject.WINDOW.close();
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
-                Observer mainActor = GameObject.getLevelContainer().levelActors.mainActor();
+                Observer mainActor = gameObject.getLevelContainer().levelActors.mainActor();
                 int chunkId;
                 switch (command.mode) {
                     case GET:
@@ -515,7 +515,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int totalSize = CacheModule.totalSize(GameObject.getLevelContainer().getChunks());
+                        int totalSize = CacheModule.totalSize(gameObject.getLevelContainer().getChunks());
                         int cachedSize = 0;
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
                             cachedSize += ci.cachedSize;
@@ -530,7 +530,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
-                            Chunk chunk = GameObject.getLevelContainer().getChunks().getChunk(chunkId);
+                            Chunk chunk = gameObject.getLevelContainer().getChunks().getChunk(chunkId);
                             if (chunk != null) {
                                 size = chunk.getBlockList().size();
                             }
@@ -563,7 +563,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
                 break;
             case CLEAR:
                 if (command.mode == Mode.SET) {
-                    Console console = GameObject.getIntrface().getConsole();
+                    Console console = gameObject.getIntrface().getConsole();
                     console.clear();
                 }
                 command.status = Status.SUCCEEDED;
@@ -596,7 +596,7 @@ public class Command implements Callable<Object> { // its not actually a thread 
 
     @Override
     public Object call() throws Exception {
-        return (this.result = Command.execute(this));
+        return (this.result = Command.execute(GameObject.getInstance(), this));
     }
 
     public List<Object> getArgs() {

@@ -32,13 +32,16 @@ public class MenuItem {
     protected final Menu.EditType editType;
 
     /**
+     * Game intrface
      *
+     * @param intrface game intrface
      * @param string display text
      * @param editType editable type {NoValue, SingleValue, MultiValue}
      * @param menuValue
+     * @throws java.lang.Exception
      */
-    public MenuItem(String string, Menu.EditType editType, MenuValue menuValue) {
-        this.keyText = new DynamicText(Texture.FONT, string);
+    public MenuItem(Intrface intrface, String string, Menu.EditType editType, MenuValue menuValue) throws Exception {
+        this.keyText = new DynamicText(intrface, Texture.FONT, string);
         this.editType = editType;
         this.menuValue = menuValue;
     }

@@ -100,14 +100,17 @@ public class Text implements ComponentIfc {
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
+    protected final Intrface intrface;
 
-    public Text(Texture texture, String content) {
+    public Text(Intrface intrface, Texture texture, String content) throws Exception {
+        this.intrface = intrface;
         this.texture = texture;
         this.content = content;
         this.enabled = true;
     }
 
-    public Text(Texture texture, String content, Vector4f color, Vector2f pos) {
+    public Text(Intrface intrface, Texture texture, String content, Vector4f color, Vector2f pos) throws Exception {
+        this.intrface = intrface;
         this.texture = texture;
         this.content = content;
         this.color = color;
@@ -115,7 +118,8 @@ public class Text implements ComponentIfc {
         this.enabled = true;
     }
 
-    public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
+    public Text(Intrface intrface, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) throws Exception {
+        this.intrface = intrface;
         this.texture = texture;
         this.content = content;
         this.pos = pos;
@@ -393,23 +397,23 @@ public class Text implements ComponentIfc {
     }
 
     public float getRelativeCharWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
     public float getRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor * content.length() / (float) GameObject.MY_WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor * content.length() / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
     public float getRelativeCharHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
     public float getRelativeHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor * numberOfLines() / (float) GameObject.MY_WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor * numberOfLines() / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
     // it aligns position to next char position (useful if characters are cut out or so)
@@ -483,10 +487,6 @@ public class Text implements ComponentIfc {
     @Override
     public int getIbo() {
         return ibo;
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     public Texture getTexture() {

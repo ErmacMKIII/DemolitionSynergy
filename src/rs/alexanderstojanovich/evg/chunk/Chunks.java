@@ -56,54 +56,6 @@ public class Chunks {
         }
     };
 
-    @Deprecated
-    public void updateSolids() {
-        for (Block solidBlock : getTotalList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = solidBlock.getFaceBits();
-            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(solidBlock.pos);
-            if (pair != null && pair.isSolid()) {
-                byte neighborBits = pair.getByteValue();
-                solidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = solidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    int chunkId = Chunk.chunkFunc(solidBlock.getPos());
-                    Chunk solidChunk = getChunk(chunkId);
-                    if (solidChunk != null) {
-                        solidChunk.transfer(solidBlock, faceBitsBefore, faceBitsAfter);
-                    }
-                }
-            }
-        }
-    }
-
-    @Deprecated
-    public void updateFluids() {
-        for (Block fluidBlock : getTotalList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = fluidBlock.getFaceBits();
-            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(fluidBlock.pos);
-            if (pair != null && !pair.isSolid()) {
-                byte neighborBits = pair.getByteValue();
-                fluidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = fluidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
-                    Chunk fluidChunk = getChunk(chunkId);
-                    if (fluidChunk != null) {
-                        fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Updates blocks faces of both original block and adjacent blocks. Block
      * must be solid.

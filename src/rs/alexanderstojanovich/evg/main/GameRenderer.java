@@ -20,8 +20,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -36,6 +34,8 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
 public class GameRenderer extends Thread implements Executor {
 
     protected static final Configuration cfg = Configuration.getInstance();
+    protected final GameObject gameObject;
+
     public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
     private static int fps = 0;
@@ -49,25 +49,30 @@ public class GameRenderer extends Thread implements Executor {
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
      * here.
+     *
+     * @param gameObject Game Object
      */
-    public GameRenderer() {
+    public GameRenderer(GameObject gameObject) {
         super("Renderer");
+        this.gameObject = gameObject;
     }
 
     @Override
     public void run() {
-        MasterRenderer.initGL(GameObject.MY_WINDOW, cfg); // loads myWindow context, creates OpenGL context..        
+        gameObject.masterRenderer.initGL(cfg); // loads myWindow context, creates OpenGL context..        
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
+        gameObject.perspectiveRenderer.updatePerspective(); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
-        GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context
+        gameObject.waterRenderer.getFrameBuffer().init(); // it is tuned in the correct OpenGL context
         do {
-            GameObject.render(); // render splash screen
+            gameObject.render(); // render splash screen
         } while (Game.upsTicks < 1.0);
-        GameObject.SPLASH_SCREEN.setEnabled(false);
-        MasterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
-        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
-        PerspectiveRenderer.setBuffered(false);
+        gameObject.splashScreen.setEnabled(false);
+
+        gameObject.masterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
+        gameObject.perspectiveRenderer.updatePerspective();
+        gameObject.perspectiveRenderer.setBuffered(false);
+
         animationTimer = 0.0;
 
         fps = 0;
@@ -76,7 +81,7 @@ public class GameRenderer extends Thread implements Executor {
         double currTime;
         double deltaTime = 0.0;
 
-        while (!GameObject.MY_WINDOW.shouldClose()) {
+        while (!gameObject.WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = Math.max(currTime - lastTime, 0.0);
             fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
@@ -85,14 +90,14 @@ public class GameRenderer extends Thread implements Executor {
             // Detecting critical status
             if (fps == 0 && deltaTime > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                GameObject.MY_WINDOW.close();
+                gameObject.WINDOW.close();
                 break;
             }
 
             numOfPasses = 0;
             // also avoid rendering when game is updating 
             while (fpsTicks >= 1.0 && couldRender()) {
-                GameObject.render();
+                gameObject.render();
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
@@ -100,8 +105,8 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - animationTimer > 20.0) {
-                if (!GameObject.isWorking() && couldAnimate()) {
-                    GameObject.animate();
+                if (!gameObject.isWorking() && couldAnimate()) {
+                    gameObject.animate();
                 }
 
                 animationTimer += 20.0;
@@ -148,7 +153,7 @@ public class GameRenderer extends Thread implements Executor {
      * interface as well).
      */
     protected void release() {
-        GameObject.release();
+        gameObject.release();
         DSLogger.reportDebug("Game content resources deleted.", null);
     }
 
@@ -158,7 +163,7 @@ public class GameRenderer extends Thread implements Executor {
     }
 
     public LevelContainer getLevelContainer() {
-        return GameObject.getLevelContainer();
+        return gameObject.getLevelContainer();
     }
 
     public static double getFpsTicks() {
@@ -191,6 +196,14 @@ public class GameRenderer extends Thread implements Executor {
 
     public static int getNumOfPasses() {
         return numOfPasses;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public FutureTask<Object> getTask() {
+        return task;
     }
 
 }

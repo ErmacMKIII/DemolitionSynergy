@@ -25,6 +25,7 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -35,10 +36,10 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class WaterRenderer {
+public class WaterRenderer implements CoreRenderer {
 
     private final LevelContainer levelContainer;
-    private final FrameBuffer frameBuffer = new FrameBuffer();
+    private final FrameBuffer frameBuffer;
     private final Camera camera;
 
     public static enum WaterEffectsQuality {
@@ -46,11 +47,13 @@ public class WaterRenderer {
     };
     private WaterEffectsQuality effectsQuality = WaterEffectsQuality.values()[Configuration.getInstance().getWaterEffects()];
     private int maxWaterDepthSize = 3;
-
     public static final IList<Float> WATER_HEIGHTS = new GapList<>();
+    protected final GameObject gameObject;
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
 
-    public WaterRenderer(LevelContainer levelContainer) {
+    public WaterRenderer(GameObject gameObject, LevelContainer levelContainer) throws Exception {
+        this.gameObject = gameObject;
+        this.frameBuffer = new FrameBuffer();
         this.camera = new Camera();
         this.levelContainer = levelContainer;
         this.setDepthByQuality();
@@ -189,7 +192,7 @@ public class WaterRenderer {
                 capture(waterHeight);
             }
         }
-        FrameBuffer.unbind();
+        FrameBuffer.unbind(gameObject);
 //        if (!debugQuad.isBuffered()) {
 //            debugQuad.bufferAll();
 //        }

@@ -72,10 +72,10 @@ public class FrameBuffer {
         GL11.glViewport(0, 0, texture.getImage().getWidth(), texture.getImage().getHeight()); // Render on the whole framebuffer, complete from the lower left corner to the upper right
     }
 
-    public static void unbind() {
+    public static void unbind(GameObject gameObject) {
         // render to the screen
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-        GL11.glViewport(0, 0, GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
+        GL11.glViewport(0, 0, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight());
     }
 
     public int getFbo() {

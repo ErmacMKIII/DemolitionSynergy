@@ -28,11 +28,13 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 public class HistoryItem {
 
     protected Command cmd;
-    protected final DynamicText cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
-    protected Quad quad = new Quad(14, 14, Texture.LIGHT_BULB);
+    protected final DynamicText cmdText;
+    protected final Quad quad;
 
-    public HistoryItem(Command command) {
+    public HistoryItem(Console con, Command command) throws Exception {
         this.cmd = command;
+        this.cmdText = new DynamicText(con.intrface, Texture.FONT, "", new Vector2f(), 18, 18);
+        this.quad = new Quad(con.intrface, 14, 14, Texture.LIGHT_BULB);
     }
 
     /**
@@ -121,10 +123,6 @@ public class HistoryItem {
 
     public Quad getQuad() {
         return quad;
-    }
-
-    public void setQuad(Quad quad) {
-        this.quad = quad;
     }
 
 }

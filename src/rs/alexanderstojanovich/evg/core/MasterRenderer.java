@@ -22,33 +22,38 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.main.GameObject;
 
 /**
  * Responsible for primitive rendering. OpenGL initialization happens here.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class MasterRenderer {
+public class MasterRenderer implements CoreRenderer {
 
     private static GLCapabilities glCaps; // GL context   
+    private final GameObject gameObject;
+
+    public MasterRenderer(GameObject gameObject) {
+        this.gameObject = gameObject;
+    }
 
     // load GL context into this thread  -> important!
     /**
      * Initializes OpenGL into this thread and configures it.Notice that OpenGL
      * is being rendered in the Window. Call only from Renderer.
      *
-     * @param myWindow window associated with rendering.
      * @param cfg ingame configuration
      */
-    public static void initGL(Window myWindow, Configuration cfg) {
+    public void initGL(Configuration cfg) {
         // load context
-        myWindow.loadContext();
+        gameObject.WINDOW.loadContext();
 
         // create openGL context        
         glCaps = GL.createCapabilities();
 
         // enable/disable vsync
-        myWindow.setVSync(cfg.isVsync());
+        gameObject.WINDOW.setVSync(cfg.isVsync());
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
@@ -62,20 +67,21 @@ public class MasterRenderer {
         GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f);
     }
 
-    public static void setResolution(int width, int height) {
+    public void setResolution(int width, int height) {
         GL11.glViewport(0, 0, width, height);
     }
 
     /**
      * Render by clearing the color (COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT)
      */
-    public static void render() {
+    @Override
+    public void render() {
         Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryRGBColor();
         GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
-    public static GLCapabilities getGlCaps() {
+    public GLCapabilities getGlCaps() {
         return glCaps;
     }
 

@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class LightSources {
 
+    protected final GameObject gameObject;
     public static final int MAX_LIGHTS = 256;
     public final IList<LightSource> lightSource = new GapList<>();
     public final boolean[] modified = new boolean[MAX_LIGHTS];
@@ -41,8 +42,13 @@ public class LightSources {
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
 
-    public final LightOverlay lightOverlay = new LightOverlay(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight(), new Texture("loverlay"));
+    public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
+
+    public LightSources(GameObject gameObject) throws Exception {
+        this.gameObject = gameObject;
+        this.lightOverlay = new LightOverlay(gameObject.getIntrface(), gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), new Texture("loverlay"));
+    }
 
     /**
      * Update lights unconditionally.

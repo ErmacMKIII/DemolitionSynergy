@@ -49,7 +49,7 @@ public class Editor {
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }
-        selectTexture();
+        selectTexture(lc.gameObject);
         // fetching..
         Camera camera = lc.levelActors.mainCamera();
         Vector3f pos = camera.getPos();
@@ -66,7 +66,7 @@ public class Editor {
             selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.GREEN_RGBA, true);
         }
 
-        GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
+        lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
     }
 
     public static void selectCurrSolid(LevelContainer lc) {
@@ -148,7 +148,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture();
+            selectTexture(lc.gameObject);
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -189,7 +189,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture();
+            selectTexture(lc.gameObject);
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -252,10 +252,10 @@ public class Editor {
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
+                synchronized (lc.gameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
                     lc.chunks.addBlock(selectedNew);
                 }
-                GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
+                lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 selectedNew = new Block(Texture.TEX_WORLD[texValue]);
             }
         }
@@ -264,37 +264,37 @@ public class Editor {
 
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
-            synchronized (GameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
+            synchronized (lc.gameObject.UPDATE_RENDER_MUTEX) { // potentially dangerous
                 lc.chunks.removeBlock(selectedCurr);
             }
-            GameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
+            lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
     }
 
-    private static void selectTexture() {
+    private static void selectTexture(GameObject gameObject) {
         if (selectedNew != null) {
-            synchronized (GameObject.UPDATE_RENDER_MUTEX) {
+            synchronized (gameObject.UPDATE_RENDER_MUTEX) {
                 String texName = Texture.TEX_WORLD[texValue];
                 selectedNew.setTexNameWithDeepCopy(texName);
             }
         }
     }
 
-    public static void selectPrevTexture() {
+    public static void selectPrevTexture(GameObject gameObject) {
         if (selectedNew != null) {
             if (texValue > 0) {
                 texValue--;
-                selectTexture();
+                selectTexture(gameObject);
             }
         }
     }
 
-    public static void selectNextTexture() {
+    public static void selectNextTexture(GameObject gameObject) {
         if (selectedNew != null) {
             if (texValue < Texture.TEX_WORLD.length - 1) {
                 texValue++;
-                selectTexture();
+                selectTexture(gameObject);
             }
         }
     }

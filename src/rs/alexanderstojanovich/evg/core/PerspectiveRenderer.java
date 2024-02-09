@@ -20,6 +20,7 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -27,12 +28,17 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class PerspectiveRenderer {
+public class PerspectiveRenderer implements CoreRenderer {
 
-    public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static FloatBuffer floatBuff = null;
+    private final GameObject gameObject;
+    public final Matrix4f PROJECTION_MATRIX = new Matrix4f();
+    protected FloatBuffer floatBuff = null;
 
-    protected static boolean buffered = false;
+    protected boolean buffered = false;
+
+    public PerspectiveRenderer(GameObject gameObject) {
+        this.gameObject = gameObject;
+    }
 
     /**
      * Load Perspective (projection matrix used in shaders)
@@ -43,24 +49,23 @@ public class PerspectiveRenderer {
      * @param zNear nearest point
      * @param zFar furthest point
      */
-    private static void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
+    private void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
         PROJECTION_MATRIX.setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
     }
 
     /**
      * Update perspective to window resolution (dimension)
-     *
-     * @param myWindow window
      */
-    public static void updatePerspective(Window myWindow) {
-        loadPerspective((float) (org.joml.Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20480.0f);
+    public void updatePerspective() {
+        loadPerspective((float) (org.joml.Math.PI / 2.0f), gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), 0.05f, 24576.0f);
     }
 
     /**
      * Buffer and render to the projection matrix (shaders)
      */
-    public static void bufferAndRender() {
+    @Override
+    public void render() {
         floatBuff = MemoryUtil.memCallocFloat(16); // 4x4
         if (floatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
@@ -80,20 +85,20 @@ public class PerspectiveRenderer {
         buffered = true;
     }
 
-    public static FloatBuffer getFloatBuff() {
+    public FloatBuffer getFloatBuff() {
         return floatBuff;
     }
 
-    public static void setFloatBuff(FloatBuffer floatBuff) {
-        PerspectiveRenderer.floatBuff = floatBuff;
+    public void setFloatBuff(FloatBuffer floatBuff) {
+        this.floatBuff = floatBuff;
     }
 
-    public static boolean isBuffered() {
+    public boolean isBuffered() {
         return buffered;
     }
 
-    public static void setBuffered(boolean buffered) {
-        PerspectiveRenderer.buffered = buffered;
+    public void setBuffered(boolean buffered) {
+        this.buffered = buffered;
     }
 
 }

@@ -19,6 +19,8 @@ package rs.alexanderstojanovich.evg.intrface;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
@@ -43,6 +45,7 @@ import rs.alexanderstojanovich.evg.util.PlainTextReader;
  */
 public class Intrface {
 
+    public final GameObject gameObject;
     private Quad crosshair;
     private DynamicText updText; // displays updates
     private DynamicText fpsText; // displays framerates
@@ -79,455 +82,200 @@ public class Intrface {
 
     private OptionsMenu singlPlayerMenu;
 
-    private final Console console = new Console();
+    private final Console console;
 
     /**
      * Init interface with all GL components: text, dialogs & menus.
+     *
+     * @param gameObject game object
+     * @throws java.lang.Exception if game object is not initialized (console
+     * cannot be created)
      */
-    public Intrface() {
-        initIntrface();
+    public Intrface(GameObject gameObject) throws Exception {
+        this.gameObject = gameObject;
+        this.console = new Console(this);
     }
 
     /**
      * Long Initialization. All components get their purpose now.
      */
-    private void initIntrface() {
-        final float menuScale = 2.0f;
+    public void initIntrface() {
+        try {
+            final float menuScale = 2.0f;
 
-        AudioPlayer musicPlayer = GameObject.getMusicPlayer();
-        AudioPlayer soundFXPlayer = GameObject.getSoundFXPlayer();
+            AudioPlayer musicPlayer = gameObject.getMusicPlayer();
+            AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-        updText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
-        updText.alignToNextChar();
-        fpsText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
-        fpsText.alignToNextChar();
+            updText = new DynamicText(this, Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
+            updText.alignToNextChar();
+            fpsText = new DynamicText(this, Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
+            fpsText.alignToNextChar();
 
-        posText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
-        posText.setAlignment(Text.ALIGNMENT_RIGHT);
-        posText.alignToNextChar();
+            posText = new DynamicText(this, Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
+            posText.setAlignment(Text.ALIGNMENT_RIGHT);
+            posText.alignToNextChar();
 
-        viewText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
-        viewText.setAlignment(Text.ALIGNMENT_RIGHT);
-        viewText.alignToNextChar();
+            viewText = new DynamicText(this, Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+            viewText.setAlignment(Text.ALIGNMENT_RIGHT);
+            viewText.alignToNextChar();
 
-        chunkText = new DynamicText(Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
-        chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
-        chunkText.alignToNextChar();
+            chunkText = new DynamicText(this, Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
+            chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
+            chunkText.alignToNextChar();
 
-        collText = new DynamicText(Texture.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
-        collText.alignToNextChar();
-        helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
-        helpText.alignToNextChar();
-        helpText.setEnabled(false);
-        progText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
-        progText.alignToNextChar();
-        screenText = new DynamicText(Texture.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
-        screenText.alignToNextChar();
-        gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
-        gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
-        gameModeText.alignToNextChar();
+            collText = new DynamicText(this, Texture.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
+            collText.alignToNextChar();
+            helpText = new DynamicText(this, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
+            helpText.alignToNextChar();
+            helpText.setEnabled(false);
+            progText = new DynamicText(this, Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
+            progText.alignToNextChar();
+            screenText = new DynamicText(this, Texture.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
+            screenText.alignToNextChar();
+            gameModeText = new DynamicText(this, Texture.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
+            gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
+            gameModeText.alignToNextChar();
 
-        gameTimeText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
-        gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
-        gameTimeText.alignToNextChar();
+            gameTimeText = new DynamicText(this, Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
+            gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
+            gameTimeText.alignToNextChar();
 
-        crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
-        crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
-        IList<MenuItem> mainMenuItems = new GapList<>();
-        mainMenuItems.add(new MenuItem("SINGLE PLAYER", Menu.EditType.EditNoValue, null));
-        mainMenuItems.add(new MenuItem("MULTIPLAYER", Menu.EditType.EditNoValue, null));
-        mainMenuItems.add(new MenuItem("EDITOR", Menu.EditType.EditNoValue, null));
-        mainMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
-        mainMenuItems.add(new MenuItem("CREDITS", Menu.EditType.EditNoValue, null));
-        mainMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
-        mainMenu = new Menu("", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
-            @Override
-            protected void leave() {
+            crosshair = new Quad(this, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+            crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
+            IList<MenuItem> mainMenuItems = new GapList<>();
+            mainMenuItems.add(new MenuItem(this, "SINGLE PLAYER", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "MULTIPLAYER", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "EDITOR", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "OPTIONS", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "CREDITS", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "EXIT", Menu.EditType.EditNoValue, null));
+            mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
+                @Override
+                protected void leave() {
 
-            }
-
-            @Override
-            protected void execute() {
-                String s = mainMenu.items.get(mainMenu.getSelected()).keyText.content;
-                switch (s) {
-                    case "SINGLE PLAYER":
-                        singlPlayerMenu.open();
-                        break;
-                    case "EDITOR":
-                        editorMenu.open();
-                        break;
-                    case "OPTIONS":
-                        optionsMenu.open();
-                        break;
-                    case "CREDITS":
-                        creditsMenu.open();
-                        break;
-                    case "EXIT":
-                        GameObject.MY_WINDOW.close();
-                        break;
                 }
-            }
-        };
-        Quad logo = new Quad(120, 90, Texture.LOGO);
-        logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
-        logo.setScale(1.5f);
-        mainMenu.setLogo(logo);
-        mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
-        saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
-            @Override
-            protected boolean execute(String command) {
-                Editor.deselect();
-                progText.enabled = true;
-                boolean ok = GameObject.saveLevelToFile(command);
-                if (ok) {
-                    Game.setCurrentMode(Mode.EDITOR);
-                }
-                return ok;
-            }
-        };
-
-        loadDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
-            @Override
-            protected boolean execute(String command) {
-                Editor.deselect();
-                progText.enabled = true;
-                boolean ok = GameObject.loadLevelFromFile(command);
-                if (ok) {
-                    Game.setCurrentMode(Mode.EDITOR);
-                }
-                return ok;
-            }
-        };
-        loadDialog.dialog.alignToNextChar();
-
-        File currFile = new File("./");
-        String[] datFileList = currFile.list(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".dat");
-            }
-        });
-
-        IList<MenuItem> loadLvlMenuPairs = new GapList<>();
-        for (String datFile : datFileList) {
-            loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
-        }
-
-        loadLvlMenu = new Menu("LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                editorMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-                String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
-                GameObject.loadLevelFromFile(chosen);
-            }
-        };
-        loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
-
-        randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
-            @Override
-            protected boolean execute(String command) {
-                boolean ok = false;
-                if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
-                    Editor.deselect();
-                    ok |= GameObject.generateRandomLevel(numBlocks);
-                    if (ok) {
-                        Game.setCurrentMode(Mode.EDITOR);
-                    } else {
-                        Game.setCurrentMode(Mode.FREE);
+                @Override
+                protected void execute() {
+                    String s = mainMenu.items.get(mainMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "SINGLE PLAYER":
+                            singlPlayerMenu.open();
+                            break;
+                        case "EDITOR":
+                            editorMenu.open();
+                            break;
+                        case "OPTIONS":
+                            optionsMenu.open();
+                            break;
+                        case "CREDITS":
+                            creditsMenu.open();
+                            break;
+                        case "EXIT":
+                            gameObject.WINDOW.close();
+                            break;
                     }
                 }
-                return ok;
-            }
-        };
-        randLvlDialog.dialog.alignToNextChar();
+            };
+            Quad logo = new Quad(this, 120, 90, Texture.LOGO);
+            logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
+            logo.setScale(1.5f);
+            mainMenu.setLogo(logo);
+            mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
-        IList<MenuItem> randLvlMenuItems = new GapList<>();
-        randLvlMenuItems.add(new MenuItem("SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
-        randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
-        randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
-        randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
-        randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
-
-        randLvlMenu = new OptionsMenu("GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                mainMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-                String str = randLvlMenu.items.get(selected).keyText.content;
-                String[] split = str.split("\\s+");
-                switch (split[0]) {
-                    case "SMALL":
-                        numBlocks = 25000;
-                        break;
-                    case "MEDIUM":
-                        numBlocks = 50000;
-                        break;
-                    case "LARGE":
-                        numBlocks = 100000;
-                        break;
-                    case "HUGE":
-                        numBlocks = 131070;
-                        break;
-                    default:
-                    case "SEED":
-                        MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
-                        GameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
-                        break;
-                }
-
-                if (numBlocks != 0 && selected != 4) {
-                    randLvlDialog.open();
-                }
-            }
-
-        };
-        randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
-
-        singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
-            @Override
-            protected boolean execute(String command) {
-                boolean ok = false;
-                if (!GameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+            saveDialog = new ConcurrentDialog(this, Texture.FONT, new Vector2f(-0.95f, 0.65f),
+                    "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
+                @Override
+                protected boolean execute(String command) {
                     Editor.deselect();
-                    ok |= GameObject.generateSinglePlayerLevel(numBlocks);
+                    progText.enabled = true;
+                    boolean ok = gameObject.saveLevelToFile(command);
                     if (ok) {
-                        Game.setCurrentMode(Mode.SINGLE_PLAYER);
-                    } else {
-                        Game.setCurrentMode(Mode.FREE);
-                    }
-                }
-
-                return ok;
-            }
-        };
-        singlePlayerDialog.dialog.alignToNextChar();
-
-        Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
-        Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
-        Object[] swtch = {"OFF", "ON"};
-        Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
-        Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
-        Object[] volume = new Float[21];
-        int k = 0;
-        for (float i = 0.0f; i < 1.05f; i += 0.05f) {
-            volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
-        }
-
-        IList<MenuItem> optionsMenuPairs = new GapList<>();
-        optionsMenuPairs.add(new MenuItem("FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
-        optionsMenuPairs.add(new MenuItem("RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
-                resolutions,
-                MenuValue.Type.STRING,
-                String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()))));
-        optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF")));
-        optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF")));
-        optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, GameObject.getWaterRenderer().getEffectsQuality().toString())));
-        optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
-        optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
-        optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
-
-        optionsMenu = new OptionsMenu("OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                mainMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-                Command command;
-                FutureTask<Object> task;
-                switch (selected) {
-                    case 0:
-                        command = Command.getCommand(Command.Target.FPS_MAX);
-                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                    case 1:
-                        command = Command.getCommand(Command.Target.RESOLUTION);
-                        String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
-                        String things[] = giveCurrent.split("x");
-                        command.getArgs().add(Integer.valueOf(things[0]));
-                        command.getArgs().add(Integer.valueOf(things[1]));
-                        command.setMode(Command.Mode.SET);
-                        task = new FutureTask<>(command);
-                        GameRenderer.TASK_QUEUE.add(task);
-                        break;
-                    case 2:
-                        String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.getCommand(Command.Target.FULLSCREEN);
-                        switch (fullscreen) {
-                            case "ON":
-                                command.args.add(true);
-                                break;
-                            case "OFF":
-                                command.args.add(false);
-                                break;
-                        }
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                    case 3:
-                        String vsync = (String) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.getCommand(Command.Target.VSYNC);
-                        switch (vsync) {
-                            case "ON":
-                                command.getArgs().add(true);
-                                break;
-                            case "OFF":
-                                command.getArgs().add(false);
-                                break;
-                        }
-                        command.setMode(Command.Mode.SET);
-                        task = new FutureTask<>(command);
-                        GameRenderer.TASK_QUEUE.add(task);
-                        break;
-                    case 4:
-                        String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.getCommand(Command.Target.WATER_EFFECTS);
-                        String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
-                        command.getArgs().add(waterFX);
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                    case 5:
-                        float msens = (float) items.get(selected).menuValue.getCurrentValue();
-                        command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
-                        command.getArgs().add(msens);
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                    case 6:
-                        command = Command.getCommand(Command.Target.MUSIC_VOLUME);
-                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                    case 7:
-                        command = Command.getCommand(Command.Target.SOUND_VOLUME);
-                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
-                        command.setMode(Command.Mode.SET);
-                        Command.execute(command);
-                        break;
-                }
-            }
-        };
-
-        optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
-
-        IList<MenuItem> editorMenuPairs = new GapList<>();
-        editorMenuPairs.add(new MenuItem("START NEW LEVEL", Menu.EditType.EditNoValue, null));
-        editorMenuPairs.add(new MenuItem("GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
-        editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
-        editorMenuPairs.add(new MenuItem("LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
-
-        editorMenu = new Menu("EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                mainMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-                String s = editorMenu.items.get(editorMenu.getSelected()).keyText.content;
-                switch (s) {
-                    case "START NEW LEVEL":
-                        progText.setEnabled(true);
-                        GameObject.startNewLevel();
                         Game.setCurrentMode(Mode.EDITOR);
-                        break;
-                    case "GENERATE RANDOM LEVEL":
-                        progText.setEnabled(true);
-                        //randLvlDialog.open();
-                        randLvlMenu.open();
-                        break;
-                    case "SAVE LEVEL TO FILE":
-                        progText.setEnabled(true);
-                        saveDialog.open();
-                        break;
-                    case "LOAD LEVEL FROM FILE":
-                        progText.setEnabled(true);
-                        loadLvlMenu.open();
-                        break;
+                    }
+                    return ok;
                 }
-            }
-        };
-        editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+            };
 
-        IList<MenuItem> creditsMenuPairs = new GapList<>();
-        creditsMenuPairs.add(new MenuItem("Programmer", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Testers", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Edmund \"HellBlade64\" Alby", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Art", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
-        creditsMenuPairs.add(new MenuItem("Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
-
-        creditsMenu = new Menu("CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                mainMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-
-            }
-
-        };
-
-        int index = 0;
-        for (MenuItem item : creditsMenu.items) {
-            if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
-                item.keyText.scale = 1.0f;
-                item.keyText.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
-                item.keyText.setBuffered(false);
-            }
-            index++;
-        }
-        creditsMenu.iterator.setEnabled(false);
-        creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
-
-        IList<MenuItem> singlPlayerMenuItems = new GapList<>();
-        singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
-        singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
-        singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
-        singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(GameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
-        singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
-
-        singlPlayerMenu = new OptionsMenu("SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
-            @Override
-            protected void leave() {
-                mainMenu.open();
-            }
-
-            @Override
-            protected void execute() {
-                // set player character model & color
-                if (singlPlayerMenu.selected == 1) {
-                    singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+            loadDialog = new ConcurrentDialog(this, Texture.FONT, new Vector2f(-0.95f, 0.65f),
+                    "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
+                @Override
+                protected boolean execute(String command) {
+                    Editor.deselect();
+                    progText.enabled = true;
+                    boolean ok = gameObject.loadLevelFromFile(command);
+                    if (ok) {
+                        Game.setCurrentMode(Mode.EDITOR);
+                    }
+                    return ok;
                 }
-                if (singlPlayerMenu.selected == 4) {
-                    Player player = GameObject.getLevelContainer().levelActors.player;
-                    player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
-                    player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
-                    // set level size & seed
-                    String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
-                    switch (levelSize) {
-                        default:
+            };
+            loadDialog.dialog.alignToNextChar();
+
+            File currFile = new File("./");
+            String[] datFileList = currFile.list(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.toLowerCase().endsWith(".dat");
+                }
+            });
+
+            IList<MenuItem> loadLvlMenuPairs = new GapList<>();
+            for (String datFile : datFileList) {
+                loadLvlMenuPairs.add(new MenuItem(this, datFile, Menu.EditType.EditNoValue, null));
+            }
+
+            loadLvlMenu = new Menu(this, "LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    editorMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
+                    gameObject.loadLevelFromFile(chosen);
+                }
+            };
+            loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+
+            randLvlDialog = new ConcurrentDialog(this, Texture.FONT, new Vector2f(-0.95f, 0.65f),
+                    "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
+                @Override
+                protected boolean execute(String command) {
+                    boolean ok = false;
+                    if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                        Editor.deselect();
+                        ok |= gameObject.generateRandomLevel(numBlocks);
+                        if (ok) {
+                            Game.setCurrentMode(Mode.EDITOR);
+                        } else {
+                            Game.setCurrentMode(Mode.FREE);
+                        }
+                    }
+                    return ok;
+                }
+            };
+            randLvlDialog.dialog.alignToNextChar();
+
+            IList<MenuItem> randLvlMenuItems = new GapList<>();
+            randLvlMenuItems.add(new MenuItem(this, "SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "SEED  ", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+
+            randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String str = randLvlMenu.items.get(selected).keyText.content;
+                    String[] split = str.split("\\s+");
+                    switch (split[0]) {
                         case "SMALL":
                             numBlocks = 25000;
                             break;
@@ -540,18 +288,282 @@ public class Intrface {
                         case "HUGE":
                             numBlocks = 131070;
                             break;
+                        default:
+                        case "SEED":
+                            MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
+                            gameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
+                            break;
                     }
-                    long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
-                    GameObject.getRandomLevelGenerator().setSeed(seedValue);
-                    singlePlayerDialog.open();
+
+                    if (numBlocks != 0 && selected != 4) {
+                        randLvlDialog.open();
+                    }
                 }
 
+            };
+            randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
+
+            singlePlayerDialog = new ConcurrentDialog(this, Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+                @Override
+                protected boolean execute(String command) {
+                    boolean ok = false;
+                    if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                        Editor.deselect();
+                        ok |= gameObject.generateSinglePlayerLevel(numBlocks);
+                        if (ok) {
+                            Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                        } else {
+                            Game.setCurrentMode(Mode.FREE);
+                        }
+                    }
+
+                    return ok;
+                }
+            };
+            singlePlayerDialog.dialog.alignToNextChar();
+
+            Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
+            Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
+            Object[] swtch = {"OFF", "ON"};
+            Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
+            Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
+            Object[] volume = new Float[21];
+            int k = 0;
+            for (float i = 0.0f; i < 1.05f; i += 0.05f) {
+                volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
             }
 
-        };
-        singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
-        singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
-        DSLogger.reportDebug("Interface initialized.", null);
+            IList<MenuItem> optionsMenuPairs = new GapList<>();
+            optionsMenuPairs.add(new MenuItem(this, "FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(this, fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
+            optionsMenuPairs.add(new MenuItem(this, "RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(this,
+                    resolutions,
+                    MenuValue.Type.STRING,
+                    String.valueOf(gameObject.WINDOW.getWidth()) + "x" + String.valueOf(gameObject.WINDOW.getHeight()))));
+            optionsMenuPairs.add(new MenuItem(this, "FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isFullscreen() ? "ON" : "OFF")));
+            optionsMenuPairs.add(new MenuItem(this, "VSYNC", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isVsync() ? "ON" : "OFF")));
+            optionsMenuPairs.add(new MenuItem(this, "WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(this, swtchFX, MenuValue.Type.STRING, gameObject.getWaterRenderer().getEffectsQuality().toString())));
+            optionsMenuPairs.add(new MenuItem(this, "MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(this, mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
+            optionsMenuPairs.add(new MenuItem(this, "MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
+            optionsMenuPairs.add(new MenuItem(this, "SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
+
+            optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    Command command;
+                    FutureTask<Object> task;
+                    switch (selected) {
+                        case 0:
+                            command = Command.getCommand(Command.Target.FPS_MAX);
+                            command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 1:
+                            command = Command.getCommand(Command.Target.RESOLUTION);
+                            String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
+                            String things[] = giveCurrent.split("x");
+                            command.getArgs().add(Integer.valueOf(things[0]));
+                            command.getArgs().add(Integer.valueOf(things[1]));
+                            command.setMode(Command.Mode.SET);
+                            task = new FutureTask<>(command);
+                            GameRenderer.TASK_QUEUE.add(task);
+                            break;
+                        case 2:
+                            String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
+                            command = Command.getCommand(Command.Target.FULLSCREEN);
+                            switch (fullscreen) {
+                                case "ON":
+                                    command.args.add(true);
+                                    break;
+                                case "OFF":
+                                    command.args.add(false);
+                                    break;
+                            }
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 3:
+                            String vsync = (String) items.get(selected).menuValue.getCurrentValue();
+                            command = Command.getCommand(Command.Target.VSYNC);
+                            switch (vsync) {
+                                case "ON":
+                                    command.getArgs().add(true);
+                                    break;
+                                case "OFF":
+                                    command.getArgs().add(false);
+                                    break;
+                            }
+                            command.setMode(Command.Mode.SET);
+                            task = new FutureTask<>(command);
+                            GameRenderer.TASK_QUEUE.add(task);
+                            break;
+                        case 4:
+                            String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
+                            command = Command.getCommand(Command.Target.WATER_EFFECTS);
+                            String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
+                            command.getArgs().add(waterFX);
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 5:
+                            float msens = (float) items.get(selected).menuValue.getCurrentValue();
+                            command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
+                            command.getArgs().add(msens);
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 6:
+                            command = Command.getCommand(Command.Target.MUSIC_VOLUME);
+                            command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 7:
+                            command = Command.getCommand(Command.Target.SOUND_VOLUME);
+                            command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                    }
+                }
+            };
+
+            optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+
+            IList<MenuItem> editorMenuPairs = new GapList<>();
+            editorMenuPairs.add(new MenuItem(this, "START NEW LEVEL", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
+
+            editorMenu = new Menu(this, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String s = editorMenu.items.get(editorMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "START NEW LEVEL":
+                            progText.setEnabled(true);
+                            gameObject.startNewLevel();
+                            Game.setCurrentMode(Mode.EDITOR);
+                            break;
+                        case "GENERATE RANDOM LEVEL":
+                            progText.setEnabled(true);
+                            //randLvlDialog.open();
+                            randLvlMenu.open();
+                            break;
+                        case "SAVE LEVEL TO FILE":
+                            progText.setEnabled(true);
+                            saveDialog.open();
+                            break;
+                        case "LOAD LEVEL FROM FILE":
+                            progText.setEnabled(true);
+                            loadLvlMenu.open();
+                            break;
+                    }
+                }
+            };
+            editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+
+            IList<MenuItem> creditsMenuPairs = new GapList<>();
+            creditsMenuPairs.add(new MenuItem(this, "Programmer", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Testers", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Edmund \"HellBlade64\" Alby", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Art", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Music/FX", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
+
+            creditsMenu = new Menu(this, "CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+
+                }
+
+            };
+
+            int index = 0;
+            for (MenuItem item : creditsMenu.items) {
+                if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
+                    item.keyText.scale = 1.0f;
+                    item.keyText.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
+                    item.keyText.setBuffered(false);
+                }
+                index++;
+            }
+            creditsMenu.iterator.setEnabled(false);
+            creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
+
+            IList<MenuItem> singlPlayerMenuItems = new GapList<>();
+            singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
+            singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+            singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
+
+            singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    // set player character model & color
+                    if (singlPlayerMenu.selected == 1) {
+                        singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                    }
+                    if (singlPlayerMenu.selected == 4) {
+                        Player player = gameObject.getLevelContainer().levelActors.player;
+                        player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                        player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
+                        // set level size & seed
+                        String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
+                        switch (levelSize) {
+                            default:
+                            case "SMALL":
+                                numBlocks = 25000;
+                                break;
+                            case "MEDIUM":
+                                numBlocks = 50000;
+                                break;
+                            case "LARGE":
+                                numBlocks = 100000;
+                                break;
+                            case "HUGE":
+                                numBlocks = 131070;
+                                break;
+                        }
+                        long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
+                        gameObject.getRandomLevelGenerator().setSeed(seedValue);
+                        singlePlayerDialog.open();
+                    }
+
+                }
+
+            };
+            singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
+            DSLogger.reportDebug("Interface initialized.", null);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to initialize interface! => " + ex.getMessage(), ex);
+        }
     }
 
     /**

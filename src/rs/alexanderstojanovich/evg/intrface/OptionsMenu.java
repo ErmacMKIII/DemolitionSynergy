@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
@@ -27,7 +26,6 @@ import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditNoValue;
 import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditSingleValue;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
@@ -47,13 +45,13 @@ public abstract class OptionsMenu extends Menu {
 
     protected GLFWCharCallback glfwCharCallback;
 
-    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName) {
-        super(title, items, textureFileName);
+    public OptionsMenu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
+        super(intrface, title, items, textureFileName);
         additionalInit();
     }
 
-    public OptionsMenu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
-        super(title, items, textureFileName, pos, scale);
+    public OptionsMenu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) throws Exception {
+        super(intrface, title, items, textureFileName, pos, scale);
         additionalInit();
     }
 
@@ -72,7 +70,7 @@ public abstract class OptionsMenu extends Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+                    GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -120,7 +118,7 @@ public abstract class OptionsMenu extends Menu {
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                        GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+                        GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                         execute();
                     }
                 } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -178,7 +176,7 @@ public abstract class OptionsMenu extends Menu {
                         GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                         GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                         GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                        GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+                        GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                         leave();
                     }
                 }
@@ -206,13 +204,13 @@ public abstract class OptionsMenu extends Menu {
         inputEdited = false;
         mode = InputMode.INIT;
         input.setLength(0);
-        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), glfwCursorPosCallback);
-        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
+        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCursorPosCallback);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
         GLFW.glfwWaitEvents();
-        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), glfwCharCallback);
+        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
 
-        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), glfwMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(intrface.gameObject.WINDOW.getWindowID(), glfwMouseButtonCallback);
     }
 
     @Override

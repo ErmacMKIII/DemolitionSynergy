@@ -506,7 +506,7 @@ public class Tuple extends Blocks {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
 
-            if (waterTexture != null && GameObject.getWaterRenderer().getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+            if (waterTexture != null && waterTexture != Texture.EMPTY) {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }

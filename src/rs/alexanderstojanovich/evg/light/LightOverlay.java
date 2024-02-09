@@ -22,6 +22,7 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -33,12 +34,12 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class LightOverlay extends Quad {
 
-    public LightOverlay(int width, int height, Texture texture) {
-        super(width, height, texture);
+    public LightOverlay(Intrface intrface, int width, int height, Texture texture) throws Exception {
+        super(intrface, width, height, texture);
     }
 
-    public LightOverlay(int width, int height, Texture texture, boolean ignoreFactor) {
-        super(width, height, texture, ignoreFactor);
+    public LightOverlay(Intrface intrface, int width, int height, Texture texture, boolean ignoreFactor) throws Exception {
+        super(intrface, width, height, texture, ignoreFactor);
     }
 
     public void render(Camera camera, LightSources lightSrc, ShaderProgram shaderProgram) {

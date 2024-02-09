@@ -64,21 +64,24 @@ public abstract class Menu {
     protected GLFWCursorPosCallback glfwCursorPosCallback;
     protected GLFWKeyCallback glfwKeyCallback;
     protected GLFWMouseButtonCallback glfwMouseButtonCallback;
+    protected final Intrface intrface;
 
-    public Menu(String title, IList<MenuItem> items, String textureFileName) {
-        this.title = new DynamicText(Texture.FONT, title);
+    public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
+        this.intrface = intrface;
+        this.title = new DynamicText(intrface, Texture.FONT, title);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
         Texture mngTexture = Texture.MINIGUN;
-        iterator = new Quad(24, 24, mngTexture);
+        iterator = new Quad(intrface, 24, 24, mngTexture);
         iterator.scale = itemScale;
         makeItems();
         updateIterator();
         init();
     }
 
-    public Menu(String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
-        this.title = new DynamicText(Texture.FONT, title);
+    public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) throws Exception {
+        this.intrface = intrface;
+        this.title = new DynamicText(intrface, Texture.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
@@ -86,7 +89,7 @@ public abstract class Menu {
         this.pos = pos;
         this.itemScale = scale;
         Texture mngTexture = Texture.MINIGUN;
-        iterator = new Quad(24, 24, mngTexture);
+        iterator = new Quad(intrface, 24, 24, mngTexture);
         iterator.scale = scale;
         makeItems();
         updateIterator();
@@ -119,8 +122,8 @@ public abstract class Menu {
             @Override
             public void invoke(long window, double xpos, double ypos) {
                 // get the new values
-                float new_xposGL = (float) (xpos / GameObject.MY_WINDOW.getWidth() - 0.5f) * 2.0f;
-                float new_yposGL = (float) (0.5f - ypos / GameObject.MY_WINDOW.getHeight()) * 2.0f;
+                float new_xposGL = (float) (xpos / intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
+                float new_yposGL = (float) (0.5f - ypos / intrface.gameObject.WINDOW.getHeight()) * 2.0f;
 
                 // if new and prev values aren't the same user moved the mouse
                 if (new_xposGL != xposGL || new_yposGL != yposGL) {
@@ -142,7 +145,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+                    GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -155,7 +158,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+                    GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     execute();
                 }
             }
@@ -191,11 +194,11 @@ public abstract class Menu {
      */
     public void open() {
         enabled = true;
-        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), glfwCursorPosCallback);
-        GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), null);
-        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
-        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), glfwMouseButtonCallback);
+        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCursorPosCallback);
+        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
+        GLFW.glfwSetMouseButtonCallback(intrface.gameObject.WINDOW.getWindowID(), glfwMouseButtonCallback);
     }
 
     protected int longestWord() {
@@ -327,7 +330,7 @@ public abstract class Menu {
     }
 
     public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
+        return intrface.gameObject.WINDOW;
     }
 
     public Quad getLogo() {

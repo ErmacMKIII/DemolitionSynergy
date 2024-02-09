@@ -33,6 +33,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -382,46 +383,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    @Deprecated
-    protected void updateSolids() {
-        for (Block solidBlock : getBlockList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = solidBlock.getFaceBits();
-            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(solidBlock.pos);
-            if (pair != null && pair.isSolid()) {
-                byte neighborBits = pair.getByteValue();
-                solidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = solidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    transfer(solidBlock, faceBitsBefore, faceBitsAfter);
-                }
-            }
-        }
-    }
-
-    @Deprecated
-    protected void updateFluids() {
-        for (Block fluidBlock : getBlockList()) {
-            if (GameObject.MY_WINDOW.shouldClose()) {
-                break;
-            }
-
-            int faceBitsBefore = fluidBlock.getFaceBits();
-            TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(fluidBlock.pos);
-            if (pair != null && !pair.isSolid()) {
-                byte neighborBits = pair.getByteValue();
-                fluidBlock.setFaceBits(~neighborBits & 63);
-                int faceBitsAfter = fluidBlock.getFaceBits();
-                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
-                    transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
-                }
-            }
-        }
-    }
-
     /**
      * Add block to the chunk.
      *
@@ -447,9 +408,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // update original block with neighbor blocks
         // setSafeCheck if it's light block        
         if (block.getTexName().equals("reflc")) { // if first add
-            LightSource lightSource = new LightSource(block.pos, block.getPrimaryRGBColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
-            LevelContainer.LIGHT_SOURCES.addLight(lightSource);
-            LevelContainer.LIGHT_SOURCES.setModified(block.pos, true);
+            GameObject gameObject;
+            try {
+                gameObject = GameObject.getInstance();
+                LightSource lightSource = new LightSource(block.pos, block.getPrimaryRGBColor(), LightSource.DEFAULT_LIGHT_INTENSITY);
+                gameObject.levelContainer.lightSources.addLight(lightSource);
+                gameObject.levelContainer.lightSources.setModified(block.pos, true);
+            } catch (Exception ex) {
+                DSLogger.reportError("Could not add the block!", null);
+            }
         }
         updateForAdd(block);
     }
@@ -476,7 +443,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             // update original block with neighbor blocks
             // setSafeCheck if it's light block
             if (block.getTexName().equals("reflc")) {
-                LevelContainer.LIGHT_SOURCES.removeLight(block.pos);
+                GameObject gameObject;
+                try {
+                    gameObject = GameObject.getInstance();
+                    gameObject.levelContainer.lightSources.removeLight(block.pos);
+                } catch (Exception ex) {
+                    DSLogger.reportError("Could not add the block!", null);
+                }
+
             }
             updateForRem(block);
         }

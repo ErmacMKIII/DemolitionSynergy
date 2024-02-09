@@ -18,6 +18,8 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -71,17 +73,19 @@ public class Quad implements ComponentIfc {
 
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
-
+    protected final Intrface intrface;
     protected boolean buffered = false;
 
-    public Quad(int width, int height, Texture texture) {
+    public Quad(Intrface intrface, int width, int height, Texture texture) throws Exception {
+        this.intrface = intrface;
         this.width = width;
         this.height = height;
         this.texture = texture;
         initUVs();
     }
 
-    public Quad(int width, int height, Texture texture, boolean ignoreFactor) {
+    public Quad(Intrface intrface, int width, int height, Texture texture, boolean ignoreFactor) throws Exception {
+        this.intrface = intrface;
         this.width = width;
         this.height = height;
         this.texture = texture;
@@ -329,17 +333,33 @@ public class Quad implements ComponentIfc {
     }
 
     public float giveRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return width * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
+        final GameObject gameObject;
+        try {
+            gameObject = GameObject.getInstance();
+            float widthFactor = (ignoreFactor) ? 1.0f : gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+            return width * widthFactor / (float) gameObject.WINDOW.getWidth();
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return 1.0f;
     }
 
     public float giveRelativeHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return height * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
+        final GameObject gameObject;
+        try {
+            gameObject = GameObject.getInstance();
+            float heightFactor = (ignoreFactor) ? 1.0f : gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+            return height * heightFactor / (float) gameObject.WINDOW.getHeight();
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return 1.0f;
     }
 
     public Window getWindow() {
-        return GameObject.MY_WINDOW;
+        return intrface.gameObject.WINDOW;
     }
 
     @Override
@@ -376,10 +396,6 @@ public class Quad implements ComponentIfc {
     @Override
     public void setColor(Vector4f color) {
         this.color = color;
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     @Override
