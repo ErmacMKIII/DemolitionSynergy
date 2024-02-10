@@ -49,11 +49,11 @@ public class WaterRenderer implements CoreRenderer {
     private int maxWaterDepthSize = 3;
     public static final IList<Float> WATER_HEIGHTS = new GapList<>();
     protected final GameObject gameObject;
-//    private final Quad debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+//    private final Quad debugQuad = new Quad(512, 512, frameBuffer.texture());
 
     public WaterRenderer(GameObject gameObject, LevelContainer levelContainer) throws Exception {
         this.gameObject = gameObject;
-        this.frameBuffer = new FrameBuffer();
+        this.frameBuffer = new FrameBuffer(true);
         this.camera = new Camera();
         this.levelContainer = levelContainer;
         this.setDepthByQuality();
@@ -151,7 +151,8 @@ public class WaterRenderer implements CoreRenderer {
         }
     }
 
-    private void prepare() {
+    @Override
+    public void prepare() {
         GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
@@ -173,13 +174,14 @@ public class WaterRenderer implements CoreRenderer {
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        levelContainer.render(camera);
+        levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), true, false, false);
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     /**
      * Render the water reflections to water textures
      */
+    @Override
     public void render() {
         if (effectsQuality == WaterEffectsQuality.NONE) {
             return;
@@ -199,9 +201,10 @@ public class WaterRenderer implements CoreRenderer {
 //        debugQuad.render(ShaderProgram.getIntrfaceShader());
     }
 
+    @Override
     public void release() {
-        DSLogger.reportDebug("Water Renderer released.", null);
         frameBuffer.getTexture().release();
+        DSLogger.reportDebug("Water Renderer released.", null);
     }
 
     public FrameBuffer getFrameBuffer() {
@@ -225,7 +228,7 @@ public class WaterRenderer implements CoreRenderer {
         this.setDepthByQuality();
     }
 
-    public Texture getTexture() {
+    public Texture texture() {
         return frameBuffer.getTexture();
     }
 }

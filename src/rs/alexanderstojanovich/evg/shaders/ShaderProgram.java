@@ -17,6 +17,8 @@
 package rs.alexanderstojanovich.evg.shaders;
 
 import java.nio.FloatBuffer;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
@@ -49,10 +51,18 @@ public class ShaderProgram {
     private static ShaderProgram weaponShader; // renders player weaponry
     private static ShaderProgram contourShader; // renders model decals in editor
     private static ShaderProgram skyboxShader; // skybox model shader (gradient in sky)
+    private static ShaderProgram shadowBaseShader; // shadow model shader
+    private static ShaderProgram shadowVoxelShader; // shadow model shader
 
-    public static final int SHADER_COUNT = 10;
-    public static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[SHADER_COUNT];
+    public static final Map<String, ShaderProgram> GL_SHADERS = new LinkedHashMap<>();
+    public static final IList<ShaderProgram> ENVIRONMENTAL_SHADERS = new GapList<>();
+    public static final IList<ShaderProgram> ACTOR_SHADERS = new GapList<>();
+    public static final IList<ShaderProgram> WATER_SHADERS = new GapList<>();
+    public static final IList<ShaderProgram> SHADOW_SHADERS = new GapList<>();
 
+    /**
+     * Init all the shaders. Must be done in Game Renderer.
+     */
     public static void initAllShaders() { // requires initialized OpenGL capabilities
         // 1. Light shader (primitive)
         Shader lightVertexShader = new Shader(Game.EFFECTS_ENTRY, "lightVS.glsl", Shader.VERTEX_SHADER);
@@ -61,7 +71,7 @@ public class ShaderProgram {
         lightShaders.add(lightVertexShader);
         lightShaders.add(lightFragmentShader);
         lightShader = new ShaderProgram(lightShaders);
-        SHADER_PROGRAMS[0] = lightShader;
+        GL_SHADERS.put("Light", lightShader);
         // 2. Init main shader (skybox, NPCs, items)
         Shader mainVertexShader = new Shader(Game.EFFECTS_ENTRY, "mainVS.glsl", Shader.VERTEX_SHADER);
         Shader mainFragmentShader = new Shader(Game.EFFECTS_ENTRY, "mainFS.glsl", Shader.FRAGMENT_SHADER);
@@ -69,7 +79,7 @@ public class ShaderProgram {
         mainShaders.add(mainVertexShader);
         mainShaders.add(mainFragmentShader);
         mainShader = new ShaderProgram(mainShaders);
-        SHADER_PROGRAMS[1] = mainShader;
+        GL_SHADERS.put("Base", mainShader);
         // 3. Init voxel shader (solid blocks and fluid blocks)
         Shader voxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "voxelVS.glsl", Shader.VERTEX_SHADER);
         Shader voxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "voxelFS.glsl", Shader.FRAGMENT_SHADER);
@@ -77,7 +87,7 @@ public class ShaderProgram {
         voxelShaders.add(voxelVertexShader);
         voxelShaders.add(voxelFragmentShader);
         voxelShader = new ShaderProgram(voxelShaders);
-        SHADER_PROGRAMS[2] = voxelShader;
+        GL_SHADERS.put("Voxel", voxelShader);
         // 4. Init base water shader (water effects)
         Shader waterBaseVertexShader = new Shader(Game.EFFECTS_ENTRY, "waterBaseVS.glsl", Shader.VERTEX_SHADER);
         Shader waterBaseFragmentShader = new Shader(Game.EFFECTS_ENTRY, "waterBaseFS.glsl", Shader.FRAGMENT_SHADER);
@@ -85,7 +95,7 @@ public class ShaderProgram {
         waterBaseShaders.add(waterBaseVertexShader);
         waterBaseShaders.add(waterBaseFragmentShader);
         waterBaseShader = new ShaderProgram(waterBaseShaders);
-        SHADER_PROGRAMS[3] = waterBaseShader;
+        GL_SHADERS.put("WaterBase", waterBaseShader);
         // 5. Init voxel water shader (water effects)
         Shader waterVoxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "waterVoxelVS.glsl", Shader.VERTEX_SHADER);
         Shader waterVoxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "waterVoxelFS.glsl", Shader.FRAGMENT_SHADER);
@@ -93,7 +103,7 @@ public class ShaderProgram {
         waterVoxelShaders.add(waterVoxelVertexShader);
         waterVoxelShaders.add(waterVoxelFragmentShader);
         waterVoxelShader = new ShaderProgram(waterVoxelShaders);
-        SHADER_PROGRAMS[4] = waterVoxelShader;
+        GL_SHADERS.put("WaterVoxel", waterVoxelShader);
         // 6. Init interface shader (crosshair & fonts)
         Shader intrfaceVertexShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceVS.glsl", Shader.VERTEX_SHADER);
         Shader intrfaceFragmentShader = new Shader(Game.EFFECTS_ENTRY, "intrfaceFS.glsl", Shader.FRAGMENT_SHADER);
@@ -101,7 +111,7 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceVertexShader);
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
-        SHADER_PROGRAMS[5] = intrfaceShader;
+        GL_SHADERS.put("Intrface", intrfaceShader);
         // 7. Init player shader (camera)
         Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
         Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
@@ -109,7 +119,7 @@ public class ShaderProgram {
         playerShaders.add(playerVertexShader);
         playerShaders.add(playerFragmentShader);
         playerShader = new ShaderProgram(playerShaders);
-        SHADER_PROGRAMS[6] = playerShader;
+        GL_SHADERS.put("Player", playerShader);
         // 8. Init weapon shader (player weapons)
         Shader weaponVertexShader = new Shader(Game.EFFECTS_ENTRY, "weaponVS.glsl", Shader.VERTEX_SHADER);
         Shader weaponFragmentShader = new Shader(Game.EFFECTS_ENTRY, "weaponFS.glsl", Shader.FRAGMENT_SHADER);
@@ -117,7 +127,7 @@ public class ShaderProgram {
         weaponShaders.add(weaponVertexShader);
         weaponShaders.add(weaponFragmentShader);
         weaponShader = new ShaderProgram(weaponShaders);
-        SHADER_PROGRAMS[7] = weaponShader;
+        GL_SHADERS.put("Weapon", weaponShader);
         // 9. Init contour shader (editor)
         Shader contourVertexShader = new Shader(Game.EFFECTS_ENTRY, "contourVS.glsl", Shader.VERTEX_SHADER);
         Shader contourFragmentShader = new Shader(Game.EFFECTS_ENTRY, "contourFS.glsl", Shader.FRAGMENT_SHADER);
@@ -125,7 +135,7 @@ public class ShaderProgram {
         contourShaders.add(contourVertexShader);
         contourShaders.add(contourFragmentShader);
         contourShader = new ShaderProgram(contourShaders);
-        SHADER_PROGRAMS[8] = contourShader;
+        GL_SHADERS.put("Contour", contourShader);
         // 10. Skybox model shader (gradient in sky)
         Shader skyboxVertexShader = new Shader(Game.EFFECTS_ENTRY, "skyboxVS.glsl", Shader.VERTEX_SHADER);
         Shader skyboxFragmentShader = new Shader(Game.EFFECTS_ENTRY, "skyboxFS.glsl", Shader.FRAGMENT_SHADER);
@@ -133,21 +143,75 @@ public class ShaderProgram {
         skyboxShaders.add(skyboxVertexShader);
         skyboxShaders.add(skyboxFragmentShader);
         skyboxShader = new ShaderProgram(skyboxShaders);
-        SHADER_PROGRAMS[9] = skyboxShader;
+        GL_SHADERS.put("Skybox", skyboxShader);
         // ---------------------------------------------------------------------
+        // 11. Shadow model shader
+        Shader shadowBaseVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseVS.glsl", Shader.VERTEX_SHADER);
+        Shader shadowBaseFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseFS.glsl", Shader.FRAGMENT_SHADER);
+        IList<Shader> shadowBaseShaders = new GapList<>();
+        shadowBaseShaders.add(shadowBaseVertexShader);
+        shadowBaseShaders.add(shadowBaseFragmentShader);
+        shadowBaseShader = new ShaderProgram(shadowBaseShaders);
+        GL_SHADERS.put("ShadowBase", shadowBaseShader);
+        // ---------------------------------------------------------------------// 11. Shadow model shader
+        Shader shadowVoxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelVS.glsl", Shader.VERTEX_SHADER);
+        Shader shadowVoxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelFS.glsl", Shader.FRAGMENT_SHADER);
+        IList<Shader> shadowVoxelShaders = new GapList<>();
+        shadowVoxelShaders.add(shadowVoxelVertexShader);
+        shadowVoxelShaders.add(shadowVoxelFragmentShader);
+        shadowVoxelShader = new ShaderProgram(shadowVoxelShaders);
+        GL_SHADERS.put("ShadowVoxel", shadowVoxelShader);
+        // ---------------------------------------------------------------------
+        // ENVIRONMENTAL SHADERS (MAIN, CONTOUR, VOXEL, SKYBOX)
+        //----------------------------------------------------------------------
+        ENVIRONMENTAL_SHADERS.add(mainShader);
+        ENVIRONMENTAL_SHADERS.add(contourShader);
+        ENVIRONMENTAL_SHADERS.add(voxelShader);
+        ENVIRONMENTAL_SHADERS.add(skyboxShader);
+        // ---------------------------------------------------------------------
+        // ACTOR SHADERS (PLAYER, WEAPON)
+        //----------------------------------------------------------------------
+        ACTOR_SHADERS.add(mainShader);
+        ACTOR_SHADERS.add(contourShader);
+        ACTOR_SHADERS.add(voxelShader);
+        ACTOR_SHADERS.add(skyboxShader);
+        // ---------------------------------------------------------------------
+        // ---------------------------------------------------------------------        
+        // WATER SHADERS
+        //----------------------------------------------------------------------
+        WATER_SHADERS.add(waterBaseShader);
+        WATER_SHADERS.add(waterVoxelShader);
+        // ---------------------------------------------------------------------
+        // SHADOW SHADERS
+        //----------------------------------------------------------------------
+        SHADOW_SHADERS.add(shadowBaseShader);
+        SHADOW_SHADERS.add(shadowVoxelShader);
         DSLogger.reportDebug("Shaders initialized!", null);
     }
 
+    /**
+     * Create new shader program from vertex & fragment shader
+     *
+     * @param shaders to create shader program
+     */
     public ShaderProgram(IList<Shader> shaders) {
         program = GL20.glCreateProgram();
         this.shaders = shaders;
         initProgram();
     }
 
+    /**
+     * Attach shader into the program
+     *
+     * @param shader shader (to attach)
+     */
     public void attachShader(int shader) {
         GL20.glAttachShader(program, shader);
     }
 
+    /**
+     * Link attached shader
+     */
     public void linkProgram() {
         GL20.glLinkProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
@@ -172,10 +236,13 @@ public class ShaderProgram {
         }
     }
 
+    /**
+     * Wrapper for initialization
+     */
     private void initProgram() {
         // attaching all the shaders
-        for (int i = 0; i < shaders.size(); i++) {
-            attachShader(shaders.get(i).getShader());
+        for (Shader sh : shaders) {
+            attachShader(sh.getShader());
         }
         // linking program
         linkProgram();
@@ -319,7 +386,7 @@ public class ShaderProgram {
      * Delete all shader programs
      */
     public static void deleteAllShaders() {
-        for (ShaderProgram sp : SHADER_PROGRAMS) {
+        for (ShaderProgram sp : GL_SHADERS.values()) {
             sp.deleteProgram();
         }
     }
@@ -370,6 +437,14 @@ public class ShaderProgram {
 
     public static ShaderProgram getSkyboxShader() {
         return skyboxShader;
+    }
+
+    public static ShaderProgram getShadowVoxelShader() {
+        return shadowVoxelShader;
+    }
+
+    public static ShaderProgram getShadowBaseShader() {
+        return shadowBaseShader;
     }
 
 }

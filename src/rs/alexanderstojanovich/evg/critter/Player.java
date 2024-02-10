@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.Collection;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
@@ -142,7 +143,7 @@ public class Player extends Critter implements Observer {
     }
 
     @Override
-    public void render(ShaderProgram[] shaderPrograms) {
+    public void render(Collection<ShaderProgram> shaderPrograms) {
         camera.render(shaderPrograms);
     }
 

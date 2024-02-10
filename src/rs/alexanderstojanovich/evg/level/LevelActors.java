@@ -62,7 +62,7 @@ public class LevelActors {
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }
-        mainActor().render(ShaderProgram.SHADER_PROGRAMS);
+        mainActor().render(ShaderProgram.GL_SHADERS.values());
 
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
                 || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {

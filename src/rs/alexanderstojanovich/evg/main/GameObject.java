@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
+import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
@@ -58,6 +59,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public final MasterRenderer masterRenderer;
     public final LevelContainer levelContainer;
     public final WaterRenderer waterRenderer;
+    public final ShadowRenderer shadowRenderer;
     public final RandomLevelGenerator randomLevelGenerator;
     public final PerspectiveRenderer perspectiveRenderer;
 
@@ -104,6 +106,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer = new LevelContainer(this);
         randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         waterRenderer = new WaterRenderer(this, levelContainer);
+        shadowRenderer = new ShadowRenderer(this, levelContainer);
         musicPlayer = new AudioPlayer();
         soundFXPlayer = new AudioPlayer();
         //----------------------------------------------------------------------
@@ -140,8 +143,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } catch (Exception ex) {
             DSLogger.reportError(ex.getMessage(), ex);
         }
-        // init game interface        
-        DSLogger.reportDebug("Interface initialized.", null);
+//        // init game interface        
+//        DSLogger.reportDebug("Interface initialized.", null);
     }
 
     /**
@@ -222,6 +225,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
             perspectiveRenderer.updatePerspective(); // update perspective for all the shaders     
+            perspectiveRenderer.updateOrthogonal(); // update orthogonal for "shadow" shaders  
             levelContainer.update();
             synchronized (UPDATE_RENDER_MUTEX) {
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
@@ -307,17 +311,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             splashScreen.render(ShaderProgram.getIntrfaceShader());
         } else {
-            if (!perspectiveRenderer.isBuffered()) {
-                perspectiveRenderer.render(); // it sets perspective matrix accross shaders       
-            }
+            perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
             synchronized (UPDATE_RENDER_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
                     levelContainer.render();
                     if (this.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
                             && !levelContainer.getChunks().getChunkList().isEmpty()) {
                         waterRenderer.render();
+
                     }
                 }
+                shadowRenderer.render();
                 intrface.render(ShaderProgram.getIntrfaceShader());
             }
         }
@@ -331,8 +335,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void release() {
         this.splashScreen.release();
+        this.perspectiveRenderer.release();
         this.intrface.release();
         this.waterRenderer.release();
+        this.shadowRenderer.release();
         this.levelContainer.blockEnvironment.optimizedTuples.forEach(t -> t.release());
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
@@ -354,7 +360,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Auto load/save level container chunks
+     * Auto init/save level container chunks
      *
      * @return did chunk operations modify anything (something changed).
      */

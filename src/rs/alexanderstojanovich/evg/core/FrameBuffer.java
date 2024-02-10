@@ -21,7 +21,6 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Class responsible for "Rendering to Texture"
@@ -32,23 +31,41 @@ public class FrameBuffer {
 
     private static int fbo;
     private final Texture texture = new Texture("FrameBuffer");
+    private final boolean useColorBuffer;
 
     /**
-     * Call initilzation of this from Game Renderer (requires OpenGL context to
-     * be in that thread)
+     * Create Frame Buffer. Used by shadow renderer (depth only) & water
+     * renderer (color & depth)
+     *
+     * @param useColorBuffer use color buffer (water renderer only)
      */
-    public void init() { // requires OpenGL context
+    public FrameBuffer(boolean useColorBuffer) {
+        this.useColorBuffer = useColorBuffer;
+    }
+
+    /**
+     * Call initialization of this from Game Renderer (requires OpenGL context
+     * to be in that thread)
+     */
+    public void initBuffer() { // requires OpenGL context        
         texture.bufferAll(); // loads empty texture to graphics card
         createFrameBuffer();
         createDepthBuffer();
-        configureFrameBuffer();
-        DSLogger.reportDebug("Water renderer initialized!", null);
+        if (useColorBuffer) {
+            createColorBuffer();
+        }
+        // unbind so the configuration is not ruined
+        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
     }
 
     private void createFrameBuffer() {
         // the framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
         fbo = GL30.glGenFramebuffers();
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
+        if (!useColorBuffer) {
+            GL11.glDrawBuffer(GL11.GL_NONE);
+            GL11.glReadBuffer(GL11.GL_NONE);
+        }
     }
 
     private void createDepthBuffer() {
@@ -59,11 +76,10 @@ public class FrameBuffer {
         GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_RENDERBUFFER, depthRenderBuffer);
     }
 
-    private void configureFrameBuffer() {
+    private void createColorBuffer() {
         // set "renderedTexture" as our colour attachement #0
         GL32.glFramebufferTexture(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, texture.getTextureID(), 0);
         // unbinding
-        GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
     }
 
     public void bind() {
@@ -84,6 +100,10 @@ public class FrameBuffer {
 
     public Texture getTexture() {
         return texture;
+    }
+
+    public boolean isUseColorBuffer() {
+        return useColorBuffer;
     }
 
 }

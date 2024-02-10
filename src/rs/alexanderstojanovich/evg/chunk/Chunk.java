@@ -18,6 +18,8 @@ package rs.alexanderstojanovich.evg.chunk;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
@@ -29,6 +31,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
+import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -59,8 +62,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final IList<Tuple> tupleList = new GapList<>();
-
-    private Texture waterTexture;
 
     private boolean buffered = false;
 
@@ -490,11 +491,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, LightSources lightSources) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
-
-            for (Tuple tuple : tupleList) {
-                tuple.renderInstanced(shaderProgram, lightSources, waterTexture);
+            GameObject gameObj;
+            try {
+                gameObj = GameObject.getInstance();
+                for (Tuple tuple : tupleList) {
+                    tuple.renderInstanced(shaderProgram, lightSources, gameObj.waterRenderer.texture(), gameObj.shadowRenderer.texture());
+                }
+            } catch (Exception ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
             }
-
         }
     }
 
@@ -633,14 +638,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public List<Tuple> getTupleList() {
         return tupleList;
-    }
-
-    public Texture getWaterTexture() {
-        return waterTexture;
-    }
-
-    public void setWaterTexture(Texture waterTexture) {
-        this.waterTexture = waterTexture;
     }
 
     public boolean isBuffered() {

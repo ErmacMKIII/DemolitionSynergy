@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.Collection;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.critter.Observer;
@@ -253,7 +254,7 @@ public class Camera implements Observer { // is 3D looking camera
      * @param shaderPrograms multiple shader programs (array)
      */
     @Override
-    public void render(ShaderProgram[] shaderPrograms) {
+    public void render(Collection<ShaderProgram> shaderPrograms) {
         calcViewMatrix();
         for (ShaderProgram shaderProgram : shaderPrograms) {
             shaderProgram.bind();

@@ -1114,14 +1114,23 @@ public class LevelContainer implements GravityEnviroment {
         return !collision;
     }
 
-    // method for determining visible chunks
+    /**
+     * Method to determine visible chunks.
+     *
+     * @return
+     */
     public boolean determineVisible() {
         boolean changed = Chunk.determineVisible(vChnkIdList, iChnkIdList, levelActors.mainCamera());
 
         return changed;
     }
 
-    // method for saving invisible chunks / loading visible chunks
+    /**
+     * Method for saving invisible chunks / loading visible chunks. From Cache
+     * module. Cache module is being addressed.
+     *
+     * @return
+     */
     public boolean chunkOperations() {
         boolean changed = false;
         if (!working) {
@@ -1136,6 +1145,10 @@ public class LevelContainer implements GravityEnviroment {
         return changed;
     }
 
+    /**
+     * Perform update to the day/night cycle. Sun position & sunlight is
+     * updated. Skybox rotates counter-clockwise (from -right to right)
+     */
     public void update() { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!   
             final float now = GameTime.Now().getTime();
@@ -1162,6 +1175,13 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
+    /**
+     * Optimize block environment. Block environment is ensuring that there is
+     * no created overhead in rendering.
+     *
+     * Blocks from all the chunks are being taken into consideration.
+     *
+     */
     public void optimize() {
         if (!working) {
             Camera mainCamera = levelActors.mainCamera();
@@ -1172,6 +1192,9 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
+    /**
+     * Regular Rendering on the screen
+     */
     public void render() { // renderStatic for regular level rendering
         if (working) {
             return;
@@ -1194,7 +1217,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), lightSources);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), lightSources, true, true);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -1226,7 +1249,19 @@ public class LevelContainer implements GravityEnviroment {
         lightSources.resetAllModified();
     }
 
-    public void render(Camera camera) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
+    /**
+     * Render environment by using the specifing shader. And specific camera.
+     * And by specifics. This method of rendering is used by Water Renderer and
+     * Shadow Renderer.
+     *
+     * @param camera camera to use
+     * @param baseShader base shader program to render
+     * @param instanceShader instanced (rendering) shader
+     * @param renderLights render lights
+     * @param renderWater render water
+     * @param renderShadow render shadow
+     */
+    public void render(Camera camera, ShaderProgram baseShader, ShaderProgram instanceShader, boolean renderLights, boolean renderWater, boolean renderShadow) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -1238,34 +1273,34 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         if (SUNLIGHT.getIntensity() > 0.0f) {
-            SUN.render(lightSources, ShaderProgram.getWaterBaseShader());
+            SUN.render(lightSources, baseShader);
         }
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(lightSources, ShaderProgram.getWaterBaseShader());
+        SKYBOX.render(lightSources, baseShader);
 
-        camera.render(ShaderProgram.getWaterVoxelShader());
+        camera.render(instanceShader);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getWaterVoxelShader(), lightSources);
+        blockEnvironment.renderStatic(instanceShader, lightSources, renderWater, renderShadow);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
-            editorNew.render(lightSources, ShaderProgram.getWaterBaseShader());
+            editorNew.render(lightSources, baseShader);
 
             Block selectedNewWireFrame = Editor.getSelectedNewDecal();
             if (selectedNewWireFrame != null) {
                 if (!selectedNewWireFrame.isBuffered()) {
                     selectedNewWireFrame.bufferAll();
                 }
-                selectedNewWireFrame.render(lightSources, ShaderProgram.getWaterBaseShader());
+                selectedNewWireFrame.render(lightSources, baseShader);
             }
 
         }
@@ -1275,12 +1310,14 @@ public class LevelContainer implements GravityEnviroment {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
-            selectedCurrFrame.render(lightSources, ShaderProgram.getWaterBaseShader());
+            selectedCurrFrame.render(lightSources, baseShader);
         }
-        levelActors.render(lightSources, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterBaseShader());
+        levelActors.render(lightSources, ShaderProgram.getPlayerShader(), baseShader);
 
-        LightSources.render(camera, lightSources, ShaderProgram.getLightShader());
-        lightSources.resetAllModified();
+        if (renderLights) {
+            LightSources.render(camera, lightSources, ShaderProgram.getLightShader());
+            lightSources.resetAllModified();
+        }
     }
 
     // -------------------------------------------------------------------------

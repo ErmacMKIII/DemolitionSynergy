@@ -24,7 +24,18 @@ package rs.alexanderstojanovich.evg.core;
 public interface CoreRenderer {
 
     /**
+     * Prepare for render This usually means to clear the flag(s).
+     *
+     */
+    public void prepare();
+
+    /**
      * Render stuff to the screen (using OpenGL)
      */
     public void render();
+
+    /**
+     * Release resources
+     */
+    public void release();
 }

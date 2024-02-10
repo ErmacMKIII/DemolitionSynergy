@@ -59,11 +59,7 @@ public class Main {
             final GameObject gameObject = new GameObject();
             // init game interface
             gameObject.postInit();
-
-            boolean ok = gameObject.WINDOW.setResolution(inCfg.getWidth(), inCfg.getHeight());
-            if (!ok) {
-                DSLogger.reportError("Game unable to set resolution!", null);
-            }
+            // start the game loop & renderer
             gameObject.start();
             //----------------------------------------------------------------------
             Configuration outCfg = Game.makeConfig(gameObject); // makes configuration from ingame settings

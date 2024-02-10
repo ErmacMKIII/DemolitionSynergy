@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.Collection;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -138,7 +139,7 @@ public class RPGCamera extends Camera {
      * @param shaderPrograms multiple shader programs (array)
      */
     @Override
-    public void render(ShaderProgram[] shaderPrograms) {
+    public void render(Collection<ShaderProgram> shaderPrograms) {
         calcViewMatrix();
         for (ShaderProgram shaderProgram : shaderPrograms) {
             shaderProgram.bind();

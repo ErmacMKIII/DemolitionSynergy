@@ -341,7 +341,7 @@ public class Command implements Callable<Object> {
                         if (status) {
                             gameObject.masterRenderer.setResolution(width, height);
                             gameObject.perspectiveRenderer.updatePerspective();
-                            gameObject.perspectiveRenderer.setBuffered(false);
+                            gameObject.perspectiveRenderer.updateOrthogonal();
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;

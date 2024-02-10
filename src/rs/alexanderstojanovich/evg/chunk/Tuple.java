@@ -462,7 +462,7 @@ public class Tuple extends Blocks {
         updateVertices();
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
@@ -511,6 +511,11 @@ public class Tuple extends Blocks {
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
 
+            if (shadowTexture != null && shadowTexture != Texture.EMPTY) {
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
+                shadowTexture.bind(2, shaderProgram, "modelTexture2");
+            }
+
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
@@ -540,7 +545,7 @@ public class Tuple extends Blocks {
         }
     }
 
-    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture) {
+    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
         if (!tuples.isEmpty()) {
             shaderProgram.bind();
 
@@ -573,6 +578,11 @@ public class Tuple extends Blocks {
             if (waterTexture != null && waterTexture != Texture.EMPTY) {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor1");
                 waterTexture.bind(1, shaderProgram, "modelTexture1");
+            }
+
+            if (shadowTexture != null && shadowTexture != Texture.EMPTY) {
+                shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
+                shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
 
             for (Tuple tuple : tuples) {

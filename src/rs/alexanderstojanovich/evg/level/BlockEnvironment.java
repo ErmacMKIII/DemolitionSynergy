@@ -22,7 +22,6 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
-import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -193,28 +192,51 @@ public class BlockEnvironment {
             return;
         }
 
+        Texture waterTexture = gameObject.waterRenderer.getFrameBuffer().getTexture();
+        Texture shadowTexture = gameObject.shadowRenderer.getFrameBuffer().getTexture();
+
         for (Tuple tuple : optimizedTuples) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-
-            tuple.renderInstanced(shaderProgram, lightSources, tuple.isSolid() ? Texture.EMPTY : gameObject.getWaterRenderer().getFrameBuffer().getTexture());
+            tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
         }
     }
 
+//    /**
+//     * Static render (faster)
+//     *
+//     * @param shaderProgram voxel shader
+//     * @param lightSources light sources
+//     */
+//    @Deprecated
+//    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources) {
+//        if (!optimized || optimizedTuples.isEmpty()) {
+//            return;
+//        }
+//
+//        Texture waterTexture = gameObject.waterRenderer.getFrameBuffer().getTexture();
+//        Texture shadowTexture = gameObject.shadowRenderer.getFrameBuffer().getTexture();
+//
+//        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
+//    }
     /**
      * Static render (faster)
      *
      * @param shaderProgram voxel shader
      * @param lightSources light sources
+     * @param renderWater
+     * @param renderShadow
      */
-    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources) {
+    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources, boolean renderWater, boolean renderShadow) {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
-        WaterRenderer.WaterEffectsQuality effectsQuality = gameObject.getWaterRenderer().getEffectsQuality();
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, effectsQuality == WaterRenderer.WaterEffectsQuality.NONE ? Texture.EMPTY : gameObject.getWaterRenderer().getFrameBuffer().getTexture());
+        Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
     }
 
     /**

@@ -36,7 +36,7 @@ public class LightSources {
 
     protected final GameObject gameObject;
     public static final int MAX_LIGHTS = 256;
-    public final IList<LightSource> lightSource = new GapList<>();
+    public final IList<LightSource> sourceList = new GapList<>();
     public final boolean[] modified = new boolean[MAX_LIGHTS];
 
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
@@ -56,8 +56,8 @@ public class LightSources {
      * @param shaderProgram shader Program where lights are used
      */
     public void updateLightsInShader(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(lightSource.size(), MODEL_LIGHT_NUMBER_NAME);
-        shaderProgram.updateUniform(lightSource, MODEL_LIGHT_NAME);
+        shaderProgram.updateUniform(sourceList.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(sourceList, MODEL_LIGHT_NAME);
     }
 
     /**
@@ -66,8 +66,8 @@ public class LightSources {
      * @param shaderProgram shader Program where lights are used
      */
     public void updateLightsInShaderIfModified(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(lightSource.size(), MODEL_LIGHT_NUMBER_NAME);
-        shaderProgram.updateUniform(lightSource, modified, MODEL_LIGHT_NAME);
+        shaderProgram.updateUniform(sourceList.size(), MODEL_LIGHT_NUMBER_NAME);
+        shaderProgram.updateUniform(sourceList, modified, MODEL_LIGHT_NAME);
     }
 
     /**
@@ -83,7 +83,7 @@ public class LightSources {
     }
 
     public void clearLights() {
-        lightSource.clear();
+        sourceList.clear();
         lightMap.clear();
     }
 
@@ -93,7 +93,7 @@ public class LightSources {
      * @param ls light source
      */
     public void addLight(LightSource ls) {
-        lightSource.add(ls);
+        sourceList.add(ls);
         lightMap.put(ls.pos, ls);
     }
 
@@ -103,7 +103,7 @@ public class LightSources {
      * @param ls light source
      */
     public void removeLight(LightSource ls) {
-        lightSource.remove(ls);
+        sourceList.remove(ls);
         lightMap.remove(ls.pos);
     }
 
@@ -113,12 +113,12 @@ public class LightSources {
      * @param indexLastExclusive last index to keep
      */
     public void retainLights(int indexLastExclusive) {
-        lightSource.retain(0, indexLastExclusive);
+        sourceList.retain(0, indexLastExclusive);
         Set<Vector3f> keySet = lightMap.keySet();
         for (Vector3f pos : keySet) {
-            LightSource light = lightSource.filter(ls -> ls.pos.equals(pos)).getFirstOrNull();
-            if (light != null && lightSource.indexOf(light) >= indexLastExclusive) {
-                lightSource.remove(light);
+            LightSource light = sourceList.filter(ls -> ls.pos.equals(pos)).getFirstOrNull();
+            if (light != null && sourceList.indexOf(light) >= indexLastExclusive) {
+                sourceList.remove(light);
                 lightMap.remove(pos);
             }
         }
@@ -132,10 +132,10 @@ public class LightSources {
     public void removeLight(Vector3f pos) {
         LightSource ls = lightMap.get(pos);
         if (ls != null) {
-            lightSource.remove(ls);
+            sourceList.remove(ls);
             lightMap.remove(ls.pos);
         } else {
-            lightSource.removeIf(lsx -> lsx.pos.equals(pos));
+            sourceList.removeIf(lsx -> lsx.pos.equals(pos));
         }
     }
 
@@ -158,7 +158,7 @@ public class LightSources {
     public void setModified(Vector3f pos, boolean modified) {
         LightSource ls = lightMap.get(pos);
         if (ls != null) {
-            int index = lightSource.indexOf(ls);
+            int index = sourceList.indexOf(ls);
             if (index != -1) {
                 this.modified[index] = modified;
             }
@@ -173,8 +173,8 @@ public class LightSources {
         Arrays.fill(modified, false);
     }
 
-    public IList<LightSource> getLightSource() {
-        return lightSource;
+    public IList<LightSource> getSourceList() {
+        return sourceList;
     }
 
     public Map<Vector3f, LightSource> getLightMap() {

@@ -72,17 +72,33 @@ public class MasterRenderer implements CoreRenderer {
     }
 
     /**
-     * Render by clearing the color (COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT)
+     * Prepare for render
      */
     @Override
-    public void render() {
+    public void prepare() {
         Vector3f skyColor = LevelContainer.SKYBOX.getPrimaryRGBColor();
         GL11.glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
         GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
+    /**
+     * Render by clearing the color (COLOR_BUFFER_BIT | DEPTH_BUFFER_BIT)
+     */
+    @Override
+    public void render() {
+        prepare();
+    }
+
     public GLCapabilities getGlCaps() {
         return glCaps;
+    }
+
+    /**
+     * Master Renderer is pretty basic. As not having any resources
+     */
+    @Override
+    public void release() {
+
     }
 
 }
