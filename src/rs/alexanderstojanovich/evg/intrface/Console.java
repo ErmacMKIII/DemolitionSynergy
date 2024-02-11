@@ -54,29 +54,29 @@ public class Console {
     protected GLFWKeyCallback glfwKeyCallback;
     protected Intrface intrface;
 
-    public Console(Intrface intrface) throws Exception {
+    public Console(Intrface intrface) {
         this.intrface = intrface;
         int conwidth = cfg.getWidth();
         int conheight = cfg.getHeight() / 2;
 
-        this.panel = new Quad(intrface, conwidth, conheight, Texture.CONSOLE);
+        this.panel = new Quad(conwidth, conheight, Texture.CONSOLE);
         this.panel.setColor(new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
-        this.inText = new DynamicText(intrface, Texture.FONT, "]_", new Vector2f(), 18, 18);
+        this.inText = new DynamicText(Texture.FONT, "]_", new Vector2f(), 18, 18);
         this.inText.setColor(new Vector4f(GlobalColors.GREEN, 1.0f));
         this.inText.pos.x = -1.0f;
-        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
 
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
-        this.inText.alignToNextChar();
+        this.inText.alignToNextChar(intrface);
 
-        this.completes = new DynamicText(intrface, Texture.FONT, "", new Vector2f(), 18, 18);
+        this.completes = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
         this.completes.color = new Vector4f(GlobalColors.YELLOW, 1.0f);
         this.completes.pos.x = -1.0f;
-        this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
-        this.completes.alignToNextChar();
+        this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight(intrface);
+        this.completes.alignToNextChar(intrface);
         init();
     }
 
@@ -122,7 +122,7 @@ public class Console {
                             // add to queue
                             HistoryItem item;
                             try {
-                                item = new HistoryItem(Console.this, cmd);
+                                item = new HistoryItem(cmd);
                                 history.addFirst(item);
                             } catch (Exception ex) {
                                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
@@ -132,10 +132,10 @@ public class Console {
                             history.forEach(hi -> {
                                 hi.buildCmdText();
                                 hi.cmdText.pos.x = -1.0f;
-                                hi.cmdText.pos.y += ((inText.getRelativeHeight() + inText.getRelativeCharHeight()) * inText.scale + (hi.cmdText.getRelativeCharHeight() + hi.cmdText.getRelativeHeight()) * hi.cmdText.scale) * Text.LINE_SPACING;
-                                hi.cmdText.alignToNextChar();
+                                hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+                                hi.cmdText.alignToNextChar(intrface);
 
-                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth() + hi.cmdText.getRelativeCharWidth()) * hi.cmdText.scale;
+                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
                                 hi.quad.pos.y = hi.cmdText.pos.y;
                             });
 
@@ -200,33 +200,34 @@ public class Console {
     /**
      * Render in the interface (has to be enabled)
      *
+     * @param intrface intrface to render to
      * @param shaderProgram shader program to use
      */
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled) {
             panel.setWidth(intrface.gameObject.WINDOW.getWidth());
             panel.setHeight(intrface.gameObject.WINDOW.getHeight() / 2);
             if (!panel.isBuffered()) {
-                panel.bufferAll();
+                panel.bufferAll(intrface);
             }
-            panel.render(shaderProgram);
+            panel.render(intrface, shaderProgram);
             inText.pos.x = -1.0f;
-            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
-            inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
+            inText.alignToNextChar(intrface); // this changes both pos.x and pos.y for inText
 
             if (!inText.isBuffered()) {
-                inText.bufferAll();
+                inText.bufferAll(intrface);
             }
-            inText.render(shaderProgram);
+            inText.render(intrface, shaderProgram);
 
             for (HistoryItem item : history) {
-                item.render(shaderProgram);
+                item.render(intrface, shaderProgram);
             }
 
             if (!completes.isBuffered()) {
-                completes.bufferAll();
+                completes.bufferAll(intrface);
             }
-            completes.render(shaderProgram);
+            completes.render(intrface, shaderProgram);
         }
     }
 

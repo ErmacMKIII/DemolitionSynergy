@@ -43,7 +43,6 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
 public class Game {
 
     private static final Configuration cfg = Configuration.getInstance();
-    private final GameObject gameObject;
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final double TICK_TIME = 1.0 / (double) TPS;
@@ -107,17 +106,15 @@ public class Game {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
-    public final LevelContainer levelContainer;
+    protected final GameObject gameObject;
 
     /**
      * Construct new game view
      *
      * @param gameObject game object
-     * @param levelContainer level (environment) container
      */
-    public Game(GameObject gameObject, LevelContainer levelContainer) {
+    public Game(GameObject gameObject) {
         this.gameObject = gameObject;
-        this.levelContainer = levelContainer;
         Arrays.fill(keys, false);
         initCallbacks();
     }
@@ -136,7 +133,7 @@ public class Game {
         Observer obs = lc.levelActors.spectator;
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveBackward(AMOUNT);
             } else {
                 obs.moveForward(amount);
@@ -145,7 +142,7 @@ public class Game {
         }
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
                 obs.moveBackward(amount);
@@ -154,7 +151,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
                 obs.moveLeft(amount);
@@ -163,7 +160,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
                 obs.moveRight(amount);
@@ -172,7 +169,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.descend(AMOUNT);
             } else {
                 obs.ascend(amount);
@@ -181,7 +178,7 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
-            if (causingCollision = gameObject.hasCollisionWith(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.ascend(AMOUNT);
             } else {
                 obs.descend(amount);
@@ -319,7 +316,7 @@ public class Game {
 
         if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision && !jumpPerformed) {
             player.movePredictorYUp(amountY);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYDown(amountY);
             } else {
                 jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -329,7 +326,7 @@ public class Game {
 
         if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
             player.movePredictorYDown(amountYNeg);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
                 player.sinkY(amountYNeg);
@@ -339,7 +336,7 @@ public class Game {
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
             player.movePredictorXZForward(amountXZ);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
@@ -349,7 +346,7 @@ public class Game {
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
             player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
@@ -359,7 +356,7 @@ public class Game {
 
         if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
             player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
@@ -369,7 +366,7 @@ public class Game {
 
         if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
             player.movePredictorXZRight(amountXZ);
-            if (causingCollision = gameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
@@ -459,19 +456,19 @@ public class Game {
                     gameObject.intrface.toggleShowHelp();
                 } else if (key == GLFW.GLFW_KEY_F2 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.intrface.getSaveDialog().open();
+                    gameObject.intrface.getSaveDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F3 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.intrface.getLoadDialog().open();
+                    gameObject.intrface.getLoadDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.printInfo();
+                    gameObject.levelContainer.chunks.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.getLevelContainer().printQueues();
+                    gameObject.levelContainer.printQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Object> task = new FutureTask<>(Command.getCommand(Command.Target.SCREENSHOT));
@@ -587,28 +584,28 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (gameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= observerDo(levelContainer, AMOUNT * (float) TICK_TIME);
-                            actionPerformed |= editorDo(levelContainer);
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
+                            actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
+                            actionPerformed |= editorDo(gameObject.levelContainer);
                         }
 
                         if (actionPerformed) {
-                            LevelContainer.updateCameraInFluid(levelContainer);
+                            LevelContainer.updateCameraInFluid(gameObject.levelContainer);
                         }
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (gameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
+                            actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
                         }
 
                         if (actionPerformed) {
-                            LevelContainer.updateCameraInFluid(levelContainer);
+                            LevelContainer.updateCameraInFluid(gameObject.levelContainer);
                         }
 
                         if (keys[GLFW.GLFW_KEY_SPACE] // prevent repeat jumping (while not in water)
-                                && !levelContainer.levelActors.player.isUnderGravity() && actionPerformed) {
+                                && !gameObject.levelContainer.levelActors.player.isUnderGravity() && actionPerformed) {
                             jumpPerformed = false;
                         }
                         break;

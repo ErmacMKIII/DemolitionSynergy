@@ -38,9 +38,8 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
  */
 public class WaterRenderer implements CoreRenderer {
 
-    private final LevelContainer levelContainer;
-    private final FrameBuffer frameBuffer;
-    private final Camera camera;
+    private final FrameBuffer frameBuffer = new FrameBuffer("Water", true);
+    private final Camera camera = new Camera();
 
     public static enum WaterEffectsQuality {
         NONE, LOW, MEDIUM, HIGH, ULTRA
@@ -51,11 +50,8 @@ public class WaterRenderer implements CoreRenderer {
     protected final GameObject gameObject;
 //    private final Quad debugQuad = new Quad(512, 512, frameBuffer.texture());
 
-    public WaterRenderer(GameObject gameObject, LevelContainer levelContainer) throws Exception {
+    public WaterRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
-        this.frameBuffer = new FrameBuffer(true);
-        this.camera = new Camera();
-        this.levelContainer = levelContainer;
         this.setDepthByQuality();
     }
 
@@ -86,7 +82,7 @@ public class WaterRenderer implements CoreRenderer {
             WATER_HEIGHTS.clear();
         }
 
-        Camera actCam = levelContainer.levelActors.mainCamera();
+        Camera actCam = gameObject.levelContainer.levelActors.mainCamera();
         Vector3f temp = new Vector3f();
         final Vector3f frontNeg = actCam.front.negate(temp);
         final float chPosY = actCam.pos.y;
@@ -162,7 +158,7 @@ public class WaterRenderer implements CoreRenderer {
     }
 
     private void updateCamera(float waterHeight) {
-        Camera mainCamera = levelContainer.levelActors.mainCamera();
+        Camera mainCamera = gameObject.levelContainer.levelActors.mainCamera();
 
         camera.getPos().x = mainCamera.pos.x;
         camera.getPos().y = 2.0f * waterHeight - mainCamera.pos.y;
@@ -174,7 +170,7 @@ public class WaterRenderer implements CoreRenderer {
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), true, false, false);
+        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), false, false, false);
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
@@ -216,7 +212,7 @@ public class WaterRenderer implements CoreRenderer {
     }
 
     public LevelContainer getLevelContainer() {
-        return levelContainer;
+        return gameObject.levelContainer;
     }
 
     public WaterEffectsQuality getEffectsQuality() {

@@ -29,9 +29,9 @@ public final class SingleValue implements MenuValue {
     private Object value = new Object();
     protected Type type;
 
-    public SingleValue(Intrface intrface, Object value, Type type) throws Exception {
+    public SingleValue(Object value, Type type) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(intrface, Texture.FONT, String.valueOf(value));
+        this.valueText = new DynamicText(Texture.FONT, String.valueOf(value));
         this.setCurrentValue(value);
     }
 
@@ -55,11 +55,11 @@ public final class SingleValue implements MenuValue {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (!valueText.isBuffered()) {
-            valueText.bufferSmart();
+            valueText.bufferSmart(intrface);
         }
-        valueText.render(shaderProgram);
+        valueText.render(intrface, shaderProgram);
     }
 
     @Override

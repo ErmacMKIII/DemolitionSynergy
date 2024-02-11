@@ -34,14 +34,13 @@ public class MenuItem {
     /**
      * Game intrface
      *
-     * @param intrface game intrface
      * @param string display text
      * @param editType editable type {NoValue, SingleValue, MultiValue}
      * @param menuValue
      * @throws java.lang.Exception
      */
-    public MenuItem(Intrface intrface, String string, Menu.EditType editType, MenuValue menuValue) throws Exception {
-        this.keyText = new DynamicText(intrface, Texture.FONT, string);
+    public MenuItem(String string, Menu.EditType editType, MenuValue menuValue) throws Exception {
+        this.keyText = new DynamicText(Texture.FONT, string);
         this.editType = editType;
         this.menuValue = menuValue;
     }
@@ -57,19 +56,20 @@ public class MenuItem {
     /**
      * Render this menu item in the menu.
      *
+     * @param intrface intrface
      * @param shaderProgram shader program to use.
      */
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (!keyText.isBuffered()) {
-            keyText.bufferSmart();
+            keyText.bufferSmart(intrface);
         }
-        keyText.render(shaderProgram);
+        keyText.render(intrface, shaderProgram);
 
         if (menuValue != null) {
             if (!menuValue.getValueText().isBuffered()) {
-                menuValue.getValueText().bufferSmart();
+                menuValue.getValueText().bufferSmart(intrface);
             }
-            menuValue.getValueText().render(shaderProgram);
+            menuValue.getValueText().render(intrface, shaderProgram);
         }
     }
 

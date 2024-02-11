@@ -114,9 +114,10 @@ public interface ComponentIfc {
     /**
      * Render using the shader program
      *
+     * @param intrface intrface to which component is rendered
      * @param shaderProgram shader program to use
      */
-    public void render(ShaderProgram shaderProgram);
+    public void render(Intrface intrface, ShaderProgram shaderProgram);
 
     /**
      * Set this component to disallow rendering unless it is buffered again
@@ -157,14 +158,18 @@ public interface ComponentIfc {
 
     /**
      * Buffer vertices and indices and set buffered flag accordingly.
+     *
+     * @param intrface intrface
      */
-    public void bufferAll();
+    public void bufferAll(Intrface intrface);
 
     /**
      * Buffer/update vertices & indices depending if it is first time and/or
      * vertex buffer the same size as prior.
+     *
+     * @param intrface intrface
      */
-    public void bufferSmart();
+    public void bufferSmart(Intrface intrface);
 
     /**
      * Release this components. All GL buffers are deleted.

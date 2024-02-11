@@ -73,19 +73,16 @@ public class Quad implements ComponentIfc {
 
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
-    protected final Intrface intrface;
     protected boolean buffered = false;
 
-    public Quad(Intrface intrface, int width, int height, Texture texture) throws Exception {
-        this.intrface = intrface;
+    public Quad(int width, int height, Texture texture) {
         this.width = width;
         this.height = height;
         this.texture = texture;
         initUVs();
     }
 
-    public Quad(Intrface intrface, int width, int height, Texture texture, boolean ignoreFactor) throws Exception {
-        this.intrface = intrface;
+    public Quad(int width, int height, Texture texture, boolean ignoreFactor) {
         this.width = width;
         this.height = height;
         this.texture = texture;
@@ -253,12 +250,12 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public void bufferAll() {
+    public void bufferAll(Intrface intrface) {
         buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
-    public void bufferSmart() {
+    public void bufferSmart(Intrface intrface) {
         if (FLOAT_BUFFER != null && vao != 0 && vbo != 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
@@ -266,12 +263,12 @@ public class Quad implements ComponentIfc {
         }
     }
 
-    protected Matrix4f calcModelMatrix() {
+    protected Matrix4f calcModelMatrix(Intrface intrface) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x, pos.y, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
-        float sx = giveRelativeWidth();
-        float sy = giveRelativeHeight();
+        float sx = giveRelativeWidth(intrface);
+        float sy = giveRelativeHeight(intrface);
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
@@ -281,7 +278,7 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) { // used for crosshair
+    public void render(Intrface intrface, ShaderProgram shaderProgram) { // used for crosshair
         if (enabled && buffered) {
             GL30.glBindVertexArray(vao);
 
@@ -292,7 +289,7 @@ public class Quad implements ComponentIfc {
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
-            Matrix4f modelMatrix = calcModelMatrix();
+            Matrix4f modelMatrix = (intrface != null) ? calcModelMatrix(intrface) : new Matrix4f().identity();
             shaderProgram.updateUniform(modelMatrix, "modelMatrix");
 
             shaderProgram.updateUniform(scale, "scale");
@@ -332,34 +329,14 @@ public class Quad implements ComponentIfc {
         }
     }
 
-    public float giveRelativeWidth() {
-        final GameObject gameObject;
-        try {
-            gameObject = GameObject.getInstance();
-            float widthFactor = (ignoreFactor) ? 1.0f : gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-            return width * widthFactor / (float) gameObject.WINDOW.getWidth();
-        } catch (Exception ex) {
-            DSLogger.reportError(ex.getMessage(), ex);
-        }
-
-        return 1.0f;
+    public float giveRelativeWidth(Intrface intrface) {
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+        return width * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
-    public float giveRelativeHeight() {
-        final GameObject gameObject;
-        try {
-            gameObject = GameObject.getInstance();
-            float heightFactor = (ignoreFactor) ? 1.0f : gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-            return height * heightFactor / (float) gameObject.WINDOW.getHeight();
-        } catch (Exception ex) {
-            DSLogger.reportError(ex.getMessage(), ex);
-        }
-
-        return 1.0f;
-    }
-
-    public Window getWindow() {
-        return intrface.gameObject.WINDOW;
+    public float giveRelativeHeight(Intrface intrface) {
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return height * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
     @Override
@@ -451,7 +428,7 @@ public class Quad implements ComponentIfc {
     @Override
     public void setPos(Vector2f pos) {
         this.pos = pos;
-        calcModelMatrix();
+//        calcModelMatrix();
     }
 
     public void setBuffered(boolean buffered) {

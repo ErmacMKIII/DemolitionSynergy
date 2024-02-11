@@ -55,10 +55,8 @@ public class Main {
             }
             MasterAudio.init(); // audio init before game loading
             //----------------------------------------------------------------------
-            // initialize game creation (game loop with game renderer)
+            // initialize game creation (only creates window)
             final GameObject gameObject = new GameObject();
-            // init game interface
-            gameObject.postInit();
             // start the game loop & renderer
             gameObject.start();
             //----------------------------------------------------------------------

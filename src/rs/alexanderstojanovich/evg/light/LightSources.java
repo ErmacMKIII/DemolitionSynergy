@@ -24,7 +24,8 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
-import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -34,7 +35,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class LightSources {
 
-    protected final GameObject gameObject;
+    public static final LightSources NONE = new LightSources();
+
     public static final int MAX_LIGHTS = 256;
     public final IList<LightSource> sourceList = new GapList<>();
     public final boolean[] modified = new boolean[MAX_LIGHTS];
@@ -45,9 +47,8 @@ public class LightSources {
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
-    public LightSources(GameObject gameObject) throws Exception {
-        this.gameObject = gameObject;
-        this.lightOverlay = new LightOverlay(gameObject.getIntrface(), gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), new Texture("loverlay"));
+    public LightSources() {
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay"));
     }
 
     /**
@@ -73,13 +74,14 @@ public class LightSources {
     /**
      * Project lights to the screen.Makes feel of light environment.
      *
+     * @param intrface intrface
      * @param camera camera (3D)
      * @param lightSources Light Sources
      * @param shaderProgram light shader program
      */
-    public static void render(Camera camera, LightSources lightSources, ShaderProgram shaderProgram) {
-        lightSources.lightOverlay.bufferSmart();
-        lightSources.lightOverlay.render(camera, lightSources, shaderProgram); // has shader bind
+    public static void render(Intrface intrface, Camera camera, LightSources lightSources, ShaderProgram shaderProgram) {
+        lightSources.lightOverlay.bufferSmart(intrface);
+        lightSources.lightOverlay.render(intrface, camera, lightSources, shaderProgram); // has shader bind
     }
 
     public void clearLights() {

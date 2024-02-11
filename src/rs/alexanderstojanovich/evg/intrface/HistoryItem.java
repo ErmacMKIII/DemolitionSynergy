@@ -31,10 +31,10 @@ public class HistoryItem {
     protected final DynamicText cmdText;
     protected final Quad quad;
 
-    public HistoryItem(Console con, Command command) throws Exception {
+    public HistoryItem(Command command) throws Exception {
         this.cmd = command;
-        this.cmdText = new DynamicText(con.intrface, Texture.FONT, "", new Vector2f(), 18, 18);
-        this.quad = new Quad(con.intrface, 14, 14, Texture.LIGHT_BULB);
+        this.cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
+        this.quad = new Quad(14, 14, Texture.LIGHT_BULB);
     }
 
     /**
@@ -81,20 +81,21 @@ public class HistoryItem {
     /**
      * Renders this history item in the console (in interface).
      *
+     * @param intrface intrface
      * @param shaderProgram shader program to use
      */
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         buildCmdText();
         if (!cmdText.isBuffered()) {
-            cmdText.bufferSmart();
+            cmdText.bufferSmart(intrface);
         }
-        cmdText.render(shaderProgram);
+        cmdText.render(intrface, shaderProgram);
         // ------------------------------------------------------------------------------------------------------        
         if (!quad.isBuffered()) {
-            quad.bufferSmart();
+            quad.bufferSmart(intrface);
         }
         quad.color = Console.StatusColor(cmd.status);
-        quad.render(shaderProgram);
+        quad.render(intrface, shaderProgram);
     }
 
     /*

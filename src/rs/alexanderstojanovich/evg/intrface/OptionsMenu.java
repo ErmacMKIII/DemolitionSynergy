@@ -47,18 +47,18 @@ public abstract class OptionsMenu extends Menu {
 
     public OptionsMenu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
         super(intrface, title, items, textureFileName);
-        additionalInit();
+        additionalInit(intrface);
     }
 
     public OptionsMenu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) throws Exception {
         super(intrface, title, items, textureFileName, pos, scale);
-        additionalInit();
+        additionalInit(intrface);
     }
 
     /**
      * Init additional callbacks (or override existing)
      */
-    private void additionalInit() {
+    private void additionalInit(Intrface intrface) {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -73,9 +73,9 @@ public abstract class OptionsMenu extends Menu {
                     GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    selectPrev();
+                    selectPrev(intrface);
                 } else if (key == GLFW.GLFW_KEY_DOWN && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    selectNext();
+                    selectNext(intrface);
                 } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     MenuItem selectedMenuItem = items.get(selected);
                     if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditMultiValue) {
@@ -214,36 +214,36 @@ public abstract class OptionsMenu extends Menu {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intface, ShaderProgram shaderProgram) {
         if (enabled) {
             //setOptionValues();
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
-            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
+            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth(intface)) + pos.x;
+            title.getPos().y = title.getRelativeCharHeight(intface) * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
-                title.bufferSmart();
+                title.bufferSmart(intface);
             }
-            title.render(shaderProgram);
+            title.render(intface, shaderProgram);
             int index = 0;
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
-                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
+                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth(intface)) + pos.x;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight(intface) * Text.LINE_SPACING + pos.y;
 
                 if (item.menuValue != null && item.menuValue.getValueText() != null) {
-                    item.menuValue.getValueText().getPos().x = item.keyText.getPos().x + itemScale * (item.keyText.getRelativeWidth() + item.keyText.getRelativeCharWidth()) * (1.0f - alignmentAmount);
+                    item.menuValue.getValueText().getPos().x = item.keyText.getPos().x + itemScale * (item.keyText.getRelativeWidth(intface) + item.keyText.getRelativeCharWidth(intface)) * (1.0f - alignmentAmount);
                     item.menuValue.getValueText().getPos().y = item.keyText.getPos().y;
                 }
-                item.render(shaderProgram);
+                item.render(intface, shaderProgram);
 
                 index++;
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferSmart();
+                iterator.bufferSmart(intface);
             }
-            iterator.render(shaderProgram);
+            iterator.render(intface, shaderProgram);
         }
     }
 

@@ -45,16 +45,16 @@ public class DynamicText extends Text {
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected static FloatBuffer bigFloatBuff = null;
 
-    public DynamicText(Intrface intrface, Texture texture, String content) throws Exception {
-        super(intrface, texture, content);
+    public DynamicText(Texture texture, String content) {
+        super(texture, content);
     }
 
-    public DynamicText(Intrface intrface, Texture texture, String content, Vector4f color, Vector2f pos) throws Exception {
-        super(intrface, texture, content, color, pos);
+    public DynamicText(Texture texture, String content, Vector4f color, Vector2f pos) {
+        super(texture, content, color, pos);
     }
 
-    public DynamicText(Intrface intrface, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) throws Exception {
-        super(intrface, texture, content, pos, charWidth, charHeight);
+    public DynamicText(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
+        super(texture, content, pos, charWidth, charHeight);
     }
 
     @Override
@@ -168,15 +168,15 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void bufferAll() {
+    public void bufferAll(Intrface intrface) {
         buffered = false;
-        setup();
+        setup(intrface);
         buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
-    public void bufferSmart() {
-        int deltaSize = setup();
+    public void bufferSmart(Intrface intrface) {
+        int deltaSize = setup(intrface);
         if (bigFloatBuff != null && bigVbo != 0 && deltaSize == 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
@@ -185,7 +185,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
             GL30.glBindVertexArray(vao);
 
@@ -196,7 +196,7 @@ public class DynamicText extends Text {
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
             shaderProgram.updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
+            texture.bind(0, shaderProgram, "ifcTexture");
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);

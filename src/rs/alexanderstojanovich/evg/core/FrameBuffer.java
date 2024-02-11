@@ -30,16 +30,18 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 public class FrameBuffer {
 
     private static int fbo;
-    private final Texture texture = new Texture("FrameBuffer");
+    private final Texture texture;
     private final boolean useColorBuffer;
 
     /**
      * Create Frame Buffer. Used by shadow renderer (depth only) & water
      * renderer (color & depth)
      *
+     * @param texName texture name
      * @param useColorBuffer use color buffer (water renderer only)
      */
-    public FrameBuffer(boolean useColorBuffer) {
+    public FrameBuffer(String texName, boolean useColorBuffer) {
+        this.texture = new Texture(texName);
         this.useColorBuffer = useColorBuffer;
     }
 

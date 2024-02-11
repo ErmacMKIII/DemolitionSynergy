@@ -25,7 +25,6 @@ import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -68,20 +67,20 @@ public abstract class Menu {
 
     public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
         this.intrface = intrface;
-        this.title = new DynamicText(intrface, Texture.FONT, title);
+        this.title = new DynamicText(Texture.FONT, title);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
         Texture mngTexture = Texture.MINIGUN;
-        iterator = new Quad(intrface, 24, 24, mngTexture);
+        iterator = new Quad(24, 24, mngTexture);
         iterator.scale = itemScale;
-        makeItems();
-        updateIterator();
-        init();
+        makeItems(intrface);
+        updateIterator(intrface);
+        init(intrface);
     }
 
     public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) throws Exception {
         this.intrface = intrface;
-        this.title = new DynamicText(intrface, Texture.FONT, title);
+        this.title = new DynamicText(Texture.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
@@ -89,23 +88,23 @@ public abstract class Menu {
         this.pos = pos;
         this.itemScale = scale;
         Texture mngTexture = Texture.MINIGUN;
-        iterator = new Quad(intrface, 24, 24, mngTexture);
+        iterator = new Quad(24, 24, mngTexture);
         iterator.scale = scale;
-        makeItems();
-        updateIterator();
-        init();
+        makeItems(intrface);
+        updateIterator(intrface);
+        init(intrface);
     }
 
-    private void makeItems() {
+    private void makeItems(Intrface intrface) {
         int index = 0;
         int longestWord = longestWord();
         for (MenuItem item : items) {
             item.keyText.color = new Vector4f(GlobalColors.GREEN, 1.0f);
             item.keyText.setScale(itemScale);
             item.keyText.setAlignment(alignmentAmount);
-            item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-            item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
-            item.keyText.alignToNextChar();
+            item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth(intrface)) + pos.x;
+            item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight(intrface) + pos.y;
+            item.keyText.alignToNextChar(intrface);
             index++;
         }
     }
@@ -117,7 +116,7 @@ public abstract class Menu {
     /**
      * Initialize menu with callbacks.
      */
-    private void init() {
+    private void init(Intrface intrface) {
         glfwCursorPosCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
@@ -148,9 +147,9 @@ public abstract class Menu {
                     GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    selectPrev();
+                    selectPrev(intrface);
                 } else if (key == GLFW.GLFW_KEY_DOWN && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    selectNext();
+                    selectNext(intrface);
                 } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                     enabled = false;
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
@@ -211,67 +210,67 @@ public abstract class Menu {
         return longest;
     }
 
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled) {
             int longest = longestWord();
             title.setAlignment(alignmentAmount);
-            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
-            title.getPos().y = title.getRelativeCharHeight() * itemScale * Text.LINE_SPACING + pos.y;
+            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth(intrface)) + pos.x;
+            title.getPos().y = title.getRelativeCharHeight(intrface) * itemScale * Text.LINE_SPACING + pos.y;
             if (!title.isBuffered()) {
-                title.bufferSmart();
+                title.bufferSmart(intrface);
             }
-            title.render(shaderProgram);
+            title.render(intrface, shaderProgram);
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
-                logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
+                logo.getPos().y = logo.giveRelativeHeight(intrface) * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
-                    logo.bufferSmart();
+                    logo.bufferSmart(intrface);
                 }
-                logo.render(shaderProgram);
+                logo.render(intrface, shaderProgram);
             }
             int index = 0;
             for (MenuItem item : items) {
                 item.keyText.setAlignment(alignmentAmount);
-                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
-                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight() * Text.LINE_SPACING + pos.y;
+                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth(intrface)) + pos.x;
+                item.keyText.getPos().y = -itemScale * (index + 1) * item.keyText.getRelativeCharHeight(intrface) * Text.LINE_SPACING + pos.y;
 
-                item.render(shaderProgram);
+                item.render(intrface, shaderProgram);
                 index++;
             }
 
             if (!iterator.isBuffered()) {
-                iterator.bufferSmart();
+                iterator.bufferSmart(intrface);
             }
-            iterator.render(shaderProgram);
+            iterator.render(intrface, shaderProgram);
         }
     }
 
-    private void updateIterator() {
+    private void updateIterator(Intrface intrface) {
         if (selected >= 0 && selected < items.size()) {
             iterator.getPos().x = items.get(selected).keyText.getPos().x;
-            iterator.getPos().x -= items.get(selected).keyText.getRelativeWidth() * alignmentAmount * itemScale;
-            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
+            iterator.getPos().x -= items.get(selected).keyText.getRelativeWidth(intrface) * alignmentAmount * itemScale;
+            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth(intrface) * iterator.getScale();
             iterator.getPos().y = items.get(selected).keyText.getPos().y;
             iterator.setColor(items.get(selected).keyText.color);
         }
     }
 
-    public void selectPrev() {
+    public void selectPrev(Intrface intrface) {
         useMouse = false;
         selected--;
         if (selected < 0) {
             selected = items.size() - 1;
         }
-        updateIterator();
+        updateIterator(intrface);
     }
 
-    public void selectNext() {
+    public void selectNext(Intrface intrface) {
         useMouse = false;
         selected++;
         if (selected > items.size() - 1) {
             selected = 0;
         }
-        updateIterator();
+        updateIterator(intrface);
     }
 
     // if menu is enabled; it's gonna track mouse cursor position 
@@ -280,11 +279,11 @@ public abstract class Menu {
         if (enabled && useMouse) {
             int index = 0;
             for (MenuItem item : items) {
-                float xMin = item.keyText.pos.x - item.keyText.scale * item.keyText.getRelativeWidth();
-                float xMax = item.keyText.pos.x + item.keyText.scale * item.keyText.getRelativeWidth();
+                float xMin = item.keyText.pos.x - item.keyText.scale * item.keyText.getRelativeWidth(intrface);
+                float xMax = item.keyText.pos.x + item.keyText.scale * item.keyText.getRelativeWidth(intrface);
 
-                float yMin = item.keyText.pos.y - item.keyText.scale * item.keyText.getRelativeCharHeight();
-                float yMax = item.keyText.pos.y + item.keyText.scale * item.keyText.getRelativeCharHeight();
+                float yMin = item.keyText.pos.y - item.keyText.scale * item.keyText.getRelativeCharHeight(intrface);
+                float yMax = item.keyText.pos.y + item.keyText.scale * item.keyText.getRelativeCharHeight(intrface);
 
                 if (xposGL >= xMin
                         && xposGL <= xMax
@@ -297,7 +296,7 @@ public abstract class Menu {
             }
             useMouse = false;
         }
-        updateIterator();
+        updateIterator(intrface);
     }
 
     public void cleanUp() {

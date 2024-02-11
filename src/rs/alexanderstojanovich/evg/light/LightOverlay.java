@@ -34,15 +34,15 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class LightOverlay extends Quad {
 
-    public LightOverlay(Intrface intrface, int width, int height, Texture texture) throws Exception {
-        super(intrface, width, height, texture);
+    public LightOverlay(int width, int height, Texture texture) {
+        super(width, height, texture);
     }
 
-    public LightOverlay(Intrface intrface, int width, int height, Texture texture, boolean ignoreFactor) throws Exception {
-        super(intrface, width, height, texture, ignoreFactor);
+    public LightOverlay(int width, int height, Texture texture, boolean ignoreFactor) {
+        super(width, height, texture, ignoreFactor);
     }
 
-    public void render(Camera camera, LightSources lightSrc, ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, Camera camera, LightSources lightSrc, ShaderProgram shaderProgram) {
         if (enabled && buffered) {
             GL30.glBindVertexArray(vao);
 
@@ -54,7 +54,7 @@ public class LightOverlay extends Quad {
             shaderProgram.bindAttribute(1, "uv");
             lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
-            Matrix4f modelMatrix = calcModelMatrix();
+            Matrix4f modelMatrix = calcModelMatrix(intrface);
             shaderProgram.updateUniform(modelMatrix, "modelMatrix");
             camera.updateCameraPosition(shaderProgram);
             camera.updateCameraFront(shaderProgram);

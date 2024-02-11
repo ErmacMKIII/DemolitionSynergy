@@ -55,9 +55,10 @@ public interface MenuValue {
     /**
      * Render this component with shader program (interface).
      *
-     * @param shaderProgram
+     * @param intrface intrface
+     * @param shaderProgram shader program
      */
-    public void render(ShaderProgram shaderProgram);
+    public void render(Intrface intrface, ShaderProgram shaderProgram);
 
     /**
      * Get Type of the menu value

@@ -81,7 +81,7 @@ public class PerspectiveRenderer implements CoreRenderer {
      * Update perspective to window resolution (dimension)
      */
     public void updateOrthogonal() {
-        loadOrthogonal(Texture.TEX_SIZE, Texture.TEX_SIZE, 0.05f, 24576.0f);
+        loadOrthogonal(512, 512, 0.05f, 1000.0f);
     }
 
     /**

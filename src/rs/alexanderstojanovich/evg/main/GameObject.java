@@ -47,7 +47,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
     // game logic is contained in here
 
-    protected boolean initialized = false;
+    protected boolean initializedWindow = false;
+    protected boolean initializedCore = false;
 
     private final Configuration cfg = Configuration.getInstance();
 
@@ -68,8 +69,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected AudioPlayer musicPlayer;
     protected AudioPlayer soundFXPlayer;
 
-    protected Game game;
-    protected GameRenderer renderer;
+    protected final Game game;
+    protected final GameRenderer renderer;
 
     public static final Object UPDATE_RENDER_MUTEX = new Object();
 
@@ -81,7 +82,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Gets one instance of the GameObject (creates new if not exists).
      *
      * @return single window instance
-     * @throws java.lang.Exception if not initialized
+     * @throws java.lang.Exception if not initializedWindow
      */
     public static GameObject getInstance() throws Exception {
         if (instance == null) {
@@ -93,68 +94,55 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Init this game container with core components.
      *
-     * @throws java.lang.Exception
      */
-    public GameObject() throws Exception {
+    public GameObject() {
         final int width = cfg.getWidth();
         final int height = cfg.getHeight();
         // creating the window
         WINDOW = Window.getInstance(width, height, WINDOW_TITLE);
 
-        masterRenderer = new MasterRenderer(this);
-        perspectiveRenderer = new PerspectiveRenderer(this);
-        levelContainer = new LevelContainer(this);
-        randomLevelGenerator = new RandomLevelGenerator(levelContainer);
-        waterRenderer = new WaterRenderer(this, levelContainer);
-        shadowRenderer = new ShadowRenderer(this, levelContainer);
-        musicPlayer = new AudioPlayer();
-        soundFXPlayer = new AudioPlayer();
-        //----------------------------------------------------------------------
         WINDOW.setFullscreen(cfg.isFullscreen());
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         WINDOW.centerTheWindow();
+        //----------------------------------------------------------------------        
+        this.splashScreen = new Quad(width, height, Texture.SPLASH, true);
+        this.splashScreen.setColor(GlobalColors.getRGBAColorOrDefault(GlobalColors.ColorName.YELLOW));
+        //----------------------------------------------------------------------        
+        //----------------------------------------------------------------------
+        initializedWindow = true;
+        //----------------------------------------------------------------------
+        masterRenderer = new MasterRenderer(this);
+        perspectiveRenderer = new PerspectiveRenderer(this);
+        levelContainer = new LevelContainer(this);
+        randomLevelGenerator = new RandomLevelGenerator(this.levelContainer);
+        waterRenderer = new WaterRenderer(this);
+        shadowRenderer = new ShadowRenderer(this);
+        musicPlayer = new AudioPlayer();
+        soundFXPlayer = new AudioPlayer();
         //----------------------------------------------------------------------
         musicPlayer.setGain(cfg.getMusicVolume());
         soundFXPlayer.setGain(cfg.getSoundFXVolume());
         //----------------------------------------------------------------------
-//        intrface = new Intrface(this); causing errors
-        // init game loop
-        game = new Game(this, levelContainer); // init game with given configuration and game object
-        // game interacts with the whole game container
-        renderer = new GameRenderer(this); // init renderer with given game object        
-        DSLogger.reportDebug("Game initialized.", null);
+        intrface = new Intrface(this);
+        initializedCore = true;
+        //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
-        initialized = true;
-        instance = this;
-    }
-
-    /**
-     * Post-initialization. Initialize game interface.
-     */
-    public void postInit() {
-        if (!initialized) {
-            return;
-        }
-        try {
-            this.splashScreen = new Quad(intrface, WINDOW.getWidth(), WINDOW.getHeight(), Texture.SPLASH, true);
-            this.splashScreen.setColor(GlobalColors.getRGBAColorOrDefault(GlobalColors.ColorName.YELLOW));
-            this.intrface = new Intrface(this);
-            this.intrface.initIntrface();
-        } catch (Exception ex) {
-            DSLogger.reportError(ex.getMessage(), ex);
-        }
-//        // init game interface        
-//        DSLogger.reportDebug("Interface initialized.", null);
+        // init game loop
+        game = new Game(this); // init game with given configuration and game object
+        DSLogger.reportDebug("Game initialized.", null);
+        // game interacts with the whole game container
+        renderer = new GameRenderer(this); // init renderer with given game object
+        DSLogger.reportDebug("Game Renderer initialized.", null);
     }
 
     /**
      * Start this game container. Starts loop and renderer.
      */
     public void start() {
-        if (!initialized) {
+        if (!initializedWindow || !initializedCore) {
             return;
         }
-
+        //----------------------------------------------------------------------        
         Timer timer1 = new Timer("Timer Utils");
         TimerTask task1 = new TimerTask() {
             @Override
@@ -169,7 +157,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
-        WINDOW.centerTheWindow();
         DSLogger.reportDebug("Game will start soon.", null);
         game.go();
         game.cleanUp();
@@ -216,7 +203,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param deltaTime deltaTime in ticks
      */
     public void update(float deltaTime) {
-        if (!initialized) {
+        if (!initializedWindow) {
             return;
         }
 
@@ -300,16 +287,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public void render() {
-        if (!initialized || this.WINDOW.shouldClose()) {
+        if (!initializedWindow || this.WINDOW.shouldClose()) {
             return;
         }
 
         masterRenderer.render(); // it clears color bit and depth buffer bit
         if (splashScreen != null && splashScreen.isEnabled()) {
             if (!splashScreen.isBuffered()) {
-                splashScreen.bufferSmart();
+                splashScreen.bufferSmart(intrface);
             }
-            splashScreen.render(ShaderProgram.getIntrfaceShader());
+            splashScreen.render(null, ShaderProgram.getIntrfaceShader());
         } else {
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
             synchronized (UPDATE_RENDER_MUTEX) {
@@ -495,7 +482,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // prints general and detailed information about solid and fluid chunks
     public void printInfo() {
-        levelContainer.getChunks().printInfo();
+        levelContainer.chunks.printInfo();
     }
 
     public LevelContainer getLevelContainer() {
@@ -522,8 +509,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return randomLevelGenerator;
     }
 
-    public boolean isInitialized() {
-        return initialized;
+    public boolean isInitializedWindow() {
+        return initializedWindow;
     }
 
     public Configuration getCfg() {
@@ -536,6 +523,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public GameRenderer getRenderer() {
         return renderer;
+    }
+
+    public boolean isInitializedCore() {
+        return initializedCore;
+    }
+
+    public MasterRenderer getMasterRenderer() {
+        return masterRenderer;
+    }
+
+    public ShadowRenderer getShadowRenderer() {
+        return shadowRenderer;
+    }
+
+    public PerspectiveRenderer getPerspectiveRenderer() {
+        return perspectiveRenderer;
+    }
+
+    public Quad getSplashScreen() {
+        return splashScreen;
     }
 
 }

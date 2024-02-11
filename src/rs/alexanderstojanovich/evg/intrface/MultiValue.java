@@ -33,24 +33,24 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     private int selected = -1;
     protected Type type;
 
-    public MultiValue(Intrface intrface, Object[] valueArray, Type type) throws Exception {
+    public MultiValue(Object[] valueArray, Type type) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(intrface, Texture.FONT, "");
+        this.valueText = new DynamicText(Texture.FONT, "");
         values.addAll(Arrays.asList(valueArray));
     }
 
-    public MultiValue(Intrface intrface, Object[] valueArray, Type type, int selected) throws Exception {
+    public MultiValue(Object[] valueArray, Type type, int selected) throws Exception {
         this.type = type;
         this.selected = selected;
-        this.valueText = new DynamicText(intrface, Texture.FONT, String.valueOf(valueArray[selected]));
+        this.valueText = new DynamicText(Texture.FONT, String.valueOf(valueArray[selected]));
         for (Object object : valueArray) {
             values.add(object);
         }
     }
 
-    public MultiValue(Intrface intrface, Object[] valueArray, Type type, Object currentValue) throws Exception {
+    public MultiValue(Object[] valueArray, Type type, Object currentValue) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(intrface, Texture.FONT, String.valueOf(currentValue));
+        this.valueText = new DynamicText(Texture.FONT, String.valueOf(currentValue));
         values.addAll(Arrays.asList(valueArray));
         this.selected = values.indexOf(currentValue);
     }
@@ -131,11 +131,11 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (!valueText.isBuffered()) {
-            valueText.bufferAll();
+            valueText.bufferAll(intrface);
         }
-        valueText.render(shaderProgram);
+        valueText.render(intrface, shaderProgram);
     }
 
     @Override

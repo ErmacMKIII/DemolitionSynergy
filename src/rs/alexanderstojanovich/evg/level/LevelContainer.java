@@ -207,11 +207,11 @@ public class LevelContainer implements GravityEnviroment {
         SUN.setPrimaryColorAlpha(1.05f);
     }
 
-    public LevelContainer(GameObject gameObject) throws Exception {
+    public LevelContainer(GameObject gameObject) {
         this.gameObject = gameObject;
         this.blockEnvironment = new BlockEnvironment(gameObject, chunks);
         this.cacheModule = new CacheModule(this);
-        this.lightSources = new LightSources(gameObject);
+        this.lightSources = new LightSources();
 
         lightSources.addLight(levelActors.player.light);
         lightSources.addLight(SUNLIGHT);
@@ -1245,7 +1245,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
 
-        LightSources.render(levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
+        LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
     }
 
@@ -1315,7 +1315,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), baseShader);
 
         if (renderLights) {
-            LightSources.render(camera, lightSources, ShaderProgram.getLightShader());
+            LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
             lightSources.resetAllModified();
         }
     }

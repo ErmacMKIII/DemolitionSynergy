@@ -100,17 +100,14 @@ public class Text implements ComponentIfc {
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
-    protected final Intrface intrface;
 
-    public Text(Intrface intrface, Texture texture, String content) throws Exception {
-        this.intrface = intrface;
+    public Text(Texture texture, String content) {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
     }
 
-    public Text(Intrface intrface, Texture texture, String content, Vector4f color, Vector2f pos) throws Exception {
-        this.intrface = intrface;
+    public Text(Texture texture, String content, Vector4f color, Vector2f pos) {
         this.texture = texture;
         this.content = content;
         this.color = color;
@@ -118,8 +115,7 @@ public class Text implements ComponentIfc {
         this.enabled = true;
     }
 
-    public Text(Intrface intrface, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) throws Exception {
-        this.intrface = intrface;
+    public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         this.texture = texture;
         this.content = content;
         this.pos = pos;
@@ -283,23 +279,24 @@ public class Text implements ComponentIfc {
     /**
      * Character size difference (now & before)
      *
+     * @param intrface intrface
      * @return char difference
      */
-    protected int setup() {
+    protected int setup(Intrface intrface) {
         int prevSize = txtChList.size();
         txtChList.clear();
-        final int lineSize = Math.round(relativeLineSize());
+        final int lineSize = Math.round(relativeLineSize(intrface));
         String[] lines = content.split("\n");
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
                 int j = i % lineSize;
                 int k = i / lineSize;
                 char ch = lines[l].charAt(i);
-                float xinc = Math.round(j - content.length() * alignment) * scale * getRelativeCharWidth();
-                float ydec = (k + l) * scale * getRelativeCharHeight() * Text.LINE_SPACING;
+                float xinc = Math.round(j - content.length() * alignment) * scale * getRelativeCharWidth(intrface);
+                float ydec = (k + l) * scale * getRelativeCharHeight(intrface) * Text.LINE_SPACING;
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
-                txtCh.modelMat4 = calcModelMatrix(txtCh); // setup once and don't touch it
+                txtCh.modelMat4 = calcModelMatrix(intrface, txtCh); // setup once and don't touch it
 
                 txtChList.add(txtCh);
             }
@@ -309,15 +306,15 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void bufferAll() {
+    public void bufferAll(Intrface intrface) {
         buffered = false;
-        setup();
+        setup(intrface);
         buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
-    public void bufferSmart() {
-        int deltaSize = setup();
+    public void bufferSmart(Intrface intrface) {
+        int deltaSize = setup(intrface);
         if (floatBuffer != null && vbo != 0 && deltaSize == 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
@@ -331,7 +328,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
             GL30.glBindVertexArray(vao);
 
@@ -396,31 +393,31 @@ public class Text implements ComponentIfc {
         return charHeight;
     }
 
-    public float getRelativeCharWidth() {
+    public float getRelativeCharWidth(Intrface intrface) {
         float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
         return charWidth * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
-    public float getRelativeWidth() {
+    public float getRelativeWidth(Intrface intrface) {
         float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
         return charWidth * widthFactor * content.length() / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
-    public float getRelativeCharHeight() {
+    public float getRelativeCharHeight(Intrface intrface) {
         float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
         return charHeight * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
-    public float getRelativeHeight() {
+    public float getRelativeHeight(Intrface intrface) {
         float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor * numberOfLines() / (float) intrface.gameObject.WINDOW.getHeight();
+        return charHeight * heightFactor * numberOfLines(intrface) / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
     // it aligns position to next char position (useful if characters are cut out or so)
     // call this method only once!
-    public void alignToNextChar() {
-        float srw = scale * getRelativeCharWidth(); // scaled relative width
-        float srh = scale * getRelativeCharHeight(); // scaled relative height                                                                 
+    public void alignToNextChar(Intrface intrface) {
+        float srw = scale * getRelativeCharWidth(intrface); // scaled relative width
+        float srh = scale * getRelativeCharHeight(intrface); // scaled relative height                                                                 
 
         float xrem = pos.x % srw;
         pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
@@ -429,12 +426,12 @@ public class Text implements ComponentIfc {
         pos.y -= yrem;
     }
 
-    protected Matrix4f calcModelMatrix(float xinc, float ydec) {
+    protected Matrix4f calcModelMatrix(Intrface intrface, float xinc, float ydec) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y - ydec, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
-        float sx = getRelativeCharWidth();
-        float sy = getRelativeCharHeight();
+        float sx = getRelativeCharWidth(intrface);
+        float sy = getRelativeCharHeight(intrface);
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
@@ -442,12 +439,12 @@ public class Text implements ComponentIfc {
         return modelMatrix;
     }
 
-    protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
+    protected Matrix4f calcModelMatrix(Intrface intrface, TextCharacter txtCh) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
-        float sx = getRelativeCharWidth();
-        float sy = getRelativeCharHeight();
+        float sx = getRelativeCharWidth(intrface);
+        float sy = getRelativeCharHeight(intrface);
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
@@ -455,8 +452,8 @@ public class Text implements ComponentIfc {
         return modelMatrix;
     }
 
-    public int numberOfLines() {
-        final int lineSize = Math.round(relativeLineSize());
+    public int numberOfLines(Intrface intrface) {
+        final int lineSize = Math.round(relativeLineSize(intrface));
         int numOfLines = 0;
         numOfLines += content.codePoints().filter(ch -> (char) ch == '\n').count(); // #include all '\n'
         String[] parts = content.split("\n", -1);
@@ -467,8 +464,8 @@ public class Text implements ComponentIfc {
         return 1 + numOfLines; // #lines start with 1
     }
 
-    public float relativeLineSize() {
-        return 2.0f / (float) getRelativeCharWidth();
+    public float relativeLineSize(Intrface intrface) {
+        return 2.0f / (float) getRelativeCharWidth(intrface);
     }
 
     public IList<TextCharacter> getTxtChList() {
