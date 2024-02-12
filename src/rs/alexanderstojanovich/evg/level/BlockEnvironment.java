@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -38,6 +39,11 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class BlockEnvironment {
 
+    public static final int LIGHT_MASK = 0x01;
+    public static final int WATER_MASK = 0x02;
+    public static final int SHADOW_MASK = 0x04;
+
+    public Matrix4f lightViewMatrix = new Matrix4f().zero();
     private final GameObject gameObject;
 
     public final IList<Tuple> optimizedTuples = new GapList<>();
@@ -185,21 +191,26 @@ public class BlockEnvironment {
      * Standard render (slow)
      *
      * @param shaderProgram voxel shader
-     * @param lightSources light sources
+     * @param renderFlag what is renderered
      */
-    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
+    public void render(ShaderProgram shaderProgram, int renderFlag) {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
-        Texture waterTexture = gameObject.waterRenderer.getFrameBuffer().getTexture();
-        Texture shadowTexture = gameObject.shadowRenderer.getFrameBuffer().getTexture();
+        final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
+        final boolean renderWater = (renderFlag & WATER_MASK) != 0;
+        final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
 
+        final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
+        final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        final Matrix4f shadowMatrix = (renderShadow) ? gameObject.shadowRenderer.getCamera().viewMatrix : new Matrix4f().zero();
         for (Tuple tuple : optimizedTuples) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
+            tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture, shadowMatrix);
         }
     }
 
@@ -224,19 +235,23 @@ public class BlockEnvironment {
      * Static render (faster)
      *
      * @param shaderProgram voxel shader
-     * @param lightSources light sources
-     * @param renderWater
-     * @param renderShadow
+     * @param renderFlag what is renderered
      */
-    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources, boolean renderWater, boolean renderShadow) {
+    public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
-        Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
+        final boolean renderWater = (renderFlag & WATER_MASK) != 0;
+        final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
 
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
+        final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
+        final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+        final Matrix4f shadowMatrix = (renderShadow) ? gameObject.shadowRenderer.getCamera().viewMatrix : new Matrix4f().zero();
+
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture, shadowMatrix);
     }
 
     /**
@@ -268,6 +283,10 @@ public class BlockEnvironment {
     }
 
     public int getBitPos() {
+        return lastFaceBits;
+    }
+
+    public int getLastFaceBits() {
         return lastFaceBits;
     }
 

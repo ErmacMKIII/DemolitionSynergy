@@ -20,8 +20,10 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -38,12 +40,40 @@ public class ShadowRenderer implements CoreRenderer {
     private final FrameBuffer frameBuffer = new FrameBuffer("Shadow", false);
     private final Camera camera = new Camera();
     private Quad debugQuad;
+    protected ShadowBox shadowBox = new ShadowBox().zero();
+
+    public static enum ShadowEffectsQuality {
+        NONE, LOW, MEDIUM, HIGH, ULTRA
+    };
+
+    private ShadowRenderer.ShadowEffectsQuality effectsQuality = ShadowRenderer.ShadowEffectsQuality.values()[Configuration.getInstance().getShadowEffects()];
+    private float shadowDistance = 500.0f;
 
     public ShadowRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
+        setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
         this.debugQuad.setScale(0.5f);
         this.debugQuad.setPos(new Vector2f(1.0f, -1.0f));
+    }
+
+    private void setDepthByQuality() {
+        switch (effectsQuality) {
+            case NONE:
+                shadowDistance = 0.0f;
+            case LOW:
+                shadowDistance = 250f;
+                break;
+            case MEDIUM:
+                shadowDistance = 500f;
+                break;
+            case HIGH:
+                shadowDistance = 1000f;
+                break;
+            case ULTRA:
+                shadowDistance = 2000f;
+                break;
+        }
     }
 
     @Override
@@ -52,8 +82,11 @@ public class ShadowRenderer implements CoreRenderer {
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
     }
 
-    private void updateClipPlane(float waterHeight) {
-//        ShaderProgram.getWaterBaseShader().updateUniform(waterHeight, "waterHeight");
+    /**
+     * Call externally in game object
+     */
+    public void updateShadowBox() {
+        shadowBox = ShadowBox.createOrUpdate(shadowDistance, camera.viewMatrix, gameObject.levelContainer.levelActors.mainCamera());
     }
 
     private void updateCamera(Vector3f lightSrcPos) {
@@ -70,23 +103,19 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     private void capture(Vector3f lightSrcPos) {
-//        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
-//        updateClipPlane(lightSrcPos.y);
         updateCamera(lightSrcPos);
-        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), true, false, false);
-//        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
+        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), BlockEnvironment.LIGHT_MASK);
     }
 
     /**
-     * Render the water reflections to water textures
+     * Render the shadows reflections to texture (frame buffer)
      */
     @Override
     public void render() {
         frameBuffer.bind();
         prepare();
-//        levelContainer.gameObject.perspectiveRenderer.updateOrthogonal();
         for (LightSource ls : gameObject.levelContainer.lightSources.sourceList) {
-//            capture(ls.pos);
+            capture(ls.pos);
         }
         if (!debugQuad.isBuffered()) {
             debugQuad.bufferAll(gameObject.intrface);
@@ -99,6 +128,14 @@ public class ShadowRenderer implements CoreRenderer {
     public void release() {
         frameBuffer.getTexture().release();
         DSLogger.reportDebug("Shadow Renderer released.", null);
+    }
+
+    public ShadowRenderer.ShadowEffectsQuality getEffectsQuality() {
+        return effectsQuality;
+    }
+
+    public float getShadowDistance() {
+        return shadowDistance;
     }
 
     public GameObject getGameObject() {
@@ -124,4 +161,14 @@ public class ShadowRenderer implements CoreRenderer {
     public Texture texture() {
         return frameBuffer.getTexture();
     }
+
+    public ShadowBox getShadowBox() {
+        return shadowBox;
+    }
+
+    public void setEffectsQuality(ShadowRenderer.ShadowEffectsQuality effectsQuality) {
+        this.effectsQuality = effectsQuality;
+        this.setDepthByQuality();
+    }
+
 }

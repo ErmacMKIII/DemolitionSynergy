@@ -72,7 +72,6 @@ public class GameRenderer extends Thread implements Executor {
         // resolution config
         gameObject.masterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
         gameObject.perspectiveRenderer.updatePerspective();
-        gameObject.perspectiveRenderer.updateOrthogonal();
         animationTimer = 0.0;
 
         fps = 0;

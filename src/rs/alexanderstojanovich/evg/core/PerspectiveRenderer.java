@@ -20,10 +20,8 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -31,6 +29,10 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class PerspectiveRenderer implements CoreRenderer {
+
+    public static final float FOV = (float) (org.joml.Math.PI / 2.0f);
+    public static final float NEAR_PLANE = 0.05f;
+    public static final float FAR_PLANE = 24576.0f;
 
     private final GameObject gameObject;
     public final Matrix4f perspectiveMatrix = new Matrix4f();
@@ -51,9 +53,9 @@ public class PerspectiveRenderer implements CoreRenderer {
      * @param zNear nearest point
      * @param zFar furthest point
      */
-    private void loadOrthogonal(float width, float height, float zNear, float zFar) {
+    private void loadOrthogonal(float left, float right, float bottom, float top, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
-        orthogonalMatrix.setOrthoSymmetricLH(width, height, zNear, zFar);
+        orthogonalMatrix.setOrthoLH(left, right, bottom, top, zNear, zFar);
     }
 
     /**
@@ -74,14 +76,22 @@ public class PerspectiveRenderer implements CoreRenderer {
      * Update perspective to window resolution (dimension)
      */
     public void updatePerspective() {
-        loadPerspective((float) (org.joml.Math.PI / 2.0f), gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), 0.05f, 24576.0f);
+        loadPerspective(FOV, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), NEAR_PLANE, FAR_PLANE);
     }
 
     /**
-     * Update perspective to window resolution (dimension)
+     * Update orthogonal to bounding box width * height * depth. Bounding box as
+     * cuboid is represented by 8 vertices.
+     *
+     * @param left
+     * @param right
+     * @param bottom
+     * @param top
+     * @param zNear
+     * @param zFar
      */
-    public void updateOrthogonal() {
-        loadOrthogonal(512, 512, 0.05f, 1000.0f);
+    public void updateOrthogonal(float left, float right, float bottom, float top, float zNear, float zFar) {
+        loadOrthogonal(left, right, bottom, top, zNear, zFar);
     }
 
     /**

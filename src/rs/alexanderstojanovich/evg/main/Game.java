@@ -653,6 +653,7 @@ public class Game {
         cfg.setFullscreen(gameObject.WINDOW.isFullscreen());
         cfg.setVsync(gameObject.WINDOW.isVsync());
         cfg.setWaterEffects(gameObject.waterRenderer.getEffectsQuality().ordinal());
+        cfg.setShadowEffects(gameObject.shadowRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());

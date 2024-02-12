@@ -24,6 +24,7 @@ import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
@@ -164,6 +165,9 @@ public class Intrface {
                             break;
                         case "OPTIONS":
                             optionsMenu.open();
+                            viewText.setEnabled(false);
+                            posText.setEnabled(false);
+                            chunkText.setEnabled(false);
                             break;
                         case "CREDITS":
                             creditsMenu.open();
@@ -338,7 +342,8 @@ public class Intrface {
                     String.valueOf(gameObject.WINDOW.getWidth()) + "x" + String.valueOf(gameObject.WINDOW.getHeight()))));
             optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, gameObject.WINDOW.isFullscreen() ? "ON" : "OFF")));
             optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, gameObject.WINDOW.isVsync() ? "ON" : "OFF")));
-            optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, gameObject.getWaterRenderer().getEffectsQuality().toString())));
+            optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, gameObject.waterRenderer.getEffectsQuality().toString())));
+            optionsMenuPairs.add(new MenuItem("SHADOW EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, gameObject.shadowRenderer.getEffectsQuality().toString())));
             optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
             optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
             optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
@@ -347,6 +352,9 @@ public class Intrface {
                 @Override
                 protected void leave() {
                     mainMenu.open();
+                    viewText.setEnabled(true);
+                    posText.setEnabled(true);
+                    chunkText.setEnabled(true);
                 }
 
                 @Override
@@ -408,19 +416,27 @@ public class Intrface {
                             Command.execute(gameObject, command);
                             break;
                         case 5:
+                            String shadowEffects = (String) items.get(selected).menuValue.getCurrentValue();
+                            command = Command.getCommand(Command.Target.SHADOW_EFFECTS);
+                            String shadoFX = ShadowRenderer.ShadowEffectsQuality.valueOf(shadowEffects).toString();
+                            command.getArgs().add(shadoFX);
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case 7:
                             float msens = (float) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
                             command.getArgs().add(msens);
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 6:
+                        case 8:
                             command = Command.getCommand(Command.Target.MUSIC_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 7:
+                        case 9:
                             command = Command.getCommand(Command.Target.SOUND_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);

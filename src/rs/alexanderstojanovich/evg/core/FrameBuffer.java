@@ -64,10 +64,6 @@ public class FrameBuffer {
         // the framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
         fbo = GL30.glGenFramebuffers();
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, fbo);
-        if (!useColorBuffer) {
-            GL11.glDrawBuffer(GL11.GL_NONE);
-            GL11.glReadBuffer(GL11.GL_NONE);
-        }
     }
 
     private void createDepthBuffer() {

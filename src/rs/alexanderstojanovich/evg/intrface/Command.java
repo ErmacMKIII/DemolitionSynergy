@@ -28,6 +28,7 @@ import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -55,6 +56,7 @@ public class Command implements Callable<Object> {
         FULLSCREEN,
         VSYNC,
         WATER_EFFECTS,
+        SHADOW_EFFECTS,
         MOUSE_SENSITIVITY,
         MUSIC_VOLUME,
         SOUND_VOLUME,
@@ -186,6 +188,13 @@ public class Command implements Callable<Object> {
                 case "waterEffects":
                 case "water_effects":
                     command.target = Target.WATER_EFFECTS;
+                    if (things.length == 2) {
+                        command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
+                    }
+                    break;
+                case "shadowEffects":
+                case "shadow_effects":
+                    command.target = Target.SHADOW_EFFECTS;
                     if (things.length == 2) {
                         command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
                     }
@@ -341,7 +350,6 @@ public class Command implements Callable<Object> {
                         if (status) {
                             gameObject.masterRenderer.setResolution(width, height);
                             gameObject.perspectiveRenderer.updatePerspective();
-                            gameObject.perspectiveRenderer.updateOrthogonal();
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;
@@ -385,11 +393,23 @@ public class Command implements Callable<Object> {
             case WATER_EFFECTS:
                 switch (command.mode) {
                     case GET:
-                        result = gameObject.getWaterRenderer().getEffectsQuality();
+                        result = gameObject.waterRenderer.getEffectsQuality();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        gameObject.getWaterRenderer().setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
+                        gameObject.waterRenderer.setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
+                        command.status = Status.SUCCEEDED;
+                        break;
+                }
+                break;
+            case SHADOW_EFFECTS:
+                switch (command.mode) {
+                    case GET:
+                        result = gameObject.shadowRenderer.getEffectsQuality();
+                        command.status = Status.SUCCEEDED;
+                        break;
+                    case SET:
+                        gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.valueOf((String) command.args.get(0)));
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -610,13 +630,13 @@ public class Command implements Callable<Object> {
 
     // game commands
     public boolean isGameCommand() {
-        return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS
+        return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS || this.target == Target.SHADOW_EFFECTS
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
-        return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS
+        return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS || command.target == Target.SHADOW_EFFECTS
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
     }
 

@@ -491,7 +491,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             try {
                 gameObj = GameObject.getInstance();
                 for (Tuple tuple : tupleList) {
-                    tuple.renderInstanced(shaderProgram, lightSources, gameObj.waterRenderer.texture(), gameObj.shadowRenderer.texture());
+                    tuple.renderInstanced(shaderProgram, lightSources, gameObj.waterRenderer.texture(), gameObj.shadowRenderer.texture(), gameObj.shadowRenderer.getCamera().viewMatrix);
                 }
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);

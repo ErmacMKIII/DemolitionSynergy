@@ -37,6 +37,7 @@ public class Configuration {
     private boolean fullscreen = false;
     private boolean vsync = false;
     private int waterEffects = 0;
+    private int shadowEffects = 0;
     private float mouseSensitivity = 1.5f;
     private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
     private boolean logToFile = false;
@@ -112,6 +113,9 @@ public class Configuration {
                                 break;
                             case "watereffects":
                                 waterEffects = Integer.parseInt(words[1].toLowerCase());
+                                break;
+                            case "shadoweffects":
+                                shadowEffects = Integer.parseInt(words[1].toLowerCase());
                                 break;
                             case "mousesensitivity":
                                 val = Float.parseFloat(words[1]);
@@ -225,6 +229,8 @@ public class Configuration {
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
+            pw.println("# Shadow Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
+            pw.println("ShadowEffects = " + shadowEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
@@ -377,6 +383,14 @@ public class Configuration {
 
     public int getOptimizationPasses() {
         return optimizationPasses;
+    }
+
+    public int getShadowEffects() {
+        return shadowEffects;
+    }
+
+    public void setShadowEffects(int shadowEffects) {
+        this.shadowEffects = shadowEffects;
     }
 
 }

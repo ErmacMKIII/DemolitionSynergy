@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
+import org.joml.Matrix4f;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -111,7 +112,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 20.0f;
+    public static final float BASE = 16.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
 
@@ -1194,8 +1195,10 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Regular Rendering on the screen
+     *
+     * @param renderFlag what is rendered {LIGHT, WATER, SHADOW}
      */
-    public void render() { // renderStatic for regular level rendering
+    public void render(int renderFlag) { // renderStatic for regular level rendering
         if (working) {
             return;
         }
@@ -1217,7 +1220,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), lightSources, true, true);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag | BlockEnvironment.LIGHT_MASK);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -1257,11 +1260,9 @@ public class LevelContainer implements GravityEnviroment {
      * @param camera camera to use
      * @param baseShader base shader program to render
      * @param instanceShader instanced (rendering) shader
-     * @param renderLights render lights
-     * @param renderWater render water
-     * @param renderShadow render shadow
+     * @param renderFlag configurable render flag
      */
-    public void render(Camera camera, ShaderProgram baseShader, ShaderProgram instanceShader, boolean renderLights, boolean renderWater, boolean renderShadow) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera, ShaderProgram baseShader, ShaderProgram instanceShader, int renderFlag) { // renderStatic for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -1286,7 +1287,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(instanceShader, lightSources, renderWater, renderShadow);
+        blockEnvironment.renderStatic(instanceShader, renderFlag);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -1314,10 +1315,8 @@ public class LevelContainer implements GravityEnviroment {
         }
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), baseShader);
 
-        if (renderLights) {
-            LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
-            lightSources.resetAllModified();
-        }
+        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
+        lightSources.resetAllModified();
     }
 
     // -------------------------------------------------------------------------

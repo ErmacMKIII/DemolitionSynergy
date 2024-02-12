@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
+import rs.alexanderstojanovich.evg.core.ShadowBox;
 import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -32,6 +33,7 @@ import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -133,6 +135,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         // game interacts with the whole game container
         renderer = new GameRenderer(this); // init renderer with given game object
         DSLogger.reportDebug("Game Renderer initialized.", null);
+
+        instance = this;
     }
 
     /**
@@ -211,8 +215,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
-            perspectiveRenderer.updatePerspective(); // update perspective for all the shaders     
-            perspectiveRenderer.updateOrthogonal(); // update orthogonal for "shadow" shaders  
+            int renderFlag = 0;
+            renderFlag |= BlockEnvironment.LIGHT_MASK;
+
+            if (waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+                renderFlag |= BlockEnvironment.WATER_MASK;
+            }
+
+            if (shadowRenderer.getEffectsQuality() != ShadowRenderer.ShadowEffectsQuality.NONE) {
+                renderFlag |= BlockEnvironment.SHADOW_MASK;
+            }
+
+            perspectiveRenderer.updatePerspective(); // update perspective for all the shaders
+            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                ShadowBox shadowBox;
+                shadowRenderer.updateShadowBox();
+                shadowBox = shadowRenderer.getShadowBox();
+                // update orthogonal for "shadow" shaders corelated to
+                perspectiveRenderer.updateOrthogonal(shadowBox.minX, shadowBox.maxX, shadowBox.minY, shadowBox.maxY, shadowBox.minZ, shadowBox.maxZ);
+            }
+
             levelContainer.update();
             synchronized (UPDATE_RENDER_MUTEX) {
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
@@ -298,14 +320,24 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             splashScreen.render(null, ShaderProgram.getIntrfaceShader());
         } else {
+            int renderFlag = 0;
+            renderFlag |= BlockEnvironment.LIGHT_MASK;
+
+            if (waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+                renderFlag |= BlockEnvironment.WATER_MASK;
+            }
+
+            if (shadowRenderer.getEffectsQuality() != ShadowRenderer.ShadowEffectsQuality.NONE) {
+                renderFlag |= BlockEnvironment.SHADOW_MASK;
+            }
+
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
             synchronized (UPDATE_RENDER_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                    levelContainer.render();
+                    levelContainer.render(renderFlag);
                     if (this.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
                             && !levelContainer.getChunks().getChunkList().isEmpty()) {
                         waterRenderer.render();
-
                     }
                 }
                 shadowRenderer.render();

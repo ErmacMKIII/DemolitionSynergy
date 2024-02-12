@@ -23,6 +23,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -48,11 +50,12 @@ public class WaterRenderer implements CoreRenderer {
     private int maxWaterDepthSize = 3;
     public static final IList<Float> WATER_HEIGHTS = new GapList<>();
     protected final GameObject gameObject;
-//    private final Quad debugQuad = new Quad(512, 512, frameBuffer.texture());
+    private final Quad debugQuad;
 
     public WaterRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
         this.setDepthByQuality();
+        this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
     }
 
     private void setDepthByQuality() {
@@ -170,7 +173,7 @@ public class WaterRenderer implements CoreRenderer {
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), false, false, false);
+        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), BlockEnvironment.LIGHT_MASK);
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 

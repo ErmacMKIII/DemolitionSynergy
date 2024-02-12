@@ -462,7 +462,7 @@ public class Tuple extends Blocks {
         updateVertices();
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
+    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture, Matrix4f shadowMatrix) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
@@ -515,6 +515,8 @@ public class Tuple extends Blocks {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
+            // zero matrix if shadows are disabled
+            shaderProgram.updateUniform(shadowMatrix, "shadowMatrix");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
@@ -545,7 +547,7 @@ public class Tuple extends Blocks {
         }
     }
 
-    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
+    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture, Matrix4f shadowMatrix) {
         if (!tuples.isEmpty()) {
             shaderProgram.bind();
 
@@ -584,6 +586,8 @@ public class Tuple extends Blocks {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
+            // zero matrix if shadows are disabled
+            shaderProgram.updateUniform(shadowMatrix, "shadowMatrix");
 
             for (Tuple tuple : tuples) {
                 if (!tuple.isBuffered()) {
