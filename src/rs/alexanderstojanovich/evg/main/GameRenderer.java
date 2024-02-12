@@ -63,7 +63,8 @@ public class GameRenderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
-        gameObject.waterRenderer.getFrameBuffer().initBuffer();// it is tuned in the correct OpenGL context
+        gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context
+        gameObject.shadowRenderer.getFrameBuffer().initBuffer();
         do {
             gameObject.render(); // render splash screen
         } while (Game.upsTicks < 1.0);

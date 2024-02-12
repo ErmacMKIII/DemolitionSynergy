@@ -40,7 +40,7 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
  */
 public class WaterRenderer implements CoreRenderer {
 
-    private final FrameBuffer frameBuffer = new FrameBuffer("Water", true);
+    private final FrameBuffer frameBuffer;
     private final Camera camera = new Camera();
 
     public static enum WaterEffectsQuality {
@@ -52,7 +52,8 @@ public class WaterRenderer implements CoreRenderer {
     protected final GameObject gameObject;
     private final Quad debugQuad;
 
-    public WaterRenderer(GameObject gameObject) {
+    public WaterRenderer(GameObject gameObject) throws Exception {
+        this.frameBuffer = new FrameBuffer("Water", Texture.RGB5_A1, FrameBuffer.COLOR_ATTACHMENT);
         this.gameObject = gameObject;
         this.setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
@@ -135,7 +136,7 @@ public class WaterRenderer implements CoreRenderer {
                     float b = values.get(i + 1);
                     float halftwo = (a + b) / 2.0f;
                     float delta = halftwo - avgWaterHeight;
-                    if (delta >= 0.5f && delta <= 0.5f) {
+                    if (delta >= -1.5f && delta <= 1.5f) {
                         tmpList.addIfAbsent(halftwo);
                     } else {
                         tmpList.addIfAbsent(Math.max(a, b));

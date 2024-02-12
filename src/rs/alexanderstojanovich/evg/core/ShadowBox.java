@@ -157,7 +157,7 @@ public class ShadowBox {
      *
      * @return The center of the "view cuboid" in world space.
      */
-    protected Vector3f getCenter() {
+    public Vector3f getCenter() {
         float centerX = (minX + maxX) / 2.0f;
         float centerY = (minY + maxY) / 2.0f;
         float centerZ = (minZ + maxZ) / 2.0f;
@@ -168,21 +168,21 @@ public class ShadowBox {
     /**
      * @return The width of the "view cuboid" (orthographic projection area).
      */
-    protected float getWidth() {
+    public float getWidth() {
         return maxX - minX;
     }
 
     /**
      * @return The height of the "view cuboid" (orthographic projection area).
      */
-    protected float getHeight() {
+    public float getHeight() {
         return maxY - minY;
     }
 
     /**
      * @return The length of the "view cuboid" (orthographic projection area).
      */
-    protected float getDepth() {
+    public float getDepth() {
         return maxZ - minZ;
     }
 

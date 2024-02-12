@@ -96,8 +96,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Init this game container with core components.
      *
+     * @throws java.lang.Exception if water renderer or shadow renderer is
+     * improperly configured
      */
-    public GameObject() {
+    public GameObject() throws Exception {
         final int width = cfg.getWidth();
         final int height = cfg.getHeight();
         // creating the window

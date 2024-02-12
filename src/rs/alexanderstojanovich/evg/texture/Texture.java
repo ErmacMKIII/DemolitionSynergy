@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
@@ -42,6 +43,12 @@ import rs.alexanderstojanovich.evg.util.ImageUtils;
  */
 public class Texture {
 
+    public static final int RGB5_A1 = GL11.GL_RGB5_A1;
+    public static final int RGBA8 = GL11.GL_RGBA8;
+    public static final int DEPTH24 = GL14.GL_DEPTH_COMPONENT24;
+
+    private final int formatFlag;
+
     private final BufferedImage image;
     private final String texName;
     private int textureID = 0;
@@ -49,27 +56,27 @@ public class Texture {
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
     public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
-    public static final Texture EMPTY = new Texture("EMPTY");
+    public static final Texture EMPTY = new Texture("EMPTY", Texture.RGB5_A1);
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
 
-    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
-    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
+    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Texture.RGBA8);
+    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png", Texture.RGBA8);
     public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
 
-    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png");
-    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
+    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Texture.RGBA8);
+    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Texture.RGBA8);
 
-    public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png");
-    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png");
-    public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
-    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
-    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
-    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png");
-    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png");
+    public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Texture.RGBA8);
+    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Texture.RGBA8);
+    public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Texture.RGBA8);
+    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Texture.RGBA8);
+    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png", Texture.RGBA8);
+    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png", Texture.RGBA8);
+    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png", Texture.RGBA8);
 
-    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png");
-    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png");
+    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Texture.RGBA8);
+    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Texture.RGBA8);
 
     public static final String[] TEX_PLAYER_WEAPONS = {
         "W01M9", "W02M1", "W03DE", "W04UZ",
@@ -93,8 +100,10 @@ public class Texture {
      * Creates blank Texture (TEXSIZE x TEXSIZE)
      *
      * @param texName texture name
+     * @param formatFlag colorRGBA/depth format flag
      */
-    public Texture(String texName) {
+    public Texture(String texName, int formatFlag) {
+        this.formatFlag = formatFlag;
         this.image = new BufferedImage(TEX_SIZE, TEX_SIZE, BufferedImage.TYPE_INT_ARGB);
         this.texName = texName;
         Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
@@ -105,8 +114,10 @@ public class Texture {
      *
      * @param subDir directory or entry where file is located
      * @param fileName filename of the image (future texture)
+     * @param formatFlag colorRGBA/depth format flag
      */
-    public Texture(String subDir, String fileName) {
+    public Texture(String subDir, String fileName, int formatFlag) {
+        this.formatFlag = formatFlag;
         this.image = ImageUtils.loadImage(subDir, fileName);
         this.texName = fileName.substring(0, fileName.indexOf("."));
         Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
@@ -155,7 +166,7 @@ public class Texture {
         // get the content as ByteBuffer
         ByteBuffer imageDataBuffer = ImageUtils.getImageDataBuffer(image, Texture.TEX_SIZE);
 
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGBA8, TEX_SIZE, TEX_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageDataBuffer);
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, formatFlag, TEX_SIZE, TEX_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageDataBuffer);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         if (imageDataBuffer.capacity() != 0) {
@@ -267,7 +278,7 @@ public class Texture {
      * @return Texture Atlas as one big Texture.
      */
     public static Texture buildTextureAtlas(String atlasName, String subDir, String[] texNames, int gridSize) {
-        Texture result = new Texture(atlasName);
+        Texture result = new Texture(atlasName, Texture.RGBA8);
         Graphics2D g2d = result.image.createGraphics();
         final int texUnitSize = Math.round(TEX_SIZE / (float) gridSize);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -358,4 +369,9 @@ public class Texture {
     public static boolean isLightSource(String texName) {
         return LIGHT_TEX_LIST.contains(texName);
     }
+
+    public int getFormatFlag() {
+        return formatFlag;
+    }
+
 }

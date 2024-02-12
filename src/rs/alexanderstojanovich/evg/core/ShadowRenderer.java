@@ -28,6 +28,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -37,7 +38,7 @@ public class ShadowRenderer implements CoreRenderer {
 
     private final GameObject gameObject;
 
-    private final FrameBuffer frameBuffer = new FrameBuffer("Shadow", false);
+    private final FrameBuffer frameBuffer;
     private final Camera camera = new Camera();
     private Quad debugQuad;
     protected ShadowBox shadowBox = new ShadowBox().zero();
@@ -49,12 +50,14 @@ public class ShadowRenderer implements CoreRenderer {
     private ShadowRenderer.ShadowEffectsQuality effectsQuality = ShadowRenderer.ShadowEffectsQuality.values()[Configuration.getInstance().getShadowEffects()];
     private float shadowDistance = 500.0f;
 
-    public ShadowRenderer(GameObject gameObject) {
+    public ShadowRenderer(GameObject gameObject) throws Exception {
+        this.frameBuffer = new FrameBuffer("Shadow", Texture.DEPTH24, FrameBuffer.DEPTH_ATTACHMENT);
         this.gameObject = gameObject;
         setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
-        this.debugQuad.setScale(0.5f);
-        this.debugQuad.setPos(new Vector2f(1.0f, -1.0f));
+        this.debugQuad.setScale(0.25f);
+        this.debugQuad.setPos(new Vector2f(0.0f, 0.0f));
+        this.debugQuad.setColor(GlobalColors.RED_RGBA);
     }
 
     private void setDepthByQuality() {
@@ -78,7 +81,7 @@ public class ShadowRenderer implements CoreRenderer {
 
     @Override
     public void prepare() {
-        GL11.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+//        GL11.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
     }
 
@@ -90,7 +93,8 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     private void updateCamera(Vector3f lightSrcPos) {
-        camera.setPos(lightSrcPos);
+        Vector3f temp = new Vector3f();
+        camera.setPos(lightSrcPos.negate(temp));
 
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
@@ -112,15 +116,19 @@ public class ShadowRenderer implements CoreRenderer {
      */
     @Override
     public void render() {
+        if (effectsQuality == ShadowRenderer.ShadowEffectsQuality.NONE) {
+            return;
+        }
+
         frameBuffer.bind();
         prepare();
         for (LightSource ls : gameObject.levelContainer.lightSources.sourceList) {
             capture(ls.pos);
         }
-        if (!debugQuad.isBuffered()) {
-            debugQuad.bufferAll(gameObject.intrface);
-        }
-        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
+//        if (!debugQuad.isBuffered()) {
+//            debugQuad.bufferAll(gameObject.intrface);
+//        }
+//        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
         FrameBuffer.unbind(gameObject);
     }
 

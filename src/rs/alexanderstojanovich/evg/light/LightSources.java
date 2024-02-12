@@ -48,7 +48,7 @@ public class LightSources {
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
     public LightSources() {
-        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay"));
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.RGB5_A1));
     }
 
     /**
