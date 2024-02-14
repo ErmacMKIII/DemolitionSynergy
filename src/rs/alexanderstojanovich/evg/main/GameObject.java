@@ -336,13 +336,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
             synchronized (UPDATE_RENDER_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+                    waterRenderer.render();
+                    shadowRenderer.render();
                     levelContainer.render(renderFlag);
-                    if (this.waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE
-                            && !levelContainer.getChunks().getChunkList().isEmpty()) {
-                        waterRenderer.render();
-                    }
                 }
-                shadowRenderer.render();
+
                 intrface.render(ShaderProgram.getIntrfaceShader());
             }
         }

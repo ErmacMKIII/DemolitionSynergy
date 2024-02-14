@@ -43,11 +43,15 @@ import rs.alexanderstojanovich.evg.util.ImageUtils;
  */
 public class Texture {
 
-    public static final int RGB5_A1 = GL11.GL_RGB5_A1;
-    public static final int RGBA8 = GL11.GL_RGBA8;
-    public static final int DEPTH24 = GL14.GL_DEPTH_COMPONENT24;
+    public static enum Format {
+        NONE, RGB5_A1, RGBA8, DEPTH24
+    }
 
-    private final int formatFlag;
+    public static enum Type {
+        UNSINGED_BYTE, FLOAT
+    }
+
+    protected Format texFmt = Format.NONE;
 
     private final BufferedImage image;
     private final String texName;
@@ -56,27 +60,27 @@ public class Texture {
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
     public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
-    public static final Texture EMPTY = new Texture("EMPTY", Texture.RGB5_A1);
+    public static final Texture EMPTY = new Texture("EMPTY", Format.RGB5_A1);
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
 
-    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Texture.RGBA8);
-    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png", Texture.RGBA8);
+    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Format.RGBA8);
+    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png", Format.RGBA8);
     public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
 
-    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Texture.RGBA8);
-    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Texture.RGBA8);
+    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Format.RGBA8);
+    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Format.RGBA8);
 
-    public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Texture.RGBA8);
-    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Texture.RGBA8);
-    public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Texture.RGBA8);
-    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Texture.RGBA8);
-    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png", Texture.RGBA8);
-    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png", Texture.RGBA8);
-    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png", Texture.RGBA8);
+    public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Format.RGBA8);
+    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Format.RGBA8);
+    public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Format.RGBA8);
+    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Format.RGBA8);
+    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png", Format.RGBA8);
+    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png", Format.RGBA8);
+    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png", Format.RGBA8);
 
-    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Texture.RGBA8);
-    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Texture.RGBA8);
+    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Format.RGBA8);
+    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Format.RGBA8);
 
     public static final String[] TEX_PLAYER_WEAPONS = {
         "W01M9", "W02M1", "W03DE", "W04UZ",
@@ -86,8 +90,8 @@ public class Texture {
     };
     public static final int GRID_SIZE_PLAYER = 4;
 
-    public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD);
-    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER);
+    public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
+    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
 
     public static IList<String> LIGHT_TEX_LIST = new GapList<String>() {
         {
@@ -100,10 +104,10 @@ public class Texture {
      * Creates blank Texture (TEXSIZE x TEXSIZE)
      *
      * @param texName texture name
-     * @param formatFlag colorRGBA/depth format flag
+     * @param texFmt colorRGBA/depth texFmt flag
      */
-    public Texture(String texName, int formatFlag) {
-        this.formatFlag = formatFlag;
+    public Texture(String texName, Format texFmt) {
+        this.texFmt = texFmt;
         this.image = new BufferedImage(TEX_SIZE, TEX_SIZE, BufferedImage.TYPE_INT_ARGB);
         this.texName = texName;
         Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
@@ -114,23 +118,73 @@ public class Texture {
      *
      * @param subDir directory or entry where file is located
      * @param fileName filename of the image (future texture)
-     * @param formatFlag colorRGBA/depth format flag
+     * @param texFmt colorRGBA/depth texFmt flag
      */
-    public Texture(String subDir, String fileName, int formatFlag) {
-        this.formatFlag = formatFlag;
+    public Texture(String subDir, String fileName, Format texFmt) {
+        this.texFmt = texFmt;
         this.image = ImageUtils.loadImage(subDir, fileName);
         this.texName = fileName.substring(0, fileName.indexOf("."));
         Texture.TEX_STORE.put(texName, new TexValue(this, -1, 1));
     }
 
+    /**
+     * Buffer texture with byte buffer (nullable) If parsed image data is null
+     * texture is generated empty
+     *
+     * Optionally Image utils can be used to get buffer from the image
+     *
+     */
     public void bufferAll() {
-        loadTexture();
+        ByteBuffer imgDatBuff = ImageUtils.getImageDataBuffer(image, TEX_SIZE);
+        switch (texFmt) {
+            case NONE:
+                loadTexture(imgDatBuff, GL11.GL_RGB, GL11.GL_RGB, Type.UNSINGED_BYTE);
+                break;
+            case RGB5_A1:
+                loadTexture(imgDatBuff, GL11.GL_RGB5_A1, GL11.GL_RGBA, Type.UNSINGED_BYTE);
+                break;
+            case RGBA8:
+                loadTexture(imgDatBuff, GL11.GL_RGBA8, GL11.GL_RGBA, Type.UNSINGED_BYTE);
+                break;
+            case DEPTH24:
+                loadTexture(imgDatBuff, GL14.GL_DEPTH_COMPONENT24, GL14.GL_DEPTH_COMPONENT, Type.FLOAT);
+                break;
+        }
+
         buffered = true;
+    }
+
+    /**
+     * Buffer texture with byte buffer (nullable) If parsed image data is null
+     * texture is generated empty
+     *
+     * Optionally Image utils can be used to get buffer from the image
+     *
+     * @param texture texture to load to
+     * @param imgDatBuff (nullable) image data
+     */
+    public static void bufferAll(Texture texture, ByteBuffer imgDatBuff) {
+        switch (texture.texFmt) {
+            case NONE:
+                texture.loadTexture(imgDatBuff, GL11.GL_RGB, GL11.GL_RGB, Type.UNSINGED_BYTE);
+                break;
+            case RGB5_A1:
+                texture.loadTexture(imgDatBuff, GL11.GL_RGB5_A1, GL11.GL_RGBA, Type.UNSINGED_BYTE);
+                break;
+            case RGBA8:
+                texture.loadTexture(imgDatBuff, GL11.GL_RGBA8, GL11.GL_RGBA, Type.UNSINGED_BYTE);
+                break;
+            case DEPTH24:
+                texture.loadTexture(imgDatBuff, GL14.GL_DEPTH_COMPONENT24, GL14.GL_DEPTH_COMPONENT, Type.FLOAT);
+                break;
+        }
+
+        texture.buffered = true;
     }
 
     public static void bufferAllTextures() {
         // EMPTY Texture (Water etc)
-        EMPTY.bufferAll();
+        Texture.bufferAll(EMPTY, null);
         // intrface
         SPLASH.bufferAll();
         LOGO.bufferAll();
@@ -153,7 +207,7 @@ public class Texture {
         DSLogger.reportDebug("Textures loaded!", null);
     }
 
-    private void loadTexture() {
+    private void loadTexture(ByteBuffer imgDatBuff, int internFmt, int pixFmt, Type type) {
         textureID = GL11.glGenTextures();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureID);
         // Set the texture wrapping parameters
@@ -164,13 +218,19 @@ public class Texture {
         GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_LINEAR);
 
         // get the content as ByteBuffer
-        ByteBuffer imageDataBuffer = ImageUtils.getImageDataBuffer(image, Texture.TEX_SIZE);
+        switch (type) {
+            case UNSINGED_BYTE:
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internFmt, TEX_SIZE, TEX_SIZE, 0, pixFmt, GL11.GL_UNSIGNED_BYTE, imgDatBuff);
+                break;
+            case FLOAT:
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internFmt, TEX_SIZE, TEX_SIZE, 0, pixFmt, GL11.GL_FLOAT, imgDatBuff);
+                break;
+        }
 
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, formatFlag, TEX_SIZE, TEX_SIZE, 0, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, imageDataBuffer);
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
-        if (imageDataBuffer.capacity() != 0) {
-            MemoryUtil.memFree(imageDataBuffer);
+        if (imgDatBuff != null && imgDatBuff.capacity() != 0) {
+            MemoryUtil.memFree(imgDatBuff);
         }
     }
 
@@ -275,10 +335,11 @@ public class Texture {
      * @param subDir Subdirectory in dsynergy.zip
      * @param texNames texture names to build atlas from.
      * @param gridSize must be square root of number of textures.
+     * @param format texture format
      * @return Texture Atlas as one big Texture.
      */
-    public static Texture buildTextureAtlas(String atlasName, String subDir, String[] texNames, int gridSize) {
-        Texture result = new Texture(atlasName, Texture.RGBA8);
+    public static Texture buildTextureAtlas(String atlasName, String subDir, String[] texNames, int gridSize, Format format) {
+        Texture result = new Texture(atlasName, format);
         Graphics2D g2d = result.image.createGraphics();
         final int texUnitSize = Math.round(TEX_SIZE / (float) gridSize);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
@@ -370,8 +431,8 @@ public class Texture {
         return LIGHT_TEX_LIST.contains(texName);
     }
 
-    public int getFormatFlag() {
-        return formatFlag;
+    public Format getTexFmt() {
+        return texFmt;
     }
 
 }

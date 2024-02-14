@@ -53,10 +53,12 @@ public class WaterRenderer implements CoreRenderer {
     private final Quad debugQuad;
 
     public WaterRenderer(GameObject gameObject) throws Exception {
-        this.frameBuffer = new FrameBuffer("Water", Texture.RGB5_A1, FrameBuffer.COLOR_ATTACHMENT);
+        this.frameBuffer = new FrameBuffer("Water", Texture.Format.RGB5_A1, FrameBuffer.Configuration.COLOR_ATTACHMENT);
         this.gameObject = gameObject;
         this.setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+        this.debugQuad.setScale(0.25f);
+        this.debugQuad.setPos(new Vector2f(0.5f, 0.5f));
     }
 
     private void setDepthByQuality() {
@@ -158,7 +160,11 @@ public class WaterRenderer implements CoreRenderer {
     }
 
     private void updateClipPlane(float waterHeight) {
-        ShaderProgram.getWaterBaseShader().updateUniform(waterHeight, "waterHeight");
+        for (ShaderProgram sp : ShaderProgram.WATER_SHADERS) {
+            sp.bind();
+            sp.updateUniform(waterHeight, "waterHeight");
+            ShaderProgram.unbind();
+        }
     }
 
     private void updateCamera(float waterHeight) {
@@ -195,15 +201,15 @@ public class WaterRenderer implements CoreRenderer {
             }
         }
         FrameBuffer.unbind(gameObject);
-//        if (!debugQuad.isBuffered()) {
-//            debugQuad.bufferAll();
-//        }
-//        debugQuad.render(ShaderProgram.getIntrfaceShader());
+        if (!debugQuad.isBuffered()) {
+            debugQuad.bufferAll(gameObject.intrface);
+        }
+        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
     }
 
     @Override
     public void release() {
-        frameBuffer.getTexture().release();
+        frameBuffer.release();
         DSLogger.reportDebug("Water Renderer released.", null);
     }
 

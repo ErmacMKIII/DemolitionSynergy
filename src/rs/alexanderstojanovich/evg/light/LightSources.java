@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -47,8 +48,11 @@ public class LightSources {
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
+    public Matrix4f lightViewMatrix = new Matrix4f().zero();
+    public Matrix4f lightProjMatrix = new Matrix4f().zero();
+
     public LightSources() {
-        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.RGB5_A1));
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.Format.RGB5_A1));
     }
 
     /**
@@ -167,6 +171,14 @@ public class LightSources {
         }
     }
 
+    /**
+     * Reset Light Matrices (If shadows are disabled they are not rendered)
+     */
+    public void resetLightMatrices() {
+        lightProjMatrix.zero();
+        lightViewMatrix.zero();
+    }
+
     public void setAllModified() {
         Arrays.fill(modified, true);
     }
@@ -189,6 +201,14 @@ public class LightSources {
 
     public boolean[] getModified() {
         return modified;
+    }
+
+    public Matrix4f getLightViewMatrix() {
+        return lightViewMatrix;
+    }
+
+    public Matrix4f getLightProjMatrix() {
+        return lightProjMatrix;
     }
 
 }

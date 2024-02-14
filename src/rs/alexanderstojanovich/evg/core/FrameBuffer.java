@@ -32,24 +32,27 @@ public class FrameBuffer {
     private int fbo;
     private final Texture texture;
 
-    public static final int COLOR_ATTACHMENT = GL30.GL_COLOR_ATTACHMENT0;
-    public static final int DEPTH_ATTACHMENT = GL30.GL_DEPTH_ATTACHMENT;
+    private int depthRenderBuff = 0;
 
-    private final int cfgFlag;
+    public static enum Configuration {
+        COLOR_ATTACHMENT, DEPTH_ATTACHMENT
+    }
+
+    private final Configuration cfg;
 
     /**
      * Create Frame Buffer. Used by shadow renderer (depth only) & water
      * renderer (color & depth)
      *
      * @param texName texture name
-     * @param texFmtFlag texture format flag {RGBA8, RGB5A1 or DEPTH24}
-     * @param cfgFlag must be either color attachment or depth attachment
+     * @param texFormat texture format flag {RGBA8, RGB5A1 or DEPTH24}
+     * @param cfg must be either color attachment or depth attachment
      * @throws java.lang.Exception if invalid config flag is provided
      */
-    public FrameBuffer(String texName, int texFmtFlag, int cfgFlag) throws Exception {
-        this.texture = new Texture(texName, texFmtFlag);
-        this.cfgFlag = cfgFlag;
-        if (cfgFlag != COLOR_ATTACHMENT && cfgFlag != DEPTH_ATTACHMENT) {
+    public FrameBuffer(String texName, Texture.Format texFormat, Configuration cfg) throws Exception {
+        this.texture = new Texture(texName, texFormat);
+        this.cfg = cfg;
+        if (this.cfg != Configuration.COLOR_ATTACHMENT && this.cfg != Configuration.DEPTH_ATTACHMENT) {
             throw new Exception("Invalid attachment was provided");
         }
     }
@@ -59,11 +62,28 @@ public class FrameBuffer {
      * to be in that thread)
      */
     public void initBuffer() { // requires OpenGL context        
-        texture.bufferAll(); // loads empty texture to graphics card
-        createFrameBuffer();
-        createRenderBuffer();
-        if (cfgFlag == COLOR_ATTACHMENT || cfgFlag == DEPTH_ATTACHMENT) {
-            createColorOrDepthBuffer(cfgFlag);
+        // loads empty texture to graphics card
+        Texture.bufferAll(texture, null);
+
+        switch (cfg) {
+            case COLOR_ATTACHMENT:
+                createFrameBuffer();
+                configureColorTexture();
+                createDepth();
+                break;
+
+            case DEPTH_ATTACHMENT:
+                createFrameBuffer();
+                configureDepthTexture();
+                createDepth();
+                break;
+        }
+
+        // where color buffer is written
+        if (cfg == Configuration.COLOR_ATTACHMENT) {
+            GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
+        } else {
+            GL11.glDrawBuffer(GL11.GL_NONE);
         }
         // unbind so the configuration is not ruined
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
@@ -76,24 +96,30 @@ public class FrameBuffer {
     }
 
     /**
-     * Create depth buffer (always)
+     * Create color buffer (conditional, water renderer)
      */
-    private void createRenderBuffer() {
+    private void configureColorTexture() {
         // the depth buffer
-        int depthRenderBuffer = GL30.glGenRenderbuffers();
-        GL30.glBindRenderbuffer(GL30.GL_RENDERBUFFER, depthRenderBuffer);
-        GL30.glRenderbufferStorage(GL30.GL_RENDERBUFFER, GL30.GL_DEPTH_COMPONENT24, texture.getImage().getWidth(), texture.getImage().getHeight());
-        GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_RENDERBUFFER, depthRenderBuffer);
+        GL32.glFramebufferTexture(GL30.GL_FRAMEBUFFER, GL30.GL_COLOR_ATTACHMENT0, texture.getTextureID(), 0);
     }
 
     /**
-     * Create color buffer (color textures) or depth only (shadow)
-     *
-     * @param attachmentType
+     * Create color buffer (conditional, shadow renderer)
      */
-    private void createColorOrDepthBuffer(int attachmentType) {
-        // set "renderedTexture" as our colour attachement #0
-        GL32.glFramebufferTexture(GL30.GL_FRAMEBUFFER, attachmentType, texture.getTextureID(), 0);
+    private void configureDepthTexture() {
+        // the depth buffer
+        GL32.glFramebufferTexture(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, texture.getTextureID(), 0);
+    }
+
+    /**
+     * Create depth buffer (always)
+     */
+    private void createDepth() {
+        // the depth buffer
+        depthRenderBuff = GL30.glGenRenderbuffers();
+        GL30.glBindRenderbuffer(GL30.GL_RENDERBUFFER, depthRenderBuff);
+        GL30.glRenderbufferStorage(GL30.GL_RENDERBUFFER, GL30.GL_DEPTH_COMPONENT24, texture.getImage().getWidth(), texture.getImage().getHeight());
+        GL30.glFramebufferRenderbuffer(GL30.GL_FRAMEBUFFER, GL30.GL_DEPTH_ATTACHMENT, GL30.GL_RENDERBUFFER, depthRenderBuff);
     }
 
     public void bind() {
@@ -108,16 +134,18 @@ public class FrameBuffer {
         GL11.glViewport(0, 0, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight());
     }
 
+    public void release() {
+        GL30.glDeleteFramebuffers(fbo);
+        GL30.glDeleteRenderbuffers(depthRenderBuff);
+        texture.release();
+    }
+
     public int getFbo() {
         return fbo;
     }
 
     public Texture getTexture() {
         return texture;
-    }
-
-    public int getCfgFlag() {
-        return cfgFlag;
     }
 
 }

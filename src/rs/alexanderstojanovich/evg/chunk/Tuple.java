@@ -31,9 +31,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -247,7 +245,10 @@ public class Tuple extends Blocks {
             }
             blkIndex++;
         }
-        bigFloatBuff.flip();
+
+        if (bigFloatBuff.position() != 0) {
+            bigFloatBuff.flip();
+        }
 
         if (bigFloatBuff.capacity() != 0) {
             GL30.glBindVertexArray(vao); //**
@@ -300,7 +301,9 @@ public class Tuple extends Blocks {
             vec4FloatColorBuff.put(color.z);
             vec4FloatColorBuff.put(color.w);
         }
-        vec4FloatColorBuff.flip();
+        if (vec4FloatColorBuff.position() != 0) {
+            vec4FloatColorBuff.flip();
+        }
 
         if (vec4Vbo == 0) {
             vec4Vbo = GL15.glGenBuffers();
@@ -359,7 +362,10 @@ public class Tuple extends Blocks {
                 mat4FloatModelBuff.put(vectArr[i].w);
             }
         }
-        mat4FloatModelBuff.flip();
+
+        if (mat4FloatModelBuff.position() != 0) {
+            mat4FloatModelBuff.flip();
+        }
 
         if (mat4Vbo == 0) {
             mat4Vbo = GL15.glGenBuffers();
@@ -462,7 +468,7 @@ public class Tuple extends Blocks {
         updateVertices();
     }
 
-    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture, Matrix4f shadowMatrix) {
+    public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);
@@ -516,7 +522,9 @@ public class Tuple extends Blocks {
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
             // zero matrix if shadows are disabled
-            shaderProgram.updateUniform(shadowMatrix, "shadowMatrix");
+            // PASS 2
+            shaderProgram.updateUniform(lightSources.lightProjMatrix, "lightProjMatrix");
+            shaderProgram.updateUniform(lightSources.lightViewMatrix, "lightViewMatrix");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
@@ -547,7 +555,7 @@ public class Tuple extends Blocks {
         }
     }
 
-    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture, Matrix4f shadowMatrix) {
+    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
         if (!tuples.isEmpty()) {
             shaderProgram.bind();
 
@@ -587,7 +595,9 @@ public class Tuple extends Blocks {
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
             // zero matrix if shadows are disabled
-            shaderProgram.updateUniform(shadowMatrix, "shadowMatrix");
+            // PASS 2
+            shaderProgram.updateUniform(lightSources.lightProjMatrix, "lightProjMatrix");
+            shaderProgram.updateUniform(lightSources.lightViewMatrix, "lightViewMatrix");
 
             for (Tuple tuple : tuples) {
                 if (!tuple.isBuffered()) {

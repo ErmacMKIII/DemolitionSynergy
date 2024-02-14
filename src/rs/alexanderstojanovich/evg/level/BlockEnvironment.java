@@ -205,12 +205,11 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        final Matrix4f shadowMatrix = (renderShadow) ? gameObject.shadowRenderer.getCamera().viewMatrix : new Matrix4f().zero();
         for (Tuple tuple : optimizedTuples) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture, shadowMatrix);
+            tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
         }
     }
 
@@ -249,9 +248,8 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        final Matrix4f shadowMatrix = (renderShadow) ? gameObject.shadowRenderer.getCamera().viewMatrix : new Matrix4f().zero();
 
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture, shadowMatrix);
+        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
     }
 
     /**

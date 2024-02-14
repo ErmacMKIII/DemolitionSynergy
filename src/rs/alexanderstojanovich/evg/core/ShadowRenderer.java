@@ -16,13 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.intrface.Quad;
-import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
+import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -51,12 +52,12 @@ public class ShadowRenderer implements CoreRenderer {
     private float shadowDistance = 500.0f;
 
     public ShadowRenderer(GameObject gameObject) throws Exception {
-        this.frameBuffer = new FrameBuffer("Shadow", Texture.DEPTH24, FrameBuffer.DEPTH_ATTACHMENT);
+        this.frameBuffer = new FrameBuffer("Shadow", Texture.Format.DEPTH24, FrameBuffer.Configuration.DEPTH_ATTACHMENT);
         this.gameObject = gameObject;
         setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
         this.debugQuad.setScale(0.25f);
-        this.debugQuad.setPos(new Vector2f(0.0f, 0.0f));
+        this.debugQuad.setPos(new Vector2f(-0.5f, 0.5f));
         this.debugQuad.setColor(GlobalColors.RED_RGBA);
     }
 
@@ -81,7 +82,6 @@ public class ShadowRenderer implements CoreRenderer {
 
     @Override
     public void prepare() {
-//        GL11.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
     }
 
@@ -93,22 +93,21 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     private void updateCamera(Vector3f lightSrcPos) {
+        camera.setPos(lightSrcPos);
+
         Vector3f temp = new Vector3f();
-        camera.setPos(lightSrcPos.negate(temp));
-
-        Vector3f temp1 = new Vector3f();
-        Vector3f temp2 = new Vector3f();
-        Vector3f lightDir = lightSrcPos.negate(temp1).normalize(temp2);
-
-        float lightYaw = org.joml.Math.atan2(lightDir.x, -lightDir.z); // negative cotangent
-        float lightPitch = org.joml.Math.asin(lightDir.y);
+        Vector3f lightDir = lightSrcPos.negate(temp);
+        float lightYaw = org.joml.Math.atan2(-lightDir.z, lightDir.x);
+        float lightPitch = org.joml.Math.atan2(lightDir.y, org.joml.Math.sqrt(lightDir.x * lightDir.x + lightDir.z * lightDir.z));
 
         camera.lookAtAngle(lightYaw, lightPitch);
+        DSLogger.reportInfo("yaw=" + org.joml.Math.toDegrees(lightYaw), null);
+        DSLogger.reportInfo("pitch=" + org.joml.Math.toDegrees(lightPitch), null);
     }
 
     private void capture(Vector3f lightSrcPos) {
         updateCamera(lightSrcPos);
-        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), BlockEnvironment.LIGHT_MASK);
+        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), 0);
     }
 
     /**
@@ -120,21 +119,27 @@ public class ShadowRenderer implements CoreRenderer {
             return;
         }
 
+        // PASS 1 .. render depth to texture
         frameBuffer.bind();
+        LightSources lightSources = gameObject.levelContainer.lightSources;
         prepare();
-        for (LightSource ls : gameObject.levelContainer.lightSources.sourceList) {
+        for (LightSource ls : lightSources.sourceList) {
             capture(ls.pos);
         }
-//        if (!debugQuad.isBuffered()) {
-//            debugQuad.bufferAll(gameObject.intrface);
-//        }
-//        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
         FrameBuffer.unbind(gameObject);
+        // PASS 2 .. render the scene
+        lightSources.lightViewMatrix.set(camera.viewMatrix);
+        lightSources.lightProjMatrix.set(gameObject.perspectiveRenderer.orthogonalMatrix);
+
+        if (!debugQuad.isBuffered()) {
+            debugQuad.bufferAll(gameObject.intrface);
+        }
+        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
     }
 
     @Override
     public void release() {
-        frameBuffer.getTexture().release();
+        frameBuffer.release();
         DSLogger.reportDebug("Shadow Renderer released.", null);
     }
 
