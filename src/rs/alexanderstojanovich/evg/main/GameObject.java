@@ -23,7 +23,6 @@ import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evg.core.ShadowBox;
 import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
@@ -229,21 +228,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.updatePerspective(); // update perspective for all the shaders
-            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                ShadowBox shadowBox;
-                shadowRenderer.updateShadowBox();
-                shadowBox = shadowRenderer.getShadowBox();
-                // update orthogonal for "shadow" shaders corelated to
-                perspectiveRenderer.updateOrthogonal(shadowBox.minX, shadowBox.maxX, shadowBox.minY, shadowBox.maxY, shadowBox.minZ, shadowBox.maxZ);
+            perspectiveRenderer.updateOrthogonal(); // update orthogonal for all the shaders
+
+            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                waterRenderer.update();
             }
 
-            levelContainer.update();
+            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                shadowRenderer.update();
+            }
+
             synchronized (UPDATE_RENDER_MUTEX) {
+                levelContainer.update();
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
                     boolean underGravity = levelContainer.gravityDo(deltaTime);
                     levelContainer.levelActors.player.setUnderGravity(underGravity);
                 }
-                waterRenderer.updateHeights();
             }
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();
@@ -336,8 +336,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
             synchronized (UPDATE_RENDER_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                    waterRenderer.render();
-                    shadowRenderer.render();
+                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                        waterRenderer.render();
+                    }
+
+                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                        shadowRenderer.render();
+                    }
                     levelContainer.render(renderFlag);
                 }
 

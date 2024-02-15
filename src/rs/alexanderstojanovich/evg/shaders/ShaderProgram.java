@@ -145,7 +145,7 @@ public class ShaderProgram {
         skyboxShader = new ShaderProgram(skyboxShaders);
         GL_SHADERS.put("Skybox", skyboxShader);
         // ---------------------------------------------------------------------
-        // 11. Shadow model shader
+        // 11. Shadow base model shader
         Shader shadowBaseVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseVS.glsl", Shader.VERTEX_SHADER);
         Shader shadowBaseFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> shadowBaseShaders = new GapList<>();
@@ -153,7 +153,8 @@ public class ShaderProgram {
         shadowBaseShaders.add(shadowBaseFragmentShader);
         shadowBaseShader = new ShaderProgram(shadowBaseShaders);
         GL_SHADERS.put("ShadowBase", shadowBaseShader);
-        // ---------------------------------------------------------------------// 11. Shadow model shader
+        // ---------------------------------------------------------------------
+        // 12. Shadow voxel (instanced) model shader
         Shader shadowVoxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelVS.glsl", Shader.VERTEX_SHADER);
         Shader shadowVoxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> shadowVoxelShaders = new GapList<>();

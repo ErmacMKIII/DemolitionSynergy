@@ -78,7 +78,7 @@ public class WaterRenderer implements CoreRenderer {
         }
     }
 
-    public void updateHeights() { // call this in update (renderer)
+    public void update() { // call this in update (renderer)
         if (effectsQuality == WaterEffectsQuality.NONE) {
             return;
         }

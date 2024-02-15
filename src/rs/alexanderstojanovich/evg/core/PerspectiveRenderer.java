@@ -83,15 +83,10 @@ public class PerspectiveRenderer implements CoreRenderer {
      * Update orthogonal to bounding box width * height * depth. Bounding box as
      * cuboid is represented by 8 vertices.
      *
-     * @param left
-     * @param right
-     * @param bottom
-     * @param top
-     * @param zNear
-     * @param zFar
      */
-    public void updateOrthogonal(float left, float right, float bottom, float top, float zNear, float zFar) {
-        loadOrthogonal(left, right, bottom, top, zNear, zFar);
+    public void updateOrthogonal() {
+        final ShadowBox shadowBox = gameObject.shadowRenderer.shadowBox;
+        loadOrthogonal(shadowBox.minX, shadowBox.maxX, shadowBox.minY, shadowBox.maxY, shadowBox.minZ, shadowBox.maxZ);
     }
 
     /**
@@ -141,6 +136,13 @@ public class PerspectiveRenderer implements CoreRenderer {
         for (ShaderProgram shaderProgram : ShaderProgram.SHADOW_SHADERS) {
             shaderProgram.bind();
             int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
+            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffOrthogonal);
+            ShaderProgram.unbind();
+        }
+
+        for (ShaderProgram shaderProgram : ShaderProgram.ENVIRONMENTAL_SHADERS) {
+            shaderProgram.bind();
+            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "lightProjectionMatrix");
             GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffOrthogonal);
             ShaderProgram.unbind();
         }

@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
-import org.joml.Matrix4f;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -1170,9 +1169,10 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-            for (int i = 0; i < 2; i++) {
-                lightSources.setModified(i, true);
-            }
+            lightSources.resetAllModified();
+//            for (int i = 0; i < 2; i++) {
+//                lightSources.setModified(i, true);
+//            }
         }
     }
 
@@ -1220,7 +1220,7 @@ public class LevelContainer implements GravityEnviroment {
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag | BlockEnvironment.LIGHT_MASK);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {

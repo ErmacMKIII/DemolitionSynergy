@@ -16,20 +16,19 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
-import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -58,7 +57,6 @@ public class ShadowRenderer implements CoreRenderer {
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
         this.debugQuad.setScale(0.25f);
         this.debugQuad.setPos(new Vector2f(-0.5f, 0.5f));
-        this.debugQuad.setColor(GlobalColors.RED_RGBA);
     }
 
     private void setDepthByQuality() {
@@ -82,27 +80,29 @@ public class ShadowRenderer implements CoreRenderer {
 
     @Override
     public void prepare() {
-        GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
     }
 
     /**
      * Call externally in game object
      */
-    public void updateShadowBox() {
-        shadowBox = ShadowBox.createOrUpdate(shadowDistance, camera.viewMatrix, gameObject.levelContainer.levelActors.mainCamera());
+    public void update() {
+        shadowBox = ShadowBox.createOrUpdate(shadowDistance, gameObject.levelContainer.levelActors.mainCamera());
     }
 
     private void updateCamera(Vector3f lightSrcPos) {
-        camera.setPos(lightSrcPos);
+        camera.setPos(new Vector3f(lightSrcPos));
 
-        Vector3f temp = new Vector3f();
-        Vector3f lightDir = lightSrcPos.negate(temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f lightDir = lightSrcPos.negate(temp1).normalize(temp2);
         float lightYaw = org.joml.Math.atan2(-lightDir.z, lightDir.x);
         float lightPitch = org.joml.Math.atan2(lightDir.y, org.joml.Math.sqrt(lightDir.x * lightDir.x + lightDir.z * lightDir.z));
 
-        camera.lookAtAngle(lightYaw, lightPitch);
-        DSLogger.reportInfo("yaw=" + org.joml.Math.toDegrees(lightYaw), null);
-        DSLogger.reportInfo("pitch=" + org.joml.Math.toDegrees(lightPitch), null);
+        camera.lookAtAngle(-lightYaw, lightPitch);
+//        DSLogger.reportInfo("yaw=" + org.joml.Math.toDegrees(lightYaw), null);
+//        DSLogger.reportInfo("pitch=" + org.joml.Math.toDegrees(lightPitch), null);
     }
 
     private void capture(Vector3f lightSrcPos) {
@@ -121,15 +121,14 @@ public class ShadowRenderer implements CoreRenderer {
 
         // PASS 1 .. render depth to texture
         frameBuffer.bind();
-        LightSources lightSources = gameObject.levelContainer.lightSources;
         prepare();
-        for (LightSource ls : lightSources.sourceList) {
-            capture(ls.pos);
+        for (LightSource ls : gameObject.levelContainer.lightSources.sourceList) {
+            if (ls.pos != gameObject.levelContainer.levelActors.mainActor().getPos()) {
+                capture(ls.pos);
+            }
         }
         FrameBuffer.unbind(gameObject);
-        // PASS 2 .. render the scene
-        lightSources.lightViewMatrix.set(camera.viewMatrix);
-        lightSources.lightProjMatrix.set(gameObject.perspectiveRenderer.orthogonalMatrix);
+        // PASS 2 .. render the scene        
 
         if (!debugQuad.isBuffered()) {
             debugQuad.bufferAll(gameObject.intrface);

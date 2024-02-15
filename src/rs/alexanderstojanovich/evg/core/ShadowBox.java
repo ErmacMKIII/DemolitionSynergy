@@ -101,28 +101,19 @@ public class ShadowBox {
      *
      *
      * @param shadowDistance shadow distance
-     * @param lightViewMatrix light view matrix (from shadow renderer)
      * @param mainObs main observer (from level container) using the main
      * camera.
      * @return
      */
-    public static ShadowBox createOrUpdate(float shadowDistance, Matrix4f lightViewMatrix, Observer mainObs) {
-        Vector3f temp1 = new Vector3f();
-        Vector3f toFar = mainObs.getFront().mul(shadowDistance, temp1);
-        Vector3f temp2 = new Vector3f();
-        Vector3f toNear = mainObs.getFront().mul(PerspectiveRenderer.NEAR_PLANE, temp2);
-
-        Vector3f temp3 = new Vector3f();
-        Vector3f centerNear = toNear.add(mainObs.getPos(), temp3);
-        Vector3f temp4 = new Vector3f();
-        Vector3f centerFar = toFar.add(mainObs.getPos(), temp4);
+    public static ShadowBox createOrUpdate(float shadowDistance, Observer mainObs) {
 
         Vector4f whVec4 = widthAndHeight(shadowDistance);
         IList<Vector3f> points = frustumVertices(
-                whVec4.x, whVec4.y, centerNear, // widthNear, heightNear, centerNear
-                whVec4.z, whVec4.z, centerFar, // widthFar, heightFar, centerFar
+                PerspectiveRenderer.NEAR_PLANE,
+                shadowDistance,
+                whVec4,
                 mainObs.getFront(), mainObs.getRight(), mainObs.getUp(), // front, right & up vectors from main observer (observer or player)
-                lightViewMatrix
+                mainObs.getCamera().viewMatrix
         );
 
         final ShadowBox shadowBox = new ShadowBox();
@@ -187,57 +178,58 @@ public class ShadowBox {
     }
 
     /**
-     * Calculates the position of the vertex at each corner of the view frustum
-     * in light space (8 vertices in total, so this returns 8 positions).
+     * Calculates the positions of cuboid frustum (nearWidth x nearHeight),
+     * (farWidth x farHeight),
      *
-     * @param widthNear
-     * @param heightNear
-     * @param centerNear - the center point of the frustum's near plane.
-     * @param widthFar
-     * @param heightFar
-     * @param centerFar - the center point of the frustum's (possibly adjusted)
-     * far plane.
-     * @param frontVector
-     * @param upVector
-     * @param rightVector
-     * @param viewMatrix light view matrix
+     * @param nearDistance near Z
+     * @param farDistance far Z
+     * @param widthHeightVec4 (nearWidth x nearHeight), (farWidth x farHeight)
+     * as xyzw
+     *
+     * @param frontVec3 camera front vec3
+     * @param upVec3 camera up vec3
+     * @param rightVec3 camera right vec3
+     * @param viewMat4 view (space) matrix
      *
      * @return The positions of the vertices of the frustum in light space.
      */
-    protected static IList<Vector3f> frustumVertices(float widthNear, float heightNear, Vector3f centerNear,
-            float widthFar, float heightFar, Vector3f centerFar, Vector3f frontVector, Vector3f upVector, Vector3f rightVector, Matrix4f viewMatrix) {
+    protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3, Matrix4f viewMat4) {
+        float widthNear = widthHeightVec4.x;
+        float widthFar = widthHeightVec4.y;
+
+        float heightNear = widthHeightVec4.z;
+        float heightFar = widthHeightVec4.w;
 
         Vector3f temp1 = new Vector3f();
-        Vector3f bottomNear = centerNear.add(upVector.mul(-heightNear, temp1), temp1);
-
+        Vector3f toNear = frontVec3.mul(nearDistance, temp1);
         Vector3f temp2 = new Vector3f();
-        Vector3f topNear = centerNear.add(upVector.mul(heightNear, temp2), temp2);
+        Vector3f toFar = frontVec3.mul(farDistance, temp2);
 
-        Vector3f temp3 = new Vector3f();
-        Vector3f bottomFar = centerFar.add(upVector.mul(-heightFar, temp3), temp3);
+        Vector3f tempA = new Vector3f();
+        Vector3f tempB = new Vector3f();
+        Vector3f tempC = new Vector3f();
+        Vector3f tempD = new Vector3f();
 
-        Vector3f temp4 = new Vector3f();
-        Vector3f topFar = centerFar.add(upVector.mul(heightFar, temp4), temp4);
+        Vector3f nearXPosYPos = toNear.add(rightVec3.mul(widthNear, tempA)).add(upVec3.mul(heightNear, tempA), tempA);
+        Vector3f nearXNegYPos = toNear.add(rightVec3.mul(-widthNear, tempB)).add(upVec3.mul(heightNear, tempB), tempB);
+        Vector3f nearXPosYNeg = toNear.add(rightVec3.mul(widthNear, tempC)).add(upVec3.mul(-heightNear, tempC), tempC);
+        Vector3f nearXNegYNeg = toNear.add(rightVec3.mul(-widthNear, tempD)).add(upVec3.mul(-heightNear, tempD), tempD);
 
-        Vector3f temp5 = new Vector3f();
-        Vector3f bottomLeft = centerNear.add(upVector.mul(-widthFar, temp5), temp5);
+        Vector3f farXPosYPos = toFar.add(rightVec3.mul(widthFar, tempA)).add(upVec3.mul(heightFar, tempA), tempA);
+        Vector3f farXNegYPos = toFar.add(rightVec3.mul(-widthFar, tempB)).add(upVec3.mul(heightFar, tempB), tempB);
+        Vector3f farXPosYNeg = toFar.add(rightVec3.mul(widthFar, tempC)).add(upVec3.mul(-heightFar, tempC), tempC);
+        Vector3f farXNegYNeg = toFar.add(rightVec3.mul(-widthFar, tempD)).add(upVec3.mul(-heightFar, tempD), tempD);
 
-        Vector3f temp6 = new Vector3f();
-        Vector3f bottomRight = centerNear.add(rightVector.mul(widthNear, temp6), temp6);
-
-        Vector3f temp7 = new Vector3f();
-        Vector3f topLeft = centerFar.add(upVector.mul(-widthNear, temp7), temp7);
-
-        Vector3f temp8 = new Vector3f();
-        Vector3f topRight = centerFar.add(upVector.mul(widthFar, temp8), temp8);
-
-        Vector3f[] points = new Vector3f[]{bottomLeft, bottomRight, bottomNear, bottomFar, topLeft, topRight, topNear, topFar};
+        Vector3f[] points = new Vector3f[]{
+            nearXPosYPos, nearXNegYPos, nearXPosYNeg, nearXNegYNeg,
+            farXPosYPos, farXNegYPos, farXPosYNeg, farXNegYNeg
+        };
         IList<Vector3f> result = new GapList<>();
 
         Vector4f tmp = new Vector4f();
         for (Vector3f point : points) {
             Vector4f vec4f = new Vector4f(point, 1.0f);
-            Vector4f pos = viewMatrix.transform(vec4f, tmp);
+            Vector4f pos = viewMat4.transform(vec4f, tmp);
             result.add(new Vector3f(pos.x, pos.y, pos.z));
         }
 
@@ -252,7 +244,7 @@ public class ShadowBox {
      * but means that distant objects wouldn't cast shadows.
      */
     private static Vector4f widthAndHeight(float shadowDistance) {
-        double tangent = org.joml.Math.tan(Math.toRadians(PerspectiveRenderer.FOV));
+        double tangent = org.joml.Math.tan(PerspectiveRenderer.FOV);
 
         float widthNear = (float) (PerspectiveRenderer.NEAR_PLANE * tangent);
         float widthFar = (float) (shadowDistance * tangent);
@@ -261,6 +253,30 @@ public class ShadowBox {
         float heightFar = (float) (shadowDistance / tangent);
 
         return new Vector4f(widthNear, widthFar, heightNear, heightFar);
+    }
+
+    public float getMinX() {
+        return minX;
+    }
+
+    public float getMaxX() {
+        return maxX;
+    }
+
+    public float getMinY() {
+        return minY;
+    }
+
+    public float getMaxY() {
+        return maxY;
+    }
+
+    public float getMinZ() {
+        return minZ;
+    }
+
+    public float getMaxZ() {
+        return maxZ;
     }
 
 }
