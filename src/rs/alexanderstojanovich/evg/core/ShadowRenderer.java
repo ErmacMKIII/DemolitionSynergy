@@ -16,19 +16,19 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -41,7 +41,7 @@ public class ShadowRenderer implements CoreRenderer {
     private final FrameBuffer frameBuffer;
     private final Camera camera = new Camera();
     private Quad debugQuad;
-    protected ShadowBox shadowBox = new ShadowBox().zero();
+    public final ShadowBox shadowBox = new ShadowBox();
 
     public static enum ShadowEffectsQuality {
         NONE, LOW, MEDIUM, HIGH, ULTRA
@@ -51,12 +51,13 @@ public class ShadowRenderer implements CoreRenderer {
     private float shadowDistance = 500.0f;
 
     public ShadowRenderer(GameObject gameObject) throws Exception {
-        this.frameBuffer = new FrameBuffer("Shadow", Texture.Format.DEPTH24, FrameBuffer.Configuration.DEPTH_ATTACHMENT);
+        this.frameBuffer = new FrameBuffer("Shadow", Texture.Format.RGBA8, FrameBuffer.Configuration.COLOR_ATTACHMENT);
         this.gameObject = gameObject;
         setDepthByQuality();
         this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
         this.debugQuad.setScale(0.25f);
         this.debugQuad.setPos(new Vector2f(-0.5f, 0.5f));
+        this.debugQuad.setColor(GlobalColors.GREEN_RGBA);
     }
 
     private void setDepthByQuality() {
@@ -85,10 +86,22 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     /**
-     * Call externally in game object
+     * Get (derive) light space matrix
+     *
+     * @return light space matrix
      */
-    public void update() {
-        shadowBox = ShadowBox.createOrUpdate(shadowDistance, gameObject.levelContainer.levelActors.mainCamera());
+    public Matrix4f lightSpaceMatrix() {
+        Matrix4f lightViewMatrix = camera.viewMatrix;
+        Matrix4f lightProjMatrix = gameObject.levelContainer.gameObject.perspectiveRenderer.orthogonalMatrix;
+        Matrix4f temp = new Matrix4f();
+        Matrix4f lightSpaceMatrix = lightProjMatrix.mul(lightViewMatrix, temp);
+
+        return lightSpaceMatrix;
+    }
+
+    public void updateShadowBox() {
+        final float aspectRatio = gameObject.WINDOW.getAspectRatio();
+        ShadowBox.createOrUpdate(shadowDistance, aspectRatio, camera, shadowBox);
     }
 
     private void updateCamera(Vector3f lightSrcPos) {
@@ -97,17 +110,15 @@ public class ShadowRenderer implements CoreRenderer {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         Vector3f lightDir = lightSrcPos.negate(temp1).normalize(temp2);
-        float lightYaw = org.joml.Math.atan2(-lightDir.z, lightDir.x);
-        float lightPitch = org.joml.Math.atan2(lightDir.y, org.joml.Math.sqrt(lightDir.x * lightDir.x + lightDir.z * lightDir.z));
 
-        camera.lookAtAngle(-lightYaw, lightPitch);
-//        DSLogger.reportInfo("yaw=" + org.joml.Math.toDegrees(lightYaw), null);
-//        DSLogger.reportInfo("pitch=" + org.joml.Math.toDegrees(lightPitch), null);
+        float lightYaw = org.joml.Math.atan2(lightDir.z, lightDir.x) - (float) org.joml.Math.PI / 2.0f;
+        float lightPitch = -org.joml.Math.atan2(lightDir.y, org.joml.Math.sqrt(lightDir.x * lightDir.x + lightDir.z * lightDir.z));
+
+        camera.lookAtAngle(lightYaw, lightPitch);
     }
 
-    private void capture(Vector3f lightSrcPos) {
-        updateCamera(lightSrcPos);
-        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), 0);
+    private void capture() {
+        gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), BlockEnvironment.LIGHT_MASK);
     }
 
     /**
@@ -118,18 +129,14 @@ public class ShadowRenderer implements CoreRenderer {
         if (effectsQuality == ShadowRenderer.ShadowEffectsQuality.NONE) {
             return;
         }
-
         // PASS 1 .. render depth to texture
         frameBuffer.bind();
         prepare();
-        for (LightSource ls : gameObject.levelContainer.lightSources.sourceList) {
-            if (ls.pos != gameObject.levelContainer.levelActors.mainActor().getPos()) {
-                capture(ls.pos);
-            }
-        }
+        updateShadowBox();
+        updateCamera(LevelContainer.SUNLIGHT.pos);
+        capture();
         FrameBuffer.unbind(gameObject);
         // PASS 2 .. render the scene        
-
         if (!debugQuad.isBuffered()) {
             debugQuad.bufferAll(gameObject.intrface);
         }

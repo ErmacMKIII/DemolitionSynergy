@@ -1,12 +1,7 @@
 #version 330 core
 
-in vec3 varNormal;
-in vec2 varUV;
-in vec4 varColor;
-
-uniform vec4 modelColor0;
-uniform sampler2D modelTexture0; // this is primary texture
+in vec4 varGLPos;
 
 void main() {            
-	     
+	gl_FragColor = vec4(1.0);
 }

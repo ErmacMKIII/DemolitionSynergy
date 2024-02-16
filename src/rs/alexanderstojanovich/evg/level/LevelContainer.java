@@ -201,7 +201,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
         SUN.setPrimaryRGBColor(SUN_COLOR_RGB);
-        SUN.pos = new Vector3f(0.0f, -12288.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
         SUN.setPrimaryColorAlpha(1.05f);
@@ -1267,23 +1267,20 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
 
-        camera.render(ShaderProgram.getWaterBaseShader());
-
-        if (!SUN.isBuffered()) {
-            SUN.bufferAll();
-        }
-
-        if (SUNLIGHT.getIntensity() > 0.0f) {
-            SUN.render(lightSources, baseShader);
-        }
-
-        if (!SKYBOX.isBuffered()) {
-            SKYBOX.bufferAll();
-        }
-        SKYBOX.render(lightSources, baseShader);
-
+        camera.render(baseShader);
         camera.render(instanceShader);
 
+//        if (!SUN.isBuffered()) {
+//            SUN.bufferAll();
+//        }
+//
+//        if (SUNLIGHT.getIntensity() > 0.0f) {
+//            SUN.render(lightSources, baseShader);
+//        }
+//        if (!SKYBOX.isBuffered()) {
+//            SKYBOX.bufferAll();
+//        }
+//        SKYBOX.render(lightSources, baseShader);
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
@@ -1313,10 +1310,10 @@ public class LevelContainer implements GravityEnviroment {
             }
             selectedCurrFrame.render(lightSources, baseShader);
         }
-        levelActors.render(lightSources, ShaderProgram.getPlayerShader(), baseShader);
+//        levelActors.render(lightSources, baseShader, baseShader);
 
-        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
-        lightSources.resetAllModified();
+//        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
+//        lightSources.resetAllModified();
     }
 
     // -------------------------------------------------------------------------

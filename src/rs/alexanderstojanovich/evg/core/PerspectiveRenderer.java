@@ -32,7 +32,7 @@ public class PerspectiveRenderer implements CoreRenderer {
 
     public static final float FOV = (float) (org.joml.Math.PI / 2.0f);
     public static final float NEAR_PLANE = 0.05f;
-    public static final float FAR_PLANE = 24576.0f;
+    public static final float FAR_PLANE = 12288.0f;
 
     private final GameObject gameObject;
     public final Matrix4f perspectiveMatrix = new Matrix4f();
@@ -136,13 +136,6 @@ public class PerspectiveRenderer implements CoreRenderer {
         for (ShaderProgram shaderProgram : ShaderProgram.SHADOW_SHADERS) {
             shaderProgram.bind();
             int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
-            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffOrthogonal);
-            ShaderProgram.unbind();
-        }
-
-        for (ShaderProgram shaderProgram : ShaderProgram.ENVIRONMENTAL_SHADERS) {
-            shaderProgram.bind();
-            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "lightProjectionMatrix");
             GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffOrthogonal);
             ShaderProgram.unbind();
         }

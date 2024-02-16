@@ -22,7 +22,6 @@ import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.critter.Observer;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 
 /**
  * "Represents the 3D cuboid area of the world in which objects will cast
@@ -61,14 +60,14 @@ public class ShadowBox {
      * and (possibly adjusted) far plane.
      */
     public ShadowBox() {
-        minX = LevelContainer.SKYBOX_WIDTH;
-        maxX = -LevelContainer.SKYBOX_WIDTH;
+        minX = Float.POSITIVE_INFINITY;
+        maxX = Float.NEGATIVE_INFINITY;
 
-        minY = LevelContainer.SKYBOX_WIDTH;
-        maxY = -LevelContainer.SKYBOX_WIDTH;
+        minY = Float.POSITIVE_INFINITY;
+        maxY = Float.NEGATIVE_INFINITY;
 
-        minZ = LevelContainer.SKYBOX_WIDTH;
-        maxZ = -LevelContainer.SKYBOX_WIDTH;
+        minZ = Float.POSITIVE_INFINITY;
+        maxZ = Float.NEGATIVE_INFINITY;
     }
 
     /**
@@ -88,6 +87,51 @@ public class ShadowBox {
     }
 
     /**
+     * Transforms shadow box to the light space.
+     *
+     * Light Space matrix is light projection matrix x light view matrix
+     *
+     * @param lightSpaceMat4 light space matrix
+     * @return
+     */
+    public ShadowBox toLightSpace(Matrix4f lightSpaceMat4) {
+        Vector3f[] points = {
+            new Vector3f(minX, minY, minZ),
+            new Vector3f(minX, minY, maxZ),
+            new Vector3f(minX, maxY, minZ),
+            new Vector3f(minX, maxY, maxZ),
+            new Vector3f(maxX, minY, minZ),
+            new Vector3f(maxX, minY, maxZ),
+            new Vector3f(maxX, maxY, minZ),
+            new Vector3f(maxX, maxY, maxZ)
+        };
+
+        float minLightX = Float.POSITIVE_INFINITY;
+        float minLightY = Float.POSITIVE_INFINITY;
+        float minLightZ = Float.POSITIVE_INFINITY;
+        float maxLightX = Float.NEGATIVE_INFINITY;
+        float maxLightY = Float.NEGATIVE_INFINITY;
+        float maxLightZ = Float.NEGATIVE_INFINITY;
+
+        for (Vector3f point : points) {
+            Vector4f temp = new Vector4f();
+            Vector4f vec4f = new Vector4f(point, 1.0f);
+            Vector4f pos = lightSpaceMat4.transform(vec4f, temp);
+
+            // Update min and max coordinates in light space
+            minLightX = Math.min(minLightX, pos.x);
+            minLightY = Math.min(minLightY, pos.y);
+            minLightZ = Math.min(minLightZ, pos.z);
+            maxLightX = Math.max(maxLightX, pos.x);
+            maxLightY = Math.max(maxLightY, pos.y);
+            maxLightZ = Math.max(maxLightZ, pos.z);
+        }
+
+        // Construct and return a new shadow box in light space
+        return new ShadowBox(minLightX, maxLightX, minLightY, maxLightY, minLightZ, maxLightZ);
+    }
+
+    /**
      *
      * Updates the bounds of the shadow box based on the light direction and the
      * camera's view frustum, to make sure that the box covers the smallest area
@@ -101,45 +145,50 @@ public class ShadowBox {
      *
      *
      * @param shadowDistance shadow distance
-     * @param mainObs main observer (from level container) using the main
-     * camera.
+     * @param aspectRatio screen aspect ratio
+     * @param obs observer (viewing the light space). Camera from light point of
+     * view - perpective.
+     * @param outShadowBox (can be null)
      * @return
      */
-    public static ShadowBox createOrUpdate(float shadowDistance, Observer mainObs) {
-
-        Vector4f whVec4 = widthAndHeight(shadowDistance);
+    public static ShadowBox createOrUpdate(float shadowDistance, float aspectRatio, Observer obs, ShadowBox outShadowBox) {
+        final float nearDistance = PerspectiveRenderer.NEAR_PLANE;
+        final float farDistance = shadowDistance;
+        Vector4f whVec4 = widthAndHeight(nearDistance, farDistance, aspectRatio);
         IList<Vector3f> points = frustumVertices(
-                PerspectiveRenderer.NEAR_PLANE,
-                shadowDistance,
+                nearDistance,
+                farDistance,
                 whVec4,
-                mainObs.getFront(), mainObs.getRight(), mainObs.getUp(), // front, right & up vectors from main observer (observer or player)
-                mainObs.getCamera().viewMatrix
+                obs.getFront(), obs.getUp(), obs.getRight() // front, right & up vectors from main observer (observer or player)
         );
 
-        final ShadowBox shadowBox = new ShadowBox();
+        ShadowBox newShadowBox = new ShadowBox();
+
         for (Vector3f point : points) {
 
-            if (point.x > shadowBox.maxX) {
-                shadowBox.maxX = point.x;
-            } else if (point.x < shadowBox.minX) {
-                shadowBox.minX = point.x;
+            if (point.x > newShadowBox.maxX) {
+                newShadowBox.maxX = point.x;
+            } else if (point.x < newShadowBox.minX) {
+                newShadowBox.minX = point.x;
             }
 
-            if (point.y > shadowBox.maxY) {
-                shadowBox.maxY = point.y;
-            } else if (point.y < shadowBox.minY) {
-                shadowBox.minY = point.y;
+            if (point.y > newShadowBox.maxY) {
+                newShadowBox.maxY = point.y;
+            } else if (point.y < newShadowBox.minY) {
+                newShadowBox.minY = point.y;
             }
 
-            if (point.z > shadowBox.maxZ) {
-                shadowBox.maxZ = point.z;
-            } else if (point.z < shadowBox.minZ) {
-                shadowBox.minZ = point.z;
+            if (point.z > newShadowBox.maxZ) {
+                newShadowBox.maxZ = point.z;
+            } else if (point.z < newShadowBox.minZ) {
+                newShadowBox.minZ = point.z;
             }
 
         }
 
-        return shadowBox;
+        outShadowBox = newShadowBox;
+
+        return outShadowBox;
     }
 
     /**
@@ -189,16 +238,15 @@ public class ShadowBox {
      * @param frontVec3 camera front vec3
      * @param upVec3 camera up vec3
      * @param rightVec3 camera right vec3
-     * @param viewMat4 view (space) matrix
      *
      * @return The positions of the vertices of the frustum in light space.
      */
-    protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3, Matrix4f viewMat4) {
-        float widthNear = widthHeightVec4.x;
-        float widthFar = widthHeightVec4.y;
+    protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3) {
+        float halfWidthNear = widthHeightVec4.x / 2.0f;
+        float halfWidthFar = widthHeightVec4.y / 2.0f;
 
-        float heightNear = widthHeightVec4.z;
-        float heightFar = widthHeightVec4.w;
+        float halfHeightNear = widthHeightVec4.z / 2.0f;
+        float halfHeightFar = widthHeightVec4.w / 2.0f;
 
         Vector3f temp1 = new Vector3f();
         Vector3f toNear = frontVec3.mul(nearDistance, temp1);
@@ -210,28 +258,21 @@ public class ShadowBox {
         Vector3f tempC = new Vector3f();
         Vector3f tempD = new Vector3f();
 
-        Vector3f nearXPosYPos = toNear.add(rightVec3.mul(widthNear, tempA)).add(upVec3.mul(heightNear, tempA), tempA);
-        Vector3f nearXNegYPos = toNear.add(rightVec3.mul(-widthNear, tempB)).add(upVec3.mul(heightNear, tempB), tempB);
-        Vector3f nearXPosYNeg = toNear.add(rightVec3.mul(widthNear, tempC)).add(upVec3.mul(-heightNear, tempC), tempC);
-        Vector3f nearXNegYNeg = toNear.add(rightVec3.mul(-widthNear, tempD)).add(upVec3.mul(-heightNear, tempD), tempD);
+        Vector3f nearXPosYPos = toNear.add(rightVec3.mul(halfWidthNear, tempA)).add(upVec3.mul(halfHeightNear, tempA), tempA);
+        Vector3f nearXNegYPos = toNear.add(rightVec3.mul(-halfWidthNear, tempB)).add(upVec3.mul(halfHeightNear, tempB), tempB);
+        Vector3f nearXPosYNeg = toNear.add(rightVec3.mul(halfWidthNear, tempC)).add(upVec3.mul(-halfHeightNear, tempC), tempC);
+        Vector3f nearXNegYNeg = toNear.add(rightVec3.mul(-halfWidthNear, tempD)).add(upVec3.mul(-halfHeightNear, tempD), tempD);
 
-        Vector3f farXPosYPos = toFar.add(rightVec3.mul(widthFar, tempA)).add(upVec3.mul(heightFar, tempA), tempA);
-        Vector3f farXNegYPos = toFar.add(rightVec3.mul(-widthFar, tempB)).add(upVec3.mul(heightFar, tempB), tempB);
-        Vector3f farXPosYNeg = toFar.add(rightVec3.mul(widthFar, tempC)).add(upVec3.mul(-heightFar, tempC), tempC);
-        Vector3f farXNegYNeg = toFar.add(rightVec3.mul(-widthFar, tempD)).add(upVec3.mul(-heightFar, tempD), tempD);
+        Vector3f farXPosYPos = toFar.add(rightVec3.mul(halfWidthFar, tempA)).add(upVec3.mul(halfHeightFar, tempA), tempA);
+        Vector3f farXNegYPos = toFar.add(rightVec3.mul(-halfWidthFar, tempB)).add(upVec3.mul(halfHeightFar, tempB), tempB);
+        Vector3f farXPosYNeg = toFar.add(rightVec3.mul(halfWidthFar, tempC)).add(upVec3.mul(-halfHeightFar, tempC), tempC);
+        Vector3f farXNegYNeg = toFar.add(rightVec3.mul(-halfWidthFar, tempD)).add(upVec3.mul(-halfHeightFar, tempD), tempD);
 
         Vector3f[] points = new Vector3f[]{
             nearXPosYPos, nearXNegYPos, nearXPosYNeg, nearXNegYNeg,
             farXPosYPos, farXNegYPos, farXPosYNeg, farXNegYNeg
         };
         IList<Vector3f> result = new GapList<>();
-
-        Vector4f tmp = new Vector4f();
-        for (Vector3f point : points) {
-            Vector4f vec4f = new Vector4f(point, 1.0f);
-            Vector4f pos = viewMat4.transform(vec4f, tmp);
-            result.add(new Vector3f(pos.x, pos.y, pos.z));
-        }
 
         return result;
     }
@@ -242,15 +283,25 @@ public class ShadowBox {
      * plane of the view frustum. It can use a shortened view frustum if desired
      * by bringing the far-plane closer, which would increase shadow resolution
      * but means that distant objects wouldn't cast shadows.
+     *
+     * @param nearDistance (shadow) distance internal config
+     * @param aspectRatio screen aspect ratio
+     * @return width x height of near and far as vec4
      */
-    private static Vector4f widthAndHeight(float shadowDistance) {
-        double tangent = org.joml.Math.tan(PerspectiveRenderer.FOV);
+    private static Vector4f widthAndHeight(float nearDistance, float farDistance, float aspectRatio) {
+        float tangent = org.joml.Math.tan(PerspectiveRenderer.FOV / 2.0f);
 
-        float widthNear = (float) (PerspectiveRenderer.NEAR_PLANE * tangent);
-        float widthFar = (float) (shadowDistance * tangent);
+        // Calculate height of the near plane
+        float heightNear = 2.0f * tangent * nearDistance;
 
-        float heightNear = (float) (PerspectiveRenderer.NEAR_PLANE / tangent);
-        float heightFar = (float) (shadowDistance / tangent);
+        // Calculate width of the near plane based on aspect ratio
+        float widthNear = heightNear * aspectRatio;
+
+        // Calculate height of the far plane
+        float heightFar = 2.0f * tangent * farDistance;
+
+        // Calculate width of the far plane based on aspect ratio
+        float widthFar = heightFar * aspectRatio;
 
         return new Vector4f(widthNear, widthFar, heightNear, heightFar);
     }
@@ -277,6 +328,20 @@ public class ShadowBox {
 
     public float getMaxZ() {
         return maxZ;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ShadowBox{");
+        sb.append("minX=").append(minX);
+        sb.append(", maxX=").append(maxX);
+        sb.append(", minY=").append(minY);
+        sb.append(", maxY=").append(maxY);
+        sb.append(", minZ=").append(minZ);
+        sb.append(", maxZ=").append(maxZ);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

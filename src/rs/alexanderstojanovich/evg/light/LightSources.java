@@ -48,8 +48,7 @@ public class LightSources {
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
-    public Matrix4f lightViewMatrix = new Matrix4f().zero();
-    public Matrix4f lightProjMatrix = new Matrix4f().zero();
+    public final Matrix4f lightSpaceMatrix = new Matrix4f().zero();
 
     public LightSources() {
         this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.Format.RGB5_A1));
@@ -175,8 +174,7 @@ public class LightSources {
      * Reset Light Matrices (If shadows are disabled they are not rendered)
      */
     public void resetLightMatrices() {
-        lightProjMatrix.zero();
-        lightViewMatrix.zero();
+        lightSpaceMatrix.zero();
     }
 
     public void setAllModified() {
@@ -203,12 +201,8 @@ public class LightSources {
         return modified;
     }
 
-    public Matrix4f getLightViewMatrix() {
-        return lightViewMatrix;
-    }
-
-    public Matrix4f getLightProjMatrix() {
-        return lightProjMatrix;
+    public Matrix4f getLightSpaceMatrix() {
+        return lightSpaceMatrix;
     }
 
 }

@@ -27,11 +27,12 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
 
-uniform mat4 lightProjMatrix;
-uniform mat4 lightViewMatrix;
+uniform mat4 lightSpaceMatrix;
 
 uniform vec3 cameraPos;
 uniform vec3 cameraFront;
+
+uniform sampler2D modelTexture2; // this is shadow texture
 
 struct LightSource {
 	vec3 pos;
@@ -40,7 +41,7 @@ struct LightSource {
 };
 
 const float AMBIENT_LIGHT = 0.15;
-const float SHADOW_FACTOR = 0.05;
+const float SHADOW_FACTOR = 0.75;
 
 const vec3[6] lightDirX = vec3[](
 	vec3(1.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0),
@@ -84,12 +85,17 @@ vec2 reflUV() {
     return vec2(ndc.x, -ndc.y);
 }
 
+vec2 shadowUV() {
+	vec2 ndc = (varShadowGLPos.xy / varShadowGLPos.w) / 2.0 + 0.5;
+    return vec2(ndc.x, -ndc.y);
+}
+
 void main() {      
 	mat4 modelMatrix = mat4(column0, column1, column2, column3);
 	vec4 modelColor0 = color;
 
 	varGLPos = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
-	varShadowGLPos = lightProjMatrix * lightViewMatrix * modelMatrix * vec4(pos, 1.0);
+	varShadowGLPos = lightSpaceMatrix * modelMatrix * vec4(pos, 1.0);
     varModelPos = (modelMatrix * vec4(pos, 1.0)).xyz;	
 	
     gl_Position = varGLPos;        
@@ -97,10 +103,11 @@ void main() {
     varUV = uv;  			
 		
 	float fresnel = dot(normalize(cameraPos), varNormal);
-	varShadowColor = vec4(vec3(SHADOW_FACTOR), 1.0);
 	
 	varWaterColor = fresnel * modelColor1;
 	varColor = fog(cameraPos, varModelPos.xyz, modelColor0, FOG_COLOR, FOG_DENS);	
+
+	float testZ = texture2D(modelTexture2, shadowUV()).r;
 	
 	vec3 lightColor = vec3(AMBIENT_LIGHT);	
 	float light = 0.0;
@@ -116,14 +123,13 @@ void main() {
 		}
 		light *= modelLight.intensity;
 		light *= attenuation(modelLight.pos, varModelPos);
-		
-		// darken pixel which is in shadow
-		if (varGLPos.z < varShadowGLPos.z) {	
-			//light *= SHADOW_FACTOR;
-		}
-		
-		lightColor += light * modelLight.color;
+		lightColor += light * modelLight.color;					
 	}
 	
+	// darken pixel which is in shadow
+	if (testZ >= varShadowGLPos.z) {	
+		varColor.rgb *= SHADOW_FACTOR;			
+	} 
+		
 	varLightColor = vec4(lightColor, 1.0);
 }

@@ -385,7 +385,7 @@ public class Window {
     }
 
     public float getAspectRatio() {
-        return width / height;
+        return width / (float) height;
     }
 
     public static float getMinAspectRatio() {

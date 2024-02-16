@@ -55,7 +55,7 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    private static int ups; // current update per second    
+    private static int ups; // current updateShadowBox per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
@@ -527,7 +527,7 @@ public class Game {
     }
 
     /**
-     * Starts the main (update) loop
+     * Starts the main (updateShadowBox) loop
      */
     public void go() {
         Game.setCurrentMode(Mode.FREE);
@@ -569,7 +569,7 @@ public class Game {
             }
 
             if (upsTicks >= 1.0) {
-                // update with delta time like gravity
+                // updateShadowBox with delta time like gravity
                 gameObject.update((float) (Game.upsTicks * TICK_TIME));
                 // call utility functions (chunking, optimizing etc.)
                 gameObject.util();

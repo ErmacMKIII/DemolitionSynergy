@@ -12,7 +12,10 @@ layout (location = 7) in vec4 column3;
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 
+out vec4 varGLPos;
+
 void main() {  
 	mat4 modelMatrix = mat4(column0, column1, column2, column3);
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);   
+    varGLPos = projectionMatrix * viewMatrix * modelMatrix * vec4(pos, 1.0);
+	gl_Position = varGLPos;
 }

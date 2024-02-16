@@ -686,7 +686,7 @@ public class Intrface {
     /**
      * Capturing mouse input for menus
      */
-    public void update() { // update menu components
+    public void update() { // updateShadowBox menu components
         mainMenu.update();
         optionsMenu.update();
         editorMenu.update();

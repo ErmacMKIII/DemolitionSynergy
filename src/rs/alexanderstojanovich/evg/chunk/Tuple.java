@@ -523,8 +523,7 @@ public class Tuple extends Blocks {
             }
             // zero matrix if shadows are disabled
             // PASS 2
-            shaderProgram.updateUniform(lightSources.lightProjMatrix, "lightProjMatrix");
-            shaderProgram.updateUniform(lightSources.lightViewMatrix, "lightViewMatrix");
+            shaderProgram.updateUniform(lightSources.lightSpaceMatrix, "lightSpaceMatrix");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
@@ -596,8 +595,7 @@ public class Tuple extends Blocks {
             }
             // zero matrix if shadows are disabled
             // PASS 2
-            shaderProgram.updateUniform(lightSources.lightProjMatrix, "lightProjMatrix");
-            shaderProgram.updateUniform(lightSources.lightViewMatrix, "lightViewMatrix");
+            shaderProgram.updateUniform(lightSources.lightSpaceMatrix, "lightSpaceMatrix");
 
             for (Tuple tuple : tuples) {
                 if (!tuple.isBuffered()) {

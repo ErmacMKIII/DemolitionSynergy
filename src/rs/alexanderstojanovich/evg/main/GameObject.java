@@ -216,6 +216,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
+
             int renderFlag = 0;
             renderFlag |= BlockEnvironment.LIGHT_MASK;
 
@@ -227,15 +228,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 renderFlag |= BlockEnvironment.SHADOW_MASK;
             }
 
-            perspectiveRenderer.updatePerspective(); // update perspective for all the shaders
-            perspectiveRenderer.updateOrthogonal(); // update orthogonal for all the shaders
-
             if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
                 waterRenderer.update();
             }
 
             if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                shadowRenderer.update();
+//                shadowRenderer.updateShadowBox();
             }
 
             synchronized (UPDATE_RENDER_MUTEX) {
@@ -245,6 +243,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     levelContainer.levelActors.player.setUnderGravity(underGravity);
                 }
             }
+
+            perspectiveRenderer.updatePerspective(); // updateShadowBox perspective for all the shaders
+            perspectiveRenderer.updateOrthogonal(); // updateShadowBox orthogonal for all the shaders
+
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();
             int chunkId = Chunk.chunkFunc(pos);
@@ -343,7 +345,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
                         shadowRenderer.render();
                     }
-                    levelContainer.render(renderFlag);
+                    levelContainer.render(0);
                 }
 
                 intrface.render(ShaderProgram.getIntrfaceShader());
