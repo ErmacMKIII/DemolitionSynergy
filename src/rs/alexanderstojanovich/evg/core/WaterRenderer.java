@@ -180,7 +180,7 @@ public class WaterRenderer implements CoreRenderer {
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), BlockEnvironment.LIGHT_MASK);
+        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), 0);
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 

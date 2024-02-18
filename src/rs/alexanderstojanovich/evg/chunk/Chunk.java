@@ -193,7 +193,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param formFaceBits face bits before
      * @param currFaceBits face bits current (after the change)
      */
-    public void transfer(Block block, int formFaceBits, int currFaceBits) { // updateShadowBox fluids use this to transfer fluid blocks between tuples
+    public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         String texture = block.getTexName();
 
         Tuple srcTuple = getTuple(texture, formFaceBits);
@@ -225,7 +225,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param formFaceBits face bits before
      * @param currFaceBits face bits current (after the change)
      */
-    public void transfer(IList<Block> blocks, IList<Integer> formFaceBits, IList<Integer> currFaceBits) { // updateShadowBox fluids use this to transfer fluid blocks between tuples
+    public void transfer(IList<Block> blocks, IList<Integer> formFaceBits, IList<Integer> currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         int index = 0;
         for (Block block : blocks) {
             String texture = block.getTexName();
@@ -258,7 +258,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      *
      * Used after add operation.
      *
-     * @param block block to updateShadowBox
+     * @param block block to update
      */
     protected void updateForAdd(Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
@@ -283,7 +283,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             IList<Integer> bitsBefore = new GapList<>();
             IList<Integer> bitsAfter = new GapList<>();
 
-            // query all neighbors and updateShadowBox this block and adjacent blocks accordingly
+            // query all neighbors and update this block and adjacent blocks accordingly
             for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                 // -------------------------------------------------------------------
                 // following logic updates adjacent block 
@@ -332,7 +332,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      *
      * Used after removal operation.
      *
-     * @param block block to updateShadowBox
+     * @param block block to update
      */
     protected void updateForRem(Block block) {
         IList<Block> blocks = new GapList<>();
@@ -402,7 +402,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         // level container also set neighbor bits
         LevelContainer.putBlock(block);
-        // updateShadowBox original block with neighbor blocks
+        // update original block with neighbor blocks
         // setSafeCheck if it's light block        
         if (block.getTexName().equals("reflc")) { // if first add
             GameObject gameObject;
@@ -437,7 +437,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
             // level container also set neighbor bits
             LevelContainer.removeBlock(block);
-            // updateShadowBox original block with neighbor blocks
+            // update original block with neighbor blocks
             // setSafeCheck if it's light block
             if (block.getTexName().equals("reflc")) {
                 GameObject gameObject;

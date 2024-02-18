@@ -311,6 +311,8 @@ public class Command implements Callable<Object> {
                         float ticks = (float) command.args.get(0);
                         if (ticks >= 0.0f) {
                             Game.setAccumulator(ticks);
+//                            GameRenderer.setFps(0);
+                            GameRenderer.setFpsTicks(0.0f);
                             GameRenderer.setAnimationTimer(ticks);
                             command.status = Status.SUCCEEDED;
                         }

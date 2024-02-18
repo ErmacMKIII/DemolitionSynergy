@@ -596,7 +596,7 @@ public class Tuple extends Blocks {
             // zero matrix if shadows are disabled
             // PASS 2
             shaderProgram.updateUniform(lightSources.lightSpaceMatrix, "lightSpaceMatrix");
-
+//            DSLogger.reportInfo(lightSources.lightSpaceMatrix.toString(), null);
             for (Tuple tuple : tuples) {
                 if (!tuple.isBuffered()) {
                     tuple.bufferAll();

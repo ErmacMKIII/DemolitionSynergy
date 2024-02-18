@@ -229,11 +229,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                waterRenderer.update();
+                waterRenderer.update(); // update water heights
             }
 
             if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-//                shadowRenderer.updateShadowBox();
+                shadowRenderer.update(); // update shadow box
             }
 
             synchronized (UPDATE_RENDER_MUTEX) {
@@ -244,8 +244,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
             }
 
-            perspectiveRenderer.updatePerspective(); // updateShadowBox perspective for all the shaders
-            perspectiveRenderer.updateOrthogonal(); // updateShadowBox orthogonal for all the shaders
+            perspectiveRenderer.updatePerspective(); // update perspective for all the shaders (aoart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();
@@ -345,7 +344,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
                         shadowRenderer.render();
                     }
-                    levelContainer.render(0);
+                    levelContainer.render(renderFlag);
                 }
 
                 intrface.render(ShaderProgram.getIntrfaceShader());

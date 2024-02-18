@@ -170,13 +170,12 @@ public class LightSources {
         }
     }
 
-    /**
-     * Reset Light Matrices (If shadows are disabled they are not rendered)
-     */
-    public void resetLightMatrices() {
-        lightSpaceMatrix.zero();
-    }
-
+//    /**
+//     * Reset Light Matrices (If shadows are disabled they are not rendered)
+//     */
+//    public void resetLightMatrices() {
+//        lightSpaceMatrix.zero();
+//    }
     public void setAllModified() {
         Arrays.fill(modified, true);
     }

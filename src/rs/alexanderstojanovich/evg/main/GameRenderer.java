@@ -103,7 +103,7 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // updateShadowBox text which animates water every quarter of the second
+            // update text which animates water every quarter of the second
             if (Game.accumulator - animationTimer > 20.0) {
                 if (!gameObject.isWorking() && couldAnimate()) {
                     gameObject.animate();

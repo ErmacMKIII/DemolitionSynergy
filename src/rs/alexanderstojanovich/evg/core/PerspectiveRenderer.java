@@ -36,26 +36,10 @@ public class PerspectiveRenderer implements CoreRenderer {
 
     private final GameObject gameObject;
     public final Matrix4f perspectiveMatrix = new Matrix4f();
-    public final Matrix4f orthogonalMatrix = new Matrix4f();
     protected FloatBuffer floatBuffPerspective = null;
-    protected FloatBuffer floatBuffOrthogonal = null;
 
     public PerspectiveRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
-    }
-
-    /**
-     * Load Perspective (projection matrix used in shaders)
-     *
-     * @param fov field of view (in radians)
-     * @param width screen width
-     * @param height screen height
-     * @param zNear nearest point
-     * @param zFar furthest point
-     */
-    private void loadOrthogonal(float left, float right, float bottom, float top, float zNear, float zFar) {
-        // LH is for OpenGL way, it's required..
-        orthogonalMatrix.setOrthoLH(left, right, bottom, top, zNear, zFar);
     }
 
     /**
@@ -80,16 +64,6 @@ public class PerspectiveRenderer implements CoreRenderer {
     }
 
     /**
-     * Update orthogonal to bounding box width * height * depth. Bounding box as
-     * cuboid is represented by 8 vertices.
-     *
-     */
-    public void updateOrthogonal() {
-        final ShadowBox shadowBox = gameObject.shadowRenderer.shadowBox;
-        loadOrthogonal(shadowBox.minX, shadowBox.maxX, shadowBox.minY, shadowBox.maxY, shadowBox.minZ, shadowBox.maxZ);
-    }
-
-    /**
      * Initialize. Allocate memory
      */
     public void init() {
@@ -97,10 +71,7 @@ public class PerspectiveRenderer implements CoreRenderer {
         if (floatBuffPerspective.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffPerspective) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
         }
-        floatBuffOrthogonal = MemoryUtil.memCallocFloat(16); // 4x4
-        if (floatBuffOrthogonal.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffOrthogonal) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-        }
+
     }
 
     /**
@@ -130,15 +101,6 @@ public class PerspectiveRenderer implements CoreRenderer {
             GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffPerspective);
             ShaderProgram.unbind();
         }
-
-        orthogonalMatrix.get(floatBuffOrthogonal);
-
-        for (ShaderProgram shaderProgram : ShaderProgram.SHADOW_SHADERS) {
-            shaderProgram.bind();
-            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
-            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffOrthogonal);
-            ShaderProgram.unbind();
-        }
     }
 
     @Override
@@ -150,9 +112,6 @@ public class PerspectiveRenderer implements CoreRenderer {
     public void release() {
         if (floatBuffPerspective.capacity() != 0) {
             MemoryUtil.memFree(floatBuffPerspective);
-        }
-        if (floatBuffOrthogonal.capacity() != 0) {
-            MemoryUtil.memFree(floatBuffOrthogonal);
         }
     }
 
@@ -166,14 +125,6 @@ public class PerspectiveRenderer implements CoreRenderer {
 
     public Matrix4f getPerspectiveMatrix() {
         return perspectiveMatrix;
-    }
-
-    public Matrix4f getOrthogonalMatrix() {
-        return orthogonalMatrix;
-    }
-
-    public FloatBuffer getFloatBuffOrthogonal() {
-        return floatBuffOrthogonal;
     }
 
 }
