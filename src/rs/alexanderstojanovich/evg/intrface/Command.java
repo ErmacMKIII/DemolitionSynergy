@@ -188,7 +188,9 @@ public class Command implements Callable<Object> {
                 case "waterEffects":
                 case "water_effects":
                     command.target = Target.WATER_EFFECTS;
-                    if (things.length == 2) {
+                    if (things[1].matches("[0-9]+")) {
+                        command.args.add(WaterRenderer.WaterEffectsQuality.values()[Integer.parseInt(things[1])]);
+                    } else {
                         command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
                     }
                     break;
@@ -196,7 +198,11 @@ public class Command implements Callable<Object> {
                 case "shadow_effects":
                     command.target = Target.SHADOW_EFFECTS;
                     if (things.length == 2) {
-                        command.args.add(WaterRenderer.WaterEffectsQuality.valueOf(things[1].toUpperCase()).name());
+                        if (things[1].matches("[0-9]+")) {
+                            command.args.add(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(things[1])]);
+                        } else {
+                            command.args.add(ShadowRenderer.ShadowEffectsQuality.valueOf(things[1].toUpperCase()).name());
+                        }
                     }
                     break;
                 case "msens":
@@ -399,7 +405,11 @@ public class Command implements Callable<Object> {
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        gameObject.waterRenderer.setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf((String) command.args.get(0)));
+                        if (command.args.get(0).toString().matches("[0-9]+")) {
+                            gameObject.waterRenderer.setEffectsQuality(WaterRenderer.WaterEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())]);
+                        } else {
+                            gameObject.waterRenderer.setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf(command.args.get(0).toString()));
+                        }
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -411,7 +421,11 @@ public class Command implements Callable<Object> {
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
-                        gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.valueOf((String) command.args.get(0)));
+                        if (command.args.get(0).toString().matches("[0-9]+")) {
+                            gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())]);
+                        } else {
+                            gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.valueOf(command.args.get(0).toString()));
+                        }
                         command.status = Status.SUCCEEDED;
                         break;
                 }

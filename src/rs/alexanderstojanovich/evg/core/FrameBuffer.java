@@ -60,22 +60,26 @@ public class FrameBuffer {
     /**
      * Call initialization of this from Game Renderer (requires OpenGL context
      * to be in that thread)
+     *
+     * @throws java.lang.Exception if buffer cannot be created
      */
-    public void initBuffer() { // requires OpenGL context        
-        // loads empty texture to graphics card
-        Texture.bufferAll(texture, null);
+    public void initBuffer() throws Exception { // requires OpenGL context        
 
         switch (cfg) {
             case COLOR_ATTACHMENT:
                 createFrameBuffer();
+                // loads empty texture to graphics card
+                Texture.bufferAll(texture, null);
                 configureColorTexture();
                 createDepth();
                 break;
 
             case DEPTH_ATTACHMENT:
                 createFrameBuffer();
+                // loads empty texture to graphics card
+                Texture.bufferAll(texture, null);
                 configureDepthTexture();
-                createDepth();
+//                createDepth();
                 break;
         }
 
@@ -84,7 +88,13 @@ public class FrameBuffer {
             GL11.glDrawBuffer(GL30.GL_COLOR_ATTACHMENT0);
         } else {
             GL11.glDrawBuffer(GL11.GL_NONE);
+            GL11.glReadBuffer(GL11.GL_NONE);
         }
+
+        if (GL30.glCheckFramebufferStatus(GL30.GL_FRAMEBUFFER) != GL30.GL_FRAMEBUFFER_COMPLETE) {
+            throw new Exception("Could not create FrameBuffer");
+        }
+
         // unbind so the configuration is not ruined
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
     }

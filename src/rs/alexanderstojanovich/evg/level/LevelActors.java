@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class LevelActors {
 
-    public Camera spectator = new Camera(); // spectator is separate camera from player instance
+    public Observer spectator = new Camera(); // spectator is separate camera from player instance
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
 
@@ -59,15 +59,16 @@ public class LevelActors {
     }
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
-        for (NPC npc : npcList) {
-            npc.render(lightSrc, npcShader);
-        }
-        mainActor().render(ShaderProgram.GL_SHADERS.values());
-
-        if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
-                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+//        for (NPC npc : npcList) {
+//            npc.render(lightSrc, npcShader);
+//        }        
+        if ((mainActor() == player)) {
+            player.body.render(lightSrc, npcShader);
             player.render(lightSrc, mainActorShader);
+        } else if (mainActor() == spectator) {
+            spectator.render(mainActorShader);
         }
+
     }
 
     public Observer mainActor() {

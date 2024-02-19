@@ -229,7 +229,7 @@ public class Texture {
                 // Set texture filtering parameters
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MIN_FILTER, GL11.GL_NEAREST);
                 GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
-                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internFmt, TEX_SIZE, TEX_SIZE, 0, pixFmt, GL11.GL_FLOAT, imgDatBuff);
+                GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, internFmt, TEX_SIZE, TEX_SIZE, 0, GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, imgDatBuff);
                 break;
         }
 

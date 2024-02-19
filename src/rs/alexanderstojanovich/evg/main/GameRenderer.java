@@ -20,6 +20,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -63,8 +65,12 @@ public class GameRenderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
-        gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context
-        gameObject.shadowRenderer.getFrameBuffer().initBuffer();
+        try {
+            gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (color & depth buffer)
+            gameObject.shadowRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (depth buffer only) 
+        } catch (Exception ex) {
+            DSLogger.reportInfo(ex.getMessage(), ex);
+        }
         do {
             gameObject.render(); // render splash screen
         } while (Game.upsTicks < 1.0);

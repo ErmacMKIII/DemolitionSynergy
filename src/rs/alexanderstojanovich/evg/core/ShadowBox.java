@@ -105,17 +105,6 @@ public class ShadowBox {
         return this;
     }
 
-    public ShadowBox scale(float scalar) {
-        this.minX *= scalar;
-        this.maxX *= scalar;
-        this.minY *= scalar;
-        this.maxY *= scalar;
-        this.minZ *= scalar;
-        this.maxZ *= scalar;
-
-        return this;
-    }
-
     /**
      * Calculate projection matrix so this shadow box is used when rendering to
      * the texture
@@ -202,12 +191,11 @@ public class ShadowBox {
      *
      * @param shadowDistance shadow distance
      * @param aspectRatio screen aspect ratio
-     * @param mainActor main actor (from the level)
      * @param lightPov light (point of view) camera
      * @param outShadowBox (nullable)
      * @return new or updated shadow box
      */
-    public static ShadowBox createOrUpdate(float shadowDistance, float aspectRatio, Observer mainActor, Observer lightPov, ShadowBox outShadowBox) {
+    public static ShadowBox createOrUpdate(float shadowDistance, float aspectRatio, Observer lightPov, ShadowBox outShadowBox) {
         final float nearDistance = PerspectiveRenderer.NEAR_PLANE;
         final float farDistance = shadowDistance;
         Vector4f whVec4 = widthAndHeight(nearDistance, farDistance, aspectRatio);
@@ -215,9 +203,8 @@ public class ShadowBox {
                 nearDistance,
                 farDistance,
                 whVec4,
-                mainActor.getPos(), // main observer position
                 lightPov.getFront(), lightPov.getUp(), lightPov.getRight(), // front, right & up vectors from the light (and not the main actor)
-                lightPov.getCamera().viewMatrix
+                lightPov.getCamera().viewMatrix // way to free this shadow box to not being tied to light-space
         );
 
         if (outShadowBox == null) {
@@ -292,7 +279,6 @@ public class ShadowBox {
      * @param farDistance far Z
      * @param widthHeightVec4 (nearWidth x nearHeight), (farWidth x farHeight)
      * as xyzw
-     * @param pos camera pos
      *
      * @param frontVec3 front vec3
      * @param upVec3 up vec3
@@ -301,7 +287,7 @@ public class ShadowBox {
      *
      * @return The positions of the vertices of the frustum in world space.
      */
-    protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f pos, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3, Matrix4f viewMat4) {
+    protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3, Matrix4f viewMat4) {
         final IList<Vector3f> result = new GapList<>();
 
         float halfWidthNear = widthHeightVec4.x / 2.0f;
@@ -312,26 +298,24 @@ public class ShadowBox {
 
         Vector3f temp1 = new Vector3f();
         Vector3f toNear = frontVec3.mul(nearDistance, temp1);
-        Vector3f cenNear = toNear.add(pos, temp1);
 
         Vector3f temp2 = new Vector3f();
         Vector3f toFar = frontVec3.mul(farDistance, temp2);
-        Vector3f cenFar = toFar.add(pos, temp2);
 
         Vector3f tempA = new Vector3f();
         Vector3f tempB = new Vector3f();
         Vector3f tempC = new Vector3f();
         Vector3f tempD = new Vector3f();
 
-        Vector3f nearXPosYPos = cenNear.add(rightVec3.mul(halfWidthNear, tempA)).add(upVec3.mul(halfHeightNear, tempA), tempA);
-        Vector3f nearXNegYPos = cenNear.add(rightVec3.mul(-halfWidthNear, tempB)).add(upVec3.mul(halfHeightNear, tempB), tempB);
-        Vector3f nearXPosYNeg = cenNear.add(rightVec3.mul(halfWidthNear, tempC)).add(upVec3.mul(-halfHeightNear, tempC), tempC);
-        Vector3f nearXNegYNeg = cenNear.add(rightVec3.mul(-halfWidthNear, tempD)).add(upVec3.mul(-halfHeightNear, tempD), tempD);
+        Vector3f nearXPosYPos = toNear.add(rightVec3.mul(halfWidthNear, tempA)).add(upVec3.mul(halfHeightNear, tempA), tempA);
+        Vector3f nearXNegYPos = toNear.add(rightVec3.mul(-halfWidthNear, tempB)).add(upVec3.mul(halfHeightNear, tempB), tempB);
+        Vector3f nearXPosYNeg = toNear.add(rightVec3.mul(halfWidthNear, tempC)).add(upVec3.mul(-halfHeightNear, tempC), tempC);
+        Vector3f nearXNegYNeg = toNear.add(rightVec3.mul(-halfWidthNear, tempD)).add(upVec3.mul(-halfHeightNear, tempD), tempD);
 
-        Vector3f farXPosYPos = cenFar.add(rightVec3.mul(halfWidthFar, tempA)).add(upVec3.mul(halfHeightFar, tempA), tempA);
-        Vector3f farXNegYPos = cenFar.add(rightVec3.mul(-halfWidthFar, tempB)).add(upVec3.mul(halfHeightFar, tempB), tempB);
-        Vector3f farXPosYNeg = cenFar.add(rightVec3.mul(halfWidthFar, tempC)).add(upVec3.mul(-halfHeightFar, tempC), tempC);
-        Vector3f farXNegYNeg = cenFar.add(rightVec3.mul(-halfWidthFar, tempD)).add(upVec3.mul(-halfHeightFar, tempD), tempD);
+        Vector3f farXPosYPos = toFar.add(rightVec3.mul(halfWidthFar, tempA)).add(upVec3.mul(halfHeightFar, tempA), tempA);
+        Vector3f farXNegYPos = toFar.add(rightVec3.mul(-halfWidthFar, tempB)).add(upVec3.mul(halfHeightFar, tempB), tempB);
+        Vector3f farXPosYNeg = toFar.add(rightVec3.mul(halfWidthFar, tempC)).add(upVec3.mul(-halfHeightFar, tempC), tempC);
+        Vector3f farXNegYNeg = toFar.add(rightVec3.mul(-halfWidthFar, tempD)).add(upVec3.mul(-halfHeightFar, tempD), tempD);
 
         // temp array of points
         Vector3f[] points = new Vector3f[]{

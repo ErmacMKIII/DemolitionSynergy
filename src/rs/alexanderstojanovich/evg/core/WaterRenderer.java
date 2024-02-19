@@ -23,8 +23,6 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.intrface.Quad;
-import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -50,15 +48,15 @@ public class WaterRenderer implements CoreRenderer {
     private int maxWaterDepthSize = 3;
     public static final IList<Float> WATER_HEIGHTS = new GapList<>();
     protected final GameObject gameObject;
-    private final Quad debugQuad;
+//    private final Quad debugQuad;
 
     public WaterRenderer(GameObject gameObject) throws Exception {
         this.frameBuffer = new FrameBuffer("Water", Texture.Format.RGB5_A1, FrameBuffer.Configuration.COLOR_ATTACHMENT);
         this.gameObject = gameObject;
         this.setDepthByQuality();
-        this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
-        this.debugQuad.setScale(0.25f);
-        this.debugQuad.setPos(new Vector2f(0.5f, 0.5f));
+//        this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+//        this.debugQuad.setScale(0.25f);
+//        this.debugQuad.setPos(new Vector2f(0.5f, 0.5f));
     }
 
     private void setDepthByQuality() {
@@ -78,15 +76,15 @@ public class WaterRenderer implements CoreRenderer {
         }
     }
 
-    public void update() { // call this in update (renderer)
+    public void updateWaterHeights() { // call this in update (renderer)
         if (effectsQuality == WaterEffectsQuality.NONE) {
             return;
         }
 
         // player must notice that water heights are updating!
-        synchronized (WATER_HEIGHTS) {
-            WATER_HEIGHTS.clear();
-        }
+//        synchronized (WATER_HEIGHTS) {
+        WATER_HEIGHTS.clear();
+//        }
 
         Camera actCam = gameObject.levelContainer.levelActors.mainCamera();
         Vector3f temp = new Vector3f();
@@ -147,9 +145,9 @@ public class WaterRenderer implements CoreRenderer {
                 values = new GapList<>(tmpList);
             }
 
-            synchronized (WATER_HEIGHTS) {
-                WATER_HEIGHTS.addAll(values);
-            }
+//            synchronized (WATER_HEIGHTS) {
+            WATER_HEIGHTS.addAll(values);
+//            }
         }
     }
 
@@ -193,6 +191,7 @@ public class WaterRenderer implements CoreRenderer {
             return;
         }
 
+        updateWaterHeights();
         frameBuffer.bind();
         prepare();
         synchronized (WATER_HEIGHTS) {
@@ -201,10 +200,10 @@ public class WaterRenderer implements CoreRenderer {
             }
         }
         FrameBuffer.unbind(gameObject);
-        if (!debugQuad.isBuffered()) {
-            debugQuad.bufferAll(gameObject.intrface);
-        }
-        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
+//        if (!debugQuad.isBuffered()) {
+//            debugQuad.bufferAll(gameObject.intrface);
+//        }
+//        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
     }
 
     @Override

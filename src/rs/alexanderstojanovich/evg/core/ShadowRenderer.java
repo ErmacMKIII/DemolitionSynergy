@@ -23,6 +23,7 @@ import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -44,7 +45,7 @@ public class ShadowRenderer implements CoreRenderer {
 
     private final FrameBuffer frameBuffer;
     private final Camera camera = new Camera();
-    private Quad debugQuad;
+//    private Quad debugQuad;
     public final ShadowBox shadowBox = new ShadowBox();
 
     public static enum ShadowEffectsQuality {
@@ -55,13 +56,13 @@ public class ShadowRenderer implements CoreRenderer {
     private float shadowDistance = 0.0f;
 
     public ShadowRenderer(GameObject gameObject) throws Exception {
-        this.frameBuffer = new FrameBuffer("Shadow", Texture.Format.RGBA8, FrameBuffer.Configuration.COLOR_ATTACHMENT);
+        this.frameBuffer = new FrameBuffer("Shadow", Texture.Format.DEPTH24, FrameBuffer.Configuration.DEPTH_ATTACHMENT);
         this.gameObject = gameObject;
         setDepthByQuality();
-        this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
-        this.debugQuad.setScale(0.25f);
-        this.debugQuad.setPos(new Vector2f(-0.5f, 0.5f));
-        this.debugQuad.setColor(GlobalColors.GREEN_RGBA);
+//        this.debugQuad = new Quad(512, 512, frameBuffer.getTexture());
+//        this.debugQuad.setScale(0.25f);
+//        this.debugQuad.setPos(new Vector2f(-0.5f, 0.5f));
+//        this.debugQuad.setColor(GlobalColors.GREEN_RGBA);
     }
 
     private void setDepthByQuality() {
@@ -95,7 +96,13 @@ public class ShadowRenderer implements CoreRenderer {
      *
      */
     public void transformToLightSpace() {
-        final Matrix4f lightProjMatrix = shadowBox.projectionMatrix();
+        /*In general, an orthographic projection matrix is defined based on the dimensions of the viewing frustum or the area you want to project onto. 
+          It maps 3D coordinates to 2D coordinates without perspective, which is useful for rendering objects with uniform size regardless of their distance from the viewer.
+          Whether the shadow box needs to be in world space depends on where the shadow mapping calculations are performed and how the shadow box is defined. 
+          If you calculate the shadow box in world space, you'll likely transform it to light space before creating the orthographic projection matrix for shadow mapping. 
+          This transformation ensures that the shadow mapping is consistent with the position and orientation of the light source. -Chat GPT*/
+
+        final Matrix4f lightProjMatrix = shadowBox.toLightSpace(camera.viewMatrix).projectionMatrix();
         Matrix4f temp = new Matrix4f();
         lightSpaceMatrix.set(lightProjMatrix.mul(camera.viewMatrix, temp));
     }
@@ -103,14 +110,13 @@ public class ShadowRenderer implements CoreRenderer {
     /**
      * Update the shadow box
      */
-    public void update() {
+    private void updateShadowBox() {
         final float aspectRatio = gameObject.WINDOW.getAspectRatio();
         ShadowBox.createOrUpdate(
                 shadowDistance,
                 aspectRatio,
-                gameObject.levelContainer.levelActors.mainActor(),
                 camera, // light point-of-view
-                shadowBox);
+                shadowBox); // shadow box to update
     }
 
     /**
@@ -152,18 +158,24 @@ public class ShadowRenderer implements CoreRenderer {
         if (effectsQuality == ShadowRenderer.ShadowEffectsQuality.NONE) {
             return;
         }
-        // PASS 1 .. render depth to texture
+
         frameBuffer.bind();
+        // PASS 1 .. render depth to texture
         prepare();
-        updateCamera(LevelContainer.SUNLIGHT.pos);
-        transformToLightSpace();
-        capture();
-        FrameBuffer.unbind(gameObject);
-        // PASS 2 .. render the scene        
-        if (!debugQuad.isBuffered()) {
-            debugQuad.bufferAll(gameObject.intrface);
+        for (LightSource ls : gameObject.levelContainer.lightSources.sourceList.subList(0, 2)) {
+            if (ls.getIntensity() > 0.0f) {
+                updateCamera(ls.pos);
+                updateShadowBox();
+                transformToLightSpace();
+                capture();
+            }
         }
-        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
+        FrameBuffer.unbind(gameObject);
+        // PASS 2 .. render the scene
+//        if (!debugQuad.isBuffered()) {
+//            debugQuad.bufferAll(gameObject.intrface);
+//        }
+//        debugQuad.render(gameObject.intrface, ShaderProgram.getIntrfaceShader());
     }
 
     @Override
@@ -196,10 +208,9 @@ public class ShadowRenderer implements CoreRenderer {
         return camera;
     }
 
-    public Quad getDebugQuad() {
-        return debugQuad;
-    }
-
+//    public Quad getDebugQuad() {
+//        return debugQuad;
+//    }
     public Texture texture() {
         return frameBuffer.getTexture();
     }

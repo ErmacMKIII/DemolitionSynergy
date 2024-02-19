@@ -76,7 +76,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.05f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
-    public static final float SUN_SCALE = 12.0f;
+    public static final float SUN_SCALE = 24.0f;
     public static final float SUN_INTENSITY = (float) (1 << 28);
 
     public static final LightSource SUNLIGHT
@@ -111,7 +111,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 16.0f;
+    public static final float BASE = 22.5f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
 
@@ -204,7 +204,7 @@ public class LevelContainer implements GravityEnviroment {
         SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
-        SUN.setPrimaryColorAlpha(1.05f);
+        SUN.setPrimaryColorAlpha(1.00f);
     }
 
     public LevelContainer(GameObject gameObject) {
@@ -1169,10 +1169,10 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-            lightSources.resetAllModified();
-//            for (int i = 0; i < 2; i++) {
-//                lightSources.setModified(i, true);
-//            }
+//            lightSources.resetAllModified();
+            for (int i = 0; i < 2; i++) {
+                lightSources.setModified(i, true);
+            }
         }
     }
 
@@ -1246,7 +1246,13 @@ public class LevelContainer implements GravityEnviroment {
             }
             selectedCurrFrame.renderContour(lightSources, ShaderProgram.getContourShader());
         }
+
+        // this portion of the code renders level actors
+        for (ShaderProgram sp : ShaderProgram.ACTOR_SHADERS) {
+            levelActors.mainCamera().render(sp);
+        }
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        // ----------------------------------------------
 
         LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
@@ -1310,7 +1316,7 @@ public class LevelContainer implements GravityEnviroment {
             }
             selectedCurrFrame.render(lightSources, baseShader);
         }
-//        levelActors.render(lightSources, baseShader, baseShader);
+        levelActors.render(lightSources, baseShader, baseShader);
 
 //        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
 //        lightSources.resetAllModified();

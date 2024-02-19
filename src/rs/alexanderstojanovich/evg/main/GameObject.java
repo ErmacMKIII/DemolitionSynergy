@@ -217,25 +217,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
 
-            int renderFlag = 0;
-            renderFlag |= BlockEnvironment.LIGHT_MASK;
-
-            if (waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
-                renderFlag |= BlockEnvironment.WATER_MASK;
-            }
-
-            if (shadowRenderer.getEffectsQuality() != ShadowRenderer.ShadowEffectsQuality.NONE) {
-                renderFlag |= BlockEnvironment.SHADOW_MASK;
-            }
-
-            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                waterRenderer.update(); // update water heights
-            }
-
-            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                shadowRenderer.update(); // update shadow box
-            }
-
+//            int renderFlag = 0;
+//            renderFlag |= BlockEnvironment.LIGHT_MASK;
+//
+//            if (waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
+//                renderFlag |= BlockEnvironment.WATER_MASK;
+//            }
+//
+//            if (shadowRenderer.getEffectsQuality() != ShadowRenderer.ShadowEffectsQuality.NONE) {
+//                renderFlag |= BlockEnvironment.SHADOW_MASK;
+//            }
+//            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+//                waterRenderer.update(); // update water heights
+//            }
+//            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+//                shadowRenderer.update(); // update shadow box
+//            }
             synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
