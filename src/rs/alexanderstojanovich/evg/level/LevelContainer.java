@@ -991,7 +991,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean collision = false;
 
-        final float precision = 32.0f;
+        final float precision = 16.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};

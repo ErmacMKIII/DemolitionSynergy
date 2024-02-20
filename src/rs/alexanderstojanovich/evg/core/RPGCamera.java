@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class RPGCamera extends Camera {
 
     private final Model target;
-    private final float distanceFromTarget = 3.0f;
+    private final float distanceFromTarget = 2.1f;
     private static final float ANGLE_AROUND_TARGET = (float) (-org.joml.Math.PI) / 2.0f; // sideways look angle
 
     public RPGCamera(Model target) {

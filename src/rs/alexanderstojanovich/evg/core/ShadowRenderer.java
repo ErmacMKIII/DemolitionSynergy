@@ -17,10 +17,8 @@
 package rs.alexanderstojanovich.evg.core;
 
 import org.joml.Matrix4f;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
-import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
@@ -29,7 +27,6 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -87,8 +84,7 @@ public class ShadowRenderer implements CoreRenderer {
 
     @Override
     public void prepare() {
-        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+        GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
     }
 
     /**
@@ -120,7 +116,8 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     /**
-     * Calculate camera position and angles based on the light source position
+     * Calculate camera position and view angles based on the light source
+     * position
      *
      * @param lightSrcPos light source position
      */

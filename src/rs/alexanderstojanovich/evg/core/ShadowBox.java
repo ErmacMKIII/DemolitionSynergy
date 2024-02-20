@@ -307,15 +307,15 @@ public class ShadowBox {
         Vector3f tempC = new Vector3f();
         Vector3f tempD = new Vector3f();
 
-        Vector3f nearXPosYPos = toNear.add(rightVec3.mul(halfWidthNear, tempA)).add(upVec3.mul(halfHeightNear, tempA), tempA);
-        Vector3f nearXNegYPos = toNear.add(rightVec3.mul(-halfWidthNear, tempB)).add(upVec3.mul(halfHeightNear, tempB), tempB);
-        Vector3f nearXPosYNeg = toNear.add(rightVec3.mul(halfWidthNear, tempC)).add(upVec3.mul(-halfHeightNear, tempC), tempC);
-        Vector3f nearXNegYNeg = toNear.add(rightVec3.mul(-halfWidthNear, tempD)).add(upVec3.mul(-halfHeightNear, tempD), tempD);
+        Vector3f nearXPosYPos = toNear.fma(halfWidthNear, rightVec3, tempA).fma(halfHeightNear, upVec3, tempA);
+        Vector3f nearXNegYPos = toNear.fma(-halfWidthNear, rightVec3, tempB).fma(halfHeightNear, upVec3, tempB);
+        Vector3f nearXPosYNeg = toNear.fma(halfWidthNear, rightVec3, tempC).fma(-halfHeightNear, upVec3, tempC);
+        Vector3f nearXNegYNeg = toNear.fma(-halfWidthNear, rightVec3, tempD).fma(-halfHeightNear, upVec3, tempD);
 
-        Vector3f farXPosYPos = toFar.add(rightVec3.mul(halfWidthFar, tempA)).add(upVec3.mul(halfHeightFar, tempA), tempA);
-        Vector3f farXNegYPos = toFar.add(rightVec3.mul(-halfWidthFar, tempB)).add(upVec3.mul(halfHeightFar, tempB), tempB);
-        Vector3f farXPosYNeg = toFar.add(rightVec3.mul(halfWidthFar, tempC)).add(upVec3.mul(-halfHeightFar, tempC), tempC);
-        Vector3f farXNegYNeg = toFar.add(rightVec3.mul(-halfWidthFar, tempD)).add(upVec3.mul(-halfHeightFar, tempD), tempD);
+        Vector3f farXPosYPos = toFar.fma(halfWidthFar, rightVec3, tempA).fma(halfHeightFar, upVec3, tempA);
+        Vector3f farXNegYPos = toFar.fma(-halfWidthFar, rightVec3, tempB).fma(halfHeightFar, upVec3, tempB);
+        Vector3f farXPosYNeg = toFar.fma(halfWidthFar, rightVec3, tempC).fma(-halfHeightFar, upVec3, tempC);
+        Vector3f farXNegYNeg = toFar.fma(-halfWidthFar, rightVec3, tempD).fma(-halfHeightFar, upVec3, tempD);
 
         // temp array of points
         Vector3f[] points = new Vector3f[]{
@@ -324,16 +324,16 @@ public class ShadowBox {
         };
 
         Matrix4f tempM4 = new Matrix4f();
+        // inverted matrix of view (light) matrix
         Matrix4f viewInvert = viewMat4.invert(tempM4);
         Vector4f tempV4 = new Vector4f();
         for (Vector3f point : points) {
             Vector4f vec4f = new Vector4f(point, 1.0f);
-            vec4f = viewInvert.transform(vec4f, tempV4);
+            vec4f = viewInvert.transform(vec4f, tempV4); // convert to world space
             Vector3f vec3f = new Vector3f(vec4f.x, vec4f.y, vec4f.z);
             result.add(vec3f);
         }
 
-//        result.addAll(Arrays.asList(points));
         return result;
     }
 

@@ -82,9 +82,7 @@ public class WaterRenderer implements CoreRenderer {
         }
 
         // player must notice that water heights are updating!
-//        synchronized (WATER_HEIGHTS) {
         WATER_HEIGHTS.clear();
-//        }
 
         Camera actCam = gameObject.levelContainer.levelActors.mainCamera();
         Vector3f temp = new Vector3f();
@@ -92,12 +90,12 @@ public class WaterRenderer implements CoreRenderer {
         final float chPosY = actCam.pos.y;
 
         float dotYAxis = frontNeg.dot(Camera.Y_AXIS);
-        if (dotYAxis >= -0.5f) {
+        if (dotYAxis >= -0.25f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
             for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
                 float delta = 2.0f * y - chPosY;
-                if (delta > 0.0f && delta <= 128f) {
+                if (delta > 0.0f && delta <= 64f) {
                     IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
                     for (Vector2f xz : xzVals) {
                         float x = xz.x;
@@ -105,7 +103,7 @@ public class WaterRenderer implements CoreRenderer {
                         Vector3f value = new Vector3f(x, y, z);
                         float angleCos = actCam.pos.angleCos(value);
                         float angleDeg = MathUtils.toDegrees(MathUtils.acos(angleCos));
-                        if (angleDeg > 0.0f && angleDeg <= 90.0f && deltaMap.size() <= 2 * maxWaterDepthSize) {
+                        if (angleDeg >= 5.0f && angleDeg < 90.0f && deltaMap.size() <= 2 * maxWaterDepthSize) {
                             deltaMap.putIfAbsent(delta, y);
                         }
 
@@ -125,6 +123,7 @@ public class WaterRenderer implements CoreRenderer {
 
             IList<Float> values = new GapList<>(deltaMap.values());
 
+            // binary sampler
             while (values.size() > maxWaterDepthSize) {
                 for (float value : values) {
                     sum += value;
@@ -145,9 +144,7 @@ public class WaterRenderer implements CoreRenderer {
                 values = new GapList<>(tmpList);
             }
 
-//            synchronized (WATER_HEIGHTS) {
             WATER_HEIGHTS.addAll(values);
-//            }
         }
     }
 
@@ -165,21 +162,24 @@ public class WaterRenderer implements CoreRenderer {
         }
     }
 
+    /**
+     * Update camera position and view angles based on water height
+     *
+     * @param waterHeight water height parameter
+     */
     private void updateCamera(float waterHeight) {
         Camera mainCamera = gameObject.levelContainer.levelActors.mainCamera();
 
-        camera.getPos().x = mainCamera.pos.x;
-        camera.getPos().y = 2.0f * waterHeight - mainCamera.pos.y;
-        camera.getPos().z = mainCamera.pos.z;
+        camera.pos.x = mainCamera.pos.x;
+        camera.pos.y = 2.0f * waterHeight - mainCamera.pos.y;
+        camera.pos.z = mainCamera.pos.z;
         camera.lookAtAngle(mainCamera.yaw, -mainCamera.pitch);
     }
 
     private void capture(float waterHeight) {
-        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
         gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), 0);
-        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
     }
 
     /**
@@ -194,11 +194,11 @@ public class WaterRenderer implements CoreRenderer {
         updateWaterHeights();
         frameBuffer.bind();
         prepare();
-        synchronized (WATER_HEIGHTS) {
-            for (float waterHeight : WATER_HEIGHTS) {
-                capture(waterHeight);
-            }
+        GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
+        for (float waterHeight : WATER_HEIGHTS) {
+            capture(waterHeight);
         }
+        GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
         FrameBuffer.unbind(gameObject);
 //        if (!debugQuad.isBuffered()) {
 //            debugQuad.bufferAll(gameObject.intrface);
