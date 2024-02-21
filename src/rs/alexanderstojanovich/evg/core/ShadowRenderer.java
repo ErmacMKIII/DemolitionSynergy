@@ -159,13 +159,12 @@ public class ShadowRenderer implements CoreRenderer {
         frameBuffer.bind();
         // PASS 1 .. render depth to texture
         prepare();
-        for (LightSource ls : gameObject.levelContainer.lightSources.sourceList.subList(0, 2)) {
-            if (ls.getIntensity() > 0.0f) {
-                updateCamera(ls.pos);
-                updateShadowBox();
-                transformToLightSpace();
-                capture();
-            }
+        final LightSource ls = LevelContainer.SUNLIGHT;
+        if (ls.getIntensity() > 0.0f) {
+            updateCamera(ls.pos);
+            updateShadowBox();
+            transformToLightSpace();
+            capture();
         }
         FrameBuffer.unbind(gameObject);
         // PASS 2 .. render the scene

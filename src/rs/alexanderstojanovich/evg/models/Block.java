@@ -411,7 +411,7 @@ public class Block extends Model {
 
     /**
      * Returns visible bits based on faces which can seen by camera front.
-     * Faster version of original.
+     * Faster version of original. And performs on cosine 3 degrees.
      *
      * @param camFront camera front (eye)
      * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
@@ -431,6 +431,64 @@ public class Block extends Model {
         int xNeg = (camFrontNeg.x <= cos3) ? XNEG_MASK : 0;
 
         result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        return result;
+    }
+
+    /**
+     * Returns single visible based on faces which can seen by camera front.
+     * Faster version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
+     */
+    public static int getRayTraceSingleFaceFast(Vector3f camFront) {
+
+        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
+        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
+        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
+        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
+        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
+        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+
+        int someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        for (int j = 0; j <= 5; j++) {
+            int tmpMask = 1 << j;
+            if ((someValue & tmpMask) != 0) {
+                return j;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Returns multi visible faces which can seen by camera front. Faster
+     * version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
+     */
+    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront) {
+        final IList<Integer> result = new GapList<>();
+        int someValue = 0;
+
+        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
+        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
+        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
+        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
+        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
+        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+
+        someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        for (int j = 0; j <= 5; j++) {
+            int tmpMask = 1 << j;
+            if ((someValue & tmpMask) != 0) {
+                result.add(j);
+            }
+        }
 
         return result;
     }
@@ -994,6 +1052,17 @@ public class Block extends Model {
         Vector2f result = new Vector2f();
         ints = Intersectionf.intersectRayAab(origin, dir, min, max, result);
         return ints;
+    }
+
+    public static Vector2f intersectsRay2(Vector3f blockPos, Vector3f dir, Vector3f origin) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = blockPos.sub(1.0f, 1.0f, 1.0f, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = blockPos.add(1.0f, 1.0f, 1.0f, temp2);
+        Vector2f result = new Vector2f();
+        Intersectionf.intersectRayAab(origin, dir, min, max, result);
+
+        return result;
     }
 
     public byte[] toByteArray() {

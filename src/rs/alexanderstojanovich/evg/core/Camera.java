@@ -40,6 +40,10 @@ public class Camera implements Observer { // is 3D looking camera
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
     public static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
 
+    public static final Vector3f XNEG_AXIS = new Vector3f(-1.0f, 0.0f, 0.0f);
+    public static final Vector3f YNEG_AXIS = new Vector3f(0.0f, -1.0f, 0.0f);
+    public static final Vector3f ZNEG_AXIS = new Vector3f(0.0f, 0.0f, -1.0f);
+
     // three vectors determining exact camera position aka camera vectors
     protected Vector3f front = Z_AXIS;
     protected Vector3f up = Y_AXIS;

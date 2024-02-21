@@ -787,7 +787,7 @@ public class LevelContainer implements GravityEnviroment {
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.83f);
+                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.1f);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
                         Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
@@ -822,7 +822,7 @@ public class LevelContainer implements GravityEnviroment {
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.83f);
+                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.1f);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
                         Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
@@ -865,7 +865,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 4.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(predictable.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -909,7 +909,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 4.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(observer.getPos(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -956,7 +956,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 4.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -991,7 +991,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean collision = false;
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
@@ -1072,7 +1072,7 @@ public class LevelContainer implements GravityEnviroment {
         float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
         float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
 
         boolean collision = false;
@@ -1228,23 +1228,14 @@ public class LevelContainer implements GravityEnviroment {
                 editorNew.bufferAll();
             }
             editorNew.render(lightSources, ShaderProgram.getMainShader());
-
-            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
-            if (selectedNewWireFrame != null) {
-                if (!selectedNewWireFrame.isBuffered()) {
-                    selectedNewWireFrame.bufferAll();
-                }
-                selectedNewWireFrame.renderContour(lightSources, ShaderProgram.getContourShader());
-            }
-
         }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-        if (selectedCurrFrame != null) {
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+        Block selectionDecal = Editor.Decal;
+        if (selectionDecal != null && Editor.isDecalActive()) {
+            if (!selectionDecal.isBuffered()) {
+                selectionDecal.bufferAll();
             }
-            selectedCurrFrame.renderContour(lightSources, ShaderProgram.getContourShader());
+            selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
         }
 
         // this portion of the code renders level actors
@@ -1276,17 +1267,19 @@ public class LevelContainer implements GravityEnviroment {
         camera.render(baseShader);
         camera.render(instanceShader);
 
-//        if (!SUN.isBuffered()) {
-//            SUN.bufferAll();
-//        }
-//
-//        if (SUNLIGHT.getIntensity() > 0.0f) {
-//            SUN.render(lightSources, baseShader);
-//        }
-//        if (!SKYBOX.isBuffered()) {
-//            SKYBOX.bufferAll();
-//        }
-//        SKYBOX.render(lightSources, baseShader);
+        if (!SUN.isBuffered()) {
+            SUN.bufferAll();
+        }
+
+        if (SUNLIGHT.getIntensity() > 0.0f) {
+            SUN.render(lightSources, baseShader);
+        }
+
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
+        }
+        SKYBOX.render(lightSources, baseShader);
+
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
@@ -1298,26 +1291,15 @@ public class LevelContainer implements GravityEnviroment {
                 editorNew.bufferAll();
             }
             editorNew.render(lightSources, baseShader);
-
-            Block selectedNewWireFrame = Editor.getSelectedNewDecal();
-            if (selectedNewWireFrame != null) {
-                if (!selectedNewWireFrame.isBuffered()) {
-                    selectedNewWireFrame.bufferAll();
-                }
-                selectedNewWireFrame.render(lightSources, baseShader);
-            }
-
         }
 
-        Block selectedCurrFrame = Editor.getSelectedCurrDecal();
-        if (selectedCurrFrame != null) {
-            if (!selectedCurrFrame.isBuffered()) {
-                selectedCurrFrame.bufferAll();
+        Block selectionDecal = Editor.Decal;
+        if (selectionDecal != null && Editor.isDecalActive()) {
+            if (!selectionDecal.isBuffered()) {
+                selectionDecal.bufferAll();
             }
-            selectedCurrFrame.render(lightSources, baseShader);
+            selectionDecal.renderContour(lightSources, baseShader);
         }
-        levelActors.render(lightSources, baseShader, baseShader);
-
 //        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
 //        lightSources.resetAllModified();
     }

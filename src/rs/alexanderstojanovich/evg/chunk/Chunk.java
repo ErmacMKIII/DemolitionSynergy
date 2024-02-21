@@ -615,7 +615,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return changed;
     }
 
-    public List<Block> getBlockList() {
+    public IList<Block> getBlockList() {
         IList<Block> result = new BigList<>();
         for (Tuple tuple : tupleList) {
             result.addAll(tuple.getBlockList());

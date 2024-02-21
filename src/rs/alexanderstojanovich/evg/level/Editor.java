@@ -20,10 +20,12 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
+import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
+import static rs.alexanderstojanovich.evg.level.LevelContainer.ALL_BLOCK_MAP;
+import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
@@ -37,19 +39,18 @@ public class Editor {
     private static int blockColorNum = 0;
 
     private static Block selectedCurr = null;
-    private static int selectedCurrIndex = -1;
 
     private static int texValue = 0; // value about which texture to use
 
-    private static Block selectedNewDecal = null;
-    private static Block selectedCurrDecal = null;
+    protected static final Block Decal = new Block("decal", new Vector3f(), GlobalColors.GREEN_RGBA, true);
+    protected static boolean DecalActive = false;
 
     public static void selectNew(LevelContainer lc) {
         deselect();
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }
-        selectTexture(lc.gameObject);
+        selectTexture();
         // fetching..
         Camera camera = lc.levelActors.mainCamera();
         Vector3f pos = camera.getPos();
@@ -63,7 +64,10 @@ public class Editor {
         selectedNew.getPos().z = (Math.round(8.0f * front.z) + Math.round(pos.z) & 0xFFFFFFFE) % Math.round(skyboxWidth + 1);
 
         if (!cannotPlace(lc)) {
-            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.GREEN_RGBA, true);
+            Decal.pos = selectedNew.pos;
+            Decal.setScale(1.05f);
+            Decal.setPrimaryRGBAColor(GlobalColors.GREEN_RGBA);
+            DecalActive = true;
         }
 
         lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
@@ -73,72 +77,126 @@ public class Editor {
         deselect();
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
-        float minDistanceOfSolid = Chunk.VISION;
-        int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk chunk = lc.chunks.getChunk(currChunkId);
 
-        int solidTargetIndex = -1;
-        if (chunk != null) {
-            int solidBlkIndex = 0;
-            for (Block blk : chunk.getBlockList()) {
-                if (blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
-                    float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
-                            blk.getPos().x, blk.getPos().y, blk.getPos().z);
-                    if (distance < minDistanceOfSolid
-                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.pos, 2.0f, 2.0f, 2.0f)) {
-                        minDistanceOfSolid = distance;
-                        solidTargetIndex = solidBlkIndex;
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int mask = 1 << face;
+
+        final float stepAmount = 0.125f;
+        Vector3f temp = new Vector3f();
+        // iterater through faces
+        SCAN:
+        // detect blocks
+        for (float amount = 0.0f; amount <= Chunk.VISION; amount += stepAmount) { // double amount precision
+            // possible block location
+            Vector3f adjPos = cameraPos.fma(amount, cameraFront, temp);
+            Vector3f adjPosAlign = new Vector3f(
+                    Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+            );
+
+            // detect ray intersection
+            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPosAlign);
+            if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
+                Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
+                if (chunk != null) {
+                    Tuple tuple = chunk.getTuple(locVal.texName, (int) ((~locVal.byteValue & 63) | mask));
+                    if (tuple != null) {
+                        Block blk = tuple.getBlock(adjPosAlign);
+                        if (blk != null) {
+                            selectedCurr = blk;
+                        } else {
+                            // heavy search on chunk boundaries
+                            blk = tuple.blockList.getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                            selectedCurr = blk;
+                        }
+                        break SCAN;
+                    } else {
+                        // heavy search on chunk boundaries
+                        Block blk = chunk.getBlockList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                        selectedCurr = blk;
+                        break SCAN;
                     }
+                } else {
+                    // heavy search on chunk boundaries
+                    Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                    selectedCurr = blk;
+                    break SCAN;
                 }
-                solidBlkIndex++;
-            }
-
-            if (solidTargetIndex != -1) {
-                selectedCurr = chunk.getBlockList().get(solidTargetIndex);
-                selectedCurrIndex = solidBlkIndex;
-                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW_RGBA, true);
             }
         }
-
+        if (selectedCurr != null) {
+            Decal.pos = selectedCurr.pos;
+            Decal.setScale(1.05f);
+            Decal.setPrimaryRGBAColor(GlobalColors.YELLOW_RGBA);
+            DecalActive = true;
+        }
     }
 
     public static void selectCurrFluid(LevelContainer lc) {
         deselect();
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
-        float minDistanceOfFluid = Chunk.VISION;
-        int currChunkId = Chunk.chunkFunc(cameraPos);
-        Chunk currFluidChunk = lc.chunks.getChunk(currChunkId);
 
-        int fluidTargetIndex = -1;
-        if (currFluidChunk != null) {
-            int fluidBlkIndex = 0;
-            for (Block blk : currFluidChunk.getBlockList()) {
-                if (!blk.isSolid() && Block.intersectsRay(blk.getPos(), cameraFront, cameraPos)) {
-                    float distance = Vector3f.distance(cameraPos.x, cameraPos.y, cameraPos.z,
-                            blk.getPos().x, blk.getPos().y, blk.getPos().z);
-                    if (distance < minDistanceOfFluid
-                            && !Model.intersectsEqually(cameraPos, 2.0f, 2.0f, 2.0f, blk.getPos(), 2.0f, 2.0f, 2.0f)) {
-                        minDistanceOfFluid = distance;
-                        fluidTargetIndex = fluidBlkIndex;
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int mask = 1 << face;
+
+        final float stepAmount = 0.125f;
+        Vector3f temp = new Vector3f();
+        // iterater through faces
+        SCAN:
+        // detect blocks
+        for (float amount = 0.0f; amount <= Chunk.VISION; amount += stepAmount) { // double amount precision
+            // possible block location
+            Vector3f adjPos = cameraPos.fma(amount, cameraFront, temp);
+            Vector3f adjPosAlign = new Vector3f(
+                    Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+            );
+
+            // detect ray intersection
+            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPosAlign);
+            if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
+                Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
+                if (chunk != null) {
+                    Tuple tuple = chunk.getTuple(locVal.texName, (int) ((~locVal.byteValue & 63) | mask));
+                    if (tuple != null) {
+                        Block blk = tuple.getBlock(adjPosAlign);
+                        if (blk != null) {
+                            selectedCurr = blk;
+                        } else {
+                            // heavy search on chunk boundaries
+                            blk = tuple.blockList.getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                            selectedCurr = blk;
+                        }
+                        break SCAN;
+                    } else {
+                        // heavy search on chunk boundaries
+                        Block blk = chunk.getBlockList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                        selectedCurr = blk;
+                        break SCAN;
                     }
+                } else {
+                    // heavy search on chunk boundaries
+                    Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
+                    selectedCurr = blk;
+                    break SCAN;
                 }
-                fluidBlkIndex++;
             }
+        }
 
-            if (fluidTargetIndex != -1) {
-                selectedCurr = currFluidChunk.getBlockList().get(fluidTargetIndex);
-                selectedCurrIndex = fluidBlkIndex;
-                selectedCurrDecal = new Block("decal", new Vector3f(selectedCurr.getPos()), GlobalColors.YELLOW_RGBA, true);
-            }
+        if (selectedCurr != null) {
+            Decal.pos = selectedCurr.pos;
+            Decal.setScale(1.05f);
+            Decal.setPrimaryRGBAColor(GlobalColors.YELLOW_RGBA);
+            DecalActive = true;
         }
     }
 
     public static void deselect() {
         selectedNew = selectedCurr = null;
-        selectedCurrIndex = -1;
-        selectedNewDecal = null;
-        selectedCurrDecal = null;
+        DecalActive = false;
     }
 
     public static void selectAdjacentSolid(LevelContainer lc, int position) {
@@ -148,7 +206,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture(lc.gameObject);
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -177,7 +235,10 @@ public class Editor {
             }
 
             if (!cannotPlace(lc)) {
-                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE_RGBA, true);
+                Decal.pos = selectedNew.pos;
+                Decal.setScale(1.05f);
+                Decal.setPrimaryRGBAColor(GlobalColors.BLUE_RGBA);
+                DecalActive = true;
             }
         }
     }
@@ -189,7 +250,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture(lc.gameObject);
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -218,7 +279,10 @@ public class Editor {
             }
 
             if (!cannotPlace(lc)) {
-                selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.BLUE_RGBA, true);
+                Decal.pos = selectedNew.pos;
+                Decal.setScale(1.05f);
+                Decal.setPrimaryRGBAColor(GlobalColors.BLUE_RGBA);
+                DecalActive = true;
             }
         }
     }
@@ -244,7 +308,10 @@ public class Editor {
             cant = lc.maxCountReached() || placeOccupied || intersects || leavesSkybox;
         }
         if (cant) {
-            selectedNewDecal = new Block("decal", new Vector3f(selectedNew.getPos()), GlobalColors.RED_RGBA, true);
+            Decal.pos = selectedNew.pos;
+            Decal.setScale(1.05f);
+            Decal.setPrimaryRGBAColor(GlobalColors.RED_RGBA);
+            DecalActive = true;
         }
         return cant;
     }
@@ -272,7 +339,7 @@ public class Editor {
         deselect();
     }
 
-    private static void selectTexture(GameObject gameObject) {
+    private static void selectTexture() {
         if (selectedNew != null) {
             synchronized (GameObject.UPDATE_RENDER_MUTEX) {
                 String texName = Texture.TEX_WORLD[texValue];
@@ -281,20 +348,20 @@ public class Editor {
         }
     }
 
-    public static void selectPrevTexture(GameObject gameObject) {
+    public static void selectPrevTexture() {
         if (selectedNew != null) {
             if (texValue > 0) {
                 texValue--;
-                selectTexture(gameObject);
+                selectTexture();
             }
         }
     }
 
-    public static void selectNextTexture(GameObject gameObject) {
+    public static void selectNextTexture() {
         if (selectedNew != null) {
             if (texValue < Texture.TEX_WORLD.length - 1) {
                 texValue++;
-                selectTexture(gameObject);
+                selectTexture();
             }
         }
     }
@@ -318,16 +385,16 @@ public class Editor {
         return blockColorNum;
     }
 
-    public static int getSelectedCurrIndex() {
-        return selectedCurrIndex;
+    public static int getTexValue() {
+        return texValue;
     }
 
-    public static Block getSelectedNewDecal() {
-        return selectedNewDecal;
+    public static Block getDecal() {
+        return Decal;
     }
 
-    public static Block getSelectedCurrDecal() {
-        return selectedCurrDecal;
+    public static boolean isDecalActive() {
+        return DecalActive;
     }
 
 }

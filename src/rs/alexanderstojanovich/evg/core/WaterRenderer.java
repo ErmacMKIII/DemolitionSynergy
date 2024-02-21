@@ -90,7 +90,7 @@ public class WaterRenderer implements CoreRenderer {
         final float chPosY = actCam.pos.y;
 
         float dotYAxis = frontNeg.dot(Camera.Y_AXIS);
-        if (dotYAxis >= -0.25f) {
+        if (dotYAxis >= 0.0f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
             for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
@@ -135,7 +135,7 @@ public class WaterRenderer implements CoreRenderer {
                     float b = values.get(i + 1);
                     float halftwo = (a + b) / 2.0f;
                     float delta = halftwo - avgWaterHeight;
-                    if (delta >= -1.5f && delta <= 1.5f) {
+                    if (delta >= -2.0f && delta <= 2.0f) {
                         tmpList.addIfAbsent(halftwo);
                     } else {
                         tmpList.addIfAbsent(Math.max(a, b));
