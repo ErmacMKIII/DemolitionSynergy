@@ -537,6 +537,7 @@ public class Tuple extends Blocks {
 
             Texture.unbind(0);
             Texture.unbind(1);
+            Texture.unbind(2);
 
             ShaderProgram.unbind();
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -640,6 +641,7 @@ public class Tuple extends Blocks {
             }
             Texture.unbind(0);
             Texture.unbind(1);
+            Texture.unbind(2);
 
             ShaderProgram.unbind();
         }

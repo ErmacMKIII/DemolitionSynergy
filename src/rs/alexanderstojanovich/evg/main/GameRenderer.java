@@ -20,8 +20,6 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -111,15 +109,15 @@ public class GameRenderer extends Thread implements Executor {
 
             // update text which animates water every quarter of the second
             if (Game.accumulator - animationTimer > 20.0) {
-                if (!gameObject.isWorking() && couldAnimate()) {
-                    gameObject.animate();
+                if (!gameObject.isWorking()) {
+                    gameObject.animate(); // has internal no-update 
                 }
 
                 animationTimer += 20.0;
             }
 
             // lastly it executes the console tasks
-            if (!couldRender()) {
+            if (couldRender()) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task);
                 }
@@ -142,18 +140,17 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (((int) Game.getUpsTicks()) & 79) == 0;
+        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.upsTicks < 1.0;
     }
 
-    /**
-     * Could Game Render animate.
-     *
-     * @return could render bool
-     */
-    public static boolean couldAnimate() {
-        return fpsTicks < 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (((int) Game.getUpsTicks()) & 19) == 0;
-    }
-
+//    /**
+//     * Could Game Render animate.
+//     *
+//     * @return could render bool
+//     */
+//    public static boolean couldAnimate() {
+//        return (Math.round(fpsTicks) & 7) == 0;
+//    }
     /**
      * Cleans all the buffers from the renderer (optimized tuples contains them,
      * interface as well).

@@ -22,9 +22,6 @@ import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.magicwerk.brownies.collections.IList;
-import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditMultiValue;
-import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditNoValue;
-import static rs.alexanderstojanovich.evg.intrface.Menu.EditType.EditSingleValue;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -136,36 +133,33 @@ public abstract class OptionsMenu extends Menu {
             public void invoke(long window, int button, int action, int mods) {
                 if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
                     MenuItem selectedMenuItem = items.get(OptionsMenu.this.selected);
-                    if (selectedMenuItem != null) {
-                        switch (selectedMenuItem.editType) {
-                            case EditSingleValue:
-                                switch (mode) {
-                                    case INIT:
-                                        input.setLength(0);
-                                        input.append(selectedMenuItem.menuValue.getCurrentValue());
-                                        selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
-                                        inputEdited = false;
-                                        mode = InputMode.GET;
-                                        break;
-                                    case GET:
-                                        mode = InputMode.PUT;
-                                        break;
-                                    case PUT:
-                                        selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
-                                        mode = InputMode.INIT;
-                                        execute();
-                                        break;
-                                }
+                    if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditSingleValue) {
+                        // if both are reset
+                        switch (mode) {
+                            case INIT:
+                                input.setLength(0);
+                                input.append(selectedMenuItem.menuValue.getCurrentValue());
+                                selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                                inputEdited = false;
+                                mode = InputMode.GET;
                                 break;
-                            case EditMultiValue:
-                                MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
-                                selectedMultiValue.selectNext();
+                            case GET:
+                                mode = InputMode.PUT;
+                                break;
+                            case PUT:
+                                selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
+                                mode = InputMode.INIT;
                                 execute();
                                 break;
-                            case EditNoValue:
-                            default:
-                                break;
                         }
+                    } else if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditNoValue) {
+                        enabled = false;
+                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                        GLFW.glfwSetCharCallback(window, null);
+                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                        GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                        GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                         execute();
                     }
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {

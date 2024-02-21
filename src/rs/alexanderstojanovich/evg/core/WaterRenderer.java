@@ -26,6 +26,7 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -95,7 +96,7 @@ public class WaterRenderer implements CoreRenderer {
             OUTER:
             for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
                 float delta = 2.0f * y - chPosY;
-                if (delta > 0.0f && delta <= 64f) {
+                if (delta >= 2.0f && delta <= 64f) {
                     IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
                     for (Vector2f xz : xzVals) {
                         float x = xz.x;
@@ -191,7 +192,11 @@ public class WaterRenderer implements CoreRenderer {
             return;
         }
 
-        updateWaterHeights();
+        // update water heights only on first frame
+        if (Math.round(GameRenderer.getFpsTicks()) == 1) {
+            updateWaterHeights();
+        }
+
         frameBuffer.bind();
         prepare();
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);

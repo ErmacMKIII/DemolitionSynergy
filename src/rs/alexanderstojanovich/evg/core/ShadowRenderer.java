@@ -24,6 +24,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -162,8 +163,11 @@ public class ShadowRenderer implements CoreRenderer {
         final LightSource ls = LevelContainer.SUNLIGHT;
         if (ls.getIntensity() > 0.0f) {
             updateCamera(ls.pos);
-            updateShadowBox();
-            transformToLightSpace();
+            // update shadow box only on first frame
+            if (Math.round(GameRenderer.getFpsTicks()) == 1) {
+                updateShadowBox();
+                transformToLightSpace();
+            }
             capture();
         }
         FrameBuffer.unbind(gameObject);
