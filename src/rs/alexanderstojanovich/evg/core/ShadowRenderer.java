@@ -163,11 +163,8 @@ public class ShadowRenderer implements CoreRenderer {
         final LightSource ls = LevelContainer.SUNLIGHT;
         if (ls.getIntensity() > 0.0f) {
             updateCamera(ls.pos);
-            // update shadow box only on first frame
-            if (Math.round(GameRenderer.getFpsTicks()) == 1) {
-                updateShadowBox();
-                transformToLightSpace();
-            }
+            updateShadowBox();
+            transformToLightSpace();
             capture();
         }
         FrameBuffer.unbind(gameObject);

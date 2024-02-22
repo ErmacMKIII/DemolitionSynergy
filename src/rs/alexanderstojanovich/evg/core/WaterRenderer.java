@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.LinkedHashMap;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
@@ -26,7 +25,7 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.GameRenderer;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -47,7 +46,7 @@ public class WaterRenderer implements CoreRenderer {
     };
     private WaterEffectsQuality effectsQuality = WaterEffectsQuality.values()[Configuration.getInstance().getWaterEffects()];
     private int maxWaterDepthSize = 3;
-    public static final IList<Float> WATER_HEIGHTS = new GapList<>();
+    public final IList<Float> waterHeights = new GapList<>();
     protected final GameObject gameObject;
 //    private final Quad debugQuad;
 
@@ -83,7 +82,7 @@ public class WaterRenderer implements CoreRenderer {
         }
 
         // player must notice that water heights are updating!
-        WATER_HEIGHTS.clear();
+        waterHeights.clear();
 
         Camera actCam = gameObject.levelContainer.levelActors.mainCamera();
         Vector3f temp = new Vector3f();
@@ -91,29 +90,18 @@ public class WaterRenderer implements CoreRenderer {
         final float chPosY = actCam.pos.y;
 
         float dotYAxis = frontNeg.dot(Camera.Y_AXIS);
-        if (dotYAxis >= 0.0f) {
+        if (dotYAxis > 0.0f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
-            for (float y : LevelContainer.ALL_BLOCK_MAP.getPlanes().keySet()) {
-                float delta = 2.0f * y - chPosY;
-                if (delta >= 2.0f && delta <= 64f) {
-                    IList<Vector2f> xzVals = LevelContainer.ALL_BLOCK_MAP.getPlanes().get(y);
-                    for (Vector2f xz : xzVals) {
-                        float x = xz.x;
-                        float z = xz.y;
-                        Vector3f value = new Vector3f(x, y, z);
-                        float angleCos = actCam.pos.angleCos(value);
-                        float angleDeg = MathUtils.toDegrees(MathUtils.acos(angleCos));
-                        if (angleDeg >= 5.0f && angleDeg < 90.0f && deltaMap.size() <= 2 * maxWaterDepthSize) {
-                            deltaMap.putIfAbsent(delta, y);
-                        }
-
-                        if (deltaMap.size() >= 2 * maxWaterDepthSize) {
-                            break OUTER;
-                        }
+            for (Vector3f xyzLoc : LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid && ((~tb.byteValue & 63) & Block.Y_MASK) != 0)) {
+                if (chPosY >= xyzLoc.y) {
+                    float delta = 2.0f * xyzLoc.y - chPosY;
+                    float angleCos = actCam.pos.angleCos(xyzLoc);
+                    float angleDeg = MathUtils.toDegrees(MathUtils.acos(angleCos));
+                    if (angleDeg >= 5.0f && angleDeg < 90.0f && deltaMap.size() <= 2 * maxWaterDepthSize) {
+                        deltaMap.putIfAbsent(delta, xyzLoc.y);
                     }
                 }
-
                 if (deltaMap.size() >= 2 * maxWaterDepthSize) {
                     break OUTER;
                 }
@@ -145,7 +133,7 @@ public class WaterRenderer implements CoreRenderer {
                 values = new GapList<>(tmpList);
             }
 
-            WATER_HEIGHTS.addAll(values);
+            waterHeights.addAll(values);
         }
     }
 
@@ -192,15 +180,13 @@ public class WaterRenderer implements CoreRenderer {
             return;
         }
 
-        // update water heights only on first frame
-        if (Math.round(GameRenderer.getFpsTicks()) == 1) {
-            updateWaterHeights();
-        }
+        updateWaterHeights();
+//        DSLogger.reportInfo("Size=" + waterHeights.size(), null);
 
         frameBuffer.bind();
         prepare();
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
-        for (float waterHeight : WATER_HEIGHTS) {
+        for (float waterHeight : waterHeights) {
             capture(waterHeight);
         }
         GL11.glDisable(GL30.GL_CLIP_DISTANCE0);

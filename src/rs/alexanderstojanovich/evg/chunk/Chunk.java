@@ -263,8 +263,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     protected void updateForAdd(Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
         int nbits = block.isSolid()
-                ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
-                : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
+                ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
+                : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
         // if has neighbors (otherwise pointless)
         if (nbits != 0) {
             // retieve current neightbor bits      
@@ -291,12 +291,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // need to find tuple where it is located
                 // -------------------------------------------------------------------
                 Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+                TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
                 if (location != null) {
                     String tupleTexName = location.getTexName();
                     int adjNBits = block.isSolid()
-                            ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(adjPos)
-                            : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(adjPos);
+                            ? LevelContainer.AllBlockMap.getNeighborSolidBits(adjPos)
+                            : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
                     int k = ((j & 1) == 0 ? j + 1 : j - 1);
                     int mask = 1 << k;
                     int tupleBits = adjNBits & (~mask & 63);
@@ -341,10 +341,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(adjPos);
+            TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
             int nBits = block.isSolid()
-                    ? LevelContainer.ALL_BLOCK_MAP.getNeighborSolidBits(block.pos)
-                    : LevelContainer.ALL_BLOCK_MAP.getNeighborFluidBits(block.pos);
+                    ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
+                    : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
             // location exists and has neighbors (otherwise pointless)
             if (location != null && nBits != 0) {
                 String tupleTexName = location.getTexName();

@@ -795,7 +795,7 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
 
         int sbits = 0;
-        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(pos);
+        TexByte pair = LevelContainer.AllBlockMap.getLocation(pos);
         if (pair != null && pair.isSolid()) {
             sbits = pair.getByteValue();
         }

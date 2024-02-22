@@ -127,7 +127,7 @@ public class LevelContainer implements GravityEnviroment {
     public final LevelActors levelActors = new LevelActors();
 
     // position of all the solid blocks to texture name & neighbors
-    public static final BlockLocation ALL_BLOCK_MAP = new BlockLocation();
+    public static final BlockLocation AllBlockMap = new BlockLocation();
 
     // std time to live
     public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
@@ -145,7 +145,7 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPos);
+            TexByte locVal = AllBlockMap.getLocation(adjPos);
             if (locVal != null) {
                 bits |= mask;
                 byte adjBits = locVal.byteValue;
@@ -163,7 +163,7 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPos);
+            TexByte locVal = AllBlockMap.getLocation(adjPos);
             if (locVal != null) {
                 bits |= mask;
                 byte adjBits = locVal.byteValue;
@@ -181,12 +181,12 @@ public class LevelContainer implements GravityEnviroment {
         String str = block.getTexName();
         byte bits = updatePutNeighbors(pos);
         TexByte locVal = new TexByte(str, bits, block.isSolid());
-        ALL_BLOCK_MAP.putLocation(new Vector3f(pos), locVal);
+        AllBlockMap.putLocation(new Vector3f(pos), locVal);
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
-        boolean rem = ALL_BLOCK_MAP.removeLocation(pos);
+        boolean rem = AllBlockMap.removeLocation(pos);
         if (rem) {
             updateRemNeighbors(pos);
         }
@@ -221,7 +221,7 @@ public class LevelContainer implements GravityEnviroment {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
         sb.append("POSITION MAP");
-        sb.append("(size = ").append(ALL_BLOCK_MAP.getPopulation()).append(")\n");
+        sb.append("(size = ").append(AllBlockMap.getPopulation()).append(")\n");
         sb.append("---------------------------");
         DSLogger.reportDebug(sb.toString(), null);
     }
@@ -255,7 +255,7 @@ public class LevelContainer implements GravityEnviroment {
 
         chunks.clear();
         levelActors.npcList.clear();
-        ALL_BLOCK_MAP.init();
+        AllBlockMap.init();
 
         lightSources.retainLights(2);
 
@@ -307,7 +307,7 @@ public class LevelContainer implements GravityEnviroment {
 
         chunks.clear();
 
-        ALL_BLOCK_MAP.init();
+        AllBlockMap.init();
 
         lightSources.retainLights(2);
 
@@ -344,7 +344,7 @@ public class LevelContainer implements GravityEnviroment {
 
         chunks.clear();
 
-        ALL_BLOCK_MAP.init();
+        AllBlockMap.init();
 
         lightSources.retainLights(2);
 
@@ -372,7 +372,7 @@ public class LevelContainer implements GravityEnviroment {
                 int randCol = ldim + random.nextInt(rdim - ldim);
                 int randRow = ldim + random.nextInt(rdim - ldim);
                 int chunkId = randRow * Chunk.GRID_SIZE + randCol;
-                solidPopLoc = LevelContainer.ALL_BLOCK_MAP.getPopulatedLocations(chunkId, loc -> loc.solid && ((loc.byteValue & (~Block.Y_MASK & 63))) != 0);
+                solidPopLoc = LevelContainer.AllBlockMap.getPopulatedLocations(chunkId, loc -> loc.solid && ((loc.byteValue & (~Block.Y_MASK & 63))) != 0);
                 attempts++;
             } while (solidPopLoc.isEmpty() && attempts < Chunk.GRID_SIZE);
 
@@ -509,7 +509,7 @@ public class LevelContainer implements GravityEnviroment {
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             chunks.clear();
 
-            ALL_BLOCK_MAP.init();
+            AllBlockMap.init();
 
             lightSources.retainLights(2);
 
@@ -611,7 +611,7 @@ public class LevelContainer implements GravityEnviroment {
         if (buffer[0] == 'D' && buffer[1] == 'S' && buffer[2] == 'X') {
             chunks.clear();
 
-            ALL_BLOCK_MAP.init();
+            AllBlockMap.init();
 
             lightSources.retainLights(2);
 
@@ -783,7 +783,7 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = ALL_BLOCK_MAP.isLocationPopulated(obsCamPosAlign, false);
+        yea = AllBlockMap.isLocationPopulated(obsCamPosAlign, false);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
@@ -794,7 +794,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, false);
+                boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
 
                 if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
@@ -818,7 +818,7 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = ALL_BLOCK_MAP.isLocationPopulated(obsCamPosAlign, false);
+        yea = AllBlockMap.isLocationPopulated(obsCamPosAlign, false);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
@@ -829,7 +829,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, false);
+                boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
 
                 if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
@@ -860,7 +860,7 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(predictable.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
+            coll = AllBlockMap.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
@@ -873,7 +873,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
+                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictable.getPredictor())
@@ -904,7 +904,7 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(observer.getPos().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
+            coll = AllBlockMap.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
@@ -917,7 +917,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
+                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, observer.getPos())
@@ -951,7 +951,7 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_BLOCK_MAP.isLocationPopulated(predAlign, true);
+            coll = AllBlockMap.isLocationPopulated(predAlign, true);
 
             if (!coll) {
                 OUTER:
@@ -964,7 +964,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjAlign, true);
+                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
@@ -1007,7 +1007,7 @@ public class LevelContainer implements GravityEnviroment {
                             Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
                     );
 
-                    boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjBottomAlign, true);
+                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
                     if (solidOnLoc) {
                         levelActors.player.movePredictorYDown(tstHeight);
                         // solid object collision
@@ -1087,7 +1087,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjTop.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean solidOnLoc = ALL_BLOCK_MAP.isLocationPopulated(adjTopAlign, true);
+                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjTopAlign, true);
                 if (solidOnLoc) {
                     critter.movePredictorYUp(height1);
                     // solid object collision

@@ -248,7 +248,7 @@ public class CacheModule {
                 MEMORY[pos++] = (byte) blocks.size();
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
                 for (Block block : blocks) {
-                    TexByte location = LevelContainer.ALL_BLOCK_MAP.getLocation(block.pos);
+                    TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
                     if (location != null) {
                         location.byteValue = 0;
                     }

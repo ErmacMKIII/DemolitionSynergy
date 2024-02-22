@@ -88,7 +88,7 @@ public class RandomLevelGenerator {
     }
 
     private boolean repeatCondition(Vector3f pos) {
-        return LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(pos)
+        return LevelContainer.AllBlockMap.isLocationPopulated(pos)
                 || levelContainer.getLevelActors().getPlayer().body.containsInsideEqually(pos)
                 || levelContainer.getLevelActors().spectator.getPos().equals(pos)
                 || levelContainer.getMyWindow().shouldClose();

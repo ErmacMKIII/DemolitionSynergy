@@ -22,12 +22,12 @@ import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
-import static rs.alexanderstojanovich.evg.level.LevelContainer.ALL_BLOCK_MAP;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 
 /**
  *
@@ -96,7 +96,7 @@ public class Editor {
             );
 
             // detect ray intersection
-            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPosAlign);
+            TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
                 if (chunk != null) {
@@ -156,7 +156,7 @@ public class Editor {
             );
 
             // detect ray intersection
-            TexByte locVal = ALL_BLOCK_MAP.getLocation(adjPosAlign);
+            TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
                 if (chunk != null) {
@@ -289,7 +289,7 @@ public class Editor {
 
     private static boolean cannotPlace(LevelContainer lc) {
         boolean cant = false;
-        boolean placeOccupied = LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(selectedNew.pos);
+        boolean placeOccupied = LevelContainer.AllBlockMap.isLocationPopulated(selectedNew.pos);
         //----------------------------------------------------------------------
         boolean intersects = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());

@@ -125,7 +125,7 @@ public class BlockEnvironment {
                     optimizedTuples.sort(Tuple.TUPLE_COMP);
                 } else {
                     // remove non-existing blocks
-                    optmTuple.blockList.removeIf(blk -> !LevelContainer.ALL_BLOCK_MAP.isLocationPopulated(blk.pos));
+                    optmTuple.blockList.removeIf(blk -> !LevelContainer.AllBlockMap.isLocationPopulated(blk.pos));
 
                     for (int chunkId : vqueue) {
                         Chunk chunk = chunks.getChunk(chunkId);
