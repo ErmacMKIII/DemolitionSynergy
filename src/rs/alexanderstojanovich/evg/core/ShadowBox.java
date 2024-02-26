@@ -22,7 +22,6 @@ import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.critter.Observer;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  * "Represents the 3D cuboid area of the world in which objects will cast
@@ -113,17 +112,17 @@ public class ShadowBox {
      */
     public Matrix4f projectionMatrix() {
         // Calculate the aspect ratio of the shadow map texture
-        double aspectRatio = (float) Texture.TEX_SIZE / (float) Texture.TEX_SIZE;
+        float aspectRatio = (float) 1.0f;
 
         // Determine the center of the shadow box
-        double centerX = (minX + maxX) / 2.0;
-        double centerY = (minY + maxY) / 2.0;
-        double centerZ = (minZ + maxZ) / 2.0;
+        float centerX = (minX + maxX) / 2.0f;
+        float centerY = (minY + maxY) / 2.0f;
+        float centerZ = (minZ + maxZ) / 2.0f;
 
         // Calculate the extents of the shadow box
-        double halfWidth = (maxX - minX) / 2.0;
-        double halfHeight = (maxY - minY) / 2.0;
-        double halfDepth = (maxZ - minZ) / 2.0;
+        float halfWidth = (maxX - minX) / 2.0f;
+        float halfHeight = (maxY - minY) / 2.0f;
+        float halfDepth = (maxZ - minZ) / 2.0f;
 
         // Construct the orthographic projection matrix
         Matrix4f projectionMatrix = new Matrix4f().orthoLH(

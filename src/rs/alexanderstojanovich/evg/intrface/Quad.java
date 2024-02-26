@@ -102,7 +102,7 @@ public class Quad implements ComponentIfc {
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
         if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i = 0; i < 4; i++) {
             FLOAT_BUFFER.put(VERTICES[i].x);
@@ -148,16 +148,16 @@ public class Quad implements ComponentIfc {
     public boolean updateVertices() {
         if (vao == 0) {
             DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex array object is zero!");
         }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
         FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
         if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i = 0; i < 4; i++) {
             FLOAT_BUFFER.put(VERTICES[i].x);
@@ -196,7 +196,7 @@ public class Quad implements ComponentIfc {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);
@@ -229,7 +229,7 @@ public class Quad implements ComponentIfc {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);

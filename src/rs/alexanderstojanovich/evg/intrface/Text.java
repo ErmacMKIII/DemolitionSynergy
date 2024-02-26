@@ -29,7 +29,6 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -129,7 +128,7 @@ public class Text implements ComponentIfc {
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
         if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
@@ -175,16 +174,16 @@ public class Text implements ComponentIfc {
     public boolean updateVertices() {
         if (vao == 0) {
             DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex array object is zero!");
         }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
         floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
         if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
@@ -223,7 +222,7 @@ public class Text implements ComponentIfc {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);
@@ -256,7 +255,7 @@ public class Text implements ComponentIfc {
         intBuffer = MemoryUtil.memCallocInt(INDICES.length);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);

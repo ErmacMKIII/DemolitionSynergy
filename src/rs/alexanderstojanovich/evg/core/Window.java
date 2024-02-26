@@ -345,7 +345,7 @@ public class Window {
         ByteBuffer buffer = MemoryUtil.memCalloc(width * height * rgba); // RGBA -> 4
         if (buffer.capacity() != 0 && MemoryUtil.memAddressSafe(buffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return null;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         GL11.glReadPixels(0, 0, width, height, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 

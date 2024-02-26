@@ -361,8 +361,8 @@ public class ShaderProgram {
     public void updateUniform(Matrix4f mat, String name) {
         FloatBuffer fb = MemoryUtil.memCallocFloat(4 * 4);
         if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-            return; // Memory allocation failed
+            DSLogger.reportError("Could not allocate memory address!", null);// Memory allocation failed
+            throw new RuntimeException("Could not allocate memory address!");
         }
         mat.get(fb);
         int uniformLocation = GL20.glGetUniformLocation(program, name);

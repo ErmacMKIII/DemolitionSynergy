@@ -22,19 +22,29 @@ import java.util.Map;
 import java.util.Set;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Material;
+import rs.alexanderstojanovich.evg.models.Mesh;
+import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LightSources {
+
+    public static final Vector3f ZERO_VEC3 = new Vector3f();
+    public static final float AMBIENT_LIGHT = 0.15f;
 
     public static final LightSources NONE = new LightSources();
 
@@ -48,7 +58,7 @@ public class LightSources {
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
-    public final Matrix4f lightSpaceMatrix = new Matrix4f().zero();
+    public final Matrix4f lightProjectionMatrix = new Matrix4f().zero();
 
     public LightSources() {
         this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.Format.RGB5_A1));
@@ -145,6 +155,34 @@ public class LightSources {
     }
 
     /**
+     * Get light source to modified.
+     *
+     * @param index index of light source
+     * @return is modified
+     */
+    public boolean isModified(int index) {
+        return this.modified[index];
+    }
+
+    /**
+     * Get light source to modified.
+     *
+     * @param pos position of the light
+     * @return is light source modified
+     */
+    public boolean isModified(Vector3f pos) {
+        LightSource ls = lightMap.get(pos);
+        if (ls != null) {
+            int index = sourceList.indexOf(ls);
+            if (index != -1) {
+                return this.modified[index];
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Set light source to modified.
      *
      * @param index index of light source
@@ -170,6 +208,280 @@ public class LightSources {
         }
     }
 
+    /**
+     * Weakening attenuation from light source by target.
+     *
+     * @param lightSrcPos light source position
+     * @param targetPos target position
+     * @return
+     */
+    protected static float attenuation(Vector3f lightSrcPos, Vector3f targetPos) {
+        float distance = lightSrcPos.distance(targetPos);
+        float attenuation = 1.0f / (1.0f - 0.07f * distance + 1.8f * distance * distance);
+        attenuation = org.joml.Math.clamp(attenuation, 0.0f, 1.0f);
+
+        return attenuation;
+    }
+
+    /**
+     * Calculates diffuse light for light direction and normal
+     *
+     * @param lightDir light direction
+     * @param normal normal of model
+     * @return diffuse light
+     */
+    protected static float diffuseLight(Vector3f lightDir, Vector3f normal) {
+        return Math.max(normal.dot(lightDir), 0.0f);
+    }
+
+    /**
+     * Calculates specular light for light direction and normal
+     *
+     * @param lightDir light direction
+     * @param normal normal of model
+     * @return specular light
+     */
+    protected static float specularLight(Vector3f lightDir, Vector3f normal) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f reflectDir = lightDir.negate(temp1).reflect(normal, temp2);
+        float specularLight = (float) Math.pow(Math.max(lightDir.dot(reflectDir), 0.0f), 32.0f);
+
+        return specularLight;
+    }
+
+    /**
+     * Calculate Ambient + Diffuse + Specular as vertex color from single light
+     * source. Much more simple light calculations. Calculation is done for
+     * whole model.
+     *
+     * @param ls light sources
+     * @param modelPos model position
+     *
+     * @return ambient + diffuse + specular as 3 elem struct
+     */
+    public static LightStruct lightColorRGB(LightSource ls, Vector3f modelPos) {
+        // copy start vertex color
+        Vector3f ambient = new Vector3f(0.0f);
+        Vector3f diffuse = new Vector3f(0.0f);
+        Vector3f specular = new Vector3f(0.0f);
+
+        float distSqr = Vector3f.distanceSquared(
+                ls.pos.x, ls.pos.y, ls.pos.z,
+                modelPos.x, modelPos.y, modelPos.z
+        );
+
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+
+        ambient = ambient.fma(AMBIENT_LIGHT * ls.intensity, ls.color, temp1);
+
+        if (distSqr != 0.0f) {
+            Vector3f lightDir = ls.pos.sub(modelPos, temp1);
+            if (lightDir.lengthSquared() != 0.0f) {
+                lightDir = lightDir.normalize(temp2);
+                for (int j = 0; j < 6; j++) {
+                    float attenuation = attenuation(ls.pos, modelPos);
+                    Vector3f normalX = Block.FACE_NORMALS[j];
+                    Vector3f temp3 = new Vector3f();
+                    Vector3f temp4 = new Vector3f();
+                    Vector3f temp5 = new Vector3f();
+                    if (normalX.lengthSquared() != 0.0f) {
+                        normalX = normalX.normalize(temp3);
+                        diffuse = diffuse.fma(diffuseLight(lightDir, normalX) * ls.intensity * attenuation / 6.0f, ls.color, temp4);
+                        specular = specular.fma(specularLight(lightDir, normalX) * ls.intensity * attenuation / 6.0f, ls.color, temp5);
+                    }
+                }
+            }
+        } else {
+            diffuse = diffuse.fma(ls.intensity, ls.color, temp1);
+            specular = specular.fma(ls.intensity, ls.color, temp2);
+        }
+
+        return new LightStruct(ambient, diffuse, specular);
+    }
+
+    /**
+     * Calculate Ambient + Diffuse + Specular as vertex color from single light
+     * source. Calculation is done per vertex.
+     *
+     * @param ls light sources
+     * @param modelPos model position
+     * @param vxPos pixel or vertex position
+     * @param normal normal associated with the vertex
+     * @param modelMatrix modelMat4 matrix to transform
+     *
+     * @return ambient + diffuse + specular as 3 elem struct
+     */
+    public static LightStruct lightColorRGB(LightSource ls, Vector3f modelPos, Vector3f vxPos, Vector3f normal, Matrix4f modelMatrix) {
+        // copy start vertex color
+        Vector3f ambient = new Vector3f(0.0f);
+        Vector3f diffuse = new Vector3f(0.0f);
+        Vector3f specular = new Vector3f(0.0f);
+
+        Vector3f temp1 = new Vector3f();
+
+        float distSqr = Vector3f.distanceSquared(
+                ls.pos.x, ls.pos.y, ls.pos.z,
+                modelPos.x, modelPos.y, modelPos.z
+        );
+
+        Vector3f temp2 = new Vector3f();
+        Vector4f temp3 = new Vector4f();
+        Vector3f temp4 = new Vector3f();
+
+        ambient = ambient.fma(AMBIENT_LIGHT * ls.intensity, ls.color, temp4);
+
+        if (distSqr != 0.0f) {
+            Vector4f varVertexPos4f = new Vector4f(vxPos, 1.0f);
+            varVertexPos4f = modelMatrix.transform(varVertexPos4f, temp3);
+            Vector3f varVertexPos3f = new Vector3f(varVertexPos4f.x, varVertexPos4f.y, varVertexPos4f.z);
+            Vector3f lightDir = ls.pos.sub(varVertexPos3f, temp2);
+            if (lightDir.lengthSquared() != 0.0f) {
+                for (int j = 0; j < 6; j++) {
+                    float attenuation = attenuation(ls.pos, varVertexPos3f);
+                    Vector3f lightDirX = lightDir.mul(Block.FACE_NORMALS[j], temp1);
+                    Vector3f temp5 = new Vector3f();
+                    Vector3f temp6 = new Vector3f();
+                    Vector3f temp7 = new Vector3f();
+                    if (lightDirX.lengthSquared() != 0.0f) {
+                        lightDirX = lightDirX.normalize(temp5);
+                        diffuse = diffuse.fma(diffuseLight(lightDirX, normal) * ls.intensity * attenuation / 6.0f, ls.color, temp6);
+                        specular = specular.fma(specularLight(lightDirX, normal) * ls.intensity * attenuation / 6.0f, ls.color, temp7);
+                    } else {
+                        lightDir = lightDir.normalize(temp5);
+                        diffuse = diffuse.fma(ls.intensity * attenuation / 6.0f, ls.color, temp6);
+                        specular = specular.fma(ls.intensity * attenuation / 6.0f, ls.color, temp7);
+                    }
+                }
+            }
+        } else {
+            diffuse = diffuse.fma(ls.intensity, ls.color, temp2);
+            specular = specular.fma(ls.intensity, ls.color, temp4);
+        }
+
+        return new LightStruct(ambient, diffuse, specular);
+    }
+
+    /**
+     * Render Ambient + Diffuse + Specular for each model (block) in model mesh
+     *
+     * @param lsx light source collection
+     * @param model to update (light) color
+     */
+    public static void updateLights(LightSources lsx, Model model) {
+        Mesh mesh = model.meshes.getFirst();
+        final Vector3f ambient = new Vector3f(GlobalColors.BLACK);
+        final Vector3f diffuse = new Vector3f(GlobalColors.BLACK);
+        final Vector3f specular = new Vector3f(GlobalColors.BLACK);
+
+        for (Vertex vx : mesh.vertices) {
+            // no need to change colors on disabled (vertices)
+            if (vx.isEnabled()) {
+                // reset color to black
+                // add color so it is not black
+                for (LightSource ls : lsx.sourceList) {
+                    LightStruct lightColorRGB = LightSources.lightColorRGB(
+                            ls,
+                            model.pos,
+                            vx.getPos(),
+                            vx.getNormal(),
+                            model.getModelMatrix()
+                    );
+                    // add light color from each light source to vertex
+                    ambient.add(lightColorRGB.ambient);
+                    diffuse.add(lightColorRGB.diffuse);
+                    specular.add(lightColorRGB.specular);
+                }
+            }
+        }
+
+        ambient.div(mesh.vertices.size());
+        diffuse.div(mesh.vertices.size());
+        specular.div(mesh.vertices.size());
+
+        Material mat = model.materials.getFirst();
+        mat.setAmbient(new Vector4f(ambient, 1.0f));
+        mat.setAmbient(new Vector4f(diffuse, 1.0f));
+        mat.setAmbient(new Vector4f(specular, 1.0f));
+    }
+
+    /**
+     * Render Ambient + Diffuse + Specular for each model (block) in model mesh
+     *
+     * @param ls single light source
+     * @param model to update (light) color
+     */
+    public static void updateLights(LightSource ls, Model model) {
+        Mesh mesh = model.meshes.getFirst();
+        final Vector3f ambient = new Vector3f(GlobalColors.BLACK);
+        final Vector3f diffuse = new Vector3f(GlobalColors.BLACK);
+        final Vector3f specular = new Vector3f(GlobalColors.BLACK);
+
+        for (Vertex vx : mesh.vertices) {
+            // no need to change colors on disabled (vertices)
+            if (vx.isEnabled()) {
+                // reset color to black
+                // add color so it is not black
+                LightStruct lightColorRGB = LightSources.lightColorRGB(
+                        ls,
+                        model.pos,
+                        vx.getPos(),
+                        vx.getNormal(),
+                        model.getModelMatrix()
+                );
+                // add light color from each light source to vertex
+                ambient.add(lightColorRGB.ambient);
+                diffuse.add(lightColorRGB.diffuse);
+                specular.add(lightColorRGB.specular);
+            }
+        }
+        ambient.div(mesh.vertices.size());
+        diffuse.div(mesh.vertices.size());
+        specular.div(mesh.vertices.size());
+
+        Material mat = model.materials.getFirst();
+        mat.setAmbient(new Vector4f(ambient, 1.0f));
+        mat.setAmbient(new Vector4f(diffuse, 1.0f));
+        mat.setAmbient(new Vector4f(specular, 1.0f));
+    }
+
+//    /**
+//     * Render Ambient + Diffuse + Specular for each model (block) in model mesh
+//     * This doesn't rely on update method
+//     *
+//     * @param ls light source (as collection)
+//     * @param model to update (light) color
+//     */
+//    public void renderLights(LightSource ls, Model model) {
+//        if (!isModified(ls.pos)) {
+//            model.updateVertices();
+//        }
+//    }
+//    /**
+//     * Render Ambient + Diffuse + Specular for each model (block) in model mesh
+//     * This doesn't rely on update method
+//     *
+//     * @param lsx all light sources (as collection)
+//     * @param model to update (light) color
+//     */
+//    public static void renderLights(LightSources lsx, Model model) {
+//        Mesh mesh = model.meshes.getFirst();
+//
+//        for (Vertex vx : mesh.vertices) {
+//            // reset color
+//            vx.resetColor();
+//            // add ambient light
+//            vx.addColor(new Vector3f(AMBIENT_LIGHT));
+//            // for each light source
+//            lsx.sourceList.forEach((LightSource ls) -> {
+//                // render
+//                lsx.renderLights(ls, model);
+//            });
+//        }
+//
+//        model.updateVertices();
+//    }
 //    /**
 //     * Reset Light Matrices (If shadows are disabled they are not rendered)
 //     */
@@ -200,8 +512,8 @@ public class LightSources {
         return modified;
     }
 
-    public Matrix4f getLightSpaceMatrix() {
-        return lightSpaceMatrix;
+    public Matrix4f getLightProjectionMatrix() {
+        return lightProjectionMatrix;
     }
 
 }

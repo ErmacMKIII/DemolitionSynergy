@@ -62,7 +62,7 @@ public class DynamicText extends Text {
         bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
         for (TextCharacter txtCh : txtChList) {
@@ -114,19 +114,19 @@ public class DynamicText extends Text {
     public boolean updateVertices() {
         if (vao == 0) {
             DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex array object is zero!");
         }
 
         if (bigVbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
 
         // auto adjust dynamic size of float buff and do it on every 1024 element
         bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
         for (TextCharacter txtCh : txtChList) {

@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.chunk;
 import java.util.Arrays;
 import java.util.List;
 import org.joml.FrustumIntersection;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -51,13 +52,13 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public static final float LENGTH = BOUND * STEP * 2.0f;
 
     // id of the chunk (signed)
-    private final int id;
+    public final int id;
 
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final IList<Tuple> tupleList = new GapList<>();
+    public final IList<Tuple> tupleList = new GapList<>();
 
     private boolean buffered = false;
 
@@ -555,15 +556,27 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      */
     public static boolean intersectsVisionFunc(int chunkId, Camera camera) {
         final Vector3f chunkPos = invChunkFunc(chunkId);
+        final GameObject gameObject;
+        try {
+            gameObject = GameObject.getInstance();
 
-        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+            Matrix4f perspectiveMatrix = gameObject.perspectiveRenderer.perspectiveMatrix;
+            Matrix4f viewMatrix = camera.viewMatrix;
+            Matrix4f temp = new Matrix4f();
+            Matrix4f pv = perspectiveMatrix.mul(viewMatrix, temp);
+            FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(pv);
 
-        Vector3f temp1 = new Vector3f();
-        Vector3f min = chunkPos.sub(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp1);
-        Vector3f temp2 = new Vector3f();
-        Vector3f max = chunkPos.add(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp2);
+            Vector3f temp1 = new Vector3f();
+            Vector3f min = chunkPos.sub(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp1);
+            Vector3f temp2 = new Vector3f();
+            Vector3f max = chunkPos.add(LENGTH / 2.0f, VISION * 8.0f, LENGTH / 2.0f, temp2);
 
-        return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
+            return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
+        } catch (Exception ex) {
+            DSLogger.reportInfo(ex.getMessage(), ex);
+        }
+
+        return false;
     }
 
     /**
@@ -600,7 +613,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
 
-                if (deltaCol <= 1 && deltaRow <= 1) {
+                if (deltaCol <= 1 && deltaRow <= 1 && intersectsVisionFunc(chunkId, camera)) {
                     vChnkIdList.add(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
                     iChnkIdList.add(chunkId);
@@ -632,7 +645,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return id;
     }
 
-    public List<Tuple> getTupleList() {
+    public IList<Tuple> getTupleList() {
         return tupleList;
     }
 

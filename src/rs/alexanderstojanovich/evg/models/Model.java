@@ -108,12 +108,13 @@ public class Model implements Renderable, Comparable<Model> {
     @Override
     public void render(LightSources lightSources, ShaderProgram shaderProgram) {
         if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
-            return; // this is very critical!!
+            return; // Skip rendering if not ready
         }
 
         for (Mesh mesh : meshes) {
             GL30.glBindVertexArray(mesh.vao);
 
+            // Enable vertex attribute arrays
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
@@ -121,45 +122,48 @@ public class Model implements Renderable, Comparable<Model> {
             if (shaderProgram != null) {
                 shaderProgram.bind();
 
+                // Bind attributes
                 shaderProgram.bindAttribute(0, "pos");
                 shaderProgram.bindAttribute(1, "normal");
                 shaderProgram.bindAttribute(2, "uv");
 
+                // Update uniforms
                 transform(shaderProgram);
-
                 primaryColor(shaderProgram);
+                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
+                // Bind textures
                 Texture primaryTexture = Texture.getOrDefault(texName);
-                if (primaryTexture != null) { // this is primary texture
+                if (primaryTexture != null) {
                     primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
 
-                if (waterTexture != null) { // this is reflective texture
+                if (waterTexture != null) {
                     secondaryColor(shaderProgram);
                     waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
             }
+
+            // Draw the mesh
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
             GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
             Texture.unbind(0);
             Texture.unbind(1);
             ShaderProgram.unbind();
 
+            // Clean up
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
-
             GL30.glBindVertexArray(0);
         }
-
     }
 
     /**
-     * Render model. (Draw all meshes)
+     * Render model contour. (Draw all meshes)
      *
      * @param lightSources light sources {SUN, PLAYER_WEAPONS, OTHER LIGHT,
      * BLOCKS etc}
@@ -168,12 +172,13 @@ public class Model implements Renderable, Comparable<Model> {
     @Override
     public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
         if (!isBuffered() || meshes.isEmpty() || materials.isEmpty() || !materials.getFirst().texture.isBuffered()) {
-            return; // this is very critical!!
+            return; // Skip rendering if not ready
         }
 
         for (Mesh mesh : meshes) {
             GL30.glBindVertexArray(mesh.vao);
 
+            // Enable vertex attribute arrays
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
             GL20.glEnableVertexAttribArray(2);
@@ -181,43 +186,46 @@ public class Model implements Renderable, Comparable<Model> {
             if (shaderProgram != null) {
                 shaderProgram.bind();
 
+                // Bind attributes
                 shaderProgram.bindAttribute(0, "pos");
                 shaderProgram.bindAttribute(1, "normal");
                 shaderProgram.bindAttribute(2, "uv");
 
+                // Update uniforms
                 shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
                 shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
                 transform(shaderProgram);
-
                 primaryColor(shaderProgram);
+                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
+                // Bind textures
                 Texture primaryTexture = Texture.getOrDefault(texName);
-                if (primaryTexture != null) { // this is primary texture
+                if (primaryTexture != null) {
                     primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
                 }
 
-                if (waterTexture != null) { // this is reflective texture
+                if (waterTexture != null) {
                     secondaryColor(shaderProgram);
                     waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
             }
+
+            // Draw the mesh
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
             GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
             Texture.unbind(0);
             Texture.unbind(1);
             ShaderProgram.unbind();
 
+            // Clean up
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
-
             GL30.glBindVertexArray(0);
         }
-
     }
 
     /**
@@ -307,6 +315,10 @@ public class Model implements Renderable, Comparable<Model> {
 
     public void secondaryColor(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor1");
+    }
+
+    public void lightColor(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(getLightColor(), "lightColor");
     }
 
     public void calcDims() {
@@ -693,11 +705,23 @@ public class Model implements Renderable, Comparable<Model> {
     }
 
     public Vector3f getPrimaryRGBColor() {
-        return new Vector3f(this.getMaterials().getFirst().color.x, this.getMaterials().getFirst().color.y, this.getMaterials().getFirst().color.z);
+        return new Vector3f(this.materials.getFirst().color.x, this.materials.getFirst().color.y, this.materials.getFirst().color.z);
     }
 
     public Vector4f getPrimaryRGBAColor() {
-        return this.getMaterials().getFirst().color;
+        return this.materials.getFirst().color;
+    }
+
+    public Vector4f getLightColor() {
+        return this.materials.getFirst().getLightColor();
+    }
+
+    public Vector4f getModelColor() {
+        Vector4f prim = this.materials.getFirst().color;
+        Vector4f light = this.materials.getFirst().getLightColor();
+        Vector4f temp = new Vector4f();
+
+        return prim.mul(light, temp);
     }
 
     public void setPrimaryRGBColor(Vector3f color) {

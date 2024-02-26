@@ -18,18 +18,23 @@ package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.light.LightStruct;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Material;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -117,33 +122,37 @@ public class BlockEnvironment {
         for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
             // assign last value & increment to next value with limit to 63
             final int faceBits = (++lastFaceBits) & 63;
-
             if ((faceBits & (mask & 63)) != 0) {
-                final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                if (optmTuple == null) {
-                    optimizedTuples.add(new Tuple(tex, faceBits));
-                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-                } else {
-                    // remove non-existing blocks
-                    optmTuple.blockList.removeIf(blk -> !LevelContainer.AllBlockMap.isLocationPopulated(blk.pos));
+                chunks.chunkList.forEach(chnk -> { // for all chunks
+                    if (vqueue.contains(chnk.id)) { // visible ones
+                        // select correlated tuples
+                        final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
+                        // for each selected tuple
+                        selectedTuples.forEach(st -> {
+                            st.blockList.forEach(blk -> {
+                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                                // if optimized doesn't exist
+                                if (optmTuple == null) {
+                                    // create new one since is needed to add blocks
+                                    optmTuple = new Tuple(tex, faceBits);
+                                    // add to the optimized list
+                                    optimizedTuples.add(optmTuple);
+                                    // sort so it remains ordered
+                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                                }
 
-                    for (int chunkId : vqueue) {
-                        Chunk chunk = chunks.getChunk(chunkId);
-                        if (chunk != null) {
-                            Tuple tuple = chunk.getTuple(tex, faceBits);
-                            if (tuple != null) {
-                                // add absent ones
-                                tuple.blockList.forEach(blk -> {
-                                    boolean modified = optmTuple.blockList.addIfAbsent(blk);
-                                    if (modified) {
-                                        optmTuple.setBuffered(false);
-                                    }
-                                });
-                            }
-                        }
+                                // add absent blocks
+                                boolean modified = optmTuple.blockList.addIfAbsent(blk);
+                                if (modified) {
+                                    // sort so it does remains ordered
+                                    optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                    // sets to unbuffer if modified
+                                    optmTuple.setBuffered(false);
+                                }
+                            });
+                        });
                     }
-                    optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                }
+                });
             }
         }
 
@@ -209,27 +218,15 @@ public class BlockEnvironment {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
+
+            if (tuple.isBuffered() && tuple.isNeedUpdateLights()) {
+                tuple.updateLightDefs();
+            }
+
             tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
         }
     }
 
-//    /**
-//     * Static render (faster)
-//     *
-//     * @param shaderProgram voxel shader
-//     * @param lightSources light sources
-//     */
-//    @Deprecated
-//    public void renderStatic(ShaderProgram shaderProgram, LightSources lightSources) {
-//        if (!optimized || optimizedTuples.isEmpty()) {
-//            return;
-//        }
-//
-//        Texture waterTexture = gameObject.waterRenderer.getFrameBuffer().getTexture();
-//        Texture shadowTexture = gameObject.shadowRenderer.getFrameBuffer().getTexture();
-//
-//        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
-//    }
     /**
      * Static render (faster)
      *
@@ -250,6 +247,69 @@ public class BlockEnvironment {
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
         Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
+    }
+
+    /**
+     * Update vertices. For light definition, for instance.
+     */
+    public void updateVertices() {
+        if (!optimized || optimizedTuples.isEmpty()) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            if (tuple.isBuffered() && tuple.faceBits() > 0) {
+                tuple.updateVertices(); // update lights
+            }
+        }
+    }
+
+    /**
+     * Update light (color pixel) for each block from all the tuples
+     *
+     * @param camFront to determine visible face bits
+     * @param lsx light source collection
+     */
+    public void updateLights(Vector3f camFront, LightSources lsx) {
+        // determine lastFaceBits mask
+        final int mask = Block.getVisibleFaceBitsFast(camFront);
+
+        // for max passes update the lights
+        for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
+            // assign last value & increment to next value with limit to 63
+            final int faceBits = (++lastFaceBits) & 63;
+            IList<Tuple> filtered = optimizedTuples.filter(ot -> (ot.faceBits() == faceBits) && (ot.faceBits() & (mask & 63)) != 0);
+            filtered.forEach(ot -> {
+                ot.blockList.forEach(blk -> {
+                    final Vector3f ambient = new Vector3f(GlobalColors.BLACK);
+                    final Vector3f diffuse = new Vector3f(GlobalColors.BLACK);
+                    final Vector3f specular = new Vector3f(GlobalColors.BLACK);
+
+                    // reset color to black
+                    // add color so it is not black
+                    for (LightSource ls : lsx.sourceList) {
+                        LightStruct lightColorRGB = LightSources.lightColorRGB(ls, blk.pos);
+                        // add light color from each light source to vertex
+                        ambient.add(lightColorRGB.ambient);
+                        diffuse.add(lightColorRGB.diffuse);
+                        specular.add(lightColorRGB.specular);
+                    }
+
+                    Material mat = blk.materials.getFirst();
+                    mat.setAmbient(new Vector4f(ambient, 1.0f));
+                    mat.setAmbient(new Vector4f(diffuse, 1.0f));
+                    mat.setAmbient(new Vector4f(specular, 1.0f));
+
+                    // store light (color) information somewhere
+                    if (LevelContainer.AllBlockMap.isLocationPopulated(blk.pos)) {
+                        LevelContainer.AllBlockMap.getLocation(blk.pos).lightColor = mat.getLightColor();
+                    }
+
+                });
+
+                ot.setNeedUpdateLights(true);
+            });
+        }
     }
 
     /**

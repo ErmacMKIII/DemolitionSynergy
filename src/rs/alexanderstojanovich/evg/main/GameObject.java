@@ -228,10 +228,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //                renderFlag |= BlockEnvironment.SHADOW_MASK;
 //            }
 //            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-//                waterRenderer.update(); // update water heights
+//                waterRenderer.updateVertices(); // updateVertices water heights
 //            }
 //            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-//                shadowRenderer.update(); // update shadow box
+//                shadowRenderer.updateVertices(); // updateVertices shadow box
 //            }
             synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
@@ -241,7 +241,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
             }
 
-            perspectiveRenderer.updatePerspective(); // update perspective for all the shaders (aoart from shadow ones)
+            perspectiveRenderer.updatePerspective(); // updateVertices perspective for all the shaders (aoart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();

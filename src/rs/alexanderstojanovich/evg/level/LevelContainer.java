@@ -1150,7 +1150,7 @@ public class LevelContainer implements GravityEnviroment {
      * updated. Skybox rotates counter-clockwise (from -right to right)
      */
     public void update() { // call it externally from the main thread 
-        if (!working) { // don't update if working, it may screw up!   
+        if (!working) { // don't updateVertices if working, it may screw up!   
             final float now = GameTime.Now().getTime();
             float dtime = now - lastCycledDayTime;
             lastCycledDayTime = now;
@@ -1169,7 +1169,9 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-//            lightSources.resetAllModified();
+            LightSources.updateLights(SUNLIGHT, SUN); // sun updates light from itself
+            LightSources.updateLights(SUNLIGHT, SKYBOX); // skybox updates light from the sun
+            blockEnvironment.updateLights(levelActors.mainCamera().getFront(), lightSources); // and all the blocks updates lights from the light sources
             for (int i = 0; i < 2; i++) {
                 lightSources.setModified(i, true);
             }
@@ -1214,11 +1216,12 @@ public class LevelContainer implements GravityEnviroment {
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.renderContour(lightSources, ShaderProgram.getSkyboxShader());
+        SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
 
         // only visible & uncached are in chunk list      
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
+
         // only visible & uncached are in chunk list 
         blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
 
@@ -1243,14 +1246,14 @@ public class LevelContainer implements GravityEnviroment {
             levelActors.mainCamera().render(sp);
         }
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
-        // ----------------------------------------------
+        // ----------------------------------------------       
 
         LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
     }
 
     /**
-     * Render environment by using the specifing shader. And specific camera.
+     * Render environment by using the specifying shader. And specific camera.
      * And by specifics. This method of rendering is used by Water Renderer and
      * Shadow Renderer.
      *
@@ -1282,6 +1285,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
+
         // only visible & uncached are in chunk list 
         blockEnvironment.renderStatic(instanceShader, renderFlag);
 
@@ -1300,8 +1304,8 @@ public class LevelContainer implements GravityEnviroment {
             }
             selectionDecal.renderContour(lightSources, baseShader);
         }
-//        LightSources.render(gameObject.intrface, camera, lightSources, ShaderProgram.getLightShader());
-//        lightSources.resetAllModified();
+
+        lightSources.resetAllModified();
     }
 
     // -------------------------------------------------------------------------
@@ -1375,6 +1379,14 @@ public class LevelContainer implements GravityEnviroment {
     @Override
     public float getFallVelocity() {
         return fallVelocity;
+    }
+
+    public BlockEnvironment getBlockEnvironment() {
+        return blockEnvironment;
+    }
+
+    public LightSources getLightSources() {
+        return lightSources;
     }
 
 }

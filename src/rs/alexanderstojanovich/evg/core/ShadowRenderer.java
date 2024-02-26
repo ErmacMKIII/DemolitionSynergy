@@ -24,7 +24,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -35,7 +34,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class ShadowRenderer implements CoreRenderer {
 
-    public final Matrix4f lightSpaceMatrix = new Matrix4f().zero();
+    public final Matrix4f lightProjectionMatrix = new Matrix4f().zero();
 
     public static final float SCALE = 50.0f;
     public static final Vector3f ORIGIN = new Vector3f(0, 0, 2.1f);
@@ -101,7 +100,7 @@ public class ShadowRenderer implements CoreRenderer {
 
         final Matrix4f lightProjMatrix = shadowBox.toLightSpace(camera.viewMatrix).projectionMatrix();
         Matrix4f temp = new Matrix4f();
-        lightSpaceMatrix.set(lightProjMatrix.mul(camera.viewMatrix, temp));
+        lightProjectionMatrix.set(lightProjMatrix.mul(camera.viewMatrix, temp));
     }
 
     /**
@@ -118,33 +117,27 @@ public class ShadowRenderer implements CoreRenderer {
 
     /**
      * Calculate camera position and view angles based on the light source
-     * position
+     * position & set view matrix for that light source
      *
-     * @param lightSrcPos light source position
+     * @param lightSrc light source
      */
-    private void updateCamera(Vector3f lightSrcPos) {
-        final float pi = (float) org.joml.Math.PI;
-
+    private void updateCamera(LightSource lightSrc) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
-        Vector3f lightDir = lightSrcPos.negate(temp1).normalize(temp2);
+        Vector3f lightDir = lightSrc.pos.negate(temp1).normalize(temp2);
 
         float lightYaw = org.joml.Math.atan2(-lightDir.z, lightDir.x);
-
-        // Ensure lightYaw is within the range 0 to PI
-        lightYaw = (lightYaw + 2.0f * (float) pi) % (2.0f * (float) pi);
-
         float lightPitch = -org.joml.Math.atan2(lightDir.y, org.joml.Math.sqrt(lightDir.x * lightDir.x + lightDir.z * lightDir.z));
-
-        // Ensure lightPitch is within the range -PI/2 to PI/2
-        lightPitch = Math.max(-pi / 2.0f, Math.min(lightPitch, pi / 2.0f));
 
         camera.lookAtAngle(lightYaw, lightPitch);
         camera.setPos(ORIGIN);
+
+        lightSrc.lightViewMatrix.set(camera.viewMatrix);
     }
 
     private void capture() {
-        gameObject.levelContainer.lightSources.lightSpaceMatrix.set(this.lightSpaceMatrix); // shadow renderer uses light matrix from light source when rendering from the scene
+        // shadow renderer uses light matrix from light source when rendering from the scene
+        gameObject.levelContainer.lightSources.lightProjectionMatrix.set(this.lightProjectionMatrix);
         gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), BlockEnvironment.LIGHT_MASK);
     }
 
@@ -162,7 +155,7 @@ public class ShadowRenderer implements CoreRenderer {
         prepare();
         final LightSource ls = LevelContainer.SUNLIGHT;
         if (ls.getIntensity() > 0.0f) {
-            updateCamera(ls.pos);
+            updateCamera(ls);
             updateShadowBox();
             transformToLightSpace();
             capture();
@@ -217,8 +210,8 @@ public class ShadowRenderer implements CoreRenderer {
         this.setDepthByQuality();
     }
 
-    public Matrix4f getLightSpaceMatrix() {
-        return lightSpaceMatrix;
+    public Matrix4f getLightProjectionMatrix() {
+        return lightProjectionMatrix;
     }
 
     public ShadowBox getShadowBox() {

@@ -26,7 +26,6 @@ import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -41,7 +40,7 @@ public class Chunks {
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    private final IList<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
+    public final IList<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
 
     public static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override

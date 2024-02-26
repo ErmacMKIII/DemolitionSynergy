@@ -70,6 +70,7 @@ public class PerspectiveRenderer implements CoreRenderer {
         floatBuffPerspective = MemoryUtil.memCallocFloat(16); // 4x4
         if (floatBuffPerspective.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffPerspective) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
     }
