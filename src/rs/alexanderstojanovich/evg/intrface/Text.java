@@ -125,11 +125,14 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean bufferVertices() {
-        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
-        if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-            throw new RuntimeException("Could not allocate memory address!");
+        int someSize = Quad.VERTEX_COUNT * VERTEX_SIZE;
+        if (floatBuffer == null) {
+            floatBuffer = MemoryUtil.memCallocFloat(someSize);
+        } else if (floatBuffer.capacity() < someSize) {
+            floatBuffer = MemoryUtil.memRealloc(floatBuffer, someSize);
         }
+        floatBuffer.position(0);
+        floatBuffer.limit(someSize);
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
             floatBuffer.put(VERTICES[i].y);
@@ -180,7 +183,14 @@ public class Text implements ComponentIfc {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
         }
-        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
+        int someSize = Quad.VERTEX_COUNT * VERTEX_SIZE;
+        if (floatBuffer == null) {
+            floatBuffer = MemoryUtil.memCallocFloat(someSize);
+        } else if (floatBuffer.capacity() < someSize) {
+            floatBuffer = MemoryUtil.memRealloc(floatBuffer, someSize);
+        }
+        floatBuffer.position(0);
+        floatBuffer.limit(someSize);
         if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -219,7 +229,14 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean bufferIndices() {
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -239,10 +256,6 @@ public class Text implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
-
         return true;
     }
 
@@ -252,7 +265,14 @@ public class Text implements ComponentIfc {
             DSLogger.reportError("Index buffer object is zero!", null);
             return false;
         }
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -267,10 +287,6 @@ public class Text implements ComponentIfc {
             GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, intBuffer);
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
 
         return true;
     }
@@ -368,6 +384,16 @@ public class Text implements ComponentIfc {
         }
         if (ibo != 0) {
             GL20.glDeleteBuffers(ibo);
+        }
+
+        if (floatBuffer != null && floatBuffer.capacity() != 0) {
+            MemoryUtil.memFree(floatBuffer);
+            floatBuffer = null;
+        }
+
+        if (intBuffer != null && intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+            intBuffer = null;
         }
     }
 

@@ -72,10 +72,10 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
         } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
-        } 
+        }
         bigFloatBuff.position(0);
         bigFloatBuff.limit(someSize);
-        
+
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -151,7 +151,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
         } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
-        } 
+        }
         bigFloatBuff.position(0);
         bigFloatBuff.limit(someSize);
 
@@ -234,11 +234,11 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             if (intBuff == null) {
                 intBuff = Block.createIntBuffer(block.getFaceBits());
             } else if (intBuff.capacity() < someSize) {
-                intBuff = Block.resizeIntBuffer(intBuff, someSize);
-            } 
+                intBuff = Block.resizeIntBuffer(intBuff, block.getFaceBits());
+            }
             intBuff.position(0);
             intBuff.limit(someSize);
-            
+
             if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
                 DSLogger.reportError("Could not allocate memory address!", null);
                 throw new RuntimeException("Could not allocate memory address!");

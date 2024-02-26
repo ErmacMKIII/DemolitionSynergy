@@ -59,7 +59,18 @@ public class DynamicText extends Text {
 
     @Override
     public boolean bufferVertices() {
-        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        int someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        if (bigFloatBuff == null) {
+            bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
+        } else if (bigFloatBuff.capacity() < someSize) {
+            bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
+        }
+
+        if (!txtChList.isEmpty()) {
+            bigFloatBuff.position(0);
+            bigFloatBuff.limit(someSize);
+        }
+
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -103,10 +114,6 @@ public class DynamicText extends Text {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (bigFloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(bigFloatBuff);
-        }
-
         return true;
     }
 
@@ -123,7 +130,18 @@ public class DynamicText extends Text {
         }
 
         // auto adjust dynamic size of float buff and do it on every 1024 element
-        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        int someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        if (bigFloatBuff == null) {
+            bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
+        } else if (bigFloatBuff.capacity() < someSize) {
+            bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
+        }
+
+        if (!txtChList.isEmpty()) {
+            bigFloatBuff.position(0);
+            bigFloatBuff.limit(someSize);
+        }
+
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -159,10 +177,6 @@ public class DynamicText extends Text {
             GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (bigFloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(bigFloatBuff);
-        }
 
         return true;
     }
@@ -235,6 +249,15 @@ public class DynamicText extends Text {
 
         if (intBuffer != null && intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) != MemoryUtil.NULL) {
             MemoryUtil.memFree(floatBuffer);
+        }
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        if (bigFloatBuff != null && bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+            bigFloatBuff = null;
         }
     }
 

@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -29,7 +27,6 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -99,7 +96,15 @@ public class Quad implements ComponentIfc {
 
     @Override
     public boolean bufferVertices() {
-        FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
+        int someSize = 4 * VERTEX_COUNT;
+        if (FLOAT_BUFFER == null) {
+            FLOAT_BUFFER = MemoryUtil.memCallocFloat(someSize);
+        } else if (FLOAT_BUFFER.capacity() < someSize) {
+            FLOAT_BUFFER = MemoryUtil.memRealloc(FLOAT_BUFFER, someSize);
+        }
+        FLOAT_BUFFER.position(0);
+        FLOAT_BUFFER.limit(someSize);
+
         if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -137,10 +142,6 @@ public class Quad implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (FLOAT_BUFFER.capacity() != 0) {
-            MemoryUtil.memFree(FLOAT_BUFFER);
-        }
-
         return true;
     }
 
@@ -154,11 +155,16 @@ public class Quad implements ComponentIfc {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
         }
-        FLOAT_BUFFER = MemoryUtil.memCallocFloat(4 * VERTEX_COUNT);
-        if (FLOAT_BUFFER.capacity() != 0 && MemoryUtil.memAddressSafe(FLOAT_BUFFER) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-            throw new RuntimeException("Could not allocate memory address!");
+
+        int someSize = 4 * VERTEX_COUNT;
+        if (FLOAT_BUFFER == null) {
+            FLOAT_BUFFER = MemoryUtil.memCallocFloat(someSize);
+        } else if (FLOAT_BUFFER.capacity() < someSize) {
+            FLOAT_BUFFER = MemoryUtil.memRealloc(FLOAT_BUFFER, someSize);
         }
+        FLOAT_BUFFER.position(0);
+        FLOAT_BUFFER.limit(someSize);
+
         for (int i = 0; i < 4; i++) {
             FLOAT_BUFFER.put(VERTICES[i].x);
             FLOAT_BUFFER.put(VERTICES[i].y);
@@ -184,16 +190,20 @@ public class Quad implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (FLOAT_BUFFER.capacity() != 0) {
-            MemoryUtil.memFree(FLOAT_BUFFER);
-        }
-
         return true;
     }
 
     @Override
     public boolean bufferIndices() {
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
+
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -213,10 +223,6 @@ public class Quad implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
-
         return true;
     }
 
@@ -226,7 +232,14 @@ public class Quad implements ComponentIfc {
             DSLogger.reportError("Index buffer object is zero!", null);
             return false;
         }
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -241,10 +254,6 @@ public class Quad implements ComponentIfc {
             GL15.glBufferSubData(GL15.GL_ELEMENT_ARRAY_BUFFER, 0, intBuffer);
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
 
         return true;
     }
@@ -316,6 +325,16 @@ public class Quad implements ComponentIfc {
         }
         if (ibo != 0) {
             GL20.glDeleteBuffers(ibo);
+        }
+
+        if (FLOAT_BUFFER != null && FLOAT_BUFFER.capacity() != 0) {
+            MemoryUtil.memFree(FLOAT_BUFFER);
+            FLOAT_BUFFER = null;
+        }
+
+        if (intBuffer != null && intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+            intBuffer = null;
         }
     }
 

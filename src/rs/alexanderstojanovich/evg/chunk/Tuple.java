@@ -170,7 +170,7 @@ public class Tuple extends Series {
         }
         vec4FloatColorBuff.position(0);
         vec4FloatColorBuff.limit(someSize);
-        
+
         if (vec4FloatColorBuff.capacity() != 0 && MemoryUtil.memAddressSafe(vec4FloatColorBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -228,7 +228,7 @@ public class Tuple extends Series {
         }
         lightFloatColorBuff.position(0);
         lightFloatColorBuff.limit(someSize);
-        
+
         if (lightFloatColorBuff.capacity() != 0 && MemoryUtil.memAddressSafe(lightFloatColorBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -286,7 +286,7 @@ public class Tuple extends Series {
         }
         lightFloatColorBuff.position(0);
         lightFloatColorBuff.limit(someSize);
-        
+
         if (lightFloatColorBuff == null || MemoryUtil.memAddressSafe(lightFloatColorBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -332,7 +332,7 @@ public class Tuple extends Series {
         }
         mat4FloatModelBuff.position(0);
         mat4FloatModelBuff.limit(someSize);
-        
+
         for (Block block : blockList) {
             Vector4f[] vectArr = new Vector4f[4];
             for (int i = 0; i < 4; i++) {
