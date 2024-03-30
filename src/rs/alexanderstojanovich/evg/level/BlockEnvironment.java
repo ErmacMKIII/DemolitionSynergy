@@ -219,10 +219,9 @@ public class BlockEnvironment {
                 tuple.bufferAll();
             }
 
-            if (tuple.isBuffered() && tuple.isNeedUpdateLights()) {
-                tuple.updateLightDefs();
-            }
-
+//            if (tuple.isBuffered() && tuple.isNeedUpdateLights()) {
+//                tuple.updateLightDefs();
+//            }
             tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
         }
     }
@@ -259,59 +258,77 @@ public class BlockEnvironment {
 
         for (Tuple tuple : optimizedTuples) {
             if (tuple.isBuffered() && tuple.faceBits() > 0) {
-                tuple.updateVertices(); // update lights
+                tuple.subBufferVertices(); // update lights
             }
         }
     }
 
     /**
-     * Update light (color pixel) for each block from all the tuples
+     * Update vertices. For light definition, for instance. Is rendering method
+     */
+//    public void updateLightColors() {
+//        if (!optimized || optimizedTuples.isEmpty()) {
+//            return;
+//        }
+//
+//        for (Tuple tuple : optimizedTuples) {
+//            if (tuple.isBuffered() && tuple.faceBits() > 0) {
+//                tuple.updateLightDefs();
+//            }
+//        }
+//    }
+    /**
+     * Update light (color pixel) for each block from all the tuples. This
+     * happens in batches.
      *
      * @param camFront to determine visible face bits
      * @param lsx light source collection
      */
-    public void updateLights(Vector3f camFront, LightSources lsx) {
-        // determine lastFaceBits mask
-        final int mask = Block.getVisibleFaceBitsFast(camFront);
-
-        // for max passes update the lights
-        for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
-            // assign last value & increment to next value with limit to 63
-            final int faceBits = (++lastFaceBits) & 63;
-            IList<Tuple> filtered = optimizedTuples.filter(ot -> (ot.faceBits() == faceBits) && (ot.faceBits() & (mask & 63)) != 0);
-            filtered.forEach(ot -> {
-                ot.blockList.forEach(blk -> {
-                    final Vector3f ambient = new Vector3f(GlobalColors.BLACK);
-                    final Vector3f diffuse = new Vector3f(GlobalColors.BLACK);
-                    final Vector3f specular = new Vector3f(GlobalColors.BLACK);
-
-                    // reset color to black
-                    // add color so it is not black
-                    for (LightSource ls : lsx.sourceList) {
-                        LightStruct lightColorRGB = LightSources.lightColorRGB(ls, blk.pos);
-                        // add light color from each light source to vertex
-                        ambient.add(lightColorRGB.ambient);
-                        diffuse.add(lightColorRGB.diffuse);
-                        specular.add(lightColorRGB.specular);
-                    }
-
-                    Material mat = blk.materials.getFirst();
-                    mat.setAmbient(new Vector4f(ambient, 1.0f));
-                    mat.setAmbient(new Vector4f(diffuse, 1.0f));
-                    mat.setAmbient(new Vector4f(specular, 1.0f));
-
-                    // store light (color) information somewhere
-                    if (LevelContainer.AllBlockMap.isLocationPopulated(blk.pos)) {
-                        LevelContainer.AllBlockMap.getLocation(blk.pos).lightColor = mat.getLightColor();
-                    }
-
-                });
-
-                ot.setNeedUpdateLights(true);
-            });
-        }
-    }
-
+//    public void updateLights(Vector3f camFront, LightSources lsx) {
+//        if (!optimized) {
+//            return;
+//        }
+//        // determine lastFaceBits mask
+//        final int mask = Block.getVisibleFaceBitsFast(camFront);
+//
+//        // for max passes update the lights
+//        for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
+//            // assign last value & increment to next value with limit to 63
+//            final int faceBits = (++lastFaceBits) & 63;
+//            IList<Tuple> filtered = optimizedTuples.filter(ot -> (ot.faceBits() == faceBits) && (ot.faceBits() & (mask & 63)) != 0);
+//            filtered.forEach(ot -> {
+//
+//                ot.blockList.forEach(blk -> {
+//                    Vector3f ambient = new Vector3f(GlobalColors.BLACK);
+//                    Vector3f diffuse = new Vector3f(GlobalColors.BLACK);
+//                    Vector3f specular = new Vector3f(GlobalColors.BLACK);
+//
+//                    // reset color to black
+//                    // add color so it is not black
+//                    for (LightSource ls : lsx.sourceList) {
+//                        LightStruct lightColorRGB = LightSources.lightColorRGB(ls, blk.pos, Block.VERTEX_COUNT);
+//                        // add light color from each light source to vertex
+//                        ambient.add(lightColorRGB.ambient);
+//                        diffuse.add(lightColorRGB.diffuse);
+//                        specular.add(lightColorRGB.specular);
+//                    }
+//
+//                    Material mat = blk.materials.getFirst();
+//                    mat.setAmbient(new Vector4f(ambient, 1.0f));
+//                    mat.setAmbient(new Vector4f(diffuse, 1.0f));
+//                    mat.setAmbient(new Vector4f(specular, 1.0f));
+//
+//                    // store light (color) information somewhere
+//                    if (LevelContainer.AllBlockMap.isLocationPopulated(blk.pos)) {
+//                        LevelContainer.AllBlockMap.getLocation(blk.pos).lightColor = LightSources.lightColor(ambient, diffuse, specular);
+//                    }
+//
+//                });
+//
+//                ot.setNeedUpdateLights(false); // set to false cuz light were just updated
+//            });
+//        }
+//    }
     /**
      * Clear optimization tuples
      */

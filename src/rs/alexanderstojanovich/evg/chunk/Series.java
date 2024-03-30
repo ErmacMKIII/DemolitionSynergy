@@ -65,14 +65,22 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         indicesNum = Block.INDICES_COUNT;
     }
 
+    /**
+     * Buffer vertex data prior rendering
+     *
+     * @return if vertex data was successfully buffered
+     */
     public boolean bufferVertices() { // Call before rendering
+        // Calculate the total size needed for vertex data
         int someSize = blockList.size() * verticesNum * Vertex.SIZE;
 
+        // Allocate memory for the vertex data buffer
         if (bigFloatBuff == null) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
         } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
         }
+        // Set buffer position and limit
         bigFloatBuff.position(0);
         bigFloatBuff.limit(someSize);
 
@@ -81,6 +89,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             throw new RuntimeException("Could not allocate memory address!");
         }
 
+        // Iterate through blocks and vertices to populate the buffer
         for (Block block : blockList) {
             for (Vertex vertex : block.getVertices()) {
                 if (vertex.isEnabled()) {
@@ -97,6 +106,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             }
         }
 
+        // Flip the buffer => to allow reading
         if (bigFloatBuff.position() != 0) {
             bigFloatBuff.flip();
         }
@@ -111,6 +121,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             vao = GL30.glGenVertexArrays();
         }
 
+        // Buffer vertex data
         if (bigFloatBuff.capacity() != 0) {
 
             GL30.glBindVertexArray(vao);
@@ -139,19 +150,26 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         return true;
     }
 
-    public boolean updateVertices() { // Call before rendering
+    /**
+     * SubBuffer vertex data prior rendering. And after at at least one vertex
+     * data buffering
+     *
+     * @return if vertex data was successfully buffered
+     */
+    public boolean subBufferVertices() { // Call before rendering
         if (vao == 0 || bigVbo == 0) {
             DSLogger.reportError("Vertex array object or vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex array object or vertex buffer object is zero!");
         }
 
-        // Recreate the buffer   
+        // Allocate memory for the vertex data buffer
         int someSize = blockList.size() * verticesNum * Vertex.SIZE;
         if (bigFloatBuff == null) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
         } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
         }
+        // Set buffer position and limit
         bigFloatBuff.position(0);
         bigFloatBuff.limit(someSize);
 
@@ -160,6 +178,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             throw new RuntimeException("Could not allocate memory address!");
         }
 
+        // Iterate through blocks and vertices to populate the buffer
         for (Block block : blockList) {
             for (Vertex vertex : block.getVertices()) {
                 if (vertex.isEnabled()) {
@@ -176,11 +195,12 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             }
         }
 
-        // Flip the buffer
+        // Flip the buffer => to allow reading
         if (bigFloatBuff.position() != 0) {
             bigFloatBuff.flip();
         }
 
+        // Sub-Buffer vertex data
         if (bigFloatBuff.capacity() != 0) {
             GL30.glBindVertexArray(vao);
 
@@ -196,7 +216,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             // Specify vertex attribute pointers
             GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // Position
             GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // Normal
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // UV
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // UV            
 
             // Disable vertex attributes after configuration
             GL20.glDisableVertexAttribArray(0);
@@ -280,7 +300,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             }
         }
 
-        updateVertices();
+        subBufferVertices();
     }
 
     public void prepare(boolean cameraInFluid) { // Call only for fluid blocks before rendering
@@ -295,7 +315,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             }
         }
 
-        updateVertices();
+        subBufferVertices();
     }
 
     public void render(ShaderProgram shaderProgram, LightSources lightSources) { // Standard render all

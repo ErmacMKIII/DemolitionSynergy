@@ -1169,9 +1169,9 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-            LightSources.updateLights(SUNLIGHT, SUN); // sun updates light from itself
-            LightSources.updateLights(SUNLIGHT, SKYBOX); // skybox updates light from the sun
-            blockEnvironment.updateLights(levelActors.mainCamera().getFront(), lightSources); // and all the blocks updates lights from the light sources
+//            LightSources.updateLights(SUNLIGHT, SUN); // sun updates light from itself
+//            LightSources.updateLights(SUNLIGHT, SKYBOX); // skybox updates light from the sun
+//            blockEnvironment.updateLights(levelActors.mainCamera().getFront(), lightSources); // and all the blocks updates lights from the light sources
             for (int i = 0; i < 2; i++) {
                 lightSources.setModified(i, true);
             }

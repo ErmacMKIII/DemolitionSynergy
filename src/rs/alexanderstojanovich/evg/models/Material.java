@@ -91,6 +91,6 @@ public class Material {
         float blue = ambient.z + diffuse.z + specular.z;
         float alpha = 1.0f;
 
-        return new Vector4f(red, green, blue, alpha);
+        return new Vector4f(new Vector3f(red, green, blue), alpha);
     }
 }

@@ -318,7 +318,7 @@ public class Model implements Renderable, Comparable<Model> {
     }
 
     public void lightColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(getLightColor(), "lightColor");
+        shaderProgram.updateUniform(this.getMapLightColor(), "lightColor");
     }
 
     public void calcDims() {
@@ -712,7 +712,12 @@ public class Model implements Renderable, Comparable<Model> {
         return this.materials.getFirst().color;
     }
 
-    public Vector4f getLightColor() {
+    /**
+     * Get light color from material.
+     *
+     * @return
+     */
+    public Vector4f getMapLightColor() {
         return this.materials.getFirst().getLightColor();
     }
 
