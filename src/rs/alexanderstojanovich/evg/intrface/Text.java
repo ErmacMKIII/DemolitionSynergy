@@ -29,6 +29,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -354,6 +355,43 @@ public class Text implements ComponentIfc {
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
+            shaderProgram.updateUniform(scale, "scale");
+            shaderProgram.updateUniform(color, "color");
+            texture.bind(0, shaderProgram, "ifcTexture");
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            for (TextCharacter txtCh : txtChList) {
+                uvs = txtCh.uvs;
+
+                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+                GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+            }
+
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+
+            GL30.glBindVertexArray(0);
+        }
+    }
+
+    public void renderContour(Intrface intrface, ShaderProgram shaderProgram) {
+        if (enabled && buffered && !txtChList.isEmpty()) {
+            GL30.glBindVertexArray(vao);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            shaderProgram.bind();
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "uv");
+
+            // Update uniforms
+            shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+            shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
             shaderProgram.updateUniform(scale, "scale");
             shaderProgram.updateUniform(color, "color");
             texture.bind(0, shaderProgram, "ifcTexture");

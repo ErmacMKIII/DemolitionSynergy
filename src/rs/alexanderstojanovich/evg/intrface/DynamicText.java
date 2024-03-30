@@ -26,6 +26,7 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -215,7 +216,49 @@ public class DynamicText extends Text {
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             for (TextCharacter txtCh : txtChList) {
-                ShaderProgram.getIntrfaceShader().updateUniform(txtCh.modelMat4, "modelMatrix");
+                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+
+                GL32.glDrawElementsBaseVertex(
+                        GL11.GL_TRIANGLES,
+                        INDICES.length,
+                        GL11.GL_UNSIGNED_INT,
+                        0,
+                        index++ << 2 // vertex size is 4
+                );
+            }
+
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
+
+            GL30.glBindVertexArray(0);
+        }
+    }
+
+    @Override
+    public void renderContour(Intrface intrface, ShaderProgram contourShaderProgram) {
+        if (enabled && buffered && !txtChList.isEmpty()) {
+            GL30.glBindVertexArray(vao);
+
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            contourShaderProgram.bind();
+            // Update uniforms
+            contourShaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+            contourShaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
+            contourShaderProgram.bindAttribute(0, "pos");
+            contourShaderProgram.bindAttribute(1, "uv");
+            contourShaderProgram.updateUniform(color, "color");
+            texture.bind(0, contourShaderProgram, "ifcTexture");
+
+            int index = 0;
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            for (TextCharacter txtCh : txtChList) {
+                contourShaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
 
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,

@@ -492,7 +492,7 @@ public class Intrface {
             creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Testers", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Edmund \"HellBlade64\" Alby", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem("\n", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Art", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
@@ -613,8 +613,10 @@ public class Intrface {
      *
      * @param ifcShaderProgram Interface shader program (default - use that
      * one).
+     * @param ifcContShaderProgramn Interface contour shader program
+     * (animated-through - use that one).
      */
-    public void render(ShaderProgram ifcShaderProgram) {
+    public void render(ShaderProgram ifcShaderProgram, ShaderProgram ifcContShaderProgram) {
         saveDialog.render(this, ifcShaderProgram);
         loadDialog.render(this, ifcShaderProgram);
         randLvlDialog.render(this, ifcShaderProgram);
@@ -680,7 +682,7 @@ public class Intrface {
             }
             crosshair.render(this, ifcShaderProgram);
         }
-        console.render(this, ifcShaderProgram);
+        console.render(this, ifcShaderProgram, ifcContShaderProgram);
     }
 
     /**

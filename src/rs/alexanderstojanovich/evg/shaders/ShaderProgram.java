@@ -47,6 +47,7 @@ public class ShaderProgram {
     private static ShaderProgram waterBaseShader; // renders skybox & sun as water reflections
     private static ShaderProgram waterVoxelShader; // renders blocks as water reflections
     private static ShaderProgram intrfaceShader; // renders interface
+    private static ShaderProgram intrfaceContourShader; // renders interface contour
     private static ShaderProgram playerShader; // renders spectator & player
     private static ShaderProgram weaponShader; // renders player weaponry
     private static ShaderProgram contourShader; // renders model decals in editor
@@ -112,7 +113,15 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         GL_SHADERS.put("Intrface", intrfaceShader);
-        // 7. Init player shader (camera)
+        // 7. Init interface shader (crosshair & fonts)
+        Shader intrfaceContourVertexShader = new Shader(Game.EFFECTS_ENTRY, "intrface_contourVS.glsl", Shader.VERTEX_SHADER);
+        Shader intrfaceContourFragmentShader = new Shader(Game.EFFECTS_ENTRY, "intrface_contourFS.glsl", Shader.FRAGMENT_SHADER);
+        IList<Shader> intrfaceContourShaders = new GapList<>();
+        intrfaceContourShaders.add(intrfaceContourVertexShader);
+        intrfaceContourShaders.add(intrfaceContourFragmentShader);
+        intrfaceContourShader = new ShaderProgram(intrfaceContourShaders);
+        GL_SHADERS.put("IntrfaceContour", intrfaceShader);
+        // 8. Init player shader (camera)
         Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
         Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> playerShaders = new GapList<>();
@@ -120,7 +129,7 @@ public class ShaderProgram {
         playerShaders.add(playerFragmentShader);
         playerShader = new ShaderProgram(playerShaders);
         GL_SHADERS.put("Player", playerShader);
-        // 8. Init weapon shader (player weapons)
+        // 9. Init weapon shader (player weapons)
         Shader weaponVertexShader = new Shader(Game.EFFECTS_ENTRY, "weaponVS.glsl", Shader.VERTEX_SHADER);
         Shader weaponFragmentShader = new Shader(Game.EFFECTS_ENTRY, "weaponFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> weaponShaders = new GapList<>();
@@ -128,7 +137,7 @@ public class ShaderProgram {
         weaponShaders.add(weaponFragmentShader);
         weaponShader = new ShaderProgram(weaponShaders);
         GL_SHADERS.put("Weapon", weaponShader);
-        // 9. Init contour shader (editor)
+        // 10. Init contour shader (editor)
         Shader contourVertexShader = new Shader(Game.EFFECTS_ENTRY, "contourVS.glsl", Shader.VERTEX_SHADER);
         Shader contourFragmentShader = new Shader(Game.EFFECTS_ENTRY, "contourFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> contourShaders = new GapList<>();
@@ -136,7 +145,7 @@ public class ShaderProgram {
         contourShaders.add(contourFragmentShader);
         contourShader = new ShaderProgram(contourShaders);
         GL_SHADERS.put("Contour", contourShader);
-        // 10. Skybox model shader (gradient in sky)
+        // 11. Skybox model shader (gradient in sky)
         Shader skyboxVertexShader = new Shader(Game.EFFECTS_ENTRY, "skyboxVS.glsl", Shader.VERTEX_SHADER);
         Shader skyboxFragmentShader = new Shader(Game.EFFECTS_ENTRY, "skyboxFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> skyboxShaders = new GapList<>();
@@ -145,7 +154,7 @@ public class ShaderProgram {
         skyboxShader = new ShaderProgram(skyboxShaders);
         GL_SHADERS.put("Skybox", skyboxShader);
         // ---------------------------------------------------------------------
-        // 11. Shadow base model shader
+        // 12. Shadow base model shader
         Shader shadowBaseVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseVS.glsl", Shader.VERTEX_SHADER);
         Shader shadowBaseFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowBaseFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> shadowBaseShaders = new GapList<>();
@@ -154,7 +163,7 @@ public class ShaderProgram {
         shadowBaseShader = new ShaderProgram(shadowBaseShaders);
         GL_SHADERS.put("ShadowBase", shadowBaseShader);
         // ---------------------------------------------------------------------
-        // 12. Shadow voxel (instanced) model shader
+        // 13. Shadow voxel (instanced) model shader
         Shader shadowVoxelVertexShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelVS.glsl", Shader.VERTEX_SHADER);
         Shader shadowVoxelFragmentShader = new Shader(Game.EFFECTS_ENTRY, "shadowVoxelFS.glsl", Shader.FRAGMENT_SHADER);
         IList<Shader> shadowVoxelShaders = new GapList<>();
@@ -446,6 +455,10 @@ public class ShaderProgram {
 
     public static ShaderProgram getShadowBaseShader() {
         return shadowBaseShader;
+    }
+
+    public static ShaderProgram getIntrfaceContourShader() {
+        return intrfaceContourShader;
     }
 
 }

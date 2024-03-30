@@ -53,7 +53,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final String WINDOW_TITLE = "Demolition Synergy - v38 beta";
+    public static final String WINDOW_TITLE = "Demolition Synergy - v38";
 
     // makes default window -> Renderer sets resolution from config
     public final Window WINDOW;
@@ -344,7 +344,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     levelContainer.render(renderFlag);
                 }
 
-                intrface.render(ShaderProgram.getIntrfaceShader());
+                intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
             }
         }
 

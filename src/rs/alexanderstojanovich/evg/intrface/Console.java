@@ -202,13 +202,15 @@ public class Console {
      *
      * @param intrface intrface to render to
      * @param shaderProgram shader program to use
+     * @param contourShaderProgram shader program to use
+     * (contour-animation-through)
      */
-    public void render(Intrface intrface, ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram, ShaderProgram contourShaderProgram) {
         if (enabled) {
             panel.setWidth(intrface.gameObject.WINDOW.getWidth());
             panel.setHeight(intrface.gameObject.WINDOW.getHeight() / 2);
             if (!panel.isBuffered()) {
-                panel.bufferAll(intrface);
+                panel.bufferSmart(intrface);
             }
             panel.render(intrface, shaderProgram);
             inText.pos.x = -1.0f;
@@ -216,16 +218,16 @@ public class Console {
             inText.alignToNextChar(intrface); // this changes both pos.x and pos.y for inText
 
             if (!inText.isBuffered()) {
-                inText.bufferAll(intrface);
+                inText.bufferSmart(intrface);
             }
-            inText.render(intrface, shaderProgram);
+            inText.renderContour(intrface, contourShaderProgram);
 
             for (HistoryItem item : history) {
                 item.render(intrface, shaderProgram);
             }
 
             if (!completes.isBuffered()) {
-                completes.bufferAll(intrface);
+                completes.bufferSmart(intrface);
             }
             completes.render(intrface, shaderProgram);
         }
