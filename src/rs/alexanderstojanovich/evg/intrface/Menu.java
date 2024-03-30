@@ -17,12 +17,14 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -148,8 +150,10 @@ public abstract class Menu {
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev(intrface);
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_SELECT, new Vector3f());
                 } else if (key == GLFW.GLFW_KEY_DOWN && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectNext(intrface);
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_SELECT, new Vector3f());
                 } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                     enabled = false;
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
@@ -158,6 +162,7 @@ public abstract class Menu {
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
                     GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_ACCEPT, new Vector3f());
                     execute();
                 }
             }

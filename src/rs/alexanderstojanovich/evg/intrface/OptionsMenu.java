@@ -17,11 +17,13 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
@@ -71,14 +73,17 @@ public abstract class OptionsMenu extends Menu {
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev(intrface);
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_SELECT, new Vector3f());
                 } else if (key == GLFW.GLFW_KEY_DOWN && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectNext(intrface);
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_SELECT, new Vector3f());
                 } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     MenuItem selectedMenuItem = items.get(selected);
                     if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditMultiValue) {
                         MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
                         selectedMultiValue.selectPrev();
                         execute();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
                     }
                 } else if (key == GLFW.GLFW_KEY_RIGHT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     MenuItem selectedMenuItem = items.get(selected);
@@ -86,6 +91,7 @@ public abstract class OptionsMenu extends Menu {
                         MultiValue selectedMultiValue = (MultiValue) selectedMenuItem.menuValue;
                         selectedMultiValue.selectNext();
                         execute();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
                     }
                 } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                     MenuItem selectedMenuItem = items.get(selected);
@@ -106,6 +112,7 @@ public abstract class OptionsMenu extends Menu {
                                 selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
                                 mode = InputMode.INIT;
                                 execute();
+                                intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
                                 break;
                         }
                     } else if (selectedMenuItem != null && selectedMenuItem.editType == Menu.EditType.EditNoValue) {
@@ -117,6 +124,7 @@ public abstract class OptionsMenu extends Menu {
                         GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
                         GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                         execute();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
                     }
                 } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     MenuItem selectedMenuItem = items.get(selected);
@@ -161,6 +169,7 @@ public abstract class OptionsMenu extends Menu {
                         GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
                         GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                         execute();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
                     }
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
                     if (items.get(OptionsMenu.this.selected) != null) {

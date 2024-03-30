@@ -78,6 +78,9 @@ public class AudioPlayer {
         if (isPlaying()) {
             stop();
         }
+        if (audioFile.getContent() == null) {
+            return;
+        }
         AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, 0);
         AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());
 

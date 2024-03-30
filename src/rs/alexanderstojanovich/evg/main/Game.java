@@ -474,12 +474,16 @@ public class Game {
                     FutureTask<Object> task = new FutureTask<>(Command.getCommand(Command.Target.SCREENSHOT));
                     GameRenderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.cycleBlockColor();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.selectPrevTexture();
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.selectNextTexture();
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
