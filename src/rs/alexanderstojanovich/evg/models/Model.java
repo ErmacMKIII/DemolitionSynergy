@@ -130,7 +130,7 @@ public class Model implements Renderable, Comparable<Model> {
                 // Update uniforms
                 transform(shaderProgram);
                 primaryColor(shaderProgram);
-                lightColor(shaderProgram);
+//                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
@@ -196,7 +196,7 @@ public class Model implements Renderable, Comparable<Model> {
                 shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
                 transform(shaderProgram);
                 primaryColor(shaderProgram);
-                lightColor(shaderProgram);
+//                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
@@ -317,10 +317,9 @@ public class Model implements Renderable, Comparable<Model> {
         shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor1");
     }
 
-    public void lightColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(this.getMapLightColor(), "lightColor");
-    }
-
+//    public void lightColor(ShaderProgram shaderProgram) {
+//        shaderProgram.updateUniform(this.getMapLightColor(), "lightColor");
+//    }
     public void calcDims() {
         final Mesh mesh = meshes.getFirst();
         Vector3f vect = mesh.vertices.get(0).getPos();
@@ -717,10 +716,9 @@ public class Model implements Renderable, Comparable<Model> {
      *
      * @return
      */
-    public Vector4f getMapLightColor() {
-        return this.materials.getFirst().getLightColor();
-    }
-
+//    public Vector4f getMapLightColor() {
+//        return this.materials.getFirst().getLightColor();
+//    }
     public Vector4f getModelColor() {
         Vector4f prim = this.materials.getFirst().color;
         Vector4f light = this.materials.getFirst().getLightColor();

@@ -107,7 +107,7 @@ public class Mesh {
         return true;
     }
 
-    public boolean updateVertices() {
+    public boolean subBufferVertices() {
         // Check if vertex array and vertex buffer objects are initialized
         if (vao == 0) {
             DSLogger.reportError("Vertex array object is zero!", null);

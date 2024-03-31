@@ -1200,22 +1200,21 @@ public class Block extends Model {
         return sb.toString();
     }
 
-    /**
-     * Get block light color (stored in AllBlockMap)
-     *
-     * @return block light color
-     */
-    @Override
-    public Vector4f getMapLightColor() {
-        // load light (color) information from somewhere
-        if (LevelContainer.AllBlockMap.isLocationPopulated(this.pos)) {
-            return LevelContainer.AllBlockMap.getLocation(this.pos).lightColor;
-        } else {
-            return super.getMapLightColor();
-        }
-
-    }
-
+//    /**
+//     * Get block light color (stored in AllBlockMap)
+//     *
+//     * @return block light color
+//     */
+//    @Override
+//    public Vector4f getMapLightColor() {
+//        // load light (color) information from somewhere
+//        if (LevelContainer.AllBlockMap.isLocationPopulated(this.pos)) {
+//            return LevelContainer.AllBlockMap.getLocation(this.pos).lightColor;
+//        } else {
+//            return super.getMapLightColor();
+//        }
+//
+//    }
     /**
      * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
      *

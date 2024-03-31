@@ -352,8 +352,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
                     block.getWaterTexture().bind(1, shaderProgram, "modelTexture1");
                 }
 
-                block.lightColor(shaderProgram);
-
+//                block.lightColor(shaderProgram);
                 // Draw elements
                 GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
                 GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, Block.INDICES_COUNT, GL11.GL_UNSIGNED_INT, 0, blkIndex * Vertex.SIZE);
@@ -412,8 +411,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
                         block.getWaterTexture().bind(1, shaderProgram, "modelTexture1");
                     }
 
-                    block.lightColor(shaderProgram);
-
+//                    block.lightColor(shaderProgram);
                     // Draw elements
                     GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
                     GL32.glDrawElementsBaseVertex(GL11.GL_TRIANGLES, Block.INDICES_COUNT, GL11.GL_UNSIGNED_INT, 0, blkIndex * Vertex.SIZE);

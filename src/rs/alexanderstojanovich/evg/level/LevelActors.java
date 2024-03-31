@@ -59,11 +59,11 @@ public class LevelActors {
     }
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
-//        for (NPC npc : npcList) {
-//            npc.render(lightSrc, npcShader);
-//        }        
+        // Npc list is for now empty
+        for (NPC npc : npcList) {
+            npc.render(lightSrc, npcShader);
+        }
         if ((mainActor() == player)) {
-            player.body.render(lightSrc, npcShader);
             player.render(lightSrc, mainActorShader);
         } else if (mainActor() == spectator) {
             spectator.render(mainActorShader);

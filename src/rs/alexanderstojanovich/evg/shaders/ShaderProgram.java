@@ -181,10 +181,11 @@ public class ShaderProgram {
         // ---------------------------------------------------------------------
         // ACTOR SHADERS (PLAYER, WEAPON)
         //----------------------------------------------------------------------
-        ACTOR_SHADERS.add(mainShader);
-        ACTOR_SHADERS.add(contourShader);
-        ACTOR_SHADERS.add(voxelShader);
-        ACTOR_SHADERS.add(skyboxShader);
+        ACTOR_SHADERS.add(playerShader); // player
+        ACTOR_SHADERS.add(mainShader); // environnment & npc
+        ACTOR_SHADERS.add(contourShader); // decal
+        ACTOR_SHADERS.add(voxelShader); // blocks
+        ACTOR_SHADERS.add(skyboxShader); // skybox
         // ---------------------------------------------------------------------
         // ---------------------------------------------------------------------        
         // WATER SHADERS
