@@ -34,10 +34,10 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class ShadowRenderer implements CoreRenderer {
 
-    public final Matrix4f lightProjectionMatrix = new Matrix4f().zero();
+    public final Matrix4f projectionMatrix = new Matrix4f();
 
     public static final float SCALE = 50.0f;
-    public static final Vector3f ORIGIN = new Vector3f(0, 0, 2.1f);
+    public static final Vector3f ORIGIN = new Vector3f();
     private final GameObject gameObject;
 
     private final FrameBuffer frameBuffer;
@@ -88,31 +88,21 @@ public class ShadowRenderer implements CoreRenderer {
     }
 
     /**
-     * Get (derive) light space matrix
-     *
+     * Update the shadow box
      */
-    public void transformToLightSpace() {
+    private void updateShadowBox() {
         /*In general, an orthographic projection matrix is defined based on the dimensions of the viewing frustum or the area you want to project onto. 
           It maps 3D coordinates to 2D coordinates without perspective, which is useful for rendering objects with uniform size regardless of their distance from the viewer.
           Whether the shadow box needs to be in world space depends on where the shadow mapping calculations are performed and how the shadow box is defined. 
           If you calculate the shadow box in world space, you'll likely transform it to light space before creating the orthographic projection matrix for shadow mapping. 
           This transformation ensures that the shadow mapping is consistent with the position and orientation of the light source. -Chat GPT*/
-
-        final Matrix4f lightProjMatrix = shadowBox.toLightSpace(camera.viewMatrix).projectionMatrix();
-        Matrix4f temp = new Matrix4f();
-        lightProjectionMatrix.set(lightProjMatrix.mul(camera.viewMatrix, temp));
-    }
-
-    /**
-     * Update the shadow box
-     */
-    private void updateShadowBox() {
         final float aspectRatio = gameObject.WINDOW.getAspectRatio();
         ShadowBox.createOrUpdate(
                 shadowDistance,
                 aspectRatio,
                 camera, // light point-of-view
                 shadowBox); // shadow box to update
+        projectionMatrix.set(shadowBox.toWorldSpace(camera.viewMatrix).projectionMatrix());
     }
 
     /**
@@ -131,13 +121,22 @@ public class ShadowRenderer implements CoreRenderer {
 
         camera.lookAtAngle(lightYaw, lightPitch);
         camera.setPos(ORIGIN);
-
-        lightSrc.lightViewMatrix.set(camera.viewMatrix);
     }
 
-    private void capture() {
+    /**
+     * Render the scene from light source point-of-view
+     *
+     * @param ls Light Source from which angle is captured or viewed
+     */
+    private void capture(LightSource ls) {
+        updateCamera(ls);
         // shadow renderer uses light matrix from light source when rendering from the scene
-        gameObject.levelContainer.lightSources.lightProjectionMatrix.set(this.lightProjectionMatrix);
+        for (ShaderProgram sp : ShaderProgram.SHADOW_SHADERS) {
+            sp.bind();
+            sp.updateUniform(projectionMatrix, "projectionMatrix");
+            sp.updateUniform(camera.viewMatrix, "viewMatrix");
+            ShaderProgram.unbind();
+        }
         gameObject.levelContainer.render(camera, ShaderProgram.getShadowBaseShader(), ShaderProgram.getShadowVoxelShader(), BlockEnvironment.LIGHT_MASK);
     }
 
@@ -155,13 +154,17 @@ public class ShadowRenderer implements CoreRenderer {
         prepare();
         final LightSource ls = LevelContainer.SUNLIGHT;
         if (ls.getIntensity() > 0.0f) {
-            updateCamera(ls);
             updateShadowBox();
-            transformToLightSpace();
-            capture();
+            capture(ls);
         }
         FrameBuffer.unbind(gameObject);
         // PASS 2 .. render the scene
+        for (ShaderProgram sp : ShaderProgram.ENVIRONMENTAL_SHADERS) {
+            sp.bind();
+            sp.updateUniform(projectionMatrix, "lightOrthoMatrix");
+            sp.updateUniform(camera.viewMatrix, "lightViewMatrix");
+            ShaderProgram.unbind();
+        }
 //        if (!debugQuad.isBuffered()) {
 //            debugQuad.bufferAll(gameObject.intrface);
 //        }
@@ -210,8 +213,8 @@ public class ShadowRenderer implements CoreRenderer {
         this.setDepthByQuality();
     }
 
-    public Matrix4f getLightProjectionMatrix() {
-        return lightProjectionMatrix;
+    public Matrix4f getProjectionMatrix() {
+        return projectionMatrix;
     }
 
     public ShadowBox getShadowBox() {

@@ -22,6 +22,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -165,10 +166,15 @@ public class WaterRenderer implements CoreRenderer {
         camera.lookAtAngle(mainCamera.yaw, -mainCamera.pitch);
     }
 
+    /**
+     * Render the scene from water camera point-of-view
+     *
+     * @param waterHeight water height to update camera position & angle
+     */
     private void capture(float waterHeight) {
         updateClipPlane(waterHeight);
         updateCamera(waterHeight);
-        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), 0);
+        gameObject.levelContainer.render(camera, ShaderProgram.getWaterBaseShader(), ShaderProgram.getWaterVoxelShader(), BlockEnvironment.LIGHT_MASK);
     }
 
     /**
@@ -184,6 +190,7 @@ public class WaterRenderer implements CoreRenderer {
 //        DSLogger.reportInfo("Size=" + waterHeights.size(), null);
 
         frameBuffer.bind();
+        // PASS 1 .. render color & depth to texture
         prepare();
         GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
         for (float waterHeight : waterHeights) {

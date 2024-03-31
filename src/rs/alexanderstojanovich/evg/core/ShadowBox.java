@@ -135,14 +135,14 @@ public class ShadowBox {
     }
 
     /**
-     * Transforms shadow box to the light space (assuming is from world space)
+     * Transforms shadow box to the world space (assuming is from light space)
      *
      * Light Space matrix is light view matrix
      *
-     * @param lightSpaceMat4 light space matrix
+     * @param lightViewMatrix light space matrix
      * @return
      */
-    public ShadowBox toLightSpace(Matrix4f lightSpaceMat4) {
+    public ShadowBox toWorldSpace(Matrix4f lightViewMatrix) {
         Vector3f[] points = {
             new Vector3f(minX, minY, minZ),
             new Vector3f(minX, minY, maxZ),
@@ -161,10 +161,12 @@ public class ShadowBox {
         float maxLightY = Float.NEGATIVE_INFINITY;
         float maxLightZ = Float.NEGATIVE_INFINITY;
 
+        Matrix4f lightInverseMatrix = new Matrix4f(lightViewMatrix).invert();
+
         for (Vector3f point : points) {
             Vector4f temp = new Vector4f();
             Vector4f vec4f = new Vector4f(point, 1.0f);
-            Vector4f pos = lightSpaceMat4.transform(vec4f, temp);
+            Vector4f pos = lightInverseMatrix.transform(vec4f, temp);
 
             // Update min and max coordinates in light space
             minLightX = Math.min(minLightX, pos.x);
@@ -186,7 +188,7 @@ public class ShadowBox {
      * possible while still ensuring that everything inside the camera's view
      * (within a certain range) will cast shadows.
      *
-     * Returned shadow box is in the world space
+     * Returned shadow box is in the light space
      *
      * @param shadowDistance shadow distance
      * @param aspectRatio screen aspect ratio
@@ -272,7 +274,7 @@ public class ShadowBox {
     /**
      * Calculates the positions of cuboid frustum (nearWidth x nearHeight),
      * (farWidth x farHeight) in space provided with view vectors front, up,
-     * right
+     * right. From light-point-of-view.
      *
      * @param nearDistance near Z
      * @param farDistance far Z
@@ -284,7 +286,7 @@ public class ShadowBox {
      * @param rightVec3 right vec3
      * @param viewMat4 view mat4
      *
-     * @return The positions of the vertices of the frustum in world space.
+     * @return The positions of the vertices of the frustum in light space.
      */
     protected static IList<Vector3f> frustumVertices(float nearDistance, float farDistance, Vector4f widthHeightVec4, Vector3f frontVec3, Vector3f upVec3, Vector3f rightVec3, Matrix4f viewMat4) {
         final IList<Vector3f> result = new GapList<>();
@@ -322,13 +324,10 @@ public class ShadowBox {
             farXPosYPos, farXNegYPos, farXPosYNeg, farXNegYNeg
         };
 
-        Matrix4f tempM4 = new Matrix4f();
-        // inverted matrix of view (light) matrix
-        Matrix4f viewInvert = viewMat4.invert(tempM4);
         Vector4f tempV4 = new Vector4f();
         for (Vector3f point : points) {
             Vector4f vec4f = new Vector4f(point, 1.0f);
-            vec4f = viewInvert.transform(vec4f, tempV4); // convert to world space
+            vec4f = viewMat4.transform(vec4f, tempV4); // convert to light space
             Vector3f vec3f = new Vector3f(vec4f.x, vec4f.y, vec4f.z);
             result.add(vec3f);
         }

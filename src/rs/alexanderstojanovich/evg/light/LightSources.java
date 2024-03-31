@@ -28,14 +28,8 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
-import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Material;
-import rs.alexanderstojanovich.evg.models.Mesh;
-import rs.alexanderstojanovich.evg.models.Model;
-import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
@@ -57,8 +51,6 @@ public class LightSources {
 
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
-
-    public final Matrix4f lightProjectionMatrix = new Matrix4f().zero();
 
     public LightSources() {
         this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.Format.RGB5_A1));
@@ -478,10 +470,6 @@ public class LightSources {
 
     public boolean[] getModified() {
         return modified;
-    }
-
-    public Matrix4f getLightProjectionMatrix() {
-        return lightProjectionMatrix;
     }
 
 }

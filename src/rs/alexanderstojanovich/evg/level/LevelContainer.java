@@ -1305,7 +1305,6 @@ public class LevelContainer implements GravityEnviroment {
             selectionDecal.renderContour(lightSources, baseShader);
         }
 
-        lightSources.resetAllModified();
     }
 
     // -------------------------------------------------------------------------

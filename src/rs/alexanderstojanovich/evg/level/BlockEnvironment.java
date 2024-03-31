@@ -18,23 +18,18 @@ package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
-import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.light.LightStruct;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.models.Material;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -48,7 +43,7 @@ public class BlockEnvironment {
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
 
-    public Matrix4f lightViewMatrix = new Matrix4f().zero();
+    public Matrix4f lightViewMatrix = new Matrix4f();
     private final GameObject gameObject;
 
     public final IList<Tuple> optimizedTuples = new GapList<>();

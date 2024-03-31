@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.light;
 
 import java.util.Objects;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
@@ -32,7 +31,6 @@ public class LightSource {
     public Vector3f pos;
     protected Vector3f color;
     protected float intensity;
-    public final Matrix4f lightViewMatrix = new Matrix4f().zero();
 
     /**
      * Define light source with (pos, color, intensity)
@@ -101,10 +99,6 @@ public class LightSource {
         this.intensity = intensity;
     }
 
-    public Matrix4f getLightViewMatrix() {
-        return lightViewMatrix;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -112,7 +106,7 @@ public class LightSource {
         sb.append("pos=").append(pos);
         sb.append(", color=").append(color);
         sb.append(", intensity=").append(intensity);
-        sb.append(", lightViewMatrix=").append(lightViewMatrix);
+//        sb.append(", lightViewMatrix=").append(lightViewMatrix);
         sb.append('}');
         return sb.toString();
     }

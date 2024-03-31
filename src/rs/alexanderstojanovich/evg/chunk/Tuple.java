@@ -476,9 +476,6 @@ public class Tuple extends Series {
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
             // zero matrix if shadows are disabled
-            // PASS 2
-//            shaderProgram.updateUniform(lightSources.lightSpaceMatrix, "lightSpaceMatrix");
-
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL32.glDrawElementsInstancedBaseVertex(
                     GL11.GL_TRIANGLES,
@@ -548,10 +545,7 @@ public class Tuple extends Series {
                 shaderProgram.updateUniform(new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), "modelColor2");
                 shadowTexture.bind(2, shaderProgram, "modelTexture2");
             }
-            // zero matrix if shadows are disabled
-            // PASS 2
-//            shaderProgram.updateUniform(lightSources.lightSpaceMatrix, "lightSpaceMatrix");
-//            DSLogger.reportInfo(lightSources.lightSpaceMatrix.toString(), null);
+//            DSLogger.reportInfo(lightSources.lightViewMatrix.toString(), null);
             for (Tuple tuple : tuples) {
                 if (!tuple.isBuffered()) {
                     tuple.bufferAll();
