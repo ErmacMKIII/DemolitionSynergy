@@ -22,7 +22,6 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
@@ -90,16 +89,11 @@ public class DynamicText extends Text {
             bigFloatBuff.flip();
         }
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }
 
         if (bigFloatBuff.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
 
@@ -111,7 +105,6 @@ public class DynamicText extends Text {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -120,11 +113,6 @@ public class DynamicText extends Text {
 
     @Override
     public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            throw new RuntimeException("Vertex array object is zero!");
-        }
-
         if (bigVbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -162,7 +150,6 @@ public class DynamicText extends Text {
         }
 
         if (bigFloatBuff.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
 
@@ -174,8 +161,6 @@ public class DynamicText extends Text {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -202,12 +187,13 @@ public class DynamicText extends Text {
     @Override
     public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
             shaderProgram.updateUniform(color, "color");
@@ -233,25 +219,26 @@ public class DynamicText extends Text {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
     }
 
     @Override
     public void renderContour(Intrface intrface, ShaderProgram contourShaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             contourShaderProgram.bind();
-            // Update uniforms
-            contourShaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
-            contourShaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             contourShaderProgram.bindAttribute(0, "pos");
             contourShaderProgram.bindAttribute(1, "uv");
+
+            // Update uniforms
+            contourShaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+            contourShaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
+
             contourShaderProgram.updateUniform(color, "color");
             texture.bind(0, contourShaderProgram, "ifcTexture");
 
@@ -275,8 +262,6 @@ public class DynamicText extends Text {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
     }
 

@@ -60,6 +60,7 @@ public class ShaderProgram {
     public static final IList<ShaderProgram> ACTOR_SHADERS = new GapList<>();
     public static final IList<ShaderProgram> WATER_SHADERS = new GapList<>();
     public static final IList<ShaderProgram> SHADOW_SHADERS = new GapList<>();
+    public static final IList<ShaderProgram> INTRFACE_SHADERS = new GapList<>();
 
     /**
      * Init all the shaders. Must be done in Game Renderer.
@@ -174,18 +175,15 @@ public class ShaderProgram {
         // ---------------------------------------------------------------------
         // ENVIRONMENTAL SHADERS (MAIN, CONTOUR, VOXEL, SKYBOX)
         //----------------------------------------------------------------------
-        ENVIRONMENTAL_SHADERS.add(mainShader);
-        ENVIRONMENTAL_SHADERS.add(contourShader);
-        ENVIRONMENTAL_SHADERS.add(voxelShader);
-        ENVIRONMENTAL_SHADERS.add(skyboxShader);
+        ENVIRONMENTAL_SHADERS.add(mainShader); // environnment & npc
+        ENVIRONMENTAL_SHADERS.add(contourShader); // decal
+        ENVIRONMENTAL_SHADERS.add(voxelShader); // blocks
+        ENVIRONMENTAL_SHADERS.add(skyboxShader); // skybox
         // ---------------------------------------------------------------------
         // ACTOR SHADERS (PLAYER, WEAPON)
         //----------------------------------------------------------------------
-        ACTOR_SHADERS.add(playerShader); // player
-        ACTOR_SHADERS.add(mainShader); // environnment & npc
-        ACTOR_SHADERS.add(contourShader); // decal
-        ACTOR_SHADERS.add(voxelShader); // blocks
-        ACTOR_SHADERS.add(skyboxShader); // skybox
+        ACTOR_SHADERS.add(playerShader); // player        
+        ACTOR_SHADERS.add(weaponShader); // weapon in hands
         // ---------------------------------------------------------------------
         // ---------------------------------------------------------------------        
         // WATER SHADERS
@@ -197,6 +195,11 @@ public class ShaderProgram {
         //----------------------------------------------------------------------
         SHADOW_SHADERS.add(shadowBaseShader);
         SHADOW_SHADERS.add(shadowVoxelShader);
+        // ---------------------------------------------------------------------
+        // INTRFACE SHADERS
+        //----------------------------------------------------------------------
+        INTRFACE_SHADERS.add(intrfaceShader);
+        INTRFACE_SHADERS.add(intrfaceContourShader);
         DSLogger.reportDebug("Shaders initialized!", null);
     }
 

@@ -65,9 +65,6 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 public class LevelContainer implements GravityEnviroment {
 
     public final GameObject gameObject;
-    public static int PLAYER_LIGHT_INDEX = 0;
-    public static int SUNLIGHT_INDEX = 0;
-
     protected final Configuration cfg = Configuration.getInstance();
 
     public static final Block SKYBOX = new Block("night");
@@ -200,7 +197,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
-        SUN.setPrimaryRGBColor(SUN_COLOR_RGB);
+        SUN.setPrimaryRGBColor(new Vector3f(SUN_COLOR_RGB));
         SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
@@ -1150,8 +1147,8 @@ public class LevelContainer implements GravityEnviroment {
      * updated. Skybox rotates counter-clockwise (from -right to right)
      */
     public void update() { // call it externally from the main thread 
-        if (!working) { // don't updateVertices if working, it may screw up!   
-            final float now = GameTime.Now().getTime();
+        if (!working) { // don't subBufferVertices if working, it may screw up!   
+            final float now = (float) GameTime.Now().getTime();
             float dtime = now - lastCycledDayTime;
             lastCycledDayTime = now;
 
@@ -1163,15 +1160,12 @@ public class LevelContainer implements GravityEnviroment {
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
             float inten = org.joml.Math.max(org.joml.Math.sin(sunAngle), 0.0f);
 
-            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.05f));
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
             Camera mainCamera = levelActors.mainCamera();
             levelActors.player.light.pos = mainCamera.getPos();
 
-//            LightSources.updateLights(SUNLIGHT, SUN); // sun updates light from itself
-//            LightSources.updateLights(SUNLIGHT, SKYBOX); // skybox updates light from the sun
-//            blockEnvironment.updateLights(levelActors.mainCamera().getFront(), lightSources); // and all the blocks updates lights from the light sources
             for (int i = 0; i < 2; i++) {
                 lightSources.setModified(i, true);
             }
@@ -1205,6 +1199,14 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
 
+        // this portion of the code renders level actors
+        // render observer/player
+        levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        // render same camera to eniromental (voxel) shaders
+        for (ShaderProgram sp : ShaderProgram.ENVIRONMENTAL_SHADERS) {
+            levelActors.mainCamera().render(sp);
+        }
+
         if (!SUN.isBuffered()) {
             SUN.bufferAll();
         }
@@ -1217,13 +1219,6 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.bufferAll();
         }
         SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
-
-        // only visible & uncached are in chunk list      
-        // prepare alters tex coords based on whether or not camera is submerged in fluid   
-        blockEnvironment.prepare(cameraInFluid);
-
-        // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -1241,13 +1236,15 @@ public class LevelContainer implements GravityEnviroment {
             selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
         }
 
-        // this portion of the code renders level actors
-        for (ShaderProgram sp : ShaderProgram.ACTOR_SHADERS) {
-            levelActors.mainCamera().render(sp);
-        }
-        levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
+        // only visible & uncached are in chunk list      
+        // prepare alters tex coords based on whether or not camera is submerged in fluid   
+        blockEnvironment.prepare(cameraInFluid);
+
+        // only visible & uncached are in chunk list 
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
         // ----------------------------------------------       
 
+        // render light overlay
         LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
     }
@@ -1283,12 +1280,6 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, baseShader);
 
-        // prepare alters tex coords based on whether or not camera is submerged in fluid
-        blockEnvironment.prepare(cameraInFluid);
-
-        // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(instanceShader, renderFlag);
-
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
             if (!editorNew.isBuffered()) {
@@ -1305,6 +1296,11 @@ public class LevelContainer implements GravityEnviroment {
             selectionDecal.renderContour(lightSources, baseShader);
         }
 
+        // prepare alters tex coords based on whether or not camera is submerged in fluid
+        blockEnvironment.prepare(cameraInFluid);
+
+        // only visible & uncached are in chunk list 
+        blockEnvironment.renderStatic(instanceShader, renderFlag);
     }
 
     // -------------------------------------------------------------------------

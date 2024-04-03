@@ -24,7 +24,6 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -111,26 +110,26 @@ public class Model implements Renderable, Comparable<Model> {
             return; // Skip rendering if not ready
         }
 
+        // Enable vertex attribute arrays
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
         for (Mesh mesh : meshes) {
-            GL30.glBindVertexArray(mesh.vao);
-
-            // Enable vertex attribute arrays
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
-
             if (shaderProgram != null) {
                 shaderProgram.bind();
 
                 // Bind attributes
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+                GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+                GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+                GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
                 shaderProgram.bindAttribute(0, "pos");
                 shaderProgram.bindAttribute(1, "normal");
                 shaderProgram.bindAttribute(2, "uv");
 
                 // Update uniforms
                 transform(shaderProgram);
-                primaryColor(shaderProgram);
-//                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
@@ -144,22 +143,21 @@ public class Model implements Renderable, Comparable<Model> {
                     secondaryColor(shaderProgram);
                     waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
-            }
 
-            // Draw the mesh
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
-            GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+                // Draw the mesh
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+                GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
+            }
             Texture.unbind(0);
             Texture.unbind(1);
             ShaderProgram.unbind();
-
-            // Clean up
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            GL20.glDisableVertexAttribArray(2);
-            GL30.glBindVertexArray(0);
         }
+
+        // Clean up
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
     }
 
     /**
@@ -175,28 +173,28 @@ public class Model implements Renderable, Comparable<Model> {
             return; // Skip rendering if not ready
         }
 
+        // Enable vertex attribute arrays
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
+
         for (Mesh mesh : meshes) {
-            GL30.glBindVertexArray(mesh.vao);
-
-            // Enable vertex attribute arrays
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
-
             if (shaderProgram != null) {
                 shaderProgram.bind();
 
                 // Bind attributes
+                GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, mesh.vbo);
+                GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
+                GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
+                GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
                 shaderProgram.bindAttribute(0, "pos");
                 shaderProgram.bindAttribute(1, "normal");
                 shaderProgram.bindAttribute(2, "uv");
 
                 // Update uniforms
                 shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
-                shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
+                shaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
                 transform(shaderProgram);
-                primaryColor(shaderProgram);
-//                lightColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
@@ -210,22 +208,22 @@ public class Model implements Renderable, Comparable<Model> {
                     secondaryColor(shaderProgram);
                     waterTexture.bind(1, shaderProgram, "modelTexture1");
                 }
+
+                // Draw the mesh
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
+                GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
             }
 
-            // Draw the mesh
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
-            GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
             Texture.unbind(0);
             Texture.unbind(1);
             ShaderProgram.unbind();
-
-            // Clean up
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            GL20.glDisableVertexAttribArray(2);
-            GL30.glBindVertexArray(0);
         }
+
+        // Clean up
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
     }
 
     /**
@@ -260,7 +258,6 @@ public class Model implements Renderable, Comparable<Model> {
 
             for (Model model : models) {
                 model.transform(shaderProgram);
-                model.primaryColor(shaderProgram);
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
@@ -310,7 +307,7 @@ public class Model implements Renderable, Comparable<Model> {
     }
 
     public void primaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(materials.getFirst().color, "modelColor0");
+        shaderProgram.updateUniform(getPrimaryRGBAColor(), "modelColor0");
     }
 
     public void secondaryColor(ShaderProgram shaderProgram) {
@@ -719,14 +716,13 @@ public class Model implements Renderable, Comparable<Model> {
 //    public Vector4f getMapLightColor() {
 //        return this.materials.getFirst().getLightColor();
 //    }
-    public Vector4f getModelColor() {
-        Vector4f prim = this.materials.getFirst().color;
-        Vector4f light = this.materials.getFirst().getLightColor();
-        Vector4f temp = new Vector4f();
-
-        return prim.mul(light, temp);
-    }
-
+//    public Vector4f getModelColor() {
+//        Vector4f prim = this.materials.getFirst().color;
+//        Vector4f light = this.materials.getFirst().getLightColor();
+//        Vector4f temp = new Vector4f();
+//
+//        return prim.mul(light, temp);
+//    }
     public void setPrimaryRGBColor(Vector3f color) {
         this.materials.getFirst().color = new Vector4f(color, 1.0f);
     }

@@ -92,8 +92,6 @@ public class Text implements ComponentIfc {
         new Vector2f()
     };
 
-    protected int vao = 0;
-
     protected static FloatBuffer floatBuffer = null;
     protected int vbo = 0;
 
@@ -142,16 +140,11 @@ public class Text implements ComponentIfc {
         }
         floatBuffer.flip();
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
         if (floatBuffer.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
 
@@ -163,7 +156,6 @@ public class Text implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -176,10 +168,6 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            throw new RuntimeException("Vertex array object is zero!");
-        }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -205,7 +193,6 @@ public class Text implements ComponentIfc {
         floatBuffer.flip();
 
         if (floatBuffer.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
 
@@ -217,7 +204,6 @@ public class Text implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -346,12 +332,13 @@ public class Text implements ComponentIfc {
     @Override
     public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
@@ -373,25 +360,24 @@ public class Text implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
     }
 
     public void renderContour(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
             // Update uniforms
             shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
-            shaderProgram.updateUniform(GameTime.Now().getTime(), "gameTime");
+            shaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
             shaderProgram.updateUniform(scale, "scale");
             shaderProgram.updateUniform(color, "color");
             texture.bind(0, shaderProgram, "ifcTexture");
@@ -410,8 +396,6 @@ public class Text implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
     }
 

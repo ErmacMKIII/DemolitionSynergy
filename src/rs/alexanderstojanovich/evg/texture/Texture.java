@@ -60,7 +60,8 @@ public class Texture {
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
     public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
-    public static final Texture EMPTY = new Texture("EMPTY", Format.RGB5_A1);
+    public static final Texture EMPTY = new Texture("EMPTY", Format.NONE);
+
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
     public static final int GRID_SIZE_WORLD = 3;
 
@@ -138,7 +139,7 @@ public class Texture {
         ByteBuffer imgDatBuff = ImageUtils.getImageDataBuffer(image, TEX_SIZE);
         switch (texFmt) {
             case NONE:
-                loadTexture(imgDatBuff, GL11.GL_RGB, GL11.GL_RGB, Type.UNSINGED_BYTE);
+                loadTexture(imgDatBuff, GL11.GL_RGBA, GL11.GL_RGBA, Type.UNSINGED_BYTE);
                 break;
             case RGB5_A1:
                 loadTexture(imgDatBuff, GL11.GL_RGB5_A1, GL11.GL_RGBA, Type.UNSINGED_BYTE);
@@ -166,7 +167,7 @@ public class Texture {
     public static void bufferAll(Texture texture, ByteBuffer imgDatBuff) {
         switch (texture.texFmt) {
             case NONE:
-                texture.loadTexture(imgDatBuff, GL11.GL_RGB, GL11.GL_RGB, Type.UNSINGED_BYTE);
+                texture.loadTexture(imgDatBuff, GL11.GL_RGBA, GL11.GL_RGBA, Type.UNSINGED_BYTE);
                 break;
             case RGB5_A1:
                 texture.loadTexture(imgDatBuff, GL11.GL_RGB5_A1, GL11.GL_RGBA, Type.UNSINGED_BYTE);

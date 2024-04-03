@@ -70,12 +70,12 @@ Done.
 - location 	=> block location matrix 512x512x512 on X,Z & Y axis.
 - main 		=> main inependable classes, `Game` (main loop), `GameRenderer` (separate thread) & `GameObject` links them together.
 - models 	=> 3d looking models and their part(s) - vertex, mesh, material.
-- resources => ingame block (models) cube.txt (deprecated) & cubex.txt.
+- resources     => ingame block (models) cube.txt (deprecated) & cubex.txt.
 - shaders 	=> Shader - Vertex & Fragment GLSL, Shader Program - binds them together.
 - texture 	=> ingame textures & texture store hashmap.
 - util 		=> various utils & auxillary methods including logging, math & image utils.
 
 # Mentions
 Author: Ermac(MKIII); 
-Testers: 13, Hellblade64;
+Testers: 13;
 Credits: Erokia

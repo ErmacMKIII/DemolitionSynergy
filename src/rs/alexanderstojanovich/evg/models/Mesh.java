@@ -24,7 +24,6 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -42,15 +41,24 @@ public class Mesh {
     protected static FloatBuffer fb;
     protected static IntBuffer ib;
 
-    protected int vao = 0; // vertex array object
     protected int vbo = 0; // vertex buffer object
     protected int ibo = 0; // index buffer object  
 
     protected boolean buffered = false;
 
     public boolean bufferVertices() {
-        // Allocate memory for vertex data
-        fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
+        int someSize = vertices.size() * Vertex.SIZE;
+        // Allocate memory for the vertex data buffer
+        if (fb == null) {
+            fb = MemoryUtil.memCallocFloat(someSize);
+        } else if (fb.capacity() < someSize) {
+            fb = MemoryUtil.memRealloc(fb, someSize);
+        }
+
+        // Set buffer position and limit
+        fb.position(0);
+        fb.limit(someSize);
+
         if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -69,11 +77,9 @@ public class Mesh {
                         .put(vertex.getUv().y);
             }
         }
-        fb.flip();
 
-        // Generate vertex array object and vertex buffer object if not already generated
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
+        if (fb.position() != 0) {
+            fb.flip();
         }
 
         if (vbo == 0) {
@@ -81,7 +87,6 @@ public class Mesh {
         }
 
         // Bind the vertex array and vertex buffer
-        GL30.glBindVertexArray(vao);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
 
         // Transfer vertex data to GPU
@@ -97,22 +102,18 @@ public class Mesh {
         GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // Normal
         GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // UV
 
-        // Unbind vertex array and vertex buffer
-        GL30.glBindVertexArray(0);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
 
-        // Free memory allocated for vertex data
-        MemoryUtil.memFree(fb);
+        // Unbind vertex array and vertex buffer
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
         return true;
     }
 
     public boolean subBufferVertices() {
         // Check if vertex array and vertex buffer objects are initialized
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            throw new RuntimeException("Vertex array object is zero!");
-        }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -138,24 +139,28 @@ public class Mesh {
                         .put(vertex.getUv().y);
             }
         }
-        fb.flip();
+        if (fb.position() != 0) {
+            fb.flip();
+        }
 
         // Bind the vertex array and vertex buffer
-        GL30.glBindVertexArray(vao);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
 
         // Update vertex data on GPU
         GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
 
-        // Free memory allocated for vertex data
-        MemoryUtil.memFree(fb);
-
         return true;
     }
 
     public boolean bufferIndices() {
+        int someSize = indices.size();
         // Allocate memory for index data
-        ib = MemoryUtil.memCallocInt(indices.size());
+        if (ib == null) {
+            ib = MemoryUtil.memCallocInt(someSize);
+        }
+        ib.position(0);
+        ib.limit(someSize);
+
         if (MemoryUtil.memAddressSafe(ib) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
             throw new RuntimeException("Could not allocate memory address!");
@@ -177,9 +182,6 @@ public class Mesh {
 
         // Transfer index data to GPU
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
-
-        // Free memory allocated for index data
-        MemoryUtil.memFree(ib);
 
         return true;
     }
@@ -259,4 +261,26 @@ public class Mesh {
         return indices;
     }
 
+    public void release() {
+        if (vbo != 0) {
+            GL15.glDeleteBuffers(vbo);
+        }
+        if (ibo != 0) {
+            GL15.glDeleteBuffers(ibo);
+        }
+
+        if (fb != null && fb.capacity() != 0) {
+            // Free memory allocated for vertex data
+            MemoryUtil.memFree(fb);
+            fb = null;
+        }
+
+        if (ib != null && ib.capacity() != 0) {
+            // Free memory allocated for index data
+            MemoryUtil.memFree(ib);
+            ib = null;
+        }
+
+        buffered = false;
+    }
 }

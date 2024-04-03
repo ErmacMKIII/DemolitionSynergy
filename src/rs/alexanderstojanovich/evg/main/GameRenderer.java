@@ -88,7 +88,7 @@ public class GameRenderer extends Thread implements Executor {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = Math.max(currTime - lastTime, 0.0);
-            fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
+            fpsTicks += deltaTime * MathUtils.lerp(Game.getFpsMax(), fps, 5.0E-4);
             lastTime = currTime;
 
             // Detecting critical status

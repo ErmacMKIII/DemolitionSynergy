@@ -20,7 +20,6 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
@@ -44,14 +43,15 @@ public class LightOverlay extends Quad {
 
     public void render(Intrface intrface, Camera camera, LightSources lightSrc, ShaderProgram shaderProgram) {
         if (enabled && buffered) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
+//            GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+//            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
-            shaderProgram.bindAttribute(1, "uv");
+//            shaderProgram.bindAttribute(1, "uv");
             lightSrc.updateLightsInShaderIfModified(shaderProgram);
 
             Matrix4f modelMatrix = calcModelMatrix(intrface);
@@ -69,9 +69,7 @@ public class LightOverlay extends Quad {
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
+//            GL20.glDisableVertexAttribArray(1);
         }
     }
 

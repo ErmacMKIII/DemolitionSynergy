@@ -64,22 +64,18 @@ public class FrameBuffer {
      * @throws java.lang.Exception if buffer cannot be created
      */
     public void initBuffer() throws Exception { // requires OpenGL context        
+        // loads empty texture to graphics card
+        Texture.bufferAll(texture, null);
+        createFrameBuffer();
 
         switch (cfg) {
-            case COLOR_ATTACHMENT:
-                createFrameBuffer();
-                // loads empty texture to graphics card
-                Texture.bufferAll(texture, null);
+            case COLOR_ATTACHMENT: // Water Frame Buffer
                 configureColorTexture();
                 createDepth();
                 break;
 
-            case DEPTH_ATTACHMENT:
-                createFrameBuffer();
-                // loads empty texture to graphics card
-                Texture.bufferAll(texture, null);
+            case DEPTH_ATTACHMENT: // Shadow Frame Buffer
                 configureDepthTexture();
-//                createDepth();
                 break;
         }
 

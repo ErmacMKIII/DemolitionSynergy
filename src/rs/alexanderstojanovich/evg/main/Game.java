@@ -555,7 +555,7 @@ public class Game {
             deltaTime = currTime - lastTime;
             // hunger time
             accumulator += deltaTime * Game.TPS;
-            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.02);
+            upsTicks += deltaTime * MathUtils.lerp(Game.TPS, ups, 0.02);
             lastTime = currTime;
 
             // Detecting critical status

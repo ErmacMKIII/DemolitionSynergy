@@ -60,7 +60,7 @@ public class Player extends Critter implements Observer {
         super(body);
 //        this.camera = new Camera(new Vector3f(this.body.pos));
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
-        this.light = new LightSource(this.body.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+        this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {

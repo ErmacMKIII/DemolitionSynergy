@@ -228,10 +228,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //                renderFlag |= BlockEnvironment.SHADOW_MASK;
 //            }
 //            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-//                waterRenderer.updateVertices(); // updateVertices water heights
+//                waterRenderer.subBufferVertices(); // subBufferVertices water heights
 //            }
 //            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-//                shadowRenderer.updateVertices(); // updateVertices shadow box
+//                shadowRenderer.subBufferVertices(); // subBufferVertices shadow box
 //            }
             synchronized (UPDATE_RENDER_MUTEX) {
                 levelContainer.update();
@@ -241,7 +241,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
             }
 
-            perspectiveRenderer.updatePerspective(); // updateVertices perspective for all the shaders (aoart from shadow ones)
+            perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();
@@ -341,6 +341,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
                         shadowRenderer.render();
                     }
+
                     levelContainer.render(renderFlag);
                 }
 
@@ -408,7 +409,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         synchronized (UPDATE_RENDER_MUTEX) {
             levelContainer.optimize();
         }
-        levelContainer.lightSources.setAllModified();
     }
 
     /**

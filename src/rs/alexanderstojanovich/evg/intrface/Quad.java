@@ -24,7 +24,6 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -65,7 +64,6 @@ public class Quad implements ComponentIfc {
     protected Vector2f[] uvs = new Vector2f[4];
     protected static final int[] INDICES = {0, 1, 2, 2, 3, 0};
 
-    protected int vao = 0;
     protected int vbo = 0;
 
     protected static IntBuffer intBuffer = null;
@@ -121,12 +119,7 @@ public class Quad implements ComponentIfc {
             vbo = GL15.glGenBuffers();
         }
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         if (FLOAT_BUFFER.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, FLOAT_BUFFER, GL15.GL_STATIC_DRAW);
 
@@ -138,7 +131,6 @@ public class Quad implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -147,10 +139,6 @@ public class Quad implements ComponentIfc {
 
     @Override
     public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            throw new RuntimeException("Vertex array object is zero!");
-        }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -174,7 +162,6 @@ public class Quad implements ComponentIfc {
         FLOAT_BUFFER.flip();
 
         if (FLOAT_BUFFER.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, FLOAT_BUFFER);
 
@@ -186,7 +173,6 @@ public class Quad implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -265,7 +251,7 @@ public class Quad implements ComponentIfc {
 
     @Override
     public void bufferSmart(Intrface intrface) {
-        if (FLOAT_BUFFER != null && vao != 0 && vbo != 0 && ibo != 0) {
+        if (FLOAT_BUFFER != null && vbo != 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
@@ -289,12 +275,14 @@ public class Quad implements ComponentIfc {
     @Override
     public void render(Intrface intrface, ShaderProgram shaderProgram) { // used for crosshair
         if (enabled && buffered) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
+
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
@@ -313,8 +301,6 @@ public class Quad implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
     }
 

@@ -22,7 +22,6 @@ import java.util.function.Predicate;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.BigList;
@@ -44,7 +43,6 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
     public final IList<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
-    protected int vao = 0;
     protected int bigVbo = 0;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
@@ -116,15 +114,8 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             bigVbo = GL15.glGenBuffers();
         }
 
-        // Generate vertex array object if not already generated
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         // Buffer vertex data
         if (bigFloatBuff.capacity() != 0) {
-
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
 
@@ -142,8 +133,6 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
-
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -157,7 +146,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
      * @return if vertex data was successfully buffered
      */
     public boolean subBufferVertices() { // Call before rendering
-        if (vao == 0 || bigVbo == 0) {
+        if (bigVbo == 0) {
             DSLogger.reportError("Vertex array object or vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex array object or vertex buffer object is zero!");
         }
@@ -202,8 +191,6 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
 
         // Sub-Buffer vertex data
         if (bigFloatBuff.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
-
             // Update the vertex buffer object with new data
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
@@ -223,7 +210,6 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             GL20.glDisableVertexAttribArray(1);
             GL20.glDisableVertexAttribArray(2);
 
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -320,9 +306,6 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
 
     public void render(ShaderProgram shaderProgram, LightSources lightSources) { // Standard render all
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-            // Bind vertex array
-            GL30.glBindVertexArray(vao);
-
             // Enable vertex attribute arrays
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -331,6 +314,10 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             int blkIndex = 0;
             shaderProgram.bind();
 
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // Position
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // Normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // UV
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
@@ -372,15 +359,12 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             // Unbind vertex array and buffers
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            GL30.glBindVertexArray(0);
+            // GL30.glBindVertexArray(0);
         }
     }
 
     public void renderIf(ShaderProgram shaderProgram, LightSources lightSources, Predicate<Block> predicate) { // Powerful render if block is visible by camera
         if (buffered && shaderProgram != null && !blockList.isEmpty()) {
-            // Bind vertex array
-            GL30.glBindVertexArray(vao);
-
             // Enable vertex attribute arrays
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -389,6 +373,10 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             int blkIndex = 0;
             shaderProgram.bind();
 
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 0); // Position
+            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 12); // Normal
+            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, (Vertex.SIZE) * 4, 24); // UV
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
@@ -432,7 +420,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             // Unbind vertex array and buffers
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-            GL30.glBindVertexArray(0);
+            // GL30.glBindVertexArray(0);
         }
     }
 

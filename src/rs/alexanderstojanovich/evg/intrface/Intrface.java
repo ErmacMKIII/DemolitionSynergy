@@ -613,7 +613,7 @@ public class Intrface {
      *
      * @param ifcShaderProgram Interface shader program (default - use that
      * one).
-     * @param ifcContShaderProgramn Interface contour shader program
+     * @param ifcContShaderProgram Interface contour shader program
      * (animated-through - use that one).
      */
     public void render(ShaderProgram ifcShaderProgram, ShaderProgram ifcContShaderProgram) {
