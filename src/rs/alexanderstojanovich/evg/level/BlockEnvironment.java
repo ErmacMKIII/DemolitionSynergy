@@ -30,7 +30,6 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -115,7 +114,7 @@ public class BlockEnvironment {
         }
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
-        for (int j = 0; j <= NUM_OF_PASSES_MAX; j++) {
+        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
             // assign last value & increment to next value with limit to 63
             final int faceBits = (++lastFaceBits) & 63;
             if ((faceBits & (mask & 63)) != 0) {

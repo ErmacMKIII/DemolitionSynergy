@@ -164,6 +164,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Renderer started.", null);
         DSLogger.reportDebug("Game will start soon.", null);
         game.go();
+        timer1.cancel();
         game.cleanUp();
         intrface.cleanUp();
         //----------------------------------------------------------------------
@@ -172,7 +173,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } catch (InterruptedException ex) {
             DSLogger.reportError(ex.getMessage(), ex);
         }
-        timer1.cancel();
     }
 
     // -------------------------------------------------------------------------

@@ -117,7 +117,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // lastly it executes the console tasks
-            if (couldRender()) {
+            if (!couldRender()) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task);
                 }

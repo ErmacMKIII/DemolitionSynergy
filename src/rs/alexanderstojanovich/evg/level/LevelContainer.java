@@ -849,7 +849,9 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(predictable.getPredictor()));
 
         if (!coll) {
-            final float stepAmount = (float) Game.TICK_TIME;
+            final float precision = 32.0f;
+            final float stepAmount = (float) Game.TICK_TIME / precision;
+            final float maxAmount = (float) (Game.AMOUNT);
 
             Vector3f predAlign = new Vector3f(
                     Math.round(predictable.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -862,7 +864,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(predictable.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -893,7 +895,9 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(observer.getPos(), 0.07f, 0.07f, 0.07f));
 
         if (!coll) {
-            final float stepAmount = (float) Game.TICK_TIME;
+            final float precision = 32.0f;
+            final float stepAmount = (float) Game.TICK_TIME / precision;
+            final float maxAmount = (float) (Game.AMOUNT);
 
             Vector3f predAlign = new Vector3f(
                     Math.round(observer.getPos().x + 0.5f) & 0xFFFFFFFE,
@@ -906,7 +910,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(observer.getPos(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -940,7 +944,9 @@ public class LevelContainer implements GravityEnviroment {
                         critter.body.getHeight(), critter.body.getDepth()));
 
         if (!coll) {
-            final float stepAmount = (float) Game.TICK_TIME;
+            final float precision = 32.0f;
+            final float stepAmount = (float) Game.TICK_TIME / precision;
+            final float maxAmount = (float) (Game.AMOUNT);
 
             Vector3f predAlign = new Vector3f(
                     Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
@@ -953,7 +959,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!coll) {
                 OUTER:
                 for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= 16.0f * Game.AMOUNT; amount += stepAmount) { // double amount precision
+                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
                         Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                         Vector3f adjAlign = new Vector3f(
                                 Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -990,36 +996,35 @@ public class LevelContainer implements GravityEnviroment {
 
         final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
+        final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
         SCAN:
-        for (float tstTime = 0.0f; tstTime <= deltaTime; tstTime += stepAmount) { // quad-precision
+        for (float tstTime = 0.0f; tstTime <= maxAmount; tstTime += stepAmount) { // quad-precision
             for (int i = 0; i < testSides.length; i++) {
                 float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                for (float eps = 0.0f; eps <= 2.0f; eps += 0.125f) {
-                    Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), testSides[i], tstHeight + eps);
-                    Vector3f adjBottomAlign = new Vector3f(
-                            Math.round(adjBottom.x + 0.5f) & 0xFFFFFFFE,
-                            Math.round(adjBottom.y + 0.5f) & 0xFFFFFFFE,
-                            Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
-                    );
+                Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), testSides[i], tstHeight + 2.0f);
+                Vector3f adjBottomAlign = new Vector3f(
+                        Math.round(adjBottom.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjBottom.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
+                );
 
-                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
-                    if (solidOnLoc) {
-                        levelActors.player.movePredictorYDown(tstHeight);
-                        // solid object collision
-                        collision |= Block.containsInsideEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f, levelActors.player.getPredictor())
-                                || Model.intersectsEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f,
-                                        levelActors.player.getPredictor(), 1.05f * levelActors.player.body.getWidth(), 1.05f * levelActors.player.body.getHeight(), 1.05f * levelActors.player.body.getDepth());
-                        // skybox collision
-                        collision |= (!SKYBOX.containsInsideExactly(levelActors.player.getPredictor())
-                                || !SKYBOX.intersectsExactly(levelActors.player.getPredictor(), levelActors.player.body.getWidth(),
-                                        levelActors.player.body.getHeight(), levelActors.player.body.getDepth()));
-                        levelActors.player.movePredictorYUp(tstHeight);
-                        if (collision) {
-                            fallVelocity = 0.0f;
-                            break SCAN;
-                        }
+                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
+                if (solidOnLoc) {
+                    levelActors.player.movePredictorYDown(tstHeight);
+                    // solid object collision
+                    collision |= Block.containsInsideEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f, levelActors.player.getPredictor())
+                            || Model.intersectsEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f,
+                                    levelActors.player.getPredictor(), 1.05f * levelActors.player.body.getWidth(), 1.05f * levelActors.player.body.getHeight(), 1.05f * levelActors.player.body.getDepth());
+                    // skybox collision
+                    collision |= (!SKYBOX.containsInsideExactly(levelActors.player.getPredictor())
+                            || !SKYBOX.intersectsExactly(levelActors.player.getPredictor(), levelActors.player.body.getWidth(),
+                                    levelActors.player.body.getHeight(), levelActors.player.body.getDepth()));
+                    levelActors.player.movePredictorYUp(tstHeight);
+                    if (collision) {
+                        fallVelocity = 0.0f;
+                        break SCAN;
                     }
                 }
             }
@@ -1059,10 +1064,9 @@ public class LevelContainer implements GravityEnviroment {
         float height0 = amountY * deltaTime;
         float heightThrust = 0.0f;
         if (cameraInFluid) {
-            final float resistConst = 5E-6f;
             final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
-            final float mass = 75f;
-            final float accel = thrustForce * resistConst / mass;
+            final float mass = 90f;
+            final float accel = thrustForce / mass;
             heightThrust = accel * deltaTime * deltaTime / 2.0f;
         }
 
@@ -1071,11 +1075,12 @@ public class LevelContainer implements GravityEnviroment {
 
         final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
+        final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 
         boolean collision = false;
         int[] testSides = {Block.TOP, Block.LEFT_TOP, Block.RIGHT_TOP, Block.TOP_BACK, Block.TOP_FRONT};
         SCAN:
-        for (float amount = 0.0f; amount <= precision * Game.AMOUNT; amount += stepAmount) { // quad-precision
+        for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // quad-precision
             for (int i = 0; i < testSides.length; i++) {
                 Vector3f adjTop = Block.getAdjacentPos(critter.getPos(), testSides[i], amount);
                 Vector3f adjTopAlign = new Vector3f(
@@ -1163,8 +1168,6 @@ public class LevelContainer implements GravityEnviroment {
             SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
-            Camera mainCamera = levelActors.mainCamera();
-            levelActors.player.light.pos = mainCamera.getPos();
 
             for (int i = 0; i < 2; i++) {
                 lightSources.setModified(i, true);
