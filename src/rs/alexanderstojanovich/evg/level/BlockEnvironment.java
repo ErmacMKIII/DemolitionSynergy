@@ -106,12 +106,18 @@ public class BlockEnvironment {
     public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
         // determine lastFaceBits mask
         final int mask = Block.getVisibleFaceBitsFast(camFront);
-        optimizedTuples.removeIf(ot -> (ot.faceBits() & mask) == 0);
+        boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask) == 0);
+
+        // some removals are made
+        if (someRemoved) {
+            optimized = false;
+        }
 
         // determine texture type to process - split
         if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
+
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
         for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
@@ -138,6 +144,8 @@ public class BlockEnvironment {
                                     // add absent blocks
                                     boolean modified = optmTuple.blockList.addIfAbsent(blk);
                                     if (modified) {
+                                        // it is not fully optimized
+                                        optimized = false;
                                         // sort so it does remains ordered
                                         optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                                         // sets to unbuffer if modified
@@ -151,7 +159,15 @@ public class BlockEnvironment {
             }
         }
 
-        optimized = true;
+        // if last bits is processed start from beginning next time
+        if (lastFaceBits == 64) {
+            lastFaceBits = 0;
+        }
+
+        // if full circle with all textures & facebits has been completed
+        if (texProcIndex == 0 && lastFaceBits == 0) {
+            optimized = true;
+        }
     }
 
     /**

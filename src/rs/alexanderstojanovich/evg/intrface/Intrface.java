@@ -327,7 +327,7 @@ public class Intrface {
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
             Object[] swtch = {"OFF", "ON"};
             Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
-            Object[] mouseSens = {1.0f, 2.0f, 2.0f, 2.5f, 3.0f, 3.5f, 2.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
+            Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
             Object[] volume = new Float[21];
             int k = 0;
             for (float i = 0.0f; i < 1.05f; i += 0.05f) {
@@ -423,20 +423,20 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 7:
+                        case 6:
                             float msens = (float) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
                             command.getArgs().add(msens);
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 8:
+                        case 7:
                             command = Command.getCommand(Command.Target.MUSIC_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 9:
+                        case 8:
                             command = Command.getCommand(Command.Target.SOUND_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);

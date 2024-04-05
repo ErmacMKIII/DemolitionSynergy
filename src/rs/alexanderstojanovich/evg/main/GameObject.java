@@ -405,7 +405,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with special tuples
      */
     private void optimize() {
-        levelContainer.blockEnvironment.setOptimized(false); // this is also hint to not render
         synchronized (UPDATE_RENDER_MUTEX) {
             levelContainer.optimize();
         }

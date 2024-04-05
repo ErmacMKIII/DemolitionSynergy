@@ -613,7 +613,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 int deltaCol = Math.abs(currCol - col);
                 int deltaRow = Math.abs(currRow - row);
 
-                if (deltaCol <= 1 && deltaRow <= 1 && intersectsVisionFunc(chunkId, camera)) {
+                if (deltaCol <= 1 && deltaRow <= 1 /*&& intersectsVisionFunc(chunkId, camera)*/) {
                     vChnkIdList.add(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
                     iChnkIdList.add(chunkId);
