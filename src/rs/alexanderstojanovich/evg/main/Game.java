@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
@@ -132,7 +133,7 @@ public class Game {
 
         Observer obs = lc.levelActors.spectator;
 
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveBackward(AMOUNT);
             } else {
@@ -141,7 +142,7 @@ public class Game {
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
@@ -150,7 +151,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_A]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
@@ -159,7 +160,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_D]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
@@ -168,7 +169,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.descend(AMOUNT);
             } else {
@@ -177,7 +178,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.ascend(AMOUNT);
             } else {
@@ -310,31 +311,7 @@ public class Game {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        if (lc.isCameraInFluid()) {
-            jumpPerformed = false;
-        }
-
-        if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision && !jumpPerformed) {
-            player.movePredictorYUp(amountY);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
-                player.movePredictorYDown(amountY);
-            } else {
-                jumpPerformed |= lc.jump(player, amountY, deltaTime);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
-            player.movePredictorYDown(amountYNeg);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
-                player.movePredictorYUp(amountYNeg);
-            } else {
-                player.sinkY(amountYNeg);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             player.movePredictorXZForward(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZBackward(amountXZ);
@@ -344,7 +321,7 @@ public class Game {
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
             player.movePredictorXZBackward(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZForward(amountXZ);
@@ -354,7 +331,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_A]) {
             player.movePredictorXZLeft(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZRight(amountXZ);
@@ -364,12 +341,32 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_D]) {
             player.movePredictorXZRight(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+            player.movePredictorYUp(amountY);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                player.movePredictorYDown(amountY);
+            } else {
+                jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+            player.movePredictorYDown(amountYNeg);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                player.movePredictorYUp(amountYNeg);
+            } else {
+                player.sinkY(amountYNeg);
                 changed = true;
             }
         }
@@ -578,6 +575,8 @@ public class Game {
                 // call utility functions (optimizing etc.)
                 gameObject.utilOptimization();
             } else {
+                // determine visible chunks (can be altered with player position)
+                gameObject.determineVisibleChunks();
                 // call utility functions (chunk loading etc.)
                 gameObject.utilChunkOperations();
             }
@@ -591,38 +590,44 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
-                            actionPerformed |= editorDo(gameObject.levelContainer);
-                        }
+                        actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
+                        actionPerformed |= editorDo(gameObject.levelContainer);
 
                         if (actionPerformed) {
-                            LevelContainer.updateCameraInFluid(gameObject.levelContainer);
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2700.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
-                        }
+                        actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 3920.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
 
                         if (actionPerformed) {
-                            LevelContainer.updateCameraInFluid(gameObject.levelContainer);
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
 
-                        if (keys[GLFW.GLFW_KEY_SPACE] // prevent repeat jumping (while not in water)
-                                && !gameObject.levelContainer.levelActors.player.isUnderGravity() && actionPerformed) {
-                            jumpPerformed = false;
+                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
+
+                        if (!jumpPerformed) {
+                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                            Vector3f playerPosAlign = new Vector3f(
+                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                            );
+
+                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                                    Block.getAdjacentPos(
+                                            playerPosAlign, Block.BOTTOM, 1.05f),
+                                    false
+                            );
                         }
                         break;
                 }
 
                 // display collision text
                 gameObject.assertCheckCollision(causingCollision);
-
-                // determine visible chunks (can be altered with player position)
-                gameObject.determineVisibleChunks();
 
                 ups++;
                 upsTicks--;

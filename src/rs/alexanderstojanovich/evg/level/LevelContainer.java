@@ -813,7 +813,7 @@ public class LevelContainer implements GravityEnviroment {
         return yea;
     }
 
-    public static boolean isCameraInFluid(LevelContainer lc) {
+    public static boolean isActorInFluid(LevelContainer lc) {
         boolean yea = false;
         Vector3f camPos = lc.levelActors.mainActor().getPos();
 
@@ -826,7 +826,7 @@ public class LevelContainer implements GravityEnviroment {
         yea = AllBlockMap.isLocationPopulated(obsCamPosAlign, false);
 
         if (!yea) {
-            for (int j = 0; j <= 5; j++) {
+            for (int j = 0; j <= 13; j++) {
                 Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.1f);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -848,152 +848,184 @@ public class LevelContainer implements GravityEnviroment {
         return yea;
     }
 
-    public static void updateCameraInFluid(LevelContainer lc) {
-        cameraInFluid = isCameraInFluid(lc);
+    public static void updateActorInFluid(LevelContainer lc) {
+        cameraInFluid = isActorInFluid(lc);
     }
 
+    public static Vector3f alignVector(Vector3f vector) {
+        return new Vector3f(
+                Math.round(vector.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(vector.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(vector.z + 0.5f) & 0xFFFFFFFE
+        );
+    }
+
+    /**
+     * Checks if a {@link Predictable} has collision with the environment.
+     *
+     * @param predictable the object to check for collision.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
     public static boolean hasCollisionWithEnvironment(Predictable predictable) {
-        boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(predictable.getPredictor()));
+        if (!SKYBOX.containsInsideExactly(predictable.getPredictor())) {
+            return false; // No need to continue if outside the skybox.
+        }
 
-        if (!coll) {
-            final float precision = 32.0f;
-            final float stepAmount = (float) Game.TICK_TIME / precision;
-            final float maxAmount = (float) (Game.AMOUNT);
+        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float maxAmount = (float) Game.AMOUNT;
+        Vector3f predictor = predictable.getPredictor();
 
-            Vector3f predAlign = new Vector3f(
-                    Math.round(predictable.getPredictor().x + 0.5f) & 0xFFFFFFFE,
-                    Math.round(predictable.getPredictor().y + 0.5f) & 0xFFFFFFFE,
-                    Math.round(predictable.getPredictor().z + 0.5f) & 0xFFFFFFFE
-            );
+        // Round the predictor's coordinates to align with the grid.
+        Vector3f predAlign = new Vector3f(
+                Math.round(predictor.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.z + 0.5f) & 0xFFFFFFFE
+        );
 
-            coll = AllBlockMap.isLocationPopulated(predAlign, true);
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
 
-            if (!coll) {
-                OUTER:
-                for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
-                        Vector3f adjPos = Block.getAdjacentPos(predictable.getPredictor(), j, amount);
-                        Vector3f adjAlign = new Vector3f(
-                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                        );
+        // Iterate through adjacent positions.
+        for (int j = 0; j <= 13; j++) {
+            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+                Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                );
 
-                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
-
-                        if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictable.getPredictor())
-                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictable.getPredictor(), 0.075f, 0.075f, 0.075f);
-                            if (coll) {
-                                break OUTER;
-                            }
-                        }
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictor)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictor, 0.075f, 0.075f, 0.075f)) {
+                        return true; // Collision detected, no need to continue checking.
                     }
                 }
             }
         }
 
-        return coll;
+        return false; // No collision detected.
     }
 
+    /**
+     * Checks if an {@link Observer} has collision with the environment.
+     *
+     * @param observer the observer to check for collision.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
     public static boolean hasCollisionWithEnvironment(Observer observer) {
-        boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(observer.getPos())
-                || !SKYBOX.intersectsExactly(observer.getPos(), 0.07f, 0.07f, 0.07f));
+        if (!SKYBOX.containsInsideExactly(observer.getPos())
+                || !SKYBOX.intersectsExactly(observer.getPos(), 0.075f, 0.075f, 0.075f)) {
+            return true; // Collision detected outside the skybox or with its boundary.
+        }
 
-        if (!coll) {
-            final float precision = 32.0f;
-            final float stepAmount = (float) Game.TICK_TIME / precision;
-            final float maxAmount = (float) (Game.AMOUNT);
+        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float maxAmount = (float) Game.AMOUNT;
+        Vector3f observerPos = observer.getPos();
 
-            Vector3f predAlign = new Vector3f(
-                    Math.round(observer.getPos().x + 0.5f) & 0xFFFFFFFE,
-                    Math.round(observer.getPos().y + 0.5f) & 0xFFFFFFFE,
-                    Math.round(observer.getPos().z + 0.5f) & 0xFFFFFFFE
-            );
+        // Round the observer's coordinates to align with the grid.
+        Vector3f predAlign = new Vector3f(
+                Math.round(observerPos.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(observerPos.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(observerPos.z + 0.5f) & 0xFFFFFFFE
+        );
 
-            coll = AllBlockMap.isLocationPopulated(predAlign, true);
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
 
-            if (!coll) {
-                OUTER:
-                for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
-                        Vector3f adjPos = Block.getAdjacentPos(observer.getPos(), j, amount);
-                        Vector3f adjAlign = new Vector3f(
-                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                        );
+        // Iterate through adjacent positions.
+        OUTER:
+        for (int j = 0; j <= 13; j++) {
+            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+                Vector3f adjPos = Block.getAdjacentPos(observerPos, j, amount);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                );
 
-                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
-
-                        if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, observer.getPos())
-                                    || Block.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
-                                            observer.getPos(), 0.075f, 0.075f, 0.075f);
-
-                            if (coll) {
-                                break OUTER;
-                            }
-                        }
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, observerPos)
+                            || Block.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                                    observerPos, 0.075f, 0.075f, 0.075f)) {
+                        return true; // Collision detected, no need to continue checking.
                     }
                 }
             }
         }
 
-        return coll;
+        return false; // No collision detected.
     }
 
+    /**
+     * Checks if a {@link Critter} has collision with the environment.
+     *
+     * @param critter the critter to check for collision.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
     public static boolean hasCollisionWithEnvironment(Critter critter) {
-        boolean coll;
-        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
-                        critter.body.getHeight(), critter.body.getDepth()));
+                        critter.body.getHeight(), critter.body.getDepth())) {
+            return true; // Collision detected outside the skybox or with its boundary.
+        }
 
-        if (!coll) {
-            final float precision = 32.0f;
-            final float stepAmount = (float) Game.TICK_TIME / precision;
-            final float maxAmount = (float) (Game.AMOUNT);
+        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float maxAmount = (float) Game.AMOUNT;
+        Vector3f predictor = critter.getPredictor();
 
-            Vector3f predAlign = new Vector3f(
-                    Math.round(critter.getPredictor().x + 0.5f) & 0xFFFFFFFE,
-                    Math.round(critter.getPredictor().y + 0.5f) & 0xFFFFFFFE,
-                    Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
-            );
+        // Round the critter's predictor coordinates to align with the grid.
+        Vector3f predAlign = new Vector3f(
+                Math.round(predictor.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.z + 0.5f) & 0xFFFFFFFE
+        );
 
-            coll = AllBlockMap.isLocationPopulated(predAlign, true);
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
 
-            if (!coll) {
-                OUTER:
-                for (int j = 0; j <= 13; j++) {
-                    for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // double amount precision
-                        Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
-                        Vector3f adjAlign = new Vector3f(
-                                Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                                Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                        );
+        // Iterate through adjacent positions.
+        OUTER:
+        for (int j = 0; j <= 13; j++) {
+            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+                Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                );
 
-                        boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, true);
-
-                        if (solidOnLoc) {
-                            coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
-                                    || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
-                                            critter.getPredictor(), 1.05f * critter.body.getWidth(), 1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth());
-                            if (coll) {
-                                break OUTER;
-                            }
-                        }
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictor)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                                    predictor, 1.05f * critter.body.getWidth(),
+                                    1.05f * critter.body.getHeight(),
+                                    1.05f * critter.body.getDepth())) {
+                        return true; // Collision detected, no need to continue checking.
                     }
                 }
             }
         }
 
-        return coll;
+        return false; // No collision detected.
     }
 
-    // thats what gravity does, object fells down if they don't have support below it (sky or other object)
+    /**
+     * Applies gravity to the player, making them fall downwards if not
+     * supported below.
+     *
+     * @param deltaTime The time elapsed since the last update.
+     * @return {@code true} if the player is falling, {@code false} otherwise.
+     */
     @Override
     public boolean gravityDo(float deltaTime) {
         if (working) {
@@ -1008,24 +1040,19 @@ public class LevelContainer implements GravityEnviroment {
 
         int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
         SCAN:
-        for (float tstTime = 0.0f; tstTime <= maxAmount; tstTime += stepAmount) { // quad-precision
+        for (float tstTime = 0.0f; tstTime <= maxAmount; tstTime += stepAmount) {
             for (int i = 0; i < testSides.length; i++) {
                 float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
                 Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), testSides[i], tstHeight + 2.0f);
-                Vector3f adjBottomAlign = new Vector3f(
-                        Math.round(adjBottom.x + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjBottom.y + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjBottom.z + 0.5f) & 0xFFFFFFFE
-                );
+                Vector3f adjBottomAlign = alignVector(adjBottom);
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
                 if (solidOnLoc) {
                     levelActors.player.movePredictorYDown(tstHeight);
-                    // solid object collision
                     collision |= Block.containsInsideEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f, levelActors.player.getPredictor())
                             || Model.intersectsEqually(adjBottomAlign, 2.1f, 2.1f, 2.1f,
-                                    levelActors.player.getPredictor(), 1.05f * levelActors.player.body.getWidth(), 1.05f * levelActors.player.body.getHeight(), 1.05f * levelActors.player.body.getDepth());
-                    // skybox collision
+                                    levelActors.player.getPredictor(), 1.05f * levelActors.player.body.getWidth(),
+                                    1.05f * levelActors.player.body.getHeight(), 1.05f * levelActors.player.body.getDepth());
                     collision |= (!SKYBOX.containsInsideExactly(levelActors.player.getPredictor())
                             || !SKYBOX.intersectsExactly(levelActors.player.getPredictor(), levelActors.player.body.getWidth(),
                                     levelActors.player.body.getHeight(), levelActors.player.body.getDepth()));
@@ -1041,9 +1068,7 @@ public class LevelContainer implements GravityEnviroment {
         if (!collision) {
             float height0 = fallVelocity * deltaTime;
             float height1 = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-
             float heightThrust = 0.0f;
-
             if (cameraInFluid) {
                 final float resistConst = 5E-6f;
                 final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
@@ -1051,18 +1076,24 @@ public class LevelContainer implements GravityEnviroment {
                 final float accel = thrustForce * resistConst / mass;
                 heightThrust = accel * deltaTime * deltaTime / 2.0f;
             }
-
             float deltaHeight = height0 + height1 - heightThrust;
-
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.sinkY(deltaHeight);
-
             fallVelocity += GRAVITY_CONSTANT * deltaTime;
         }
 
         return !collision;
     }
 
+    /**
+     * Makes the player jump upwards.
+     *
+     * @param critter The player.
+     * @param amountY The amount of upward movement.
+     * @param deltaTime The time elapsed since the last update.
+     * @return {@code true} if the player successfully jumped, {@code false}
+     * otherwise.
+     */
     @Override
     public boolean jump(Critter critter, float amountY, float deltaTime) {
         if (working) {
@@ -1072,12 +1103,12 @@ public class LevelContainer implements GravityEnviroment {
         float height0 = amountY * deltaTime;
         float heightThrust = 0.0f;
         if (cameraInFluid) {
+            final float resistConst = 5E-6f;
             final float thrustForce = 8.0f * WATER_DENSITY * GRAVITY_CONSTANT;
-            final float mass = 90f;
-            final float accel = thrustForce / mass;
+            final float mass = 75f;
+            final float accel = thrustForce * resistConst / mass;
             heightThrust = accel * deltaTime * deltaTime / 2.0f;
         }
-
         float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
         float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
@@ -1088,23 +1119,18 @@ public class LevelContainer implements GravityEnviroment {
         boolean collision = false;
         int[] testSides = {Block.TOP, Block.LEFT_TOP, Block.RIGHT_TOP, Block.TOP_BACK, Block.TOP_FRONT};
         SCAN:
-        for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) { // quad-precision
+        for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
             for (int i = 0; i < testSides.length; i++) {
                 Vector3f adjTop = Block.getAdjacentPos(critter.getPos(), testSides[i], amount);
-                Vector3f adjTopAlign = new Vector3f(
-                        Math.round(adjTop.x + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjTop.y + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjTop.z + 0.5f) & 0xFFFFFFFE
-                );
+                Vector3f adjTopAlign = alignVector(adjTop);
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjTopAlign, true);
                 if (solidOnLoc) {
                     critter.movePredictorYUp(height1);
-                    // solid object collision
                     collision |= Block.containsInsideEqually(adjTopAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())
                             || Model.intersectsEqually(adjTopAlign, 2.1f, 2.1f, 2.1f,
-                                    critter.getPredictor(), 1.05f * critter.body.getWidth(), 1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth());
-                    // skybox collision
+                                    critter.getPredictor(), 1.05f * critter.body.getWidth(),
+                                    1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth());
                     collision |= (!SKYBOX.containsInsideExactly(critter.getPredictor())
                             || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
                                     critter.body.getHeight(), levelActors.player.body.getDepth()));
@@ -1177,9 +1203,6 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
 
-//            for (int i = 0; i < 2; i++) {
-//                lightSources.setModified(i, true);
-//            }
             lightSources.setAllModified();
         }
     }

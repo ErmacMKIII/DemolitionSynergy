@@ -73,7 +73,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected final Game game;
     protected final GameRenderer renderer;
 
-    public static final Object UPDATE_RENDER_MUTEX = new Object();
+    /**
+     * Update/Render for Level Container Mutex
+     */
+    public static final Object UPDATE_RENDER_LC_MUTEX = new Object();
+    /**
+     *
+     */
+    public static final Object UPDATE_RENDER_IFC_MUTEX = new Object();
 
     protected Quad splashScreen;
     protected static GameObject instance = null;
@@ -193,7 +200,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void utilChunkOperations() {
-        synchronized (UPDATE_RENDER_MUTEX) {
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
             chunkOperationPerformed = this.levelContainer.chunkOperations();
         }
     }
@@ -204,7 +211,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void utilOptimization() {
         if (isFirstOptimization() || chunkOperationPerformed || (!GameRenderer.couldRender())) {
-            synchronized (UPDATE_RENDER_MUTEX) {
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
                 this.optimize();
             }
         }
@@ -242,7 +249,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
 //                shadowRenderer.subBufferVertices(); // subBufferVertices shadow box
 //            }
-            synchronized (UPDATE_RENDER_MUTEX) {
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
                 levelContainer.update();
                 if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
                     boolean underGravity = levelContainer.gravityDo(deltaTime);
@@ -293,7 +300,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             this.getLevelContainer().setProgress(0.0f);
         }
 
-        synchronized (UPDATE_RENDER_MUTEX) {
+        synchronized (UPDATE_RENDER_IFC_MUTEX) {
             intrface.update();
         }
     }
@@ -341,7 +348,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
-            synchronized (UPDATE_RENDER_MUTEX) {
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
                 if (!levelContainer.isWorking()) { // working check avoids locking the monitor
                     if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
                         waterRenderer.render();
@@ -353,7 +360,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
                     levelContainer.render(renderFlag);
                 }
+            }
 
+            synchronized (UPDATE_RENDER_IFC_MUTEX) {
                 intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
             }
         }
@@ -396,7 +405,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        synchronized (UPDATE_RENDER_MUTEX) {
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
             levelContainer.animate();
         }
     }
@@ -405,7 +414,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with special tuples
      */
     private void optimize() {
-        synchronized (UPDATE_RENDER_MUTEX) {
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
             levelContainer.optimize();
         }
     }

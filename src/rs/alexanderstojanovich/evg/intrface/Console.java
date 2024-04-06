@@ -108,7 +108,7 @@ public class Console {
 //                            }                        
                         Command cmd = Command.getCommand(input.toString());
 // if cmd is invalid it's null
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
                             if (cmd.isRendererCommand()) {
                                 FutureTask<Object> consoleTask = new FutureTask<>(cmd);
                                 cmd.status = Command.Status.PENDING;
