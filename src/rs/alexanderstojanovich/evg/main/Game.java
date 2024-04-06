@@ -565,8 +565,8 @@ public class Game {
                 break;
             }
 
-            if (!gameObject.musicPlayer.isPlaying()) {
-                gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+            if (!gameObject.isWorking() && !gameObject.musicPlayer.isPlaying()) {
+                gameObject.musicPlayer.play(AudioFile.TRACKS[index++], true, false);
                 if (index == AudioFile.TRACKS.length) {
                     index = 0;
                 }
@@ -575,8 +575,11 @@ public class Game {
             if (upsTicks >= 1.0) {
                 // update with delta time like gravity
                 gameObject.update((float) (Game.upsTicks * TICK_TIME));
-                // call utility functions (chunking, optimizing etc.)
-                gameObject.util();
+                // call utility functions (optimizing etc.)
+                gameObject.utilOptimization();
+            } else {
+                // call utility functions (chunk loading etc.)
+                gameObject.utilChunkOperations();
             }
 
             while (upsTicks >= 1.0) {
@@ -601,7 +604,7 @@ public class Game {
                     case MULTIPLAYER:
                         // player has control
                         synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+                            actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 2700.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
                         }
 
                         if (actionPerformed) {

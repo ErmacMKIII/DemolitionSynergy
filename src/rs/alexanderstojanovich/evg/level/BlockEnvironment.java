@@ -144,8 +144,6 @@ public class BlockEnvironment {
                                     // add absent blocks
                                     boolean modified = optmTuple.blockList.addIfAbsent(blk);
                                     if (modified) {
-                                        // it is not fully optimized
-                                        optimized = false;
                                         // sort so it does remains ordered
                                         optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                                         // sets to unbuffer if modified

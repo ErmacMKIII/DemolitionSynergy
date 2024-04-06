@@ -51,12 +51,14 @@ public class AudioFile { // only ogg are supported
     public static final AudioFile AMBIENT_AIR = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_air.ogg");
     public static final AudioFile AMBIENT_HARMONY = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_harmony.ogg");
     public static final AudioFile AMBIENT_GRACE = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_grace.ogg");
-    public static final AudioFile AMBIENT_SYNERGY = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_synergy.ogg");
+    public static final AudioFile AMBIENT_UNIVERSE = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_universe.ogg");
+    public static final AudioFile AMBIENT_PEACE = new AudioFile(Game.SOUND_ENTRY, "erokia_ambient_peace.ogg");
 
-    public static AudioFile[] TRACKS = {AMBIENT_MAIN, AMBIENT_OCEAN, AMBIENT_AIR, AMBIENT_HARMONY, AMBIENT_GRACE, AMBIENT_SYNERGY};
+    public static AudioFile[] TRACKS = {AMBIENT_MAIN, AMBIENT_OCEAN, AMBIENT_AIR, AMBIENT_HARMONY, AMBIENT_GRACE, AMBIENT_UNIVERSE, AMBIENT_PEACE};
 
     public static final AudioFile INTERMISSION = new AudioFile(Game.SOUND_ENTRY, "erokia_intermission.ogg");
     public static final AudioFile RANDOM = new AudioFile(Game.SOUND_ENTRY, "erokia_random.ogg");
+    public static final AudioFile RANDOM_PULSE = new AudioFile(Game.SOUND_ENTRY, "erokia_random_pulse.ogg");
 
     public static final AudioFile BLOCK_SELECT = new AudioFile(Game.SOUND_ENTRY, "block_selection.ogg");
     public static final AudioFile BLOCK_ADD = new AudioFile(Game.SOUND_ENTRY, "block_addition.ogg");

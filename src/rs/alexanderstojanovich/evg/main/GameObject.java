@@ -41,6 +41,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
+ * Game Engine composed of Game (Loop), Game Renderer and core components.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -54,7 +55,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     private final Configuration cfg = Configuration.getInstance();
 
     public static final String WINDOW_TITLE = "Demolition Synergy - v38";
-
     // makes default window -> Renderer sets resolution from config
     public final Window WINDOW;
 
@@ -77,6 +77,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     protected Quad splashScreen;
     protected static GameObject instance = null;
+    protected boolean chunkOperationPerformed = false;
 
 //    protected Quad splashScreen; // splash screen during initialization
     /**
@@ -186,15 +187,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Perform chunking & optimization (of chunks)
+     * Auto init/save level container chunks.
+     *
+     * Perform chunking loading (or saving). From HDD/SSD disk.
+     *
      */
-    public void util() {
-        boolean chunkTransfer = false;
+    public void utilChunkOperations() {
         synchronized (UPDATE_RENDER_MUTEX) {
-            chunkTransfer = this.chunkOperations();
+            chunkOperationPerformed = this.levelContainer.chunkOperations();
         }
+    }
 
-        if (isFirstOptimization() || chunkTransfer || (!GameRenderer.couldRender())) {
+    /**
+     * Perform optimization (of chunks). Optimization is collecting all tuples
+     * with blocklist from all chunks into one tuple selection.
+     */
+    public void utilOptimization() {
+        if (isFirstOptimization() || chunkOperationPerformed || (!GameRenderer.couldRender())) {
             synchronized (UPDATE_RENDER_MUTEX) {
                 this.optimize();
             }
@@ -380,15 +389,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public boolean determineVisibleChunks() {
         return levelContainer.determineVisible();
-    }
-
-    /**
-     * Auto init/save level container chunks
-     *
-     * @return did chunk operations modify anything (something changed).
-     */
-    public boolean chunkOperations() {
-        return levelContainer.chunkOperations();
     }
 
     /**

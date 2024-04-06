@@ -248,7 +248,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
 
         chunks.clear();
         levelActors.npcList.clear();
@@ -300,7 +300,11 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        if (gameObject.intrface.isHugeLevel()) {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM_PULSE, true, true);
+        } else {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM, true, true);
+        }
 
         chunks.clear();
 
@@ -337,7 +341,11 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean success = false;
         progress = 0.0f;
-        gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
+        if (gameObject.intrface.isHugeLevel()) {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM_PULSE, true, true);
+        } else {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM, true, true);
+        }
 
         chunks.clear();
 
@@ -403,7 +411,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -501,7 +509,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             chunks.clear();
@@ -603,7 +611,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S' && buffer[2] == 'X') {
             chunks.clear();
@@ -1169,9 +1177,10 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
 
-            for (int i = 0; i < 2; i++) {
-                lightSources.setModified(i, true);
-            }
+//            for (int i = 0; i < 2; i++) {
+//                lightSources.setModified(i, true);
+//            }
+            lightSources.setAllModified();
         }
     }
 

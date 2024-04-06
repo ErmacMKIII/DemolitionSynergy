@@ -82,6 +82,7 @@ public class Intrface {
     private OptionsMenu singlPlayerMenu;
 
     private final Console console;
+    private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
 
     /**
      * Init interface with all GL components: text, dialogs & menus.
@@ -274,6 +275,7 @@ public class Intrface {
 
                 @Override
                 protected void execute() {
+                    isHugeLevel = false;
                     String str = randLvlMenu.items.get(selected).keyText.content;
                     String[] split = str.split("\\s+");
                     switch (split[0]) {
@@ -288,6 +290,7 @@ public class Intrface {
                             break;
                         case "HUGE":
                             numBlocks = 131070;
+                            isHugeLevel = true;
                             break;
                         default:
                         case "SEED":
@@ -543,6 +546,7 @@ public class Intrface {
                         singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                     }
                     if (singlPlayerMenu.selected == 4) {
+                        isHugeLevel = false;
                         Player player = gameObject.getLevelContainer().levelActors.player;
                         player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                         player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
@@ -561,6 +565,7 @@ public class Intrface {
                                 break;
                             case "HUGE":
                                 numBlocks = 131070;
+                                isHugeLevel = true;
                                 break;
                         }
                         long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
@@ -858,6 +863,10 @@ public class Intrface {
 
     public DynamicText getViewText() {
         return viewText;
+    }
+
+    public boolean isHugeLevel() {
+        return isHugeLevel;
     }
 
 }
