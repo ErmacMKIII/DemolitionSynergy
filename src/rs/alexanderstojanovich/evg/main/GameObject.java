@@ -155,8 +155,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         if (!initializedWindow || !initializedCore) {
             return;
         }
-        //----------------------------------------------------------------------        
-        Timer timer1 = new Timer("Timer Utils");
+        //----------------------------------------------------------------------
+        // Schedule timer task to clear ups & fps values
+        Timer timer0 = new Timer("Timer Utils");
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
@@ -166,13 +167,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 GameRenderer.setFps(0);
             }
         };
-        timer1.scheduleAtFixedRate(task1, 1000L, 1000L);
+        timer0.scheduleAtFixedRate(task1, 1000L, 1000L);
         //----------------------------------------------------------------------
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
         DSLogger.reportDebug("Game will start soon.", null);
         game.go();
-        timer1.cancel();
+        timer0.cancel();
         game.cleanUp();
         intrface.cleanUp();
         //----------------------------------------------------------------------
@@ -232,29 +233,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
-
-//            int renderFlag = 0;
-//            renderFlag |= BlockEnvironment.LIGHT_MASK;
-//
-//            if (waterRenderer.getEffectsQuality() != WaterRenderer.WaterEffectsQuality.NONE) {
-//                renderFlag |= BlockEnvironment.WATER_MASK;
-//            }
-//
-//            if (shadowRenderer.getEffectsQuality() != ShadowRenderer.ShadowEffectsQuality.NONE) {
-//                renderFlag |= BlockEnvironment.SHADOW_MASK;
-//            }
-//            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-//                waterRenderer.subBufferVertices(); // subBufferVertices water heights
-//            }
-//            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-//                shadowRenderer.subBufferVertices(); // subBufferVertices shadow box
-//            }
-            synchronized (UPDATE_RENDER_LC_MUTEX) {
-                levelContainer.update();
-                if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
-                    boolean underGravity = levelContainer.gravityDo(deltaTime);
-                    levelContainer.levelActors.player.setUnderGravity(underGravity);
-                }
+            levelContainer.update();
+            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
+                boolean underGravity = levelContainer.gravityDo(deltaTime);
+                levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
 
             perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)

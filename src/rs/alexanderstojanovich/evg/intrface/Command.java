@@ -319,7 +319,8 @@ public class Command implements Callable<Object> {
                             Game.setAccumulator(ticks);
 //                            GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0f);
-                            GameRenderer.setAnimationTimer(ticks);
+                            GameRenderer.setAnimationTimer((int) ticks);
+                            GameRenderer.setGlCommandTimer((int) ticks);
                             command.status = Status.SUCCEEDED;
                         }
                         break;
@@ -336,7 +337,7 @@ public class Command implements Callable<Object> {
                         if (fpsMax > 0 && fpsMax <= 1E6) {
                             GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0);
-                            GameRenderer.setAnimationTimer(0.0);
+                            GameRenderer.setAnimationTimer(0);
                             Game.setFpsMax(fpsMax);
                             command.status = Status.SUCCEEDED;
                         }

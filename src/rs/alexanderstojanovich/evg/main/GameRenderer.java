@@ -44,7 +44,11 @@ public class GameRenderer extends Thread implements Executor {
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     protected FutureTask<Object> task;
-    protected static double animationTimer = 0.0;
+    protected static int animationTimer = 0;
+    protected static int glCommandTimer = 0;
+
+    protected static int ANIMATION_RATE = 20;
+    protected static int GL_COMMAND_POLL_RATE = 40;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -77,7 +81,8 @@ public class GameRenderer extends Thread implements Executor {
         // resolution config
         gameObject.masterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
         gameObject.perspectiveRenderer.updatePerspective();
-        animationTimer = 0.0;
+        animationTimer = 0;
+        glCommandTimer = 0;
 
         fps = 0;
 
@@ -108,19 +113,21 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // update text which animates water every quarter of the second
-            if (Game.accumulator - animationTimer > 20.0) {
+            if (Game.accumulator - animationTimer > GameRenderer.ANIMATION_RATE) {
                 if (!gameObject.isWorking()) {
                     gameObject.animate(); // has internal no-update 
                 }
 
-                animationTimer += 20.0;
+                animationTimer += GameRenderer.ANIMATION_RATE;
             }
 
             // lastly it executes the console tasks
-            if (!couldRender()) {
+            if (Game.accumulator - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
                 if ((task = TASK_QUEUE.poll()) != null) {
-                    execute(task);
+                    execute(task); // requires GL-context
                 }
+
+                glCommandTimer += GameRenderer.GL_COMMAND_POLL_RATE;
             }
         }
 
@@ -189,12 +196,20 @@ public class GameRenderer extends Thread implements Executor {
         return cfg;
     }
 
-    public static double getAnimationTimer() {
+    public static int getAnimationTimer() {
         return animationTimer;
     }
 
-    public static void setAnimationTimer(double animationTimer) {
+    public static int getGlCommandTimer() {
+        return glCommandTimer;
+    }
+
+    public static void setAnimationTimer(int animationTimer) {
         GameRenderer.animationTimer = animationTimer;
+    }
+
+    public static void setGlCommandTimer(int glCommandTimer) {
+        GameRenderer.glCommandTimer = glCommandTimer;
     }
 
     public static int getNumOfPasses() {

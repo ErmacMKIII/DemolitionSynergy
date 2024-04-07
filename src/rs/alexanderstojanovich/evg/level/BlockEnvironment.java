@@ -137,9 +137,13 @@ public class BlockEnvironment {
                                     // create new one since is needed to add blocks
                                     optmTuple = new Tuple(tex, faceBits);
                                     // add to the optimized list
-                                    optimizedTuples.add(optmTuple);
-                                    // sort so it remains ordered
-                                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                                    boolean someAdded = optimizedTuples.add(optmTuple);
+                                    // some addition(s) are made
+                                    if (someAdded) {
+                                        optimized = false;
+                                        // sort so it remains ordered
+                                        optimizedTuples.sort(Tuple.TUPLE_COMP);
+                                    }
                                 } else {
                                     // add absent blocks
                                     boolean modified = optmTuple.blockList.addIfAbsent(blk);
@@ -212,7 +216,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void render(ShaderProgram shaderProgram, int renderFlag) {
-        if (!optimized || optimizedTuples.isEmpty()) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -239,7 +243,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
-        if (!optimized || optimizedTuples.isEmpty()) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
