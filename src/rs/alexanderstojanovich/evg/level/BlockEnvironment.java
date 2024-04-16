@@ -255,7 +255,20 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        Tuple.renderInstanced(optimizedTuples, shaderProgram, lightSources, waterTexture, shadowTexture);
+        // render buffered
+        IList<Tuple> filtered = optimizedTuples.filter(ot -> ot.isBuffered());
+        Tuple.renderInstanced(
+                filtered,
+                shaderProgram, lightSources, waterTexture, shadowTexture
+        );
+
+        // buffer (prepare for draw) the rest
+        IList<Tuple> notBuffered = optimizedTuples.filter(ot -> !ot.isBuffered());
+        notBuffered.forEach(ot -> {
+            if (!ot.isBuffered()) {
+                ot.bufferAll();
+            }
+        });
     }
 
     /**

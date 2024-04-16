@@ -18,6 +18,8 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -77,10 +79,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Update/Render for Level Container Mutex
      */
     public static final Object UPDATE_RENDER_LC_MUTEX = new Object();
+
     /**
-     *
+     * Update/Render for Interface Mutex
      */
     public static final Object UPDATE_RENDER_IFC_MUTEX = new Object();
+
+    /**
+     * Lock to help updating without loss (concurrent modification)
+     */
+    public static final Lock UPDATE_RENDER_LC_LOCK = new ReentrantLock();
 
     protected Quad splashScreen;
     protected static GameObject instance = null;
@@ -330,17 +338,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
-            synchronized (UPDATE_RENDER_LC_MUTEX) {
-                if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                        waterRenderer.render();
-                    }
+            if (UPDATE_RENDER_LC_LOCK.tryLock()) {
+                // Code block to execute when lock is acquired successfully
+                synchronized (UPDATE_RENDER_LC_MUTEX) {
+                    try {
 
-                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                        shadowRenderer.render();
-                    }
+                        if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                            waterRenderer.render();
+                        }
 
-                    levelContainer.render(renderFlag);
+                        if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                            shadowRenderer.render();
+                        }
+
+                        levelContainer.render(renderFlag);
+                    } finally {
+                        UPDATE_RENDER_LC_LOCK.unlock();
+                    }
                 }
             }
 
@@ -425,31 +439,53 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // Called from concurrent thread
     public boolean loadLevelFromFile(String fileName) {
-        boolean ok;
-
-        ok = levelContainer.loadLevelFromFile(fileName);
+        boolean ok = false;
+        UPDATE_RENDER_LC_LOCK.lock();
+        try {
+            ok = levelContainer.loadLevelFromFile(fileName);
+        } finally {
+            UPDATE_RENDER_LC_LOCK.unlock();
+        }
 
         return ok;
     }
 
     // Called from concurrent thread
     public boolean saveLevelToFile(String fileName) {
-        boolean ok;
-        ok = levelContainer.saveLevelToFile(fileName);
+        boolean ok = false;
+        UPDATE_RENDER_LC_LOCK.lock();
+        try {
+            ok = levelContainer.saveLevelToFile(fileName);
+        } finally {
+            UPDATE_RENDER_LC_LOCK.unlock();
+        }
+
         return ok;
     }
 
     // Called from concurrent thread
     public boolean generateRandomLevel(int numberOfBlocks) {
-        boolean ok;
-        ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        boolean ok = false;
+        UPDATE_RENDER_LC_LOCK.lock();
+        try {
+            ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        } finally {
+            UPDATE_RENDER_LC_LOCK.unlock();
+        }
+
         return ok;
     }
 
     // Called from concurrent thread
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
-        boolean ok;
-        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        boolean ok = false;
+        UPDATE_RENDER_LC_LOCK.lock();
+        try {
+            ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        } finally {
+            UPDATE_RENDER_LC_LOCK.unlock();
+        }
+
         return ok;
     }
 

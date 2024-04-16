@@ -384,7 +384,7 @@ public class LevelContainer implements GravityEnviroment {
             do {
                 int rindex = random.nextInt(solidPopLoc.size());
                 Vector3f solidLoc = solidPopLoc.get(rindex);
-                Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.1f, solidLoc.z);
+                Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z);
                 player.setPos(playerLoc);
             } while (LevelContainer.hasCollisionWithEnvironment((Critter) player));
             player.movePredictorUp(0.0f);
@@ -871,7 +871,8 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float precision = 8.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = predictable.getPredictor();
 
@@ -922,7 +923,8 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float precision = 8.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f observerPos = observer.getPos();
 
@@ -976,7 +978,8 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float stepAmount = (float) Game.TICK_TIME / 32.0f;
+        final float precision = 8.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = critter.getPredictor();
 
@@ -1034,7 +1037,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean collision = false;
 
-        final float precision = 32.0f;
+        final float precision = 8.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 
@@ -1112,7 +1115,7 @@ public class LevelContainer implements GravityEnviroment {
         float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
         float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
-        final float precision = 32.0f;
+        final float precision = 8.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 
@@ -1255,22 +1258,23 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
 
-        Block editorNew = Editor.getSelectedNew();
-        if (editorNew != null) {
-            if (!editorNew.isBuffered()) {
-                editorNew.bufferAll();
+        if (Game.getCurrentMode() == Game.Mode.EDITOR) {
+            Block editorNew = Editor.getSelectedNew();
+            if (editorNew != null) {
+                if (!editorNew.isBuffered()) {
+                    editorNew.bufferAll();
+                }
+                editorNew.render(lightSources, ShaderProgram.getMainShader());
             }
-            editorNew.render(lightSources, ShaderProgram.getMainShader());
-        }
 
-        Block selectionDecal = Editor.Decal;
-        if (selectionDecal != null && Editor.isDecalActive()) {
-            if (!selectionDecal.isBuffered()) {
-                selectionDecal.bufferAll();
+            Block selectionDecal = Editor.Decal;
+            if (selectionDecal != null && Editor.isDecalActive()) {
+                if (!selectionDecal.isBuffered()) {
+                    selectionDecal.bufferAll();
+                }
+                selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
             }
-            selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
         }
-
         // only visible & uncached are in chunk list      
         // prepare alters tex coords based on whether or not camera is submerged in fluid   
         blockEnvironment.prepare(cameraInFluid);
@@ -1315,22 +1319,23 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, baseShader);
 
-        Block editorNew = Editor.getSelectedNew();
-        if (editorNew != null) {
-            if (!editorNew.isBuffered()) {
-                editorNew.bufferAll();
+        if (Game.getCurrentMode() == Game.Mode.EDITOR) {
+            Block editorNew = Editor.getSelectedNew();
+            if (editorNew != null) {
+                if (!editorNew.isBuffered()) {
+                    editorNew.bufferAll();
+                }
+                editorNew.render(lightSources, baseShader);
             }
-            editorNew.render(lightSources, baseShader);
-        }
 
-        Block selectionDecal = Editor.Decal;
-        if (selectionDecal != null && Editor.isDecalActive()) {
-            if (!selectionDecal.isBuffered()) {
-                selectionDecal.bufferAll();
+            Block selectionDecal = Editor.Decal;
+            if (selectionDecal != null && Editor.isDecalActive()) {
+                if (!selectionDecal.isBuffered()) {
+                    selectionDecal.bufferAll();
+                }
+                selectionDecal.renderContour(lightSources, baseShader);
             }
-            selectionDecal.renderContour(lightSources, baseShader);
         }
-
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         blockEnvironment.prepare(cameraInFluid);
 

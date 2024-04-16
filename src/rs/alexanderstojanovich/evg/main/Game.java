@@ -551,8 +551,9 @@ public class Game {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             // hunger time
-            accumulator += deltaTime * Game.TPS;
-            upsTicks += deltaTime * MathUtils.lerp(Game.TPS, ups, 0.02);
+            double increment = deltaTime * Game.TPS;
+            accumulator += increment;
+            upsTicks += increment;
             lastTime = currTime;
 
             // Detecting critical status
@@ -574,7 +575,7 @@ public class Game {
                 gameObject.update((float) (Game.upsTicks * TICK_TIME));
                 // call utility functions (optimizing etc.)
                 gameObject.utilOptimization();
-            } else {
+            } else if (!GameRenderer.couldRender()) {
                 // determine visible chunks (can be altered with player position)
                 gameObject.determineVisibleChunks();
                 // call utility functions (chunk loading etc.)
