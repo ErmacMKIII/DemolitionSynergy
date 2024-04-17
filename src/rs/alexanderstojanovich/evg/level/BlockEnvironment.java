@@ -105,8 +105,8 @@ public class BlockEnvironment {
      */
     public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
         // determine lastFaceBits mask
-        final int mask = Block.getVisibleFaceBitsFast(camFront);
-        boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask) == 0);
+        final int mask0 = Block.getVisibleFaceBitsFast(camFront, LevelContainer.cameraInFluid ? 0f : 45f);
+        boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         // some removals are made
         if (someRemoved) {
@@ -123,7 +123,7 @@ public class BlockEnvironment {
         for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
             // assign last value & increment to next value with limit to 63
             final int faceBits = (++lastFaceBits) & 63;
-            if ((faceBits & (mask & 63)) != 0) {
+            if ((faceBits & (mask0 & 63)) != 0) {
                 chunks.chunkList.forEach(chnk -> { // for all chunks
                     if (vqueue.contains(chnk.id)) { // visible ones
                         // select correlated tuples

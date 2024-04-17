@@ -436,6 +436,33 @@ public class Block extends Model {
     }
 
     /**
+     * Returns visible bits based on faces which can seen by camera front.
+     * Faster version of original. And performs on cosine 3 degrees.
+     *
+     * @param camFront camera front (eye)
+     * @param degrees angle degrees
+     * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
+     */
+    public static int getVisibleFaceBitsFast(Vector3f camFront, float degrees) {
+        int result = 0;
+
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
+
+        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        return result;
+    }
+
+    /**
      * Returns single visible based on faces which can seen by camera front.
      * Faster version of original.
      *
