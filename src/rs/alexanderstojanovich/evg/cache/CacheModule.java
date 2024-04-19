@@ -235,10 +235,10 @@ public class CacheModule {
 
                 // better than tuples clear (otherwise much slower to load)
                 // this indicates that add with no transfer on fluid blocks will be used!
-                for (Tuple tuple : chunk.getTupleList()) {
-                    tuple.getBlockList().clear();
+                for (Tuple tuple : chunk.tupleList) {
+                    tuple.blockList.clear();
                 }
-                chunk.getTupleList().clear();
+                chunk.tupleList.clear();
                 this.levelContainer.chunks.getChunkList().remove(chunk);
             }
             // SAVE OPERATIONS

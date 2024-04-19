@@ -207,11 +207,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * Perform chunking loading (or saving). From HDD/SSD disk.
      *
+     * @return any chunk operation performed
      */
-    public void utilChunkOperations() {
+    public boolean utilChunkOperations() {
         synchronized (UPDATE_RENDER_LC_MUTEX) {
             chunkOperationPerformed = this.levelContainer.chunkOperations();
         }
+        return chunkOperationPerformed;
     }
 
     /**

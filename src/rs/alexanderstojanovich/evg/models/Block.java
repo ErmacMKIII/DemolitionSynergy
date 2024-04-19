@@ -562,6 +562,18 @@ public class Block extends Model {
         verticesReversed = !verticesReversed;
     }
 
+    public void setFaceVertexOrder(boolean faceVertexOrderReversed) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+        vertices.clear();
+        Block.deepCopyTo(vertices, texName);
+        if (faceVertexOrderReversed) {
+            for (int faceNum = 0; faceNum <= 5; faceNum++) {
+                Collections.reverse(getFaceVertices(vertices, faceNum));
+            }
+        }
+        verticesReversed = faceVertexOrderReversed;
+    }
+
     public static void reverseFaceVertexOrder(List<Vertex> vertices) {
         for (int faceNum = 0; faceNum <= 5; faceNum++) {
             Collections.reverse(getFaceVertices(vertices, faceNum));

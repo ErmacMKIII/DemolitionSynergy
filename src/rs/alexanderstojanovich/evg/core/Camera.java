@@ -294,7 +294,7 @@ public class Camera implements Observer { // is 3D looking camera
         boolean yea = false;
         for (Vertex vertex : model.meshes.getFirst().vertices) {
             Vector3f temp = new Vector3f();
-            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
+            Vector3f vx = vertex.getPos().add(model.pos.sub(pos, temp), temp).normalize(temp);
             if (vx.dot(front) >= 0.25f) {
                 yea = true;
                 break;
@@ -314,13 +314,15 @@ public class Camera implements Observer { // is 3D looking camera
      */
     public boolean doesSeeEff(Model model) {
         boolean yea = false;
-        // Remove duplicates
-        final List<Vertex> newDistinctList = model.meshes.getFirst().vertices.stream()
+        // Remove duplicates & return vertex position(s)
+        final List<Vector3f> v_PosList = model.meshes.getFirst().vertices.stream()
+                .map(Vertex::getPos)
                 .distinct()
                 .collect(Collectors.toList());
-        for (Vertex vertex : newDistinctList) {
+        // Now iterate and perform calculations
+        for (Vector3f v_pos : v_PosList) {
             Vector3f temp = new Vector3f();
-            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
+            Vector3f vx = v_pos.add(model.pos.sub(pos, temp), temp).normalize(temp);
             if (vx.dot(front) >= 0.25f) {
                 yea = true;
                 break;

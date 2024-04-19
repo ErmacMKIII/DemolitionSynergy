@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -99,7 +98,7 @@ public class BlockEnvironment {
 
     /**
      * Improved version of optimization for tuples from all the chunks. World is
-     * being built incrementally.
+     * being built incrementally. Consist of two passes.
      *
      * @param vqueue visible chunkId queue
      * @param camera ingame camera
@@ -121,41 +120,45 @@ public class BlockEnvironment {
 
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
+        // PASS 1 : CREATE TUPLES
+        int lastFaceBitsCopy = lastFaceBits;
         for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
             // assign last value & increment to next value with limit to 63
-            final int faceBits = (++lastFaceBits) & 63;
+            final int faceBits = (++lastFaceBitsCopy) & 63;
+            if ((faceBits & (mask0 & 63)) != 0) {
+                final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                if (optmTuple == null) {
+                    optimizedTuples.add(new Tuple(tex, faceBits));
+                    // sort so it remains ordered
+                    optimizedTuples.sort(Tuple.TUPLE_COMP);
+                }
+            }
+        }
+
+        // PASS 2 : FILL TUPLES
+        lastFaceBitsCopy = lastFaceBits;
+        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
+            // assign last value & increment to next value with limit to 63
+            final int faceBits = (++lastFaceBitsCopy) & 63;
             if ((faceBits & (mask0 & 63)) != 0) {
                 chunks.chunkList.forEach(chnk -> { // for all chunks
-                    if (vqueue.contains(chnk.id)) { // visible ones
+                    if (vqueue.contains(chnk.id)) { // visible ones && not cached!
                         // select correlated tuples
                         final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
                         // for each selected tuple
                         selectedTuples.forEach(st -> {
+                            final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                            // if optimized doesn't exist
                             st.blockList.forEach(blk -> {
-                                Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                                // if optimized doesn't exist
-                                if (optmTuple == null) {
-                                    // create new one since is needed to add blocks
-                                    optmTuple = new Tuple(tex, faceBits);
-                                    // add to the optimized list
-                                    boolean someAdded = optimizedTuples.add(optmTuple);
-                                    // some addition(s) are made
-                                    if (someAdded) {
-                                        optimized = false;
-                                        // sort so it remains ordered
-                                        optimizedTuples.sort(Tuple.TUPLE_COMP);
-                                    }
-                                } else {
-                                    // take into consideration if could be seen by camera (impr. method)
-                                    if (camera.doesSeeEff(blk)) {
-                                        // add absent blocks
-                                        boolean modified = optmTuple.blockList.addIfAbsent(blk);
-                                        if (modified) {
-                                            // sort so it does remains ordered
-                                            optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                            // sets to unbuffer if modified
-                                            optmTuple.setBuffered(false);
-                                        }
+                                // take into consideration if could be seen by camera (impr. method)
+                                if (camera.doesSeeEff(blk)) {
+                                    // add absent blocks
+                                    boolean modified = optmTuple.blockList.addIfAbsent(blk);
+                                    if (modified) {
+                                        // sort so it does remains ordered
+                                        optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                        // sets to unbuffer if modified
+                                        optmTuple.setBuffered(false);
                                     }
                                 }
                             });
@@ -164,6 +167,12 @@ public class BlockEnvironment {
                 });
             }
         }
+
+        // move forward (with increment)
+        lastFaceBits += NUM_OF_PASSES_MAX;
+
+        // Remove empty optimization tuples
+        optimizedTuples.removeIf(ot -> ot.blockList.isEmpty());
 
         // if last bits is processed start from beginning next time
         if (lastFaceBits == 64) {
