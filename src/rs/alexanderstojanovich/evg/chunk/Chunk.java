@@ -43,7 +43,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = 384;
+    public static final int BOUND = 768;
     public static final float VISION = 256.0f; // determines visibility
     public static final int GRID_SIZE = 6;
 

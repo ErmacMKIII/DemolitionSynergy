@@ -25,7 +25,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *

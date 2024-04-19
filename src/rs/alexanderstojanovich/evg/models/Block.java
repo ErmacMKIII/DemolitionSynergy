@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.FrustumIntersection;
 import org.joml.Intersectionf;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -354,16 +355,17 @@ public class Block extends Model {
      * 2.1 x 2.1
      *
      * @param camera (observer) camera
+     * @param viewProjMatrix frustum matrix
      * @return intersection with this block
      */
-    public boolean canBeSeenBy(Camera camera) {
+    public boolean canBeSeenBy(Camera camera, Matrix4f viewProjMatrix) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
 
         Vector3f min = pos.sub(1.05f, 1.05f, 1.05f, temp1);
         Vector3f max = pos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(viewProjMatrix);
 
         return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
@@ -372,18 +374,18 @@ public class Block extends Model {
      * Can block be seen by camera.It is assumed that block dimension is 2.1 x
      * 2.1 x 2.1
      *
-     * @param camera (observer) camera
+     * @param viewProjMatrix frustum matrix
      * @param blkPos block position
      * @return intersection with this block
      */
-    public static boolean canBeSeenBy(Vector3f blkPos, Camera camera) {
+    public static boolean canBeSeenBy(Vector3f blkPos, Matrix4f viewProjMatrix) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
 
         Vector3f min = blkPos.sub(1.05f, 1.05f, 1.05f, temp1);
         Vector3f max = blkPos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(viewProjMatrix);
 
         return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }

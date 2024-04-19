@@ -23,6 +23,7 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -101,11 +102,11 @@ public class BlockEnvironment {
      * being built incrementally.
      *
      * @param vqueue visible chunkId queue
-     * @param camFront camera front (look at vector)
+     * @param camera ingame camera
      */
-    public void optimizeFast(IList<Integer> vqueue, Vector3f camFront) {
+    public void optimizeFast(IList<Integer> vqueue, Camera camera) {
         // determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camFront, LevelContainer.cameraInFluid ? 0f : 45f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
         boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         // some removals are made
@@ -145,13 +146,16 @@ public class BlockEnvironment {
                                         optimizedTuples.sort(Tuple.TUPLE_COMP);
                                     }
                                 } else {
-                                    // add absent blocks
-                                    boolean modified = optmTuple.blockList.addIfAbsent(blk);
-                                    if (modified) {
-                                        // sort so it does remains ordered
-                                        optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                        // sets to unbuffer if modified
-                                        optmTuple.setBuffered(false);
+                                    // take into consideration if could be seen by camera (impr. method)
+                                    if (camera.doesSeeEff(blk)) {
+                                        // add absent blocks
+                                        boolean modified = optmTuple.blockList.addIfAbsent(blk);
+                                        if (modified) {
+                                            // sort so it does remains ordered
+                                            optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                            // sets to unbuffer if modified
+                                            optmTuple.setBuffered(false);
+                                        }
                                     }
                                 }
                             });

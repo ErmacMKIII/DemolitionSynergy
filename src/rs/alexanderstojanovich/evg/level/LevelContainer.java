@@ -1222,8 +1222,7 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-//            chunks.optimize(vChnkIdList);
-            blockEnvironment.optimizeFast(vChnkIdList, mainCamera.getFront());
+            blockEnvironment.optimizeFast(vChnkIdList, mainCamera);
         }
     }
 
@@ -1258,6 +1257,13 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
 
+        // only visible & uncached are in chunk list      
+        // prepare alters tex coords based on whether or not camera is submerged in fluid   
+        blockEnvironment.prepare(cameraInFluid);
+
+        // only visible & uncached are in chunk list 
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
+        // ----------------------------------------------       
         if (Game.getCurrentMode() == Game.Mode.EDITOR) {
             Block editorNew = Editor.getSelectedNew();
             if (editorNew != null) {
@@ -1275,14 +1281,6 @@ public class LevelContainer implements GravityEnviroment {
                 selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
             }
         }
-        // only visible & uncached are in chunk list      
-        // prepare alters tex coords based on whether or not camera is submerged in fluid   
-        blockEnvironment.prepare(cameraInFluid);
-
-        // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
-        // ----------------------------------------------       
-
         // render light overlay
         LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
@@ -1319,6 +1317,12 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, baseShader);
 
+        // prepare alters tex coords based on whether or not camera is submerged in fluid
+        blockEnvironment.prepare(cameraInFluid);
+
+        // only visible & uncached are in chunk list 
+        blockEnvironment.renderStatic(instanceShader, renderFlag);
+
         if (Game.getCurrentMode() == Game.Mode.EDITOR) {
             Block editorNew = Editor.getSelectedNew();
             if (editorNew != null) {
@@ -1336,11 +1340,6 @@ public class LevelContainer implements GravityEnviroment {
                 selectionDecal.renderContour(lightSources, baseShader);
             }
         }
-        // prepare alters tex coords based on whether or not camera is submerged in fluid
-        blockEnvironment.prepare(cameraInFluid);
-
-        // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(instanceShader, renderFlag);
     }
 
     // -------------------------------------------------------------------------

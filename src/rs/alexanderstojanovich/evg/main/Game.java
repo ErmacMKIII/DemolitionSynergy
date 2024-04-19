@@ -35,7 +35,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -534,6 +533,7 @@ public class Game {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
+        // accumulator is progressive only ingame time
         accumulator = cfg.getGameTicks();
         double lastTime = GLFW.glfwGetTime();
         double currTime;
@@ -575,7 +575,7 @@ public class Game {
                 gameObject.update((float) (Game.upsTicks * TICK_TIME));
                 // call utility functions (optimizing etc.)
                 gameObject.utilOptimization();
-            } else if (!GameRenderer.couldRender()) {
+            } else if (!GameRenderer.couldRender() && upsTicks >= 0.05) {
                 // determine visible chunks (can be altered with player position)
                 gameObject.determineVisibleChunks();
                 // call utility functions (chunk loading etc.)

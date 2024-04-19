@@ -17,6 +17,8 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.critter.Observer;
@@ -280,9 +282,43 @@ public class Camera implements Observer { // is 3D looking camera
         return coll;
     }
 
+    /**
+     * Small function to determine if camera does see model from its position
+     * and front vector (Legacy.)
+     *
+     * @param model observation model
+     *
+     * @return wether or not camera does see model
+     */
     public boolean doesSee(Model model) {
         boolean yea = false;
-        for (Vertex vertex : model.getMeshes().getFirst().getVertices()) {
+        for (Vertex vertex : model.meshes.getFirst().vertices) {
+            Vector3f temp = new Vector3f();
+            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
+            if (vx.dot(front) >= 0.25f) {
+                yea = true;
+                break;
+            }
+        }
+        return yea;
+    }
+
+    /**
+     * Efficient small function to determine if camera does see model from its
+     * position and front vector. Efficiency comes from removing duplicate
+     * vertices first. (Before check.)
+     *
+     * @param model observation model
+     *
+     * @return wether or not camera does see model
+     */
+    public boolean doesSeeEff(Model model) {
+        boolean yea = false;
+        // Remove duplicates
+        final List<Vertex> newDistinctList = model.meshes.getFirst().vertices.stream()
+                .distinct()
+                .collect(Collectors.toList());
+        for (Vertex vertex : newDistinctList) {
             Vector3f temp = new Vector3f();
             Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
             if (vx.dot(front) >= 0.25f) {
