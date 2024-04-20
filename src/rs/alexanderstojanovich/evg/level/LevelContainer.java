@@ -1205,8 +1205,28 @@ public class LevelContainer implements GravityEnviroment {
             SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
             SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
+            SUNLIGHT.pos.set(SUN.pos);
 
-            lightSources.setAllModified();
+            // always update sunlight (sun/pos)
+            lightSources.updateLight(1, SUNLIGHT);
+            lightSources.setModified(1, true); // SUNLIGHT index is always 1
+
+            // update - player light - only in correct mode
+            if (Game.getCurrentMode() != Game.Mode.SINGLE_PLAYER && Game.getCurrentMode() != Game.Mode.MULTIPLAYER) {
+                levelActors.player.light.setIntensity(0.0f);
+            } else {
+                levelActors.player.light.setIntensity(LightSource.PLAYER_LIGHT_INTENSITY);
+                lightSources.updateLight(0, levelActors.player.light);
+            }
+            lightSources.setModified(0, true); // Player index is always 0
+
+            // update - set light modified for visible lights
+            lightSources.sourceList.forEach(ls -> {
+                int chnkId = Chunk.chunkFunc(ls.pos);
+                if (vChnkIdList.contains(chnkId)) {
+                    lightSources.setModified(ls.pos, true);
+                }
+            });
         }
     }
 

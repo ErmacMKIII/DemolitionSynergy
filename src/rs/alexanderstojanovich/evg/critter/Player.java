@@ -34,8 +34,13 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Player extends Critter implements Observer {
 
+    public static enum CameraView {
+        FIRST_PERSON, THIRD_PERSON
+    }
+    protected CameraView cameraView = CameraView.THIRD_PERSON;
+
 //    private Model currWeapon;
-    private final Camera camera;
+    private final RPGCamera camera;
     public final LightSource light;
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
@@ -66,6 +71,19 @@ public class Player extends Critter implements Observer {
 //    public void switchWeapon(int num) {
 //        currWeapon = WEAPONS[num - 1];
 //    }
+    /**
+     * Toggle Between 1st Person / Third Person
+     */
+    public void switchViewToggle() {
+        if (cameraView == CameraView.FIRST_PERSON) {
+            this.camera.setDistanceFromTarget(0f);
+            this.cameraView = CameraView.THIRD_PERSON;
+        } else if (cameraView == CameraView.THIRD_PERSON) {
+            this.camera.setDistanceFromTarget(2.1f);
+            this.cameraView = CameraView.FIRST_PERSON;
+        }
+    }
+
     @Override
     public void render(ShaderProgram shaderProgram) {
         camera.render(shaderProgram);

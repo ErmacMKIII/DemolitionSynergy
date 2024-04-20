@@ -475,6 +475,9 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     Editor.cycleBlockColor();
+                } else if (key == GLFW.GLFW_KEY_V && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
+                    gameObject.levelContainer.levelActors.player.switchViewToggle();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     Editor.selectPrevTexture();

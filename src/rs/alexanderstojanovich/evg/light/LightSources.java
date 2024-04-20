@@ -102,6 +102,19 @@ public class LightSources {
     }
 
     /**
+     * Update light source (with new pos).
+     *
+     * @param index index in source list
+     * @param ls light source
+     */
+    public void updateLight(int index, LightSource ls) {
+        LightSource ls0 = sourceList.get(index);
+        if (lightMap.containsKey(ls0.pos)) {
+            lightMap.replace(ls.pos, ls);
+        }
+    }
+
+    /**
      * Removes a light source.
      *
      * @param ls light source
