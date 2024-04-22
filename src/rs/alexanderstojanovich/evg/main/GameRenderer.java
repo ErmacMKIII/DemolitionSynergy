@@ -103,7 +103,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             numOfPasses = 0;
-            // also avoid rendering when game is updating 
+            // also avoid rendering when game is updating
             while (fpsTicks >= 1.0 && couldRender()) {
                 gameObject.render();
                 fps++;
@@ -137,6 +137,24 @@ public class GameRenderer extends Thread implements Executor {
         Window.unloadContext();
 
         DSLogger.reportDebug("Renderer exited.", null);
+    }
+
+    /**
+     * Is rendering first frame.
+     *
+     * @return is rendering first frame
+     */
+    public static boolean isFirstFrame() {
+        return fpsTicks >= 1.0 && numOfPasses == 0;
+    }
+
+    /**
+     * Is rendering last frame.
+     *
+     * @return is rendering last frame
+     */
+    public static boolean isLastFrame() {
+        return fpsTicks < 1.0 || numOfPasses >= NUM_OF_PASSES_MAX;
     }
 
     /**

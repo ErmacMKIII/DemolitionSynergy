@@ -309,7 +309,7 @@ public class Chunks {
         this.chunkList.forEach(c -> c.clear());
     }
 
-    public List<Chunk> getChunkList() {
+    public IList<Chunk> getChunkList() {
         return chunkList;
     }
 

@@ -16,20 +16,21 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import org.joml.Matrix4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
+import rs.alexanderstojanovich.evg.chunk.TupleBufferObject;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -43,7 +44,6 @@ public class BlockEnvironment {
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
 
-    public Matrix4f lightViewMatrix = new Matrix4f();
     private final GameObject gameObject;
 
     public final IList<Tuple> optimizedTuples = new GapList<>();
@@ -53,6 +53,11 @@ public class BlockEnvironment {
 
     protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
     public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
+
+    /**
+     * Contains all batched buffer(s). As one.
+     */
+    public final TupleBufferObject tupleBuffObj = new TupleBufferObject();
 
     public BlockEnvironment(GameObject gameObject, Chunks chunks) {
         this.gameObject = gameObject;
@@ -148,20 +153,21 @@ public class BlockEnvironment {
                         // for each selected tuple
                         selectedTuples.forEach(st -> {
                             final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                            boolean modified = false;
                             // if optimized doesn't exist
-                            st.blockList.forEach(blk -> {
+                            for (Block blk : st.blockList) {
                                 // take into consideration if could be seen by camera (impr. method)
                                 if (camera.doesSeeEff(blk)) {
                                     // add absent blocks
-                                    boolean modified = optmTuple.blockList.addIfAbsent(blk);
-                                    if (modified) {
-                                        // sort so it does remains ordered
-                                        optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                        // sets to unbuffer if modified
-                                        optmTuple.setBuffered(false);
-                                    }
+                                    modified |= optmTuple.blockList.addIfAbsent(blk);
                                 }
-                            });
+                            }
+                            if (modified) {
+                                // sort so it does remains ordered
+                                optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                // sets TBO to unbuffer if modified
+                                tupleBuffObj.setBuffered(false);
+                            }
                         });
                     }
                 });
@@ -182,7 +188,9 @@ public class BlockEnvironment {
         // if full circle with all textures & facebits has been completed
         if (texProcIndex == 0 && lastFaceBits == 0) {
             optimized = true;
+            DSLogger.reportInfo("OptmTupleSize=" + optimizedTuples.size(), null);
         }
+
     }
 
     /**
@@ -196,7 +204,7 @@ public class BlockEnvironment {
             return;
         }
 
-        if (Game.getUpsTicks() >= 1.0) {
+        if (GameRenderer.isFirstFrame()) {
             for (Tuple tuple : optimizedTuples) {
                 if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
                     tuple.prepare(cameraInFluid);
@@ -213,7 +221,7 @@ public class BlockEnvironment {
             return;
         }
 
-        if (Game.getUpsTicks() < 1.0) {
+        if (!GameRenderer.isFirstFrame()) {
             for (Tuple tuple : optimizedTuples) {
                 if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
                     tuple.animate();
@@ -250,7 +258,7 @@ public class BlockEnvironment {
     }
 
     /**
-     * Static render (faster)
+     * Static render (faster). Batched & Instanced rendering is being used.
      *
      * @param shaderProgram voxel shader
      * @param renderFlag what is renderered
@@ -268,20 +276,22 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        // render buffered
-        IList<Tuple> filtered = optimizedTuples.filter(ot -> ot.isBuffered());
+        if (!tupleBuffObj.isBuffered()) {
+            tupleBuffObj.bufferBatchAll(optimizedTuples);
+        }
+
         Tuple.renderInstanced(
-                filtered,
+                optimizedTuples, tupleBuffObj,
                 shaderProgram, lightSources, waterTexture, shadowTexture
         );
+    }
 
-        // buffer (prepare for draw) the rest
-        IList<Tuple> notBuffered = optimizedTuples.filter(ot -> !ot.isBuffered());
-        notBuffered.forEach(ot -> {
-            if (!ot.isBuffered()) {
-                ot.bufferAll();
-            }
-        });
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public TupleBufferObject getTupleBuffObj() {
+        return tupleBuffObj;
     }
 
     /**

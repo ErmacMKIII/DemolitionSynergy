@@ -831,6 +831,84 @@ public class Block extends Model {
     }
 
     /**
+     * Make indices list base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @param baseConst const to add to all indices
+     * @return index buffer
+     */
+    public static IList<Integer> createIndices(int faceBits, int baseConst) {
+        // creating indices
+        IList<Integer> indices = new GapList<>();
+        int j = baseConst; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+
+        return indices;
+    }
+
+    /**
+     * Make new index buffer base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @param baseConst const to add to all indices
+     * @return index buffer
+     */
+    public static IntBuffer createIntBuffer(int faceBits, int baseConst) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = baseConst; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+        // storing indices in the buffer
+        IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
+        }
+
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
+        return intBuff;
+    }
+
+    /**
      * Resize index buffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]

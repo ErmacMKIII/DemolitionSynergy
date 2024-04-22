@@ -221,7 +221,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-        if (isFirstOptimization() || chunkOperationPerformed || (!GameRenderer.couldRender())) {
+        if (isFirstOptimization() || chunkOperationPerformed || GameRenderer.isLastFrame()) {
             synchronized (UPDATE_RENDER_LC_MUTEX) {
                 this.optimize();
             }
