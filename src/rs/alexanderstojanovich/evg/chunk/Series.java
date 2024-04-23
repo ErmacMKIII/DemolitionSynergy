@@ -270,6 +270,44 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         return true;
     }
 
+    public boolean bufferIndices(int baseConst) { // Call before rendering        
+        int blkIndex = 0;
+
+        for (Block block : blockList) {
+            int someSize = checkSize(block.getFaceBits());
+            if (intBuff == null) {
+                intBuff = Block.createIntBuffer(block.getFaceBits(), baseConst);
+            } else if (intBuff.capacity() < someSize) {
+                intBuff = Block.resizeIntBuffer(intBuff, block.getFaceBits(), baseConst);
+            }
+            intBuff.position(0);
+            intBuff.limit(someSize);
+
+            if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+                DSLogger.reportError("Could not allocate memory address!", null);
+                throw new RuntimeException("Could not allocate memory address!");
+            }
+
+            // Generate index buffer object if not already generated
+            if (ibo == 0) {
+                ibo = GL15.glGenBuffers();
+            }
+
+            if (intBuff.capacity() != 0) {
+                // Bind the index buffer and transfer data
+                GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+                GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, intBuff, GL15.GL_STATIC_DRAW);
+                // Store the ibo in the map
+            }
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            blkIndex++;
+        }
+
+        return true;
+    }
+
     public void bufferAll() { // Buffer both, call before rendering
         buffered = bufferVertices() && bufferIndices();
     }

@@ -398,6 +398,7 @@ public class Tuple extends Series {
             Texture.unbind(2);
 
             ShaderProgram.unbind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             GL20.glDisableVertexAttribArray(0);
@@ -511,6 +512,7 @@ public class Tuple extends Series {
             Texture.unbind(2);
 
             ShaderProgram.unbind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             GL20.glDisableVertexAttribArray(0);
@@ -604,15 +606,24 @@ public class Tuple extends Series {
             shaderProgram.bindAttribute(7, "column3");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, tbo.bigIbo);
+            int baseVertex = 0;
+            int startIndex = 0;
             for (Tuple tuple : tuples) {
+                // Draw only the specified instances of the tuple
                 GL32.glDrawElementsInstancedBaseVertex(
                         GL11.GL_TRIANGLES,
                         tuple.indicesNum,
                         GL11.GL_UNSIGNED_INT,
-                        0,
+                        startIndex * Integer.BYTES, // Offset the start index
                         tuple.blockList.size(),
-                        0
+                        baseVertex // Offset the base vertex
                 );
+
+                // Calculate the starting index for each tuple
+                startIndex += tuple.indicesNum;
+
+                // Increment baseVertex by the size of each tuple
+                baseVertex += tuple.blockList.size() * Vertex.SIZE;
             }
 
             Texture.unbind(0);
@@ -620,6 +631,7 @@ public class Tuple extends Series {
             Texture.unbind(2);
 
             ShaderProgram.unbind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
             GL20.glDisableVertexAttribArray(0);

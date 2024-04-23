@@ -70,7 +70,7 @@ public class TupleBufferObject {
         // Allocate memory for the vertex data buffer
         if (bigFloatBuff == null) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
-        } else if (bigFloatBuff.capacity() != someSize) {
+        } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
         }
         // Set buffer position and limit
@@ -160,7 +160,7 @@ public class TupleBufferObject {
         // Allocate memory for the vertex data buffer
         if (bigFloatBuff == null) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
-        } else if (bigFloatBuff.capacity() != someSize) {
+        } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
         }
         // Set buffer position and limit
@@ -236,7 +236,7 @@ public class TupleBufferObject {
         }
         if (vec4FloatColorBuff == null) {
             vec4FloatColorBuff = MemoryUtil.memCallocFloat(someSize);
-        } else if (vec4FloatColorBuff.capacity() != someSize) {
+        } else if (vec4FloatColorBuff.capacity() < someSize) {
             vec4FloatColorBuff = MemoryUtil.memRealloc(vec4FloatColorBuff, someSize);
         }
         vec4FloatColorBuff.position(0);
@@ -292,7 +292,7 @@ public class TupleBufferObject {
         }
         if (mat4FloatModelBuff == null) {
             mat4FloatModelBuff = MemoryUtil.memCallocFloat(someSize);
-        } else if (mat4FloatModelBuff.capacity() != someSize) {
+        } else if (mat4FloatModelBuff.capacity() < someSize) {
             mat4FloatModelBuff = MemoryUtil.memRealloc(mat4FloatModelBuff, someSize);
         }
         mat4FloatModelBuff.position(0);
@@ -376,12 +376,12 @@ public class TupleBufferObject {
     public boolean bufferIndices(IList<Tuple> tuples) { // Call before rendering        
         int someSize = 0;
         for (Tuple tuple : tuples) {
-            someSize += checkSize(tuple.faceBits());
+            someSize += tuple.indicesNum;
         }
 
         if (intBuffer == null) {
             intBuffer = MemoryUtil.memAllocInt(someSize);
-        } else if (intBuffer.capacity() != someSize) {
+        } else if (intBuffer.capacity() < someSize) {
             intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
         }
 
