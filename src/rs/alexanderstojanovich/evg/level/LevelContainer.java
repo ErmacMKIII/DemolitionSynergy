@@ -1242,7 +1242,7 @@ public class LevelContainer implements GravityEnviroment {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            blockEnvironment.optimizeFastMK2(vChnkIdList, mainCamera);
+            blockEnvironment.optimizeFastTBO(vChnkIdList, mainCamera);
         }
     }
 
@@ -1251,7 +1251,7 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param renderFlag what is rendered {LIGHT, WATER, SHADOW}
      */
-    public void render(int renderFlag) { // renderStaticMK2 for regular level rendering
+    public void render(int renderFlag) { // renderStaticTBO for regular level rendering
         if (working) {
             return;
         }
@@ -1282,7 +1282,7 @@ public class LevelContainer implements GravityEnviroment {
         blockEnvironment.prepare(cameraInFluid);
 
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStaticMK2(ShaderProgram.getVoxelShader(), renderFlag);
+        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
         // ----------------------------------------------       
         if (Game.getCurrentMode() == Game.Mode.EDITOR) {
             Block editorNew = Editor.getSelectedNew();
@@ -1316,7 +1316,7 @@ public class LevelContainer implements GravityEnviroment {
      * @param instanceShader instanced (rendering) shader
      * @param renderFlag configurable render flag
      */
-    public void render(Camera camera, ShaderProgram baseShader, ShaderProgram instanceShader, int renderFlag) { // renderStaticMK2 for both regular level rendering and framebuffer (water renderer)        
+    public void render(Camera camera, ShaderProgram baseShader, ShaderProgram instanceShader, int renderFlag) { // renderStaticTBO for both regular level rendering and framebuffer (water renderer)        
         if (working) {
             return;
         }
@@ -1341,7 +1341,7 @@ public class LevelContainer implements GravityEnviroment {
         blockEnvironment.prepare(cameraInFluid);
 
         // only visible & uncached are in chunk list 
-        blockEnvironment.renderStaticMK2(instanceShader, renderFlag);
+        blockEnvironment.renderStatic(instanceShader, renderFlag);
 
         if (Game.getCurrentMode() == Game.Mode.EDITOR) {
             Block editorNew = Editor.getSelectedNew();

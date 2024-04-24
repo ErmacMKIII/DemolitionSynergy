@@ -308,8 +308,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return is first optimization
      */
     public boolean isFirstOptimization() {
-        return !this.levelContainer.chunks.getChunkList().isEmpty()
-                && this.levelContainer.blockEnvironment.optimizedTuples.isEmpty();
+        return !this.levelContainer.chunks.getChunkList().isEmpty();
     }
 
     /**
@@ -378,7 +377,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.intrface.release();
         this.waterRenderer.release();
         this.shadowRenderer.release();
-        this.levelContainer.blockEnvironment.optimizedTuples.forEach(t -> t.release());
+        this.levelContainer.blockEnvironment.release();
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
 //        Quad.globlRelease();

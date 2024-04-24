@@ -45,7 +45,15 @@ public class BlockEnvironment {
 
     private final GameObject gameObject;
 
-    public final IList<Tuple> optimizedTuples = new GapList<>();
+    /**
+     * Working tuples (from update)
+     */
+    protected IList<Tuple> workingTuples = new GapList<>();
+    /**
+     * Optimizes tuples (from render)
+     */
+    protected IList<Tuple> optimizedTuples = new GapList<>();
+
     protected boolean optimized = false;
     protected final Chunks chunks;
     protected int texProcIndex = 0;
@@ -193,22 +201,20 @@ public class BlockEnvironment {
 
     /**
      * Improved version of optimization for tuples from all the chunks. World is
-     * being built incrementally. Consist of two passes. Mark II consists of
-     * modifications to make it work with TBO.
+     * being built incrementally. Consist of two passes. Also consists of
+     * modifications to make it work with Tuple Buffer Object (TBO).
      *
      * @param vqueue visible chunkId queue
      * @param camera ingame camera
      */
-    public void optimizeFastMK2(IList<Integer> vqueue, Camera camera) {
+    public void optimizeFastTBO(IList<Integer> vqueue, Camera camera) {
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
-        boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
+        boolean someRemoved = workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         // some removals are made
         if (someRemoved) {
             optimized = false;
-            // tuples changed
-            tupleBuffObj.setBuffered(false);
         }
 
         // determine texture type to process - split
@@ -224,9 +230,9 @@ public class BlockEnvironment {
             // assign last value & increment to next value with limit to 63
             final int faceBits = (++lastFaceBitsCopy) & 63;
             if ((faceBits & (mask0 & 63)) != 0) {
-                final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                final Tuple optmTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                 if (optmTuple == null) {
-                    optimizedTuples.add(new Tuple(tex, faceBits));
+                    workingTuples.add(new Tuple(tex, faceBits));
                 }
             }
         }
@@ -243,19 +249,22 @@ public class BlockEnvironment {
                         final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
                         // for each selected tuple
                         selectedTuples.forEach(st -> {
-                            final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                            final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                             boolean modified = false;
                             // if optimized doesn't exist
                             for (Block blk : st.blockList) {
                                 // take into consideration if could be seen by camera (impr. method)
                                 if (camera.doesSeeEff(blk)) {
                                     // add absent blocks
-                                    modified |= optmTuple.blockList.addIfAbsent(blk);
+                                    modified |= workTuple.blockList.addIfAbsent(blk);
                                 }
                             }
                             if (modified) {
+                                optimized = false;
                                 // sort so it does remains ordered
-                                optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                // unbuffer working tuple
+                                workTuple.setBuffered(false);
                             }
                         });
                     }
@@ -267,7 +276,7 @@ public class BlockEnvironment {
         lastFaceBits += NUM_OF_PASSES_MAX;
 
         // Remove empty optimization tuples
-        optimizedTuples.removeIf(ot -> ot.blockList.isEmpty());
+        workingTuples.removeIf(ot -> ot.blockList.isEmpty());
 
         // if last bits is processed start from beginning next time
         if (lastFaceBits == 64) {
@@ -276,10 +285,16 @@ public class BlockEnvironment {
 
         // if full circle with all textures & facebits has been completed
         if (texProcIndex == 0 && lastFaceBits == 0) {
-            optimizedTuples.sort(Tuple.TUPLE_COMP);
+            workingTuples.sort(Tuple.TUPLE_COMP);
+
+            // swap list (by reference)
+            IList<Tuple> temp = optimizedTuples;
+            optimizedTuples = workingTuples;
+            workingTuples = temp;
+
             // sets TBO to unbuffer if modified
-            tupleBuffObj.setBuffered(false);
-            // set to optimizied so render operation
+//            tupleBuffObj.setBuffered(false);
+            // set to optimized so render operation
             optimized = true;
         }
 
@@ -376,12 +391,14 @@ public class BlockEnvironment {
 
     /**
      * Static render (faster). Batched & Instanced rendering is being used.
+     * Experimental.
      *
      * @param shaderProgram voxel shader
      * @param renderFlag what is renderered
      */
-    public void renderStaticMK2(ShaderProgram shaderProgram, int renderFlag) {
-        if (!optimized || optimizedTuples.isEmpty()) {
+    @Deprecated
+    public void renderStaticTBO(ShaderProgram shaderProgram, int renderFlag) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -393,7 +410,7 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        if (!tupleBuffObj.isBuffered()) {
+        if (optimized && !tupleBuffObj.isBuffered()) {
             tupleBuffObj.bufferBatchAll();
         }
 
@@ -427,11 +444,19 @@ public class BlockEnvironment {
     }
 
     /**
-     * Clear optimization tuples
+     * Clear working & optimization tuples
      */
     public void clear() {
+        workingTuples.clear();
         optimizedTuples.clear();
         optimized = false;
+    }
+
+    /**
+     * Delete all the resources
+     */
+    public void release() {
+        optimizedTuples.forEach(t -> t.release());
     }
 
     public IList<Tuple> getOptimizedTuples() {
@@ -460,6 +485,10 @@ public class BlockEnvironment {
 
     public int getLastFaceBits() {
         return lastFaceBits;
+    }
+
+    public IList<Tuple> getWorkingTuples() {
+        return workingTuples;
     }
 
 }
