@@ -52,13 +52,24 @@ public class TupleBufferObject {
     protected boolean bufferedIndices = false;
     protected boolean buffered = false;
 
+    public final IList<Tuple> tuples;
+
+    /**
+     * Construct new Tuple Buffer Object
+     *
+     * @param tuples @param tuples tuples to buffer together into batch
+     *
+     */
+    public TupleBufferObject(IList<Tuple> tuples) {
+        this.tuples = tuples;
+    }
+
     /**
      * Buffer vertex data prior rendering
      *
-     * @param tuples tuples to buffer together
      * @return if vertex data was successfully buffered
      */
-    public boolean bufferVertices(IList<Tuple> tuples) { // Call before rendering
+    public boolean bufferVertices() { // Call before rendering
         // Calculate the total size needed for vertex data
         int someSize = 0;
 
@@ -140,10 +151,9 @@ public class TupleBufferObject {
      * SubBuffer vertex data prior rendering. And after at at least one vertex
      * data buffering
      *
-     * @param tuples tuples to buffer together
      * @return if vertex data was successfully buffered
      */
-    public boolean subBufferVertices(IList<Tuple> tuples) { // Call before rendering
+    public boolean subBufferVertices() { // Call before rendering
         if (bigVbo == 0) {
             DSLogger.reportError("Vertex array object or vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex array object or vertex buffer object is zero!");
@@ -226,10 +236,9 @@ public class TupleBufferObject {
     /**
      * Buffer VEC3 colors - instanced rendering
      *
-     * @param tuples parsed tuples
      * @return buffered success
      */
-    protected boolean bufferColors(IList<Tuple> tuples) { // buffering colors
+    protected boolean bufferColors() { // buffering colors
         int someSize = 0;
         for (Tuple tuple : tuples) {
             someSize += tuple.blockList.size() * VEC4_SIZE;
@@ -282,10 +291,9 @@ public class TupleBufferObject {
     /**
      * Buffer Model MAT4[col0, col1, col2, col3]
      *
-     * @param tuples parsed tuples
      * @return buffered success
      */
-    protected boolean bufferModelMatrices(IList<Tuple> tuples) { // buffering model matrices
+    protected boolean bufferModelMatrices() { // buffering model matrices
         int someSize = 0;
         for (Tuple tuple : tuples) {
             someSize += tuple.blockList.size() * MAT4_SIZE;
@@ -370,13 +378,12 @@ public class TupleBufferObject {
     /**
      * Buffer indices for selected tuples
      *
-     * @param tuples selected tuple to buffer indices for
      * @return
      */
-    public boolean bufferIndices(IList<Tuple> tuples) { // Call before rendering        
+    public boolean bufferIndices() { // Call before rendering        
         int someSize = 0;
         for (Tuple tuple : tuples) {
-            someSize += tuple.indicesNum;
+            someSize += tuple.blockList.size() * tuple.indicesNum;
         }
 
         if (intBuffer == null) {
@@ -394,12 +401,14 @@ public class TupleBufferObject {
         }
 
         int baseConst = 0;
-        DSLogger.reportInfo("TupleSize=" + tuples.size(), null);
         for (Tuple tuple : tuples) {
-            IList<Integer> indices = Block.createIndices(tuple.faceBits(), baseConst);
-            DSLogger.reportInfo(indices.toString(), null);
-            for (int i : indices) {
-                intBuffer.put(i);
+            DSLogger.reportInfo("BaseConst=" + baseConst, null);
+            for (Block block : tuple.blockList) {
+                IList<Integer> indices = Block.createIndices(block.getFaceBits(), baseConst);
+                DSLogger.reportInfo(indices.toString(), null);
+                for (int i : indices) {
+                    intBuffer.put(i);
+                }
             }
             baseConst += tuple.facesNum;
         }
@@ -428,12 +437,11 @@ public class TupleBufferObject {
     /**
      * Buffer all tuples together (into single geometry).
      *
-     * @param tuples tuples to buffer together into batch
      */
-    public void bufferBatchAll(IList<Tuple> tuples) {
+    public void bufferBatchAll() {
         buffered = false;
-        bufferedVertices = bufferVertices(tuples) && bufferColors(tuples) && bufferModelMatrices(tuples);
-        bufferedIndices = bufferIndices(tuples);
+        bufferedVertices = bufferVertices() && bufferColors() && bufferModelMatrices();
+        bufferedIndices = bufferIndices();
 
         buffered |= bufferedVertices && bufferedIndices;
     }
