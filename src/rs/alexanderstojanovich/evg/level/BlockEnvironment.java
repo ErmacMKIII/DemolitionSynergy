@@ -210,12 +210,7 @@ public class BlockEnvironment {
     public void optimizeFastTBO(IList<Integer> vqueue, Camera camera) {
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
-        boolean someRemoved = workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
-
-        // some removals are made
-        if (someRemoved) {
-            optimized = false;
-        }
+        workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         // determine texture type to process - split
         if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
@@ -260,7 +255,6 @@ public class BlockEnvironment {
                                 }
                             }
                             if (modified) {
-                                optimized = false;
                                 // sort so it does remains ordered
                                 workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                                 // unbuffer working tuple
@@ -287,13 +281,6 @@ public class BlockEnvironment {
         if (texProcIndex == 0 && lastFaceBits == 0) {
             workingTuples.sort(Tuple.TUPLE_COMP);
 
-            // swap list (by reference)
-            IList<Tuple> temp = optimizedTuples;
-            optimizedTuples = workingTuples;
-            workingTuples = temp;
-
-            // sets TBO to unbuffer if modified
-//            tupleBuffObj.setBuffered(false);
             // set to optimized so render operation
             optimized = true;
         }
@@ -324,11 +311,11 @@ public class BlockEnvironment {
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        if (!optimized) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
-        if (!GameRenderer.isFirstFrame()) {
+        if (GameRenderer.isLastFrame()) {
             for (Tuple tuple : optimizedTuples) {
                 if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
                     tuple.animate();
@@ -371,7 +358,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
-        if (optimizedTuples.isEmpty()) {
+        if (workingTuples.isEmpty() && optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -382,6 +369,13 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+
+        if (optimized) { // optimized -> swap list (by reference)
+            IList<Tuple> temp = optimizedTuples;
+            optimizedTuples = workingTuples;
+            workingTuples = temp;
+            optimized = false;
+        }
 
         Tuple.renderInstanced(
                 optimizedTuples,

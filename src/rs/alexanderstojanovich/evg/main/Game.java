@@ -576,13 +576,13 @@ public class Game {
             if (upsTicks >= 1.0) {
                 // update with delta time like gravity
                 gameObject.update((float) (Game.upsTicks * TICK_TIME));
+                // call utility functions (optimizing etc.)
+                gameObject.utilOptimization();
+            } else if (upsTicks >= 0.5) {
                 // determine visible chunks (can be altered with player position)
                 gameObject.determineVisibleChunks();
                 // call utility functions (chunk loading etc.)
-                if (!gameObject.utilChunkOperations()) {
-                    // call utility functions (optimizing etc.)
-                    gameObject.utilOptimization();
-                }
+                gameObject.utilChunkOperations();
             }
 
             while (upsTicks >= 1.0) {
