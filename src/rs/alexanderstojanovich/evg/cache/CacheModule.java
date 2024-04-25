@@ -30,8 +30,10 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.location.TexByte;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -49,10 +51,14 @@ public class CacheModule {
     public static final int VEC4_LEN = 16; // 16 B
     public static final int BOOL_LEN = 1; // 1 B
 
+    public static final int BLOCK_SIZE = 34;
+
+    public static final int DEFAULT_BUFFER_SIZE = 32768; // 32 KB
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
     private final LevelContainer levelContainer;
     public static final IList<CachedInfo> CACHED_CHUNKS = new GapList<>();
+    public static final int BLOCKS_PER_RUN = Configuration.getInstance().getBlocksPerRun();
 
     public CacheModule(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
@@ -160,7 +166,7 @@ public class CacheModule {
             file.delete();
         }
         try {
-            bos = new BufferedOutputStream(new FileOutputStream(file));
+            bos = new BufferedOutputStream(new FileOutputStream(file), DEFAULT_BUFFER_SIZE);
             bos.write(MEMORY, 0, pos);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
@@ -187,7 +193,7 @@ public class CacheModule {
         if (file.exists()) {
             BufferedInputStream bis = null;
             try {
-                bis = new BufferedInputStream(new FileInputStream(file));
+                bis = new BufferedInputStream(new FileInputStream(file), DEFAULT_BUFFER_SIZE);
                 bis.read(MEMORY, 0, length);
             } catch (FileNotFoundException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
@@ -201,7 +207,7 @@ public class CacheModule {
                     DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
-            file.delete();
+
         }
     }
 
@@ -229,10 +235,10 @@ public class CacheModule {
 
                 // better than tuples clear (otherwise much slower to load)
                 // this indicates that add with no transfer on fluid blocks will be used!
-                for (Tuple tuple : chunk.getTupleList()) {
-                    tuple.getBlockList().clear();
+                for (Tuple tuple : chunk.tupleList) {
+                    tuple.blockList.clear();
                 }
-                chunk.getTupleList().clear();
+                chunk.tupleList.clear();
                 this.levelContainer.chunks.getChunkList().remove(chunk);
             }
             // SAVE OPERATIONS
@@ -242,6 +248,11 @@ public class CacheModule {
                 MEMORY[pos++] = (byte) blocks.size();
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
                 for (Block block : blocks) {
+                    TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
+                    if (location != null) {
+                        location.byteValue = 0;
+                    }
+
                     byte[] texName = block.getTexName().getBytes();
                     System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
                     pos += TEX_LEN;
@@ -290,14 +301,23 @@ public class CacheModule {
         if (CacheModule.isCached(id)) {
             // LOAD INTO MEMORY
             String fileName = getFileName(id);
-            loadDiskToMem(fileName, CACHED_CHUNKS.getIf(ci -> ci.chunkId == id).cachedSize);
-//            DSLogger.reportInfo("pos=" + pos, null);
-            pos = 1;
-            // INIT BLOCK ARRAY
-            int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
-            pos += 2;
-            // READ BLOCK ARRAY
-            for (int i = 0; i < len; i++) {
+            CachedInfo cachedInfo = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
+            int remainingSize = cachedInfo.cachedSize - cachedInfo.readBytes;
+            loadDiskToMem(fileName, remainingSize);
+            int len = 0;
+            if (remainingSize == cachedInfo.cachedSize) {
+                pos = 1;
+                // INIT BLOCK ARRAY
+                len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
+                pos += 2;
+                cachedInfo.readBytes += 3;
+            } else {
+                pos = cachedInfo.readBytes;
+                len = cachedInfo.blockSize - cachedInfo.readBlocks;
+            }
+            // READ BLOCK ARRAY                                              
+            int runlen = Math.min(len, BLOCKS_PER_RUN);
+            for (int i = 0; i < runlen; i++) {
                 char[] texNameArr = new char[TEX_LEN];
                 for (int k = 0; k < texNameArr.length; k++) {
                     texNameArr[k] = (char) MEMORY[pos++];
@@ -313,14 +333,22 @@ public class CacheModule {
                 boolean solid = MEMORY[pos] != (byte) 0x00;
                 pos++;
                 Block block = new Block(texName, blockPos, blockCol, solid);
-                // PUT ALL BLOCK WHERE THEY BELONG TO
+                // PUT ALL BLOCK WHERE THEY BELONG TO                
                 levelContainer.chunks.addBlock(block);
+
+                cachedInfo.readBytes += BLOCK_SIZE;
+                cachedInfo.readBlocks++;
             }
 
             // REMOVE FROM CACHED
-            CACHED_CHUNKS.removeIf(ci -> ci.chunkId == id);
-            DSLogger.reportDebug("ChunkId=" + id + " restored from " + fileName, null);
-
+            if (cachedInfo.cachedSize - cachedInfo.readBytes == 0) {
+                CACHED_CHUNKS.removeIf(ci -> ci.chunkId == id);
+                DSLogger.reportDebug("ChunkId=" + id + " restored from " + fileName, null);
+                File file = new File(fileName);
+                if (file.exists()) {
+                    file.delete();
+                }
+            }
             op = true;
         }
 

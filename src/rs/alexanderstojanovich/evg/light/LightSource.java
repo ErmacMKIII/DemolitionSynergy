@@ -99,4 +99,16 @@ public class LightSource {
         this.intensity = intensity;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("LightSource{");
+        sb.append("pos=").append(pos);
+        sb.append(", color=").append(color);
+        sb.append(", intensity=").append(intensity);
+//        sb.append(", lightViewMatrix=").append(lightViewMatrix);
+        sb.append('}');
+        return sb.toString();
+    }
+
 }

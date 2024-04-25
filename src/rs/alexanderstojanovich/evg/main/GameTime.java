@@ -25,7 +25,7 @@ import org.joml.Vector3f;
 public class GameTime {
 
     protected static final Configuration cfg = Configuration.getInstance();
-    public static float PI = (float) org.joml.Math.PI;
+    public static double PI = (double) org.joml.Math.PI;
 
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
     public static final Vector3f Y_AXIS_NEG = new Vector3f(0.0f, -1.0f, 0.0f);
@@ -33,7 +33,7 @@ public class GameTime {
     protected final int hours;
     protected final int minutes;
     protected final int seconds;
-    protected final float time;
+    protected final double time;
     protected int days = 0;
 
     /**
@@ -42,23 +42,23 @@ public class GameTime {
      * @return GameTime
      */
     public static GameTime Now() {
-        final float gtm = cfg.getGameTimeMultiplier();
-        final float dt = gtm * (float) (Game.accumulator * Game.TICK_TIME / 16.0);
+        final double gtm = cfg.getGameTimeMultiplier();
+        final double dt = gtm * (double) (Game.accumulator * Game.TICK_TIME / 16.0);
         final int days = (int) (1.0f + dt / (2.0f * PI));
 
-        final float sin = org.joml.Math.sin(dt);
-        final float cos = org.joml.Math.cosFromSin(sin, dt);
+        final double sin = org.joml.Math.sin(dt);
+        final double cos = org.joml.Math.cosFromSin(sin, dt);
 
-        float x = cos - sin;
-        float y = sin + cos;
+        double x = cos - sin;
+        double y = sin + cos;
 
-        final float internalAngle = org.joml.Math.atan2(y, x); // replacing sun angle with internal angle
-        final float time = 21.0f + 24.0f * (float) org.joml.Math.toDegrees(internalAngle) / 360.0f;
+        final double internalAngle = org.joml.Math.atan2(y, x); // replacing sun angle with internal angle
+        final double time = 21.0f + 24.0f * (double) org.joml.Math.toDegrees(internalAngle) / 360.0f;
 
         return new GameTime(days, time);
     }
 
-    public GameTime(int days, float time) {
+    public GameTime(int days, double time) {
         this.days = days;
         this.time = time;
 
@@ -92,7 +92,7 @@ public class GameTime {
         return seconds;
     }
 
-    public float getTime() {
+    public double getTime() {
         return time;
     }
 

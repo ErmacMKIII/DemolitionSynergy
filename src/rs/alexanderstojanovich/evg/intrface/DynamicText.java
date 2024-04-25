@@ -22,10 +22,10 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
 import rs.alexanderstojanovich.evg.main.Configuration;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -59,10 +59,21 @@ public class DynamicText extends Text {
 
     @Override
     public boolean bufferVertices() {
-        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        int someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        if (bigFloatBuff == null) {
+            bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
+        } else if (bigFloatBuff.capacity() < someSize) {
+            bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
+        }
+
+        if (!txtChList.isEmpty()) {
+            bigFloatBuff.position(0);
+            bigFloatBuff.limit(someSize);
+        }
+
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
         for (TextCharacter txtCh : txtChList) {
@@ -78,16 +89,11 @@ public class DynamicText extends Text {
             bigFloatBuff.flip();
         }
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         if (bigVbo == 0) {
             bigVbo = GL15.glGenBuffers();
         }
 
         if (bigFloatBuff.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, bigFloatBuff, GL15.GL_STATIC_DRAW);
 
@@ -99,34 +105,35 @@ public class DynamicText extends Text {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (bigFloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(bigFloatBuff);
-        }
 
         return true;
     }
 
     @Override
     public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
-        }
-
         if (bigVbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
 
         // auto adjust dynamic size of float buff and do it on every 1024 element
-        bigFloatBuff = MemoryUtil.memCallocFloat(txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE);
+        int someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        if (bigFloatBuff == null) {
+            bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
+        } else if (bigFloatBuff.capacity() < someSize) {
+            bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
+        }
+
+        if (!txtChList.isEmpty()) {
+            bigFloatBuff.position(0);
+            bigFloatBuff.limit(someSize);
+        }
+
         if (bigFloatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(bigFloatBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
         for (TextCharacter txtCh : txtChList) {
@@ -143,7 +150,6 @@ public class DynamicText extends Text {
         }
 
         if (bigFloatBuff.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, bigFloatBuff);
 
@@ -155,28 +161,22 @@ public class DynamicText extends Text {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (bigFloatBuff.capacity() != 0) {
-            MemoryUtil.memFree(bigFloatBuff);
-        }
 
         return true;
     }
 
     @Override
-    public void bufferAll() {
+    public void bufferAll(Intrface intrface) {
         buffered = false;
-        setup();
+        setup(intrface);
         buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
-    public void bufferSmart() {
-        int deltaSize = setup();
+    public void bufferSmart(Intrface intrface) {
+        int deltaSize = setup(intrface);
         if (bigFloatBuff != null && bigVbo != 0 && deltaSize == 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
@@ -185,23 +185,24 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
             shaderProgram.updateUniform(color, "color");
-            texture.bind(0, ShaderProgram.getIntrfaceShader(), "ifcTexture");
+            texture.bind(0, shaderProgram, "ifcTexture");
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             for (TextCharacter txtCh : txtChList) {
-                ShaderProgram.getIntrfaceShader().updateUniform(txtCh.modelMat4, "modelMatrix");
+                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
 
                 GL32.glDrawElementsBaseVertex(
                         GL11.GL_TRIANGLES,
@@ -218,8 +219,49 @@ public class DynamicText extends Text {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
+        }
+    }
 
-            GL30.glBindVertexArray(0);
+    @Override
+    public void renderContour(Intrface intrface, ShaderProgram contourShaderProgram) {
+        if (enabled && buffered && !txtChList.isEmpty()) {
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            contourShaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, bigVbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
+            contourShaderProgram.bindAttribute(0, "pos");
+            contourShaderProgram.bindAttribute(1, "uv");
+
+            // Update uniforms
+            contourShaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+            contourShaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
+
+            contourShaderProgram.updateUniform(color, "color");
+            texture.bind(0, contourShaderProgram, "ifcTexture");
+
+            int index = 0;
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            for (TextCharacter txtCh : txtChList) {
+                contourShaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+
+                GL32.glDrawElementsBaseVertex(
+                        GL11.GL_TRIANGLES,
+                        INDICES.length,
+                        GL11.GL_UNSIGNED_INT,
+                        0,
+                        index++ << 2 // vertex size is 4
+                );
+            }
+
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
         }
     }
 
@@ -235,6 +277,15 @@ public class DynamicText extends Text {
 
         if (intBuffer != null && intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) != MemoryUtil.NULL) {
             MemoryUtil.memFree(floatBuffer);
+        }
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        if (bigFloatBuff != null && bigFloatBuff.capacity() != 0) {
+            MemoryUtil.memFree(bigFloatBuff);
+            bigFloatBuff = null;
         }
     }
 

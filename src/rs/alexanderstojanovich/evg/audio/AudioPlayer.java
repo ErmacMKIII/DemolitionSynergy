@@ -42,13 +42,14 @@ public class AudioPlayer {
      * Play audio track.
      *
      * @param audioFile audio track
+     * @param stopIfPlaying stop playing current track (optional)
      * @param loop repeat playing track after its end.
      */
-    public void play(AudioFile audioFile, boolean loop) {
+    public void play(AudioFile audioFile, boolean stopIfPlaying, boolean loop) {
         if (!MasterAudio.isInitialized()) {
             DSLogger.reportError("Master Audio not initialized!", null);
         }
-        if (isPlaying()) {
+        if (isPlaying() && stopIfPlaying) {
             stop();
         }
         AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, 0);
@@ -77,6 +78,9 @@ public class AudioPlayer {
         }
         if (isPlaying()) {
             stop();
+        }
+        if (audioFile.getContent() == null) {
+            return;
         }
         AL10.alSourcei(sourcePointer, AL10.AL_BUFFER, 0);
         AL10.alBufferData(bufferPointer, audioFile.getFormat(), audioFile.getContent(), audioFile.getSampleRate());

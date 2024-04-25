@@ -33,13 +33,13 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     private int selected = -1;
     protected Type type;
 
-    public MultiValue(Object[] valueArray, Type type) {
+    public MultiValue(Object[] valueArray, Type type) throws Exception {
         this.type = type;
         this.valueText = new DynamicText(Texture.FONT, "");
         values.addAll(Arrays.asList(valueArray));
     }
 
-    public MultiValue(Object[] valueArray, Type type, int selected) {
+    public MultiValue(Object[] valueArray, Type type, int selected) throws Exception {
         this.type = type;
         this.selected = selected;
         this.valueText = new DynamicText(Texture.FONT, String.valueOf(valueArray[selected]));
@@ -48,7 +48,7 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
         }
     }
 
-    public MultiValue(Object[] valueArray, Type type, Object currentValue) {
+    public MultiValue(Object[] valueArray, Type type, Object currentValue) throws Exception {
         this.type = type;
         this.valueText = new DynamicText(Texture.FONT, String.valueOf(currentValue));
         values.addAll(Arrays.asList(valueArray));
@@ -131,11 +131,11 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (!valueText.isBuffered()) {
-            valueText.bufferAll();
+            valueText.bufferAll(intrface);
         }
-        valueText.render(shaderProgram);
+        valueText.render(intrface, shaderProgram);
     }
 
     @Override

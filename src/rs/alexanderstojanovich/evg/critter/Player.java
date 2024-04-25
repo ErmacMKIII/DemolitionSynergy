@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.Collection;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
@@ -33,8 +34,13 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Player extends Critter implements Observer {
 
+    public static enum CameraView {
+        FIRST_PERSON, THIRD_PERSON
+    }
+    protected CameraView cameraView = CameraView.THIRD_PERSON;
+
 //    private Model currWeapon;
-    private final Camera camera;
+    private final RPGCamera camera;
     public final LightSource light;
 
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
@@ -59,12 +65,25 @@ public class Player extends Critter implements Observer {
         super(body);
 //        this.camera = new Camera(new Vector3f(this.body.pos));
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
-        this.light = new LightSource(this.body.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY);
+        this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
     }
 
 //    public void switchWeapon(int num) {
 //        currWeapon = WEAPONS[num - 1];
 //    }
+    /**
+     * Toggle Between 1st Person / Third Person
+     */
+    public void switchViewToggle() {
+        if (cameraView == CameraView.FIRST_PERSON) {
+            this.camera.setDistanceFromTarget(0f);
+            this.cameraView = CameraView.THIRD_PERSON;
+        } else if (cameraView == CameraView.THIRD_PERSON) {
+            this.camera.setDistanceFromTarget(2.1f);
+            this.cameraView = CameraView.FIRST_PERSON;
+        }
+    }
+
     @Override
     public void render(ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
@@ -142,7 +161,7 @@ public class Player extends Critter implements Observer {
     }
 
     @Override
-    public void render(ShaderProgram[] shaderPrograms) {
+    public void render(Collection<ShaderProgram> shaderPrograms) {
         camera.render(shaderPrograms);
     }
 

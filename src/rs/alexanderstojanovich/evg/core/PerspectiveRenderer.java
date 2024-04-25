@@ -20,6 +20,7 @@ import java.nio.FloatBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -27,12 +28,19 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class PerspectiveRenderer {
+public class PerspectiveRenderer implements CoreRenderer {
 
-    public static final Matrix4f PROJECTION_MATRIX = new Matrix4f();
-    protected static FloatBuffer floatBuff = null;
+    public static final float FOV = (float) (org.joml.Math.PI / 2.0f);
+    public static final float NEAR_PLANE = 0.1f;
+    public static final float FAR_PLANE = 20480.0f;
 
-    protected static boolean buffered = false;
+    private final GameObject gameObject;
+    public final Matrix4f perspectiveMatrix = new Matrix4f();
+    protected FloatBuffer floatBuffPerspective = null;
+
+    public PerspectiveRenderer(GameObject gameObject) {
+        this.gameObject = gameObject;
+    }
 
     /**
      * Load Perspective (projection matrix used in shaders)
@@ -43,57 +51,81 @@ public class PerspectiveRenderer {
      * @param zNear nearest point
      * @param zFar furthest point
      */
-    private static void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
+    private void loadPerspective(float fov, int width, int height, float zNear, float zFar) {
         // LH is for OpenGL way, it's required..
-        PROJECTION_MATRIX.setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
+        perspectiveMatrix.setPerspectiveLH(fov, (float) width / (float) height, zNear, zFar);
     }
 
     /**
      * Update perspective to window resolution (dimension)
-     *
-     * @param myWindow window
      */
-    public static void updatePerspective(Window myWindow) {
-        loadPerspective((float) (org.joml.Math.PI / 2.0f), myWindow.getWidth(), myWindow.getHeight(), 0.05f, 20480.0f);
+    public void updatePerspective() {
+        loadPerspective(FOV, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), NEAR_PLANE, FAR_PLANE);
+    }
+
+    /**
+     * Initialize. Allocate memory
+     */
+    public void init() {
+        floatBuffPerspective = MemoryUtil.memCallocFloat(16); // 4x4
+        if (floatBuffPerspective.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffPerspective) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
+        }
+
     }
 
     /**
      * Buffer and render to the projection matrix (shaders)
      */
-    public static void bufferAndRender() {
-        floatBuff = MemoryUtil.memCallocFloat(16); // 4x4
-        if (floatBuff.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuff) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-            return;
-        }
-        PROJECTION_MATRIX.get(floatBuff);
-        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
+    @Override
+    public void render() {
+        perspectiveMatrix.get(floatBuffPerspective);
+
+        for (ShaderProgram shaderProgram : ShaderProgram.ACTOR_SHADERS) {
             shaderProgram.bind();
             int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
-            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuff);
+            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffPerspective);
             ShaderProgram.unbind();
         }
-        if (floatBuff.capacity() != 0) {
-            MemoryUtil.memFree(floatBuff);
+
+        for (ShaderProgram shaderProgram : ShaderProgram.ENVIRONMENTAL_SHADERS) {
+            shaderProgram.bind();
+            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
+            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffPerspective);
+            ShaderProgram.unbind();
         }
 
-        buffered = true;
+        for (ShaderProgram shaderProgram : ShaderProgram.WATER_SHADERS) {
+            shaderProgram.bind();
+            int uniformLocation = GL20.glGetUniformLocation(shaderProgram.getProgram(), "projectionMatrix");
+            GL20.glUniformMatrix4fv(uniformLocation, false, floatBuffPerspective);
+            ShaderProgram.unbind();
+        }
     }
 
-    public static FloatBuffer getFloatBuff() {
-        return floatBuff;
+    @Override
+    public void prepare() {
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public static void setFloatBuff(FloatBuffer floatBuff) {
-        PerspectiveRenderer.floatBuff = floatBuff;
+    @Override
+    public void release() {
+        if (floatBuffPerspective.capacity() != 0) {
+            MemoryUtil.memFree(floatBuffPerspective);
+        }
     }
 
-    public static boolean isBuffered() {
-        return buffered;
+    public FloatBuffer getFloatBuffPerspective() {
+        return floatBuffPerspective;
     }
 
-    public static void setBuffered(boolean buffered) {
-        PerspectiveRenderer.buffered = buffered;
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public Matrix4f getPerspectiveMatrix() {
+        return perspectiveMatrix;
     }
 
 }

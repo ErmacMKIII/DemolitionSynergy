@@ -30,12 +30,14 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class Configuration {
 
+    private int monitor = 0;
     private int fpsCap = 100;
     private int width = 640;
     private int height = 480;
     private boolean fullscreen = false;
     private boolean vsync = false;
     private int waterEffects = 0;
+    private int shadowEffects = 0;
     private float mouseSensitivity = 1.5f;
     private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
     private boolean logToFile = false;
@@ -46,7 +48,9 @@ public class Configuration {
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 10;
+    private int optimizationPasses = 8;
     private double gameTicks = 0.0;
+    private int blocksPerRun = 1000;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -89,6 +93,9 @@ public class Configuration {
                     float val;
                     if (words.length == 2) {
                         switch (words[0].toLowerCase()) {
+                            case "monitor":
+                                monitor = Integer.parseInt(words[1]);
+                                break;
                             case "fpscap":
                                 fpsCap = Integer.parseInt(words[1]);
                                 break;
@@ -106,6 +113,9 @@ public class Configuration {
                                 break;
                             case "watereffects":
                                 waterEffects = Integer.parseInt(words[1].toLowerCase());
+                                break;
+                            case "shadoweffects":
+                                shadowEffects = Integer.parseInt(words[1].toLowerCase());
                                 break;
                             case "mousesensitivity":
                                 val = Float.parseFloat(words[1]);
@@ -149,6 +159,11 @@ public class Configuration {
                                 if (number > 0 && number <= Game.TPS * 2) {
                                     rendererPasses = number;
                                 }
+                            case "optimizationpasses":
+                                number = Integer.parseInt(words[1]);
+                                if (number >= 1 && number <= 64) {
+                                    optimizationPasses = number;
+                                }
                             case "texturesize":
                                 number = Integer.parseInt(words[1]);
                                 // if tex size is a non-zero power of two
@@ -167,6 +182,14 @@ public class Configuration {
                                 if (val >= 0.0f && val <= 5.0f) {
                                     gameTimeMultiplier = val;
                                 }
+                                break;
+                            case "blocksperrun":
+                                number = Integer.parseInt(words[1]);
+                                // block per cache loading run
+                                if (number > 0 && number <= 25000) {
+                                    blocksPerRun = number;
+                                }
+                                break;
                         }
                     }
                 }
@@ -195,6 +218,8 @@ public class Configuration {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(cfg);
+            pw.println("# Monitor (0 - Window; !=0 avaliable monitors)");
+            pw.println("Monitor = " + monitor);
             pw.println("# Maximum framerate. Depedends on VSync.");
             pw.println("FPSCap = " + fpsCap);
             pw.println("Width = " + width);
@@ -204,6 +229,8 @@ public class Configuration {
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
+            pw.println("# Shadow Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
+            pw.println("ShadowEffects = " + shadowEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
@@ -215,12 +242,16 @@ public class Configuration {
             pw.println("TextDynamicSize = " + textDynamicSize);
             pw.println("# Renderer strength. May Improve performance. Number passes per ticks. Allowed values 1-160");
             pw.println("RendererPasses = " + rendererPasses);
+            pw.println("# Optimization strength. May Improve performance. Number passes per optimization run. Allowed values 1-64");
+            pw.println("OptimizationPasses = " + optimizationPasses);
             pw.println("# Texture size. Must be power of two, non-zero and lesser or equal than 4096.");
             pw.println("TextureSize = " + textureSize);
             pw.println("# Game Ticks (decimal). Must be greater or equal zero");
             pw.println("GameTicks = " + gameTicks);
             pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
+            pw.println("# Block number load per cache run. Must be metween (0, 25000]");
+            pw.println("BlocksPerRun = " + blocksPerRun);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -228,6 +259,10 @@ public class Configuration {
                 pw.close();
             }
         }
+    }
+
+    public int getMonitor() {
+        return monitor;
     }
 
     public int getFpsCap() {
@@ -340,6 +375,22 @@ public class Configuration {
 
     public double getGameTicks() {
         return gameTicks;
+    }
+
+    public int getBlocksPerRun() {
+        return blocksPerRun;
+    }
+
+    public int getOptimizationPasses() {
+        return optimizationPasses;
+    }
+
+    public int getShadowEffects() {
+        return shadowEffects;
+    }
+
+    public void setShadowEffects(int shadowEffects) {
+        this.shadowEffects = shadowEffects;
     }
 
 }

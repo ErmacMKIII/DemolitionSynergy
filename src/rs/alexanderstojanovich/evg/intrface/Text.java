@@ -29,7 +29,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Window;
-import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -92,8 +92,6 @@ public class Text implements ComponentIfc {
         new Vector2f()
     };
 
-    protected int vao = 0;
-
     protected static FloatBuffer floatBuffer = null;
     protected int vbo = 0;
 
@@ -126,11 +124,14 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean bufferVertices() {
-        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
-        if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
-            DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+        int someSize = Quad.VERTEX_COUNT * VERTEX_SIZE;
+        if (floatBuffer == null) {
+            floatBuffer = MemoryUtil.memCallocFloat(someSize);
+        } else if (floatBuffer.capacity() < someSize) {
+            floatBuffer = MemoryUtil.memRealloc(floatBuffer, someSize);
         }
+        floatBuffer.position(0);
+        floatBuffer.limit(someSize);
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
             floatBuffer.put(VERTICES[i].y);
@@ -139,16 +140,11 @@ public class Text implements ComponentIfc {
         }
         floatBuffer.flip();
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
-        }
-
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
         if (floatBuffer.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferData(GL15.GL_ARRAY_BUFFER, floatBuffer, GL15.GL_STATIC_DRAW);
 
@@ -160,7 +156,6 @@ public class Text implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -173,18 +168,21 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
-        }
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
-        floatBuffer = MemoryUtil.memCallocFloat(Quad.VERTEX_COUNT * VERTEX_SIZE);
+        int someSize = Quad.VERTEX_COUNT * VERTEX_SIZE;
+        if (floatBuffer == null) {
+            floatBuffer = MemoryUtil.memCallocFloat(someSize);
+        } else if (floatBuffer.capacity() < someSize) {
+            floatBuffer = MemoryUtil.memRealloc(floatBuffer, someSize);
+        }
+        floatBuffer.position(0);
+        floatBuffer.limit(someSize);
         if (floatBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(floatBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i = 0; i < 4; i++) {
             floatBuffer.put(VERTICES[i].x);
@@ -195,7 +193,6 @@ public class Text implements ComponentIfc {
         floatBuffer.flip();
 
         if (floatBuffer.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, floatBuffer);
 
@@ -207,7 +204,6 @@ public class Text implements ComponentIfc {
 
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            GL30.glBindVertexArray(0);
         }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
@@ -220,10 +216,17 @@ public class Text implements ComponentIfc {
 
     @Override
     public boolean bufferIndices() {
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);
@@ -240,10 +243,6 @@ public class Text implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
-
         return true;
     }
 
@@ -253,10 +252,17 @@ public class Text implements ComponentIfc {
             DSLogger.reportError("Index buffer object is zero!", null);
             return false;
         }
-        intBuffer = MemoryUtil.memCallocInt(INDICES.length);
+        int someSize = INDICES.length;
+        if (intBuffer == null) {
+            intBuffer = MemoryUtil.memCallocInt(someSize);
+        } else if (intBuffer.capacity() < someSize) {
+            intBuffer = MemoryUtil.memRealloc(intBuffer, someSize);
+        }
+        intBuffer.position(0);
+        intBuffer.limit(someSize);
         if (intBuffer.capacity() != 0 && MemoryUtil.memAddressSafe(intBuffer) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
         for (int i : INDICES) {
             intBuffer.put(i);
@@ -269,33 +275,30 @@ public class Text implements ComponentIfc {
         }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
 
-        if (intBuffer.capacity() != 0) {
-            MemoryUtil.memFree(intBuffer);
-        }
-
         return true;
     }
 
     /**
      * Character size difference (now & before)
      *
+     * @param intrface intrface
      * @return char difference
      */
-    protected int setup() {
+    protected int setup(Intrface intrface) {
         int prevSize = txtChList.size();
         txtChList.clear();
-        final int lineSize = Math.round(relativeLineSize());
+        final int lineSize = Math.round(relativeLineSize(intrface));
         String[] lines = content.split("\n");
         for (int l = 0; l < lines.length; l++) {
             for (int i = 0; i < lines[l].length(); i++) {
                 int j = i % lineSize;
                 int k = i / lineSize;
                 char ch = lines[l].charAt(i);
-                float xinc = Math.round(j - content.length() * alignment) * scale * getRelativeCharWidth();
-                float ydec = (k + l) * scale * getRelativeCharHeight() * Text.LINE_SPACING;
+                float xinc = Math.round(j - content.length() * alignment) * scale * getRelativeCharWidth(intrface);
+                float ydec = (k + l) * scale * getRelativeCharHeight(intrface) * Text.LINE_SPACING;
 
                 TextCharacter txtCh = new TextCharacter(xinc, ydec, ch);
-                txtCh.modelMat4 = calcModelMatrix(txtCh); // setup once and don't touch it
+                txtCh.modelMat4 = calcModelMatrix(intrface, txtCh); // setup once and don't touch it
 
                 txtChList.add(txtCh);
             }
@@ -305,15 +308,15 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void bufferAll() {
+    public void bufferAll(Intrface intrface) {
         buffered = false;
-        setup();
+        setup(intrface);
         buffered = bufferVertices() && bufferIndices();
     }
 
     @Override
-    public void bufferSmart() {
-        int deltaSize = setup();
+    public void bufferSmart(Intrface intrface) {
+        int deltaSize = setup(intrface);
         if (floatBuffer != null && vbo != 0 && deltaSize == 0 && ibo != 0) {
             buffered = updateVertices() && updateIndices();
         } else {
@@ -327,14 +330,15 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled && buffered && !txtChList.isEmpty()) {
-            GL30.glBindVertexArray(vao);
-
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "uv");
 
@@ -356,8 +360,42 @@ public class Text implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
+        }
+    }
 
-            GL30.glBindVertexArray(0);
+    public void renderContour(Intrface intrface, ShaderProgram shaderProgram) {
+        if (enabled && buffered && !txtChList.isEmpty()) {
+            GL20.glEnableVertexAttribArray(0);
+            GL20.glEnableVertexAttribArray(1);
+
+            shaderProgram.bind();
+            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+            GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
+            shaderProgram.bindAttribute(0, "pos");
+            shaderProgram.bindAttribute(1, "uv");
+
+            // Update uniforms
+            shaderProgram.updateUniform(1.0f / (float) Texture.TEX_SIZE, "unit");
+            shaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
+            shaderProgram.updateUniform(scale, "scale");
+            shaderProgram.updateUniform(color, "color");
+            texture.bind(0, shaderProgram, "ifcTexture");
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
+            for (TextCharacter txtCh : txtChList) {
+                uvs = txtCh.uvs;
+
+                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+                GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+            }
+
+            Texture.unbind(0);
+            ShaderProgram.unbind();
+
+            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+            GL20.glDisableVertexAttribArray(0);
+            GL20.glDisableVertexAttribArray(1);
         }
     }
 
@@ -368,6 +406,16 @@ public class Text implements ComponentIfc {
         }
         if (ibo != 0) {
             GL20.glDeleteBuffers(ibo);
+        }
+
+        if (floatBuffer != null && floatBuffer.capacity() != 0) {
+            MemoryUtil.memFree(floatBuffer);
+            floatBuffer = null;
+        }
+
+        if (intBuffer != null && intBuffer.capacity() != 0) {
+            MemoryUtil.memFree(intBuffer);
+            intBuffer = null;
         }
     }
 
@@ -392,31 +440,31 @@ public class Text implements ComponentIfc {
         return charHeight;
     }
 
-    public float getRelativeCharWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
+    public float getRelativeCharWidth(Intrface intrface) {
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
-    public float getRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor * content.length() / (float) GameObject.MY_WINDOW.getWidth();
+    public float getRelativeWidth(Intrface intrface) {
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor * content.length() / (float) intrface.gameObject.WINDOW.getWidth();
     }
 
-    public float getRelativeCharHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
+    public float getRelativeCharHeight(Intrface intrface) {
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
-    public float getRelativeHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor * numberOfLines() / (float) GameObject.MY_WINDOW.getHeight();
+    public float getRelativeHeight(Intrface intrface) {
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor * numberOfLines(intrface) / (float) intrface.gameObject.WINDOW.getHeight();
     }
 
     // it aligns position to next char position (useful if characters are cut out or so)
     // call this method only once!
-    public void alignToNextChar() {
-        float srw = scale * getRelativeCharWidth(); // scaled relative width
-        float srh = scale * getRelativeCharHeight(); // scaled relative height                                                                 
+    public void alignToNextChar(Intrface intrface) {
+        float srw = scale * getRelativeCharWidth(intrface); // scaled relative width
+        float srh = scale * getRelativeCharHeight(intrface); // scaled relative height                                                                 
 
         float xrem = pos.x % srw;
         pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
@@ -425,12 +473,12 @@ public class Text implements ComponentIfc {
         pos.y -= yrem;
     }
 
-    protected Matrix4f calcModelMatrix(float xinc, float ydec) {
+    protected Matrix4f calcModelMatrix(Intrface intrface, float xinc, float ydec) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + xinc, pos.y - ydec, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
-        float sx = getRelativeCharWidth();
-        float sy = getRelativeCharHeight();
+        float sx = getRelativeCharWidth(intrface);
+        float sy = getRelativeCharHeight(intrface);
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
@@ -438,12 +486,12 @@ public class Text implements ComponentIfc {
         return modelMatrix;
     }
 
-    protected Matrix4f calcModelMatrix(TextCharacter txtCh) {
+    protected Matrix4f calcModelMatrix(Intrface intrface, TextCharacter txtCh) {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos.x + txtCh.xadv, pos.y - txtCh.ydrop, 0.0f);
         Matrix4f rotationMatrix = new Matrix4f().identity();
 
-        float sx = getRelativeCharWidth();
-        float sy = getRelativeCharHeight();
+        float sx = getRelativeCharWidth(intrface);
+        float sy = getRelativeCharHeight(intrface);
         Matrix4f scaleMatrix = new Matrix4f().scaleXY(sx, sy).scale(scale);
 
         Matrix4f temp = new Matrix4f();
@@ -451,8 +499,8 @@ public class Text implements ComponentIfc {
         return modelMatrix;
     }
 
-    public int numberOfLines() {
-        final int lineSize = Math.round(relativeLineSize());
+    public int numberOfLines(Intrface intrface) {
+        final int lineSize = Math.round(relativeLineSize(intrface));
         int numOfLines = 0;
         numOfLines += content.codePoints().filter(ch -> (char) ch == '\n').count(); // #include all '\n'
         String[] parts = content.split("\n", -1);
@@ -463,8 +511,8 @@ public class Text implements ComponentIfc {
         return 1 + numOfLines; // #lines start with 1
     }
 
-    public float relativeLineSize() {
-        return 2.0f / (float) getRelativeCharWidth();
+    public float relativeLineSize(Intrface intrface) {
+        return 2.0f / (float) getRelativeCharWidth(intrface);
     }
 
     public IList<TextCharacter> getTxtChList() {
@@ -483,10 +531,6 @@ public class Text implements ComponentIfc {
     @Override
     public int getIbo() {
         return ibo;
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     public Texture getTexture() {

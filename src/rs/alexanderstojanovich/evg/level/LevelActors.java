@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class LevelActors {
 
-    public Camera spectator = new Camera(); // spectator is separate camera from player instance
+    public Observer spectator = new Camera(); // spectator is separate camera from player instance
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
 
@@ -59,18 +59,19 @@ public class LevelActors {
     }
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
+        // Npc list is for now empty
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }
-        mainObserver().render(ShaderProgram.SHADER_PROGRAMS);
-
-        if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
-                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+        if ((mainActor() == player)) {
             player.render(lightSrc, mainActorShader);
+        } else if (mainActor() == spectator) {
+            spectator.render(mainActorShader);
         }
+
     }
 
-    public Observer mainObserver() {
+    public Observer mainActor() {
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
                 || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
             return player;
@@ -82,21 +83,21 @@ public class LevelActors {
     }
 
     public void configureMainObserver(Vector3f pos) {
-        mainObserver().setPos(pos);
-        mainObserver().getCamera().setFront(Camera.Z_AXIS);
-        mainObserver().getCamera().setUp(Camera.Y_AXIS);
-        mainObserver().getCamera().setRight(Camera.X_AXIS);
+        mainActor().setPos(pos);
+        mainActor().getCamera().setFront(Camera.Z_AXIS);
+        mainActor().getCamera().setUp(Camera.Y_AXIS);
+        mainActor().getCamera().setRight(Camera.X_AXIS);
     }
 
     public void configureMainObserver(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
-        mainObserver().setPos(pos);
-        mainObserver().getCamera().setFront(front);
-        mainObserver().getCamera().setUp(up);
-        mainObserver().getCamera().setRight(right);
+        mainActor().setPos(pos);
+        mainActor().getCamera().setFront(front);
+        mainActor().getCamera().setUp(up);
+        mainActor().getCamera().setRight(right);
     }
 
     public Camera mainCamera() {
-        Observer mainActor = mainObserver();
+        Observer mainActor = mainActor();
         return mainActor.getCamera();
     }
 

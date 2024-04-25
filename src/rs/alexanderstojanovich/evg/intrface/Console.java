@@ -25,13 +25,14 @@ import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
@@ -40,6 +41,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public class Console {
 
+    private static final Configuration cfg = Configuration.getInstance();
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final DynamicText inText;
@@ -48,13 +50,16 @@ public class Console {
     private final DynamicText completes;
 
     public static final int HISTORY_CAPACITY = 12;
-
     protected GLFWCharCallback glfwCharCallback;
     protected GLFWKeyCallback glfwKeyCallback;
+    protected Intrface intrface;
 
-    public Console() {
-        this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
-                GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
+    public Console(Intrface intrface) {
+        this.intrface = intrface;
+        int conwidth = cfg.getWidth();
+        int conheight = cfg.getHeight() / 2;
+
+        this.panel = new Quad(conwidth, conheight, Texture.CONSOLE);
         this.panel.setColor(new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
@@ -62,16 +67,16 @@ public class Console {
         this.inText = new DynamicText(Texture.FONT, "]_", new Vector2f(), 18, 18);
         this.inText.setColor(new Vector4f(GlobalColors.GREEN, 1.0f));
         this.inText.pos.x = -1.0f;
-        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
 
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
-        this.inText.alignToNextChar();
+        this.inText.alignToNextChar(intrface);
 
         this.completes = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
         this.completes.color = new Vector4f(GlobalColors.YELLOW, 1.0f);
         this.completes.pos.x = -1.0f;
-        this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight();
-        this.completes.alignToNextChar();
+        this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight(intrface);
+        this.completes.alignToNextChar(intrface);
         init();
     }
 
@@ -103,29 +108,34 @@ public class Console {
 //                            }                        
                         Command cmd = Command.getCommand(input.toString());
 // if cmd is invalid it's null
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
                             if (cmd.isRendererCommand()) {
                                 FutureTask<Object> consoleTask = new FutureTask<>(cmd);
                                 cmd.status = Command.Status.PENDING;
                                 GameRenderer.TASK_QUEUE.add(consoleTask);
                             } else if (cmd.isGameCommand()) {
-                                Command.execute(cmd);
+                                Command.execute(intrface.gameObject, cmd);
                             }
                         }
 
                         if (cmd.target != Command.Target.CLEAR) {
                             // add to queue
-                            HistoryItem item = new HistoryItem(cmd);
-                            history.addFirst(item);
+                            HistoryItem item;
+                            try {
+                                item = new HistoryItem(cmd);
+                                history.addFirst(item);
+                            } catch (Exception ex) {
+                                DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+                            }
 
                             // shift them
                             history.forEach(hi -> {
                                 hi.buildCmdText();
                                 hi.cmdText.pos.x = -1.0f;
-                                hi.cmdText.pos.y += ((inText.getRelativeHeight() + inText.getRelativeCharHeight()) * inText.scale + (hi.cmdText.getRelativeCharHeight() + hi.cmdText.getRelativeHeight()) * hi.cmdText.scale) * Text.LINE_SPACING;
-                                hi.cmdText.alignToNextChar();
+                                hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+                                hi.cmdText.alignToNextChar(intrface);
 
-                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth() + hi.cmdText.getRelativeCharWidth()) * hi.cmdText.scale;
+                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
                                 hi.quad.pos.y = hi.cmdText.pos.y;
                             });
 
@@ -179,44 +189,47 @@ public class Console {
 
             inText.setContent("]_");
 
-            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), glfwKeyCallback);
+            GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), glfwCharCallback);
+            GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
         }
     }
 
     /**
      * Render in the interface (has to be enabled)
      *
+     * @param intrface intrface to render to
      * @param shaderProgram shader program to use
+     * @param contourShaderProgram shader program to use
+     * (contour-animation-through)
      */
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram, ShaderProgram contourShaderProgram) {
         if (enabled) {
-            panel.setWidth(GameObject.MY_WINDOW.getWidth());
-            panel.setHeight(GameObject.MY_WINDOW.getHeight() / 2);
+            panel.setWidth(intrface.gameObject.WINDOW.getWidth());
+            panel.setHeight(intrface.gameObject.WINDOW.getHeight() / 2);
             if (!panel.isBuffered()) {
-                panel.bufferAll();
+                panel.bufferSmart(intrface);
             }
-            panel.render(shaderProgram);
+            panel.render(intrface, shaderProgram);
             inText.pos.x = -1.0f;
-            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
-            inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
+            inText.alignToNextChar(intrface); // this changes both pos.x and pos.y for inText
 
             if (!inText.isBuffered()) {
-                inText.bufferAll();
+                inText.bufferSmart(intrface);
             }
-            inText.render(shaderProgram);
+            inText.renderContour(intrface, contourShaderProgram);
 
             for (HistoryItem item : history) {
-                item.render(shaderProgram);
+                item.render(intrface, shaderProgram);
             }
 
             if (!completes.isBuffered()) {
-                completes.bufferAll();
+                completes.bufferSmart(intrface);
             }
-            completes.render(shaderProgram);
+            completes.render(intrface, shaderProgram);
         }
     }
 
@@ -261,10 +274,6 @@ public class Console {
     public void clear() {
         inText.setContent("");
         history.clear();
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     public Quad getPanel() {

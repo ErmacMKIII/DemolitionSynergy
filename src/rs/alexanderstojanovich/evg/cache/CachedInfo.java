@@ -28,6 +28,8 @@ public class CachedInfo {
     public final int blockSize;
     public final int cachedSize;
     public final String fileName;
+    protected int readBytes = 0;
+    protected int readBlocks = 0;
 
     /**
      * Create new cached chunk (descriptor) info
@@ -58,6 +60,22 @@ public class CachedInfo {
 
     public int getBlockSize() {
         return blockSize;
+    }
+
+    public int getReadBytes() {
+        return readBytes;
+    }
+
+    public void setReadBytes(int readBytes) {
+        this.readBytes = readBytes;
+    }
+
+    public int getReadBlocks() {
+        return readBlocks;
+    }
+
+    public void setReadBlocks(int readBlocks) {
+        this.readBlocks = readBlocks;
     }
 
 }

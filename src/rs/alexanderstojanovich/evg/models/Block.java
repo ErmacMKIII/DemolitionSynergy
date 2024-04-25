@@ -22,10 +22,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.FrustumIntersection;
 import org.joml.Intersectionf;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -83,6 +85,8 @@ public class Block extends Model {
 
     private boolean verticesReversed = false;
 
+    protected int id = 0;
+
     public static final Vector3f[] FACE_NORMALS = {
         new Vector3f(-1.0f, 0.0f, 0.0f),
         new Vector3f(1.0f, 0.0f, 0.0f),
@@ -101,8 +105,8 @@ public class Block extends Model {
     public static final Comparator<Block> UNIQUE_BLOCK_CMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
-            Integer a = VectorFloatUtils.blockSpecsToUniqueInt(o1.solid, o1.texName, o1.pos);
-            Integer b = VectorFloatUtils.blockSpecsToUniqueInt(o2.solid, o2.texName, o2.pos);
+            Integer a = o1.id;
+            Integer b = o2.id;
             return a.compareTo(b);
         }
     };
@@ -135,6 +139,7 @@ public class Block extends Model {
         material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         width = height = depth = 2.0f;
+        id = genId();
     }
 
     public Block(String texName, Vector3f pos, Vector4f primaryRGBAColor, boolean solid) {
@@ -148,6 +153,7 @@ public class Block extends Model {
         materials.add(material);
         this.solid = solid;
         width = height = depth = 2.0f;
+        id = genId();
     }
 
     public Block(Model other) {
@@ -349,16 +355,17 @@ public class Block extends Model {
      * 2.1 x 2.1
      *
      * @param camera (observer) camera
+     * @param viewProjMatrix frustum matrix
      * @return intersection with this block
      */
-    public boolean canBeSeenBy(Camera camera) {
+    public boolean canBeSeenBy(Camera camera, Matrix4f viewProjMatrix) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
 
         Vector3f min = pos.sub(1.05f, 1.05f, 1.05f, temp1);
         Vector3f max = pos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(viewProjMatrix);
 
         return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
@@ -367,18 +374,18 @@ public class Block extends Model {
      * Can block be seen by camera.It is assumed that block dimension is 2.1 x
      * 2.1 x 2.1
      *
-     * @param camera (observer) camera
+     * @param viewProjMatrix frustum matrix
      * @param blkPos block position
      * @return intersection with this block
      */
-    public static boolean canBeSeenBy(Vector3f blkPos, Camera camera) {
+    public static boolean canBeSeenBy(Vector3f blkPos, Matrix4f viewProjMatrix) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
 
         Vector3f min = blkPos.sub(1.05f, 1.05f, 1.05f, temp1);
         Vector3f max = blkPos.add(1.05f, 1.05f, 1.05f, temp2);
 
-        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(camera.viewMatrix);
+        FrustumIntersection frustumIntersection = new org.joml.FrustumIntersection(viewProjMatrix);
 
         return frustumIntersection.intersectAab(min, max) != FrustumIntersection.OUTSIDE;
     }
@@ -406,21 +413,111 @@ public class Block extends Model {
 
     /**
      * Returns visible bits based on faces which can seen by camera front.
-     * Faster version of original.
+     * Faster version of original. And performs on cosine 3 degrees.
      *
      * @param camFront camera front (eye)
      * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
      */
     public static int getVisibleFaceBitsFast(Vector3f camFront) {
         int result = 0;
-        int zPos = ~(Math.round(camFront.z + 0.83f) - 1) & Z_MASK;
-        int zNeg = ~(Math.round(camFront.z - 0.83f) + 1) & ZNEG_MASK;
-        int yPos = ~(Math.round(camFront.y + 0.83f) - 1) & Y_MASK;
-        int yNeg = ~(Math.round(camFront.y - 0.83f) + 1) & YNEG_MASK;
-        int xPos = ~(Math.round(camFront.x + 0.83f) - 1) & X_MASK;
-        int xNeg = ~(Math.round(camFront.x - 0.83f) + 1) & XNEG_MASK;
+
+        final float cos3 = 0.99863f; // cosine of 3 degrees
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cos3) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cos3) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cos3) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cos3) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cos3) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cos3) ? XNEG_MASK : 0;
 
         result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        return result;
+    }
+
+    /**
+     * Returns visible bits based on faces which can seen by camera front.
+     * Faster version of original. And performs on cosine 3 degrees.
+     *
+     * @param camFront camera front (eye)
+     * @param degrees angle degrees
+     * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
+     */
+    public static int getVisibleFaceBitsFast(Vector3f camFront, float degrees) {
+        int result = 0;
+
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
+
+        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        return result;
+    }
+
+    /**
+     * Returns single visible based on faces which can seen by camera front.
+     * Faster version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
+     */
+    public static int getRayTraceSingleFaceFast(Vector3f camFront) {
+
+        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
+        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
+        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
+        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
+        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
+        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+
+        int someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        for (int j = 0; j <= 5; j++) {
+            int tmpMask = 1 << j;
+            if ((someValue & tmpMask) != 0) {
+                return j;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Returns multi visible faces which can seen by camera front. Faster
+     * version of original.
+     *
+     * @param camFront camera front (eye)
+     * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
+     */
+    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront) {
+        final IList<Integer> result = new GapList<>();
+        int someValue = 0;
+
+        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
+        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
+        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
+        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
+        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
+        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+
+        someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+
+        for (int j = 0; j <= 5; j++) {
+            int tmpMask = 1 << j;
+            if ((someValue & tmpMask) != 0) {
+                result.add(j);
+            }
+        }
 
         return result;
     }
@@ -463,6 +560,18 @@ public class Block extends Model {
             Collections.reverse(getFaceVertices(vertices, faceNum));
         }
         verticesReversed = !verticesReversed;
+    }
+
+    public void setFaceVertexOrder(boolean faceVertexOrderReversed) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+        vertices.clear();
+        Block.deepCopyTo(vertices, texName);
+        if (faceVertexOrderReversed) {
+            for (int faceNum = 0; faceNum <= 5; faceNum++) {
+                Collections.reverse(getFaceVertices(vertices, faceNum));
+            }
+        }
+        verticesReversed = faceVertexOrderReversed;
     }
 
     public static void reverseFaceVertexOrder(List<Vertex> vertices) {
@@ -627,9 +736,12 @@ public class Block extends Model {
             }
         }
 
+        this.id = genId();
+
         return counter;
     }
 
+    @Deprecated
     public static void setFaceBits(List<Vertex> vertices, int faceBits) {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
@@ -674,7 +786,7 @@ public class Block extends Model {
     }
 
     /**
-     * Make index buffer base on bits form of enabled faces (used only for
+     * Make new index buffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
@@ -704,7 +816,180 @@ public class Block extends Model {
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return null;
+            throw new RuntimeException("Could not allocate memory address!");
+        }
+
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
+        return intBuff;
+    }
+
+    /**
+     * Make indices list base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @param baseConst const to add to all indices
+     * @return index buffer
+     */
+    public static IList<Integer> createIndices(int faceBits, int baseConst) {
+        // creating indices
+        IList<Integer> indices = new GapList<>();
+        int j = baseConst; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+
+        return indices;
+    }
+
+    /**
+     * Make new index buffer base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param faceBits 6-bit form
+     * @param baseConst const to add to all indices
+     * @return index buffer
+     */
+    public static IntBuffer createIntBuffer(int faceBits, int baseConst) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = baseConst; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+        // storing indices in the buffer
+        IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
+        }
+
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
+        return intBuff;
+    }
+
+    /**
+     * Resize index buffer base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param intBuff supplied int buffer (to resize)
+     * @param faceBits 6-bit form
+     * @return index buffer
+     */
+    public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = 0; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+        // storing indices in the buffer
+        intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
+
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
+        }
+
+        for (Integer index : indices) {
+            intBuff.put(index);
+        }
+
+        if (intBuff.position() != 0) {
+            intBuff.flip();
+        }
+
+        return intBuff;
+    }
+
+    /**
+     * Resize index buffer base on bits form of enabled faces (used only for
+     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * FRONT]
+     *
+     * @param intBuff supplied int buffer (to resize)
+     * @param faceBits 6-bit form
+     * @param baseConst const to add to all indices
+     * @return index buffer
+     */
+    public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits, int baseConst) {
+        // creating indices
+        List<Integer> indices = new ArrayList<>();
+        int j = baseConst; // is face number (which increments after the face is added)
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            if (bit == 1) {
+                indices.add(4 * j);
+                indices.add(4 * j + 1);
+                indices.add(4 * j + 2);
+
+                indices.add(4 * j + 2);
+                indices.add(4 * j + 3);
+                indices.add(4 * j);
+
+                j++;
+            }
+            faceBits >>= 1; // move bits to the right so they are compared again            
+        }
+        // storing indices in the buffer
+        intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
+
+        if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
+            DSLogger.reportError("Could not allocate memory address!", null);
+            throw new RuntimeException("Could not allocate memory address!");
         }
 
         for (Integer index : indices) {
@@ -724,7 +1009,7 @@ public class Block extends Model {
         List<Integer> result = new ArrayList<>();
 
         int sbits = 0;
-        TexByte pair = LevelContainer.ALL_BLOCK_MAP.getLocation(pos);
+        TexByte pair = LevelContainer.AllBlockMap.getLocation(pos);
         if (pair != null && pair.isSolid()) {
             sbits = pair.getByteValue();
         }
@@ -983,6 +1268,17 @@ public class Block extends Model {
         return ints;
     }
 
+    public static Vector2f intersectsRay2(Vector3f blockPos, Vector3f dir, Vector3f origin) {
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = blockPos.sub(1.0f, 1.0f, 1.0f, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = blockPos.add(1.0f, 1.0f, 1.0f, temp2);
+        Vector2f result = new Vector2f();
+        Intersectionf.intersectRayAab(origin, dir, min, max, result);
+
+        return result;
+    }
+
     public byte[] toByteArray() {
         byte[] byteArray = new byte[29];
         int offset = 0;
@@ -1069,6 +1365,67 @@ public class Block extends Model {
         sb.append(", verticesReversed=").append(verticesReversed);
         sb.append('}');
         return sb.toString();
+    }
+
+//    /**
+//     * Get block light color (stored in AllBlockMap)
+//     *
+//     * @return block light color
+//     */
+//    @Override
+//    public Vector4f getMapLightColor() {
+//        // load light (color) information from somewhere
+//        if (LevelContainer.AllBlockMap.isLocationPopulated(this.pos)) {
+//            return LevelContainer.AllBlockMap.getLocation(this.pos).lightColor;
+//        } else {
+//            return super.getMapLightColor();
+//        }
+//
+//    }
+    /**
+     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
+     *
+     *
+     * @return unique int
+     */
+    private int genId() {
+        char s = solid ? 'S' : 'F';
+        int hash = Objects.hash(s, texName, getFaceBits(), MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
+
+        return hash;
+    }
+
+    /**
+     * Get unique id of this block
+     *
+     * @return unique (int) id
+     */
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public void setTexNameWithDeepCopy(String texName) {
+        super.setTexNameWithDeepCopy(texName);
+        id = genId();
+    }
+
+    @Override
+    public void setTexName(String texName) {
+        super.setTexName(texName);
+        id = genId();
+    }
+
+    @Override
+    public void setPos(Vector3f pos) {
+        super.setPos(pos);
+        id = genId();
+    }
+
+    @Override
+    public void setSolid(boolean solid) {
+        super.setSolid(solid);
+        id = genId();
     }
 
 }

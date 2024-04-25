@@ -28,9 +28,11 @@ public class Vertex {
 
     public static final int SIZE = 8; // size in floats -> it means 8 floats
 
-    private Vector3f pos;
-    private Vector3f normal;
-    private Vector2f uv;
+    private Vector3f pos; // VEC3
+    private Vector3f normal; // VEC3
+    private Vector2f uv; // VEC2
+//    private Vector4f color = new Vector4f(GlobalColors.BLACK_RGBA); // VEC4
+
     private boolean enabled = true;
 
     public Vertex(float x, float y, float z) {
@@ -120,4 +122,21 @@ public class Vertex {
         this.enabled = enabled;
     }
 
+//    public Vector4f getColor() {
+//        return color;
+//    }
+//
+//    public void setColor(Vector4f color) {
+//        this.color = color;
+//    }
+//
+//    public void resetColor() {
+//        this.color = new Vector4f(GlobalColors.BLACK_RGBA);
+//    }
+//
+//    public void addColor(Vector3f colorRGB) {
+//        this.color.x += colorRGB.x;
+//        this.color.y += colorRGB.y;
+//        this.color.z += colorRGB.z;
+//    }
 }

@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.util;
 
-import java.util.Objects;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
@@ -235,22 +234,6 @@ public class VectorFloatUtils {
         float w = Float.intBitsToFloat(valw);
 
         return new Vector4f(x, y, z, w);
-    }
-
-    /**
-     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
-     *
-     * @param solid is block solid
-     * @param texName texName[5] string,
-     * @param pos float3(x,y,z) vector
-     *
-     * @return unique int
-     */
-    public static int blockSpecsToUniqueInt(boolean solid, String texName, Vector3f pos) {
-        char s = solid ? 'S' : 'F';
-        int hash = Objects.hash(s, texName, pos.x, pos.y, pos.z, MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
-
-        return hash;
     }
 
 }

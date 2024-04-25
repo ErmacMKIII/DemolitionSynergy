@@ -33,7 +33,7 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
     public static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
     private Thread dialogThread; // thread which executes command     
 
-    public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) {
+    public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) throws Exception {
         super(texture, pos, question, success, fail);
     }
 

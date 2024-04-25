@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.location;
 
 import java.util.Objects;
+import org.joml.Vector4f;
 
 /**
  *
@@ -26,6 +27,7 @@ public class TexByte {
 
     public String texName;
     public byte byteValue;
+    public Vector4f lightColor = new Vector4f();
     public boolean solid;
 
     public TexByte(String texName, byte byteValue, boolean solid) {
@@ -58,17 +60,17 @@ public class TexByte {
         this.solid = solid;
     }
 
-    @Override
-    public String toString() {
-        return "TexByte{" + "texName=" + texName + ", byteValue=" + byteValue + ", solid=" + solid + '}';
+    public Vector4f getLightColor() {
+        return lightColor;
     }
 
     @Override
     public int hashCode() {
-        int hash = 3;
-        hash = 73 * hash + Objects.hashCode(this.texName);
-        hash = 73 * hash + this.byteValue;
-        hash = 73 * hash + (this.solid ? 1 : 0);
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.texName);
+        hash = 97 * hash + this.byteValue;
+        hash = 97 * hash + Objects.hashCode(this.lightColor);
+        hash = 97 * hash + (this.solid ? 1 : 0);
         return hash;
     }
 
@@ -90,7 +92,22 @@ public class TexByte {
         if (this.solid != other.solid) {
             return false;
         }
-        return Objects.equals(this.texName, other.texName);
+        if (!Objects.equals(this.texName, other.texName)) {
+            return false;
+        }
+        return Objects.equals(this.lightColor, other.lightColor);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TexByte{");
+        sb.append("texName=").append(texName);
+        sb.append(", byteValue=").append(byteValue);
+        sb.append(", lightColor=").append(lightColor);
+        sb.append(", solid=").append(solid);
+        sb.append('}');
+        return sb.toString();
     }
 
 }

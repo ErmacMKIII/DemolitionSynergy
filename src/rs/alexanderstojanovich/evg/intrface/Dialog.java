@@ -20,9 +20,7 @@ import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -48,7 +46,7 @@ public abstract class Dialog {
     protected final GLFWKeyCallback keyCallback;
 
     public Dialog(Texture texture, Vector2f pos,
-            String question, String success, String fail) {
+            String question, String success, String fail) throws Exception {
         this.dialog = new DynamicText(texture, "");
         this.dialog.setPos(pos);
         this.enabled = false;
@@ -122,32 +120,35 @@ public abstract class Dialog {
     /**
      * Displays dialog on the screeen. When opened callbacks are set accordingly
      * (mouse & keyboard input). Enabled is set to true for rendering.
+     *
+     * @param intrface underlaying interface
      */
-    public void open() {
+    public void open(Intrface intrface) {
         if (input.length() == 0) {
             enabled = true;
             done = false;
             dialog.setContent(question + "_");
             dialog.color = GlobalColors.WHITE_RGBA;
-            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), keyCallback);
+            GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), keyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), charCallback);
+            GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), charCallback);
         }
     }
 
     /**
      * Renders dialog. Rendering takes part in the game interface.
      *
+     * @param intrface intrface
      * @param shaderProgram shader program to use.
      */
-    public void render(ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, ShaderProgram shaderProgram) {
         if (enabled) {
             if (!dialog.isBuffered()) {
-                dialog.bufferSmart();
+                dialog.bufferSmart(intrface);
             }
-            dialog.render(shaderProgram);
+            dialog.render(intrface, shaderProgram);
         }
     }
 
@@ -165,10 +166,6 @@ public abstract class Dialog {
      */
     public void release() {
         dialog.release();
-    }
-
-    public Window getMyWindow() {
-        return GameObject.MY_WINDOW;
     }
 
     public DynamicText getDialog() {

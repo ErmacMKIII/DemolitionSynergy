@@ -16,6 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.core;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.critter.Observer;
@@ -38,6 +41,10 @@ public class Camera implements Observer { // is 3D looking camera
     public static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
     public static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
+
+    public static final Vector3f XNEG_AXIS = new Vector3f(-1.0f, 0.0f, 0.0f);
+    public static final Vector3f YNEG_AXIS = new Vector3f(0.0f, -1.0f, 0.0f);
+    public static final Vector3f ZNEG_AXIS = new Vector3f(0.0f, 0.0f, -1.0f);
 
     // three vectors determining exact camera position aka camera vectors
     protected Vector3f front = Z_AXIS;
@@ -253,7 +260,7 @@ public class Camera implements Observer { // is 3D looking camera
      * @param shaderPrograms multiple shader programs (array)
      */
     @Override
-    public void render(ShaderProgram[] shaderPrograms) {
+    public void render(Collection<ShaderProgram> shaderPrograms) {
         calcViewMatrix();
         for (ShaderProgram shaderProgram : shaderPrograms) {
             shaderProgram.bind();
@@ -275,11 +282,47 @@ public class Camera implements Observer { // is 3D looking camera
         return coll;
     }
 
+    /**
+     * Small function to determine if camera does see model from its position
+     * and front vector (Legacy.)
+     *
+     * @param model observation model
+     *
+     * @return wether or not camera does see model
+     */
     public boolean doesSee(Model model) {
         boolean yea = false;
-        for (Vertex vertex : model.getMeshes().getFirst().getVertices()) {
+        for (Vertex vertex : model.meshes.getFirst().vertices) {
             Vector3f temp = new Vector3f();
-            Vector3f vx = vertex.getPos().add(model.getPos().sub(pos, temp), temp).normalize(temp);
+            Vector3f vx = vertex.getPos().add(model.pos.sub(pos, temp), temp).normalize(temp);
+            if (vx.dot(front) >= 0.25f) {
+                yea = true;
+                break;
+            }
+        }
+        return yea;
+    }
+
+    /**
+     * Efficient small function to determine if camera does see model from its
+     * position and front vector. Efficiency comes from removing duplicate
+     * vertices first. (Before check.)
+     *
+     * @param model observation model
+     *
+     * @return wether or not camera does see model
+     */
+    public boolean doesSeeEff(Model model) {
+        boolean yea = false;
+        // Remove duplicates & return vertex position(s)
+        final List<Vector3f> v_PosList = model.meshes.getFirst().vertices.stream()
+                .map(Vertex::getPos)
+                .distinct()
+                .collect(Collectors.toList());
+        // Now iterate and perform calculations
+        for (Vector3f v_pos : v_PosList) {
+            Vector3f temp = new Vector3f();
+            Vector3f vx = v_pos.add(model.pos.sub(pos, temp), temp).normalize(temp);
             if (vx.dot(front) >= 0.25f) {
                 yea = true;
                 break;

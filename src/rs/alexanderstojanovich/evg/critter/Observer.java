@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.Collection;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -58,7 +59,7 @@ public interface Observer extends Moveable {
      *
      * @param shaderPrograms multiple shader programs (array)
      */
-    public void render(ShaderProgram[] shaderPrograms);
+    public void render(Collection<ShaderProgram> shaderPrograms);
 
     //--------------------------------------------------------------------------    
     /**

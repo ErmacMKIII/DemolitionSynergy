@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
@@ -34,7 +35,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -54,8 +54,6 @@ public class Game {
     public static final int BACKWARD = 1;
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
-
-    public static final float EPSILON = 0.005f;
 
     private static int ups; // current update per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
@@ -108,10 +106,15 @@ public class Game {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
+    protected final GameObject gameObject;
+
     /**
      * Construct new game view
+     *
+     * @param gameObject game object
      */
-    public Game() {
+    public Game(GameObject gameObject) {
+        this.gameObject = gameObject;
         Arrays.fill(keys, false);
         initCallbacks();
     }
@@ -123,14 +126,14 @@ public class Game {
      *
      * @return did observer do something.. (changes on input)
      */
-    private boolean observerDo(float amount) {
+    private boolean observerDo(LevelContainer lc, float amount) {
         boolean changed = false;
         causingCollision = false;
 
-        Observer obs = GameObject.getLevelContainer().levelActors.spectator;
+        Observer obs = lc.levelActors.spectator;
 
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveBackward(AMOUNT);
             } else {
                 obs.moveForward(amount);
@@ -138,8 +141,8 @@ public class Game {
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveForward(AMOUNT);
             } else {
                 obs.moveBackward(amount);
@@ -147,8 +150,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if (keys[GLFW.GLFW_KEY_A]) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveRight(AMOUNT);
             } else {
                 obs.moveLeft(amount);
@@ -156,8 +159,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if (keys[GLFW.GLFW_KEY_D]) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.moveLeft(AMOUNT);
             } else {
                 obs.moveRight(amount);
@@ -165,8 +168,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_UP] && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.descend(AMOUNT);
             } else {
                 obs.ascend(amount);
@@ -174,8 +177,8 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN] && !causingCollision) {
-            if (causingCollision = GameObject.hasCollisionWith(obs)) {
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
                 obs.ascend(AMOUNT);
             } else {
                 obs.descend(amount);
@@ -184,15 +187,15 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().levelActors.spectator.turnLeft(ANGLE);
+            lc.levelActors.spectator.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().levelActors.spectator.turnRight(ANGLE);
+            lc.levelActors.spectator.turnRight(ANGLE);
             changed = true;
         }
         if (moveMouse) {
-            GameObject.getLevelContainer().levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            lc.levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -206,71 +209,71 @@ public class Game {
      *
      * @return did editor do something..
      */
-    private boolean editorDo() {
+    private boolean editorDo(LevelContainer lc) {
         boolean changed = false;
 
         if (keys[GLFW.GLFW_KEY_N]) {
-            Editor.selectNew();
+            Editor.selectNew(lc);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrSolid();
+            Editor.selectCurrSolid(lc);
             changed = true;
         }
 
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrFluid();
+            Editor.selectCurrFluid(lc);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.LEFT);
+            Editor.selectAdjacentSolid(lc, Block.LEFT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.RIGHT);
+            Editor.selectAdjacentSolid(lc, Block.RIGHT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.BOTTOM);
+            Editor.selectAdjacentSolid(lc, Block.BOTTOM);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.TOP);
+            Editor.selectAdjacentSolid(lc, Block.TOP);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.BACK);
+            Editor.selectAdjacentSolid(lc, Block.BACK);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(Block.FRONT);
+            Editor.selectAdjacentSolid(lc, Block.FRONT);
             changed = true;
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.LEFT);
+            Editor.selectAdjacentFluid(lc, Block.LEFT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.RIGHT);
+            Editor.selectAdjacentFluid(lc, Block.RIGHT);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.BOTTOM);
+            Editor.selectAdjacentFluid(lc, Block.BOTTOM);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.TOP);
+            Editor.selectAdjacentFluid(lc, Block.TOP);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.BACK);
+            Editor.selectAdjacentFluid(lc, Block.BACK);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(Block.FRONT);
+            Editor.selectAdjacentFluid(lc, Block.FRONT);
             changed = true;
 
         }
@@ -280,11 +283,11 @@ public class Game {
             changed = true;
         }
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
-            Editor.add();
+            Editor.add(lc);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_R]) {
-            Editor.remove();
+            Editor.remove(lc);
             changed = true;
         }
 
@@ -294,6 +297,7 @@ public class Game {
     /**
      * Handle input for player (Single player mode & Multiplayer mode)
      *
+     * @param lc level (environment) container
      * @param amountXZ movement amount on XZ plane
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
@@ -301,39 +305,14 @@ public class Game {
      *
      * @return did player do something..
      */
-    public boolean playerDo(float amountXZ, float amountY, float amountYNeg, float deltaTime) {
+    public boolean playerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
-        final LevelContainer levelContainer = GameObject.getLevelContainer();
-        final Player player = levelContainer.levelActors.player;
+        final Player player = lc.levelActors.player;
 
-        if (levelContainer.isCameraInFluid()) {
-            jumpPerformed = false;
-        }
-
-        if (keys[GLFW.GLFW_KEY_SPACE] && !causingCollision && !jumpPerformed) {
-            player.movePredictorYUp(amountY);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorYDown(amountY);
-            } else {
-                jumpPerformed |= levelContainer.jump(player, amountY, deltaTime);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && !causingCollision) {
-            player.movePredictorYDown(amountYNeg);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
-                player.movePredictorYUp(amountYNeg);
-            } else {
-                player.sinkY(amountYNeg);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             player.movePredictorXZForward(amountXZ);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
@@ -341,9 +320,9 @@ public class Game {
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) && !causingCollision) {
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
             player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
@@ -351,9 +330,9 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_A]) {
             player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
@@ -361,9 +340,9 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D] && !causingCollision) {
+        if (keys[GLFW.GLFW_KEY_D]) {
             player.movePredictorXZRight(amountXZ);
-            if (causingCollision = GameObject.hasCollisionWith((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
@@ -371,17 +350,37 @@ public class Game {
             }
         }
 
+        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+            player.movePredictorYUp(amountY);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                player.movePredictorYDown(amountY);
+            } else {
+                jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+            player.movePredictorYDown(amountYNeg);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                player.movePredictorYUp(amountYNeg);
+            } else {
+                player.sinkY(amountYNeg);
+                changed = true;
+            }
+        }
+
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            GameObject.getLevelContainer().levelActors.player.turnLeft(ANGLE);
+            lc.levelActors.player.turnLeft(ANGLE);
             changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            GameObject.getLevelContainer().levelActors.player.turnRight(ANGLE);
+            lc.levelActors.player.turnRight(ANGLE);
             changed = true;
         }
 
         if (moveMouse) {
-            GameObject.getLevelContainer().levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
             changed = true;
         }
@@ -391,27 +390,27 @@ public class Game {
         }
 
 //        if (keys[GLFW.GLFW_KEY_1]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_2]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_3]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_4]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_5]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
 //            changed = true;
 //        }
 //        if (keys[GLFW.GLFW_KEY_6]) {
-//            GameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
 //            changed = true;
 //        }
         if (keys[GLFW.GLFW_KEY_R]) {
@@ -422,7 +421,7 @@ public class Game {
     }
 
     private void setCrosshairColor(Vector4f color) {
-        GameObject.getIntrface().getCrosshair().setColor(color);
+        gameObject.intrface.getCrosshair().setColor(color);
     }
 
     private void cycleCrosshairColor() {
@@ -441,42 +440,49 @@ public class Game {
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getIntrface().setShowHelp(false);
-                    GameObject.getIntrface().getHelpText().setEnabled(false);
-                    GameObject.getIntrface().getCollText().setEnabled(true);
-                    GameObject.getIntrface().getMainMenu().open();
+                    gameObject.intrface.setShowHelp(false);
+                    gameObject.intrface.getHelpText().setEnabled(false);
+                    gameObject.intrface.getCollText().setEnabled(true);
+                    gameObject.intrface.getMainMenu().open();
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getIntrface().getConsole().open();
+                    gameObject.intrface.getConsole().open();
                 } else if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getIntrface().toggleShowHelp();
+                    gameObject.intrface.toggleShowHelp();
                 } else if (key == GLFW.GLFW_KEY_F2 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getIntrface().getSaveDialog().open();
+                    gameObject.intrface.getSaveDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F3 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getIntrface().getLoadDialog().open();
+                    gameObject.intrface.getLoadDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.printInfo();
+                    gameObject.levelContainer.chunks.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    GameObject.getLevelContainer().printQueues();
+                    gameObject.levelContainer.printQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Object> task = new FutureTask<>(Command.getCommand(Command.Target.SCREENSHOT));
                     GameRenderer.TASK_QUEUE.add(task);
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.cycleBlockColor();
+                } else if (key == GLFW.GLFW_KEY_V && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
+                    gameObject.levelContainer.levelActors.player.switchViewToggle();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.selectPrevTexture();
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                     Editor.selectNextTexture();
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
@@ -487,15 +493,15 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), defaultKeyCallback);
+        GLFW.glfwSetKeyCallback(gameObject.WINDOW.getWindowID(), defaultKeyCallback);
 
-        GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
+        GLFW.glfwSetInputMode(gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPos(gameObject.WINDOW.getWindowID(), gameObject.WINDOW.getWidth() / 2.0, gameObject.WINDOW.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                float xposGL = (float) (xpos / GameObject.MY_WINDOW.getWidth() - 0.5f) * 2.0f;
-                float yposGL = (float) (0.5f - ypos / GameObject.MY_WINDOW.getHeight()) * 2.0f;
+                float xposGL = (float) (xpos / gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
+                float yposGL = (float) (0.5f - ypos / gameObject.WINDOW.getHeight()) * 2.0f;
 
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
@@ -508,7 +514,7 @@ public class Game {
                 lastY = (float) yposGL;
             }
         };
-        GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), defaultCursorCallback);
+        GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
 
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
@@ -520,7 +526,7 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetMouseButtonCallback(GameObject.MY_WINDOW.getWindowID(), defaultMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(gameObject.WINDOW.getWindowID(), defaultMouseButtonCallback);
     }
 
     /**
@@ -530,6 +536,7 @@ public class Game {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
+        // accumulator is progressive only ingame time
         accumulator = cfg.getGameTicks();
         double lastTime = GLFW.glfwGetTime();
         double currTime;
@@ -543,30 +550,40 @@ public class Game {
 
         GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
 
-        while (!GameObject.MY_WINDOW.shouldClose()) {
+        while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             // hunger time
-            accumulator += deltaTime * Game.TPS;
-            upsTicks += MathUtils.lerp(deltaTime * Game.TPS, deltaTime * ups, 0.02);
+            double increment = deltaTime * Game.TPS;
+            accumulator += increment;
+            upsTicks += increment;
             lastTime = currTime;
 
             // Detecting critical status
             if (ups == 0 && deltaTime > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                GameObject.MY_WINDOW.close();
+                gameObject.WINDOW.close();
                 break;
             }
 
-            if (!GameObject.musicPlayer.isPlaying()) {
-                GameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+            if (!gameObject.isWorking() && !gameObject.musicPlayer.isPlaying()) {
+                gameObject.musicPlayer.play(AudioFile.TRACKS[index++], true, false);
                 if (index == AudioFile.TRACKS.length) {
                     index = 0;
                 }
             }
 
-            // update with delta time like gravity
-            GameObject.update((float) (TICK_TIME * Game.getUpsTicks()));
+            if (upsTicks >= 1.0) {
+                // update with delta time like gravity
+                gameObject.update((float) (Game.upsTicks * TICK_TIME));
+                // call utility functions (optimizing etc.)
+                gameObject.utilOptimization();
+            } else if (upsTicks >= 0.5) {
+                // determine visible chunks (can be altered with player position)
+                gameObject.determineVisibleChunks();
+                // call utility functions (chunk loading etc.)
+                gameObject.utilChunkOperations();
+            }
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
@@ -577,28 +594,44 @@ public class Game {
                         break;
                     case EDITOR:
                         // observer has control
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= observerDo(AMOUNT * (float) TICK_TIME);
-                            actionPerformed |= editorDo();
+                        actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
+                        actionPerformed |= editorDo(gameObject.levelContainer);
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        synchronized (GameObject.UPDATE_RENDER_MUTEX) {
-                            actionPerformed |= playerDo(1.1f * AMOUNT * (float) TICK_TIME, 2500.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+                        actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 3920.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
 
-                        if (keys[GLFW.GLFW_KEY_SPACE]
-                                && !GameObject.getLevelContainer().levelActors.player.isUnderGravity()) {
-                            jumpPerformed = false;
-                        }
+                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
 
+                        if (!jumpPerformed) {
+                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                            Vector3f playerPosAlign = new Vector3f(
+                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                            );
+
+                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                                    Block.getAdjacentPos(
+                                            playerPosAlign, Block.BOTTOM, 1.05f),
+                                    false
+                            );
+                        }
                         break;
                 }
 
                 // display collision text
-                GameObject.assertCheckCollision(causingCollision);
+                gameObject.assertCheckCollision(causingCollision);
 
                 ups++;
                 upsTicks--;
@@ -606,7 +639,7 @@ public class Game {
 
         }
         // stops the music        
-        GameObject.getMusicPlayer().stop();
+        gameObject.getMusicPlayer().stop();
 
         DSLogger.reportDebug("Main loop ended.", null);
     }
@@ -625,19 +658,21 @@ public class Game {
     /**
      * Creates configuration from settings
      *
+     * @param gameObject gameObject (contains binds)
      * @return Configuration cfg
      */
-    public static Configuration makeConfig() {
+    public static Configuration makeConfig(GameObject gameObject) {
         Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
-        cfg.setWidth(GameObject.MY_WINDOW.getWidth());
-        cfg.setHeight(GameObject.MY_WINDOW.getHeight());
-        cfg.setFullscreen(GameObject.MY_WINDOW.isFullscreen());
-        cfg.setVsync(GameObject.MY_WINDOW.isVsync());
-        cfg.setWaterEffects(GameObject.waterRenderer.getEffectsQuality().ordinal());
+        cfg.setWidth(gameObject.WINDOW.getWidth());
+        cfg.setHeight(gameObject.WINDOW.getHeight());
+        cfg.setFullscreen(gameObject.WINDOW.isFullscreen());
+        cfg.setVsync(gameObject.WINDOW.isVsync());
+        cfg.setWaterEffects(gameObject.waterRenderer.getEffectsQuality().ordinal());
+        cfg.setShadowEffects(gameObject.shadowRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);
-        cfg.setMusicVolume(GameObject.getMusicPlayer().getGain());
-        cfg.setSoundFXVolume(GameObject.getSoundFXPlayer().getGain());
+        cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
+        cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
         return cfg;
     }
 

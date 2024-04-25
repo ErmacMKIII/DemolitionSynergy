@@ -85,4 +85,12 @@ public class Material {
         this.texture = texture;
     }
 
+    public Vector4f getLightColor() {
+        float red = ambient.x + diffuse.x + specular.x;
+        float green = ambient.y + diffuse.y + specular.y;
+        float blue = ambient.z + diffuse.z + specular.z;
+        float alpha = 1.0f;
+
+        return new Vector4f(new Vector3f(red, green, blue), alpha);
+    }
 }

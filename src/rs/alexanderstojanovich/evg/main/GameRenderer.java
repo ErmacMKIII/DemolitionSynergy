@@ -20,14 +20,11 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
-import rs.alexanderstojanovich.evg.core.MasterRenderer;
-import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  *
@@ -36,36 +33,55 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
 public class GameRenderer extends Thread implements Executor {
 
     protected static final Configuration cfg = Configuration.getInstance();
+    protected final GameObject gameObject;
+
     public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses();
     private static double fpsTicks = 0.0;
     private static int fps = 0;
+    private static int numOfPasses = 0;
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     protected FutureTask<Object> task;
-    protected static double animationTimer = 0.0;
+    protected static int animationTimer = 0;
+    protected static int glCommandTimer = 0;
+
+    protected static int ANIMATION_RATE = 20;
+    protected static int GL_COMMAND_POLL_RATE = 40;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
      * here.
+     *
+     * @param gameObject Game Object
      */
-    public GameRenderer() {
+    public GameRenderer(GameObject gameObject) {
         super("Renderer");
+        this.gameObject = gameObject;
     }
 
     @Override
     public void run() {
-        MasterRenderer.initGL(GameObject.MY_WINDOW, cfg); // loads myWindow context, creates OpenGL context..
-        MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
+        gameObject.masterRenderer.initGL(cfg); // loads myWindow context, creates OpenGL context..        
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
+        gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
-        GameObject.getWaterRenderer().getFrameBuffer().init(); // it is tuned in the correct OpenGL context
+        try {
+            gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (color & depth buffer)
+            gameObject.shadowRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (depth buffer only) 
+        } catch (Exception ex) {
+            DSLogger.reportInfo(ex.getMessage(), ex);
+        }
         do {
-            GameObject.render(); // render splash screen
+            gameObject.render(); // render splash screen
         } while (Game.upsTicks < 1.0);
-        GameObject.SPLASH_SCREEN.setEnabled(false);
-        animationTimer = 0.0;
+        gameObject.splashScreen.setEnabled(false);
+
+        // resolution config
+        gameObject.masterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
+        gameObject.perspectiveRenderer.updatePerspective();
+        animationTimer = 0;
+        glCommandTimer = 0;
 
         fps = 0;
 
@@ -73,40 +89,44 @@ public class GameRenderer extends Thread implements Executor {
         double currTime;
         double deltaTime = 0.0;
 
-        while (!GameObject.MY_WINDOW.shouldClose()) {
+        while (!gameObject.WINDOW.shouldClose()) {
             currTime = Game.accumulator * Game.TICK_TIME;
             deltaTime = Math.max(currTime - lastTime, 0.0);
-            fpsTicks += MathUtils.lerp(deltaTime * Game.getFpsMax(), deltaTime * fps, 5.0E-4);
+            fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
             if (fps == 0 && deltaTime > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                GameObject.MY_WINDOW.close();
+                gameObject.WINDOW.close();
                 break;
             }
 
-            int numOfPasses = 0;
-            // also avoid rendering when game is updating 
-            while (fpsTicks >= 1.0 && numOfPasses < NUM_OF_PASSES_MAX && Game.getUpsTicks() < 1.0) {
-                GameObject.render();
+            numOfPasses = 0;
+            // also avoid rendering when game is updating
+            while (fpsTicks >= 1.0 && couldRender()) {
+                gameObject.render();
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
             }
 
             // update text which animates water every quarter of the second
-            if (Game.accumulator - animationTimer > 20.0) {
-                if (!GameObject.isWorking() && Game.getUpsTicks() < 1.0) {
-                    GameObject.animate();
+            if (Game.accumulator - animationTimer > GameRenderer.ANIMATION_RATE) {
+                if (!gameObject.isWorking()) {
+                    gameObject.animate(); // has internal no-update 
                 }
 
-                animationTimer += 20.0;
+                animationTimer += GameRenderer.ANIMATION_RATE;
             }
 
             // lastly it executes the console tasks
-            if ((task = TASK_QUEUE.poll()) != null) {
-                execute(task);
+            if (Game.accumulator - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
+                if ((task = TASK_QUEUE.poll()) != null) {
+                    execute(task); // requires GL-context
+                }
+
+                glCommandTimer += GameRenderer.GL_COMMAND_POLL_RATE;
             }
         }
 
@@ -120,11 +140,47 @@ public class GameRenderer extends Thread implements Executor {
     }
 
     /**
+     * Is rendering first frame.
+     *
+     * @return is rendering first frame
+     */
+    public static boolean isFirstFrame() {
+        return fpsTicks >= 1.0 && numOfPasses == 0;
+    }
+
+    /**
+     * Is rendering last frame.
+     *
+     * @return is rendering last frame
+     */
+    public static boolean isLastFrame() {
+        return fpsTicks < 1.0 || numOfPasses >= NUM_OF_PASSES_MAX;
+    }
+
+    /**
+     * Should or Could Game Render render. Game can be rendered (again) if
+     * lesser than enough passes and if is not updating.
+     *
+     * @return could render bool
+     */
+    public static boolean couldRender() {
+        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.upsTicks < 1.0;
+    }
+
+//    /**
+//     * Could Game Render animate.
+//     *
+//     * @return could render bool
+//     */
+//    public static boolean couldAnimate() {
+//        return (Math.round(fpsTicks) & 7) == 0;
+//    }
+    /**
      * Cleans all the buffers from the renderer (optimized tuples contains them,
      * interface as well).
      */
     protected void release() {
-        GameObject.release();
+        gameObject.release();
         DSLogger.reportDebug("Game content resources deleted.", null);
     }
 
@@ -134,7 +190,7 @@ public class GameRenderer extends Thread implements Executor {
     }
 
     public LevelContainer getLevelContainer() {
-        return GameObject.getLevelContainer();
+        return gameObject.getLevelContainer();
     }
 
     public static double getFpsTicks() {
@@ -157,12 +213,32 @@ public class GameRenderer extends Thread implements Executor {
         return cfg;
     }
 
-    public static double getAnimationTimer() {
+    public static int getAnimationTimer() {
         return animationTimer;
     }
 
-    public static void setAnimationTimer(double animationTimer) {
+    public static int getGlCommandTimer() {
+        return glCommandTimer;
+    }
+
+    public static void setAnimationTimer(int animationTimer) {
         GameRenderer.animationTimer = animationTimer;
+    }
+
+    public static void setGlCommandTimer(int glCommandTimer) {
+        GameRenderer.glCommandTimer = glCommandTimer;
+    }
+
+    public static int getNumOfPasses() {
+        return numOfPasses;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public FutureTask<Object> getTask() {
+        return task;
     }
 
 }

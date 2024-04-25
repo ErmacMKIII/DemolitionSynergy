@@ -24,7 +24,6 @@ import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -42,155 +41,147 @@ public class Mesh {
     protected static FloatBuffer fb;
     protected static IntBuffer ib;
 
-    protected int vao = 0; // vertex array object
     protected int vbo = 0; // vertex buffer object
     protected int ibo = 0; // index buffer object  
 
     protected boolean buffered = false;
 
     public boolean bufferVertices() {
-        // storing vertices and normals in the buffer
-        fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
+        int someSize = vertices.size() * Vertex.SIZE;
+        // Allocate memory for the vertex data buffer
+        if (fb == null) {
+            fb = MemoryUtil.memCallocFloat(someSize);
+        } else if (fb.capacity() < someSize) {
+            fb = MemoryUtil.memRealloc(fb, someSize);
+        }
+
+        // Set buffer position and limit
+        fb.position(0);
+        fb.limit(someSize);
+
         if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
+
+        // Fill the vertex buffer with data
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
-                fb.put(vertex.getPos().x);
-                fb.put(vertex.getPos().y);
-                fb.put(vertex.getPos().z);
-
-                fb.put(vertex.getNormal().x);
-                fb.put(vertex.getNormal().y);
-                fb.put(vertex.getNormal().z);
-
-                fb.put(vertex.getUv().x);
-                fb.put(vertex.getUv().y);
+                fb.put(vertex.getPos().x)
+                        .put(vertex.getPos().y)
+                        .put(vertex.getPos().z)
+                        .put(vertex.getNormal().x)
+                        .put(vertex.getNormal().y)
+                        .put(vertex.getNormal().z)
+                        .put(vertex.getUv().x)
+                        .put(vertex.getUv().y);
             }
         }
-        fb.flip();
 
-        if (vao == 0) {
-            vao = GL30.glGenVertexArrays();
+        if (fb.position() != 0) {
+            fb.flip();
         }
 
-        // storing vertices and normals buffer on the graphics card
         if (vbo == 0) {
             vbo = GL15.glGenBuffers();
         }
 
-        if (fb.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
+        // Bind the vertex array and vertex buffer
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
 
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
+        // Transfer vertex data to GPU
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
 
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+        // Enable vertex attributes
+        GL20.glEnableVertexAttribArray(0);
+        GL20.glEnableVertexAttribArray(1);
+        GL20.glEnableVertexAttribArray(2);
 
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            GL20.glDisableVertexAttribArray(2);
+        // Specify vertex attribute pointers
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // Position
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // Normal
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // UV
 
-            GL30.glBindVertexArray(0);
-        }
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+
+        // Unbind vertex array and vertex buffer
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-
-        if (fb.capacity() != 0) {
-            MemoryUtil.memFree(fb);
-        }
 
         return true;
     }
 
-    public boolean updateVertices() {
-        if (vao == 0) {
-            DSLogger.reportError("Vertex array object is zero!", null);
-            return false;
-        }
+    public boolean subBufferVertices() {
+        // Check if vertex array and vertex buffer objects are initialized
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
-            return false;
+            throw new RuntimeException("Vertex buffer object is zero!");
         }
+
+        // Allocate memory for vertex data
         fb = MemoryUtil.memCallocFloat(vertices.size() * Vertex.SIZE);
         if (MemoryUtil.memAddressSafe(fb) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
-        // storing vertices and normals in the buffer        
+
+        // Fill the vertex buffer with data
         for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
-                fb.put(vertex.getPos().x);
-                fb.put(vertex.getPos().y);
-                fb.put(vertex.getPos().z);
-
-                fb.put(vertex.getNormal().x);
-                fb.put(vertex.getNormal().y);
-                fb.put(vertex.getNormal().z);
-
-                fb.put(vertex.getUv().x);
-                fb.put(vertex.getUv().y);
+                fb.put(vertex.getPos().x)
+                        .put(vertex.getPos().y)
+                        .put(vertex.getPos().z)
+                        .put(vertex.getNormal().x)
+                        .put(vertex.getNormal().y)
+                        .put(vertex.getNormal().z)
+                        .put(vertex.getUv().x)
+                        .put(vertex.getUv().y);
             }
         }
-        fb.flip();
-        if (fb.capacity() != 0) {
-            GL30.glBindVertexArray(vao);
-            GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-            GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
-
-            GL20.glEnableVertexAttribArray(0);
-            GL20.glEnableVertexAttribArray(1);
-            GL20.glEnableVertexAttribArray(2);
-
-            GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-            GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-            GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
-
-            GL20.glDisableVertexAttribArray(0);
-            GL20.glDisableVertexAttribArray(1);
-            GL20.glDisableVertexAttribArray(2);
-
-            GL30.glBindVertexArray(0);
+        if (fb.position() != 0) {
+            fb.flip();
         }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
 
-        if (fb.capacity() != 0) {
-            MemoryUtil.memFree(fb);
-        }
+        // Bind the vertex array and vertex buffer
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+
+        // Update vertex data on GPU
+        GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, 0, fb);
 
         return true;
     }
 
     public boolean bufferIndices() {
-        // storing indices in the buffer        
-        ib = MemoryUtil.memCallocInt(indices.size());
+        int someSize = indices.size();
+        // Allocate memory for index data
+        if (ib == null) {
+            ib = MemoryUtil.memCallocInt(someSize);
+        }
+        ib.position(0);
+        ib.limit(someSize);
+
         if (MemoryUtil.memAddressSafe(ib) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
-            return false;
+            throw new RuntimeException("Could not allocate memory address!");
         }
+
+        // Fill the index buffer with data
         for (Integer index : indices) {
             ib.put(index);
         }
         ib.flip();
-        // storing indices buffer on the graphics card                
+
+        // Generate index buffer object if not already generated
         if (ibo == 0) {
             ibo = GL15.glGenBuffers();
         }
 
-        if (ib.capacity() != 0) {
-            GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
-        }
-        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
+        // Bind the index buffer
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
-        if (ib.capacity() != 0) {
-            MemoryUtil.memFree(ib);
-        }
+        // Transfer index data to GPU
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
 
         return true;
     }
@@ -270,4 +261,26 @@ public class Mesh {
         return indices;
     }
 
+    public void release() {
+        if (vbo != 0) {
+            GL15.glDeleteBuffers(vbo);
+        }
+        if (ibo != 0) {
+            GL15.glDeleteBuffers(ibo);
+        }
+
+        if (fb != null && fb.capacity() != 0) {
+            // Free memory allocated for vertex data
+            MemoryUtil.memFree(fb);
+            fb = null;
+        }
+
+        if (ib != null && ib.capacity() != 0) {
+            // Free memory allocated for index data
+            MemoryUtil.memFree(ib);
+            ib = null;
+        }
+
+        buffered = false;
+    }
 }
