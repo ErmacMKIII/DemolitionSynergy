@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -43,7 +44,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = 768;
+    public static final int BOUND = 384;
     public static final float VISION = 256.0f; // determines visibility
     public static final int GRID_SIZE = 6;
 
@@ -577,6 +578,37 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
 
         return false;
+    }
+
+    /**
+     * Does camera sees chunk. Useful.
+     *
+     * @param chunkId chunk id (number)
+     * @param camera main camera (or other camera)
+     * @return boolean condition see (or not see)
+     */
+    public static boolean doesSeeChunk(int chunkId, Camera camera) {
+        final Vector3f chunkPos = invChunkFunc(chunkId);
+        final Vector2f chunkPosXZ = new Vector2f(chunkPos.x, chunkPos.z);
+        final Vector2f camPosXZ = new Vector2f(camera.pos.x, camera.pos.z);
+        final Vector2f camFrontXZ = new Vector2f(camera.getFront().x, camera.getFront().z);
+
+        boolean yea = false;
+
+        // Now iterate and perform calculations
+        OUTER:
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Vector2f temp = new Vector2f();
+                Vector2f tst = new Vector2f(x, z).add(chunkPosXZ.sub(camPosXZ, temp), temp).normalize();
+                if (tst.dot(camFrontXZ) >= -0.707107f) { // 135 degrees
+                    yea |= true;
+                    break OUTER;
+                }
+            }
+        }
+
+        return yea;
     }
 
     /**

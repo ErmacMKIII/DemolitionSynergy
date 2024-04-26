@@ -56,7 +56,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final String WINDOW_TITLE = "Demolition Synergy - v38";
+    public static final String WINDOW_TITLE = "Demolition Synergy - v39";
     // makes default window -> Renderer sets resolution from config
     public final Window WINDOW;
 
