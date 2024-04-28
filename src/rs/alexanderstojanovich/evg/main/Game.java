@@ -684,11 +684,12 @@ public class Game {
             clientSocket.getOutputStream().write(request);
 
             // Wait for response (assuming simple echo for demonstration)
-            byte[] response = new byte[1024]; // TODO
+            byte[] response = new byte[1024];
             int bytesRead = clientSocket.getInputStream().read(response);
 
+            // Read response
             if (bytesRead > 0) {
-                System.out.println("Server response: " + new String(response, 0, bytesRead));
+                DSLogger.reportInfo("Server response: " + new String(response, 0, bytesRead), null);
             }
 
         } catch (IOException ex) {

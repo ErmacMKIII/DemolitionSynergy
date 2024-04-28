@@ -119,6 +119,9 @@ public class Console {
                         }
 
                         if (cmd.target != Command.Target.CLEAR) {
+                            if (cmd.target == Command.Target.PRINT || cmd.target == Command.Target.SAY) {
+                                cmd.mode = Command.Mode.EXE;
+                            }
                             // add to queue
                             HistoryItem item;
                             try {
@@ -194,6 +197,37 @@ public class Console {
             GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
             GLFW.glfwWaitEvents();
             GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
+        }
+    }
+
+    /*
+    * Write output to the Console
+     */
+    public void write(String m) {
+        Command cmd = Command.getCommand(Command.Target.PRINT);
+        cmd.args.add(m);
+
+        HistoryItem item;
+        try {
+            item = new HistoryItem(cmd);
+            history.addFirst(item);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+        }
+        // shift them
+        history.forEach(hi -> {
+            hi.buildCmdText();
+            hi.cmdText.pos.x = -1.0f;
+            hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+            hi.cmdText.alignToNextChar(intrface);
+
+            hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+            hi.quad.pos.y = hi.cmdText.pos.y;
+        });
+
+        // if over capacity deuque last
+        if (history.size() > HISTORY_CAPACITY) {
+            history.removeLast();
         }
     }
 

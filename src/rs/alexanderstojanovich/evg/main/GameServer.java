@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -32,6 +31,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServer implements Runnable {
 
+    protected static final String SERVER_NAME = String.format("DSYNERGY-SERVER%s", GameObject.VERSION);
     protected String worldName = "My World";
     protected String host = "localhost";
     protected int port = 13667;
@@ -106,6 +106,22 @@ public class GameServer implements Runnable {
     }
 
     /**
+     * Open client output stream and send first (welcome) response. Acceptance
+     * test passed.
+     *
+     * @param client client socket (tried to connect)
+     * @throws java.io.IOException if something happens
+     */
+    public void welcome(Socket client) throws IOException {
+        // Send a simple message with magic bytes prepended
+        final StringBuilder sb = new StringBuilder();
+        String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", GameServer.SERVER_NAME, GameObject.VERSION);
+        sb.append(welcome);
+
+        client.getOutputStream().write(welcome.getBytes("US-ASCII"));
+    }
+
+    /**
      * Server loop
      */
     @Override
@@ -123,12 +139,14 @@ public class GameServer implements Runnable {
             try {
                 final Socket client = server.accept();
                 clients.add(client);
-                if (!tst(client)) { // Acceptance test failure
+                // Acceptance test failure
+                if (tst(client)) {
+                    // Send "Welcome" Response
+                    welcome(client);
+                } else {
                     DSLogger.reportError("Acceptance test failure!", null);
                     clients.remove(client);
                     shutDownSignal = true;
-                    // TODO
-                    // Send Response
                 }
                 // Handle the client connection
             } catch (IOException ex) {
@@ -138,12 +156,22 @@ public class GameServer implements Runnable {
         }
     }
 
-    public void send(Socket client) {
-
+    /**
+     * Send responnse to the client. Client was previously accepted.
+     *
+     * @param client game client
+     */
+    public void sendResponse(Socket client) {
+        // TODO
     }
 
-    public void recieve(Socket client) {
-
+    /**
+     * Receive request from the client. Client was previously accepted.
+     *
+     * @param client game client
+     */
+    public void recieveRequest(Socket client) {
+        // TODO
     }
 
     public String getWorldName() {

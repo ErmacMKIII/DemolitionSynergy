@@ -67,13 +67,15 @@ public class Command implements Callable<Object> {
         CACHE,
         CLEAR,
         NOP,
+        PRINT,
+        SAY,
         ERROR
     };
 
     protected Target target = Target.NOP;
 
     public static enum Mode {
-        GET, SET
+        GET, SET, EXE
     };
     protected Mode mode = Mode.GET;
 
@@ -139,7 +141,7 @@ public class Command implements Callable<Object> {
     public static Command getCommand(String input) {
         Command command = new Command(input);
         command.args.clear();
-        String[] things = input.split(" ");
+        String[] things = input.split("\\s+|\".*\"");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "monitor_get":
@@ -259,6 +261,20 @@ public class Command implements Callable<Object> {
                 case "clr":
                 case "clear":
                     command.target = Target.CLEAR;
+                    break;
+                case "print":
+                case "echo":
+                case "write":
+                    command.target = Target.PRINT;
+                    if (things.length == 2) {
+                        command.args.add((String) things[1]);
+                    }
+                    break;
+                case "say":
+                    command.target = Target.SAY;
+                    if (things.length == 2) {
+                        command.args.add((String) things[1]);
+                    }
                     break;
                 default:
                     command.target = Target.ERROR;
@@ -600,10 +616,24 @@ public class Command implements Callable<Object> {
                 break;
             case CLEAR:
                 if (command.mode == Mode.SET) {
-                    Console console = gameObject.getIntrface().getConsole();
+                    Console console = gameObject.intrface.getConsole();
                     console.clear();
                 }
                 command.status = Status.SUCCEEDED;
+                break;
+            case PRINT:
+                if (!command.getArgs().isEmpty()) {
+                    gameObject.intrface.getConsole().write((String) command.getArgs().get(0));
+                    command.status = Status.SUCCEEDED;
+                }
+                break;
+            case SAY:
+                if (!command.getArgs().isEmpty()) {
+                    gameObject.intrface.getConsole().write((String) command.getArgs().get(0));
+                    command.status = Status.SUCCEEDED;
+                }
+                // TODO Multiplayer
+                // All clients receive chat
                 break;
             case NOP:
             default:
@@ -648,13 +678,15 @@ public class Command implements Callable<Object> {
     // game commands
     public boolean isGameCommand() {
         return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS || this.target == Target.SHADOW_EFFECTS
-                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
+                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR
+                || this.target == Target.PRINT || this.target == Target.SAY;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
         return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS || command.target == Target.SHADOW_EFFECTS
-                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
+                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR
+                || command.target == Target.PRINT || command.target == Target.SAY;
     }
 
     // renderer commands need OpenGL whilst other doesn't
