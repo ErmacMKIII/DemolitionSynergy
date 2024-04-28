@@ -355,6 +355,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         WINDOW.render();
     }
 
+    /**
+     * Swap working tuples & optimizing tuples in Block Environment
+     */
+    public void swap() {
+        levelContainer.blockEnvironment.swap();
+    }
+
     /*
     * Release all GL components (by deleting their buffers)
     *  Call from renderer.

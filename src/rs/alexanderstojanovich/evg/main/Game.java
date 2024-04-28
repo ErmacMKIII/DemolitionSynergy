@@ -21,8 +21,6 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -52,7 +50,7 @@ public class Game {
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 4.0f;
+    public static final float AMOUNT = 5.5f / (float) TPS;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -60,7 +58,7 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    private static int ups; // current update per second    
+    private static int ups; // current handleInput per second    
     private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
@@ -99,8 +97,8 @@ public class Game {
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
 
-    protected static double upsTicks = 0.0;
     protected static double accumulator = 0.0;
+    protected static double gameTicks = 0.0;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
@@ -541,18 +539,80 @@ public class Game {
     }
 
     /**
-     * Starts the main (update) loop
+     * Updates game (client).
+     *
+     * @param deltaTime time interval between updates
+     */
+    public void update(double deltaTime) {
+        // update with delta time like gravity or sun
+        gameObject.update((float) deltaTime);
+    }
+
+    /**
+     * Handle game input (client).
+     *
+     * @param deltaTime time interval between updates
+     */
+    public void handleInput(double deltaTime) {
+        actionPerformed = false;
+        switch (currentMode) {
+            case FREE:
+                // nobody has control
+                break;
+            case EDITOR:
+                // observer has control
+                actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT);
+                actionPerformed |= editorDo(gameObject.levelContainer);
+
+                if (actionPerformed) {
+                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                }
+                break;
+            case SINGLE_PLAYER:
+            case MULTIPLAYER:
+                // player has control
+                actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT, 3920.0f * Game.AMOUNT, 1.1f * AMOUNT, (float) deltaTime);
+
+                if (actionPerformed) {
+                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                }
+
+                jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
+
+                if (!jumpPerformed) {
+                    Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                    Vector3f playerPosAlign = new Vector3f(
+                            Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                            Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                            Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                    );
+
+                    jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                            Block.getAdjacentPos(
+                                    playerPosAlign, Block.BOTTOM, 1.05f),
+                            false
+                    );
+                }
+                break;
+        }
+
+        // display collision text
+        gameObject.assertCheckCollision(causingCollision);
+    }
+
+    /**
+     * Starts the main loop.
      */
     public void go() {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
-        // accumulator is progressive only ingame time
-        accumulator = cfg.getGameTicks();
+        // gameTicks is progressive only ingame time
+        gameTicks = cfg.getGameTicks();
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
-
         int index = 0; // track index
 
         // first time we got nothing
@@ -564,10 +624,8 @@ public class Game {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            // hunger time
-            double increment = deltaTime * Game.TPS;
-            accumulator += increment;
-            upsTicks += increment;
+            gameTicks += deltaTime * Game.TPS;
+            accumulator += deltaTime;
             lastTime = currTime;
 
             // Detecting critical status
@@ -584,70 +642,22 @@ public class Game {
                 }
             }
 
-            if (upsTicks >= 1.0) {
-                // update with delta time like gravity
-                gameObject.update((float) (Game.upsTicks * TICK_TIME));
-                // call utility functions (optimizing etc.)
-                gameObject.utilOptimization();
-            } else if (upsTicks >= 0.5) {
-                // determine visible chunks (can be altered with player position)
-                gameObject.determineVisibleChunks();
-                // call utility functions (chunk loading etc.)
-                gameObject.utilChunkOperations();
-            }
+            while (accumulator >= TICK_TIME) {
+                update(TICK_TIME);
 
-            while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
-                actionPerformed = false;
-                switch (currentMode) {
-                    case FREE:
-                        // nobody has control
-                        break;
-                    case EDITOR:
-                        // observer has control
-                        actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
-                        actionPerformed |= editorDo(gameObject.levelContainer);
-
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
-                        break;
-                    case SINGLE_PLAYER:
-                    case MULTIPLAYER:
-                        // player has control
-                        actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 3920.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
-
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
-
-                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                        if (!jumpPerformed) {
-                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                            Vector3f playerPosAlign = new Vector3f(
-                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                            );
-
-                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                                    Block.getAdjacentPos(
-                                            playerPosAlign, Block.BOTTOM, 1.05f),
-                                    false
-                            );
-                        }
-                        break;
-                }
-
-                // display collision text
-                gameObject.assertCheckCollision(causingCollision);
+                handleInput(TICK_TIME);
 
                 ups++;
-                upsTicks--;
+                accumulator -= TICK_TIME;
             }
 
+            // determine visible chunks (can be altered with player position)
+            gameObject.determineVisibleChunks();
+            // call utility functions (chunk loading etc.)
+            gameObject.utilChunkOperations();
+            // call utility functions (optimizing etc.)            
+            gameObject.utilOptimization();
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
@@ -742,8 +752,8 @@ public class Game {
         return defaultMouseButtonCallback;
     }
 
-    public static void setAccumulator(double accumulator) {
-        Game.accumulator = accumulator;
+    public static void setGameTicks(double gameTicks) {
+        Game.gameTicks = gameTicks;
     }
 
     public static int getUps() {
@@ -770,8 +780,8 @@ public class Game {
         Game.mouseSensitivity = mouseSensitivity;
     }
 
-    public static double getUpsTicks() {
-        return upsTicks;
+    public static double getAccumulator() {
+        return accumulator;
     }
 
     public static Mode getCurrentMode() {
@@ -798,8 +808,8 @@ public class Game {
         return yoffset;
     }
 
-    public static double getAccumulator() {
-        return accumulator;
+    public static double getGameTicks() {
+        return gameTicks;
     }
 
     public static boolean isChanged() {

@@ -326,13 +326,13 @@ public class Command implements Callable<Object> {
             case GAME_TICKS:
                 switch (command.mode) {
                     case GET:
-                        result = Game.getAccumulator();
+                        result = Game.getGameTicks();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float ticks = (float) command.args.get(0);
                         if (ticks >= 0.0f) {
-                            Game.setAccumulator(ticks);
+                            Game.setGameTicks(ticks);
 //                            GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0f);
                             GameRenderer.setAnimationTimer((int) ticks);

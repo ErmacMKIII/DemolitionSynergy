@@ -1026,7 +1026,7 @@ public class LevelContainer implements GravityEnviroment {
      * Applies gravity to the player, making them fall downwards if not
      * supported below.
      *
-     * @param deltaTime The time elapsed since the last update.
+     * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player is falling, {@code false} otherwise.
      */
     @Override
@@ -1093,7 +1093,7 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param critter The player.
      * @param amountY The amount of upward movement.
-     * @param deltaTime The time elapsed since the last update.
+     * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player successfully jumped, {@code false}
      * otherwise.
      */
@@ -1207,11 +1207,11 @@ public class LevelContainer implements GravityEnviroment {
             SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
             SUNLIGHT.pos.set(SUN.pos);
 
-            // always update sunlight (sun/pos)
+            // always handleInput sunlight (sun/pos)
             lightSources.updateLight(1, SUNLIGHT);
             lightSources.setModified(1, true); // SUNLIGHT index is always 1
 
-            // update - player light - only in correct mode
+            // handleInput - player light - only in correct mode
             if (Game.getCurrentMode() != Game.Mode.SINGLE_PLAYER && Game.getCurrentMode() != Game.Mode.MULTIPLAYER) {
                 levelActors.player.light.setIntensity(0.0f);
             } else {
@@ -1220,7 +1220,7 @@ public class LevelContainer implements GravityEnviroment {
             }
             lightSources.setModified(0, true); // Player index is always 0
 
-            // update - set light modified for visible lights
+            // handleInput - set light modified for visible lights
             lightSources.sourceList.forEach(ls -> {
                 int chnkId = Chunk.chunkFunc(ls.pos);
                 if (vChnkIdList.contains(chnkId)) {

@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -74,7 +75,7 @@ public class GameRenderer extends Thread implements Executor {
         }
         do {
             gameObject.render(); // render splash screen
-        } while (Game.upsTicks < 1.0);
+        } while (Game.accumulator < Game.TICK_TIME);
         gameObject.splashScreen.setEnabled(false);
 
         // resolution config
@@ -85,13 +86,13 @@ public class GameRenderer extends Thread implements Executor {
 
         fps = 0;
 
-        double lastTime = Game.accumulator * Game.TICK_TIME;
+        double lastTime = GLFW.glfwGetTime();
         double currTime;
-        double deltaTime = 0.0;
+        double deltaTime; // time between frames
 
         while (!gameObject.WINDOW.shouldClose()) {
-            currTime = Game.accumulator * Game.TICK_TIME;
-            deltaTime = Math.max(currTime - lastTime, 0.0);
+            currTime = GLFW.glfwGetTime();
+            deltaTime = currTime - lastTime;
             fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
@@ -110,18 +111,19 @@ public class GameRenderer extends Thread implements Executor {
                 numOfPasses++;
                 fpsTicks--;
             }
+            gameObject.swap();
 
-            // update text which animates water every quarter of the second
-            if (Game.accumulator - animationTimer > GameRenderer.ANIMATION_RATE) {
+            // animates water every quarter of the second
+            if (Game.gameTicks - animationTimer > GameRenderer.ANIMATION_RATE) {
                 if (!gameObject.isWorking()) {
-                    gameObject.animate(); // has internal no-update 
+                    gameObject.animate(); // has internal
                 }
 
                 animationTimer += GameRenderer.ANIMATION_RATE;
             }
 
             // lastly it executes the console tasks
-            if (Game.accumulator - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
+            if (Game.gameTicks - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task); // requires GL-context
                 }
@@ -164,7 +166,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.upsTicks < 1.0;
+        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.accumulator < Game.TICK_TIME;
     }
 
 //    /**

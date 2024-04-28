@@ -41,7 +41,14 @@ public class MathUtils {
         return (1.0f - alpha) * a + alpha * b;
     }
 
-    // linear interpolation for doubles
+    /**
+     * Calculate linear interpolation for two doubles
+     *
+     * @param a first argument
+     * @param b second argument
+     * @param alpha
+     * @return
+     */
     public static double lerp(double a, double b, double alpha) {
         return (1.0 - alpha) * a + alpha * b;
     }

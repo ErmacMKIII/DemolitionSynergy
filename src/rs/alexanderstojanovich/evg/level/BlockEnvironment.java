@@ -294,15 +294,13 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (!optimized) {
+        if (!optimized || !GameRenderer.isFirstFrame()) {
             return;
         }
 
-        if (GameRenderer.isFirstFrame()) {
-            for (Tuple tuple : optimizedTuples) {
-                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                    tuple.prepare(cameraInFluid);
-                }
+        for (Tuple tuple : optimizedTuples) {
+            if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                tuple.prepare(cameraInFluid);
             }
         }
     }
@@ -315,11 +313,9 @@ public class BlockEnvironment {
             return;
         }
 
-        if (GameRenderer.isLastFrame()) {
-            for (Tuple tuple : optimizedTuples) {
-                if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                    tuple.animate();
-                }
+        for (Tuple tuple : optimizedTuples) {
+            if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
+                tuple.animate();
             }
         }
     }
@@ -370,17 +366,23 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        if (optimized) { // optimized -> swap list (by reference)
+        Tuple.renderInstanced(
+                optimizedTuples,
+                shaderProgram, lightSources, waterTexture, shadowTexture
+        );
+    }
+
+    /**
+     * Swap working tuples with optimized tuples. What was built by optimization
+     * could be rendered (drawn).
+     */
+    public void swap() {
+        if (optimized && GameRenderer.isLastFrame()) { // optimized -> swap list (by reference)
             IList<Tuple> temp = optimizedTuples;
             optimizedTuples = workingTuples;
             workingTuples = temp;
             optimized = false;
         }
-
-        Tuple.renderInstanced(
-                optimizedTuples,
-                shaderProgram, lightSources, waterTexture, shadowTexture
-        );
     }
 
     /**

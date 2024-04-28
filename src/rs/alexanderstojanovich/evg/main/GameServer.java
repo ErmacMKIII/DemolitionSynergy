@@ -170,7 +170,7 @@ public class GameServer implements Runnable {
      *
      * @param client game client
      */
-    public void recieveRequest(Socket client) {
+    public void receiveRequest(Socket client) {
         // TODO
     }
 
