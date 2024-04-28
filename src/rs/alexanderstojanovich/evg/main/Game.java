@@ -16,8 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -108,8 +113,14 @@ public class Game {
 
     protected final GameObject gameObject;
 
+    protected static final int PORT = 13667;
+    protected static final String CLIENT_NAME = "DSYNERGY"; // Bytes
+    protected static final String HELLO = "DSPRIVET"; // 8 Bytes
+    protected static final byte[] MAGIC_BYTES = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0D, (byte) 0x13}; // 4 Bytes
+    protected static final byte[] RESERVED = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 8 Bytes
+
     /**
-     * Construct new game view
+     * Construct new game (client) view
      *
      * @param gameObject game object
      */
@@ -642,6 +653,48 @@ public class Game {
         gameObject.getMusicPlayer().stop();
 
         DSLogger.reportDebug("Main loop ended.", null);
+    }
+
+    /**
+     *
+     * @param hostAddress server (host) address
+     * @param port server port
+     */
+    public void connectToServer(InetAddress hostAddress, int port) {
+        try {
+            Socket clientSocket = new Socket(hostAddress, port);
+            DSLogger.reportInfo("Connected to server!", null);
+
+            // Send a simple message with magic bytes prepended
+            final byte[] client = (Game.CLIENT_NAME).getBytes("US-ASCII"); // 8 Bytes            
+            final byte[] version = {(byte) (GameObject.VERSION >> 24), (byte) (GameObject.VERSION >> 16), (byte) (GameObject.VERSION >> 8), (byte) (GameObject.VERSION)}; // 4 Bytes
+            final byte[] hello = (Game.HELLO).getBytes("US-ASCII"); // 8 Bytes
+            final byte[] magic = MAGIC_BYTES; // 4 Bytes                
+            final byte[] reserved = RESERVED; // 8 Bytes
+
+            // Create request
+            byte[] request = new byte[client.length + version.length + hello.length + magic.length + reserved.length];
+            System.arraycopy(client, 0, request, 0, client.length);
+            System.arraycopy(version, 0, request, 8, version.length);
+            System.arraycopy(hello, 0, request, 12, hello.length);
+            System.arraycopy(magic, 0, request, 20, magic.length);
+            System.arraycopy(reserved, 0, request, 24, reserved.length);
+
+            // Send request
+            clientSocket.getOutputStream().write(request);
+
+            // Wait for response (assuming simple echo for demonstration)
+            byte[] response = new byte[1024]; // TODO
+            int bytesRead = clientSocket.getInputStream().read(response);
+
+            if (bytesRead > 0) {
+                System.out.println("Server response: " + new String(response, 0, bytesRead));
+            }
+
+        } catch (IOException ex) {
+            DSLogger.reportError("Unable to connect to server!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
     }
 
     /*

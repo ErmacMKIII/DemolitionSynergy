@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -56,7 +54,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final String WINDOW_TITLE = "Demolition Synergy - v39";
+    public static final int VERSION = 39;
+    public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
     public final Window WINDOW;
 
@@ -84,11 +83,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Update/Render for Interface Mutex
      */
     public static final Object UPDATE_RENDER_IFC_MUTEX = new Object();
-
-    /**
-     * Lock to help updating without loss (concurrent modification)
-     */
-    public static final Lock UPDATE_RENDER_LC_LOCK = new ReentrantLock();
 
     protected Quad splashScreen;
     protected static GameObject instance = null;
@@ -339,24 +333,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
-            if (UPDATE_RENDER_LC_LOCK.tryLock()) {
-                // Code block to execute when lock is acquired successfully
-                synchronized (UPDATE_RENDER_LC_MUTEX) {
-                    try {
+            // Code block to execute when lock is acquired successfully
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
 
-                        if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                            waterRenderer.render();
-                        }
-
-                        if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                            shadowRenderer.render();
-                        }
-
-                        levelContainer.render(renderFlag);
-                    } finally {
-                        UPDATE_RENDER_LC_LOCK.unlock();
-                    }
+                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                    waterRenderer.render();
                 }
+
+                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                    shadowRenderer.render();
+                }
+
+                levelContainer.render(renderFlag);
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -411,9 +399,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with special tuples
      */
     private void optimize() {
-        synchronized (UPDATE_RENDER_LC_MUTEX) {
-            levelContainer.optimize();
-        }
+        levelContainer.optimize();
     }
 
     /**
@@ -441,12 +427,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public boolean loadLevelFromFile(String fileName) {
         boolean ok = false;
-        UPDATE_RENDER_LC_LOCK.lock();
-        try {
-            ok = levelContainer.loadLevelFromFile(fileName);
-        } finally {
-            UPDATE_RENDER_LC_LOCK.unlock();
-        }
+        ok = levelContainer.loadLevelFromFile(fileName);
 
         return ok;
     }
@@ -454,12 +435,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public boolean saveLevelToFile(String fileName) {
         boolean ok = false;
-        UPDATE_RENDER_LC_LOCK.lock();
-        try {
-            ok = levelContainer.saveLevelToFile(fileName);
-        } finally {
-            UPDATE_RENDER_LC_LOCK.unlock();
-        }
+        ok = levelContainer.saveLevelToFile(fileName);
 
         return ok;
     }
@@ -467,12 +443,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok = false;
-        UPDATE_RENDER_LC_LOCK.lock();
-        try {
-            ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-        } finally {
-            UPDATE_RENDER_LC_LOCK.unlock();
-        }
+        ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
     }
@@ -480,12 +451,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // Called from concurrent thread
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok = false;
-        UPDATE_RENDER_LC_LOCK.lock();
-        try {
-            ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
-        } finally {
-            UPDATE_RENDER_LC_LOCK.unlock();
-        }
+        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
     }

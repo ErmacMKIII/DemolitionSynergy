@@ -38,11 +38,11 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class BlockEnvironment {
-    
+
     public static final int LIGHT_MASK = 0x01;
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
-    
+
     private final GameObject gameObject;
 
     /**
@@ -53,11 +53,11 @@ public class BlockEnvironment {
      * Optimizes tuples (from render)
      */
     protected IList<Tuple> optimizedTuples = new GapList<>();
-    
+
     protected boolean optimized = false;
     protected final Chunks chunks;
     protected int texProcIndex = 0;
-    
+
     protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
     public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
@@ -65,7 +65,7 @@ public class BlockEnvironment {
      * Contains all batched buffer(s). As one.
      */
     public final TupleBufferObject tupleBuffObj = new TupleBufferObject(optimizedTuples);
-    
+
     public BlockEnvironment(GameObject gameObject, Chunks chunks) {
         this.gameObject = gameObject;
         this.chunks = chunks;
@@ -96,7 +96,7 @@ public class BlockEnvironment {
                         }
                     }
                 }
-                
+
                 if (optmTuple != null) {
                     optimizedTuples.add(optmTuple);
                     optimizedTuples.sort(Tuple.TUPLE_COMP);
@@ -104,7 +104,7 @@ public class BlockEnvironment {
             }
             faceBits++;
         }
-        
+
         optimized = true;
     }
 
@@ -129,7 +129,7 @@ public class BlockEnvironment {
         if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
-        
+
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
         // PASS 1 : CREATE TUPLES
@@ -196,7 +196,7 @@ public class BlockEnvironment {
         if (texProcIndex == 0 && lastFaceBits == 0) {
             optimized = true;
         }
-        
+
     }
 
     /**
@@ -216,7 +216,7 @@ public class BlockEnvironment {
         if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
-        
+
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
         // PASS 1 : CREATE TUPLES
@@ -239,7 +239,7 @@ public class BlockEnvironment {
             final int faceBits = (++lastFaceBitsCopy) & 63;
             if ((faceBits & (mask0 & 63)) != 0) {
                 chunks.chunkList.forEach(chnk -> { // for all chunks
-                    if (vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera)) { // visible ones && not cached!
+                    if (vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera)) { // visible ones && not cached!                        
                         // select correlated tuples
                         final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
                         // for each selected tuple
@@ -248,7 +248,7 @@ public class BlockEnvironment {
                             boolean modified = false;
                             // if optimized doesn't exist
                             for (Block blk : st.blockList) {
-                                // take into consideration if could be seen by camera (impr. method)
+                                // take into consideration if could be seen by camera (impr. method)                                
                                 if (camera.doesSeeEff(blk)) {
                                     // add absent blocks
                                     modified |= workTuple.blockList.addIfAbsent(blk);
@@ -284,7 +284,7 @@ public class BlockEnvironment {
             // set to optimized so render operation
             optimized = true;
         }
-        
+
     }
 
     /**
@@ -297,7 +297,7 @@ public class BlockEnvironment {
         if (!optimized) {
             return;
         }
-        
+
         if (GameRenderer.isFirstFrame()) {
             for (Tuple tuple : optimizedTuples) {
                 if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
@@ -314,7 +314,7 @@ public class BlockEnvironment {
         if (optimizedTuples.isEmpty()) {
             return;
         }
-        
+
         if (GameRenderer.isLastFrame()) {
             for (Tuple tuple : optimizedTuples) {
                 if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
@@ -334,11 +334,11 @@ public class BlockEnvironment {
         if (optimizedTuples.isEmpty()) {
             return;
         }
-        
+
         final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
         final boolean renderWater = (renderFlag & WATER_MASK) != 0;
         final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
-        
+
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
@@ -346,7 +346,7 @@ public class BlockEnvironment {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
-            
+
             tuple.renderInstanced(shaderProgram, lightSources, waterTexture, shadowTexture);
         }
     }
@@ -361,22 +361,22 @@ public class BlockEnvironment {
         if (workingTuples.isEmpty() && optimizedTuples.isEmpty()) {
             return;
         }
-        
+
         final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
         final boolean renderWater = (renderFlag & WATER_MASK) != 0;
         final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
-        
+
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        
+
         if (optimized) { // optimized -> swap list (by reference)
             IList<Tuple> temp = optimizedTuples;
             optimizedTuples = workingTuples;
             workingTuples = temp;
             optimized = false;
         }
-        
+
         Tuple.renderInstanced(
                 optimizedTuples,
                 shaderProgram, lightSources, waterTexture, shadowTexture
@@ -395,29 +395,29 @@ public class BlockEnvironment {
         if (optimizedTuples.isEmpty()) {
             return;
         }
-        
+
         final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
         final boolean renderWater = (renderFlag & WATER_MASK) != 0;
         final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
-        
+
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        
+
         if (optimized && !tupleBuffObj.isBuffered()) {
             tupleBuffObj.bufferBatchAll();
         }
-        
+
         Tuple.renderInstanced(
                 optimizedTuples, tupleBuffObj,
                 shaderProgram, lightSources, waterTexture, shadowTexture
         );
     }
-    
+
     public GameObject getGameObject() {
         return gameObject;
     }
-    
+
     public TupleBufferObject getTupleBuffObj() {
         return tupleBuffObj;
     }
@@ -429,7 +429,7 @@ public class BlockEnvironment {
         if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
-        
+
         for (Tuple tuple : optimizedTuples) {
             if (tuple.isBuffered() && tuple.faceBits() > 0) {
                 tuple.subBufferVertices(); // update lights
@@ -452,37 +452,37 @@ public class BlockEnvironment {
     public void release() {
         optimizedTuples.forEach(t -> t.release());
     }
-    
+
     public IList<Tuple> getOptimizedTuples() {
         return optimizedTuples;
     }
-    
+
     public boolean isOptimized() {
         return optimized;
     }
-    
+
     public void setOptimized(boolean optimized) {
         this.optimized = optimized;
     }
-    
+
     public Chunks getChunks() {
         return chunks;
     }
-    
+
     public int getTexProcIndex() {
         return texProcIndex;
     }
-    
+
     public int getBitPos() {
         return lastFaceBits;
     }
-    
+
     public int getLastFaceBits() {
         return lastFaceBits;
     }
-    
+
     public IList<Tuple> getWorkingTuples() {
         return workingTuples;
     }
-    
+
 }
