@@ -655,13 +655,11 @@ public class Game {
                 accumulator -= TICK_TIME;
             }
 
-            // Heavy operations to run
-            if (((int) Game.gameTicks & 79) == 0) {
-                // determine visible chunks (can be altered with player position)
-                if (gameObject.determineVisibleChunks()) {
-                    // call utility functions (chunk loading etc.)
-                    gameObject.utilChunkOperations();
-                }
+            // Heavy operations to run afterwards
+            // determine visible chunks (can be altered with player position)
+            if (gameObject.determineVisibleChunks() || (ups & 19) == 0) {
+                // call utility functions (chunk loading etc.)
+                gameObject.utilChunkOperations();
             }
         }
         // stops the music        
@@ -671,6 +669,7 @@ public class Game {
     }
 
     /**
+     * Connect to server (host). Multiplayer.
      *
      * @param hostAddress server (host) address
      * @param port server port
