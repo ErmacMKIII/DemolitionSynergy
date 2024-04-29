@@ -216,11 +216,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-        if (isFirstOptimization() || chunkOperationPerformed || GameRenderer.isLastFrame()) {
-            synchronized (UPDATE_GENERATE_LC_MUTEX) {
-                this.optimize();
-            }
+//        if (isFirstOptimization() || chunkOperationPerformed || GameRenderer.isLastFrame()) {
+        synchronized (UPDATE_GENERATE_LC_MUTEX) {
+            this.optimize();
         }
+//        }
     }
 
     // -------------------------------------------------------------------------

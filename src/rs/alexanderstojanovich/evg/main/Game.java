@@ -48,6 +48,11 @@ public class Game {
     private static final Configuration cfg = Configuration.getInstance();
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
+    public static final int TPS_HALF = 40; // HALF OF TPS
+    public static final int TPS_QUARTER = 20; // QUARTER OF TPS (Used for Chunk Operations)
+    public static final int TPS_EIGHTH = 10; // EIGHTH OF TPS 
+    public static final int TPS_SIXTEENTH = 5; // EIGHTH OF TPS (Used for Chunk Optimization) ~ 62.5 ms
+
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
     public static final float AMOUNT = 5.5f / (float) TPS;
@@ -546,8 +551,18 @@ public class Game {
     public void update(double deltaTime) {
         // update with delta time like gravity or sun
         gameObject.update((float) deltaTime);
+
+        // Heavy operations to run afterwards
+        // determine visible chunks (can be altered with player position)
+        if (gameObject.determineVisibleChunks() || (ups & (TPS_QUARTER - 1)) == 0) {
+            // call utility functions (chunk loading etc.)
+            gameObject.utilChunkOperations();
+        }
+
         // call utility functions (optimizing etc. - heavy operation)            
-        gameObject.utilOptimization();
+        if ((ups & (TPS_SIXTEENTH - 1)) == 0) {
+            gameObject.utilOptimization();
+        }
     }
 
     /**
@@ -604,7 +619,8 @@ public class Game {
     }
 
     /**
-     * Starts the main loop.
+     * Starts the main loop. Main loop is called from main method. (From
+     * GameObject indirectly)
      */
     public void go() {
         Game.setCurrentMode(Mode.FREE);
@@ -645,21 +661,15 @@ public class Game {
             }
 
             while (accumulator >= TICK_TIME) {
-                // update with fixed timestep
+                // Update with fixed timestep (environment)
                 update(TICK_TIME);
 
+                // Poll & handle events (keyboard & mouse)
                 GLFW.glfwPollEvents();
                 handleInput(TICK_TIME);
 
                 ups++;
                 accumulator -= TICK_TIME;
-            }
-
-            // Heavy operations to run afterwards
-            // determine visible chunks (can be altered with player position)
-            if (gameObject.determineVisibleChunks() || (ups & 19) == 0) {
-                // call utility functions (chunk loading etc.)
-                gameObject.utilChunkOperations();
             }
         }
         // stops the music        
