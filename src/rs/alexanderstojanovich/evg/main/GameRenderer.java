@@ -44,11 +44,11 @@ public class GameRenderer extends Thread implements Executor {
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     protected FutureTask<Object> task;
-    protected static int animationTimer = 0;
-    protected static int glCommandTimer = 0;
+    protected static double animationTimer = 0.0;
+    protected static double glCommandTimer = 0.0;
 
-    protected static int ANIMATION_RATE = 20;
-    protected static int GL_COMMAND_POLL_RATE = 40;
+    protected static double ANIMATION_RATE = 0.25;
+    protected static double GL_COMMAND_POLL_RATE = Game.TICK_TIME;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -103,32 +103,39 @@ public class GameRenderer extends Thread implements Executor {
                 break;
             }
 
-            numOfPasses = 0;
             // also avoid rendering when game is updating
             while (fpsTicks >= 1.0 && couldRender()) {
+                // render the scene
                 gameObject.render();
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
             }
-            gameObject.swap();
+            numOfPasses = 0;
 
-            // animates water every quarter of the second
-            if (Game.gameTicks - animationTimer > GameRenderer.ANIMATION_RATE) {
-                if (!gameObject.isWorking()) {
-                    gameObject.animate(); // has internal
-                }
-
-                animationTimer += GameRenderer.ANIMATION_RATE;
+            // swap tuples - minimize impact
+            if (!GameRenderer.isLastFrame() && !couldRender()) {
+                gameObject.swap();
             }
 
+            // animates water every quarter of the second
+            animationTimer += deltaTime;
+            if (animationTimer >= GameRenderer.ANIMATION_RATE) {
+                if (!gameObject.isWorking() && GameRenderer.isLastFrame()) {
+                    gameObject.animate(); // avoid swap and animate in the same time - 'awful effect'
+                }
+
+                animationTimer = 0.0;
+            }
+
+            glCommandTimer += deltaTime;
             // lastly it executes the console tasks
-            if (Game.gameTicks - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
+            if (glCommandTimer >= GameRenderer.GL_COMMAND_POLL_RATE) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task); // requires GL-context
                 }
 
-                glCommandTimer += GameRenderer.GL_COMMAND_POLL_RATE;
+                glCommandTimer = 0.0;
             }
         }
 
@@ -215,11 +222,11 @@ public class GameRenderer extends Thread implements Executor {
         return cfg;
     }
 
-    public static int getAnimationTimer() {
+    public static double getAnimationTimer() {
         return animationTimer;
     }
 
-    public static int getGlCommandTimer() {
+    public static double getGlCommandTimer() {
         return glCommandTimer;
     }
 

@@ -871,7 +871,7 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float precision = 8.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = predictable.getPredictor();
@@ -923,7 +923,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 8.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f observerPos = observer.getPos();
@@ -978,7 +978,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 8.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = critter.getPredictor();
@@ -1037,7 +1037,7 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean collision = false;
 
-        final float precision = 8.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 
@@ -1115,7 +1115,7 @@ public class LevelContainer implements GravityEnviroment {
         float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
         float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
-        final float precision = 8.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float maxAmount = (float) (Game.AMOUNT * Game.TICK_TIME);
 

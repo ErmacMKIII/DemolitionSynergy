@@ -546,6 +546,8 @@ public class Game {
     public void update(double deltaTime) {
         // update with delta time like gravity or sun
         gameObject.update((float) deltaTime);
+        // call utility functions (optimizing etc. - heavy operation)            
+        gameObject.utilOptimization();
     }
 
     /**
@@ -610,7 +612,7 @@ public class Game {
 
         // gameTicks is progressive only ingame time
         gameTicks = cfg.getGameTicks();
-        double lastTime = GLFW.glfwGetTime();
+        double lastTime = GLFW.glfwGetTime(); // time is measured in seconds
         double currTime;
         double deltaTime;
         int index = 0; // track index
@@ -643,6 +645,7 @@ public class Game {
             }
 
             while (accumulator >= TICK_TIME) {
+                // update with fixed timestep
                 update(TICK_TIME);
 
                 GLFW.glfwPollEvents();
@@ -652,12 +655,14 @@ public class Game {
                 accumulator -= TICK_TIME;
             }
 
-            // determine visible chunks (can be altered with player position)
-            gameObject.determineVisibleChunks();
-            // call utility functions (chunk loading etc.)
-            gameObject.utilChunkOperations();
-            // call utility functions (optimizing etc.)            
-            gameObject.utilOptimization();
+            // Heavy operations to run
+            if (((int) Game.gameTicks & 79) == 0) {
+                // determine visible chunks (can be altered with player position)
+                if (gameObject.determineVisibleChunks()) {
+                    // call utility functions (chunk loading etc.)
+                    gameObject.utilChunkOperations();
+                }
+            }
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

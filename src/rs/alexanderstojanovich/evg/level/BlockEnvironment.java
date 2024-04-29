@@ -30,6 +30,7 @@ import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -245,20 +246,22 @@ public class BlockEnvironment {
                         // for each selected tuple
                         selectedTuples.forEach(st -> {
                             final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                            boolean modified = false;
-                            // if optimized doesn't exist
-                            for (Block blk : st.blockList) {
-                                // take into consideration if could be seen by camera (impr. method)                                
-                                if (camera.doesSeeEff(blk)) {
-                                    // add absent blocks
-                                    modified |= workTuple.blockList.addIfAbsent(blk);
+                            if (workTuple != null) {
+                                boolean modified = false;
+                                // if optimized doesn't exist
+                                for (Block blk : st.blockList) {
+                                    // take into consideration if could be seen by camera (impr. method)                                
+                                    if (camera.doesSeeEff(blk)) {
+                                        // add absent blocks                                    
+                                        modified |= workTuple.blockList.addIfAbsent(blk);
+                                    }
                                 }
-                            }
-                            if (modified) {
-                                // sort so it does remains ordered
-                                workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                // unbuffer working tuple
-                                workTuple.setBuffered(false);
+                                if (modified) {
+                                    // sort so it does remains ordered
+                                    workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                                    // unbuffer working tuple
+                                    workTuple.setBuffered(false);
+                                }
                             }
                         });
                     }
@@ -377,7 +380,7 @@ public class BlockEnvironment {
      * could be rendered (drawn).
      */
     public void swap() {
-        if (optimized && GameRenderer.isLastFrame()) { // optimized -> swap list (by reference)
+        if (optimized) { // optimized -> swap list (by reference)
             IList<Tuple> temp = optimizedTuples;
             optimizedTuples = workingTuples;
             workingTuples = temp;

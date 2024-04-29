@@ -225,7 +225,7 @@ public class Configuration {
             pw.println("Width = " + width);
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
-            pw.println("# Maximum Framerate set to refresh rate if enabled");
+            pw.println("# Maximum Framerate set to refresh rate if is enabled");
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
@@ -250,7 +250,7 @@ public class Configuration {
             pw.println("GameTicks = " + gameTicks);
             pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
-            pw.println("# Block number load per cache run. Must be metween (0, 25000]");
+            pw.println("# Block number load per cache run. Must be between (0, 25000]");
             pw.println("BlocksPerRun = " + blocksPerRun);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
