@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.chunk;
 
 import java.util.Comparator;
-import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -94,7 +93,8 @@ public class Chunks {
                 Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
                 TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
                 if (location != null) {
-                    String tupleTexName = location.getTexName();
+                    int blkId = location.blkId;
+                    String tupleTexName = location.texName;
                     int adjNBits = block.isSolid()
                             ? LevelContainer.AllBlockMap.getNeighborSolidBits(adjPos)
                             : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
@@ -110,9 +110,9 @@ public class Chunks {
                         Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
                         if (tuple != null) {
                             Block adjBlock = null;
-                            adjBlock = Chunk.getBlock(tuple, adjPos);
+                            adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
 
-                            if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                            if (adjBlock != null) {
                                 int adjFaceBitsBefore = adjBlock.getFaceBits();
                                 adjBlock.setFaceBits(~adjNBits & 63);
                                 int adjFaceBitsAfter = adjBlock.getFaceBits();
@@ -147,7 +147,8 @@ public class Chunks {
             TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
             // location exists and has neighbors (otherwise pointless)
             if (location != null && nBits != 0) {
-                String tupleTexName = location.getTexName();
+                int blkId = location.blkId;
+                String tupleTexName = location.texName;
                 byte adjNBits = location.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
@@ -162,7 +163,7 @@ public class Chunks {
                 Block adjBlock = null;
 
                 if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos);
+                    adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();

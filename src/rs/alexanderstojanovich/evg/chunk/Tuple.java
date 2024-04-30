@@ -151,6 +151,66 @@ public class Tuple extends Series {
     }
 
     /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k). Faster than method with
+     * supplied Vec3f position.
+     *
+     * @param pos Vector3f position of the block
+     * @param blkId block unique id
+     * @return block if found (null if not found)
+     */
+    public Block getBlock(Vector3f pos, int blkId) {
+        Integer key = blkId;
+
+        int left = 0;
+        int right = this.blockList.size() - 1;
+        int startIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = this.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = this.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Buffer VEC3 colors - instanced rendering
      *
      * @return buffered success

@@ -188,6 +188,67 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k). Faster than method with
+     * supplied Vec3f position.
+     *
+     * @param tuple (chunk) tuple where block might be located
+     * @param pos Vector3f position of the block
+     * @param blkId block unique id
+     * @return block if found (null if not found)
+     */
+    public static Block getBlock(Tuple tuple, Vector3f pos, int blkId) {
+        Integer key = blkId;
+
+        int left = 0;
+        int right = tuple.blockList.size() - 1;
+        int startIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = tuple.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = tuple.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Transfer block between two tuples. Block will be transfered from tuple
      * with formFaceBits to tuple with current facebits.
      *
@@ -295,7 +356,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
                 TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
                 if (location != null) {
-                    String tupleTexName = location.getTexName();
+                    int blkId = location.blkId;
+                    String tupleTexName = location.texName;
                     int adjNBits = block.isSolid()
                             ? LevelContainer.AllBlockMap.getNeighborSolidBits(adjPos)
                             : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
@@ -305,9 +367,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     Tuple tuple = getTuple(tupleTexName, tupleBits);
                     Block adjBlock = null;
                     if (tuple != null) {
-                        adjBlock = Chunk.getBlock(tuple, adjPos);
+                        adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                     }
-                    if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                    if (adjBlock != null) {
                         int adjFaceBitsBefore = adjBlock.getFaceBits();
                         adjBlock.setFaceBits(~adjNBits & 63);
                         int adjFaceBitsAfter = adjBlock.getFaceBits();
@@ -349,7 +411,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
             // location exists and has neighbors (otherwise pointless)
             if (location != null && nBits != 0) {
-                String tupleTexName = location.getTexName();
+                int blkId = location.blkId;
+                String tupleTexName = location.texName;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -359,7 +422,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
                 if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos);
+                    adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();

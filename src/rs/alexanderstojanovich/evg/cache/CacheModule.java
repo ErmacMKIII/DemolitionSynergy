@@ -250,7 +250,7 @@ public class CacheModule {
                 for (Block block : blocks) {
                     TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
                     if (location != null) {
-                        location.byteValue = 0;
+                        LevelContainer.AllBlockMap.removeLocation(block.pos);
                     }
 
                     byte[] texName = block.getTexName().getBytes();

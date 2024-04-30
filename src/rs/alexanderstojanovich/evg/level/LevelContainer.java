@@ -177,7 +177,7 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         String str = block.getTexName();
         byte bits = updatePutNeighbors(pos);
-        TexByte locVal = new TexByte(str, bits, block.isSolid());
+        TexByte locVal = new TexByte(str, bits, block.isSolid(), block.getId());
         AllBlockMap.putLocation(new Vector3f(pos), locVal);
     }
 

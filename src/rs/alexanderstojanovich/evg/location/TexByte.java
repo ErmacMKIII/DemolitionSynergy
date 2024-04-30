@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.location;
 
 import java.util.Objects;
-import org.joml.Vector4f;
 
 /**
  *
@@ -25,52 +24,73 @@ import org.joml.Vector4f;
  */
 public class TexByte {
 
-    public String texName;
+    /**
+     * Texture Name
+     */
+    public final String texName;
+    /**
+     * Byte value (facebits)
+     */
     public byte byteValue;
-    public Vector4f lightColor = new Vector4f();
-    public boolean solid;
+    /**
+     * Solid property
+     */
+    public final boolean solid;
+    /**
+     * Unique block id (provide faster search)
+     */
+    public final int blkId;
 
-    public TexByte(String texName, byte byteValue, boolean solid) {
+    public TexByte(String texName, byte byteValue, boolean solid, int blkId) {
         this.texName = texName;
         this.byteValue = byteValue;
         this.solid = solid;
+        this.blkId = blkId;
     }
 
+    /**
+     * Get texture name of block occupying the place
+     *
+     * @return occupying block texture name
+     */
     public String getTexName() {
         return texName;
     }
 
-    public void setTexName(String texName) {
-        this.texName = texName;
-    }
-
+    /**
+     * Get facebits of block occupying the place
+     *
+     * @return occupying block face bits
+     */
     public byte getByteValue() {
         return byteValue;
     }
 
-    public void setByteValue(byte byteValue) {
-        this.byteValue = byteValue;
-    }
-
+    /**
+     * Get solid property of block occuping the place
+     *
+     * @return occupying block texture name
+     */
     public boolean isSolid() {
         return solid;
     }
 
-    public void setSolid(boolean solid) {
-        this.solid = solid;
-    }
-
-    public Vector4f getLightColor() {
-        return lightColor;
+    /**
+     * Get unique id (primary key) of this block
+     *
+     * @return
+     */
+    public int getBlkId() {
+        return blkId;
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 97 * hash + Objects.hashCode(this.texName);
-        hash = 97 * hash + this.byteValue;
-        hash = 97 * hash + Objects.hashCode(this.lightColor);
-        hash = 97 * hash + (this.solid ? 1 : 0);
+        hash = 71 * hash + Objects.hashCode(this.texName);
+        hash = 71 * hash + this.byteValue;
+        hash = 71 * hash + (this.solid ? 1 : 0);
+        hash = 71 * hash + this.blkId;
         return hash;
     }
 
@@ -92,22 +112,10 @@ public class TexByte {
         if (this.solid != other.solid) {
             return false;
         }
-        if (!Objects.equals(this.texName, other.texName)) {
+        if (this.blkId != other.blkId) {
             return false;
         }
-        return Objects.equals(this.lightColor, other.lightColor);
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("TexByte{");
-        sb.append("texName=").append(texName);
-        sb.append(", byteValue=").append(byteValue);
-        sb.append(", lightColor=").append(lightColor);
-        sb.append(", solid=").append(solid);
-        sb.append('}');
-        return sb.toString();
+        return Objects.equals(this.texName, other.texName);
     }
 
 }

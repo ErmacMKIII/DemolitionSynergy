@@ -68,8 +68,9 @@ public class BlockLocation {
      * @param bits neighbor bits (for each sides) how many block of the same
      * kind adjacent.
      * @param solid is block solid (or not)
+     * @param blkId unique block id (property of block)
      */
-    public void putLocation(Vector3f pos, String texname, int bits, boolean solid) {
+    public void putLocation(Vector3f pos, String texname, int bits, boolean solid, int blkId) {
         int i = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int j = Math.round((pos.z + Chunk.BOUND) / 2.0f);
         int k = Math.round((pos.y + Chunk.BOUND) / 2.0f);
@@ -78,7 +79,7 @@ public class BlockLocation {
             return;
         }
 
-        locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid);
+        locationMap[i][j][k] = new TexByte(texname, (byte) bits, solid, blkId);
         locations.add(new Vector3f(pos));
 
         population++;

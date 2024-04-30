@@ -379,7 +379,7 @@ public class BlockEnvironment {
      * could be rendered (drawn).
      */
     public void swap() {
-        if (optimized) { // optimized -> swap list (by reference)
+        if (optimized) { // optimized -> swap list (by reference)            
             IList<Tuple> temp = optimizedTuples;
             optimizedTuples = workingTuples;
             workingTuples = temp;
