@@ -73,36 +73,36 @@ public class Request implements DSObject, RequestIfc {
 
         final byte[] first = {(byte) mchType, (byte) objType, (byte) reqType, (byte) datType}; // 4 Bytes
         final byte[] second = {(byte) (version >> 24), (byte) (version >> 16), (byte) (version >> 8), (byte) (version)}; // 4 Bytes
-        final byte[] third = RequestIfc.MAGIC_BYTES; // 4 Bytes
+        final byte[] magic = RequestIfc.MAGIC_BYTES; // 4 Bytes
 
         if (getDataType() != DataType.VOID) {
-            final byte[] fourth;
+            final byte[] third;
             switch (getDataType()) {
                 case STRING:
                     String message = (String) data;
-                    fourth = message.getBytes("UTF-8");
+                    third = message.getBytes("UTF-8");
                     break;
                 default:
                     throw new Exception("Serialization failed!");
             }
 
             // Serialize
-            content = new byte[first.length + second.length + third.length + fourth.length];
+            content = new byte[first.length + second.length + magic.length + third.length];
             System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
             System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
-            System.arraycopy(third, 0, content, 8, third.length); // 4 Bytes             
-            System.arraycopy(third, 0, content, 12, fourth.length); // 4 Bytes             
+            System.arraycopy(third, 0, content, 12, third.length); // 4 Bytes   
+            System.arraycopy(magic, 0, content, 8, magic.length); // 4 Bytes             
         } else {
             // Serialize
-            content = new byte[first.length + second.length + third.length];
+            content = new byte[first.length + second.length + magic.length];
             System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
             System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
-            System.arraycopy(third, 0, content, 8, third.length); // 4 Bytes             
+            System.arraycopy(magic, 0, content, 8, magic.length); // 4 Bytes             
         }
     }
 
     @Override
-    public boolean deserialize(DSMachine machine, byte[] content) {
+    public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
         // Extracting the relevant information from the byte array
         int mchType = content[0];
         if (DSMachine.MachineType.values()[mchType] != DSMachine.MachineType.DSCLIENT && DSMachine.MachineType.values()[mchType] != DSMachine.MachineType.DSSERVER) {
@@ -136,18 +136,14 @@ public class Request implements DSObject, RequestIfc {
             byte[] actualData = Arrays.copyOfRange(content, 12, content.length);
 
             // Deserialize based on data type
-            try {
-                switch (DataType.values()[datType]) {
-                    case STRING:
-                        String message = new String(actualData, "UTF-8");
-                        data0 = message;
-                        break;
-                    // Add cases for other data types if needed
-                    default:
-                        throw new Exception("Unsupported data type during deserialization!");
-                }
-            } catch (Exception e) {
-                // Handle exception
+            switch (DataType.values()[datType]) {
+                case STRING:
+                    String message = new String(actualData, "UTF-8");
+                    data0 = message;
+                    break;
+                // Add cases for other data types if needed
+                default:
+                    throw new Exception("Unsupported data type during deserialization!");
             }
         }
 

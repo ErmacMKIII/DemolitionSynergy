@@ -34,17 +34,17 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class GameServer implements DSMachine, Runnable {
-    
+
     protected String worldName = "My World";
     protected String host = "localhost";
     protected int port = 13667;
-    
+
     protected static final int BACKLOG = 16;
-    
+
     protected ServerSocket server;
     public final List<Socket> clients = new GapList<>();
     protected final GameObject gameObject;
-    
+
     protected boolean shutDownSignal = false;
     protected final int version = 39;
 
@@ -57,7 +57,7 @@ public class GameServer implements DSMachine, Runnable {
     public GameServer(GameObject gameObject, String name) {
         this.gameObject = gameObject;
         this.worldName = name;
-        
+
     }
 
     /**
@@ -67,16 +67,16 @@ public class GameServer implements DSMachine, Runnable {
      * @return
      * @throws java.io.IOException if something happens
      */
-    protected boolean tst(Socket client) throws IOException {
+    protected boolean tst(Socket client) throws IOException, Exception {
         RequestIfc request = RequestIfc.receive(this, client);
         if (request == null) {
             return false;
         }
-        
+
         if (request.getRequestType() == RequestIfc.RequestType.HELLO) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -87,16 +87,16 @@ public class GameServer implements DSMachine, Runnable {
      * @param client client socket (tried to connect)
      * @throws java.io.IOException if something happens
      */
-    public void accept(Socket client) throws IOException {
+    public void accept(Socket client) throws IOException, Exception {
         // Send a simple message with magic bytes prepended
         final StringBuilder sb = new StringBuilder();
         String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", this.worldName, this.version);
         sb.append(welcome);
-        
+
         Object welcomeObj = welcome.getBytes("US-ASCII");
-        
+
         ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcomeObj);
-        
+
         response.send(this, client);
     }
 
@@ -107,16 +107,16 @@ public class GameServer implements DSMachine, Runnable {
      * @param client client socket (tried to connect)
      * @throws java.io.IOException if something happens
      */
-    public void reject(Socket client) throws IOException {
+    public void reject(Socket client) throws IOException, Exception {
         // Send a simple message with magic bytes prepended
         final StringBuilder sb = new StringBuilder();
         String message = "Sorry, your connection refuesed!";
         sb.append(message);
-        
+
         Object msgObj = message.getBytes("US-ASCII");
-        
+
         ResponseIfc response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msgObj);
-        
+
         response.send(this, client);
     }
 
@@ -150,52 +150,54 @@ public class GameServer implements DSMachine, Runnable {
                 }
                 // Handle the client connection
             } catch (IOException ex) {
-                DSLogger.reportError("Error(s) on listening!", ex);
+                DSLogger.reportError("Network Error(s) Occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportError("Serialization or Deserialization failed!", ex);
             }
         }
     }
-    
+
     public String getWorldName() {
         return worldName;
     }
-    
+
     public String getHost() {
         return host;
     }
-    
+
     public int getPort() {
         return port;
     }
-    
+
     public ServerSocket getServer() {
         return server;
     }
-    
+
     public List<Socket> getClients() {
         return clients;
     }
-    
+
     public GameObject getGameObject() {
         return gameObject;
     }
-    
+
     public boolean isShutDownSignal() {
         return shutDownSignal;
     }
-    
+
     public void setShutDownSignal(boolean shutDownSignal) {
         this.shutDownSignal = shutDownSignal;
     }
-    
+
     @Override
     public MachineType getMachineType() {
         return MachineType.DSSERVER;
     }
-    
+
     @Override
     public int getVersion() {
         return this.version;
     }
-    
+
 }

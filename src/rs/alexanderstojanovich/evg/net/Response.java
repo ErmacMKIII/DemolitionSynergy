@@ -72,42 +72,86 @@ public class Response implements ResponseIfc {
 
         final byte[] first = {(byte) mchType, (byte) objType, (byte) statType, (byte) datType}; // 4 Bytes
         final byte[] second = {(byte) (version >> 24), (byte) (version >> 16), (byte) (version >> 8), (byte) (version)}; // 4 Bytes
-        final byte[] third = ResponseIfc.MAGIC_BYTES; // 4 Bytes
+        final byte[] magic = ResponseIfc.MAGIC_BYTES; // 4 Bytes
 
         if (getDataType() != DataType.VOID) {
-            final byte[] fourth;
+            final byte[] third;
             switch (getDataType()) {
                 case STRING:
                     String message = (String) data;
-                    fourth = message.getBytes("UTF-8");
+                    third = message.getBytes("UTF-8");
                     break;
                 default:
                     throw new Exception("Serialization failed!");
             }
 
             // Serialize
-            content = new byte[first.length + second.length + third.length + fourth.length];
+            content = new byte[first.length + second.length + magic.length + third.length];
             System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
             System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
             System.arraycopy(third, 0, content, 8, third.length); // 4 Bytes             
-            System.arraycopy(third, 0, content, 12, fourth.length); // 4 Bytes             
+            System.arraycopy(magic, 0, content, 12, magic.length); // 4 Bytes             
         } else {
             // Serialize
-            content = new byte[first.length + second.length + third.length];
+            content = new byte[first.length + second.length + magic.length];
             System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
             System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
-            System.arraycopy(third, 0, content, 8, third.length); // 4 Bytes             
+            System.arraycopy(magic, 0, content, 8, magic.length); // 4 Bytes             
         }
     }
 
     @Override
-    public boolean deserialize(DSMachine machine, byte[] content) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
+        if (content == null || content.length < 12) {
+            // The content is invalid or too short
+            return false;
+        }
+
+        // Extract machine type, object type, status type, and data type
+        int mchType = content[0];
+        int objType = content[1];
+        int statType = content[2];
+        int datType = content[3];
+
+        // Extract version
+        int version = (content[4] << 24) | (content[5] << 16) | (content[6] << 8) | content[7];
+
+        // Verify magic bytes
+        byte[] magic = ResponseIfc.MAGIC_BYTES;
+        for (int i = 0; i < magic.length; i++) {
+            if (content[i + 8] != magic[i]) {
+                // Magic bytes don't match, invalid content
+                return false;
+            }
+        }
+
+        // Update Response fields
+        this.responseStatus = ResponseStatus.values()[statType];
+        this.dataType = DataType.values()[datType];
+//        machine.setMachineType(MachineType.values()[mchType]);
+//        machine.setVersion(version);
+
+        // Extract data
+        if (this.dataType != DataType.VOID) {
+            switch (this.dataType) {
+                case STRING:
+                    String message = new String(content, 12, content.length - 12, "UTF-8");
+                    this.data = message;
+                    break;
+                default:
+                    // Unsupported data type
+                    return false;
+            }
+
+        }
+
+        return true;
     }
 
     @Override
-    public void send(GameServer server, Socket endpoint) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public void send(GameServer server, Socket endpoint) throws Exception {
+        serialize(server);
+        endpoint.getOutputStream().write(content);
     }
 
     @Override

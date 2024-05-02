@@ -51,8 +51,9 @@ public interface ResponseIfc extends DSObject {
      *
      * @param server game server
      * @param endpoint endpoint to (game) client.
+     * @throws java.lang.Exception if serialization fails
      */
-    public void send(GameServer server, Socket endpoint);
+    public void send(GameServer server, Socket endpoint) throws Exception;
 
     /**
      * Receive response from server endpoint.
@@ -62,7 +63,7 @@ public interface ResponseIfc extends DSObject {
      * @return null if deserialization failed otherwise valid response
      * @throws java.io.IOException if network error
      */
-    public static ResponseIfc receive(Game client, Socket endpoint) throws IOException {
+    public static ResponseIfc receive(Game client, Socket endpoint) throws IOException, Exception {
         final byte[] content = new byte[512];
         final int totalBytes = endpoint.getInputStream().read(content);
         if (totalBytes > 0) {

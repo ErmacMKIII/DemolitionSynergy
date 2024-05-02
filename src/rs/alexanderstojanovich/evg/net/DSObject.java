@@ -79,6 +79,8 @@ public interface DSObject {
      * @param machine game machine who deserializes.
      * @param content byte content to deserialize
      * @return operation status - true if successful and false otherwise
+     * @throws java.lang.Exception if serialization fails or error is
+     * encountered
      */
-    public boolean deserialize(DSMachine machine, byte[] content);
+    public boolean deserialize(DSMachine machine, byte[] content) throws Exception;
 }

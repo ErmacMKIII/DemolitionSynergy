@@ -64,7 +64,7 @@ public interface RequestIfc extends DSObject {
      * @return null if deserialization failed otherwise valid request
      * @throws java.io.IOException if network error
      */
-    public static RequestIfc receive(GameServer server, Socket endpoint) throws IOException {
+    public static RequestIfc receive(GameServer server, Socket endpoint) throws IOException, Exception {
         final byte[] content = new byte[512];
         final int totalBytes = endpoint.getInputStream().read(content);
         if (totalBytes > 0) {
