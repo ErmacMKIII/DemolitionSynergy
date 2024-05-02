@@ -34,6 +34,8 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Player extends Critter implements Observer {
 
+    protected String name = "Player";
+
     public static enum CameraView {
         FIRST_PERSON, THIRD_PERSON
     }
@@ -244,6 +246,22 @@ public class Player extends Critter implements Observer {
         super.moveXZForward(amount);
         camera.moveXZForward(amount);
         light.pos = body.pos;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public CameraView getCameraView() {
+        return cameraView;
+    }
+
+    public void setCameraView(CameraView cameraView) {
+        this.cameraView = cameraView;
     }
 
 }

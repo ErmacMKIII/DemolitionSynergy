@@ -36,14 +36,20 @@ import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.net.DSMachine;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Request;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
+ * DSynergy Game client. With multiplayer capabilities.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Game {
+public class Game implements DSMachine {
 
     private static final Configuration cfg = Configuration.getInstance();
 
@@ -104,6 +110,7 @@ public class Game {
 
     protected static double accumulator = 0.0;
     protected static double gameTicks = 0.0;
+    protected final int version = 39;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
@@ -114,13 +121,13 @@ public class Game {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
 
-    protected final GameObject gameObject;
+    /**
+     * Access to Game Engine.
+     */
+    public final GameObject gameObject;
 
     protected static final int PORT = 13667;
-    protected static final String CLIENT_NAME = "DSYNERGY"; // Bytes
-    protected static final String HELLO = "DSPRIVET"; // 8 Bytes
-    protected static final byte[] MAGIC_BYTES = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0D, (byte) 0x13}; // 4 Bytes
-    protected static final byte[] RESERVED = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 8 Bytes
+    public static final String CLIENT_NAME = "DSYNERGY"; // Bytes    
 
     /**
      * Construct new game (client) view
@@ -679,47 +686,35 @@ public class Game {
     }
 
     /**
-     * Connect to server (host). Multiplayer.
+     * Connect to server (host). Multiplayer. Requires acceptance test to be
+     * passed. According to protocol.
      *
      * @param hostAddress server (host) address
      * @param port server port
+     * @return endpoint if connection succeeds and acceptance test is passed
      */
-    public void connectToServer(InetAddress hostAddress, int port) {
+    public Socket connectToServer(InetAddress hostAddress, int port) {
+        Socket endpoint = null;
         try {
-            Socket clientSocket = new Socket(hostAddress, port);
+            endpoint = new Socket(hostAddress, port);
             DSLogger.reportInfo("Connected to server!", null);
 
-            // Send a simple message with magic bytes prepended
-            final byte[] client = (Game.CLIENT_NAME).getBytes("US-ASCII"); // 8 Bytes            
-            final byte[] version = {(byte) (GameObject.VERSION >> 24), (byte) (GameObject.VERSION >> 16), (byte) (GameObject.VERSION >> 8), (byte) (GameObject.VERSION)}; // 4 Bytes
-            final byte[] hello = (Game.HELLO).getBytes("US-ASCII"); // 8 Bytes
-            final byte[] magic = MAGIC_BYTES; // 4 Bytes                
-            final byte[] reserved = RESERVED; // 8 Bytes
+            // Send a simple hello message with magic bytes prepended
+            final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
+            helloRequest.send(this, endpoint);
 
-            // Create request
-            byte[] request = new byte[client.length + version.length + hello.length + magic.length + reserved.length];
-            System.arraycopy(client, 0, request, 0, client.length);
-            System.arraycopy(version, 0, request, 8, version.length);
-            System.arraycopy(hello, 0, request, 12, hello.length);
-            System.arraycopy(magic, 0, request, 20, magic.length);
-            System.arraycopy(reserved, 0, request, 24, reserved.length);
-
-            // Send request
-            clientSocket.getOutputStream().write(request);
-
-            // Wait for response (assuming simple echo for demonstration)
-            byte[] response = new byte[1024];
-            int bytesRead = clientSocket.getInputStream().read(response);
-
-            // Read response
-            if (bytesRead > 0) {
-                DSLogger.reportInfo("Server response: " + new String(response, 0, bytesRead), null);
-            }
-
+            // Wait for response (assuming simple echo for demonstration)            
+            ResponseIfc response = ResponseIfc.receive(this, endpoint);
+            DSLogger.reportInfo(String.format("Server response: %s %s", response.getResponseStatus().toString(), response.getData().toString()), null);
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
         }
+
+        return endpoint;
     }
 
     /*
@@ -842,4 +837,25 @@ public class Game {
         Game.causingCollision = causingCollision;
     }
 
+    public static boolean isJumpPerformed() {
+        return jumpPerformed;
+    }
+
+    public static boolean isCausingCollision() {
+        return causingCollision;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    @Override
+    public MachineType getMachineType() {
+        return MachineType.DSCLIENT;
+    }
+
+    @Override
+    public int getVersion() {
+        return this.version;
+    }
 }

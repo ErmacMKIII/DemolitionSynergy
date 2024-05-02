@@ -20,29 +20,33 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.List;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evg.net.DSMachine;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class GameServer implements Runnable {
-
-    protected static final String SERVER_NAME = String.format("DSYNERGY-SERVER%s", GameObject.VERSION);
+public class GameServer implements DSMachine, Runnable {
+    
     protected String worldName = "My World";
     protected String host = "localhost";
     protected int port = 13667;
-
+    
     protected static final int BACKLOG = 16;
-
+    
     protected ServerSocket server;
     public final List<Socket> clients = new GapList<>();
     protected final GameObject gameObject;
-
+    
     protected boolean shutDownSignal = false;
+    protected final int version = 39;
 
     /**
      * Construct new game server
@@ -53,7 +57,7 @@ public class GameServer implements Runnable {
     public GameServer(GameObject gameObject, String name) {
         this.gameObject = gameObject;
         this.worldName = name;
-
+        
     }
 
     /**
@@ -64,45 +68,16 @@ public class GameServer implements Runnable {
      * @throws java.io.IOException if something happens
      */
     protected boolean tst(Socket client) throws IOException {
-        byte[] request = new byte[32];
-        int bytesRead = client.getInputStream().read(request);
-        if (bytesRead == -1) {
+        RequestIfc request = RequestIfc.receive(this, client);
+        if (request == null) {
             return false;
         }
-
-        /* ==> EXAMPLE 
-        // Send a simple message with magic bytes prepended
-            final byte[] client = (Game.CLIENT_NAME).getBytes("US-ASCII"); // 8 Bytes            
-            final byte[] version = {(byte) (GameObject.VERSION >> 24), (byte) (GameObject.VERSION >> 16), (byte) (GameObject.VERSION >> 8), (byte) (GameObject.VERSION)}; // 4 Bytes
-            final byte[] hello = (Game.HELLO).getBytes("US-ASCII"); // 8 Bytes
-            final byte[] magic = MAGIC_BYTES; // 4 Bytes                
-            final byte[] reserved = RESERVED; // 8 Bytes
-        <== */
-        int pos = 0;
-        String clientName = new String(request, 0, 8, "US-ASCII");
-        if (!clientName.equals(Game.CLIENT_NAME)) {
-            return false;
+        
+        if (request.getRequestType() == RequestIfc.RequestType.HELLO) {
+            return true;
         }
-        pos += 8;
-        int version = (request[pos + 3] & 0xFF) << 24 | (request[pos + 2] & 0xFF) << 16 | (request[pos + 1] & 0xFF) << 8 | (request[pos + 0] & 0xFF);
-        if (version < 39) {
-            return false;
-        }
-        pos += 4;
-        String hello = new String(request, pos, 8, "US-ASCII");
-        if (!hello.equals(Game.HELLO)) {
-            return false;
-        }
-        byte[] magic = new byte[Game.MAGIC_BYTES.length];
-        System.arraycopy(request, pos, magic, 0, magic.length);
-        if (!Arrays.equals(Game.MAGIC_BYTES, magic)) {
-            return false;
-        }
-        pos += 4;
-        byte[] reserved = new byte[Game.RESERVED.length];
-        System.arraycopy(request, pos, reserved, 0, reserved.length);
-
-        return Arrays.equals(Game.RESERVED, reserved);
+        
+        return false;
     }
 
     /**
@@ -112,13 +87,37 @@ public class GameServer implements Runnable {
      * @param client client socket (tried to connect)
      * @throws java.io.IOException if something happens
      */
-    public void welcome(Socket client) throws IOException {
+    public void accept(Socket client) throws IOException {
         // Send a simple message with magic bytes prepended
         final StringBuilder sb = new StringBuilder();
-        String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", GameServer.SERVER_NAME, GameObject.VERSION);
+        String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", this.worldName, this.version);
         sb.append(welcome);
+        
+        Object welcomeObj = welcome.getBytes("US-ASCII");
+        
+        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcomeObj);
+        
+        response.send(this, client);
+    }
 
-        client.getOutputStream().write(welcome.getBytes("US-ASCII"));
+    /**
+     * Open client output stream and not accepted response. Acceptance test
+     * failed.
+     *
+     * @param client client socket (tried to connect)
+     * @throws java.io.IOException if something happens
+     */
+    public void reject(Socket client) throws IOException {
+        // Send a simple message with magic bytes prepended
+        final StringBuilder sb = new StringBuilder();
+        String message = "Sorry, your connection refuesed!";
+        sb.append(message);
+        
+        Object msgObj = message.getBytes("US-ASCII");
+        
+        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msgObj);
+        
+        response.send(this, client);
     }
 
     /**
@@ -139,12 +138,13 @@ public class GameServer implements Runnable {
             try {
                 final Socket client = server.accept();
                 clients.add(client);
-                // Acceptance test failure
+                // Acceptance test (examination)
                 if (tst(client)) {
                     // Send "Welcome" Response
-                    welcome(client);
+                    accept(client);
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
+                    reject(client);
                     clients.remove(client);
                     shutDownSignal = true;
                 }
@@ -155,55 +155,47 @@ public class GameServer implements Runnable {
             }
         }
     }
-
-    /**
-     * Send responnse to the client. Client was previously accepted.
-     *
-     * @param client game client
-     */
-    public void sendResponse(Socket client) {
-        // TODO
-    }
-
-    /**
-     * Receive request from the client. Client was previously accepted.
-     *
-     * @param client game client
-     */
-    public void receiveRequest(Socket client) {
-        // TODO
-    }
-
+    
     public String getWorldName() {
         return worldName;
     }
-
+    
     public String getHost() {
         return host;
     }
-
+    
     public int getPort() {
         return port;
     }
-
+    
     public ServerSocket getServer() {
         return server;
     }
-
+    
     public List<Socket> getClients() {
         return clients;
     }
-
+    
     public GameObject getGameObject() {
         return gameObject;
     }
-
+    
     public boolean isShutDownSignal() {
         return shutDownSignal;
     }
-
+    
     public void setShutDownSignal(boolean shutDownSignal) {
         this.shutDownSignal = shutDownSignal;
     }
-
+    
+    @Override
+    public MachineType getMachineType() {
+        return MachineType.DSSERVER;
+    }
+    
+    @Override
+    public int getVersion() {
+        return this.version;
+    }
+    
 }

@@ -1,0 +1,76 @@
+/*
+ * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package rs.alexanderstojanovich.evg.net;
+
+import java.io.IOException;
+import java.net.Socket;
+import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameServer;
+
+/**
+ *
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
+ */
+public interface ResponseIfc extends DSObject {
+
+    /**
+     * Response status
+     */
+    public static enum ResponseStatus {
+        OK, ERR,
+    }
+
+    /**
+     * Magic bytes of DSynergy response
+     */
+    public static final byte[] MAGIC_BYTES = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0E, (byte) 0x14}; // 4 Bytes
+
+    /**
+     * Get Response Status (similar to HTTP REST services)
+     *
+     * @return
+     */
+    public ResponseStatus getResponseStatus();
+
+    /**
+     * Send response to client endpoint.
+     *
+     * @param server game server
+     * @param endpoint endpoint to (game) client.
+     */
+    public void send(GameServer server, Socket endpoint);
+
+    /**
+     * Receive response from server endpoint.
+     *
+     * @param client game client
+     * @param endpoint endpoint to (game) server.
+     * @return null if deserialization failed otherwise valid response
+     * @throws java.io.IOException if network error
+     */
+    public static ResponseIfc receive(Game client, Socket endpoint) throws IOException {
+        final byte[] content = new byte[512];
+        final int totalBytes = endpoint.getInputStream().read(content);
+        if (totalBytes > 0) {
+            ResponseIfc result = new Response(); // blank request
+            result.deserialize(client, content);
+            return result;
+        }
+
+        return null;
+    }
+}
