@@ -80,6 +80,9 @@ public class Intrface {
     public static final String FONT_IMG = "font.png"; // modified JetBrains font
 
     private OptionsMenu singlPlayerMenu;
+    private Menu multiPlayerMenu;
+    private OptionsMenu multiPlayerHostMenu;
+    private OptionsMenu multiPlayerJoinMenu;
 
     private final Console console;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
@@ -160,6 +163,9 @@ public class Intrface {
                     switch (s) {
                         case "SINGLE PLAYER":
                             singlPlayerMenu.open();
+                            break;
+                        case "MULTIPLAYER":
+                            multiPlayerMenu.open();
                             break;
                         case "EDITOR":
                             editorMenu.open();
@@ -547,7 +553,7 @@ public class Intrface {
                     }
                     if (singlPlayerMenu.selected == 4) {
                         isHugeLevel = false;
-                        Player player = gameObject.getLevelContainer().levelActors.player;
+                        final Player player = gameObject.levelContainer.levelActors.player;
                         player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                         player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                         // set level size & seed
@@ -578,6 +584,50 @@ public class Intrface {
             };
             singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
+
+            //------------------------------------------------------------------
+            IList<MenuItem> multiPlayerMenuItems = new GapList<>();
+            multiPlayerMenuItems.add(new MenuItem("PLAYER NICKNAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
+            multiPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            multiPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            multiPlayerMenuItems.add(new MenuItem("HOST GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenuItems.add(new MenuItem("JOIN GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() { // TODO *
+                    String s = multiPlayerMenu.items.get(multiPlayerMenu.getSelected()).keyText.content;
+                    final Player player;
+                    switch (s) {
+                        case "PLAYER NICKNAME":
+                            player = gameObject.levelContainer.levelActors.player;
+                            player.setName(this.items.getFirst().menuValue.getCurrentValue().toString());
+                            break;
+                        case "CHARACTER MODEL":
+                            player = gameObject.levelContainer.levelActors.player;
+                            player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                            break;
+                        case "COLOR":
+                            player = gameObject.levelContainer.levelActors.player;
+                            Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(multiPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                            player.body.setPrimaryRGBAColor(colorRGBA);
+                            this.items.get(2).menuValue.getValueText().color = colorRGBA;
+                            break;
+                        case "HOST GAME":
+                            break;
+                        case "JOIN GAME":
+                            break;
+                    }
+                }
+            };
+            multiPlayerMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+            multiPlayerMenu.items.get(3).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            //------------------------------------------------------------------
             DSLogger.reportDebug("Interface initialized.", null);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to initialize interface! => " + ex.getMessage(), ex);
@@ -679,6 +729,7 @@ public class Intrface {
         randLvlMenu.render(this, ifcShaderProgram);
         loadLvlMenu.render(this, ifcShaderProgram);
         singlPlayerMenu.render(this, ifcShaderProgram);
+        multiPlayerMenu.render(this, ifcShaderProgram);
 
         if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
                 && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
@@ -700,6 +751,7 @@ public class Intrface {
         randLvlMenu.update();
         loadLvlMenu.update();
         singlPlayerMenu.update();
+        multiPlayerMenu.update();
     }
 
     /**
@@ -720,6 +772,7 @@ public class Intrface {
         loadDialog.cleanUp();
         randLvlDialog.cleanUp();
         singlePlayerDialog.cleanUp();
+        multiPlayerMenu.cleanUp();
 
         console.cleanUp();
 
@@ -755,6 +808,7 @@ public class Intrface {
         loadDialog.release();
         randLvlDialog.release();
         singlePlayerDialog.release();
+        multiPlayerMenu.release();
 
         console.release();
 

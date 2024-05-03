@@ -70,6 +70,7 @@ public class Texture {
     public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
 
     public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Format.RGBA8);
+    public static final Texture DAY = new Texture(Game.WORLD_ENTRY, "day.png", Format.RGBA8);
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Format.RGBA8);
 
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Format.RGBA8);
@@ -199,6 +200,7 @@ public class Texture {
         SUN.bufferAll();
         QMARK.bufferAll();
         WORLD.bufferAll();
+        DAY.bufferAll();
         NIGHT.bufferAll();
         // player
         ALEX.bufferAll();

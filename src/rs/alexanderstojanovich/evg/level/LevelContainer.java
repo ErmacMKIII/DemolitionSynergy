@@ -73,8 +73,8 @@ public class LevelContainer implements GravityEnviroment {
     public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
-    public static final float SUN_SCALE = 24.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 28);
+    public static final float SUN_SCALE = 28.0f;
+    public static final float SUN_INTENSITY = (float) (1 << 28); // 268M
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
@@ -108,7 +108,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 20f;
+    public static final float BASE = 22.5f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
 
@@ -198,7 +198,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
         SUN.setPrimaryRGBColor(new Vector3f(SUN_COLOR_RGB));
-        SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, -12288.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
         SUN.setPrimaryColorAlpha(1.00f);
@@ -1200,11 +1200,19 @@ public class LevelContainer implements GravityEnviroment {
             SUN.pos.rotateZ(dangle);
 
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
-            float inten = org.joml.Math.max(org.joml.Math.sin(sunAngle), 0.0f);
+            float inten = org.joml.Math.sin(sunAngle);
 
-            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(inten), 1.0f));
-            SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
-            SUNLIGHT.setIntensity(inten * SUN_INTENSITY);
+            if (inten < 0.0f) { // night
+                SKYBOX.setTexName("night");
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
+            } else if (inten >= 0.0f) { // day
+                SKYBOX.setTexName("day");
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
+            }
+
+            final float sunInten = Math.max(inten, 0.0f);
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(sunInten), 1.0f));
+            SUNLIGHT.setIntensity(sunInten * SUN_INTENSITY);
             SUNLIGHT.pos.set(SUN.pos);
 
             // always handleInput sunlight (sun/pos)
