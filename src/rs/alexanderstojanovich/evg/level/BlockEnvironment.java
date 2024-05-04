@@ -26,7 +26,6 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -54,6 +53,11 @@ public class BlockEnvironment {
      */
     protected IList<Tuple> optimizedTuples = new GapList<>();
 
+    /**
+     * Modified tuples (from update/render). Meaning from update they are
+     * modified and need to be pushed to render.
+     */
+//    public final IList<Tuple> modifiedTuples = new GapList<>();
     protected boolean optimized = false;
     protected final Chunks chunks;
     protected int texProcIndex = 0;
@@ -202,20 +206,17 @@ public class BlockEnvironment {
     /**
      * Improved version of optimization for tuples from all the chunks. World is
      * being built incrementally. Consist of two passes. Also consists of
-     * modifications to make it work with Tuple Buffer Object (TBO).
+     * modifications to make it work with Tuple Buffer Object (TBO). On
+     * modification modified tuples are pushed to the optimized.
      *
      * @param vqueue visible chunkId queue
      * @param camera ingame camera
      */
-    public void optimizeFastTBO(IList<Integer> vqueue, Camera camera) {
+    public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+        push();
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
-
-        // determine texture type to process - split
-        if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
-            texProcIndex = 0;
-        }
 
         final String tex = Texture.TEX_WORLD[texProcIndex];
 
@@ -244,6 +245,7 @@ public class BlockEnvironment {
                         final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
                         // for each selected tuple
                         selectedTuples.forEach(st -> {
+                            // get tuple from PASS 1
                             final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                             if (workTuple != null) {
                                 boolean modified = false;
@@ -256,10 +258,14 @@ public class BlockEnvironment {
                                     }
                                 }
                                 if (modified) {
+                                    // single modification means no optimized
+                                    optimized = false;
                                     // sort so it does remains ordered
                                     workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                                     // unbuffer working tuple
                                     workTuple.setBuffered(false);
+                                    // add to modified list
+                                    workingTuples.add(workTuple);
                                 }
                             }
                         });
@@ -271,6 +277,11 @@ public class BlockEnvironment {
         // move forward (with increment)
         lastFaceBits += NUM_OF_PASSES_MAX;
 
+        // determine texture type to process - split
+        if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
+            texProcIndex = 0;
+        }
+
         // Remove empty optimization tuples
         workingTuples.removeIf(ot -> ot.blockList.isEmpty());
 
@@ -281,10 +292,7 @@ public class BlockEnvironment {
 
         // if full circle with all textures & facebits has been completed
         if (texProcIndex == 0 && lastFaceBits == 0) {
-            workingTuples.sort(Tuple.TUPLE_COMP);
-
-            // set to optimized so render operation
-            optimized = true;
+            optimized = true; // it is (fully) optimized            
         }
 
     }
@@ -296,7 +304,7 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (!optimized || !GameRenderer.isFirstFrame()) {
+        if (!optimized) {
             return;
         }
 
@@ -376,15 +384,22 @@ public class BlockEnvironment {
 
     /**
      * Swap working tuples with optimized tuples. What was built by optimization
-     * could be rendered (drawn).
+     * could be rendered (drawn). Called from Game Renderer.
      */
     public void swap() {
-        if (optimized) { // optimized -> swap list (by reference)            
-            IList<Tuple> temp = optimizedTuples;
-            optimizedTuples = workingTuples;
-            workingTuples = temp;
-            optimized = false;
-        }
+        IList<Tuple> temp = optimizedTuples;
+        optimizedTuples = workingTuples;
+        workingTuples = temp;
+    }
+
+    /**
+     * Push changes. Push optimized tuples to working tuples. By coping each
+     * working to optimized.
+     */
+    public void push() {
+        workingTuples = optimizedTuples.copy();
+        // sort so it remains ordered
+        workingTuples.sort(Tuple.TUPLE_COMP);
     }
 
     /**

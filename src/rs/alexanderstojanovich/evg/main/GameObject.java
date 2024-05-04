@@ -18,6 +18,9 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -71,8 +74,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected AudioPlayer musicPlayer;
     protected AudioPlayer soundFXPlayer;
 
-    protected final Game game;
-    protected final GameRenderer renderer;
+    public final Game game;
+    public final GameServer gameServer;
+    public final GameRenderer renderer;
 
     /**
      * Update/Generate for Level Container Mutex. Responsible for writting to
@@ -143,6 +147,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------
         // init game loop
         game = new Game(this); // init game with given configuration and game object
+        gameServer = new GameServer(this); // create new server from game object
         DSLogger.reportDebug("Game initialized.", null);
         // game interacts with the whole game container
         renderer = new GameRenderer(this); // init renderer with given game object
@@ -216,11 +221,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-//        if (isFirstOptimization() || chunkOperationPerformed || GameRenderer.isLastFrame()) {
         synchronized (UPDATE_GENERATE_LC_MUTEX) {
             this.optimize();
         }
-//        }
     }
 
     // -------------------------------------------------------------------------
@@ -356,8 +359,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Swap working tuples & optimizing tuples in Block Environment (On first
-     * frame).
+     * Push modified tuples to tuples in Block Environment.
+     */
+    public void push() {
+        if (levelContainer.isWorking()) {
+            return;
+        }
+        levelContainer.blockEnvironment.push();
+    }
+
+    /**
+     * Swap working tuples & optimizing tuples in Block Environment
      */
     public void swap() {
         if (levelContainer.isWorking()) {
@@ -582,6 +594,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public Quad getSplashScreen() {
         return splashScreen;
+    }
+
+    public GameServer getGameServer() {
+        return gameServer;
+    }
+
+    public boolean isChunkOperationPerformed() {
+        return chunkOperationPerformed;
     }
 
 }

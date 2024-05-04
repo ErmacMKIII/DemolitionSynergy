@@ -55,9 +55,13 @@ public class Game implements DSMachine {
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final int TPS_HALF = 40; // HALF OF TPS
-    public static final int TPS_QUARTER = 20; // QUARTER OF TPS (Used for Chunk Operations)
-    public static final int TPS_EIGHTH = 10; // EIGHTH OF TPS 
-    public static final int TPS_SIXTEENTH = 5; // EIGHTH OF TPS (Used for Chunk Optimization) ~ 62.5 ms
+    public static final int TPS_QUARTER = 20; // QUARTER OF TPS 
+    public static final int TPS_EIGHTH = 10; // EIGHTH OF TPS (Used for Chunk Operations) ~ 125 ms
+    public static final int TPS_SIXTEENTH = 5; // EIGHTH OF TPS 
+
+    public static final int TPS_ONE = 1; // One tick ~ 12.5 ms
+    public static final int TPS_TWO = 2; // Two ticks ~ 25 ms (Used for Chunk Optimization) ~ default
+    public static final int TICKS_PER_UPDATE = cfg.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
 
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
@@ -557,17 +561,19 @@ public class Game implements DSMachine {
      */
     public void update(double deltaTime) {
         // update with delta time like gravity or sun
-        gameObject.update((float) deltaTime);
+        if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+            gameObject.update((float) deltaTime);
+        }
 
         // Heavy operations to run afterwards
         // determine visible chunks (can be altered with player position)
-        if (gameObject.determineVisibleChunks() || (ups & (TPS_QUARTER - 1)) == 0) {
+        if (gameObject.determineVisibleChunks() || (ups & (TPS_EIGHTH - 1)) == 0) {
             // call utility functions (chunk loading etc.)
             gameObject.utilChunkOperations();
         }
 
         // call utility functions (optimizing etc. - heavy operation)            
-        if ((ups & (TPS_SIXTEENTH - 1)) == 0) {
+        if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
             gameObject.utilOptimization();
         }
     }

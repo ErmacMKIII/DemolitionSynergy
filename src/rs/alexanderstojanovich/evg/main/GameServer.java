@@ -21,6 +21,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
@@ -37,7 +39,8 @@ public class GameServer implements DSMachine, Runnable {
 
     protected String worldName = "My World";
     protected String host = "localhost";
-    protected int port = 13667;
+    public static int DEFAULT_PORT = 13667;
+    protected int port = DEFAULT_PORT;
 
     protected static final int BACKLOG = 16;
 
@@ -49,15 +52,44 @@ public class GameServer implements DSMachine, Runnable {
     protected final int version = 39;
 
     /**
-     * Construct new game server
+     * Server worker
+     */
+    public final Executor serverExecutor = Executors.newSingleThreadExecutor();
+
+    /**
+     * Create new game server
      *
      * @param gameObject game object
-     * @param name
+     */
+    public GameServer(GameObject gameObject) {
+        this.gameObject = gameObject;
+    }
+
+    /**
+     * Create new game server
+     *
+     * @param gameObject game object
+     * @param name world name
      */
     public GameServer(GameObject gameObject, String name) {
         this.gameObject = gameObject;
         this.worldName = name;
+    }
 
+    /**
+     * Start server.
+     */
+    public void startServer() {
+        this.shutDownSignal = false;
+        serverExecutor.execute(this);
+        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
+    }
+
+    /**
+     * Start server.
+     */
+    public void stopServer() {
+        this.shutDownSignal = true;
     }
 
     /**
@@ -129,6 +161,7 @@ public class GameServer implements DSMachine, Runnable {
             // Bind the server socket to a specific IP address and port
             server = new ServerSocket();
             server.bind(new InetSocketAddress(host, port));
+            DSLogger.reportInfo("Game Server started!", null);
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -156,6 +189,8 @@ public class GameServer implements DSMachine, Runnable {
                 DSLogger.reportError("Serialization or Deserialization failed!", ex);
             }
         }
+
+        DSLogger.reportInfo("Game Server finished!", null);
     }
 
     public String getWorldName() {
@@ -198,6 +233,22 @@ public class GameServer implements DSMachine, Runnable {
     @Override
     public int getVersion() {
         return this.version;
+    }
+
+    public void setWorldName(String worldName) {
+        this.worldName = worldName;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setServer(ServerSocket server) {
+        this.server = server;
     }
 
 }

@@ -23,7 +23,6 @@ import java.util.concurrent.FutureTask;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import static rs.alexanderstojanovich.evg.main.Game.TPS_SIXTEENTH;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -114,8 +113,9 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // swap tuples - minimize impact
-            if (!GameRenderer.isLastFrame() && ((Game.getUps() & (TPS_SIXTEENTH - 1)) != 0)) {
+            // Minimize impact
+            if (GameRenderer.isLastFrame()) {
+                // Swap them so changes are reflected to optimized
                 gameObject.swap();
             }
 
