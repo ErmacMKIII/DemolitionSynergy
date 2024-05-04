@@ -115,8 +115,8 @@ public class GameRenderer extends Thread implements Executor {
 
             // Minimize impact
             if (GameRenderer.isLastFrame()) {
-                // Swap them so changes are reflected to optimized
-                gameObject.swap();
+                // Push them so changes are reflected to optimized
+                gameObject.push();
             }
 
             // animates water every quarter of the second

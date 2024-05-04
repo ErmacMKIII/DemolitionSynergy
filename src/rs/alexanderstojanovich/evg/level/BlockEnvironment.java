@@ -213,7 +213,7 @@ public class BlockEnvironment {
      * @param camera ingame camera
      */
     public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
-        push();
+        pull();
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
@@ -229,6 +229,7 @@ public class BlockEnvironment {
                 final Tuple optmTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                 if (optmTuple == null) {
                     workingTuples.add(new Tuple(tex, faceBits));
+                    workingTuples.sort(Tuple.TUPLE_COMP);
                 }
             }
         }
@@ -264,8 +265,6 @@ public class BlockEnvironment {
                                     workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                                     // unbuffer working tuple
                                     workTuple.setBuffered(false);
-                                    // add to modified list
-                                    workingTuples.add(workTuple);
                                 }
                             }
                         });
@@ -292,9 +291,8 @@ public class BlockEnvironment {
 
         // if full circle with all textures & facebits has been completed
         if (texProcIndex == 0 && lastFaceBits == 0) {
-            optimized = true; // it is (fully) optimized            
+            optimized = true; // it is (fully) optimized  
         }
-
     }
 
     /**
@@ -304,7 +302,7 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (!optimized) {
+        if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -313,13 +311,15 @@ public class BlockEnvironment {
                 tuple.prepare(cameraInFluid);
             }
         }
+
+        optimized = false;
     }
 
     /**
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        if (optimizedTuples.isEmpty()) {
+        if (!optimized || optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -328,6 +328,8 @@ public class BlockEnvironment {
                 tuple.animate();
             }
         }
+
+        optimized = false;
     }
 
     /**
@@ -383,6 +385,14 @@ public class BlockEnvironment {
     }
 
     /**
+     * Push changes. Push working tuples to optimizing tuples. By coping each
+     * optimizing to working.
+     */
+    public void push() {
+        optimizedTuples = workingTuples.copy();
+    }
+
+    /**
      * Swap working tuples with optimized tuples. What was built by optimization
      * could be rendered (drawn). Called from Game Renderer.
      */
@@ -396,10 +406,8 @@ public class BlockEnvironment {
      * Push changes. Push optimized tuples to working tuples. By coping each
      * working to optimized.
      */
-    public void push() {
+    public void pull() {
         workingTuples = optimizedTuples.copy();
-        // sort so it remains ordered
-        workingTuples.sort(Tuple.TUPLE_COMP);
     }
 
     /**

@@ -63,12 +63,10 @@ public class Tuple extends Series {
 
     protected final int facesNum;
 
-    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
-        @Override
-        public int compare(Tuple o1, Tuple o2) {
-            return o1.getName().compareTo(o2.getName());
-        }
-    };
+    /**
+     * Tuple comparator sorting tuples by (String) name.
+     */
+    public static final Comparator<Tuple> TUPLE_COMP = (Tuple o1, Tuple o2) -> o1.getName().compareTo(o2.getName());
 
     /**
      * Construct new tuple by definition texName x face-enabled-bits

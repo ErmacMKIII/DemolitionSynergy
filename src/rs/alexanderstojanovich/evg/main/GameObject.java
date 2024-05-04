@@ -18,9 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -359,17 +356,32 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Push modified tuples to tuples in Block Environment.
+     * Pull optimized tuples to working tuples in Block Environment.
+     */
+    public void pull() {
+        if (levelContainer.isWorking()) {
+            return;
+        }
+        synchronized (UPDATE_GENERATE_LC_MUTEX) {
+            levelContainer.blockEnvironment.pull();
+        }
+    }
+
+    /**
+     * Push working to optimized tuples tuples in Block Environment.
      */
     public void push() {
         if (levelContainer.isWorking()) {
             return;
         }
-        levelContainer.blockEnvironment.push();
+        synchronized (UPDATE_GENERATE_LC_MUTEX) {
+            levelContainer.blockEnvironment.push();
+        }
     }
 
     /**
-     * Swap working tuples & optimizing tuples in Block Environment
+     * Swap working tuples & optimizing tuples in Block Environment. Zero cost
+     * operation. Doesn't require synchronized block.
      */
     public void swap() {
         if (levelContainer.isWorking()) {
@@ -413,7 +425,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        levelContainer.animate();
+        synchronized (UPDATE_GENERATE_LC_MUTEX) {
+            levelContainer.animate();
+        }
     }
 
     /**
