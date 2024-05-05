@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
@@ -352,10 +353,8 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList) {
-            if (!block.isSolid()) {
-                block.getMeshes().getFirst().triangSwap();
-            }
+        for (Block block : blockList.filter(blk -> !blk.isSolid())) {
+            block.getMeshes().getFirst().triangSwap();
         }
 
         subBufferVertices();
@@ -367,10 +366,21 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList) {
-            if (!block.isSolid() && ((block.getFaceBits() & Block.Y_MASK) != 0) && cameraInFluid ^ block.isVerticesReversed()) {
-                block.reverseTopFaceVertexOrder();
-            }
+        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
+            block.reverseFaceVertexOrder();
+        }
+
+        subBufferVertices();
+    }
+
+    public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+        if (!buffered || blockList.isEmpty() || isSolid()) {
+            return;
+        }
+
+        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
+            final float degrees = (cameraInFluid ^ block.isVerticesReversed()) ? 0f : 45f;
+            block.reverseFaceVertexOrder(camFront, degrees);
         }
 
         subBufferVertices();

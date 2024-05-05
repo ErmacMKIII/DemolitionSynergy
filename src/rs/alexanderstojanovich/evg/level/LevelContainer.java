@@ -778,6 +778,12 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
+    public void prepare() {
+        if (!working) {
+            blockEnvironment.prepare(levelActors.mainActor().getFront(), cameraInFluid);
+        }
+    }
+
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f camPos = levelActors.mainActor().getPos();

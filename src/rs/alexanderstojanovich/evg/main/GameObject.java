@@ -427,7 +427,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public void prepare() {
         if (GameRenderer.isFirstFrame()) {
             synchronized (UPDATE_RENDER_LC_MUTEX) {
-                levelContainer.blockEnvironment.prepare(levelContainer.isCameraInFluid());
+                levelContainer.prepare();
             }
         }
     }

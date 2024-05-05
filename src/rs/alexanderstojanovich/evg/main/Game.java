@@ -51,7 +51,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public class Game implements DSMachine {
 
-    private static final Configuration cfg = Configuration.getInstance();
+    private static final Configuration config = Configuration.getInstance();
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final int TPS_HALF = 40; // HALF OF TPS
@@ -61,7 +61,7 @@ public class Game implements DSMachine {
 
     public static final int TPS_ONE = 1; // One tick ~ 12.5 ms
     public static final int TPS_TWO = 2; // Two ticks ~ 25 ms (Used for Chunk Optimization) ~ default
-    public static final int TICKS_PER_UPDATE = cfg.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
+    public static final int TICKS_PER_UPDATE = config.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
 
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
@@ -74,7 +74,7 @@ public class Game implements DSMachine {
     public static final int RIGHT = 3;
 
     private static int ups; // current handleInput per second    
-    private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
+    private static int fpsMax = config.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 10.0;
@@ -640,7 +640,7 @@ public class Game implements DSMachine {
         ups = 0;
 
         // gameTicks is progressive only ingame time
-        gameTicks = cfg.getGameTicks();
+        gameTicks = config.getGameTicks();
         double lastTime = GLFW.glfwGetTime(); // time is measured in seconds
         double currTime;
         double deltaTime;

@@ -78,7 +78,7 @@ public class Editor {
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
 
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
         final int mask = 1 << face;
 
         final float stepAmount = 0.125f;
@@ -138,7 +138,7 @@ public class Editor {
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
 
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
         final int mask = 1 << face;
 
         final float stepAmount = 0.125f;

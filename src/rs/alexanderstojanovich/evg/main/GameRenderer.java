@@ -114,7 +114,7 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // Changes are reflected to optimized
-            if (!couldRender()) {
+            if (Game.accumulator < Game.TICK_TIME) {
                 gameObject.swap();
             }
 

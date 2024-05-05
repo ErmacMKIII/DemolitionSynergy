@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -306,8 +307,25 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && (ot.faceBits() & Block.Y_MASK) != 0)) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
             tuple.prepare(cameraInFluid);
+        }
+    }
+
+    /**
+     * Reorder group of vertices of optimized tuples if underwater
+     *
+     * @param camFront camera front (used for ray-trace)
+     * @param cameraInFluid is camera in fluid (checked by level container
+     * externally)
+     */
+    public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering
+        if (optimizedTuples.isEmpty()) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
+            tuple.prepare(camFront, cameraInFluid);
         }
     }
 

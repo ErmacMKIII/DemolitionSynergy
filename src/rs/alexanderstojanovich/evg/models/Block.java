@@ -469,16 +469,22 @@ public class Block extends Model {
      * Faster version of original.
      *
      * @param camFront camera front (eye)
+     * @param degrees angle degrees
+     *
      * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
      */
-    public static int getRayTraceSingleFaceFast(Vector3f camFront) {
+    public static int getRayTraceSingleFaceFast(Vector3f camFront, float degrees) {
 
-        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
-        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
-        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
-        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
-        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
-        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
 
         int someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
 
@@ -497,18 +503,23 @@ public class Block extends Model {
      * version of original.
      *
      * @param camFront camera front (eye)
+     * @param degrees angle degrees
      * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
      */
-    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront) {
+    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront, float degrees) {
         final IList<Integer> result = new GapList<>();
         int someValue = 0;
 
-        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
-        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
-        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
-        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
-        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
-        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f temp = new Vector3f();
+        Vector3f camFrontNeg = camFront.negate(temp);
+
+        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
+        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
+        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
+        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
+        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
+        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
 
         someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
 
@@ -569,6 +580,21 @@ public class Block extends Model {
     public void reverseFaceVertexOrder() {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (int faceNum = 0; faceNum <= 5; faceNum++) {
+            Collections.reverse(getFaceVertices(vertices, faceNum));
+        }
+        verticesReversed = !verticesReversed;
+    }
+
+    /**
+     * Reverse face vertex order. All Faces. (Water)
+     *
+     * @param camFront camera front (ray trace cap)
+     * @param degrees angle degrees
+     */
+    public void reverseFaceVertexOrder(Vector3f camFront, float degrees) {
+        IList<Integer> faces = getRayTraceMultiFaceFast(camFront, degrees);
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+        for (int faceNum : faces) {
             Collections.reverse(getFaceVertices(vertices, faceNum));
         }
         verticesReversed = !verticesReversed;

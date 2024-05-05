@@ -35,21 +35,21 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LightSources {
-    
+
     public static final Vector3f ZERO_VEC3 = new Vector3f();
-    
+
     public static final LightSources NONE = new LightSources();
-    
+
     public static final int MAX_LIGHTS = 256;
     public final IList<LightSource> sourceList = new GapList<>();
     public final boolean[] modified = new boolean[MAX_LIGHTS];
-    
+
     public static final String MODEL_LIGHT_NUMBER_NAME = "modelLightNumber";
     public static final String MODEL_LIGHT_NAME = "modelLights";
-    
+
     public final LightOverlay lightOverlay;
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
-    
+
     public LightSources() {
         this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, Texture.getOrDefault("waterfx"));
     }
@@ -86,7 +86,7 @@ public class LightSources {
         lc.lightSources.lightOverlay.bufferSmart(intrface);
         lc.lightSources.lightOverlay.render(intrface, camera, lc, shaderProgram); // has shader bind
     }
-    
+
     public void clearLights() {
         sourceList.clear();
         lightMap.clear();
@@ -181,7 +181,7 @@ public class LightSources {
                 return this.modified[index];
             }
         }
-        
+
         return false;
     }
 
@@ -210,29 +210,29 @@ public class LightSources {
             }
         }
     }
-    
+
     public void setAllModified() {
         Arrays.fill(modified, true);
     }
-    
+
     public void resetAllModified() {
         Arrays.fill(modified, false);
     }
-    
+
     public IList<LightSource> getSourceList() {
         return sourceList;
     }
-    
+
     public Map<Vector3f, LightSource> getLightMap() {
         return lightMap;
     }
-    
+
     public LightOverlay getLightOverlay() {
         return lightOverlay;
     }
-    
+
     public boolean[] getModified() {
         return modified;
     }
-    
+
 }
