@@ -1306,7 +1306,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
         // render light overlay
-        LightSources.render(gameObject.intrface, levelActors.mainCamera(), lightSources, ShaderProgram.getLightShader());
+        LightSources.render(gameObject.intrface, levelActors.mainCamera(), this, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
     }
 

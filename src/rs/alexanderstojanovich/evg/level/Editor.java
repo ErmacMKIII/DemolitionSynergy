@@ -24,6 +24,7 @@ import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
 import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
+import static rs.alexanderstojanovich.evg.main.GameObject.UPDATE_RENDER_IFC_MUTEX;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -318,7 +319,9 @@ public class Editor {
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
-                lc.chunks.addBlock(selectedNew);
+                synchronized (UPDATE_RENDER_IFC_MUTEX) {
+                    lc.chunks.addBlock(selectedNew);
+                }
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 selectedNew = new Block(Texture.TEX_WORLD[texValue]);
             }
@@ -328,7 +331,9 @@ public class Editor {
 
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
-            lc.chunks.removeBlock(selectedCurr);
+            synchronized (UPDATE_RENDER_IFC_MUTEX) {
+                lc.chunks.removeBlock(selectedCurr);
+            }
             lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();

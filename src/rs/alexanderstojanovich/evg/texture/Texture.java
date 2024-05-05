@@ -95,6 +95,8 @@ public class Texture {
     public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
     public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
 
+    public static final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Format.RGB5_A1);
+
     public static IList<String> LIGHT_TEX_LIST = new GapList<String>() {
         {
             add("suntx");
@@ -202,6 +204,7 @@ public class Texture {
         WORLD.bufferAll();
         DAY.bufferAll();
         NIGHT.bufferAll();
+        WATERFX.bufferAll();
         // player
         ALEX.bufferAll();
         STEVE.bufferAll();

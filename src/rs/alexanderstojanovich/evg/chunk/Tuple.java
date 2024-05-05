@@ -368,8 +368,8 @@ public class Tuple extends Series {
         }
 
         for (Block block : blockList) {
-            if (!block.isSolid() && cameraInFluid ^ block.isVerticesReversed()) {
-                block.reverseFaceVertexOrder();
+            if (!block.isSolid() && ((block.getFaceBits() & Block.Y_MASK) != 0) && cameraInFluid ^ block.isVerticesReversed()) {
+                block.reverseTopFaceVertexOrder();
             }
         }
 

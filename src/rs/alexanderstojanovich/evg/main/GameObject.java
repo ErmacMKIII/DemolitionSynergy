@@ -333,7 +333,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 renderFlag |= BlockEnvironment.SHADOW_MASK;
             }
 
-            perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
+            perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders
+            this.prepare();
             synchronized (UPDATE_RENDER_LC_MUTEX) {
                 // Render Effects
                 if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
@@ -343,9 +344,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
                     shadowRenderer.render();
                 }
-
-                // Prepare original scene (detect underwater)
-                this.prepare();
 
                 // Render Original Scene
                 levelContainer.render(renderFlag);
@@ -422,13 +420,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Prepare for water (and other fluids). Subbuffer vertices based on whether
-     * or not camera is submerged in fluid.
+     * Prepare for water (and other fluids). Sub-buffer vertices based on
+     * whether or not camera is submerged in fluid. Cause high CPU consumption.
      *
      */
     public void prepare() {
         if (GameRenderer.isFirstFrame()) {
-            levelContainer.blockEnvironment.prepare(levelContainer.isCameraInFluid());
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
+                levelContainer.blockEnvironment.prepare(levelContainer.isCameraInFluid());
+            }
         }
     }
 
@@ -441,6 +441,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             synchronized (UPDATE_RENDER_LC_MUTEX) {
                 levelContainer.animate();
             }
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+
+            // animate3 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
+
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
         }
     }
 

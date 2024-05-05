@@ -306,7 +306,7 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() > 0)) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && (ot.faceBits() & Block.Y_MASK) != 0)) {
             tuple.prepare(cameraInFluid);
         }
     }

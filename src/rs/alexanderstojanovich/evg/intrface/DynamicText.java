@@ -112,7 +112,7 @@ public class DynamicText extends Text {
     }
 
     @Override
-    public boolean updateVertices() {
+    public boolean subBufferVertices() {
         if (bigVbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -178,7 +178,7 @@ public class DynamicText extends Text {
     public void bufferSmart(Intrface intrface) {
         int deltaSize = setup(intrface);
         if (bigFloatBuff != null && bigVbo != 0 && deltaSize == 0 && ibo != 0) {
-            buffered = updateVertices() && updateIndices();
+            buffered = subBufferVertices() && subBufferIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
         }

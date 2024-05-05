@@ -554,6 +554,18 @@ public class Block extends Model {
         Arrays.fill(enabledFaces, false);
     }
 
+    /**
+     * Reverse faces but only for Top (Water)
+     */
+    public void reverseTopFaceVertexOrder() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+        Collections.reverse(getFaceVertices(vertices, Block.TOP));
+        verticesReversed = !verticesReversed;
+    }
+
+    /**
+     * Reverse face vertex order. All Faces. (Water)
+     */
     public void reverseFaceVertexOrder() {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (int faceNum = 0; faceNum <= 5; faceNum++) {
