@@ -47,11 +47,11 @@ public class BlockEnvironment {
     /**
      * Working tuples (from update)
      */
-    protected IList<Tuple> workingTuples = new GapList<>();
+    protected volatile IList<Tuple> workingTuples = new GapList<>();
     /**
      * Optimizes tuples (from render)
      */
-    protected IList<Tuple> optimizedTuples = new GapList<>();
+    protected volatile IList<Tuple> optimizedTuples = new GapList<>();
 
     /**
      * Modified tuples (from update/render). Meaning from update they are
@@ -213,7 +213,6 @@ public class BlockEnvironment {
      * @param camera ingame camera
      */
     public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
-        pull();
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
@@ -302,34 +301,28 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (!optimized || optimizedTuples.isEmpty()) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                tuple.prepare(cameraInFluid);
-            }
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() > 0)) {
+            tuple.prepare(cameraInFluid);
         }
-
-        optimized = false;
     }
 
     /**
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        if (!optimized || optimizedTuples.isEmpty()) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() > 0)) {
             if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
                 tuple.animate();
             }
         }
-
-        optimized = false;
     }
 
     /**
@@ -366,7 +359,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
-        if (workingTuples.isEmpty() && optimizedTuples.isEmpty()) {
+        if (optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -403,7 +396,7 @@ public class BlockEnvironment {
     }
 
     /**
-     * Push changes. Push optimized tuples to working tuples. By coping each
+     * Pull from recent. Pull optimized tuples to working tuples. By coping each
      * working to optimized.
      */
     public void pull() {

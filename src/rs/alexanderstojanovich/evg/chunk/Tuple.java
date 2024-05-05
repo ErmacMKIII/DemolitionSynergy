@@ -91,6 +91,22 @@ public class Tuple extends Series {
     }
 
     /**
+     * Construct new tuple by definition texName x face-enabled-bits from
+     * original tuple.
+     *
+     * @param original to copy properties from
+     */
+    public Tuple(Tuple original) {
+        this.name = String.format("%s%02d", original.texName(), original.faceBits());
+        this.facesNum = original.facesNum;
+        this.verticesNum = original.verticesNum; // affects buffering of vertices
+        this.indicesNum = original.indicesNum; // affect buffering of indices
+
+        this.blockList.clear();
+        this.blockList.addAll(original.blockList);
+    }
+
+    /**
      * Gets Block from the tuple block list (duplicates may exist but in very
      * low quantity). Complexity is O(log(n)+k).
      *

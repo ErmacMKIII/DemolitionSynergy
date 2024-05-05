@@ -113,16 +113,13 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // Minimize impact
-            if (GameRenderer.isLastFrame()) {
-                // Push them so changes are reflected to optimized
-                gameObject.push();
-            }
+            // Push them so changes are reflected to optimized
+            gameObject.swap();
 
             // animates water every quarter of the second
             animationTimer += deltaTime;
             if (animationTimer >= GameRenderer.ANIMATION_RATE) {
-                if (!gameObject.isWorking() && GameRenderer.isLastFrame()) {
+                if (!gameObject.isWorking()) {
                     gameObject.animate(); // avoid swap and animate in the same time - 'awful effect'
                 }
 

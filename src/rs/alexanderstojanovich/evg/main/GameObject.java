@@ -79,8 +79,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Update/Generate for Level Container Mutex. Responsible for writting to
      * chunks.
      */
-    public static final Object UPDATE_GENERATE_LC_MUTEX = new Object();
-
+//    public static final Object UPDATE_RENDER_LC_MUTEX = new Object();
     /**
      * Update/Render for Interface Mutex
      */
@@ -207,9 +206,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return any chunk operation performed
      */
     public boolean utilChunkOperations() {
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
-            chunkOperationPerformed = this.levelContainer.chunkOperations();
-        }
+        chunkOperationPerformed = this.levelContainer.chunkOperations();
+
         return chunkOperationPerformed;
     }
 
@@ -218,9 +216,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
-            this.optimize();
-        }
+        this.optimize();
     }
 
     // -------------------------------------------------------------------------
@@ -362,9 +358,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         if (levelContainer.isWorking()) {
             return;
         }
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
-            levelContainer.blockEnvironment.pull();
-        }
+        levelContainer.blockEnvironment.pull();
     }
 
     /**
@@ -374,9 +368,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         if (levelContainer.isWorking()) {
             return;
         }
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
-            levelContainer.blockEnvironment.push();
-        }
+        levelContainer.blockEnvironment.push();
     }
 
     /**
@@ -387,7 +379,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         if (levelContainer.isWorking()) {
             return;
         }
-        levelContainer.blockEnvironment.swap();
+        if (GameRenderer.isLastFrame()) {
+            levelContainer.blockEnvironment.swap();
+        }
     }
 
     /*
@@ -421,11 +415,21 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
+     * Prepare for water (and other fluids)
+     *
+     */
+    public void prepare() {
+        if (GameRenderer.isFirstFrame()) {
+            levelContainer.blockEnvironment.prepare(levelContainer.isCameraInFluid());
+        }
+    }
+
+    /**
      * Animation for water (and other fluids)
      *
      */
     public void animate() {
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
+        if (GameRenderer.isLastFrame()) {
             levelContainer.animate();
         }
     }
@@ -434,9 +438,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with working/special tuples
      */
     private void optimize() {
-        synchronized (UPDATE_GENERATE_LC_MUTEX) {
-            levelContainer.optimize();
-        }
+        levelContainer.optimize();
     }
 
     /**

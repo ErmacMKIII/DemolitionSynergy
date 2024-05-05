@@ -22,12 +22,11 @@ import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
+import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 
 /**
  *
@@ -319,9 +318,7 @@ public class Editor {
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (GameObject.UPDATE_GENERATE_LC_MUTEX) { // potentially dangerous
-                    lc.chunks.addBlock(selectedNew);
-                }
+                lc.chunks.addBlock(selectedNew);
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 selectedNew = new Block(Texture.TEX_WORLD[texValue]);
             }
@@ -331,9 +328,7 @@ public class Editor {
 
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
-            synchronized (GameObject.UPDATE_GENERATE_LC_MUTEX) { // potentially dangerous
-                lc.chunks.removeBlock(selectedCurr);
-            }
+            lc.chunks.removeBlock(selectedCurr);
             lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
@@ -341,10 +336,8 @@ public class Editor {
 
     private static void selectTexture() {
         if (selectedNew != null) {
-            synchronized (GameObject.UPDATE_GENERATE_LC_MUTEX) {
-                String texName = Texture.TEX_WORLD[texValue];
-                selectedNew.setTexNameWithDeepCopy(texName);
-            }
+            String texName = Texture.TEX_WORLD[texValue];
+            selectedNew.setTexNameWithDeepCopy(texName);
         }
     }
 
