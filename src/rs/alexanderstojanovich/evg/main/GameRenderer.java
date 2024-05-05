@@ -113,8 +113,10 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // Push them so changes are reflected to optimized
-            gameObject.swap();
+            // Changes are reflected to optimized
+            if (!couldRender()) {
+                gameObject.swap();
+            }
 
             // animates water every quarter of the second
             animationTimer += deltaTime;

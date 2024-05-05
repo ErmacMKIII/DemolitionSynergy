@@ -1285,10 +1285,6 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
 
-        // only visible & uncached are in chunk list      
-        // prepare alters tex coords based on whether or not camera is submerged in fluid   
-        blockEnvironment.prepare(cameraInFluid);
-
         // only visible & uncached are in chunk list 
         blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
         // ----------------------------------------------       
@@ -1344,9 +1340,6 @@ public class LevelContainer implements GravityEnviroment {
             SKYBOX.bufferAll();
         }
         SKYBOX.render(lightSources, baseShader);
-
-        // prepare alters tex coords based on whether or not camera is submerged in fluid
-        blockEnvironment.prepare(cameraInFluid);
 
         // only visible & uncached are in chunk list 
         blockEnvironment.renderStatic(instanceShader, renderFlag);

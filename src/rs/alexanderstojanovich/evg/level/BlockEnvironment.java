@@ -213,6 +213,7 @@ public class BlockEnvironment {
      * @param camera ingame camera
      */
     public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+        pull();
         // determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
@@ -343,7 +344,7 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        for (Tuple tuple : optimizedTuples) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.faceBits() > 0)) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
@@ -372,7 +373,7 @@ public class BlockEnvironment {
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
         Tuple.renderInstanced(
-                optimizedTuples,
+                optimizedTuples.filter(ot -> ot.faceBits() > 0),
                 shaderProgram, lightSources, waterTexture, shadowTexture
         );
     }
@@ -400,7 +401,7 @@ public class BlockEnvironment {
      * working to optimized.
      */
     public void pull() {
-        workingTuples = optimizedTuples.copy();
+        workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
     }
 
     /**

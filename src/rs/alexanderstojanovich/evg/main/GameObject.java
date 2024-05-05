@@ -79,7 +79,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Update/Generate for Level Container Mutex. Responsible for writting to
      * chunks.
      */
-//    public static final Object UPDATE_RENDER_LC_MUTEX = new Object();
+    public static final Object UPDATE_RENDER_LC_MUTEX = new Object();
     /**
      * Update/Render for Interface Mutex
      */
@@ -206,7 +206,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return any chunk operation performed
      */
     public boolean utilChunkOperations() {
-        chunkOperationPerformed = this.levelContainer.chunkOperations();
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
+            chunkOperationPerformed = this.levelContainer.chunkOperations();
+        }
 
         return chunkOperationPerformed;
     }
@@ -216,7 +218,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-        this.optimize();
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
+            this.optimize();
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -330,19 +334,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders       
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
+                // Render Effects
+                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                    waterRenderer.render();
+                }
 
-            // Render Effects
-            if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                waterRenderer.render();
+                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                    shadowRenderer.render();
+                }
+
+                // Prepare original scene (detect underwater)
+                this.prepare();
+
+                // Render Original Scene
+                levelContainer.render(renderFlag);
             }
-
-            if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                shadowRenderer.render();
-            }
-
-            // Render Original Scene
-            levelContainer.render(renderFlag);
-
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
                 intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
             }
@@ -415,7 +422,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Prepare for water (and other fluids)
+     * Prepare for water (and other fluids). Subbuffer vertices based on whether
+     * or not camera is submerged in fluid.
      *
      */
     public void prepare() {
@@ -430,7 +438,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void animate() {
         if (GameRenderer.isLastFrame()) {
-            levelContainer.animate();
+            synchronized (UPDATE_RENDER_LC_MUTEX) {
+                levelContainer.animate();
+            }
         }
     }
 
