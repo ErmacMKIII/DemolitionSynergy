@@ -213,6 +213,15 @@ public class Window {
 //        vsync = false;
 //    }
     /**
+     * Set window title. (Game Server may change title)
+     *
+     * @param title new window title
+     */
+    public void setTitle(String title) {
+        GLFW.glfwSetWindowTitle(windowID, title);
+    }
+
+    /**
      * Synchronize frame rate with refresh rate
      *
      * @param vsync enabled

@@ -48,6 +48,7 @@ public class GameServer implements DSMachine, Runnable {
     public final List<Socket> clients = new GapList<>();
     protected final GameObject gameObject;
 
+    protected boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
 
@@ -86,9 +87,32 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
-     * Start server.
+     * Stop running server server.
      */
     public void stopServer() {
+        if (running) {
+            // Attempt to disconnect clients
+            for (Socket client : clients) {
+                try {
+                    client.close();
+                } catch (IOException ex) {
+                    DSLogger.reportError("Unable to close client!", ex);
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+
+            // Attempt to close the server
+            if (server != null && !server.isClosed()) {
+                try {
+                    server.close();
+                } catch (IOException ex) {
+                    DSLogger.reportError("Unable to close server!", ex);
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+        }
+        // revert back title
+        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
         this.shutDownSignal = true;
     }
 
@@ -157,17 +181,19 @@ public class GameServer implements DSMachine, Runnable {
      */
     @Override
     public void run() {
+        running = true;
         try {
             // Bind the server socket to a specific IP address and port
             server = new ServerSocket();
             server.bind(new InetSocketAddress(host, port));
+            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
             DSLogger.reportInfo("Game Server started!", null);
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
         // Accept incoming connections and handle them
-        while (!gameObject.WINDOW.shouldClose() || !shutDownSignal) {
+        while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
             try {
                 final Socket client = server.accept();
                 clients.add(client);
@@ -190,6 +216,7 @@ public class GameServer implements DSMachine, Runnable {
             }
         }
 
+        running = false;
         DSLogger.reportInfo("Game Server finished!", null);
     }
 
@@ -249,6 +276,11 @@ public class GameServer implements DSMachine, Runnable {
 
     public void setServer(ServerSocket server) {
         this.server = server;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
     }
 
 }

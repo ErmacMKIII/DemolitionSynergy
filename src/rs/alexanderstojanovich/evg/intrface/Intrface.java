@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
-import rs.alexanderstojanovich.evg.main.GameServer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -602,7 +601,7 @@ public class Intrface {
 
                 @Override
                 protected void execute() { // TODO *
-                    String s = multiPlayerMenu.items.get(multiPlayerMenu.getSelected()).keyText.content;
+                    String s = this.items.get(this.getSelected()).keyText.content;
                     final Player player;
                     switch (s) {
                         case "PLAYER NAME":
@@ -615,7 +614,7 @@ public class Intrface {
                             break;
                         case "COLOR":
                             player = gameObject.levelContainer.levelActors.player;
-                            Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(multiPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                            Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(this.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                             player.body.setPrimaryRGBAColor(colorRGBA);
                             this.items.get(2).menuValue.getValueText().color = colorRGBA;
                             break;
@@ -632,10 +631,10 @@ public class Intrface {
             multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
 
             IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
-            multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
+            multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             multiPlayerHostMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
-            multiPlayerHostMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(GameServer.DEFAULT_PORT, MenuValue.Type.INT)));
+            multiPlayerHostMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getPort(), MenuValue.Type.INT)));
             multiPlayerHostMenuItems.add(new MenuItem("START", Menu.EditType.EditNoValue, null));
             multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -645,16 +644,16 @@ public class Intrface {
 
                 @Override
                 protected void execute() {
-                    String s = multiPlayerMenu.items.get(multiPlayerMenu.getSelected()).keyText.content;
+                    String s = this.items.get(this.getSelected()).keyText.content;
                     final Player player;
                     switch (s) {
                         case "WORLD NAME":
-                            player = gameObject.levelContainer.levelActors.player;
-                            player.setName(this.items.getFirst().menuValue.getCurrentValue().toString());
+                            final String worldName = this.items.getFirst().menuValue.getCurrentValue().toString();
+                            gameObject.gameServer.setWorldName(worldName);
                             break;
                         case "LEVEL SIZE":
                             player = gameObject.levelContainer.levelActors.player;
-                            player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                            player.body.texName = this.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                             break;
                         case "SEED":
                             long seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());

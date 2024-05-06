@@ -124,6 +124,7 @@ public class Game implements DSMachine {
     protected static boolean actionPerformed = false; // movement for all actors (critters)
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
+    protected boolean running = false;
 
     /**
      * Access to Game Engine.
@@ -636,6 +637,7 @@ public class Game implements DSMachine {
      * GameObject indirectly)
      */
     public void go() {
+        this.running = true;
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
@@ -687,7 +689,7 @@ public class Game implements DSMachine {
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
-
+        this.running = false;
         DSLogger.reportDebug("Main loop ended.", null);
     }
 
@@ -864,4 +866,10 @@ public class Game implements DSMachine {
     public int getVersion() {
         return this.version;
     }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
 }

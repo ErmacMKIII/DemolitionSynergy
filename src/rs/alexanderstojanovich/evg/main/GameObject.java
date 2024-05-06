@@ -137,7 +137,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         musicPlayer.setGain(cfg.getMusicVolume());
         soundFXPlayer.setGain(cfg.getSoundFXVolume());
         //----------------------------------------------------------------------
-        intrface = new Intrface(this);
         initializedCore = true;
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
@@ -148,7 +147,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         // game interacts with the whole game container
         renderer = new GameRenderer(this); // init renderer with given game object
         DSLogger.reportDebug("Game Renderer initialized.", null);
-
+        // Intrface holding stuff initialized
+        intrface = new Intrface(this);
+        DSLogger.reportDebug("Game Inetrface initialized.", null);
         instance = this;
     }
 
@@ -176,7 +177,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
         DSLogger.reportDebug("Game will start soon.", null);
-        game.go();
+        game.go(); // after the loop end
+        gameServer.stopServer(); // stop the server
         timer0.cancel();
         game.cleanUp();
         intrface.cleanUp();

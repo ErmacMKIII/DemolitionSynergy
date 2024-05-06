@@ -48,4 +48,11 @@ public interface DSMachine {
      * @return version of DSClient/DSServer
      */
     public int getVersion();
+
+    /**
+     * Is machine running.
+     *
+     * @return is machine (game client or game server) running
+     */
+    public boolean isRunning();
 }
