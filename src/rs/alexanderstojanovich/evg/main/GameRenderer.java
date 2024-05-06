@@ -114,8 +114,8 @@ public class GameRenderer extends Thread implements Executor {
             }
 
             // Changes are reflected to optimized
-            if (Game.accumulator < Game.TICK_TIME) {
-                gameObject.swap();
+            if (!couldRender()) {
+                gameObject.swap(); // swap happens only if not optimizing
             }
 
             // animates water every quarter of the second

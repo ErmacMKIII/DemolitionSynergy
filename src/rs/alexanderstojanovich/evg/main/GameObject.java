@@ -357,7 +357,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Pull optimized tuples to working tuples in Block Environment.
+     * Pull fullyOptimized tuples to working tuples in Block Environment.
      */
     public void pull() {
         if (levelContainer.isWorking()) {
@@ -367,7 +367,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Push working to optimized tuples tuples in Block Environment.
+     * Push working to fullyOptimized tuples tuples in Block Environment.
      */
     public void push() {
         if (levelContainer.isWorking()) {
@@ -381,7 +381,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (levelContainer.isWorking()) {
+        if (levelContainer.isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
             return;
         }
         if (GameRenderer.isLastFrame()) {
@@ -460,19 +460,19 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Is level container optimized
+     * Is level container fullyOptimized
      */
     public void isOptimized() {
-        levelContainer.blockEnvironment.isOptimized();
+        levelContainer.blockEnvironment.isFullyOptimized();
     }
 
     /**
      * Set level container optimization flag
      *
-     * @param optimized optimized flag to set
+     * @param optimized fullyOptimized flag to set
      */
     public void setOptimized(boolean optimized) {
-        levelContainer.blockEnvironment.setOptimized(optimized);
+        levelContainer.blockEnvironment.setFullyOptimized(optimized);
     }
 
     // -------------------------------------------------------------------------
