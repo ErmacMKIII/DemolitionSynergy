@@ -109,7 +109,7 @@ public abstract class OptionsMenu extends Menu {
                                 mode = InputMode.PUT;
                                 break;
                             case PUT:
-                                selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
+                                selectedMenuItem.menuValue.setCurrentValue(input.toString());
                                 mode = InputMode.INIT;
                                 execute();
                                 intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_OPTIONS, new Vector3f());
@@ -155,7 +155,7 @@ public abstract class OptionsMenu extends Menu {
                                 mode = InputMode.PUT;
                                 break;
                             case PUT:
-                                selectedMenuItem.menuValue.setCurrentValue(Long.valueOf(input.toString()));
+                                selectedMenuItem.menuValue.setCurrentValue(input.toString());
                                 mode = InputMode.INIT;
                                 execute();
                                 break;

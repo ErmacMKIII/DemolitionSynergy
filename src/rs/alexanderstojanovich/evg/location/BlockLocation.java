@@ -241,7 +241,7 @@ public class BlockLocation {
                         // Check if the value exists and satisfies the predicate
                         if (value != null && predicate.test(value)) {
                             // Add the position to the result list
-                            result.add(new Vector3f(x, z, y));
+                            result.add(new Vector3f(x, y, z));
                         }
                     }
                 }
@@ -272,7 +272,7 @@ public class BlockLocation {
 
         for (float y = lYBound; y <= rYBound; y += 2.0f) {
             for (float x = chunkPos.x - halfLen; x <= chunkPos.x + halfLen; x += 2.0f) {
-                for (float z = chunkPos.z - halfLen; x <= chunkPos.z + halfLen; z += 2.0f) {
+                for (float z = chunkPos.z - halfLen; z <= chunkPos.z + halfLen; z += 2.0f) {
                     int i = Math.round((x + Chunk.BOUND) / 2.0f);
                     int j = Math.round((z + Chunk.BOUND) / 2.0f);
                     int k = Math.round((y + Chunk.BOUND) / 2.0f);
@@ -282,7 +282,7 @@ public class BlockLocation {
                     }
 
                     TexByte value = locationMap[i][j][k];
-                    Vector3f pos = new Vector3f(x, z, y);
+                    Vector3f pos = new Vector3f(x, y, z);
                     if (value != null && predicate.test(value)) {
                         result.add(pos);
                     }

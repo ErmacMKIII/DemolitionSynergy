@@ -18,9 +18,12 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -301,7 +304,7 @@ public class Intrface {
                         default:
                         case "SEED":
                             MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
-                            gameObject.randomLevelGenerator.setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
+                            gameObject.randomLevelGenerator.setSeed(Long.parseLong(selectedMenuItem.menuValue.getCurrentValue().toString()));
                             break;
                     }
 
@@ -622,6 +625,7 @@ public class Intrface {
                             multiPlayerHostMenu.open();
                             break;
                         case "JOIN GAME":
+                            multiPlayerJoinMenu.open();
                             break;
                     }
                 }
@@ -670,6 +674,57 @@ public class Intrface {
             };
             multiPlayerHostMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerHostMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            //------------------------------------------------------------------
+            IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
+            multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue("", MenuValue.Type.STRING)));
+            multiPlayerJoinMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getPort(), MenuValue.Type.INT)));
+            multiPlayerJoinMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
+            multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    multiPlayerMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String s = this.items.get(this.getSelected()).keyText.content;
+                    switch (s) {
+                        case "HOSTNAME":
+                            final String host = this.items.getFirst().menuValue.getCurrentValue().toString();
+                             {
+                                try {
+                                    gameObject.game.setServerAddress(InetAddress.getByName(host));
+                                } catch (UnknownHostException ex) {
+                                    DSLogger.reportError(String.format("Unable resolve host %s!", host), ex);
+                                }
+                            }
+                            break;
+                        case "PORT":
+                            gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
+                            break;
+                        case "PLAY":
+                            double beginTime = GLFW.glfwGetTime();
+                            boolean okey = gameObject.game.connectToServer();
+                            double endTime = GLFW.glfwGetTime();
+                            if (okey) {
+                                Command command = Command.getCommand(Command.Target.PRINT);
+                                command.args.add("Connected to server!");
+                                Command.execute(gameObject, command);
+
+                                long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                            } else {
+                                Command command = Command.getCommand(Command.Target.PRINT);
+                                command.args.add("Unable to connect to server!");
+                                Command.execute(gameObject, command);
+                            }
+                            break;
+
+                    }
+                }
+            };
+            multiPlayerJoinMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+            multiPlayerJoinMenu.items.get(2).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             //------------------------------------------------------------------
             DSLogger.reportDebug("Interface initialized.", null);
         } catch (Exception ex) {
@@ -774,9 +829,11 @@ public class Intrface {
         singlPlayerMenu.render(this, ifcShaderProgram);
         multiPlayerMenu.render(this, ifcShaderProgram);
         multiPlayerHostMenu.render(this, ifcShaderProgram);
+        multiPlayerMenu.render(this, ifcShaderProgram);
+        multiPlayerJoinMenu.render(this, ifcShaderProgram);
 
         if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
-                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
+                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled()) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll(this);
             }
@@ -797,6 +854,7 @@ public class Intrface {
         singlPlayerMenu.update();
         multiPlayerMenu.update();
         multiPlayerHostMenu.update();
+        multiPlayerJoinMenu.update();
     }
 
     /**
@@ -819,6 +877,7 @@ public class Intrface {
         singlePlayerDialog.cleanUp();
         multiPlayerMenu.cleanUp();
         multiPlayerHostMenu.cleanUp();
+        multiPlayerJoinMenu.cleanUp();
 
         console.cleanUp();
 
@@ -855,6 +914,9 @@ public class Intrface {
         randLvlDialog.release();
         singlePlayerDialog.release();
         multiPlayerMenu.release();
+
+        multiPlayerHostMenu.release();
+        multiPlayerJoinMenu.release();
 
         console.release();
 

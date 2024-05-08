@@ -51,6 +51,7 @@ public class GameServer implements DSMachine, Runnable {
     protected boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
+    protected final int timeout = 15000;
 
     /**
      * Server worker
@@ -196,6 +197,7 @@ public class GameServer implements DSMachine, Runnable {
         while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
             try {
                 final Socket client = server.accept();
+                client.setSoTimeout(timeout);
                 clients.add(client);
                 // Acceptance test (examination)
                 if (tst(client)) {

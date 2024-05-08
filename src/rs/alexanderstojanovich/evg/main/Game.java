@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -125,21 +126,29 @@ public class Game implements DSMachine {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
     protected boolean running = false;
+    protected static final int DEFAULT_PORT = 13667;
+
+    /**
+     * Connect to server stuff & endpoint
+     */
+    protected Socket serverEndpoint;
+    protected InetAddress serverAddress;
+    protected int port = DEFAULT_PORT;
+    protected int timeout = 10000; // 10 sec
 
     /**
      * Access to Game Engine.
      */
     public final GameObject gameObject;
 
-    protected static final int PORT = 13667;
-    public static final String CLIENT_NAME = "DSYNERGY"; // Bytes    
-
     /**
      * Construct new game (client) view
      *
      * @param gameObject game object
+     * @throws java.net.UnknownHostException if host unavailable
      */
-    public Game(GameObject gameObject) {
+    public Game(GameObject gameObject) throws UnknownHostException {
+        this.serverAddress = InetAddress.getLocalHost();
         this.gameObject = gameObject;
         Arrays.fill(keys, false);
         initCallbacks();
@@ -697,14 +706,14 @@ public class Game implements DSMachine {
      * Connect to server (host). Multiplayer. Requires acceptance test to be
      * passed. According to protocol.
      *
-     * @param hostAddress server (host) address
-     * @param port server port
      * @return endpoint if connection succeeds and acceptance test is passed
      */
-    public Socket connectToServer(InetAddress hostAddress, int port) {
-        Socket endpoint = null;
+    public boolean connectToServer() {
+        boolean okey = false;
+        Socket endpoint;
         try {
-            endpoint = new Socket(hostAddress, port);
+            endpoint = new Socket(serverAddress, port);
+            endpoint.setSoTimeout(timeout);
             DSLogger.reportInfo("Connected to server!", null);
 
             // Send a simple hello message with magic bytes prepended
@@ -713,6 +722,10 @@ public class Game implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this, endpoint);
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                this.serverEndpoint = endpoint;
+                okey = true;
+            }
             DSLogger.reportInfo(String.format("Server response: %s %s", response.getResponseStatus().toString(), response.getData().toString()), null);
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
@@ -722,7 +735,7 @@ public class Game implements DSMachine {
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
-        return endpoint;
+        return okey;
     }
 
     /*
@@ -870,6 +883,50 @@ public class Game implements DSMachine {
     @Override
     public boolean isRunning() {
         return running;
+    }
+
+    public boolean isMoveMouse() {
+        return moveMouse;
+    }
+
+    public void setMoveMouse(boolean moveMouse) {
+        this.moveMouse = moveMouse;
+    }
+
+    public int getCrosshairColorNum() {
+        return crosshairColorNum;
+    }
+
+    public void setCrosshairColorNum(int crosshairColorNum) {
+        this.crosshairColorNum = crosshairColorNum;
+    }
+
+    public Socket getServerEndpoint() {
+        return serverEndpoint;
+    }
+
+    public void setServerEndpoint(Socket serverEndpoint) {
+        this.serverEndpoint = serverEndpoint;
+    }
+
+    public InetAddress getServerAddress() {
+        return serverAddress;
+    }
+
+    public void setServerAddress(InetAddress serverAddress) {
+        this.serverAddress = serverAddress;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public int getTimeout() {
+        return timeout;
     }
 
 }

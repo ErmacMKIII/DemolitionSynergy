@@ -381,6 +381,17 @@ public class LevelContainer implements GravityEnviroment {
                 attempts++;
             } while (solidPopLoc.isEmpty() && attempts < Chunk.GRID_SIZE);
 
+            // spawn preferrance
+            if (solidPopLoc.size() > 200) {
+                final int[] tstSides = {Block.LEFT, Block.RIGHT, Block.FRONT, Block.BACK};
+                for (float r = 2.0f; r <= 16.0f; r += 2.0f) {
+                    for (int j : tstSides) {
+                        final float amount = r;
+                        solidPopLoc.removeIf(loc -> AllBlockMap.isLocationPopulated(Block.getAdjacentPos(loc, j, amount), true));
+                    }
+                }
+            }
+
             do {
                 int rindex = random.nextInt(solidPopLoc.size());
                 Vector3f solidLoc = solidPopLoc.get(rindex);
