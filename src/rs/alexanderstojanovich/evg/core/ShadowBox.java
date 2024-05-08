@@ -52,6 +52,8 @@ public class ShadowBox {
         this.maxZ = maxZ;
     }
 
+    protected static float FOV_Factor = 0.0f;
+
     /**
      * Default constructor sets vertex points to min/max bounds.
      *
@@ -347,7 +349,7 @@ public class ShadowBox {
      * @return width x height of near and far as vec4
      */
     private static Vector4f widthAndHeight(float nearDistance, float farDistance, float aspectRatio) {
-        float tangent = org.joml.Math.tan(PerspectiveRenderer.FOV / 2.0f);
+        float tangent = org.joml.Math.tan(FOV_Factor * PerspectiveRenderer.FOV / 2.0f);
 
         // Calculate height of the near plane
         float heightNear = 2.0f * tangent * nearDistance;
@@ -400,6 +402,10 @@ public class ShadowBox {
         sb.append(", maxZ=").append(maxZ);
         sb.append('}');
         return sb.toString();
+    }
+
+    public static float getFOV_Factor() {
+        return FOV_Factor;
     }
 
 }
