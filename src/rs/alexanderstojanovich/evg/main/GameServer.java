@@ -21,7 +21,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.net.DSMachine;
@@ -56,7 +56,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Server worker
      */
-    public final Executor serverExecutor = Executors.newSingleThreadExecutor();
+    public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Create new game server
@@ -115,6 +115,13 @@ public class GameServer implements DSMachine, Runnable {
         // revert back title
         gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
         this.shutDownSignal = true;
+    }
+
+    /**
+     * Shut down execution service. Server is not available anymore.
+     */
+    public void shutDown() {
+        this.serverExecutor.shutdown();
     }
 
     /**
@@ -196,6 +203,7 @@ public class GameServer implements DSMachine, Runnable {
                 if (tst(client)) {
                     // Send "Welcome" Response
                     accept(client);
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);

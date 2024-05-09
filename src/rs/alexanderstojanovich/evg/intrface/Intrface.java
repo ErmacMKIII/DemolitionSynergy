@@ -668,7 +668,7 @@ public class Intrface {
                             gameObject.gameServer.setPort(Integer.parseInt(this.items.get(2).menuValue.getCurrentValue().toString()));
                             break;
                         case "START":
-                            mainMenu.getLogo().color = new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 1.0f);
+                            mainMenu.getLogo().color = new Vector4f(LevelContainer.SUN_COLOR_RGBA).mul(1.6f);
                             gameObject.gameServer.startServer();
                             break;
                     }

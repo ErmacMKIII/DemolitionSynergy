@@ -179,6 +179,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Game will start soon.", null);
         game.go(); // after the loop end
         gameServer.stopServer(); // stop the server
+        gameServer.shutDown();
         timer0.cancel();
         game.cleanUp();
         intrface.cleanUp();

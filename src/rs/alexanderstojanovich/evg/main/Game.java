@@ -727,6 +727,7 @@ public class Game implements DSMachine {
                 okey = true;
             }
             DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+            gameObject.intrface.getConsole().write(response.getData().toString());
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
