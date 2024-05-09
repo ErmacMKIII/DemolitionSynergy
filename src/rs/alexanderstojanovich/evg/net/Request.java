@@ -16,7 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import rs.alexanderstojanovich.evg.main.Game;
 
@@ -25,7 +30,7 @@ import rs.alexanderstojanovich.evg.main.Game;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Request implements DSObject, RequestIfc {
+public class Request implements RequestIfc {
 
     protected byte[] content;
     protected RequestType requestType;
@@ -43,7 +48,7 @@ public class Request implements DSObject, RequestIfc {
     }
 
     @Override
-    public ObjType getObjType() {
+    public ObjType getObjectType() {
         return ObjType.REQUEST;
     }
 
@@ -64,95 +69,86 @@ public class Request implements DSObject, RequestIfc {
 
     @Override
     public void serialize(DSMachine machine) throws Exception {
-        final int mchType = machine.getMachineType().ordinal();
-        final int objType = getObjType().ordinal(); // request or response
-        final int reqType = getRequestType().ordinal();
-        final int datType = getDataType().ordinal();
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(byteStream);
 
-        final int version = machine.getVersion();
+        // Write magic bytes
+        out.write(RequestIfc.MAGIC_BYTES);
 
-        final byte[] first = {(byte) mchType, (byte) objType, (byte) reqType, (byte) datType}; // 4 Bytes
-        final byte[] second = {(byte) (version >> 24), (byte) (version >> 16), (byte) (version >> 8), (byte) (version)}; // 4 Bytes
-        final byte[] magic = RequestIfc.MAGIC_BYTES; // 4 Bytes
+        // Write machine type, object type, request type, data type
+        out.writeInt(machine.getMachineType().ordinal());
+        out.writeInt(getObjectType().ordinal());
+        out.writeInt(requestType.ordinal());
+        out.writeInt(dataType.ordinal());
 
-        if (getDataType() != DataType.VOID) {
-            final byte[] third;
-            switch (getDataType()) {
+        // Write version
+        out.writeInt(machine.getVersion());
+
+        // Write data
+        if (dataType != DataType.VOID) {
+            switch (dataType) {
                 case STRING:
                     String message = (String) data;
-                    third = message.getBytes("UTF-8");
+                    byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+                    out.writeInt(messageBytes.length);
+                    out.write(messageBytes);
                     break;
                 default:
-                    throw new Exception("Serialization failed!");
+                    throw new Exception("Unsupported data type during serialization!");
             }
-
-            // Serialize
-            content = new byte[first.length + second.length + magic.length + third.length];
-            System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
-            System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
-            System.arraycopy(third, 0, content, 12, third.length); // 4 Bytes   
-            System.arraycopy(magic, 0, content, 8, magic.length); // 4 Bytes             
-        } else {
-            // Serialize
-            content = new byte[first.length + second.length + magic.length];
-            System.arraycopy(first, 0, content, 0, first.length); // 4 Bytes
-            System.arraycopy(second, 0, content, 4, second.length); // 4 Bytes
-            System.arraycopy(magic, 0, content, 8, magic.length); // 4 Bytes             
         }
+
+        out.close();
+        this.content = byteStream.toByteArray();
     }
 
     @Override
     public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
-        // Extracting the relevant information from the byte array
-        int mchType = content[0];
-        if (DSMachine.MachineType.values()[mchType] != DSMachine.MachineType.DSCLIENT && DSMachine.MachineType.values()[mchType] != DSMachine.MachineType.DSSERVER) {
-            return false; // bad request
-        }
-        int objType = content[1];
-        if (DSObject.ObjType.values()[objType] != ObjType.REQUEST && DSObject.ObjType.values()[objType] != ObjType.RESPONSE) {
-            return false; // bad request
+        ByteArrayInputStream byteStream = new ByteArrayInputStream(content);
+        DataInputStream in = new DataInputStream(byteStream);
+
+        // Read magic bytes
+        byte[] magicBytes = new byte[RequestIfc.MAGIC_BYTES.length];
+        in.readFully(magicBytes);
+        if (!Arrays.equals(magicBytes, RequestIfc.MAGIC_BYTES)) {
+            return false; // Magic bytes mismatch
         }
 
-        int reqType = content[2];
-        if (reqType < 0 || reqType >= RequestType.values().length) {
-            return false; // bad request
-        }
-        int datType = content[3];
-        if (datType < 0 || datType >= DataType.values().length) {
-            return false; // bad request
-        }
-        int version = (content[4] << 24) | (content[5] << 16) | (content[6] << 8) | content[7];
-        if (version < 39) {
-            return false; // bad request
-        }
-        byte[] magic = Arrays.copyOfRange(content, 8, 12);
-        if (Arrays.equals(magic, Request.MAGIC_BYTES)) {
-            return false;
+        // Read machine type, object type, request type, and data type
+        int machineTypeOrdinal = in.readInt();
+        int objTypeOrdinal = in.readInt();
+        int reqTypeOrdinal = in.readInt();
+        int dataTypeOrdinal = in.readInt();
+
+        // Verify machine type, object type, and request type
+        if (machineTypeOrdinal < 0 || machineTypeOrdinal >= DSMachine.MachineType.values().length
+                || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
+                || reqTypeOrdinal < 0 || reqTypeOrdinal >= RequestType.values().length
+                || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
+            return false; // Invalid machine type, object type, request type, or data type
         }
 
-        // If there is additional data, deserialize it based on the data type
-        Object data0 = null;
-        if (content.length > 12) {
-            byte[] actualData = Arrays.copyOfRange(content, 12, content.length);
+        // Read version
+        int version = in.readInt();
 
-            // Deserialize based on data type
-            switch (DataType.values()[datType]) {
-                case STRING:
-                    String message = new String(actualData, "UTF-8");
-                    data0 = message;
-                    break;
-                // Add cases for other data types if needed
-                default:
-                    throw new Exception("Unsupported data type during deserialization!");
-            }
+        // Read data
+        switch (DataType.values()[dataTypeOrdinal]) {
+            case STRING:
+                int stringLength = in.readInt();
+                byte[] stringBytes = new byte[stringLength];
+                in.readFully(stringBytes);
+                data = new String(stringBytes, StandardCharsets.UTF_8);
+                break;
+            case VOID:
+                break;
+            default:
+                throw new Exception("Unsupported data type during deserialization!");
         }
 
-        // Constructing the request object
-        this.requestType = RequestType.values()[reqType];
-        this.dataType = DataType.values()[datType];
-        this.data = data0;
+        in.close();
         this.content = content;
-
+        this.requestType = RequestType.values()[reqTypeOrdinal];
+        this.dataType = DataType.values()[dataTypeOrdinal];
         return true;
     }
 
@@ -166,5 +162,4 @@ public class Request implements DSObject, RequestIfc {
         serialize(client);
         endpoint.getOutputStream().write(content);
     }
-
 }

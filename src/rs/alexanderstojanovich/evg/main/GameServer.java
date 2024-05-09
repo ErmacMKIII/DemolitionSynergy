@@ -51,7 +51,7 @@ public class GameServer implements DSMachine, Runnable {
     protected boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
-    protected final int timeout = 15000;
+    protected final int timeout = 320000;
 
     /**
      * Server worker
@@ -148,11 +148,8 @@ public class GameServer implements DSMachine, Runnable {
         // Send a simple message with magic bytes prepended
         final StringBuilder sb = new StringBuilder();
         String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", this.worldName, this.version);
-        sb.append(welcome);
 
-        Object welcomeObj = welcome.getBytes("US-ASCII");
-
-        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcomeObj);
+        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcome);
 
         response.send(this, client);
     }
@@ -166,13 +163,9 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void reject(Socket client) throws IOException, Exception {
         // Send a simple message with magic bytes prepended
-        final StringBuilder sb = new StringBuilder();
-        String message = "Sorry, your connection refuesed!";
-        sb.append(message);
+        String message = "Sorry, your connection refused!";
 
-        Object msgObj = message.getBytes("US-ASCII");
-
-        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msgObj);
+        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, message);
 
         response.send(this, client);
     }

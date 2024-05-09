@@ -134,7 +134,7 @@ public class Game implements DSMachine {
     protected Socket serverEndpoint;
     protected InetAddress serverAddress;
     protected int port = DEFAULT_PORT;
-    protected int timeout = 10000; // 10 sec
+    protected int timeout = 300000; // 30 sec
 
     /**
      * Access to Game Engine.
@@ -726,7 +726,7 @@ public class Game implements DSMachine {
                 this.serverEndpoint = endpoint;
                 okey = true;
             }
-            DSLogger.reportInfo(String.format("Server response: %s %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);

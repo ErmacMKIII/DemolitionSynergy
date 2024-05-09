@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -667,6 +668,7 @@ public class Intrface {
                             gameObject.gameServer.setPort(Integer.parseInt(this.items.get(2).menuValue.getCurrentValue().toString()));
                             break;
                         case "START":
+                            mainMenu.getLogo().color = new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 1.0f);
                             gameObject.gameServer.startServer();
                             break;
                     }
@@ -707,15 +709,12 @@ public class Intrface {
                             boolean okey = gameObject.game.connectToServer();
                             double endTime = GLFW.glfwGetTime();
                             if (okey) {
-                                Command command = Command.getCommand(Command.Target.PRINT);
-                                command.args.add("Connected to server!");
-                                Command.execute(gameObject, command);
-
+                                console.write("Connected to server!");
                                 long tripTime = Math.round(endTime - beginTime) * 1000L;
                                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
                             } else {
                                 Command command = Command.getCommand(Command.Target.PRINT);
-                                command.args.add("Unable to connect to server!");
+                                console.write("Unable to connect to server!");
                                 Command.execute(gameObject, command);
                             }
                             break;

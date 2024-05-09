@@ -35,7 +35,7 @@ public interface DSObject {
      *
      * @return DSynergy object type
      */
-    public ObjType getObjType();
+    public ObjType getObjectType();
 
     /**
      * Get whole object content (byte array)
