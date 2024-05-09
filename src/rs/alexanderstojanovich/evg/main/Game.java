@@ -478,7 +478,11 @@ public class Game implements DSMachine {
                     gameObject.intrface.setShowHelp(false);
                     gameObject.intrface.getHelpText().setEnabled(false);
                     gameObject.intrface.getCollText().setEnabled(true);
-                    gameObject.intrface.getMainMenu().open();
+                    if (currentMode == Mode.SINGLE_PLAYER || currentMode == Mode.MULTIPLAYER) {
+                        gameObject.intrface.getGameMenu().open();
+                    } else {
+                        gameObject.intrface.getMainMenu().open();
+                    }
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     gameObject.intrface.getConsole().open();

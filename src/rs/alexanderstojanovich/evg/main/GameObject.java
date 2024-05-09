@@ -479,20 +479,48 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // -------------------------------------------------------------------------
-    // Called from concurrent thread
+    /**
+     * Clear Everything. Game will be 'Free'.
+     */
+    public void clearEverything() {
+        LevelContainer.AllBlockMap.init();
+        levelContainer.chunks.clear();
+        levelContainer.blockEnvironment.clear();
+        levelContainer.levelActors.player.setPos(new Vector3f());
+        levelContainer.levelActors.spectator.setPos(new Vector3f());
+        Game.setCurrentMode(Game.Mode.FREE);
+    }
+
+    /**
+     * Start new level from editor. Editor by default adds 9 'Doom' blocks at
+     * the starting position. Called from concurrent thread.
+     */
     public void startNewLevel() {
         levelContainer.startNewLevel();
     }
 
-    // Called from concurrent thread
+    /**
+     * Load level from external file (which is in root of game dir). Called from
+     * concurrent thread.
+     *
+     * @param fileName file name in filesystem.
+     * @return success of operation
+     */
     public boolean loadLevelFromFile(String fileName) {
         boolean ok = false;
+        this.clearEverything();
         ok = levelContainer.loadLevelFromFile(fileName);
 
         return ok;
     }
 
-    // Called from concurrent thread
+    /**
+     * Save level to external file (which is in root of game dir). Called from
+     * concurrent thread. Could be shared in opened in another game clients.
+     *
+     * @param fileName file name in filesystem.
+     * @return success of operation
+     */
     public boolean saveLevelToFile(String fileName) {
         boolean ok = false;
         ok = levelContainer.saveLevelToFile(fileName);
@@ -500,17 +528,38 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return ok;
     }
 
-    // Called from concurrent thread
+    /**
+     * Start new randomly generated level from editor. New level could be
+     * generated and subsequently edited from (game) client. Notice that there
+     * is no 'SMALL', 'MEDIUM', 'LARGE', 'HUGE'. It is coded to parameter
+     * 'numberOfBlocks'.
+     *
+     * Called from concurrent thread.
+     *
+     * @param numberOfBlocks max number of blocks to generate
+     * @return success of operation
+     */
     public boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok = false;
+        this.clearEverything();
         ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
     }
 
-    // Called from concurrent thread
+    /**
+     * Start new randomly generated level in singleplayer. New level will be
+     * generated. Notice that there is no 'SMALL', 'MEDIUM', 'LARGE', 'HUGE'. It
+     * is coded to parameter 'numberOfBlocks'.
+     *
+     * Called from concurrent thread.
+     *
+     * @param numberOfBlocks max number of blocks to generate
+     * @return success of operation
+     */
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok = false;
+        this.clearEverything();
         ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
@@ -521,7 +570,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return false;
     }
 
-    // Checked from main and Renderer
+    /**
+     * Check if level container is generating/loading/saving level.
+     *
+     * @return
+     */
     public boolean isWorking() {
         return levelContainer.isWorking();
     }

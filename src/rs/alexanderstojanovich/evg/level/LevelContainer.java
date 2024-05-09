@@ -383,7 +383,7 @@ public class LevelContainer implements GravityEnviroment {
 
             // spawn preferrance
             if (solidPopLoc.size() > 200) {
-                final int[] tstSides = {Block.LEFT, Block.RIGHT, Block.FRONT, Block.BACK};
+                final int[] tstSides = {Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
                 for (float r = 2.0f; r <= 16.0f; r += 2.0f) {
                     for (int j : tstSides) {
                         final float amount = r;

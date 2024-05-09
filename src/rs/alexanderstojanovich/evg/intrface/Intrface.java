@@ -69,8 +69,10 @@ public class Intrface {
     private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
     private ConcurrentDialog singlePlayerDialog;
+    private ConcurrentDialog multiPlayerDialog;
 
     private Menu mainMenu;
+    private Menu gameMenu; // when player has is ingame session
 
     private OptionsMenu optionsMenu;
 
@@ -158,7 +160,9 @@ public class Intrface {
             mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
                 @Override
                 protected void leave() {
-
+                    viewText.setEnabled(true);
+                    posText.setEnabled(true);
+                    chunkText.setEnabled(true);
                 }
 
                 @Override
@@ -182,6 +186,9 @@ public class Intrface {
                             break;
                         case "CREDITS":
                             creditsMenu.open();
+                            viewText.setEnabled(false);
+                            posText.setEnabled(false);
+                            chunkText.setEnabled(false);
                             break;
                         case "EXIT":
                             gameObject.WINDOW.close();
@@ -194,7 +201,38 @@ public class Intrface {
             logo.setScale(1.5f);
             mainMenu.setLogo(logo);
             mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
+            // -----------------------------------------------------------------
+            IList<MenuItem> gameMenuItems = new GapList<>();
+            gameMenuItems.add(new MenuItem("RESUME", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
+            gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
+                @Override
+                protected void leave() {
 
+                }
+
+                @Override
+                protected void execute() {
+                    String s = gameMenu.items.get(gameMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "RESUME":
+                            break;
+                        case "OPTIONS":
+                            optionsMenu.open();
+                            viewText.setEnabled(false);
+                            posText.setEnabled(false);
+                            chunkText.setEnabled(false);
+                            break;
+                        case "EXIT":
+                            gameObject.clearEverything();
+                            break;
+                    }
+                }
+            };
+
+            gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+            // -----------------------------------------------------------------
             saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
                 @Override
@@ -364,7 +402,11 @@ public class Intrface {
             optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
-                    mainMenu.open();
+                    if (Game.getCurrentMode() == Mode.SINGLE_PLAYER || Game.getCurrentMode() == Mode.MULTIPLAYER) {
+                        gameObject.intrface.getGameMenu().open();
+                    } else {
+                        gameObject.intrface.getMainMenu().open();
+                    }
                     viewText.setEnabled(true);
                     posText.setEnabled(true);
                     chunkText.setEnabled(true);
@@ -820,6 +862,7 @@ public class Intrface {
 
         screenText.render(this, ifcShaderProgram);
         mainMenu.render(this, ifcShaderProgram);
+        gameMenu.render(this, ifcShaderProgram);
         optionsMenu.render(this, ifcShaderProgram);
         editorMenu.render(this, ifcShaderProgram);
         creditsMenu.render(this, ifcContShaderProgram);
@@ -831,8 +874,9 @@ public class Intrface {
         multiPlayerMenu.render(this, ifcShaderProgram);
         multiPlayerJoinMenu.render(this, ifcShaderProgram);
 
-        if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
-                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled()) {
+        if (!mainMenu.isEnabled() && !gameMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
+                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled() && !singlPlayerMenu.isEnabled()
+                && !multiPlayerMenu.isEnabled() && !multiPlayerHostMenu.isEnabled() && !multiPlayerJoinMenu.isEnabled()) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll(this);
             }
@@ -846,6 +890,8 @@ public class Intrface {
      */
     public void update() { // handleInput menu components
         mainMenu.update();
+        gameMenu.update();
+
         optionsMenu.update();
         editorMenu.update();
         randLvlMenu.update();
@@ -861,6 +907,8 @@ public class Intrface {
      */
     public void cleanUp() {
         mainMenu.cleanUp();
+        gameMenu.cleanUp();
+
         optionsMenu.cleanUp();
         editorMenu.cleanUp();
 
@@ -1028,6 +1076,10 @@ public class Intrface {
 
     public boolean isHugeLevel() {
         return isHugeLevel;
+    }
+
+    public Menu getGameMenu() {
+        return gameMenu;
     }
 
 }
