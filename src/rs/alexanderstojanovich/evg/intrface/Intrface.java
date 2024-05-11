@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.FutureTask;
@@ -31,7 +30,6 @@ import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -197,7 +195,7 @@ public class Intrface {
                 }
             };
             Quad logo = new Quad(120, 90, Texture.LOGO);
-            logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
+            logo.setColor(new Vector4f(2.0f, 1.37f, 0.1f, 1.0f));
             logo.setScale(1.5f);
             mainMenu.setLogo(logo);
             mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
@@ -225,6 +223,12 @@ public class Intrface {
                             chunkText.setEnabled(false);
                             break;
                         case "EXIT":
+                            if (Game.getCurrentMode() == Mode.MULTIPLAYER) {
+                                if (gameObject.gameServer.isRunning()) {
+                                    gameObject.gameServer.stopServer();
+                                }
+                                gameObject.game.disconnectFromServer();
+                            }
                             gameObject.clearEverything();
                             break;
                     }
@@ -263,12 +267,7 @@ public class Intrface {
             loadDialog.dialog.alignToNextChar(this);
 
             File currFile = new File("./");
-            String[] datFileList = currFile.list(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.toLowerCase().endsWith(".dat");
-                }
-            });
+            String[] datFileList = currFile.list((File dir, String name) -> name.toLowerCase().endsWith(".dat"));
 
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
@@ -364,6 +363,7 @@ public class Intrface {
                         ok |= gameObject.generateSinglePlayerLevel(numBlocks);
                         if (ok) {
                             Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                            gameMenu.getTitle().setContent("SINGLE PLAYER");
                         } else {
                             Game.setCurrentMode(Mode.FREE);
                         }
@@ -373,6 +373,25 @@ public class Intrface {
                 }
             };
             singlePlayerDialog.dialog.alignToNextChar(this);
+
+            multiPlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
+                @Override
+                protected boolean execute(String command) {
+                    boolean ok = false;
+                    if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                        gameObject.clearEverything();
+                        if (!gameObject.gameServer.isRunning()) {
+                            gameObject.gameServer.startServer();
+                            Game.setCurrentMode(Mode.MULTIPLAYER);
+                            gameMenu.getTitle().setContent("MUTLIPLAYER");
+                            ok = true;
+                        }
+                    }
+
+                    return ok;
+                }
+            };
+            multiPlayerDialog.dialog.alignToNextChar(this);
 
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
@@ -710,8 +729,7 @@ public class Intrface {
                             gameObject.gameServer.setPort(Integer.parseInt(this.items.get(2).menuValue.getCurrentValue().toString()));
                             break;
                         case "START":
-                            mainMenu.getLogo().color = new Vector4f(LevelContainer.SUN_COLOR_RGBA).mul(1.6f);
-                            gameObject.gameServer.startServer();
+                            multiPlayerDialog.open(Intrface.this);
                             break;
                     }
                 }
@@ -754,10 +772,10 @@ public class Intrface {
                                 console.write("Connected to server!");
                                 long tripTime = Math.round(endTime - beginTime) * 1000L;
                                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                                Game.setCurrentMode(Mode.MULTIPLAYER);
+                                gameMenu.getTitle().setContent("MUTLIPLAYER");
                             } else {
-                                Command command = Command.getCommand(Command.Target.PRINT);
-                                console.write("Unable to connect to server!");
-                                Command.execute(gameObject, command);
+                                console.write("Unable to connect to server!", true);
                             }
                             break;
 
@@ -815,6 +833,8 @@ public class Intrface {
         loadDialog.render(this, ifcShaderProgram);
         randLvlDialog.render(this, ifcShaderProgram);
         singlePlayerDialog.render(this, ifcShaderProgram);
+        multiPlayerDialog.render(this, ifcShaderProgram);
+
         if (!updText.isBuffered()) {
             updText.bufferSmart(this);
         }
@@ -936,6 +956,8 @@ public class Intrface {
      */
     public void release() {
         mainMenu.release();
+        gameMenu.release();
+
         optionsMenu.release();
         editorMenu.release();
 
@@ -1080,6 +1102,18 @@ public class Intrface {
 
     public Menu getGameMenu() {
         return gameMenu;
+    }
+
+    public ConcurrentDialog getMultiPlayerDialog() {
+        return multiPlayerDialog;
+    }
+
+    public OptionsMenu getSinglPlayerMenu() {
+        return singlPlayerMenu;
+    }
+
+    public OptionsMenu getMultiPlayerMenu() {
+        return multiPlayerMenu;
     }
 
 }

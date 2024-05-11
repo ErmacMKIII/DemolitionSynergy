@@ -226,7 +226,7 @@ public abstract class Menu {
             }
             title.render(intrface, shaderProgram);
             if (logo != null && title.getContent().equals("")) {
-                logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
+                logo.getPos().x = (alignmentAmount - 0.5f) * (longest * logo.getScale() * title.getRelativeCharWidth(intrface)) + pos.x;
                 logo.getPos().y = logo.giveRelativeHeight(intrface) * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
                     logo.bufferSmart(intrface);

@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -42,10 +42,10 @@ public class GameServer implements DSMachine, Runnable {
     public static int DEFAULT_PORT = 13667;
     protected int port = DEFAULT_PORT;
 
-    protected static final int BACKLOG = 16;
+    protected static final int MAX_CLIENTS = 8;
 
     protected ServerSocket server;
-    public final List<Socket> clients = new GapList<>();
+    public final IList<Socket> clients = new GapList<>();
     protected final GameObject gameObject;
 
     protected boolean running = false;
@@ -53,10 +53,17 @@ public class GameServer implements DSMachine, Runnable {
     protected final int version = 39;
     protected final int timeout = 320000;
 
+    protected final Object SYNC_OBJ = new Object();
+
     /**
      * Server worker
      */
     public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
+
+    /**
+     * Client service
+     */
+    public final ExecutorService clientServiceExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Create new game server
@@ -79,12 +86,53 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
+     * Client service. Suspended if no clients (connected player(s)).
+     */
+    public void clientServiceMethod() {
+        // Handling clients
+        try {
+            while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
+                if (clients.isEmpty()) {
+                    synchronized (SYNC_OBJ) {
+                        SYNC_OBJ.wait();
+                    }
+                }
+
+                for (Socket client : clients) {
+                    final RequestIfc request = RequestIfc.receive(GameServer.this, client);
+                    processRequest((ResponseIfc) request);
+                    ResponseIfc response = new Response();
+                }
+            }
+        } catch (IOException ex) {
+            DSLogger.reportError("Network Error(s) Occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError("Serialization or Deserialization failed!", ex);
+        }
+    }
+
+    /**
      * Start server.
      */
     public void startServer() {
         this.shutDownSignal = false;
         serverExecutor.execute(this);
+        clientServiceExecutor.execute(() -> {
+            clientServiceMethod();
+        });
+
         DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
+    }
+
+    /**
+     * Process request from clients
+     *
+     * @param request received request from clients
+     * @return object for generating response
+     */
+    public Object processRequest(ResponseIfc request) {
+        return null;
     }
 
     /**
@@ -109,18 +157,20 @@ public class GameServer implements DSMachine, Runnable {
                 } catch (IOException ex) {
                     DSLogger.reportError("Unable to close server!", ex);
                     DSLogger.reportError(ex.getMessage(), ex);
+                } finally {
+                    // revert back title
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
+                    this.shutDownSignal = true;
                 }
             }
         }
-        // revert back title
-        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
-        this.shutDownSignal = true;
     }
 
     /**
      * Shut down execution service. Server is not available anymore.
      */
     public void shutDown() {
+        this.clientServiceExecutor.shutdown();
         this.serverExecutor.shutdown();
     }
 
@@ -153,12 +203,15 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void accept(Socket client) throws IOException, Exception {
         // Send a simple message with magic bytes prepended
-        final StringBuilder sb = new StringBuilder();
         String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", this.worldName, this.version);
 
         ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcome);
 
         response.send(this, client);
+        // wakeup client service
+        synchronized (SYNC_OBJ) {
+            SYNC_OBJ.notify();
+        }
     }
 
     /**
@@ -200,7 +253,7 @@ public class GameServer implements DSMachine, Runnable {
                 client.setSoTimeout(timeout);
                 clients.add(client);
                 // Acceptance test (examination)
-                if (tst(client)) {
+                if (tst(client) && clients.size() <= MAX_CLIENTS) {
                     // Send "Welcome" Response
                     accept(client);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
@@ -208,7 +261,7 @@ public class GameServer implements DSMachine, Runnable {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);
                     clients.remove(client);
-                    shutDownSignal = true;
+//                    shutDownSignal = true;
                 }
                 // Handle the client connection
             } catch (IOException ex) {
@@ -239,7 +292,7 @@ public class GameServer implements DSMachine, Runnable {
         return server;
     }
 
-    public List<Socket> getClients() {
+    public IList<Socket> getClients() {
         return clients;
     }
 

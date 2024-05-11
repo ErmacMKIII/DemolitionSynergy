@@ -517,6 +517,8 @@ public class Game implements DSMachine {
                 } else if (key == GLFW.GLFW_KEY_V && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     gameObject.levelContainer.levelActors.player.switchViewToggle();
+                } else if (key == GLFW.GLFW_KEY_Y && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     Editor.selectPrevTexture();
@@ -741,6 +743,35 @@ public class Game implements DSMachine {
         }
 
         return okey;
+    }
+
+    /**
+     * Disconnect (host) server. Multiplayer. If was no connected has no effect.
+     */
+    public void disconnectFromServer() {
+        if (serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed()) {
+            try {
+                // Send a simple 'goodbye' message with magic bytes prepended
+                final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
+                goodByeRequest.send(this, serverEndpoint);
+
+                // Wait for response (assuming simple echo for demonstration)            
+                ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString());
+
+                serverEndpoint.close();
+                serverEndpoint.setSoTimeout(timeout);
+                DSLogger.reportInfo("Disconnected from server!", null);
+
+            } catch (IOException ex) {
+                DSLogger.reportError("Network error(s) occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportError("Error occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
     }
 
     /*

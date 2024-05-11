@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.util.Timer;
 import java.util.TimerTask;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
@@ -33,12 +34,12 @@ import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
+import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Game Engine composed of Game (Loop), Game Renderer and core components.
@@ -120,7 +121,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         WINDOW.centerTheWindow();
         //----------------------------------------------------------------------        
         this.splashScreen = new Quad(width, height, Texture.SPLASH, true);
-        this.splashScreen.setColor(GlobalColors.getRGBAColorOrDefault(GlobalColors.ColorName.YELLOW));
+        this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
         initializedWindow = true;
@@ -278,6 +279,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
         if (intrface.getSinglePlayerDialog().isDone()) {
             intrface.getSinglePlayerDialog().setEnabled(false);
+        }
+
+        if (intrface.getMultiPlayerDialog().isDone()) {
+            intrface.getMultiPlayerDialog().setEnabled(false);
         }
 
         if (intrface.getScreenText().isEnabled()) {
@@ -483,6 +488,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Clear Everything. Game will be 'Free'.
      */
     public void clearEverything() {
+        Editor.deselect();
         LevelContainer.AllBlockMap.init();
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
@@ -567,6 +573,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // TODO: Not implemented..
     public boolean generateMultiPlayerLevel(int numberOfBlocks) {
+        boolean ok = false;
+        this.clearEverything();
+        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
         return false;
     }
 

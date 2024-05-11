@@ -75,7 +75,7 @@ public class Command implements Callable<Object> {
     protected Target target = Target.NOP;
 
     public static enum Mode {
-        GET, SET, EXE
+        GET, SET
     };
     protected Mode mode = Mode.GET;
 
@@ -262,9 +262,10 @@ public class Command implements Callable<Object> {
                 case "clear":
                     command.target = Target.CLEAR;
                     break;
-                case "print":
-                case "echo":
-                case "write":
+                case "print": // Visual Basic
+                case "echo": // PHP
+                case "write": // C#
+                case "log": // JS
                     command.target = Target.PRINT;
                     if (things.length == 2) {
                         command.args.add((String) things[1]);
@@ -272,8 +273,9 @@ public class Command implements Callable<Object> {
                     break;
                 case "say":
                     command.target = Target.SAY;
-                    if (things.length == 2) {
+                    if (things.length == 3) {
                         command.args.add((String) things[1]);
+                        command.args.add((String) things[2]);
                     }
                     break;
                 default:
@@ -282,9 +284,13 @@ public class Command implements Callable<Object> {
             }
         }
 
-        if (command.args.isEmpty() && command.target != Target.CLEAR || command.target == Target.SIZEOF) {
+        boolean argsEmpty = command.args.isEmpty();
+        boolean isGetOnly = command.target == Target.SIZEOF;
+        boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY;
+
+        if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
-        } else {
+        } else if (isSetOnly) {
             command.mode = Mode.SET;
         }
 
@@ -622,15 +628,17 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case PRINT:
-                if (!command.getArgs().isEmpty()) {
-                    gameObject.intrface.getConsole().write((String) command.getArgs().get(0));
-                    command.status = Status.SUCCEEDED;
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        command.status = Status.SUCCEEDED;
+                    }
                 }
                 break;
             case SAY:
-                if (!command.getArgs().isEmpty()) {
-                    gameObject.intrface.getConsole().write((String) command.getArgs().get(0));
-                    command.status = Status.SUCCEEDED;
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        command.status = Status.SUCCEEDED;
+                    }
                 }
                 // TODO Multiplayer
                 // All clients receive chat
