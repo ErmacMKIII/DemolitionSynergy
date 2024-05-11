@@ -259,7 +259,7 @@ public class Configuration {
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
             pw.println("# Block number load per cache run. Must be between (0, 25000]");
             pw.println("BlocksPerRun = " + blocksPerRun);
-            pw.println("# Ticks per update (1 - FLUID, 2 - LEGACY)");
+            pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);

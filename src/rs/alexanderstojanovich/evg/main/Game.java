@@ -578,7 +578,7 @@ public class Game implements DSMachine {
     public void update(double deltaTime) {
         // update with delta time like gravity or sun
         if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
-            gameObject.update((float) deltaTime);
+            gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
         }
 
         // Heavy operations to run afterwards
