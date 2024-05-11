@@ -98,10 +98,16 @@ public class GameServer implements DSMachine, Runnable {
                     }
                 }
 
+                clients.removeIf(cli -> cli.isClosed());
+
                 for (Socket client : clients) {
                     final RequestIfc request = RequestIfc.receive(GameServer.this, client);
-                    processRequest((ResponseIfc) request);
-                    ResponseIfc response = new Response();
+                    ResponseIfc response = processRequest(client, request);
+                    response.send(this, client);
+                    // disconnect clients who send this
+                    if (request.getRequestType() == RequestIfc.RequestType.GOODBYE) {
+                        client.close();
+                    }
                 }
             }
         } catch (IOException ex) {
@@ -128,11 +134,34 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Process request from clients
      *
+     * @param client client socket (where request was received)
      * @param request received request from clients
      * @return object for generating response
      */
-    public Object processRequest(ResponseIfc request) {
-        return null;
+    public ResponseIfc processRequest(Socket client, RequestIfc request) {
+        ResponseIfc result = null;
+        String msg;
+        double time;
+        switch (request.getRequestType()) {
+            case HELLO:
+                msg = String.format("You are alerady connected to %s, v%s!", this.worldName, this.version);
+                result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
+                break;
+            case GOODBYE:
+                msg = "Goodbye, hope we will see you again!";
+                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                break;
+            case GET_TIME:
+                time = GameTime.Now().getTime();
+                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, time);
+                break;
+            case PING:
+                msg = String.format("You pinged %s", this.host);
+                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                break;
+        }
+
+        return result;
     }
 
     /**

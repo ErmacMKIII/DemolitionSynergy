@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -34,6 +35,10 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Request;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 
@@ -67,6 +72,7 @@ public class Command implements Callable<Object> {
         CACHE,
         CLEAR,
         NOP,
+        PING,
         PRINT,
         SAY,
         ERROR
@@ -626,6 +632,21 @@ public class Command implements Callable<Object> {
                     console.clear();
                 }
                 command.status = Status.SUCCEEDED;
+                break;
+            case PING:
+                if (command.mode == Mode.SET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+                    try {
+                        double beginTime = GLFW.glfwGetTime();
+                        RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
+                        req.send(gameObject.game, gameObject.game.getServerEndpoint());
+                        ResponseIfc.receive(gameObject.game, gameObject.game.getServerEndpoint());
+                        double endTime = GLFW.glfwGetTime();
+                        result = Math.round((endTime - beginTime)) * 1000L;
+                        command.status = Status.SUCCEEDED;
+                    } catch (Exception ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                }
                 break;
             case PRINT:
                 if (command.mode == Command.Mode.SET) {

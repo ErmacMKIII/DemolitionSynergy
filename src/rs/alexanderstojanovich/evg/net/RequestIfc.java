@@ -36,7 +36,38 @@ public interface RequestIfc extends DSObject {
      * Allowed request type. To send to DSynergy server.
      */
     public static enum RequestType {
-        HELLO, UPDATE, HANDLE_INPUT, SYNC_TIME, SAY, LOAD_CHUNK, GOODBYE
+        /**
+         * Send hello request to authenticate game client
+         */
+        HELLO,
+        /**
+         * Get ingame time from server
+         */
+        GET_TIME,
+        /**
+         * Set ingame time on the server
+         */
+        SET_TIME,
+        /**
+         * Get player position from the server
+         */
+        GET_POS,
+        /**
+         * Set player position on the server
+         */
+        SET_POS,
+        /**
+         * Send chat message to the server (global)
+         */
+        SAY,
+        /**
+         * Ping the server. Trip round-time.
+         */
+        PING,
+        /**
+         * Send goodbye-disconnect request to leave the server
+         */
+        GOODBYE
     }
 
     /**

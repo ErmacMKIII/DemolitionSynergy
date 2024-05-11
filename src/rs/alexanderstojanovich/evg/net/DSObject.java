@@ -48,7 +48,7 @@ public interface DSObject {
      * Intern data type
      */
     public static enum DataType {
-        VOID, BOOL, INT, FLOAT, STRING, ARRAY
+        VOID, BOOL, INT, FLOAT, LONG, DOUBLE, STRING, VEC3F, VEC4F
     }
 
     /**

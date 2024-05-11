@@ -1040,6 +1040,69 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
+     * Checks if a {@link Critter} has collision with the environment.
+     * Multiplayer.
+     *
+     * @param critter the critter to check for collision.
+     * @param playerServerPos player position according to server
+     * @param interpolationTime interpolation time
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
+    public static boolean hasCollisionWithEnvironment(Critter critter, Vector3f playerServerPos, float interpolationTime) {
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                        critter.body.getHeight(), critter.body.getDepth())) {
+            return true; // Collision detected outside the skybox or with its boundary.
+        }
+
+        final float precision = 32.0f;
+        final float stepAmount = (float) Game.TICK_TIME / precision;
+        final float maxAmount = (float) Game.AMOUNT;
+        Vector3f predictor = critter.getPredictor();
+
+        // Round the critter's predictor coordinates to align with the grid.
+        Vector3f predAlign = new Vector3f(
+                Math.round(predictor.x + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.y + 0.5f) & 0xFFFFFFFE,
+                Math.round(predictor.z + 0.5f) & 0xFFFFFFFE
+        );
+
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
+
+        // Iterate through adjacent positions.
+        OUTER:
+        for (int j = 0; j <= 13; j++) {
+            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+                // Interpolate the critter's position based on the current interpolation time.
+                Vector3f interpolatedPos = new Vector3f(critter.getPos()).lerp(playerServerPos, interpolationTime);
+
+                Vector3f adjPos = Block.getAdjacentPos(interpolatedPos, j, amount);
+                Vector3f adjAlign = new Vector3f(
+                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+                );
+
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, interpolatedPos)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                                    interpolatedPos, 1.05f * critter.body.getWidth(),
+                                    1.05f * critter.body.getHeight(),
+                                    1.05f * critter.body.getDepth())) {
+                        return true; // Collision detected, no need to continue checking.
+                    }
+                }
+            }
+        }
+
+        return false; // No collision detected.
+    }
+
+    /**
      * Applies gravity to the player, making them fall downwards if not
      * supported below.
      *

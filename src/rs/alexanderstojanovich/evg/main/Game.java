@@ -455,6 +455,143 @@ public class Game implements DSMachine {
         return changed;
     }
 
+    /**
+     * Handle input for player (Single player mode & Multiplayer mode)
+     *
+     * @param lc level (environment) container
+     * @param amountXZ movement amount on XZ plane
+     * @param amountY vertical movement amount on Y-axis when jump,
+     * @param amountYNeg vertical movement amount on Y-axis when sink,
+     * @param deltaTime tick time
+     *
+     * @return did player do something..
+     * @throws java.lang.Exception if deserialization fails
+     */
+    public boolean multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) throws Exception {
+        boolean changed = false;
+        causingCollision = false;
+        final Player player = lc.levelActors.player;
+
+        double beginTime = GLFW.glfwGetTime();
+        RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.VOID, null);
+        playerPosReq.send(this, serverEndpoint);
+        ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
+        double endTime = GLFW.glfwGetTime();
+        double ping = endTime - beginTime;
+
+        final float interpTime = (float) ping * deltaTime;
+        final Vector3f playerServerPos = (Vector3f) playerPosResp.getData();
+
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            player.movePredictorXZForward(amountXZ);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorXZBackward(amountXZ);
+            } else {
+                player.moveXZForward(amountXZ);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            player.movePredictorXZBackward(amountXZ);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorXZForward(amountXZ);
+            } else {
+                player.moveXZBackward(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_A]) {
+            player.movePredictorXZLeft(amountXZ);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorXZRight(amountXZ);
+            } else {
+                player.moveXZLeft(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_D]) {
+            player.movePredictorXZRight(amountXZ);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorXZLeft(amountXZ);
+            } else {
+                player.moveXZRight(amountXZ);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+            player.movePredictorYUp(amountY);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorYDown(amountY);
+            } else {
+                jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                changed = true;
+            }
+        }
+
+        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+            player.movePredictorYDown(amountYNeg);
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+                player.movePredictorYUp(amountYNeg);
+            } else {
+                player.sinkY(amountYNeg);
+                changed = true;
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_LEFT]) {
+            lc.levelActors.player.turnLeft(ANGLE);
+            changed = true;
+        }
+        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+            lc.levelActors.player.turnRight(ANGLE);
+            changed = true;
+        }
+
+        if (moveMouse) {
+            lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            moveMouse = false;
+            changed = true;
+        }
+
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
+            changed = true;
+        }
+
+//        if (keys[GLFW.GLFW_KEY_1]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_2]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_3]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_4]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_5]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_6]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
+//            changed = true;
+//        }
+        if (keys[GLFW.GLFW_KEY_R]) {
+            changed = true;
+        }
+
+        return changed;
+    }
+
     private void setCrosshairColor(Vector4f color) {
         gameObject.intrface.getCrosshair().setColor(color);
     }
@@ -615,6 +752,31 @@ public class Game implements DSMachine {
                 }
                 break;
             case SINGLE_PLAYER:
+                // player has control
+                actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT, 3920.0f * Game.AMOUNT, 1.1f * AMOUNT, (float) deltaTime);
+
+                if (actionPerformed) {
+                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                }
+
+                jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
+
+                if (!jumpPerformed) {
+                    Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                    Vector3f playerPosAlign = new Vector3f(
+                            Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                            Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                            Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                    );
+
+                    jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                            Block.getAdjacentPos(
+                                    playerPosAlign, Block.BOTTOM, 1.05f),
+                            false
+                    );
+                }
+                break;
             case MULTIPLAYER:
                 // player has control
                 actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT, 3920.0f * Game.AMOUNT, 1.1f * AMOUNT, (float) deltaTime);
@@ -761,7 +923,6 @@ public class Game implements DSMachine {
                 gameObject.intrface.getConsole().write(response.getData().toString());
 
                 serverEndpoint.close();
-                serverEndpoint.setSoTimeout(timeout);
                 DSLogger.reportInfo("Disconnected from server!", null);
 
             } catch (IOException ex) {
