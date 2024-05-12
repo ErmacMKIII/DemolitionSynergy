@@ -36,6 +36,7 @@ public class Request implements RequestIfc {
     protected RequestType requestType;
     protected DataType dataType;
     protected Object data;
+    protected int version = 0;
 
     public Request() {
 
@@ -70,85 +71,81 @@ public class Request implements RequestIfc {
     @Override
     public void serialize(DSMachine machine) throws Exception {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(byteStream);
-
         // Write magic bytes
-        out.write(RequestIfc.MAGIC_BYTES);
+        try (DataOutputStream out = new DataOutputStream(byteStream)) {
+            // Write magic bytes
+            out.write(RequestIfc.MAGIC_BYTES);
 
-        // Write machine type, object type, request type, data type
-        out.writeInt(machine.getMachineType().ordinal());
-        out.writeInt(getObjectType().ordinal());
-        out.writeInt(requestType.ordinal());
-        out.writeInt(dataType.ordinal());
+            // Write machine type, object type, request type, data type
+            out.writeInt(machine.getMachineType().ordinal());
+            out.writeInt(getObjectType().ordinal());
+            out.writeInt(requestType.ordinal());
+            out.writeInt(dataType.ordinal());
 
-        // Write version
-        out.writeInt(machine.getVersion());
+            // Write version
+            out.writeInt(machine.getVersion());
 
-        // Write data
-        if (dataType != DataType.VOID) {
-            switch (dataType) {
-                case STRING:
-                    String message = (String) data;
-                    byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
-                    out.writeInt(messageBytes.length);
-                    out.write(messageBytes);
-                    break;
-                default:
-                    throw new Exception("Unsupported data type during serialization!");
+            // Write data
+            if (dataType != DataType.VOID) {
+                switch (dataType) {
+                    case STRING:
+                        String message = (String) data;
+                        byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
+                        out.writeInt(messageBytes.length);
+                        out.write(messageBytes);
+                        break;
+                    default:
+                        throw new Exception("Unsupported data type during serialization!");
+                }
             }
         }
-
-        out.close();
         this.content = byteStream.toByteArray();
     }
 
     @Override
     public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
         ByteArrayInputStream byteStream = new ByteArrayInputStream(content);
-        DataInputStream in = new DataInputStream(byteStream);
-
+        int reqTypeOrdinal;
+        int dataTypeOrdinal;
+        int version;
         // Read magic bytes
-        byte[] magicBytes = new byte[RequestIfc.MAGIC_BYTES.length];
-        in.readFully(magicBytes);
-        if (!Arrays.equals(magicBytes, RequestIfc.MAGIC_BYTES)) {
-            return false; // Magic bytes mismatch
+        try (DataInputStream in = new DataInputStream(byteStream)) {
+            // Read magic bytes
+            byte[] magicBytes = new byte[RequestIfc.MAGIC_BYTES.length];
+            in.readFully(magicBytes);
+            if (!Arrays.equals(magicBytes, RequestIfc.MAGIC_BYTES)) {
+                return false; // Magic bytes mismatch
+            }   // Read machine type, object type, request type, and data type
+            int machineTypeOrdinal = in.readInt();
+            int objTypeOrdinal = in.readInt();
+            reqTypeOrdinal = in.readInt();
+            dataTypeOrdinal = in.readInt();
+            // Verify machine type, object type, and request type
+            if (machineTypeOrdinal < 0 || machineTypeOrdinal >= DSMachine.MachineType.values().length
+                    || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
+                    || reqTypeOrdinal < 0 || reqTypeOrdinal >= RequestType.values().length
+                    || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
+                return false; // Invalid machine type, object type, request type, or data type
+            }   // Read version
+            version = in.readInt();
+            // Read data
+            switch (DataType.values()[dataTypeOrdinal]) {
+                case STRING:
+                    int stringLength = in.readInt();
+                    byte[] stringBytes = new byte[stringLength];
+                    in.readFully(stringBytes);
+                    data = new String(stringBytes, StandardCharsets.UTF_8);
+                    break;
+                case VOID:
+                    break;
+                default:
+                    throw new Exception("Unsupported data type during deserialization!");
+            }
         }
-
-        // Read machine type, object type, request type, and data type
-        int machineTypeOrdinal = in.readInt();
-        int objTypeOrdinal = in.readInt();
-        int reqTypeOrdinal = in.readInt();
-        int dataTypeOrdinal = in.readInt();
-
-        // Verify machine type, object type, and request type
-        if (machineTypeOrdinal < 0 || machineTypeOrdinal >= DSMachine.MachineType.values().length
-                || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
-                || reqTypeOrdinal < 0 || reqTypeOrdinal >= RequestType.values().length
-                || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
-            return false; // Invalid machine type, object type, request type, or data type
-        }
-
-        // Read version
-        int version = in.readInt();
-
-        // Read data
-        switch (DataType.values()[dataTypeOrdinal]) {
-            case STRING:
-                int stringLength = in.readInt();
-                byte[] stringBytes = new byte[stringLength];
-                in.readFully(stringBytes);
-                data = new String(stringBytes, StandardCharsets.UTF_8);
-                break;
-            case VOID:
-                break;
-            default:
-                throw new Exception("Unsupported data type during deserialization!");
-        }
-
-        in.close();
         this.content = content;
         this.requestType = RequestType.values()[reqTypeOrdinal];
         this.dataType = DataType.values()[dataTypeOrdinal];
+        this.version = version;
         return true;
     }
 

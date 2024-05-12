@@ -1243,10 +1243,10 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param critter the critter to check for collision.
      * @param playerServerPos player position according to server
-     * @param interpolationTime interpolation time
+     * @param interpFactor interpolation factor
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(Critter critter, Vector3f playerServerPos, float interpolationTime) {
+    public static boolean hasCollisionWithEnvironment(Critter critter, Vector3f playerServerPos, float interpFactor) {
         if (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
                         critter.body.getHeight(), critter.body.getDepth())) {
@@ -1275,7 +1275,7 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = 0; j <= 13; j++) {
             for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
                 // Interpolate the critter's position based on the current interpolation time.
-                Vector3f interpolatedPos = new Vector3f(critter.getPos()).lerp(playerServerPos, interpolationTime);
+                Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
 
                 Vector3f adjPos = Block.getAdjacentPos(interpolatedPos, j, amount);
                 Vector3f adjAlign = new Vector3f(

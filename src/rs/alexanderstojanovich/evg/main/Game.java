@@ -66,7 +66,7 @@ public class Game implements DSMachine {
 
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 5.5f / (float) TPS;
+    public static final float AMOUNT = 5.5f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -340,7 +340,7 @@ public class Game implements DSMachine {
      *
      * @return did player do something..
      */
-    public boolean playerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
+    public boolean singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
         final Player player = lc.levelActors.player;
@@ -472,15 +472,20 @@ public class Game implements DSMachine {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        double beginTime = GLFW.glfwGetTime();
-        RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.VOID, null);
-        playerPosReq.send(this, serverEndpoint);
-        ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
-        double endTime = GLFW.glfwGetTime();
-        double ping = endTime - beginTime;
+        double ping = 0.000;
+        Vector3f playerServerPos = player.getPos();
 
-        final float interpTime = (float) ping * deltaTime;
-        final Vector3f playerServerPos = (Vector3f) playerPosResp.getData();
+        // Multiplayer-Join mode
+        if (isConnected()) {
+            double beginTime = GLFW.glfwGetTime();
+            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.VOID, null);
+            playerPosReq.send(this, serverEndpoint);
+            ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
+            playerServerPos = (Vector3f) playerPosResp.getData();
+            double endTime = GLFW.glfwGetTime();
+            ping = endTime - beginTime;
+        }
+        final float interpTime = 1.0f - deltaTime / ((float) ping + deltaTime);
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             player.movePredictorXZForward(amountXZ);
@@ -713,6 +718,22 @@ public class Game implements DSMachine {
      * @param deltaTime time interval between updates
      */
     public void update(double deltaTime) {
+        if (Game.currentMode == Mode.MULTIPLAYER && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
+            try {
+                double beginTime = GLFW.glfwGetTime();
+                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
+                playerPosReq.send(this, serverEndpoint);
+                ResponseIfc timeResp = ResponseIfc.receive(this, serverEndpoint);
+                double endTime = GLFW.glfwGetTime();
+                long tripTime = Math.round(endTime - beginTime) * 1000L;
+
+                Game.setGameTicks((double) timeResp.getData());
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+            } catch (Exception ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
         // update with delta time like gravity or sun
         if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
             gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
@@ -737,76 +758,84 @@ public class Game implements DSMachine {
      * @param deltaTime time interval between updates
      */
     public void handleInput(double deltaTime) {
-        actionPerformed = false;
-        switch (currentMode) {
-            case FREE:
-                // nobody has control
-                break;
-            case EDITOR:
-                // observer has control
-                actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT);
-                actionPerformed |= editorDo(gameObject.levelContainer);
+        try {
+            GLFW.glfwPollEvents();
+            if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+                final float time = (float) deltaTime * Game.TICKS_PER_UPDATE;
+                final float amount = Game.AMOUNT * time;
+                actionPerformed = false;
+                switch (currentMode) {
+                    case FREE:
+                        // nobody has control
+                        break;
+                    case EDITOR:
+                        // observer has control
+                        actionPerformed |= observerDo(gameObject.levelContainer, amount);
+                        actionPerformed |= editorDo(gameObject.levelContainer);
 
-                if (actionPerformed) {
-                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+                        break;
+                    case SINGLE_PLAYER:
+                        // player has control
+                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+
+                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
+
+                        if (!jumpPerformed) {
+                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                            Vector3f playerPosAlign = new Vector3f(
+                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                            );
+
+                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                                    Block.getAdjacentPos(
+                                            playerPosAlign, Block.BOTTOM, 1.05f),
+                                    false
+                            );
+                        }
+                        break;
+                    case MULTIPLAYER:
+                        // player has control
+                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+
+                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
+
+                        if (!jumpPerformed) {
+                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
+
+                            Vector3f playerPosAlign = new Vector3f(
+                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
+                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
+                            );
+
+                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
+                                    Block.getAdjacentPos(
+                                            playerPosAlign, Block.BOTTOM, 1.05f),
+                                    false
+                            );
+                        }
+                        break;
                 }
-                break;
-            case SINGLE_PLAYER:
-                // player has control
-                actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT, 3920.0f * Game.AMOUNT, 1.1f * AMOUNT, (float) deltaTime);
-
-                if (actionPerformed) {
-                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                }
-
-                jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                if (!jumpPerformed) {
-                    Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                    Vector3f playerPosAlign = new Vector3f(
-                            Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                            Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                            Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                    );
-
-                    jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                            Block.getAdjacentPos(
-                                    playerPosAlign, Block.BOTTOM, 1.05f),
-                            false
-                    );
-                }
-                break;
-            case MULTIPLAYER:
-                // player has control
-                actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT, 3920.0f * Game.AMOUNT, 1.1f * AMOUNT, (float) deltaTime);
-
-                if (actionPerformed) {
-                    LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                }
-
-                jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                if (!jumpPerformed) {
-                    Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                    Vector3f playerPosAlign = new Vector3f(
-                            Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                            Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                            Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                    );
-
-                    jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                            Block.getAdjacentPos(
-                                    playerPosAlign, Block.BOTTOM, 1.05f),
-                            false
-                    );
-                }
-                break;
+                // display collision text
+                gameObject.assertCheckCollision(causingCollision);
+            }
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex);
         }
-
-        // display collision text
-        gameObject.assertCheckCollision(causingCollision);
     }
 
     /**
@@ -856,8 +885,7 @@ public class Game implements DSMachine {
                 // Update with fixed timestep (environment)
                 update(TICK_TIME);
 
-                // Poll & handle events (keyboard & mouse)
-                GLFW.glfwPollEvents();
+                // Poll & handle events (keyboard & mouse)                                
                 handleInput(TICK_TIME);
 
                 ups++;
@@ -877,6 +905,9 @@ public class Game implements DSMachine {
      * @return endpoint if connection succeeds and acceptance test is passed
      */
     public boolean connectToServer() {
+        if (isConnected()) {
+            return false;
+        }
         boolean okey = false;
         Socket endpoint;
         try {
@@ -911,7 +942,7 @@ public class Game implements DSMachine {
      * Disconnect (host) server. Multiplayer. If was no connected has no effect.
      */
     public void disconnectFromServer() {
-        if (serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed()) {
+        if (isConnected()) {
             try {
                 // Send a simple 'goodbye' message with magic bytes prepended
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
@@ -965,6 +996,10 @@ public class Game implements DSMachine {
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
         return cfg;
+    }
+
+    public boolean isConnected() {
+        return serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed();
     }
 
     public static GLFWKeyCallback getDefaultKeyCallback() {
