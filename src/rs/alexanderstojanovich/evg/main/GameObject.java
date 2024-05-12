@@ -18,9 +18,13 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
+import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.MasterRenderer;
 import rs.alexanderstojanovich.evg.core.PerspectiveRenderer;
@@ -30,7 +34,6 @@ import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Predictable;
-import rs.alexanderstojanovich.evg.intrface.ConcurrentDialog;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
@@ -75,6 +78,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public final Game game;
     public final GameServer gameServer;
     public final GameRenderer renderer;
+
+    /**
+     * Async Task Executor
+     */
+    public static final ExecutorService TASK_EXECUTOR = Executors.newCachedThreadPool();
 
     /**
      * Update/Generate for Level Container Mutex. Responsible for writting to
@@ -464,7 +472,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Optimize with working/special tuples
      */
     private void optimize() {
-        levelContainer.optimize();
+        synchronized (UPDATE_RENDER_LC_MUTEX) {
+            levelContainer.optimize();
+        }
     }
 
     /**
@@ -489,6 +499,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void clearEverything() {
         Editor.deselect();
+        CacheModule.deleteCache();
         LevelContainer.AllBlockMap.init();
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
@@ -554,7 +565,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Start new randomly generated level in singleplayer. New level will be
+     * Start new randomly generated level in single player. New level will be
      * generated. Notice that there is no 'SMALL', 'MEDIUM', 'LARGE', 'HUGE'. It
      * is coded to parameter 'numberOfBlocks'.
      *
@@ -571,12 +582,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         return ok;
     }
 
-    // TODO: Not implemented..
-    public boolean generateMultiPlayerLevel(int numberOfBlocks) {
+    /**
+     * Host new randomly generated level in multiplayer. All players on join
+     * will download the saved level from game server 'world name'.
+     *
+     * @param numberOfBlocks max number of blocks to generate
+     * @return success of operation
+     * @throws java.lang.InterruptedException
+     * @throws java.util.concurrent.ExecutionException
+     */
+    public boolean generateMultiPlayerLevel(int numberOfBlocks) throws InterruptedException, ExecutionException {
         boolean ok = false;
+
         this.clearEverything();
-        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
-        return false;
+        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks) && levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat").get();
+
+        return ok;
     }
 
     /**
@@ -593,7 +614,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     * Load the window context and destroyes the window.
      */
     public void destroy() {
-        ConcurrentDialog.EXECUTOR.shutdown();
+        TASK_EXECUTOR.shutdown();
         WINDOW.destroy();
     }
 

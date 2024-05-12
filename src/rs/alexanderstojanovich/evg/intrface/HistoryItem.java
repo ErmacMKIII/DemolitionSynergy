@@ -44,17 +44,16 @@ public class HistoryItem {
         StringBuilder sb = new StringBuilder();
         if (cmd.target == Command.Target.ERROR) {
             sb.append(cmd.input);
+        } else {
+            sb.append(cmd.target);
         }
-//        } else if (cmd.mode != Command.Mode.EXE) {
-//            sb.append(cmd.target);
-//        }
         String connector = "";
         switch (cmd.mode) {
             case GET:
                 connector = " IS ";
                 break;
             case SET:
-//                connector = " => ";
+                connector = " => ";
                 break;
             default:
                 break;

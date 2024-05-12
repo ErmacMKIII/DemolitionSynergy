@@ -1333,6 +1333,22 @@ public class Block extends Model {
         return byteArray;
     }
 
+    public static byte[] toByteArray(Vector3f pos, TexByte tb) {
+        byte[] byteArray = new byte[29];
+        int offset = 0;
+        byte[] texNameArr = tb.texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5);
+        offset += 5;
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        Vector3f primaryRGBColor = new Vector3f(tb.color.x, tb.color.y, tb.color.z);
+        byte[] colArr = VectorFloatUtils.vec3fToByteArray(primaryRGBColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
+        return byteArray;
+    }
+
     public byte[] toNewByteArray() {
         byte[] byteArray = new byte[35];
         int offset = 0;

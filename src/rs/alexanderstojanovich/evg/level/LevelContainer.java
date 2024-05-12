@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Alexander Stojanonullch <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -73,7 +74,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
-    public static final float SUN_SCALE = 28.0f;
+    public static final float SUN_SCALE = 32.0f;
     public static final float SUN_INTENSITY = (float) (1 << 28); // 268M
 
     public static final LightSource SUNLIGHT
@@ -177,7 +178,7 @@ public class LevelContainer implements GravityEnviroment {
         Vector3f pos = block.getPos();
         String str = block.getTexName();
         byte bits = updatePutNeighbors(pos);
-        TexByte locVal = new TexByte(str, bits, block.isSolid(), block.getId());
+        TexByte locVal = new TexByte(block.getPrimaryRGBAColor(), str, bits, block.isSolid(), block.getId());
         AllBlockMap.putLocation(new Vector3f(pos), locVal);
     }
 
@@ -414,6 +415,89 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
+    public boolean generateMultiPlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+        if (working) {
+            return false;
+        }
+        working = true;
+        levelActors.freeze();
+
+        boolean success = false;
+        progress = 0.0f;
+        if (gameObject.intrface.isHugeLevel()) {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM_PULSE, true, true);
+        } else {
+            gameObject.getMusicPlayer().play(AudioFile.RANDOM, true, true);
+        }
+
+        chunks.clear();
+
+        AllBlockMap.init();
+
+        lightSources.retainLights(2);
+
+        CacheModule.deleteCache();
+
+        if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_BLOCKS) {
+            // generate blocks
+            randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
+            randomLevelGenerator.generate();
+
+            // place player on his/her position
+            LevelContainer levelContainer = gameObject.getLevelContainer();
+            Player player = (Player) levelContainer.levelActors.player;
+            Random random = gameObject.getRandomLevelGenerator().getRandom();
+
+            // random on elements in the center
+            final int halfDim = Chunk.GRID_SIZE / 2;
+            final int ldim = Math.max(halfDim - 1, 0);
+            final int rdim = Math.min(halfDim + 1, Chunk.CHUNK_NUM - 1);
+
+            int attempts = 0;
+            IList<Vector3f> solidPopLoc;
+            do {
+                // choosing random solid location                            
+                int randCol = ldim + random.nextInt(rdim - ldim);
+                int randRow = ldim + random.nextInt(rdim - ldim);
+                int chunkId = randRow * Chunk.GRID_SIZE + randCol;
+                solidPopLoc = LevelContainer.AllBlockMap.getPopulatedLocations(chunkId, loc -> loc.solid && ((loc.byteValue & (~Block.Y_MASK & 63))) != 0);
+                attempts++;
+            } while (solidPopLoc.isEmpty() && attempts < Chunk.GRID_SIZE);
+
+            // spawn preferrance
+            if (solidPopLoc.size() > 200) {
+                final int[] tstSides = {Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
+                for (float r = 2.0f; r <= 16.0f; r += 2.0f) {
+                    for (int j : tstSides) {
+                        final float amount = r;
+                        solidPopLoc.removeIf(loc -> AllBlockMap.isLocationPopulated(Block.getAdjacentPos(loc, j, amount), true));
+                    }
+                }
+            }
+
+            do {
+                int rindex = random.nextInt(solidPopLoc.size());
+                Vector3f solidLoc = solidPopLoc.get(rindex);
+                Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z);
+                player.setPos(playerLoc);
+            } while (LevelContainer.hasCollisionWithEnvironment((Critter) player));
+            player.movePredictorUp(0.0f);
+            player.ascend(0.0f); // Stop player changing location work            
+
+            success = true;
+        }
+
+        blockEnvironment.clear();
+
+        progress = 100.0f;
+        working = false;
+
+        levelActors.unfreeze();
+        gameObject.getMusicPlayer().stop();
+
+        return success;
+    }
+
     private boolean storeLevelToBuffer() {
         working = true;
         boolean success = false;
@@ -449,12 +533,8 @@ public class LevelContainer implements GravityEnviroment {
         System.arraycopy(camup, 0, buffer, pos, camright.length);
         pos += camright.length;
 
-        IList<Block> allBlocks = chunks.getTotalList();
-        Predicate predSolid = (Predicate<Block>) (Block t) -> t.isSolid();
-        IList<Block> solidBlocks = (IList<Block>) allBlocks.filter(predSolid);
-
-        Predicate predFluid = (Predicate<Block>) (Block t) -> !t.isSolid();
-        IList<Block> fluidBlocks = (IList<Block>) allBlocks.filter(predFluid);
+        IList<Vector3f> solidPos = AllBlockMap.getPopulatedLocations(tb -> tb.solid);
+        IList<Vector3f> fluidPos = AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
 
         buffer[pos++] = 'S';
         buffer[pos++] = 'O';
@@ -462,19 +542,19 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        int solidNum = solidBlocks.size();
+        int solidNum = solidPos.size();
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
         //----------------------------------------------------------------------
-        for (Block solidBlock : solidBlocks) {
+        for (Vector3f sp : solidPos) {
             if (gameObject.WINDOW.shouldClose()) {
                 break;
             }
-            byte[] byteArraySolid = solidBlock.toByteArray();
+            byte[] byteArraySolid = Block.toByteArray(sp, AllBlockMap.getLocation(sp));
             System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
             pos += 29;
-            progress += 50.0f / (float) allBlocks.size();
+            progress += 50.0f / (float) solidPos.size();
         }
 
         buffer[pos++] = 'F';
@@ -483,18 +563,18 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = 'I';
         buffer[pos++] = 'D';
 
-        int fluidNum = fluidBlocks.size();
+        int fluidNum = fluidPos.size();
         buffer[pos++] = (byte) (fluidNum);
         buffer[pos++] = (byte) (fluidNum >> 8);
 
-        for (Block fluidBlock : fluidBlocks) {
+        for (Vector3f fp : fluidPos) {
             if (gameObject.WINDOW.shouldClose()) {
                 break;
             }
-            byte[] byteArrayFluid = fluidBlock.toByteArray();
+            byte[] byteArrayFluid = Block.toByteArray(fp, AllBlockMap.getLocation(fp));
             System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
             pos += 29;
-            progress += 50.0f / (float) allBlocks.size();
+            progress += 50.0f / (float) fluidPos.size();
         }
 
         buffer[pos++] = 'E';
@@ -510,6 +590,91 @@ public class LevelContainer implements GravityEnviroment {
         working = false;
         gameObject.getMusicPlayer().stop();
         return success;
+    }
+
+    private boolean storeLevelToBufferAsync() {
+        progress = 0.0f;
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
+        pos = 0;
+        buffer[0] = 'D';
+        buffer[1] = 'S';
+        pos += 2;
+
+        Camera camera = levelActors.mainCamera();
+        if (camera == null) {
+            return false;
+        }
+
+        byte[] campos = VectorFloatUtils.vec3fToByteArray(camera.getPos());
+        System.arraycopy(campos, 0, buffer, pos, campos.length);
+        pos += campos.length;
+
+        byte[] camfront = VectorFloatUtils.vec3fToByteArray(camera.getFront());
+        System.arraycopy(camfront, 0, buffer, pos, camfront.length);
+        pos += camfront.length;
+
+        byte[] camup = VectorFloatUtils.vec3fToByteArray(camera.getUp());
+        System.arraycopy(camup, 0, buffer, pos, camup.length);
+        pos += camup.length;
+
+        byte[] camright = VectorFloatUtils.vec3fToByteArray(camera.getRight());
+        System.arraycopy(camup, 0, buffer, pos, camright.length);
+        pos += camright.length;
+
+        IList<Vector3f> solidPos = AllBlockMap.getPopulatedLocations(tb -> tb.solid);
+        IList<Vector3f> fluidPos = AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
+
+        buffer[pos++] = 'S';
+        buffer[pos++] = 'O';
+        buffer[pos++] = 'L';
+        buffer[pos++] = 'I';
+        buffer[pos++] = 'D';
+
+        int solidNum = solidPos.size();
+        buffer[pos++] = (byte) (solidNum);
+        buffer[pos++] = (byte) (solidNum >> 8);
+
+        //----------------------------------------------------------------------
+        for (Vector3f sp : solidPos) {
+            if (gameObject.WINDOW.shouldClose()) {
+                break;
+            }
+            byte[] byteArraySolid = Block.toByteArray(sp, AllBlockMap.getLocation(sp));
+            System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
+            pos += 29;
+            progress += 50.0f / (float) solidPos.size();
+        }
+
+        buffer[pos++] = 'F';
+        buffer[pos++] = 'L';
+        buffer[pos++] = 'U';
+        buffer[pos++] = 'I';
+        buffer[pos++] = 'D';
+
+        int fluidNum = fluidPos.size();
+        buffer[pos++] = (byte) (fluidNum);
+        buffer[pos++] = (byte) (fluidNum >> 8);
+
+        for (Vector3f fp : fluidPos) {
+            if (gameObject.WINDOW.shouldClose()) {
+                break;
+            }
+            byte[] byteArrayFluid = Block.toByteArray(fp, AllBlockMap.getLocation(fp));
+            System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
+            pos += 29;
+            progress += 50.0f / (float) fluidPos.size();
+        }
+
+        buffer[pos++] = 'E';
+        buffer[pos++] = 'N';
+        buffer[pos++] = 'D';
+
+        levelActors.unfreeze();
+        progress = 100.0f;
+
+        gameObject.getMusicPlayer().stop();
+
+        return true;
     }
 
     private boolean loadLevelFromBuffer() {
@@ -611,6 +776,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         gameObject.getMusicPlayer().stop();
+
         return success;
     }
 
@@ -746,6 +912,38 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
         return success;
+    }
+
+    public Future<Boolean> saveLevelToFileAsync(String filename) {
+        Callable<Boolean> task = () -> {
+            boolean result = false;
+            BufferedOutputStream bos = null;
+            File file = new File(filename);
+            if (file.exists()) {
+                file.delete();
+            }
+            result |= storeLevelToBufferAsync(); // saves level to bufferVertices first
+
+            try {
+                bos = new BufferedOutputStream(new FileOutputStream(file));
+                bos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+            if (bos != null) {
+                try {
+                    bos.close();
+                } catch (IOException ex) {
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
+                }
+            }
+
+            return result;
+        };
+
+        return GameObject.TASK_EXECUTOR.submit(task);
     }
 
     public boolean loadLevelFromFile(String filename) {

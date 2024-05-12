@@ -576,10 +576,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
         // setSafeCheck which column of the interval
-        int col = Math.round(nx * (1.0f / STEP - 1.0f));
+        int col = (int) (nx * (1.0f / STEP - 1.0f));
 
         // setSafeCheck which rows of the interval
-        int row = Math.round(nz * (1.0f / STEP - 1.0f));
+        int row = (int) (nz * (1.0f / STEP - 1.0f));
 
         // determining chunk id -> row(z) & col(x)
         int cid = row * GRID_SIZE + col;

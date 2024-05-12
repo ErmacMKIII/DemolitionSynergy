@@ -296,7 +296,9 @@ public class Command implements Callable<Object> {
 
         if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
-        } else if (isSetOnly) {
+        }
+
+        if (isSetOnly || !argsEmpty) {
             command.mode = Mode.SET;
         }
 

@@ -33,6 +33,12 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public abstract class Dialog {
 
+    public static enum ExecStatus {
+        NOT_RUNNING, IN_PROGRESS, SUCCESS, FAILURE
+    }
+
+    protected ExecStatus execStatus = ExecStatus.NOT_RUNNING;
+
     protected final DynamicText dialog;
     protected final StringBuilder input = new StringBuilder(); // this is the answer we type from keyboard
     protected boolean enabled;
@@ -94,18 +100,19 @@ public abstract class Dialog {
         };
     }
 
-    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog  
+    protected abstract ExecStatus execute(String arg); // we need to override this upon creation of the dialog  
 
     /*
      * What happens on command
      */
     protected void onCommand() {// what is happening internally on command
+        execStatus = ExecStatus.NOT_RUNNING;
         if (!input.toString().equals("")) {
-            boolean execStatus = execute(input.toString());
-            if (execStatus) {
+            execStatus = execute(input.toString());
+            if (execStatus == ExecStatus.SUCCESS) {
                 dialog.setContent(success);
                 dialog.color = GlobalColors.GREEN_RGBA;
-            } else {
+            } else if (execStatus == ExecStatus.FAILURE) {
                 dialog.setContent(fail);
                 dialog.color = GlobalColors.RED_RGBA;
             }

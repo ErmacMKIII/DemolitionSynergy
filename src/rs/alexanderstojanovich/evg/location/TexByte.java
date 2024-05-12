@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.location;
 
 import java.util.Objects;
+import org.joml.Vector4f;
 
 /**
  *
@@ -24,6 +25,10 @@ import java.util.Objects;
  */
 public class TexByte {
 
+    /**
+     * Block color
+     */
+    public final Vector4f color;
     /**
      * Texture Name
      */
@@ -41,11 +46,45 @@ public class TexByte {
      */
     public final int blkId;
 
-    public TexByte(String texName, byte byteValue, boolean solid, int blkId) {
+    /**
+     * Get properties of block.
+     *
+     * @param color block color
+     * @param texName block texture name
+     * @param solid is block solid
+     * @param blkId block id (primary key) occupying the slot
+     */
+    public TexByte(Vector4f color, String texName, boolean solid, int blkId) {
+        this.color = color;
+        this.texName = texName;
+        this.solid = solid;
+        this.blkId = blkId;
+    }
+
+    /**
+     * Get properties of block.
+     *
+     * @param color block color
+     * @param texName block texture name
+     * @param byteValue facebits of the block
+     * @param solid is block solid
+     * @param blkId block id (primary key) occupying the slot
+     */
+    public TexByte(Vector4f color, String texName, byte byteValue, boolean solid, int blkId) {
+        this.color = color;
         this.texName = texName;
         this.byteValue = byteValue;
         this.solid = solid;
         this.blkId = blkId;
+    }
+
+    /**
+     * Get block color (RGBA)
+     *
+     * @return vec4 RGBA of color
+     */
+    public Vector4f getColor() {
+        return color;
     }
 
     /**
@@ -86,11 +125,12 @@ public class TexByte {
 
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 71 * hash + Objects.hashCode(this.texName);
-        hash = 71 * hash + this.byteValue;
-        hash = 71 * hash + (this.solid ? 1 : 0);
-        hash = 71 * hash + this.blkId;
+        int hash = 5;
+        hash = 97 * hash + Objects.hashCode(this.color);
+        hash = 97 * hash + Objects.hashCode(this.texName);
+        hash = 97 * hash + this.byteValue;
+        hash = 97 * hash + (this.solid ? 1 : 0);
+        hash = 97 * hash + this.blkId;
         return hash;
     }
 
@@ -115,7 +155,10 @@ public class TexByte {
         if (this.blkId != other.blkId) {
             return false;
         }
-        return Objects.equals(this.texName, other.texName);
+        if (!Objects.equals(this.texName, other.texName)) {
+            return false;
+        }
+        return Objects.equals(this.color, other.color);
     }
 
 }

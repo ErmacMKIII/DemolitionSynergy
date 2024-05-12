@@ -16,10 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.joml.Vector2f;
-import org.joml.Vector4f;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
@@ -29,29 +30,27 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread                
 
-    private Runnable command;
-    public static final ExecutorService EXECUTOR = Executors.newSingleThreadExecutor();
-    private Thread dialogThread; // thread which executes command     
-
     public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) throws Exception {
         super(texture, pos, question, success, fail);
     }
 
     @Override
-    protected abstract boolean execute(String command); // we need to override this upon creation of the dialog     
+    protected abstract ExecStatus execute(String arg); // we need to override this upon creation of the dialog     
 
     // what is happening internally on command
     @Override
     protected void onCommand() {
-        command = () -> {
+        execStatus = ExecStatus.NOT_RUNNING;
+        Runnable task = () -> {
+            execStatus = ExecStatus.IN_PROGRESS;
             if (!input.toString().equals("")) {
-                boolean execStatus = execute(input.toString());
-                if (execStatus) {
+                execStatus = execute(input.toString());
+                if (execStatus == ExecStatus.SUCCESS) {
                     dialog.setContent(success);
-                    dialog.color = new Vector4f(GlobalColors.GREEN, 1.0f);
-                } else {
+                    dialog.color = GlobalColors.GREEN_RGBA;
+                } else if (execStatus == ExecStatus.FAILURE) {
                     dialog.setContent(fail);
-                    dialog.color = new Vector4f(GlobalColors.RED, 1.0f);
+                    dialog.color = GlobalColors.RED_RGBA;
                 }
             } else {
                 dialog.setContent("");
@@ -60,15 +59,23 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             input.setLength(0);
             done = true;
         };
-        EXECUTOR.execute(command);
+
+        GameObject.TASK_EXECUTOR.execute(task);
     }
 
-    public Runnable getCommand() {
-        return command;
-    }
+    /**
+     * Execute async command and wait on result (blocking).
+     *
+     * @param arg string argument
+     * @return execution status
+     */
+    public Future<ExecStatus> executeAsync(String arg) {
+        Callable<ExecStatus> task = () -> {
+            execStatus = ExecStatus.IN_PROGRESS;
+            return execute(arg);
+        };
 
-    public Thread getDialogThread() {
-        return dialogThread;
+        return GameObject.TASK_EXECUTOR.submit(task);
     }
 
 }

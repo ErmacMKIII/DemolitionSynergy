@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -248,10 +247,10 @@ public class CacheModule {
                 MEMORY[pos++] = (byte) blocks.size();
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
                 for (Block block : blocks) {
-                    TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
-                    if (location != null) {
-                        LevelContainer.AllBlockMap.removeLocation(block.pos);
-                    }
+//                    TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
+//                    if (location != null) {
+//                        LevelContainer.AllBlockMap.removeLocation(block.pos);
+//                    }
 
                     byte[] texName = block.getTexName().getBytes();
                     System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
@@ -367,6 +366,8 @@ public class CacheModule {
             }
             cache.delete();
         }
+
+        CACHED_CHUNKS.clear();
     }
 
     /**

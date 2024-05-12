@@ -99,6 +99,7 @@ public class GameServer implements DSMachine, Runnable {
                 }
 
                 clients.removeIf(cli -> cli.isClosed());
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
 
                 for (Socket client : clients) {
                     final RequestIfc request = RequestIfc.receive(GameServer.this, client);
@@ -190,6 +191,10 @@ public class GameServer implements DSMachine, Runnable {
                     // revert back title
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
                     this.shutDownSignal = true;
+                    // wakeup client service
+                    synchronized (SYNC_OBJ) {
+                        SYNC_OBJ.notify();
+                    }
                 }
             }
         }
@@ -298,6 +303,10 @@ public class GameServer implements DSMachine, Runnable {
                 DSLogger.reportError(ex.getMessage(), ex);
             } catch (Exception ex) {
                 DSLogger.reportError("Serialization or Deserialization failed!", ex);
+            } finally {
+                if (server.isClosed()) {
+                    shutDownSignal = true;
+                }
             }
         }
 
