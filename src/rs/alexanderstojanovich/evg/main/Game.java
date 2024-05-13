@@ -134,7 +134,7 @@ public class Game implements DSMachine {
     protected Socket serverEndpoint;
     protected InetAddress serverAddress;
     protected int port = DEFAULT_PORT;
-    protected int timeout = 300000; // 30 sec
+    protected int timeout = 30; // 30 sec
 
     /**
      * Access to Game Engine.
@@ -478,18 +478,23 @@ public class Game implements DSMachine {
         // Multiplayer-Join mode
         if (isConnected()) {
             double beginTime = GLFW.glfwGetTime();
-            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.VOID, null);
+            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, serverEndpoint);
             ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
-            playerServerPos = (Vector3f) playerPosResp.getData();
-            double endTime = GLFW.glfwGetTime();
-            ping = endTime - beginTime;
+            if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                playerServerPos = (Vector3f) playerPosResp.getData();
+                double endTime = GLFW.glfwGetTime();
+                ping = endTime - beginTime;
+            } else {
+                DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
+                gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
+            }
         }
-        final float interpTime = 1.0f - deltaTime / ((float) ping + deltaTime);
+        final float interpFact = 1.0f - deltaTime / ((float) ping + deltaTime);
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             player.movePredictorXZForward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
@@ -499,7 +504,7 @@ public class Game implements DSMachine {
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
             player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
@@ -509,7 +514,7 @@ public class Game implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_A]) {
             player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
@@ -519,7 +524,7 @@ public class Game implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_D]) {
             player.movePredictorXZRight(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
@@ -529,7 +534,7 @@ public class Game implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
             player.movePredictorYUp(amountY);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorYDown(amountY);
             } else {
                 jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -539,7 +544,7 @@ public class Game implements DSMachine {
 
         if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
             player.movePredictorYDown(amountYNeg);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpTime)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
                 player.sinkY(amountYNeg);
@@ -921,8 +926,9 @@ public class Game implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this, endpoint);
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
                 this.serverEndpoint = endpoint;
+                this.serverEndpoint.setSoTimeout(0);
                 okey = true;
             }
             DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);

@@ -54,7 +54,7 @@ public interface DSObject {
     /**
      * Get intern data type
      *
-     * @return
+     * @return data type which was sent over 'DS' network.
      */
     public DataType getDataType();
 
@@ -76,11 +76,10 @@ public interface DSObject {
     /**
      * Derialize-self into byte array. Result is written to content.
      *
-     * @param machine game machine who deserializes.
      * @param content byte content to deserialize
-     * @return operation status - true if successful and false otherwise
+     * @return this; if this is not null operation is successful
      * @throws java.lang.Exception if serialization fails or error is
      * encountered
      */
-    public boolean deserialize(DSMachine machine, byte[] content) throws Exception;
+    public DSObject deserialize(byte[] content) throws Exception;
 }

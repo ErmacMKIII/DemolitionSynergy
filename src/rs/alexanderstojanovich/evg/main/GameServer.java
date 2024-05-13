@@ -22,8 +22,11 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -51,7 +54,7 @@ public class GameServer implements DSMachine, Runnable {
     protected boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
-    protected final int timeout = 320000;
+    protected final int timeout = 30;
 
     protected final Object SYNC_OBJ = new Object();
 
@@ -145,7 +148,7 @@ public class GameServer implements DSMachine, Runnable {
         double time;
         switch (request.getRequestType()) {
             case HELLO:
-                msg = String.format("You are alerady connected to %s, v%s!", this.worldName, this.version);
+                msg = String.format("Bad Request - You are alerady connected to %s, v%s!", this.worldName, this.version);
                 result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                 break;
             case GOODBYE:
@@ -159,6 +162,38 @@ public class GameServer implements DSMachine, Runnable {
             case PING:
                 msg = String.format("You pinged %s", this.host);
                 result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                break;
+            case GET_POS:
+                if (request.getDataType() == DSObject.DataType.INT) {
+                    int playerIndex = (int) request.getData() - 1;
+                    Vector3f vec3f;
+                    LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
+                    if (playerIndex == -1) {
+                        vec3f = levelActors.player.getPos();
+                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                    } else if (playerIndex >= 0 && playerIndex < levelActors.otherPlayers.size()) {
+                        vec3f = levelActors.otherPlayers.get(playerIndex).getPos();
+                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                    } else {
+                        result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
+                    }
+                } else if (request.getDataType() == DSObject.DataType.STRING) {
+                    String uuid = request.getData().toString();
+                    Vector3f vec3f;
+                    LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
+                    if (levelActors.player.uniqueId.equals(uuid)) {
+                        vec3f = levelActors.player.getPos();
+                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                    } else {
+                        Player other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
+                        if (other != null) {
+                            vec3f = other.getPos();
+                            result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                        } else {
+                            result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
+                        }
+                    }
+                }
                 break;
         }
 
@@ -289,13 +324,13 @@ public class GameServer implements DSMachine, Runnable {
                 // Acceptance test (examination)
                 if (tst(client) && clients.size() <= MAX_CLIENTS) {
                     // Send "Welcome" Response
-                    accept(client);
+                    accept(client); // Authenticated
+                    client.setSoTimeout(0);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);
                     clients.remove(client);
-//                    shutDownSignal = true;
                 }
                 // Handle the client connection
             } catch (IOException ex) {

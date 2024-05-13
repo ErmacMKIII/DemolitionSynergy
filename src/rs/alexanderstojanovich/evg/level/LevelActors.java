@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.level;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Observer;
@@ -40,9 +41,21 @@ public class LevelActors {
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
 
+    /**
+     * Main player (Single Player & Multiplayer)
+     */
     public final Player player = new Player(PLAYER_BODY);
 
-    protected final List<NPC> npcList = new GapList<>();
+    /**
+     * Non-playable characters. Handled by client (SinglePlayer) or server host
+     * (MultiPlyer).
+     */
+    public final List<NPC> npcList = new GapList<>();
+
+    /**
+     * Other players (Multiplayer)
+     */
+    public final IList<Player> otherPlayers = new GapList<>();
 
     public void freeze() {
 //        getMainActor().setGivenControl(false);

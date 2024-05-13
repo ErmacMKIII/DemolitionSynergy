@@ -20,10 +20,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.Game;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.BOOL;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.DOUBLE;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.FLOAT;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VEC3F;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VEC4F;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VOID;
 
 /**
  * DSynergy Request implementation
@@ -94,8 +104,30 @@ public class Request implements RequestIfc {
                         out.writeInt(messageBytes.length);
                         out.write(messageBytes);
                         break;
+                    case BOOL:
+                        out.writeBoolean((boolean) data);
+                        break;
+                    case FLOAT:
+                        out.writeFloat((float) data);
+                        break;
+                    case DOUBLE:
+                        out.writeDouble((double) data);
+                        break;
+                    case VEC3F:
+                        Vector3f vec3 = (Vector3f) data;
+                        out.writeFloat(vec3.x);
+                        out.writeFloat(vec3.y);
+                        out.writeFloat(vec3.z);
+                        break;
+                    case VEC4F:
+                        Vector4f vec4 = (Vector4f) data;
+                        out.writeFloat(vec4.x);
+                        out.writeFloat(vec4.y);
+                        out.writeFloat(vec4.z);
+                        out.writeFloat(vec4.w);
+                        break;
                     default:
-                        throw new Exception("Unsupported data type during serialization!");
+                        throw new IOException("Unsupported data type during serialization!");
                 }
             }
         }
@@ -103,7 +135,7 @@ public class Request implements RequestIfc {
     }
 
     @Override
-    public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
+    public DSObject deserialize(byte[] content) throws Exception {
         ByteArrayInputStream byteStream = new ByteArrayInputStream(content);
         int reqTypeOrdinal;
         int dataTypeOrdinal;
@@ -114,7 +146,7 @@ public class Request implements RequestIfc {
             byte[] magicBytes = new byte[RequestIfc.MAGIC_BYTES.length];
             in.readFully(magicBytes);
             if (!Arrays.equals(magicBytes, RequestIfc.MAGIC_BYTES)) {
-                return false; // Magic bytes mismatch
+                return null; // Magic bytes mismatch
             }   // Read machine type, object type, request type, and data type
             int machineTypeOrdinal = in.readInt();
             int objTypeOrdinal = in.readInt();
@@ -125,10 +157,11 @@ public class Request implements RequestIfc {
                     || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
                     || reqTypeOrdinal < 0 || reqTypeOrdinal >= RequestType.values().length
                     || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
-                return false; // Invalid machine type, object type, request type, or data type
+                return null; // Invalid machine type, object type, request type, or data type
             }   // Read version
             version = in.readInt();
             // Read data
+            // Read data based on data type
             switch (DataType.values()[dataTypeOrdinal]) {
                 case STRING:
                     int stringLength = in.readInt();
@@ -136,17 +169,40 @@ public class Request implements RequestIfc {
                     in.readFully(stringBytes);
                     data = new String(stringBytes, StandardCharsets.UTF_8);
                     break;
+                case BOOL:
+                    data = in.readBoolean();
+                    break;
+                case FLOAT:
+                    data = in.readFloat();
+                    break;
+                case DOUBLE:
+                    data = in.readDouble();
+                    break;
+                case VEC3F:
+                    float x = in.readFloat();
+                    float y = in.readFloat();
+                    float z = in.readFloat();
+                    data = new Vector3f(x, y, z);
+                    break;
+                case VEC4F:
+                    float vx = in.readFloat();
+                    float vy = in.readFloat();
+                    float vz = in.readFloat();
+                    float vw = in.readFloat();
+                    data = new Vector4f(vx, vy, vz, vw);
+                    break;
                 case VOID:
                     break;
                 default:
-                    throw new Exception("Unsupported data type during deserialization!");
+                    throw new IOException("Unsupported data type during deserialization!");
             }
         }
         this.content = content;
         this.requestType = RequestType.values()[reqTypeOrdinal];
         this.dataType = DataType.values()[dataTypeOrdinal];
         this.version = version;
-        return true;
+
+        return this;
     }
 
     @Override

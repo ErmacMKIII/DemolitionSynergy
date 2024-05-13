@@ -20,9 +20,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.GameServer;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VOID;
 
@@ -38,18 +41,12 @@ public class Response implements ResponseIfc {
     protected int version = 0;
 
     public Response() {
-
     }
 
     public Response(ResponseStatus responseStatus, DataType dataType, Object data) {
         this.responseStatus = responseStatus;
         this.dataType = dataType;
         this.data = data;
-    }
-
-    @Override
-    public ObjType getObjectType() {
-        return ObjType.RESPONSE;
     }
 
     @Override
@@ -68,35 +65,56 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public void serialize(DSMachine machine) throws Exception {
+    public void serialize(DSMachine machine) throws IOException {
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        // Write magic bytes
         try (DataOutputStream out = new DataOutputStream(byteStream)) {
             // Write magic bytes
             out.write(ResponseIfc.MAGIC_BYTES);
-
             // Write machine type, object type, status type, and data type
             out.writeInt(machine.getMachineType().ordinal());
             out.writeInt(getObjectType().ordinal());
             out.writeInt(responseStatus.ordinal());
             out.writeInt(dataType.ordinal());
-
-            // Write version
             out.writeInt(machine.getVersion());
 
-            // Write data
             if (dataType != DataType.VOID) {
                 switch (dataType) {
                     case STRING:
+                        // Write string length and bytes
                         String message = (String) data;
                         byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
                         out.writeInt(messageBytes.length);
                         out.write(messageBytes);
                         break;
-                    case VOID:
+                    case BOOL:
+                        // Write boolean
+                        out.writeBoolean((boolean) data);
+                        break;
+                    case FLOAT:
+                        // Write float
+                        out.writeFloat((float) data);
+                        break;
+                    case DOUBLE:
+                        // Write double
+                        out.writeDouble((double) data);
+                        break;
+                    case VEC3F:
+                        // Write Vector3f
+                        Vector3f vec3 = (Vector3f) data;
+                        out.writeFloat(vec3.x);
+                        out.writeFloat(vec3.y);
+                        out.writeFloat(vec3.z);
+                        break;
+                    case VEC4F:
+                        // Write Vector4f
+                        Vector4f vec4 = (Vector4f) data;
+                        out.writeFloat(vec4.x);
+                        out.writeFloat(vec4.y);
+                        out.writeFloat(vec4.z);
+                        out.writeFloat(vec4.w);
                         break;
                     default:
-                        throw new Exception("Unsupported data type during serialization!");
+                        throw new IOException("Unsupported data type during serialization!");
                 }
             }
         }
@@ -104,15 +122,14 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public boolean deserialize(DSMachine machine, byte[] content) throws Exception {
+    public Response deserialize(byte[] content) throws IOException {
         ByteArrayInputStream byteStream = new ByteArrayInputStream(content);
-        // Read magic bytes
         try (DataInputStream in = new DataInputStream(byteStream)) {
             // Read magic bytes
             byte[] magicBytes = new byte[ResponseIfc.MAGIC_BYTES.length];
             in.readFully(magicBytes);
             if (!Arrays.equals(magicBytes, ResponseIfc.MAGIC_BYTES)) {
-                return false; // Magic bytes mismatch
+                return null; // Magic bytes mismatch
             }
 
             // Read machine type, object type, status type, and data type
@@ -121,23 +138,15 @@ public class Response implements ResponseIfc {
             int statusTypeOrdinal = in.readInt();
             int dataTypeOrdinal = in.readInt();
 
-            // Verify machine type, object type, and status type
-            if (machineTypeOrdinal < 0 || machineTypeOrdinal >= DSMachine.MachineType.values().length
-                    || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
-                    || statusTypeOrdinal < 0 || statusTypeOrdinal >= ResponseStatus.values().length
-                    || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
-                return false; // Invalid machine type, object type, status type, or data type
-            }
-
+            // Verify machine type, object type, status type, and data type
             machineType = DSMachine.MachineType.values()[machineTypeOrdinal];
             objectType = DSObject.ObjType.values()[objTypeOrdinal];
             responseStatus = ResponseStatus.values()[statusTypeOrdinal];
             dataType = DataType.values()[dataTypeOrdinal];
 
-            // Read version
             version = in.readInt();
 
-            // Read data
+            // Read data based on data type
             switch (dataType) {
                 case STRING:
                     int stringLength = in.readInt();
@@ -145,16 +154,40 @@ public class Response implements ResponseIfc {
                     in.readFully(stringBytes);
                     data = new String(stringBytes, StandardCharsets.UTF_8);
                     break;
+                case BOOL:
+                    data = in.readBoolean();
+                    break;
+                case FLOAT:
+                    data = in.readFloat();
+                    break;
+                case DOUBLE:
+                    data = in.readDouble();
+                    break;
+                case VEC3F:
+                    float x = in.readFloat();
+                    float y = in.readFloat();
+                    float z = in.readFloat();
+                    data = new Vector3f(x, y, z);
+                    break;
+                case VEC4F:
+                    float vx = in.readFloat();
+                    float vy = in.readFloat();
+                    float vz = in.readFloat();
+                    float vw = in.readFloat();
+                    data = new Vector4f(vx, vy, vz, vw);
+                    break;
+                case VOID:
+                    break;
                 default:
-                    throw new Exception("Unsupported data type during deserialization!");
+                    throw new IOException("Unsupported data type during deserialization!");
             }
         }
         this.content = content;
-        return true;
+        return this;
     }
 
     @Override
-    public void send(GameServer server, Socket endpoint) throws Exception {
+    public void send(GameServer server, Socket endpoint) throws IOException {
         serialize(server);
         endpoint.getOutputStream().write(content);
     }
@@ -164,12 +197,9 @@ public class Response implements ResponseIfc {
         return this.responseStatus;
     }
 
-    public DSMachine.MachineType getMachineType() {
-        return machineType;
-    }
-
-    public int getVersion() {
-        return version;
+    @Override
+    public ObjType getObjectType() {
+        return ObjType.RESPONSE;
     }
 
 }

@@ -99,8 +99,8 @@ public interface RequestIfc extends DSObject {
         final byte[] content = new byte[512];
         final int totalBytes = endpoint.getInputStream().read(content);
         if (totalBytes > 0) {
-            RequestIfc result = new Request(); // blank request
-            result.deserialize(server, content);
+            RequestIfc result = (RequestIfc) new Request().deserialize(content); // new request
+
             return result;
         }
 
