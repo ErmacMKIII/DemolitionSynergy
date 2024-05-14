@@ -40,6 +40,11 @@ public class Response implements ResponseIfc {
     protected ObjType objectType;
     protected int version = 0;
 
+    /**
+     * Invalid response. If receiving fails!
+     */
+    public static final Response INVALID = new Response(ResponseStatus.INVALID, VOID, null);
+
     public Response() {
     }
 

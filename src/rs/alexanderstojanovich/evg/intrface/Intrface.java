@@ -21,8 +21,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -397,7 +395,7 @@ public class Intrface {
                             progText.setEnabled(true);
                             gameObject.gameServer.startServer();
                             try {
-                                ok |= gameObject.generateMultiPlayerLevel(numBlocks);
+                                ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
                             } catch (InterruptedException | ExecutionException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
@@ -834,6 +832,7 @@ public class Intrface {
                                 console.write("Connected to server!");
                                 long tripTime = Math.round(endTime - beginTime) * 1000L;
                                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                                gameObject.generateMultiPlayerLevelAsJoin();
                                 Game.setCurrentMode(Mode.MULTIPLAYER);
                                 gameMenu.getTitle().setContent("MUTLIPLAYER");
                             } else {

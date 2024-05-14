@@ -31,7 +31,7 @@ public interface ResponseIfc extends DSObject {
      * Response status
      */
     public static enum ResponseStatus {
-        OK, ERR,
+        OK, ERR, INVALID
     }
 
     /**
@@ -60,7 +60,8 @@ public interface ResponseIfc extends DSObject {
      *
      * @param client game client
      * @param endpoint endpoint to (game) server.
-     * @return null if deserialization failed otherwise valid response
+     * @return Response.INVALID if deserialization failed otherwise valid
+     * response
      * @throws java.io.IOException if network error
      */
     public static ResponseIfc receive(Game client, Socket endpoint) throws IOException, Exception {
@@ -72,6 +73,6 @@ public interface ResponseIfc extends DSObject {
             return result;
         }
 
-        return null;
+        return Response.INVALID;
     }
 }

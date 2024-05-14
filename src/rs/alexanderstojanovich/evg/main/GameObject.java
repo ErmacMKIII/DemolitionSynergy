@@ -591,13 +591,32 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @throws java.lang.InterruptedException
      * @throws java.util.concurrent.ExecutionException
      */
-    public boolean generateMultiPlayerLevel(int numberOfBlocks) throws InterruptedException, ExecutionException {
+    public boolean generateMultiPlayerLevelAsHost(int numberOfBlocks) throws InterruptedException, ExecutionException {
         boolean ok = false;
 
         this.clearEverything();
         ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks) && levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat").get();
 
         return ok;
+    }
+
+    /**
+     * Join new randomly generated level in multiplayer host. All players on
+     * join will download the saved level from game server 'world name'.
+     *
+     */
+    public void generateMultiPlayerLevelAsJoin() {
+        this.clearEverything();
+        // register player with Unique ID (UUID)
+        if (game.registerPlayer()) {
+            // if successful download level
+            if (game.downloadLevel()) {
+                // load levvel to buffer
+                levelContainer.loadLevelFromBufferAsync();
+                // spawn player (set position)
+                levelContainer.spawnPlayer();
+            }
+        }
     }
 
     /**

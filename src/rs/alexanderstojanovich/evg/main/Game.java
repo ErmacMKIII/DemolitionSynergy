@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -142,7 +143,7 @@ public class Game implements DSMachine {
     public final GameObject gameObject;
 
     /**
-     * Construct new game (client) view
+     * Construct new game (client) view. Demolition Synergy client.
      *
      * @param gameObject game object
      * @throws java.net.UnknownHostException if host unavailable
@@ -476,7 +477,7 @@ public class Game implements DSMachine {
         Vector3f playerServerPos = player.getPos();
 
         // Multiplayer-Join mode
-        if (isConnected()) {
+        if (isConnected() && gameObject.levelContainer.levelActors.player.isRegistered()) {
             double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, serverEndpoint);
@@ -945,6 +946,120 @@ public class Game implements DSMachine {
     }
 
     /**
+     * Connect to server (host). Multiplayer. Requires acceptance test to be
+     * passed. According to protocol.
+     *
+     * @return endpoint if connection succeeds and acceptance test is passed
+     */
+    public boolean registerPlayer() {
+        if (!isConnected()) {
+            return false;
+        }
+
+        try {
+            // Send a simple 'goodbye' message with magic bytes prepended
+            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER, DSObject.DataType.VOID, null);
+            register.send(this, serverEndpoint);
+
+            // Wait for response (assuming simple echo for demonstration)            
+            ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+            gameObject.intrface.getConsole().write(response.getData().toString());
+
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
+                gameObject.levelContainer.levelActors.player.setRegistered(true);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString(), false);
+            } else {
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString(), true);
+            }
+        } catch (IOException ex) {
+            DSLogger.reportError("Network error(s) occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return true;
+    }
+
+    /**
+     * Download level (map) from the server
+     *
+     * @return true if the download was successful, false otherwise
+     */
+    public boolean downloadLevel() {
+        if (!isConnected()) { // Check if the client is connected to the server
+            return false;
+        }
+        boolean okey = false; // Variable to track if the download was successful
+        try {
+            // Send a request to begin downloading the level
+            final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD_BEGIN, DSObject.DataType.VOID, null);
+            downlBeginRequest.send(this, serverEndpoint);
+
+            // Wait for response indicating the download can begin
+            ResponseIfc response0 = ResponseIfc.receive(this, serverEndpoint);
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Server is ready to send data
+                // Log server response
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
+                // Display server response in client console
+                gameObject.intrface.getConsole().write(response0.getData().toString());
+
+                // Read data from server input stream and write into level container buffer
+                int bytesRead;
+                int totalBytesRead = 0;
+                InputStream in = serverEndpoint.getInputStream();
+                while ((bytesRead = in.read(gameObject.levelContainer.buffer, totalBytesRead, gameObject.levelContainer.buffer.length - totalBytesRead)) != -1) {
+                    totalBytesRead += bytesRead;
+                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
+                    if (totalBytesRead >= gameObject.levelContainer.buffer.length) {
+                        break;
+                    }
+                }
+
+                // Logging download information
+                DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
+                gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
+
+                if (totalBytesRead != -1) {
+                    // Send a request to indicate the download has finished
+                    final RequestIfc downlEndRequest = new Request(RequestIfc.RequestType.DOWNLOAD_END, DSObject.DataType.VOID, null);
+                    downlEndRequest.send(this, serverEndpoint);
+
+                    // Wait for response indicating the server has processed the end of download
+                    ResponseIfc response1 = ResponseIfc.receive(this, serverEndpoint);
+                    if (response1.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                        // Load the level from the buffer into the game
+                        gameObject.levelContainer.loadLevelFromBufferAsync();
+                        okey = true;
+                    } else {
+                        // Handle error response from server
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response1.getData().toString()), null);
+                        gameObject.intrface.getConsole().write(response1.getData().toString(), true);
+                    }
+                }
+            } else {
+                // Handle error response from server
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response0.getData().toString(), true);
+            }
+        } catch (IOException ex) {
+            // Handle IO exception
+            DSLogger.reportError("Unable to connect to server!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            // Handle other exceptions
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return okey; // Return whether the download was successful
+    }
+
+    /**
      * Disconnect (host) server. Multiplayer. If was no connected has no effect.
      */
     public void disconnectFromServer() {
@@ -962,6 +1077,7 @@ public class Game implements DSMachine {
                 serverEndpoint.close();
                 DSLogger.reportInfo("Disconnected from server!", null);
 
+                gameObject.levelContainer.levelActors.player.setRegistered(false);
             } catch (IOException ex) {
                 DSLogger.reportError("Network error(s) occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);

@@ -37,6 +37,10 @@ public interface RequestIfc extends DSObject {
      */
     public static enum RequestType {
         /**
+         * Occurs on server side if invalid request is received
+         */
+        INVALID,
+        /**
          * Send hello request to authenticate game client
          */
         HELLO,
@@ -67,7 +71,19 @@ public interface RequestIfc extends DSObject {
         /**
          * Send goodbye-disconnect request to leave the server
          */
-        GOODBYE
+        GOODBYE,
+        /**
+         * Begin Download Level (Map)
+         */
+        DOWNLOAD_BEGIN,
+        /**
+         * End Download Level (Map)
+         */
+        DOWNLOAD_END,
+        /**
+         * Register player (UUID) to game server
+         */
+        REGISTER
     }
 
     /**
@@ -104,6 +120,6 @@ public interface RequestIfc extends DSObject {
             return result;
         }
 
-        return null;
+        return Request.INVALID;
     }
 }

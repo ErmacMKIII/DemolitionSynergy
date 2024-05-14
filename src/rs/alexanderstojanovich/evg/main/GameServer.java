@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.critter.Player;
-import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -35,6 +33,7 @@ import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Demolition Synergy Game Server
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -66,7 +65,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Client service
      */
-    public final ExecutorService clientServiceExecutor = Executors.newSingleThreadExecutor();
+    public final ExecutorService clientServiceExecutor = Executors.newFixedThreadPool(MAX_CLIENTS);
 
     /**
      * Create new game server
@@ -89,115 +88,13 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
-     * Client service. Suspended if no clients (connected player(s)).
-     */
-    public void clientServiceMethod() {
-        // Handling clients
-        try {
-            while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
-                if (clients.isEmpty()) {
-                    synchronized (SYNC_OBJ) {
-                        SYNC_OBJ.wait();
-                    }
-                }
-
-                clients.removeIf(cli -> cli.isClosed());
-                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
-
-                for (Socket client : clients) {
-                    final RequestIfc request = RequestIfc.receive(GameServer.this, client);
-                    ResponseIfc response = processRequest(client, request);
-                    response.send(this, client);
-                    // disconnect clients who send this
-                    if (request.getRequestType() == RequestIfc.RequestType.GOODBYE) {
-                        client.close();
-                    }
-                }
-            }
-        } catch (IOException ex) {
-            DSLogger.reportError("Network Error(s) Occurred!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
-        } catch (Exception ex) {
-            DSLogger.reportError("Serialization or Deserialization failed!", ex);
-        }
-    }
-
-    /**
      * Start server.
      */
     public void startServer() {
         this.shutDownSignal = false;
         serverExecutor.execute(this);
-        clientServiceExecutor.execute(() -> {
-            clientServiceMethod();
-        });
 
         DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
-    }
-
-    /**
-     * Process request from clients
-     *
-     * @param client client socket (where request was received)
-     * @param request received request from clients
-     * @return object for generating response
-     */
-    public ResponseIfc processRequest(Socket client, RequestIfc request) {
-        ResponseIfc result = null;
-        String msg;
-        double time;
-        switch (request.getRequestType()) {
-            case HELLO:
-                msg = String.format("Bad Request - You are alerady connected to %s, v%s!", this.worldName, this.version);
-                result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
-                break;
-            case GOODBYE:
-                msg = "Goodbye, hope we will see you again!";
-                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                break;
-            case GET_TIME:
-                time = GameTime.Now().getTime();
-                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, time);
-                break;
-            case PING:
-                msg = String.format("You pinged %s", this.host);
-                result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                break;
-            case GET_POS:
-                if (request.getDataType() == DSObject.DataType.INT) {
-                    int playerIndex = (int) request.getData() - 1;
-                    Vector3f vec3f;
-                    LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
-                    if (playerIndex == -1) {
-                        vec3f = levelActors.player.getPos();
-                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else if (playerIndex >= 0 && playerIndex < levelActors.otherPlayers.size()) {
-                        vec3f = levelActors.otherPlayers.get(playerIndex).getPos();
-                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else {
-                        result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
-                    }
-                } else if (request.getDataType() == DSObject.DataType.STRING) {
-                    String uuid = request.getData().toString();
-                    Vector3f vec3f;
-                    LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
-                    if (levelActors.player.uniqueId.equals(uuid)) {
-                        vec3f = levelActors.player.getPos();
-                        result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else {
-                        Player other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
-                        if (other != null) {
-                            vec3f = other.getPos();
-                            result = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                        } else {
-                            result = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
-                        }
-                    }
-                }
-                break;
-        }
-
-        return result;
     }
 
     /**
@@ -327,6 +224,13 @@ public class GameServer implements DSMachine, Runnable {
                     accept(client); // Authenticated
                     client.setSoTimeout(0);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
+                    // Create handle client task ~ for handling requests and sending responses
+                    CompletableFuture.supplyAsync(new HandleClientTask(client, this), this.clientServiceExecutor)
+                            .exceptionally(ex -> {
+                                // Handle exceptions
+                                DSLogger.reportError("Error handling client: " + ex.getMessage(), ex);
+                                return null;
+                            });
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);

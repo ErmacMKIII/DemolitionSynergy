@@ -34,6 +34,8 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Player extends Critter implements Observer {
 
+    protected boolean registered = false;
+
     protected String name = "Player";
 
     public static enum CameraView {
@@ -264,4 +266,11 @@ public class Player extends Critter implements Observer {
         this.cameraView = cameraView;
     }
 
+    public void setRegistered(boolean registered) {
+        this.registered = registered;
+    }
+
+    public boolean isRegistered() {
+        return registered;
+    }
 }

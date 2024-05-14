@@ -48,6 +48,11 @@ public class Request implements RequestIfc {
     protected Object data;
     protected int version = 0;
 
+    /**
+     * Invalid request. If receiving fails!
+     */
+    public static final Request INVALID = new Request(RequestType.INVALID, DataType.VOID, null);
+
     public Request() {
 
     }
