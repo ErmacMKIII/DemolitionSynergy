@@ -26,6 +26,7 @@ import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
+import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_POS;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_TIME;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GOODBYE;
@@ -34,14 +35,17 @@ import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.PING;
 import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
 
 /**
  * Task to handle each client asynchronously.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class HandleClientTask implements Supplier<Void> {
+public class HandleClientTask implements Supplier<HandleClientTask.Status> {
+
+    public static enum Status {
+        INTERNAL_ERROR, CLIENT_ERROR, OK
+    }
 
     public static final int BUFF_SIZE = 8192; // write bytes (chunk) buffer size
 
@@ -86,12 +90,12 @@ public class HandleClientTask implements Supplier<Void> {
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                 if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
                         && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
+                    levelActors.otherPlayers.add(new Player(LevelActors.PLAYER_BODY));
                     msg = String.format("Player ID is OK!", gameServer.worldName, gameServer.version);
                     response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 } else {
                     msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
                     response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
-
                 }
                 response.send(gameServer, client);
                 break;
@@ -147,7 +151,7 @@ public class HandleClientTask implements Supplier<Void> {
                 response.send(gameServer, client);
                 break;
             case DOWNLOAD:
-                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download begin request is OK.");
+                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");
                 response.send(gameServer, client);
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
                     OutputStream out = client.getOutputStream();
@@ -183,23 +187,25 @@ public class HandleClientTask implements Supplier<Void> {
      * @return null.
      */
     @Override
-    public Void get() {
+    public HandleClientTask.Status get() {
+        HandleClientTask.Status status;
         try {
             // Handle client request and response
             while (client.isConnected() && !client.isClosed()) {
                 process();
             }
+            status = Status.OK;
         } catch (IOException ex) {
             // Handle IOException
+            status = Status.CLIENT_ERROR;
             DSLogger.reportError("IOException occurred!", ex);
         } catch (Exception ex) {
             // Handle other exceptions
+            status = Status.INTERNAL_ERROR;
             DSLogger.reportError("Exception occurred!", ex);
         }
 
-        DSLogger.reportError("Client task returned!", null);
-
-        return null;
+        return status;
     }
 
     public Socket getClient() {

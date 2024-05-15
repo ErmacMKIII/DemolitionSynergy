@@ -134,6 +134,8 @@ public class GameServer implements DSMachine, Runnable {
                     }
                 }
             }
+
+            clients.clear();
         }
     }
 
@@ -234,8 +236,17 @@ public class GameServer implements DSMachine, Runnable {
                             .exceptionally(ex -> {
                                 // Handle exceptions
                                 DSLogger.reportError("Error handling client: " + ex.getMessage(), ex);
-                                return null;
-                            });
+
+                                return HandleClientTask.Status.INTERNAL_ERROR;
+                            }).whenComplete((result, ex) -> {
+                        DSLogger.reportInfo(String.format("Client task returned %s!", result), ex);
+                        gameObject.intrface.getConsole().write("Client task returned " + result.toString(), result != HandleClientTask.Status.OK);
+                        // Code to execute finally
+                        // This block will execute regardless of whether the CompletableFuture completed exceptionally or successfully
+                        // You can perform cleanup tasks or any other final actions here
+                        clients.remove(client);
+                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
+                    });
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);
@@ -248,12 +259,19 @@ public class GameServer implements DSMachine, Runnable {
             } catch (Exception ex) {
                 DSLogger.reportError("Serialization or Deserialization failed!", ex);
             } finally {
-                if (server.isClosed()) {
-                    shutDownSignal = true;
+                if (!server.isClosed()) {
+                    try {
+                        server.close();
+                    } catch (IOException ex) {
+                        // Handle exceptions
+                        DSLogger.reportError("Server error: " + ex.getMessage(), ex);
+                    }
                 }
+                shutDownSignal = true;
             }
         }
 
+        clients.clear();
         running = false;
         DSLogger.reportInfo("Game Server finished!", null);
     }

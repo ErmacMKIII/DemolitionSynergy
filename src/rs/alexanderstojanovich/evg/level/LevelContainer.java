@@ -828,6 +828,8 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Future<Boolean> loadLevelFromBufferAsync() {
+        progress = 0.0f;
+
         Callable<Boolean> task = () -> {
             if (progress > 0.0f) {
                 return false;

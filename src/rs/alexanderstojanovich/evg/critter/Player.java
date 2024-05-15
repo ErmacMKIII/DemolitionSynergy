@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import java.util.Collection;
+import java.util.UUID;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
@@ -26,7 +27,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -35,7 +35,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Player extends Critter implements Observer {
 
-    public final String uniqueId = HardwareUtils.generateHardwareUUID().toString();
+    public final String uniqueId = UUID.randomUUID().toString();
 
     protected boolean registered = false;
 

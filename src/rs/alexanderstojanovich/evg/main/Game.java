@@ -992,6 +992,24 @@ public class Game implements DSMachine {
     }
 
     /**
+     * Checks if the end-of-stream marker is present in the received data.
+     *
+     * @param buffer The buffer containing the received data.
+     * @param bytesRead The number of bytes read into the buffer.
+     * @return True if the end-of-stream marker is found, otherwise false.
+     */
+    private static boolean isEndOfStream(byte[] buffer, int bytesRead) {
+        if (bytesRead >= Game.EOS.length) {
+            for (int i = 0; i <= bytesRead - Game.EOS.length; i++) {
+                if (Arrays.equals(Arrays.copyOfRange(buffer, i, i + Game.EOS.length), Game.EOS)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Download level (map) from the server
      *
      * @return true if the download was successful, false otherwise
@@ -1014,30 +1032,38 @@ public class Game implements DSMachine {
                 // Display server response in client console
                 gameObject.intrface.getConsole().write(response0.getData().toString());
 
-                // Read data from server input stream and write into level container buffer
+                // Define a buffer to hold the received data
+                byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
-                InputStream in = serverEndpoint.getInputStream();
-                byte[] data = new byte[BUFF_SIZE];
-                int bytesRead;
 
-                // read until end-of-stream of socket
-                while ((bytesRead = in.read(data)) != -1) {
+                // Read until end-of-stream of socket
+                int bytesRead;
+                final InputStream in = serverEndpoint.getInputStream();
+                while ((bytesRead = in.read(buffer)) != -1) {
                     // Check if the end-of-stream marker is received
-                    if (Arrays.equals(Arrays.copyOf(data, 4), Game.EOS)) {
-                        // End of stream marker encountered, break the loop
-                        DSLogger.reportInfo("EOS", null);
+                    if (isEndOfStream(buffer, bytesRead)) {
+                        // Write the received data to the buffer
+                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
+                        totalBytesRead += bytesRead - Game.EOS.length;
+                        // End of stream marker encountered, break the loop or handle accordingly
+                        DSLogger.reportInfo("End of stream (EOS) marker received", null);
                         break;
+                    } else {
+                        // Write the received data to the buffer
+                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+                        totalBytesRead += bytesRead;
                     }
 
                     // Write the received data to the buffer
-                    System.arraycopy(data, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-                    totalBytesRead += bytesRead;
+                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
 
                     DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
                 }
+
                 // Logging download information
                 DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
                 gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
+                okey = true;
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
