@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Critter implements Predictable, Moveable, Renderable {
 
-    public final String uniqueId = UUID.randomUUID().toString();
     public final Model body;
     protected Vector3f predictor;
     protected Vector3f front = Camera.Z_AXIS;
@@ -340,10 +339,6 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public void setIsInJump(boolean isJump) {
         this.inJump = isJump;
-    }
-
-    public String getUniqueId() {
-        return uniqueId;
     }
 
 }

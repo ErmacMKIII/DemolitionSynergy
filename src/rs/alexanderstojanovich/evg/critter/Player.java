@@ -26,6 +26,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -33,6 +34,8 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Player extends Critter implements Observer {
+
+    public final String uniqueId = HardwareUtils.generateHardwareUUID().toString();
 
     protected boolean registered = false;
 
@@ -67,7 +70,6 @@ public class Player extends Critter implements Observer {
 //    }
     public Player(Model body) {
         super(body);
-//        this.camera = new Camera(new Vector3f(this.body.pos));
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
         this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
     }

@@ -73,13 +73,9 @@ public interface RequestIfc extends DSObject {
          */
         GOODBYE,
         /**
-         * Begin Download Level (Map)
+         * Request Download Level (Map)
          */
-        DOWNLOAD_BEGIN,
-        /**
-         * End Download Level (Map)
-         */
-        DOWNLOAD_END,
+        DOWNLOAD,
         /**
          * Register player (UUID) to game server
          */

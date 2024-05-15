@@ -26,7 +26,6 @@ import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD_BEGIN;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_POS;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_TIME;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GOODBYE;
@@ -35,6 +34,7 @@ import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.PING;
 import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
 
 /**
  * Task to handle each client asynchronously.
@@ -146,7 +146,7 @@ public class HandleClientTask implements Supplier<Void> {
                 }
                 response.send(gameServer, client);
                 break;
-            case DOWNLOAD_BEGIN:
+            case DOWNLOAD:
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download begin request is OK.");
                 response.send(gameServer, client);
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
@@ -169,11 +169,10 @@ public class HandleClientTask implements Supplier<Void> {
                         // Logging the bytes written
                         DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
                     }
+
+                    // signal end-of-stream
+                    out.write(GameServer.EOS);
                 }
-                break;
-            case DOWNLOAD_END:
-                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download end request is OK.");
-                response.send(gameServer, client);
                 break;
         }
     }

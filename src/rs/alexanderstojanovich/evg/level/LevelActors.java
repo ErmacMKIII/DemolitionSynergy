@@ -37,15 +37,16 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class LevelActors {
 
-    public Observer spectator = new Camera(); // spectator is separate camera from player instance
+    /**
+     * Spectator is separate camera from player instance
+     */
+    public final Observer spectator = new Camera(); // spectator is separate camera from player instance
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
-
     /**
      * Main player (Single Player & Multiplayer)
      */
     public final Player player = new Player(PLAYER_BODY);
-
     /**
      * Non-playable characters. Handled by client (SinglePlayer) or server host
      * (MultiPlyer).

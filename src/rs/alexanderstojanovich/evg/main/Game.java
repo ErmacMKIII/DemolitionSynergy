@@ -130,12 +130,18 @@ public class Game implements DSMachine {
     protected static final int DEFAULT_PORT = 13667;
 
     /**
+     * Magic bytes of End-of-Stream
+     */
+    public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
+
+    /**
      * Connect to server stuff & endpoint
      */
     protected Socket serverEndpoint;
     protected InetAddress serverAddress;
     protected int port = DEFAULT_PORT;
-    protected int timeout = 30; // 30 sec
+    protected final int timeout = 30 * 1000; // 30 sec
+    public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
 
     /**
      * Access to Game Engine.
@@ -956,20 +962,20 @@ public class Game implements DSMachine {
             return false;
         }
 
+        boolean okey = false;
+
         try {
             // Send a simple 'goodbye' message with magic bytes prepended
-            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER, DSObject.DataType.VOID, null);
+            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
             register.send(this, serverEndpoint);
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
-            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-            gameObject.intrface.getConsole().write(response.getData().toString());
-
             if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response.getData().toString(), false);
+                okey |= true;
             } else {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response.getData().toString(), true);
@@ -982,7 +988,7 @@ public class Game implements DSMachine {
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
-        return true;
+        return okey;
     }
 
     /**
@@ -997,7 +1003,7 @@ public class Game implements DSMachine {
         boolean okey = false; // Variable to track if the download was successful
         try {
             // Send a request to begin downloading the level
-            final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD_BEGIN, DSObject.DataType.VOID, null);
+            final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this, serverEndpoint);
 
             // Wait for response indicating the download can begin
@@ -1009,38 +1015,29 @@ public class Game implements DSMachine {
                 gameObject.intrface.getConsole().write(response0.getData().toString());
 
                 // Read data from server input stream and write into level container buffer
-                int bytesRead;
                 int totalBytesRead = 0;
                 InputStream in = serverEndpoint.getInputStream();
-                while ((bytesRead = in.read(gameObject.levelContainer.buffer, totalBytesRead, gameObject.levelContainer.buffer.length - totalBytesRead)) != -1) {
-                    totalBytesRead += bytesRead;
-                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
-                    if (totalBytesRead >= gameObject.levelContainer.buffer.length) {
+                byte[] data = new byte[BUFF_SIZE];
+                int bytesRead;
+
+                // read until end-of-stream of socket
+                while ((bytesRead = in.read(data)) != -1) {
+                    // Check if the end-of-stream marker is received
+                    if (Arrays.equals(Arrays.copyOf(data, 4), Game.EOS)) {
+                        // End of stream marker encountered, break the loop
+                        DSLogger.reportInfo("EOS", null);
                         break;
                     }
-                }
 
+                    // Write the received data to the buffer
+                    System.arraycopy(data, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+                    totalBytesRead += bytesRead;
+
+                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
+                }
                 // Logging download information
                 DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
                 gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
-
-                if (totalBytesRead != -1) {
-                    // Send a request to indicate the download has finished
-                    final RequestIfc downlEndRequest = new Request(RequestIfc.RequestType.DOWNLOAD_END, DSObject.DataType.VOID, null);
-                    downlEndRequest.send(this, serverEndpoint);
-
-                    // Wait for response indicating the server has processed the end of download
-                    ResponseIfc response1 = ResponseIfc.receive(this, serverEndpoint);
-                    if (response1.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                        // Load the level from the buffer into the game
-                        gameObject.levelContainer.loadLevelFromBufferAsync();
-                        okey = true;
-                    } else {
-                        // Handle error response from server
-                        DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response1.getData().toString()), null);
-                        gameObject.intrface.getConsole().write(response1.getData().toString(), true);
-                    }
-                }
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);

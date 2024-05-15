@@ -827,7 +827,7 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public void loadLevelFromBufferAsync() {
+    public Future<Boolean> loadLevelFromBufferAsync() {
         Callable<Boolean> task = () -> {
             if (progress > 0.0f) {
                 return false;
@@ -930,7 +930,7 @@ public class LevelContainer implements GravityEnviroment {
             return okey;
         };
 
-        GameObject.TASK_EXECUTOR.submit(task);
+        return GameObject.TASK_EXECUTOR.submit(task);
     }
 
     private boolean loadLevelFromBufferAsNewFormat() {

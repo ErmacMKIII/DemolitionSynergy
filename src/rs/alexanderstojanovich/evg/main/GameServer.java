@@ -53,9 +53,14 @@ public class GameServer implements DSMachine, Runnable {
     protected boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
-    protected final int timeout = 30;
+    protected final int timeout = 30 * 1000; // 30 sec
 
     protected final Object SYNC_OBJ = new Object();
+
+    /**
+     * Magic bytes of End-of-Stream
+     */
+    public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
 
     /**
      * Server worker

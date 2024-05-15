@@ -251,7 +251,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else { // working check avoids locking the monitor
             levelContainer.update();
-            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER)) {
+            // if single player gravity is affected or if multiplayer and player is registered
+            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
+                    || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER && levelContainer.levelActors.player.isRegistered())) {
                 boolean underGravity = levelContainer.gravityDo(deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
@@ -504,6 +506,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
         levelContainer.levelActors.player.setPos(new Vector3f());
+        levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
         Game.setCurrentMode(Game.Mode.FREE);
     }
@@ -597,6 +600,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.clearEverything();
         ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks) && levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat").get();
 
+        levelContainer.levelActors.player.setRegistered(true);
+
         return ok;
     }
 
@@ -604,19 +609,32 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Join new randomly generated level in multiplayer host. All players on
      * join will download the saved level from game server 'world name'.
      *
+     * @return success of operation
+     * @throws java.lang.InterruptedException
+     * @throws java.util.concurrent.ExecutionException
      */
-    public void generateMultiPlayerLevelAsJoin() {
+    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException {
+        boolean okey = false;
         this.clearEverything();
         // register player with Unique ID (UUID)
         if (game.registerPlayer()) {
             // if successful download level
             if (game.downloadLevel()) {
-                // load levvel to buffer
-                levelContainer.loadLevelFromBufferAsync();
-                // spawn player (set position)
-                levelContainer.spawnPlayer();
+                // load level to buffer
+                if (levelContainer.loadLevelFromBufferAsync().get()) {
+                    // spawn player (set position)
+                    levelContainer.spawnPlayer();
+                    okey = true;
+                }
             }
+        } else {
+            // if player cannot be registered disconnect
+            game.disconnectFromServer();
+            // revert back
+            this.clearEverything();
         }
+
+        return okey;
     }
 
     /**

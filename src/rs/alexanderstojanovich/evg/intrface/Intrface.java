@@ -829,12 +829,17 @@ public class Intrface {
                             boolean okey = gameObject.game.connectToServer();
                             double endTime = GLFW.glfwGetTime();
                             if (okey) {
-                                console.write("Connected to server!");
-                                long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
-                                gameObject.generateMultiPlayerLevelAsJoin();
-                                Game.setCurrentMode(Mode.MULTIPLAYER);
-                                gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                try {
+                                    console.write("Connected to server!");
+                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                        Game.setCurrentMode(Mode.MULTIPLAYER);
+                                        gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                    }
+                                } catch (InterruptedException | ExecutionException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
+                                }
                             } else {
                                 console.write("Unable to connect to server!", true);
                             }
