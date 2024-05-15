@@ -21,6 +21,7 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
@@ -56,7 +57,7 @@ public class LevelActors {
     /**
      * Other players (Multiplayer)
      */
-    public final IList<Player> otherPlayers = new GapList<>();
+    public final IList<Critter> otherPlayers = new GapList<>();
 
     public void freeze() {
 //        getMainActor().setGivenControl(false);

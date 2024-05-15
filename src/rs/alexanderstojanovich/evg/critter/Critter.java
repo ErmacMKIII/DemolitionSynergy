@@ -22,6 +22,7 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.HardwareUtils;
 
 /**
  * Critter is class of living things. Has capabilities moving. Is collision
@@ -31,6 +32,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Critter implements Predictable, Moveable, Renderable {
 
+    public final String uniqueId;
     public final Model body;
     protected Vector3f predictor;
     protected Vector3f front = Camera.Z_AXIS;
@@ -48,6 +50,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
+        this.uniqueId = HardwareUtils.generateHardwareUUID().toString();
     }
 
     /**
@@ -60,6 +63,19 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Vector3f pos, Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
+        this.uniqueId = HardwareUtils.generateHardwareUUID().toString();
+    }
+
+    /**
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
+     *
+     * @param uniqueId to be assigned to the critter
+     * @param body model body for the critter
+     */
+    public Critter(String uniqueId, Model body) {
+        this.uniqueId = uniqueId;
+        this.body = body;
     }
 
     @Override

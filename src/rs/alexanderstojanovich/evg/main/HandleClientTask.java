@@ -21,7 +21,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.function.Supplier;
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
@@ -90,8 +90,8 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                 if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
                         && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
-                    levelActors.otherPlayers.add(new Player(LevelActors.PLAYER_BODY));
-                    msg = String.format("Player ID is OK!", gameServer.worldName, gameServer.version);
+                    levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, LevelActors.PLAYER_BODY));
+                    msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                     response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 } else {
                     msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
@@ -137,7 +137,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         vec3f = levelActors.player.getPos();
                         response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
                     } else {
-                        Player other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
+                        Critter other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
                         if (other != null) {
                             vec3f = other.getPos();
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);

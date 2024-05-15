@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.critter;
 
 import java.util.Collection;
-import java.util.UUID;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
@@ -27,6 +26,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -34,8 +34,6 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Player extends Critter implements Observer {
-
-    public final String uniqueId = UUID.randomUUID().toString();
 
     protected boolean registered = false;
 
@@ -68,10 +66,43 @@ public class Player extends Critter implements Observer {
 //            weapon.setrY((float) (-Math.PI / 2.0f));
 //        }
 //    }
+    /**
+     * Create new player for Single Player
+     *
+     * @param body player body
+     */
     public Player(Model body) {
         super(body);
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
         this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
+    }
+
+    /**
+     * Create new player for Single Player
+     *
+     * @param camera camera to view
+     * @param light light from player
+     * @param body player body
+     */
+    public Player(RPGCamera camera, LightSource light, Model body) {
+        super(body);
+        this.camera = camera;
+        this.light = light;
+    }
+
+    /**
+     * Create new player for Multiplayer. Using client registration to server.
+     * Client has submit registration to this server.
+     *
+     * @param camera camera to view
+     * @param light light from player
+     * @param uniqueId unique id to be assigned to player
+     * @param body player body
+     */
+    public Player(RPGCamera camera, LightSource light, String uniqueId, Model body) {
+        super(uniqueId, body);
+        this.camera = camera;
+        this.light = light;
     }
 
 //    public void switchWeapon(int num) {
