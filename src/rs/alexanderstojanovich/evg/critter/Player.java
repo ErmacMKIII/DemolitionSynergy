@@ -26,7 +26,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -36,8 +35,6 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Player extends Critter implements Observer {
 
     protected boolean registered = false;
-
-    protected String name = "Player";
 
     public static enum CameraView {
         FIRST_PERSON, THIRD_PERSON
@@ -75,6 +72,7 @@ public class Player extends Critter implements Observer {
         super(body);
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
         this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
+        this.name = "Player";
     }
 
     /**
@@ -88,6 +86,7 @@ public class Player extends Critter implements Observer {
         super(body);
         this.camera = camera;
         this.light = light;
+        this.name = "Player";
     }
 
     /**
@@ -281,14 +280,6 @@ public class Player extends Critter implements Observer {
         super.moveXZForward(amount);
         camera.moveXZForward(amount);
         light.pos = body.pos;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public CameraView getCameraView() {

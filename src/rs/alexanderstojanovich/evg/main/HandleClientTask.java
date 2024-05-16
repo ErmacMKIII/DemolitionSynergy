@@ -16,14 +16,18 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.function.Supplier;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
@@ -42,10 +46,6 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class HandleClientTask implements Supplier<HandleClientTask.Status> {
-
-    public static enum Status {
-        INTERNAL_ERROR, CLIENT_ERROR, OK
-    }
 
     public static final int BUFF_SIZE = 8192; // write bytes (chunk) buffer size
 
@@ -75,6 +75,14 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
             // avoid processing invalid requests requests
             return;
         }
+
+        // Handle null data type (Possible & always erroneous)
+        if (request.getDataType() == null) {
+            Response response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
+            response.send(gameServer, client);
+            return;
+        }
+
         ResponseIfc response;
         String msg;
         LevelActors levelActors;
@@ -86,16 +94,43 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 response.send(gameServer, client);
                 break;
             case REGISTER:
-                String newPlayerUniqueId = request.getData().toString();
-                levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
-                if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
-                        && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
-                    levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, LevelActors.PLAYER_BODY));
-                    msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
-                    response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                } else {
-                    msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
-                    response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
+                switch (request.getDataType()) {
+                    case STRING: {
+                        String newPlayerUniqueId = request.getData().toString();
+                        levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                        if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
+                                && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
+                            levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, LevelActors.PLAYER_BODY));
+                            msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                        } else {
+                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
+                            response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
+                        }
+                        break;
+                    }
+                    case OBJECT: {
+                        String jsonStr = request.getData().toString();
+                        PlayerInfo info = PlayerInfo.fromJson(jsonStr);
+                        levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                        if (!levelActors.player.uniqueId.equals(info.uniqueId)
+                                && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId)) == null)) {
+                            Critter critter = new Critter(info.uniqueId, LevelActors.PLAYER_BODY);
+                            critter.setName(info.name);
+                            critter.body.setPrimaryRGBAColor(info.color);
+                            critter.body.texName = info.texModel;
+                            levelActors.otherPlayers.add(critter);
+                            msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                        } else {
+                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
+                            response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
+                        }
+                        break;
+                    }
+                    default:
+                        response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
+                        break;
                 }
                 response.send(gameServer, client);
                 break;
@@ -116,37 +151,43 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 response.send(gameServer, client);
                 break;
             case GET_POS:
-                if (request.getDataType() == DSObject.DataType.INT) {
-                    int playerIndex = (int) request.getData() - 1;
-                    Vector3f vec3f;
-                    levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
-                    if (playerIndex == -1) {
-                        vec3f = levelActors.player.getPos();
-                        response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else if (playerIndex >= 0 && playerIndex < levelActors.otherPlayers.size()) {
-                        vec3f = levelActors.otherPlayers.get(playerIndex).getPos();
-                        response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else {
-                        response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
-                    }
-                } else if (request.getDataType() == DSObject.DataType.STRING) {
-                    String uuid = request.getData().toString();
-                    Vector3f vec3f;
-                    levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
-                    if (levelActors.player.uniqueId.equals(uuid)) {
-                        vec3f = levelActors.player.getPos();
-                        response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
-                    } else {
-                        Critter other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
-                        if (other != null) {
-                            vec3f = other.getPos();
+                switch (request.getDataType()) {
+                    case INT: {
+                        int playerIndex = (int) request.getData() - 1;
+                        Vector3f vec3f;
+                        levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                        if (playerIndex == -1) {
+                            vec3f = levelActors.player.getPos();
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                        } else if (playerIndex >= 0 && playerIndex < levelActors.otherPlayers.size()) {
+                            vec3f = levelActors.otherPlayers.get(playerIndex).getPos();
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
                         } else {
-                            response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid Player ID or not registered!");
+                            response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
                         }
+                        break;
                     }
-                } else {
-                    response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
+                    case STRING: {
+                        String uuid = request.getData().toString();
+                        Vector3f vec3f;
+                        levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                        if (levelActors.player.uniqueId.equals(uuid)) {
+                            vec3f = levelActors.player.getPos();
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                        } else {
+                            Critter other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
+                            if (other != null) {
+                                vec3f = other.getPos();
+                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                            } else {
+                                response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid Player ID or not registered!");
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
+                        break;
                 }
                 response.send(gameServer, client);
                 break;
@@ -177,6 +218,18 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                     // signal end-of-stream
                     out.write(GameServer.EOS);
                 }
+                break;
+            case PLAYER_INFO:
+                levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                Gson gson = new Gson();
+                IList<PlayerInfo> playerInfos = new GapList<>();
+                playerInfos.add(new PlayerInfo(levelActors.player.getName(), levelActors.player.body.texName, levelActors.player.uniqueId, levelActors.player.body.getPrimaryRGBAColor()));
+                levelActors.otherPlayers.forEach(op -> {
+                    playerInfos.add(new PlayerInfo(op.getName(), op.body.texName, op.uniqueId, op.body.getPrimaryRGBAColor()));
+                });
+                String obj = gson.toJson(playerInfos, IList.class);
+                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, obj);
+                response.send(gameServer, client);
                 break;
         }
     }
@@ -214,6 +267,10 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
 
     public GameServer getGameServer() {
         return gameServer;
+    }
+
+    public static enum Status {
+        INTERNAL_ERROR, CLIENT_ERROR, OK
     }
 
 }

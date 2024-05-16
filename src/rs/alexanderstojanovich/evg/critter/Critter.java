@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.UUID;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -32,6 +33,7 @@ import rs.alexanderstojanovich.evg.util.HardwareUtils;
  */
 public class Critter implements Predictable, Moveable, Renderable {
 
+    protected String name;
     public final String uniqueId;
     public final Model body;
     protected Vector3f predictor;
@@ -50,7 +52,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
-        this.uniqueId = HardwareUtils.generateHardwareUUID().toString();
+        this.uniqueId = UUID.randomUUID().toString();
     }
 
     /**
@@ -63,7 +65,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Vector3f pos, Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
-        this.uniqueId = HardwareUtils.generateHardwareUUID().toString();
+        this.uniqueId = UUID.randomUUID().toString();
     }
 
     /**
@@ -354,6 +356,14 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public void setIsInJump(boolean isJump) {
         this.inJump = isJump;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
 }

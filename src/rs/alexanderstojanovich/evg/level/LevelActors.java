@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.ArrayDeque;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -28,6 +29,7 @@ import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
@@ -122,6 +124,16 @@ public class LevelActors {
 
     public List<NPC> getNpcList() {
         return npcList;
+    }
+
+    public void configOtherPlayers(ArrayDeque<PlayerInfo> playerInfo) {
+        playerInfo.forEach(pi -> {
+            Critter op = new Critter(pi.uniqueId, PLAYER_BODY);
+            op.setName(pi.name);
+            op.body.setPrimaryRGBAColor(pi.color);
+            op.body.setTexName(pi.texModel);
+            otherPlayers.add(op);
+        });
     }
 
 }

@@ -16,11 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -40,6 +42,7 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
@@ -966,7 +969,10 @@ public class Game implements DSMachine {
 
         try {
             // Send a simple 'goodbye' message with magic bytes prepended
-            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
+            final Player player = gameObject.levelContainer.levelActors.player;
+            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER,
+                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor()).toString()
+            );
             register.send(this, serverEndpoint);
 
             // Wait for response (assuming simple echo for demonstration)            
@@ -1080,6 +1086,38 @@ public class Game implements DSMachine {
         }
 
         return okey; // Return whether the download was successful
+    }
+
+    /**
+     * Get Player Info (Json)
+     *
+     * @return Player Info
+     */
+    public ArrayDeque<PlayerInfo> getPlayerInfo() {
+        ArrayDeque<PlayerInfo> result = null;
+        if (isConnected()) {
+            try {
+                // Send a simple 'goodbye' message with magic bytes prepended
+                final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
+                piReq.send(this, serverEndpoint);
+
+                // Wait for response (assuming simple echo for demonstration)            
+                ResponseIfc objResp = ResponseIfc.receive(this, serverEndpoint);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), objResp.getData().toString()), null);
+                gameObject.intrface.getConsole().write(objResp.getData().toString());
+
+                Gson gson = new Gson();
+                result = gson.fromJson((String) objResp.getData(), ArrayDeque.class);
+            } catch (IOException ex) {
+                DSLogger.reportError("Network error(s) occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportError("Error occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
+        return result;
     }
 
     /**
