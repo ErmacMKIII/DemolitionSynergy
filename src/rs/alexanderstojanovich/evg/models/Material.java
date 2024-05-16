@@ -93,4 +93,5 @@ public class Material {
 
         return new Vector4f(new Vector3f(red, green, blue), alpha);
     }
+
 }

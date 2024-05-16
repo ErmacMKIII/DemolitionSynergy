@@ -542,7 +542,6 @@ public class LevelContainer implements GravityEnviroment {
         } while (LevelContainer.hasCollisionWithEnvironment((Critter) player));
         player.movePredictorUp(0.0f);
         player.ascend(0.0f); // Stop player changing location work            
-
     }
 
     private boolean storeLevelToBuffer() {

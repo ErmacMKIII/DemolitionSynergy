@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.models;
 import java.util.List;
 import java.util.Objects;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
@@ -76,7 +77,7 @@ public class Model implements Renderable, Comparable<Model> {
     public Model(Model other) {
         this.modelFileName = other.modelFileName;
         this.texName = other.texName;
-        this.pos = other.pos;
+        this.pos = new Vector3f(other.pos);
 
         this.scale = other.scale;
         this.width = other.width;
@@ -87,8 +88,22 @@ public class Model implements Renderable, Comparable<Model> {
         this.rY = other.rY;
         this.rZ = other.rZ;
 
-        this.materials.addAll(other.materials);
-        this.meshes.addAll(other.meshes);
+        other.materials.forEach(mat -> {
+            Material copy = new Material(mat.texture);
+            copy.color = new Vector4f(mat.color);
+
+            this.materials.add(copy);
+        });
+
+        other.meshes.forEach(mesh -> {
+            Mesh copy = new Mesh();
+            mesh.vertices.forEach(mv -> {
+                copy.vertices.add(new Vertex(new Vector3f(mv.getPos()), new Vector3f(mv.getNormal()), new Vector2f(mv.getUv())));
+            });
+            copy.indices.addAll(mesh.indices);
+
+            this.meshes.add(mesh);
+        });
 
         this.solid = other.solid;
 

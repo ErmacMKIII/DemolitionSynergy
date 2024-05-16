@@ -49,7 +49,7 @@ public class LevelActors {
     /**
      * Main player (Single Player & Multiplayer)
      */
-    public final Player player = new Player(PLAYER_BODY);
+    public final Player player = new Player(new Model(PLAYER_BODY));
     /**
      * Non-playable characters. Handled by client (SinglePlayer) or server host
      * (MultiPlyer).
@@ -133,7 +133,7 @@ public class LevelActors {
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
         Arrays.asList(playerInfo).forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
-                Critter op = new Critter(pi.uniqueId, PLAYER_BODY);
+                Critter op = new Critter(pi.uniqueId, new Model(LevelActors.PLAYER_BODY));
                 op.setName(pi.name);
                 op.body.setPrimaryRGBAColor(pi.color);
                 op.body.setTexName(pi.texModel);

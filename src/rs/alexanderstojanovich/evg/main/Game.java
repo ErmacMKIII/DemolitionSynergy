@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -802,7 +801,7 @@ public class Game implements DSMachine {
                 double endTime = GLFW.glfwGetTime();
                 long tripTime = Math.round(endTime - beginTime) * 1000L;
 
-                Game.setGameTicks((double) timeResp.getData());
+                Game.gameTicks = (double) timeResp.getData();
                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -812,6 +811,39 @@ public class Game implements DSMachine {
         // update with delta time like gravity or sun
         if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
             gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
+
+            // Multiplayer update
+            if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected()) {
+                try {
+                    RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
+                    playerPosReq.send(this, serverEndpoint);
+                    ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
+                    if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                        gameObject.levelContainer.levelActors.player.setPos((Vector3f) playerPosResp.getData());
+                    } else {
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
+                        gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
+                    }
+                } catch (Exception ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+
+                gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
+                    try {
+                        RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
+                        otherPlayerRequest.send(this, serverEndpoint);
+                        ResponseIfc otherPlayerResponse = ResponseIfc.receive(this, serverEndpoint);
+                        if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                            other.setPos((Vector3f) otherPlayerResponse.getData());
+                        } else {
+                            DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
+                            gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
+                        }
+                    } catch (Exception ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                });
+            }
         }
 
         // Heavy operations to run afterwards
@@ -939,7 +971,9 @@ public class Game implements DSMachine {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            gameTicks += deltaTime * Game.TPS;
+            if (currentMode != Mode.MULTIPLAYER_JOIN) { // it updates time via request
+                gameTicks += deltaTime * Game.TPS;
+            }
             accumulator += deltaTime;
             lastTime = currTime;
 

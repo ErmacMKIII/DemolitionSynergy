@@ -26,7 +26,10 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.level.LevelActors;
+import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.DSObject;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -86,7 +89,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
         ResponseIfc response;
         String msg;
         LevelActors levelActors;
-        double time;
+        double gameTime;
         switch (request.getRequestType()) {
             case HELLO:
                 msg = String.format("Bad Request - You are alerady connected to %s, v%s!", gameServer.worldName, gameServer.version);
@@ -100,7 +103,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
                                 && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
-                            levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, LevelActors.PLAYER_BODY));
+                            levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, new Model(LevelActors.PLAYER_BODY)));
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                         } else {
@@ -115,7 +118,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (!levelActors.player.uniqueId.equals(info.uniqueId)
                                 && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId)) == null)) {
-                            Critter critter = new Critter(info.uniqueId, LevelActors.PLAYER_BODY);
+                            Critter critter = new Critter(info.uniqueId, new Model(LevelActors.PLAYER_BODY));
                             critter.setName(info.name);
                             critter.body.setPrimaryRGBAColor(info.color);
                             critter.body.texName = info.texModel;
@@ -141,8 +144,8 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 client.close();
                 break;
             case GET_TIME:
-                time = GameTime.Now().getTime();
-                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, time);
+                gameTime = Game.gameTicks;
+                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, gameTime);
                 response.send(gameServer, client);
                 break;
             case PING:
