@@ -228,7 +228,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                     playerInfos.add(new PlayerInfo(op.getName(), op.body.texName, op.uniqueId, op.body.getPrimaryRGBAColor()));
                 });
                 String obj = gson.toJson(playerInfos, IList.class);
-                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, obj);
+                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                 response.send(gameServer, client);
                 break;
         }

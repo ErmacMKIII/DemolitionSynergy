@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.util.ArrayDeque;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
@@ -24,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -256,7 +254,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             levelContainer.update();
             // if single player gravity is affected or if multiplayer and player is registered
             if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
-                    || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER && levelContainer.levelActors.player.isRegistered())) {
+                    || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
                 boolean underGravity = levelContainer.gravityDo(deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
@@ -625,7 +623,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             if (game.downloadLevel()) {
                 // load level to buffer
                 if (levelContainer.loadLevelFromBufferAsync().get()) {
-                    ArrayDeque<PlayerInfo> playerInfo = game.getPlayerInfo();
+                    PlayerInfo[] playerInfo = game.getPlayerInfo();
                     // config other players
                     levelContainer.levelActors.configOtherPlayers(playerInfo);
                     // spawn player (set position)

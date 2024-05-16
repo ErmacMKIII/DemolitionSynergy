@@ -1653,7 +1653,7 @@ public class LevelContainer implements GravityEnviroment {
             lightSources.setModified(1, true); // SUNLIGHT index is always 1
 
             // handleInput - player light - only in correct mode
-            if (Game.getCurrentMode() != Game.Mode.SINGLE_PLAYER && Game.getCurrentMode() != Game.Mode.MULTIPLAYER) {
+            if (Game.getCurrentMode() == Game.Mode.FREE || Game.getCurrentMode() == Game.Mode.EDITOR) {
                 levelActors.player.light.setIntensity(0.0f);
             } else {
                 levelActors.player.light.setIntensity(LightSource.PLAYER_LIGHT_INTENSITY);

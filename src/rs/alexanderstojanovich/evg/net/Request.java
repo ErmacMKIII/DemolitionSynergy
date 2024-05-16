@@ -103,6 +103,7 @@ public class Request implements RequestIfc {
             // Write data
             if (dataType != DataType.VOID) {
                 switch (dataType) {
+                    case OBJECT:
                     case STRING:
                         String message = (String) data;
                         byte[] messageBytes = message.getBytes(StandardCharsets.UTF_8);
@@ -168,6 +169,7 @@ public class Request implements RequestIfc {
             // Read data
             // Read data based on data type
             switch (DataType.values()[dataTypeOrdinal]) {
+                case OBJECT:
                 case STRING:
                     int stringLength = in.readInt();
                     byte[] stringBytes = new byte[stringLength];

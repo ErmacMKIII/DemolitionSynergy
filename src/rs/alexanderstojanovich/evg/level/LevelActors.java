@@ -16,7 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -76,6 +76,10 @@ public class LevelActors {
     }
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
+        // Other players is used in Multiplayer
+        for (Critter otherPlayer : otherPlayers) {
+            otherPlayer.render(lightSrc, npcShader);
+        }
         // Npc list is for now empty
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
@@ -90,7 +94,7 @@ public class LevelActors {
 
     public Observer mainActor() {
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
-                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
             return player;
         } else if (Game.getCurrentMode() == Game.Mode.FREE
                 || Game.getCurrentMode() == Game.Mode.EDITOR) {
@@ -126,13 +130,15 @@ public class LevelActors {
         return npcList;
     }
 
-    public void configOtherPlayers(ArrayDeque<PlayerInfo> playerInfo) {
-        playerInfo.forEach(pi -> {
-            Critter op = new Critter(pi.uniqueId, PLAYER_BODY);
-            op.setName(pi.name);
-            op.body.setPrimaryRGBAColor(pi.color);
-            op.body.setTexName(pi.texModel);
-            otherPlayers.add(op);
+    public void configOtherPlayers(PlayerInfo[] playerInfo) {
+        Arrays.asList(playerInfo).forEach(pi -> {
+            if (!pi.uniqueId.equals(player.uniqueId)) {
+                Critter op = new Critter(pi.uniqueId, PLAYER_BODY);
+                op.setName(pi.name);
+                op.body.setPrimaryRGBAColor(pi.color);
+                op.body.setTexName(pi.texModel);
+                otherPlayers.add(op);
+            }
         });
     }
 

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.GameServer;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.OBJECT;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VOID;
 
 public class Response implements ResponseIfc {
@@ -84,6 +85,7 @@ public class Response implements ResponseIfc {
 
             if (dataType != DataType.VOID) {
                 switch (dataType) {
+                    case OBJECT:
                     case STRING:
                         // Write string length and bytes
                         String message = (String) data;
@@ -153,6 +155,7 @@ public class Response implements ResponseIfc {
 
             // Read data based on data type
             switch (dataType) {
+                case OBJECT:
                 case STRING:
                     int stringLength = in.readInt();
                     byte[] stringBytes = new byte[stringLength];

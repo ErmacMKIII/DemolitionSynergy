@@ -224,7 +224,7 @@ public class Intrface {
                             chunkText.setEnabled(false);
                             break;
                         case "EXIT":
-                            if (Game.getCurrentMode() == Mode.MULTIPLAYER) {
+                            if (Game.getCurrentMode() == Mode.MULTIPLAYER_HOST) {
                                 if (gameObject.gameServer.isRunning()) {
                                     gameObject.gameServer.stopServer();
                                 }
@@ -402,7 +402,7 @@ public class Intrface {
                         }
 
                         if (ok) {
-                            Game.setCurrentMode(Mode.MULTIPLAYER);
+                            Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
                             gameMenu.getTitle().setContent("MUTLIPLAYER");
                             status = ExecStatus.SUCCESS;
                         } else {
@@ -444,7 +444,7 @@ public class Intrface {
             optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
-                    if (Game.getCurrentMode() == Mode.SINGLE_PLAYER || Game.getCurrentMode() == Mode.MULTIPLAYER) {
+                    if (Game.getCurrentMode() == Mode.SINGLE_PLAYER || Game.getCurrentMode() == Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Mode.MULTIPLAYER_JOIN) {
                         gameObject.intrface.getGameMenu().open();
                     } else {
                         gameObject.intrface.getMainMenu().open();
@@ -698,7 +698,7 @@ public class Intrface {
                             break;
                         case "CHARACTER MODEL":
                             player = gameObject.levelContainer.levelActors.player;
-                            player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                            player.body.texName = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
                             break;
                         case "COLOR":
                             player = gameObject.levelContainer.levelActors.player;
@@ -834,7 +834,7 @@ public class Intrface {
                                     long tripTime = Math.round(endTime - beginTime) * 1000L;
                                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
                                     if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                        Game.setCurrentMode(Mode.MULTIPLAYER);
+                                        Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                         gameMenu.getTitle().setContent("MUTLIPLAYER");
                                     }
                                 } catch (InterruptedException | ExecutionException ex) {

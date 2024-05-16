@@ -636,7 +636,7 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case PING:
-                if (command.mode == Mode.SET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+                if (command.mode == Mode.SET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
                     try {
                         double beginTime = GLFW.glfwGetTime();
                         RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);

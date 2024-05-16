@@ -122,7 +122,7 @@ public class Game implements DSMachine {
     protected final int version = 39;
 
     public static enum Mode {
-        FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
+        FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
     };
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
@@ -486,7 +486,7 @@ public class Game implements DSMachine {
         Vector3f playerServerPos = player.getPos();
 
         // Multiplayer-Join mode
-        if (isConnected() && gameObject.levelContainer.levelActors.player.isRegistered()) {
+        if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
             double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, serverEndpoint);
@@ -499,66 +499,126 @@ public class Game implements DSMachine {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
                 gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
             }
-        }
-        final float interpFact = 1.0f - deltaTime / ((float) ping + deltaTime);
+            final float interpFact = (float) ping / ((float) ping + deltaTime);
 
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
-            player.movePredictorXZForward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
-                player.movePredictorXZBackward(amountXZ);
-            } else {
-                player.moveXZForward(amountXZ);
-                changed = true;
-            }
-        }
-
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
-            player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
-            } else {
-                player.moveXZBackward(amountXZ);
-                changed = true;
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZBackward(amountXZ);
+                } else {
+                    player.moveXZForward(amountXZ);
+                    changed = true;
+                }
             }
-        }
 
-        if (keys[GLFW.GLFW_KEY_A]) {
-            player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
-                player.movePredictorXZRight(amountXZ);
-            } else {
-                player.moveXZLeft(amountXZ);
-                changed = true;
+            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+                player.movePredictorXZBackward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZForward(amountXZ);
+                } else {
+                    player.moveXZBackward(amountXZ);
+                    changed = true;
+                }
             }
-        }
 
-        if (keys[GLFW.GLFW_KEY_D]) {
-            player.movePredictorXZRight(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+            if (keys[GLFW.GLFW_KEY_A]) {
                 player.movePredictorXZLeft(amountXZ);
-            } else {
-                player.moveXZRight(amountXZ);
-                changed = true;
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZRight(amountXZ);
+                } else {
+                    player.moveXZLeft(amountXZ);
+                    changed = true;
+                }
             }
-        }
 
-        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
-            player.movePredictorYUp(amountY);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
-                player.movePredictorYDown(amountY);
-            } else {
-                jumpPerformed |= lc.jump(player, amountY, deltaTime);
-                changed = true;
+            if (keys[GLFW.GLFW_KEY_D]) {
+                player.movePredictorXZRight(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZLeft(amountXZ);
+                } else {
+                    player.moveXZRight(amountXZ);
+                    changed = true;
+                }
             }
-        }
 
-        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
-            player.movePredictorYDown(amountYNeg);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
-                player.movePredictorYUp(amountYNeg);
-            } else {
-                player.sinkY(amountYNeg);
-                changed = true;
+            if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+                player.movePredictorYUp(amountY);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorYDown(amountY);
+                } else {
+                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+                player.movePredictorYDown(amountYNeg);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorYUp(amountYNeg);
+                } else {
+                    player.sinkY(amountYNeg);
+                    changed = true;
+                }
+            }
+        } else if (currentMode == Mode.MULTIPLAYER_HOST && gameObject.levelContainer.levelActors.player.isRegistered()) {
+            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+                player.movePredictorXZForward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZBackward(amountXZ);
+                } else {
+                    player.moveXZForward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+                player.movePredictorXZBackward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZForward(amountXZ);
+                } else {
+                    player.moveXZBackward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_A]) {
+                player.movePredictorXZLeft(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZRight(amountXZ);
+                } else {
+                    player.moveXZLeft(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_D]) {
+                player.movePredictorXZRight(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZLeft(amountXZ);
+                } else {
+                    player.moveXZRight(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+                player.movePredictorYUp(amountY);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorYDown(amountY);
+                } else {
+                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+                player.movePredictorYDown(amountYNeg);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorYUp(amountYNeg);
+                } else {
+                    player.sinkY(amountYNeg);
+                    changed = true;
+                }
             }
         }
 
@@ -635,7 +695,7 @@ public class Game implements DSMachine {
                     gameObject.intrface.setShowHelp(false);
                     gameObject.intrface.getHelpText().setEnabled(false);
                     gameObject.intrface.getCollText().setEnabled(true);
-                    if (currentMode == Mode.SINGLE_PLAYER || currentMode == Mode.MULTIPLAYER) {
+                    if (currentMode == Mode.SINGLE_PLAYER || (currentMode == Mode.MULTIPLAYER_HOST || currentMode == Mode.MULTIPLAYER_JOIN)) {
                         gameObject.intrface.getGameMenu().open();
                     } else {
                         gameObject.intrface.getMainMenu().open();
@@ -733,7 +793,7 @@ public class Game implements DSMachine {
      * @param deltaTime time interval between updates
      */
     public void update(double deltaTime) {
-        if (Game.currentMode == Mode.MULTIPLAYER && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
             try {
                 double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
@@ -818,7 +878,8 @@ public class Game implements DSMachine {
                             );
                         }
                         break;
-                    case MULTIPLAYER:
+                    case MULTIPLAYER_HOST:
+                    case MULTIPLAYER_JOIN:
                         // player has control
                         actionPerformed |= multiPlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
 
@@ -1093,8 +1154,8 @@ public class Game implements DSMachine {
      *
      * @return Player Info
      */
-    public ArrayDeque<PlayerInfo> getPlayerInfo() {
-        ArrayDeque<PlayerInfo> result = null;
+    public PlayerInfo[] getPlayerInfo() {
+        PlayerInfo[] result = null;
         if (isConnected()) {
             try {
                 // Send a simple 'goodbye' message with magic bytes prepended
@@ -1107,7 +1168,7 @@ public class Game implements DSMachine {
                 gameObject.intrface.getConsole().write(objResp.getData().toString());
 
                 Gson gson = new Gson();
-                result = gson.fromJson((String) objResp.getData(), ArrayDeque.class);
+                result = gson.fromJson((String) objResp.getData(), PlayerInfo[].class);
             } catch (IOException ex) {
                 DSLogger.reportError("Network error(s) occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
