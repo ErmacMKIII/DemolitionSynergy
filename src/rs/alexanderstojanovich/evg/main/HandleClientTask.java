@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.net.DSObject;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
 import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
@@ -157,14 +158,23 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 switch (request.getDataType()) {
                     case INT: {
                         int playerIndex = (int) request.getData() - 1;
-                        Vector3f vec3f;
+                        Vector3f vec3fPos;
+                        Vector3f vec3fView;
+                        PosInfo posInfo;
+                        String obj;
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (playerIndex == -1) {
-                            vec3f = levelActors.player.getPos();
-                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                            vec3fPos = levelActors.player.getPos();
+                            vec3fView = levelActors.player.getFront();
+                            posInfo = new PosInfo(levelActors.player.uniqueId, vec3fPos, vec3fView);
+                            obj = posInfo.toString();
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                         } else if (playerIndex >= 0 && playerIndex < levelActors.otherPlayers.size()) {
-                            vec3f = levelActors.otherPlayers.get(playerIndex).getPos();
-                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                            vec3fPos = levelActors.otherPlayers.get(playerIndex).getPos();
+                            vec3fView = levelActors.otherPlayers.get(playerIndex).getFront();
+                            posInfo = new PosInfo(levelActors.player.uniqueId, vec3fPos, vec3fView);
+                            obj = posInfo.toString();
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                         } else {
                             response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid argument!");
                         }
@@ -172,18 +182,27 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                     }
                     case STRING: {
                         String uuid = request.getData().toString();
-                        Vector3f vec3f;
+                        Vector3f vec3fPos;
+                        Vector3f vec3fView;
+                        PosInfo posInfo;
+                        String obj;
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (levelActors.player.uniqueId.equals(uuid)) {
-                            vec3f = levelActors.player.getPos();
-                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                            vec3fPos = levelActors.player.getPos();
+                            vec3fView = levelActors.player.getFront();
+                            posInfo = new PosInfo(levelActors.player.uniqueId, vec3fPos, vec3fView);
+                            obj = posInfo.toString();
+                            response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                         } else {
                             Critter other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(uuid));
                             if (other != null) {
-                                vec3f = other.getPos();
-                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VEC3F, vec3f);
+                                vec3fPos = other.getPos();
+                                vec3fView = other.getFront();
+                                posInfo = new PosInfo(levelActors.player.uniqueId, vec3fPos, vec3fView);
+                                obj = posInfo.toString();
+                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                             } else {
-                                response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Invalid Player ID or not registered!");
+                                response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.OBJECT, "Bad Request - Invalid Player ID or not registered!");
                             }
                         }
                         break;
@@ -193,6 +212,21 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         break;
                 }
                 response.send(gameServer, client);
+                break;
+            case SET_POS:
+                String jsonStr = request.getData().toString();
+                PosInfo posInfo = PosInfo.fromJson(jsonStr);
+                levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
+                if (levelActors.player.uniqueId.equals(posInfo.uniqueId)) {
+                    levelActors.player.setPos(posInfo.pos);
+                    levelActors.player.getFront().set(posInfo.front);
+                    levelActors.player.setRotationXYZ(posInfo.front);
+                } else {
+                    Critter other = levelActors.otherPlayers.getIf(ply -> ply.uniqueId.equals(posInfo.uniqueId));
+                    other.setPos(posInfo.pos);
+                    other.getFront().set(posInfo.front);
+                    other.setRotationXYZ(posInfo.front);
+                }
                 break;
             case DOWNLOAD:
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");

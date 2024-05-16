@@ -42,6 +42,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
@@ -481,17 +482,17 @@ public class Game implements DSMachine {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        double ping = 0.000;
-        Vector3f playerServerPos = player.getPos();
-
         // Multiplayer-Join mode
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
+            double ping = 0.000;
+            Vector3f playerServerPos = player.getPos();
             double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, serverEndpoint);
             ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
             if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                playerServerPos = (Vector3f) playerPosResp.getData();
+                PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
+                playerServerPos = posInfo.pos;
                 double endTime = GLFW.glfwGetTime();
                 ping = endTime - beginTime;
             } else {
@@ -559,6 +560,7 @@ public class Game implements DSMachine {
                     changed = true;
                 }
             }
+
         } else if (currentMode == Mode.MULTIPLAYER_HOST && gameObject.levelContainer.levelActors.player.isRegistered()) {
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
@@ -666,6 +668,11 @@ public class Game implements DSMachine {
 //        }
         if (keys[GLFW.GLFW_KEY_R]) {
             changed = true;
+        }
+
+        // in case of multiplayer join send to the server
+        if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN) {
+            this.requestSetPlayerPosition();
         }
 
         return changed;
@@ -814,27 +821,16 @@ public class Game implements DSMachine {
 
             // Multiplayer update
             if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected()) {
-                try {
-                    RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
-                    playerPosReq.send(this, serverEndpoint);
-                    ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
-                    if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                        gameObject.levelContainer.levelActors.player.setPos((Vector3f) playerPosResp.getData());
-                    } else {
-                        DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
-                        gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
-                    }
-                } catch (Exception ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this, serverEndpoint);
                         ResponseIfc otherPlayerResponse = ResponseIfc.receive(this, serverEndpoint);
                         if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                            other.setPos((Vector3f) otherPlayerResponse.getData());
+                            PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
+                            other.setPos(posInfo.pos);
+                            other.getFront().set(posInfo.front);
+                            other.setRotationXYZ(posInfo.front);
                         } else {
                             DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
                             gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
@@ -866,8 +862,8 @@ public class Game implements DSMachine {
      */
     public void handleInput(double deltaTime) {
         try {
-            GLFW.glfwPollEvents();
             if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+                GLFW.glfwPollEvents();
                 final float time = (float) deltaTime * Game.TICKS_PER_UPDATE;
                 final float amount = Game.AMOUNT * time;
                 actionPerformed = false;
@@ -1241,6 +1237,22 @@ public class Game implements DSMachine {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
             }
+        }
+    }
+
+    /**
+     * Request server to update player position.
+     */
+    public void requestSetPlayerPosition() {
+        try {
+            final Player player = gameObject.levelContainer.levelActors.player;
+            final PosInfo posInfo = new PosInfo(player.uniqueId, player.getPos(), player.getFront());
+            String posStr = posInfo.toString();
+            RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
+            posReq.send(this, serverEndpoint);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
         }
     }
 

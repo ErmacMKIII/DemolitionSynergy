@@ -53,11 +53,11 @@ public interface RequestIfc extends DSObject {
          */
         SET_TIME,
         /**
-         * Get player position from the server
+         * Get player position & view from the server
          */
         GET_POS,
         /**
-         * Set player position on the server
+         * Set player position & view on the server
          */
         SET_POS,
         /**

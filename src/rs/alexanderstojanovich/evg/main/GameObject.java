@@ -628,6 +628,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     levelContainer.levelActors.configOtherPlayers(playerInfo);
                     // spawn player (set position)
                     levelContainer.spawnPlayer();
+                    // player set pos
+                    game.requestSetPlayerPosition();
                     okey = true;
                 }
             }

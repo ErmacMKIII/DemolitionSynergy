@@ -316,6 +316,12 @@ public class Model implements Renderable, Comparable<Model> {
         return modelMatrix;
     }
 
+    public void setRotationXYZ(Vector3f viewDir) {
+        float lightYaw = org.joml.Math.atan2(-viewDir.z, viewDir.x);
+        float lightPitch = -org.joml.Math.atan2(viewDir.y, org.joml.Math.sqrt(viewDir.x * viewDir.x + viewDir.z * viewDir.z));
+        this.calcModelMatrix();
+    }
+
     public void transform(ShaderProgram shaderProgram) {
         calcModelMatrix();
         shaderProgram.updateUniform(modelMatrix, "modelMatrix");

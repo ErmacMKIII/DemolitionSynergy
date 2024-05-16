@@ -42,6 +42,14 @@ public class PlayerInfo {
      */
     public final Vector4f color;
 
+    /**
+     * Create new Player Info (Json)
+     *
+     * @param name player name
+     * @param texModel player (character) texture model
+     * @param uniqueId player unique id
+     * @param color player color (of body)
+     */
     public PlayerInfo(String name, String texModel, String uniqueId, Vector4f color) {
         this.name = name;
         this.texModel = texModel;

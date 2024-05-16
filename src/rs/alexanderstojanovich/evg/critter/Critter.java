@@ -23,7 +23,6 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.HardwareUtils;
 
 /**
  * Critter is class of living things. Has capabilities moving. Is collision
@@ -342,6 +341,18 @@ public class Critter implements Predictable, Moveable, Renderable {
         predictor = body.pos.sub(amountXYZ, temp);
     }
 
+    /**
+     * Set XYZ Body (Model) Rotation
+     *
+     * @param newFront new front vec3f
+     */
+    public void setRotationXYZ(Vector3f newFront) {
+        final float newYaw = org.joml.Math.atan2(-newFront.z, newFront.x);
+//        float newPitch = -org.joml.Math.atan2(newFront.y, org.joml.Math.sqrt(newFront.x * newFront.x + newFront.z * newFront.z));        
+        this.body.setrY(-3.0f * (float) (org.joml.Math.PI) / 2.0f + newYaw);
+        updateCameraVectors(newFront);
+    }
+
     public boolean isUnderGravity() {
         return underGravity;
     }
@@ -364,6 +375,22 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getUniqueId() {
+        return uniqueId;
+    }
+
+    public Vector3f getFront() {
+        return front;
+    }
+
+    public Vector3f getUp() {
+        return up;
+    }
+
+    public Vector3f getRight() {
+        return right;
     }
 
 }
