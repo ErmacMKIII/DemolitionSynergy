@@ -62,7 +62,7 @@ public class LightOverlay extends Quad {
             camera.updateCameraFront(shaderProgram);
             shaderProgram.updateUniform(scale, "scale");
 
-            if (LevelContainer.isActorInFluid(lc)) {
+            if (LevelContainer.isActorInFluidChk(lc)) {
                 texture.bind(shaderProgram, "ifcTexture");
                 color = LevelContainer.SKYBOX_COLOR;
             } else {

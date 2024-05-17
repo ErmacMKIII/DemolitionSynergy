@@ -228,6 +228,7 @@ public class Intrface {
                                 if (gameObject.gameServer.isRunning()) {
                                     gameObject.gameServer.stopServer();
                                 }
+                            } else if (Game.getCurrentMode() == Mode.MULTIPLAYER_JOIN) {
                                 gameObject.game.disconnectFromServer();
                             }
                             gameObject.clearEverything();

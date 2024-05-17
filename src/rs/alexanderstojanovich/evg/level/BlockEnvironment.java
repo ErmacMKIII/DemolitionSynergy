@@ -123,7 +123,7 @@ public class BlockEnvironment {
      */
     public void optimizeFast(IList<Integer> vqueue, Camera camera) {
         // determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         boolean someRemoved = optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         // some removals are made
@@ -219,7 +219,7 @@ public class BlockEnvironment {
         pull(); // pull from optimized stream
 
         // determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.cameraInFluid ? 0f : 45f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         final String tex = Texture.TEX_WORLD[texProcIndex];

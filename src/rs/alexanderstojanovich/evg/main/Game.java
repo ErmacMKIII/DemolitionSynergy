@@ -60,7 +60,7 @@ public class Game implements DSMachine {
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final int TPS_HALF = 40; // HALF OF TPS
-    public static final int TPS_QUARTER = 20; // QUARTER OF TPS 
+    public static final int TPS_QUARTER = 20; // QUARTER OF TPS ~ 250 ms
     public static final int TPS_EIGHTH = 10; // EIGHTH OF TPS (Used for Chunk Operations) ~ 125 ms
     public static final int TPS_SIXTEENTH = 5; // EIGHTH OF TPS 
 
@@ -395,7 +395,7 @@ public class Game implements DSMachine {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+        if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
             player.movePredictorYUp(amountY);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYDown(amountY);
@@ -541,7 +541,7 @@ public class Game implements DSMachine {
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+            if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
                 player.movePredictorYUp(amountY);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
                     player.movePredictorYDown(amountY);
@@ -602,7 +602,7 @@ public class Game implements DSMachine {
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+            if (keys[GLFW.GLFW_KEY_SPACE] && (!jumpPerformed)) {
                 player.movePredictorYUp(amountY);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                     player.movePredictorYDown(amountY);
@@ -888,22 +888,10 @@ public class Game implements DSMachine {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
 
-                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                        if (!jumpPerformed) {
-                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                            Vector3f playerPosAlign = new Vector3f(
-                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                            );
-
-                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                                    Block.getAdjacentPos(
-                                            playerPosAlign, Block.BOTTOM, 1.05f),
-                                    false
-                            );
+                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        if (keys[GLFW.GLFW_KEY_SPACE]) {
+                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
+//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
                         }
                         break;
                     case MULTIPLAYER_HOST:
@@ -915,22 +903,10 @@ public class Game implements DSMachine {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
 
-                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                        if (!jumpPerformed) {
-                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                            Vector3f playerPosAlign = new Vector3f(
-                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                            );
-
-                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                                    Block.getAdjacentPos(
-                                            playerPosAlign, Block.BOTTOM, 1.05f),
-                                    false
-                            );
+                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        if (keys[GLFW.GLFW_KEY_SPACE]) {
+                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
+//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
                         }
                         break;
                 }
