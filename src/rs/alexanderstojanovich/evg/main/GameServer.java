@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -71,6 +73,11 @@ public class GameServer implements DSMachine, Runnable {
      * Client service
      */
     public final ExecutorService clientServiceExecutor = Executors.newFixedThreadPool(MAX_CLIENTS);
+
+    /**
+     * Who is Client Socket <==> Player UniqueId
+     */
+    public final LinkedHashMap<Socket, String> whoIsMap = new LinkedHashMap<>();
 
     /**
      * Create new game server
@@ -213,7 +220,7 @@ public class GameServer implements DSMachine, Runnable {
             // Bind the server socket to a specific IP address and port
             server = new ServerSocket();
             server.bind(new InetSocketAddress(host, port));
-            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
+            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
             DSLogger.reportInfo("Game Server started!", null);
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
@@ -230,22 +237,35 @@ public class GameServer implements DSMachine, Runnable {
                     // Send "Welcome" Response
                     accept(client); // Authenticated
                     client.setSoTimeout(0);
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
                     // Create handle client task ~ for handling requests and sending responses
                     CompletableFuture.supplyAsync(new HandleClientTask(client, this), this.clientServiceExecutor)
                             .exceptionally(ex -> {
                                 // Handle exceptions
                                 DSLogger.reportError("Error handling client: " + ex.getMessage(), ex);
+                                clients.remove(client);
+                                try {
+                                    client.close();
+                                } catch (IOException ex1) {
+                                    DSLogger.reportError(ex1.getMessage(), ex1);
+                                }
 
                                 return HandleClientTask.Status.INTERNAL_ERROR;
                             }).whenComplete((result, ex) -> {
-                        DSLogger.reportInfo(String.format("Client task returned %s!", result), ex);
-                        gameObject.intrface.getConsole().write("Client task returned " + result.toString(), result != HandleClientTask.Status.OK);
-                        // Code to execute finally
-                        // This block will execute regardless of whether the CompletableFuture completed exceptionally or successfully
-                        // You can perform cleanup tasks or any other final actions here
-                        clients.remove(client);
-                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + clients.size());
+                        try {
+                            DSLogger.reportInfo(String.format("Client task returned %s!", result), ex);
+                            gameObject.intrface.getConsole().write("Client task returned " + result.toString(), result != HandleClientTask.Status.OK);
+                            // Code to execute finally
+                            // This block will execute regardless of whether the CompletableFuture completed exceptionally or successfully
+                            // You can perform cleanup tasks or any other final actions here
+                            performCleanUp(gameObject, whoIsMap.get(client));
+                            clients.remove(client);
+                            client.close();
+
+                            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
+                        } catch (IOException ex1) {
+                            DSLogger.reportError(ex1.getMessage(), ex1);
+                        }
                     });
                 } else {
                     DSLogger.reportError("Acceptance test failure!", null);
@@ -274,6 +294,20 @@ public class GameServer implements DSMachine, Runnable {
         clients.clear();
         running = false;
         DSLogger.reportInfo("Game Server finished!", null);
+    }
+
+    /**
+     * Perform clean up after player has disconnected or lost connection.
+     *
+     * @param gameObject game object
+     * @param uniqueId player unique id (which was registered)
+     */
+    public static void performCleanUp(GameObject gameObject, String uniqueId) {
+        LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
+
+        levelActors.otherPlayers.removeIf(ply -> ply.uniqueId.equals(uniqueId));
+        DSLogger.reportInfo(String.format("Player %s timed out.", uniqueId), null);
+        gameObject.intrface.getConsole().write(String.format("Player %s timed out.", uniqueId));
     }
 
     public String getWorldName() {

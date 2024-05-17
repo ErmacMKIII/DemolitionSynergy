@@ -56,6 +56,8 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
     public final Socket client;
     public final GameServer gameServer;
 
+    protected boolean goodBye = false;
+
     /**
      * Constructor for HandleClientTask.
      *
@@ -107,6 +109,11 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                             levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, new Model(LevelActors.PLAYER_BODY)));
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+
+                            gameServer.gameObject.intrface.getConsole().write(String.format("Player %s has connected.", newPlayerUniqueId));
+                            DSLogger.reportInfo(String.format("Player %s has connected.", newPlayerUniqueId), null);
+
+                            gameServer.whoIsMap.put(client, newPlayerUniqueId);
                         } else {
                             msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
@@ -124,6 +131,12 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                             critter.body.setPrimaryRGBAColor(info.color);
                             critter.body.texName = info.texModel;
                             levelActors.otherPlayers.add(critter);
+
+                            gameServer.gameObject.intrface.getConsole().write(String.format("Player %s (%s) has connected.", info.name, info.uniqueId));
+                            DSLogger.reportInfo(String.format("Player %s (%s) has connected.", info.name, info.uniqueId), null);
+
+                            gameServer.whoIsMap.put(client, info.uniqueId);
+
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                         } else {
@@ -142,7 +155,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, client);
-                client.close();
+                goodBye = true;
                 break;
             case GET_TIME:
                 gameTime = Game.gameTicks;
@@ -279,9 +292,10 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
     @Override
     public HandleClientTask.Status get() {
         HandleClientTask.Status status;
+        boolean isGoodBye = false;
         try {
             // Handle client request and response
-            while (client.isConnected() && !client.isClosed()) {
+            while (client.isConnected() && !client.isClosed() && !isGoodBye) {
                 process();
             }
             status = Status.OK;
