@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -77,6 +78,7 @@ public class LevelActors {
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
         // Other players is used in Multiplayer
+//        DSLogger.reportInfo(""+otherPlayers.size(), null);
         for (Critter otherPlayer : otherPlayers) {
             otherPlayer.render(lightSrc, npcShader);
         }

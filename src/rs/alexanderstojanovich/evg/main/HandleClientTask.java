@@ -292,10 +292,9 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
     @Override
     public HandleClientTask.Status get() {
         HandleClientTask.Status status;
-        boolean isGoodBye = false;
         try {
             // Handle client request and response
-            while (client.isConnected() && !client.isClosed() && !isGoodBye) {
+            while ((client.isConnected() && !client.isClosed()) && !goodBye) {
                 process();
             }
             status = Status.OK;
@@ -322,6 +321,14 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
 
     public static enum Status {
         INTERNAL_ERROR, CLIENT_ERROR, OK
+    }
+
+    public static int getBUFF_SIZE() {
+        return BUFF_SIZE;
+    }
+
+    public boolean isGoodBye() {
+        return goodBye;
     }
 
 }

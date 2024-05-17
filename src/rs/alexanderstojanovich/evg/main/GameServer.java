@@ -262,6 +262,8 @@ public class GameServer implements DSMachine, Runnable {
                             clients.remove(client);
                             client.close();
 
+                            whoIsMap.remove(client);
+
                             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
                         } catch (IOException ex1) {
                             DSLogger.reportError(ex1.getMessage(), ex1);

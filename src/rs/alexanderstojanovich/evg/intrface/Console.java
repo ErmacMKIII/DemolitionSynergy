@@ -249,7 +249,9 @@ public class Console {
         cmd.args.add(m);
 
         Command.execute(intrface.gameObject, cmd);
-        cmd.status = Command.Status.FAILED;
+        if (isError) {
+            cmd.status = Command.Status.FAILED;
+        }
 
         // add to queue
         HistoryItem item;
