@@ -294,7 +294,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
         HandleClientTask.Status status;
         try {
             // Handle client request and response
-            while ((client.isConnected() && !client.isClosed()) && !goodBye) {
+            while ((client.isConnected() && !client.isClosed()) && !goodBye && !gameServer.isShutDownSignal()) {
                 process();
             }
             status = Status.OK;
