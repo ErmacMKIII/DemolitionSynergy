@@ -724,6 +724,7 @@ public class Intrface {
             multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             multiPlayerHostMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
+            multiPlayerHostMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue("", MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getPort(), MenuValue.Type.INT)));
             multiPlayerHostMenuItems.add(new MenuItem("START", Menu.EditType.EditNoValue, null));
             multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
@@ -766,8 +767,12 @@ public class Intrface {
                             seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
                             gameObject.randomLevelGenerator.setSeed(seedValue);
                             break;
+                        case "HOSTNAME":
+                            final String host = this.items.get(3).menuValue.getCurrentValue().toString();
+                            gameObject.gameServer.setHost(host);
+                            break;
                         case "PORT":
-                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(4).menuValue.getCurrentValue().toString()));
                             break;
                         case "START":
                             levelSize = this.items.get(1).menuValue.getCurrentValue().toString().toUpperCase();
@@ -789,14 +794,14 @@ public class Intrface {
                             }
                             seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
                             gameObject.randomLevelGenerator.setSeed(seedValue);
-                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(4).menuValue.getCurrentValue().toString()));
                             multiPlayerDialog.open(Intrface.this);
                             break;
                     }
                 }
             };
             multiPlayerHostMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
-            multiPlayerHostMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerHostMenu.items.get(5).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             //------------------------------------------------------------------
             IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
             multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue("", MenuValue.Type.STRING)));
@@ -814,13 +819,7 @@ public class Intrface {
                     switch (s) {
                         case "HOSTNAME":
                             final String host = this.items.getFirst().menuValue.getCurrentValue().toString();
-                             {
-                                try {
-                                    gameObject.game.setServerAddress(InetAddress.getByName(host));
-                                } catch (UnknownHostException ex) {
-                                    DSLogger.reportError(String.format("Unable resolve host %s!", host), ex);
-                                }
-                            }
+                            gameObject.game.setServerAddress(host);
                             break;
                         case "PORT":
                             gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
@@ -833,7 +832,7 @@ public class Intrface {
                                 try {
                                     console.write("Connected to server!");
                                     long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress() + " ( " + tripTime + " ms )");
                                     if (gameObject.generateMultiPlayerLevelAsJoin()) {
                                         Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                         gameMenu.getTitle().setContent("MUTLIPLAYER");

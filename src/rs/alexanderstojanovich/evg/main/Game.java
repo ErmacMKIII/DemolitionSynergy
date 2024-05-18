@@ -19,9 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -141,7 +139,7 @@ public class Game implements DSMachine {
      * Connect to server stuff & endpoint
      */
     protected Socket serverEndpoint;
-    protected InetAddress serverAddress;
+    protected String serverAddress = "";
     protected int port = DEFAULT_PORT;
     protected final int timeout = 30 * 1000; // 30 sec
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
@@ -155,10 +153,8 @@ public class Game implements DSMachine {
      * Construct new game (client) view. Demolition Synergy client.
      *
      * @param gameObject game object
-     * @throws java.net.UnknownHostException if host unavailable
      */
-    public Game(GameObject gameObject) throws UnknownHostException {
-        this.serverAddress = InetAddress.getLocalHost();
+    public Game(GameObject gameObject) {
         this.gameObject = gameObject;
         Arrays.fill(keys, false);
         initCallbacks();
@@ -809,7 +805,7 @@ public class Game implements DSMachine {
                 long tripTime = Math.round(endTime - beginTime) * 1000L;
 
                 Game.gameTicks = (double) timeResp.getData();
-                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress() + " ( " + tripTime + " ms )");
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
             }
@@ -1407,11 +1403,11 @@ public class Game implements DSMachine {
         this.serverEndpoint = serverEndpoint;
     }
 
-    public InetAddress getServerAddress() {
+    public String getServerAddress() {
         return serverAddress;
     }
 
-    public void setServerAddress(InetAddress serverAddress) {
+    public void setServerAddress(String serverAddress) {
         this.serverAddress = serverAddress;
     }
 

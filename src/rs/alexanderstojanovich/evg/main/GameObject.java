@@ -529,7 +529,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
-        WINDOW.setTitle(GameObject.WINDOW_TITLE);
+        levelContainer.levelActors.npcList.clear();
+        levelContainer.levelActors.otherPlayers.clear();
+        if (!gameServer.isShutDownSignal()) {
+            WINDOW.setTitle(GameObject.WINDOW_TITLE);
+        }
         Game.setCurrentMode(Game.Mode.FREE);
     }
 

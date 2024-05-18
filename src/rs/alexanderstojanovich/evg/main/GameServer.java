@@ -52,7 +52,7 @@ public class GameServer implements DSMachine, Runnable {
     public final IList<Socket> clients = new GapList<>();
     protected final GameObject gameObject;
 
-    protected boolean running = false;
+    protected volatile boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
     protected final int timeout = 30 * 1000; // 30 sec
@@ -222,6 +222,7 @@ public class GameServer implements DSMachine, Runnable {
             server.bind(new InetSocketAddress(host, port));
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
             DSLogger.reportInfo("Game Server started!", null);
+            gameObject.intrface.getConsole().write("Game Server started!");
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -236,6 +237,8 @@ public class GameServer implements DSMachine, Runnable {
                 if (tst(client) && clients.size() <= MAX_CLIENTS) {
                     // Send "Welcome" Response
                     accept(client); // Authenticated
+                    DSLogger.reportInfo(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getCanonicalHostName()), null);
+                    gameObject.intrface.getConsole().write(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getCanonicalHostName()));
                     client.setSoTimeout(0);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
                     // Create handle client task ~ for handling requests and sending responses
@@ -273,6 +276,8 @@ public class GameServer implements DSMachine, Runnable {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);
                     clients.remove(client);
+                    DSLogger.reportInfo(String.format("Client %s rejected!", client.getInetAddress().getCanonicalHostName()), null);
+                    gameObject.intrface.getConsole().write(String.format("Client %s rejected!", client.getInetAddress().getCanonicalHostName()), true);
                 }
                 // Handle the client connection
             } catch (IOException ex) {
