@@ -343,9 +343,7 @@ public class BlockEnvironment {
         }
 
         for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() > 0)) {
-            if (tuple.isBuffered() && !tuple.isSolid() && tuple.faceBits() > 0) {
-                tuple.animate();
-            }
+            tuple.animate();
         }
     }
 
