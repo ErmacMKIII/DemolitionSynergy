@@ -44,7 +44,7 @@ import rs.alexanderstojanovich.evg.util.PlainTextReader;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Intrface {
-
+    
     public final GameObject gameObject;
     private Quad crosshair;
     private DynamicText updText; // displays updates
@@ -54,39 +54,39 @@ public class Intrface {
 
     private DynamicText chunkText; // display current chunk (player)
     private DynamicText gameTimeText;
-
+    
     private DynamicText collText; // collision info
     private DynamicText helpText; // displays the help (toggle)
     private DynamicText progText; // progress text;
     private DynamicText screenText; // screenshot information
     private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MUTLIPLAYER}
     private boolean showHelp = false;
-
+    
     private ConcurrentDialog saveDialog;
     private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
     private ConcurrentDialog singlePlayerDialog;
     private ConcurrentDialog multiPlayerDialog;
-
+    
     private Menu mainMenu;
     private Menu gameMenu; // when player has is ingame session
 
     private OptionsMenu optionsMenu;
-
+    
     private Menu editorMenu;
     private Menu creditsMenu;
     private OptionsMenu randLvlMenu;
     private Menu loadLvlMenu;
-
+    
     private int numBlocks = 0;
-
+    
     public static final String FONT_IMG = "font.png"; // modified JetBrains font
 
     private OptionsMenu singlPlayerMenu;
     private OptionsMenu multiPlayerMenu;
     private OptionsMenu multiPlayerHostMenu;
     private OptionsMenu multiPlayerJoinMenu;
-
+    
     private final Console console;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
 
@@ -107,27 +107,27 @@ public class Intrface {
     private void initSelf() {
         try {
             final float menuScale = 2.0f;
-
+            
             AudioPlayer musicPlayer = gameObject.getMusicPlayer();
             AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
-
+            
             updText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
             updText.alignToNextChar(this);
             fpsText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
             fpsText.alignToNextChar(this);
-
+            
             posText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
             posText.setAlignment(Text.ALIGNMENT_RIGHT);
             posText.alignToNextChar(this);
-
+            
             viewText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
             viewText.setAlignment(Text.ALIGNMENT_RIGHT);
             viewText.alignToNextChar(this);
-
+            
             chunkText = new DynamicText(Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
             chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
             chunkText.alignToNextChar(this);
-
+            
             collText = new DynamicText(Texture.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
             collText.alignToNextChar(this);
             helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
@@ -140,11 +140,11 @@ public class Intrface {
             gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
             gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
             gameModeText.alignToNextChar(this);
-
+            
             gameTimeText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
             gameTimeText.alignToNextChar(this);
-
+            
             crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
             crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
             IList<MenuItem> mainMenuItems = new GapList<>();
@@ -161,7 +161,7 @@ public class Intrface {
                     posText.setEnabled(true);
                     chunkText.setEnabled(true);
                 }
-
+                
                 @Override
                 protected void execute() {
                     String s = mainMenu.items.get(mainMenu.getSelected()).keyText.content;
@@ -206,9 +206,9 @@ public class Intrface {
             gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
                 @Override
                 protected void leave() {
-
+                    
                 }
-
+                
                 @Override
                 protected void execute() {
                     String s = gameMenu.items.get(gameMenu.getSelected()).keyText.content;
@@ -234,7 +234,7 @@ public class Intrface {
                     }
                 }
             };
-
+            
             gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
             // -----------------------------------------------------------------
             saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
@@ -250,7 +250,7 @@ public class Intrface {
                     return ExecStatus.FAILURE;
                 }
             };
-
+            
             loadDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
                 @Override
@@ -265,26 +265,26 @@ public class Intrface {
                     } else {
                         status = ExecStatus.FAILURE;
                     }
-
+                    
                     return status;
                 }
             };
             loadDialog.dialog.alignToNextChar(this);
-
+            
             File currFile = new File("./");
             String[] datFileList = currFile.list((File dir, String name) -> name.toLowerCase().endsWith(".dat"));
-
+            
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
                 loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
             }
-
+            
             loadLvlMenu = new Menu(this, "LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
                     editorMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
@@ -292,7 +292,7 @@ public class Intrface {
                 }
             };
             loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
-
+            
             randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
                 @Override
@@ -313,20 +313,20 @@ public class Intrface {
                 }
             };
             randLvlDialog.dialog.alignToNextChar(this);
-
+            
             IList<MenuItem> randLvlMenuItems = new GapList<>();
             randLvlMenuItems.add(new MenuItem("SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
-
+            
             randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     isHugeLevel = false;
@@ -352,15 +352,15 @@ public class Intrface {
                             gameObject.randomLevelGenerator.setSeed(Long.parseLong(selectedMenuItem.menuValue.getCurrentValue().toString()));
                             break;
                     }
-
+                    
                     if (numBlocks != 0 && selected != 4) {
                         randLvlDialog.open(Intrface.this);
                     }
                 }
-
+                
             };
             randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
-
+            
             singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
                 @Override
                 protected ExecStatus execute(String command) {
@@ -377,12 +377,12 @@ public class Intrface {
                             Game.setCurrentMode(Mode.FREE);
                         }
                     }
-
+                    
                     return status;
                 }
             };
             singlePlayerDialog.dialog.alignToNextChar(this);
-
+            
             multiPlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
                 @Override
                 protected ExecStatus execute(String command) {
@@ -394,13 +394,22 @@ public class Intrface {
                             progText.setEnabled(true);
                             gameObject.gameServer.startServer();
                             try {
-                                ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                                // wait for server thread to wake up
+                                synchronized (gameObject.gameServer.SYNC_OBJ) {
+                                    gameObject.gameServer.SYNC_OBJ.wait(30 * 1000L);
+                                }
+
+                                // if game server is running and not shut down
+                                if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
+                                    ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                                }
                             } catch (InterruptedException | ExecutionException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
                         }
-
+                        
                         if (ok) {
+                            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
                             Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
                             gameMenu.getTitle().setContent("MUTLIPLAYER");
                             status = ExecStatus.SUCCESS;
@@ -409,12 +418,12 @@ public class Intrface {
                             Game.setCurrentMode(Mode.FREE);
                         }
                     }
-
+                    
                     return status;
                 }
             };
             multiPlayerDialog.dialog.alignToNextChar(this);
-
+            
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
             Object[] swtch = {"OFF", "ON"};
@@ -425,7 +434,7 @@ public class Intrface {
             for (float i = 0.0f; i < 1.05f; i += 0.05f) {
                 volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
             }
-
+            
             IList<MenuItem> optionsMenuPairs = new GapList<>();
             optionsMenuPairs.add(new MenuItem("FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
             optionsMenuPairs.add(new MenuItem("RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
@@ -439,7 +448,7 @@ public class Intrface {
             optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
             optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
             optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
-
+            
             optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
@@ -452,7 +461,7 @@ public class Intrface {
                     posText.setEnabled(true);
                     chunkText.setEnabled(true);
                 }
-
+                
                 @Override
                 protected void execute() {
                     Command command;
@@ -541,21 +550,21 @@ public class Intrface {
                     }
                 }
             };
-
+            
             optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
-
+            
             IList<MenuItem> editorMenuPairs = new GapList<>();
             editorMenuPairs.add(new MenuItem("START NEW LEVEL", Menu.EditType.EditNoValue, null));
             editorMenuPairs.add(new MenuItem("GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
             editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
             editorMenuPairs.add(new MenuItem("LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
-
+            
             editorMenu = new Menu(this, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     String s = editorMenu.items.get(editorMenu.getSelected()).keyText.content;
@@ -582,7 +591,7 @@ public class Intrface {
                 }
             };
             editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
-
+            
             IList<MenuItem> creditsMenuPairs = new GapList<>();
             creditsMenuPairs.add(new MenuItem("Programmer", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
@@ -593,20 +602,20 @@ public class Intrface {
             creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem("Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
-
+            
             creditsMenu = new Menu(this, "CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
-
+                    
                 }
-
+                
             };
-
+            
             int index = 0;
             for (MenuItem item : creditsMenu.items) {
                 if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
@@ -618,20 +627,20 @@ public class Intrface {
             }
             creditsMenu.iterator.setEnabled(false);
             creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
-
+            
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
             singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
             singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
             singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
-
+            
             singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     // set player character model & color
@@ -665,9 +674,9 @@ public class Intrface {
                         gameObject.randomLevelGenerator.setSeed(seedValue);
                         singlePlayerDialog.open(Intrface.this);
                     }
-
+                    
                 }
-
+                
             };
             singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
@@ -685,7 +694,7 @@ public class Intrface {
                 protected void leave() {
                     mainMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() { // TODO *
                     String s = this.items.get(this.getSelected()).keyText.content;
@@ -717,7 +726,7 @@ public class Intrface {
             multiPlayerMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerMenu.items.get(3).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
-
+            
             IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
             multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
@@ -730,7 +739,7 @@ public class Intrface {
                 protected void leave() {
                     multiPlayerMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     String s = this.items.get(this.getSelected()).keyText.content;
@@ -810,7 +819,7 @@ public class Intrface {
                 protected void leave() {
                     multiPlayerMenu.open();
                 }
-
+                
                 @Override
                 protected void execute() {
                     String s = this.items.get(this.getSelected()).keyText.content;
@@ -842,7 +851,7 @@ public class Intrface {
                                 console.write("Unable to connect to server!", true);
                             }
                             break;
-
+                        
                     }
                 }
             };
@@ -898,7 +907,7 @@ public class Intrface {
         randLvlDialog.render(this, ifcShaderProgram);
         singlePlayerDialog.render(this, ifcShaderProgram);
         multiPlayerDialog.render(this, ifcShaderProgram);
-
+        
         if (!updText.isBuffered()) {
             updText.bufferSmart(this);
         }
@@ -938,12 +947,12 @@ public class Intrface {
         if (!screenText.isBuffered()) {
             screenText.bufferSmart(this);
         }
-
+        
         if (!gameTimeText.isBuffered()) {
             gameTimeText.bufferSmart(this);
         }
         gameTimeText.render(this, ifcShaderProgram);
-
+        
         screenText.render(this, ifcShaderProgram);
         mainMenu.render(this, ifcShaderProgram);
         gameMenu.render(this, ifcShaderProgram);
@@ -957,7 +966,7 @@ public class Intrface {
         multiPlayerHostMenu.render(this, ifcShaderProgram);
         multiPlayerMenu.render(this, ifcShaderProgram);
         multiPlayerJoinMenu.render(this, ifcShaderProgram);
-
+        
         if (!mainMenu.isEnabled() && !gameMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
                 && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled() && !singlPlayerMenu.isEnabled()
                 && !multiPlayerMenu.isEnabled() && !multiPlayerHostMenu.isEnabled() && !multiPlayerJoinMenu.isEnabled()) {
@@ -975,7 +984,7 @@ public class Intrface {
     public void update() { // handleInput menu components
         mainMenu.update();
         gameMenu.update();
-
+        
         optionsMenu.update();
         editorMenu.update();
         randLvlMenu.update();
@@ -992,16 +1001,16 @@ public class Intrface {
     public void cleanUp() {
         mainMenu.cleanUp();
         gameMenu.cleanUp();
-
+        
         optionsMenu.cleanUp();
         editorMenu.cleanUp();
-
+        
         randLvlMenu.cleanUp();
         loadLvlMenu.cleanUp();
         singlPlayerMenu.cleanUp();
-
+        
         creditsMenu.cleanUp();
-
+        
         saveDialog.cleanUp();
         loadDialog.cleanUp();
         randLvlDialog.cleanUp();
@@ -1009,9 +1018,9 @@ public class Intrface {
         multiPlayerMenu.cleanUp();
         multiPlayerHostMenu.cleanUp();
         multiPlayerJoinMenu.cleanUp();
-
+        
         console.cleanUp();
-
+        
         DSLogger.reportDebug("Interface cleaned up.", null);
     }
 
@@ -1021,163 +1030,163 @@ public class Intrface {
     public void release() {
         mainMenu.release();
         gameMenu.release();
-
+        
         optionsMenu.release();
         editorMenu.release();
-
+        
         randLvlMenu.release();
         loadLvlMenu.release();
-
+        
         creditsMenu.release();
-
+        
         updText.release();
         fpsText.release();
         viewText.release();
         posText.release();
         chunkText.release();
-
+        
         collText.release();
         helpText.release();
         progText.release();
         screenText.release();
         gameModeText.release();
-
+        
         saveDialog.release();
         loadDialog.release();
         randLvlDialog.release();
         singlePlayerDialog.release();
         multiPlayerMenu.release();
-
+        
         multiPlayerHostMenu.release();
         multiPlayerJoinMenu.release();
-
+        
         console.release();
-
+        
         DSLogger.reportDebug("Interface buffers deleted.", null);
     }
-
+    
     public Quad getCrosshair() {
         return crosshair;
     }
-
+    
     public DynamicText getUpdText() {
         return updText;
     }
-
+    
     public DynamicText getFpsText() {
         return fpsText;
     }
-
+    
     public DynamicText getPosText() {
         return posText;
     }
-
+    
     public DynamicText getChunkText() {
         return chunkText;
     }
-
+    
     public Menu getCreditsMenu() {
         return creditsMenu;
     }
-
+    
     public Menu getRandLvlMenu() {
         return randLvlMenu;
     }
-
+    
     public int getNumBlocks() {
         return numBlocks;
     }
-
+    
     public DynamicText getCollText() {
         return collText;
     }
-
+    
     public DynamicText getHelpText() {
         return helpText;
     }
-
+    
     public DynamicText getScreenText() {
         return screenText;
     }
-
+    
     public boolean isShowHelp() {
         return showHelp;
     }
-
+    
     public ConcurrentDialog getSaveDialog() {
         return saveDialog;
     }
-
+    
     public ConcurrentDialog getLoadDialog() {
         return loadDialog;
     }
-
+    
     public Menu getMainMenu() {
         return mainMenu;
     }
-
+    
     public OptionsMenu getOptionsMenu() {
         return optionsMenu;
     }
-
+    
     public Menu getEditorMenu() {
         return editorMenu;
     }
-
+    
     public static String getFONT_IMG() {
         return FONT_IMG;
     }
-
+    
     public void setShowHelp(boolean showHelp) {
         this.showHelp = showHelp;
     }
-
+    
     public ConcurrentDialog getRandLvlDialog() {
         return randLvlDialog;
     }
-
+    
     public DynamicText getProgText() {
         return progText;
     }
-
+    
     public DynamicText getGameModeText() {
         return gameModeText;
     }
-
+    
     public ConcurrentDialog getSinglePlayerDialog() {
         return singlePlayerDialog;
     }
-
+    
     public Console getConsole() {
         return console;
     }
-
+    
     public DynamicText getGameTimeText() {
         return gameTimeText;
     }
-
+    
     public DynamicText getViewText() {
         return viewText;
     }
-
+    
     public boolean isHugeLevel() {
         return isHugeLevel;
     }
-
+    
     public Menu getGameMenu() {
         return gameMenu;
     }
-
+    
     public ConcurrentDialog getMultiPlayerDialog() {
         return multiPlayerDialog;
     }
-
+    
     public OptionsMenu getSinglPlayerMenu() {
         return singlPlayerMenu;
     }
-
+    
     public OptionsMenu getMultiPlayerMenu() {
         return multiPlayerMenu;
     }
-
+    
 }
