@@ -37,6 +37,7 @@ public class GlobalColors { // some of the defined colors
         }
     }
 
+    public static final Vector4f TRANSPARENT = new Vector4f();
     public static final Vector3f BLACK = new Vector3f();
     public static final Vector3f WHITE = new Vector3f(1.0f, 1.0f, 1.0f);
 

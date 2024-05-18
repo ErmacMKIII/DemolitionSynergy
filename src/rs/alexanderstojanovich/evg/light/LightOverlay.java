@@ -23,8 +23,10 @@ import org.lwjgl.opengl.GL20;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Project lights to the screen. Makes feel of light environment.
@@ -41,35 +43,43 @@ public class LightOverlay extends Quad {
         super(width, height, texture, ignoreFactor);
     }
 
-    public void render(Intrface intrface, Camera camera, LightSources lightSrc, ShaderProgram shaderProgram) {
+    public void render(Intrface intrface, Camera camera, LevelContainer lc, ShaderProgram shaderProgram) {
         if (enabled && buffered) {
             GL20.glEnableVertexAttribArray(0);
-//            GL20.glEnableVertexAttribArray(1);
+            GL20.glEnableVertexAttribArray(1);
 
             shaderProgram.bind();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL20.glVertexAttribPointer(0, 2, GL11.GL_FLOAT, false, 4 * 4, 0); // this is for intrface pos
-//            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
+            GL20.glVertexAttribPointer(1, 2, GL11.GL_FLOAT, false, 4 * 4, 8); // this is for intrface uv 
             shaderProgram.bindAttribute(0, "pos");
-//            shaderProgram.bindAttribute(1, "uv");
-            lightSrc.updateLightsInShaderIfModified(shaderProgram);
+            shaderProgram.bindAttribute(1, "uv");
+            lc.lightSources.updateLightsInShaderIfModified(shaderProgram);
 
             Matrix4f modelMatrix = calcModelMatrix(intrface);
             shaderProgram.updateUniform(modelMatrix, "modelMatrix");
             camera.updateCameraPosition(shaderProgram);
             camera.updateCameraFront(shaderProgram);
             shaderProgram.updateUniform(scale, "scale");
+
+            if (LevelContainer.isActorInFluidChk(lc)) {
+                texture.bind(shaderProgram, "ifcTexture");
+                color = LevelContainer.SKYBOX_COLOR;
+            } else {
+                Texture.EMPTY.bind(shaderProgram, "ifcTexture");
+                color = GlobalColors.TRANSPARENT;
+            }
             shaderProgram.updateUniform(color, "color");
-//            texture.bind(0, shaderProgram, "ifcTexture");
+
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
             GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
 
-//            Texture.unbind(0);
+            Texture.unbind(0);
             ShaderProgram.unbind();
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
-//            GL20.glDisableVertexAttribArray(1);
+            GL20.glDisableVertexAttribArray(1);
         }
     }
 

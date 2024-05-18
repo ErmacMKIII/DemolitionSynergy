@@ -22,17 +22,17 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Player extends Critter implements Observer {
+
+    protected boolean registered = false;
 
     public static enum CameraView {
         FIRST_PERSON, THIRD_PERSON
@@ -42,17 +42,6 @@ public class Player extends Critter implements Observer {
 //    private Model currWeapon;
     private final RPGCamera camera;
     public final LightSource light;
-
-    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
-
-    public static final Model PISTOL = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9", true);
-    public static final Model SUB_MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9", true);
-    public static final Model SHOTGUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9", true);
-    public static final Model ASSAULT_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK", true);
-    public static final Model MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6", true);
-    public static final Model SNIPER_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8", true);
-    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-
 //    static {
 //        for (Model weapon : WEAPONS) {
 //            weapon.pos = WEAPON_POS;
@@ -61,11 +50,46 @@ public class Player extends Critter implements Observer {
 //            weapon.setrY((float) (-Math.PI / 2.0f));
 //        }
 //    }
+
+    /**
+     * Create new player for Single Player
+     *
+     * @param body player body
+     */
     public Player(Model body) {
         super(body);
-//        this.camera = new Camera(new Vector3f(this.body.pos));
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
         this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
+        this.name = "Player";
+    }
+
+    /**
+     * Create new player for Single Player
+     *
+     * @param camera camera to view
+     * @param light light from player
+     * @param body player body
+     */
+    public Player(RPGCamera camera, LightSource light, Model body) {
+        super(body);
+        this.camera = camera;
+        this.light = light;
+        this.name = "Player";
+    }
+
+    /**
+     * Create new player for Multiplayer. Using client registration to server.
+     * Client has submit registration to this server.
+     *
+     * @param camera camera to view
+     * @param light light from player
+     * @param uniqueId unique id to be assigned to player
+     * @param body player body
+     */
+    public Player(RPGCamera camera, LightSource light, String uniqueId, Model body) {
+        super(uniqueId, body);
+        this.camera = camera;
+        this.light = light;
     }
 
 //    public void switchWeapon(int num) {
@@ -246,4 +270,19 @@ public class Player extends Critter implements Observer {
         light.pos = body.pos;
     }
 
+    public CameraView getCameraView() {
+        return cameraView;
+    }
+
+    public void setCameraView(CameraView cameraView) {
+        this.cameraView = cameraView;
+    }
+
+    public void setRegistered(boolean registered) {
+        this.registered = registered;
+    }
+
+    public boolean isRegistered() {
+        return registered;
+    }
 }

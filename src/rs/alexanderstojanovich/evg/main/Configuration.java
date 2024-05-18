@@ -51,6 +51,7 @@ public class Configuration {
     private int optimizationPasses = 8;
     private double gameTicks = 0.0;
     private int blocksPerRun = 1000;
+    private int ticksPerUpdate = Game.TPS_TWO;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -190,6 +191,12 @@ public class Configuration {
                                     blocksPerRun = number;
                                 }
                                 break;
+                            case "ticksperupdate":
+                                number = Integer.parseInt(words[1]);
+                                // block per cache loading run
+                                if (number > 0 && number <= 2) {
+                                    ticksPerUpdate = number;
+                                }
                         }
                     }
                 }
@@ -225,7 +232,7 @@ public class Configuration {
             pw.println("Width = " + width);
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
-            pw.println("# Maximum Framerate set to refresh rate if enabled");
+            pw.println("# Maximum Framerate set to refresh rate if is enabled");
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
@@ -250,8 +257,10 @@ public class Configuration {
             pw.println("GameTicks = " + gameTicks);
             pw.println("# Game Time (decimal). Must be metween (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
-            pw.println("# Block number load per cache run. Must be metween (0, 25000]");
+            pw.println("# Block number load per cache run. Must be between (0, 25000]");
             pw.println("BlocksPerRun = " + blocksPerRun);
+            pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
+            pw.println("TicksPerUpdate = " + ticksPerUpdate);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -391,6 +400,10 @@ public class Configuration {
 
     public void setShadowEffects(int shadowEffects) {
         this.shadowEffects = shadowEffects;
+    }
+
+    public int getTicksPerUpdate() {
+        return ticksPerUpdate;
     }
 
 }

@@ -198,6 +198,88 @@ public class Console {
     }
 
     /**
+     * Write output to the Console.
+     *
+     * @param m message output
+     */
+    public void write(String m) {
+        Command cmd = Command.getCommand(Command.Target.PRINT);
+        cmd.mode = Command.Mode.SET;
+        cmd.args.add(m);
+
+        Command.execute(intrface.gameObject, cmd);
+
+        // add to queue
+        HistoryItem item;
+        try {
+            item = new HistoryItem(cmd);
+            history.addFirst(item);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+        }
+
+        // shift them
+        history.forEach(hi -> {
+            hi.buildCmdText();
+            hi.cmdText.pos.x = -1.0f;
+            hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+            hi.cmdText.alignToNextChar(intrface);
+
+            hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+            hi.quad.pos.y = hi.cmdText.pos.y;
+        });
+
+        // if over capacity deuque last
+        if (history.size() > HISTORY_CAPACITY) {
+            history.removeLast();
+        }
+    }
+
+    /**
+     * Write output to the Console. If isError is true it will be logged as
+     * error. In other case, if isError is false it will be logged as plain
+     * message.
+     *
+     * @param m message output
+     * @param isError is message logged as error
+     */
+    public void write(String m, boolean isError) {
+        Command cmd = Command.getCommand(Command.Target.PRINT);
+        cmd.mode = Command.Mode.SET;
+        cmd.args.add(m);
+
+        Command.execute(intrface.gameObject, cmd);
+        if (isError) {
+            cmd.status = Command.Status.FAILED;
+        }
+
+        // add to queue
+        HistoryItem item;
+        try {
+            item = new HistoryItem(cmd);
+            history.addFirst(item);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+        }
+
+        // shift them
+        history.forEach(hi -> {
+            hi.buildCmdText();
+            hi.cmdText.pos.x = -1.0f;
+            hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+            hi.cmdText.alignToNextChar(intrface);
+
+            hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+            hi.quad.pos.y = hi.cmdText.pos.y;
+        });
+
+        // if over capacity deuque last
+        if (history.size() > HISTORY_CAPACITY) {
+            history.removeLast();
+        }
+    }
+
+    /**
      * Render in the interface (has to be enabled)
      *
      * @param intrface intrface to render to

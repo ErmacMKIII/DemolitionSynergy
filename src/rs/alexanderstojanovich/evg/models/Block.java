@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.FrustumIntersection;
@@ -37,6 +36,7 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -446,20 +446,28 @@ public class Block extends Model {
      * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
      */
     public static int getVisibleFaceBitsFast(Vector3f camFront, float degrees) {
-        int result = 0;
-
         final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
-        Vector3f temp = new Vector3f();
-        Vector3f camFrontNeg = camFront.negate(temp);
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
 
-        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
-        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
-        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
-        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
-        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
-        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
-
-        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        int result = 0;
+        if (camFrontNeg.z >= -cosine) {
+            result |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            result |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            result |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            result |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            result |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            result |= XNEG_MASK;
+        }
 
         return result;
     }
@@ -469,22 +477,36 @@ public class Block extends Model {
      * Faster version of original.
      *
      * @param camFront camera front (eye)
+     * @param degrees angle degrees
+     *
      * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
      */
-    public static int getRayTraceSingleFaceFast(Vector3f camFront) {
+    public static int getRayTraceSingleFaceFast(Vector3f camFront, float degrees) {
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
 
-        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
-        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
-        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
-        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
-        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
-        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
-
-        int someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        int someValue = 0;
+        if (camFrontNeg.z >= -cosine) {
+            someValue |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            someValue |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            someValue |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            someValue |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            someValue |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            someValue |= XNEG_MASK;
+        }
 
         for (int j = 0; j <= 5; j++) {
-            int tmpMask = 1 << j;
-            if ((someValue & tmpMask) != 0) {
+            if ((someValue & (1 << j)) != 0) {
                 return j;
             }
         }
@@ -497,24 +519,36 @@ public class Block extends Model {
      * version of original.
      *
      * @param camFront camera front (eye)
+     * @param degrees angle degrees
      * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
      */
-    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront) {
+    public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront, float degrees) {
         final IList<Integer> result = new GapList<>();
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
+
         int someValue = 0;
-
-        int zPos = (Math.round(camFront.z) == 1) ? Z_MASK : 0;
-        int zNeg = (Math.round(camFront.z) == -1) ? ZNEG_MASK : 0;
-        int yPos = (Math.round(camFront.y) == 1) ? Y_MASK : 0;
-        int yNeg = (Math.round(camFront.y) == -1) ? YNEG_MASK : 0;
-        int xPos = (Math.round(camFront.y) == 1) ? X_MASK : 0;
-        int xNeg = (Math.round(camFront.y) == -1) ? XNEG_MASK : 0;
-
-        someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        if (camFrontNeg.z >= -cosine) {
+            someValue |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            someValue |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            someValue |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            someValue |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            someValue |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            someValue |= XNEG_MASK;
+        }
 
         for (int j = 0; j <= 5; j++) {
-            int tmpMask = 1 << j;
-            if ((someValue & tmpMask) != 0) {
+            if ((someValue & (1 << j)) != 0) {
                 result.add(j);
             }
         }
@@ -554,10 +588,54 @@ public class Block extends Model {
         Arrays.fill(enabledFaces, false);
     }
 
+    /**
+     * Reverse faces but only for Top (Water)
+     */
+    public void reverseTopFaceVertexOrder() {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+        Collections.reverse(getFaceVertices(vertices, Block.TOP));
+        verticesReversed = !verticesReversed;
+    }
+
+    /**
+     * Reverse face vertex order. All Faces. (Water)
+     */
     public void reverseFaceVertexOrder() {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
-        for (int faceNum = 0; faceNum <= 5; faceNum++) {
-            Collections.reverse(getFaceVertices(vertices, faceNum));
+        for (int faceNum = Block.LEFT; faceNum <= Block.FRONT; faceNum++) {
+            int start = 4 * faceNum;
+            int end = start + 3;
+            while (start < end) {
+                Vertex temp = vertices.get(start);
+                vertices.set(start, vertices.get(end));
+                vertices.set(end, temp);
+                start++;
+                end--;
+            }
+        }
+        verticesReversed = !verticesReversed;
+    }
+
+    /**
+     * Reverse face vertex order. All Faces. (Water)
+     *
+     * @param camFront camera front (ray trace cap)
+     * @param degrees angle degrees
+     */
+    public void reverseFaceVertexOrder(Vector3f camFront, float degrees) {
+        IList<Integer> faces = getRayTraceMultiFaceFast(camFront, degrees);
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+
+        for (int faceNum : faces) {
+            int start = 4 * faceNum;
+            int end = start + 3;
+            while (start < end) {
+                Vertex temp = vertices.get(start);
+                vertices.set(start, vertices.get(end));
+                vertices.set(end, temp);
+                start++;
+                end--;
+            }
         }
         verticesReversed = !verticesReversed;
     }
@@ -1295,6 +1373,22 @@ public class Block extends Model {
         return byteArray;
     }
 
+    public static byte[] toByteArray(Vector3f pos, TexByte tb) {
+        byte[] byteArray = new byte[29];
+        int offset = 0;
+        byte[] texNameArr = tb.texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5);
+        offset += 5;
+        byte[] posArr = VectorFloatUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        Vector3f primaryRGBColor = new Vector3f(tb.color.x, tb.color.y, tb.color.z);
+        byte[] colArr = VectorFloatUtils.vec3fToByteArray(primaryRGBColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
+        return byteArray;
+    }
+
     public byte[] toNewByteArray() {
         byte[] byteArray = new byte[35];
         int offset = 0;
@@ -1383,16 +1477,35 @@ public class Block extends Model {
 //
 //    }
     /**
-     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
-     *
+     * Convert block specs {solid, texName, VEC3} to unique int (computation).
      *
      * @return unique int
      */
     private int genId() {
-        char s = solid ? 'S' : 'F';
-        int hash = Objects.hash(s, texName, getFaceBits(), MathUtils.invSqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z));
+        // Convert boolean solid to integer based on ASCII values of 'S' and 'F'
+        int a = solid ? 'S' : 'F';
 
-        return hash;
+        // Get texture index
+        int b = Texture.getOrDefaultIndex(texName);
+        b++;
+
+        // Get chunk function
+        int c = Chunk.chunkFunc(pos);
+        c++;
+
+        // Calculate indices for the position
+        float iFloat = (pos.x + Chunk.BOUND) / 2.0f;
+        float jFloat = (pos.z + Chunk.BOUND) / 2.0f;
+        float kFloat = (pos.y + Chunk.BOUND) / 2.0f;
+
+        // Calculate unique integer using the position indices using FMA
+        int d = (int) Math.fma(Math.round(kFloat), Math.fma(Chunk.BOUND, Chunk.BOUND, Math.fma(Math.round(jFloat), Chunk.BOUND, Math.round(iFloat))), 0);
+        d++;
+
+        // Combine all components to generate the final ID using FMA
+        int result = Math.round(Math.fma(b ^ c, d, a));
+
+        return result;
     }
 
     /**

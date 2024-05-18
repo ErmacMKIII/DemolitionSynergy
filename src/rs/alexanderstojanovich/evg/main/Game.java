@@ -16,6 +16,12 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import com.google.gson.Gson;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -33,21 +39,38 @@ import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.net.DSMachine;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.net.PosInfo;
+import rs.alexanderstojanovich.evg.net.Request;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
+ * DSynergy Game client. With multiplayer capabilities.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Game {
+public class Game implements DSMachine {
 
-    private static final Configuration cfg = Configuration.getInstance();
+    private static final Configuration config = Configuration.getInstance();
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
+    public static final int TPS_HALF = 40; // HALF OF TPS
+    public static final int TPS_QUARTER = 20; // QUARTER OF TPS ~ 250 ms
+    public static final int TPS_EIGHTH = 10; // EIGHTH OF TPS (Used for Chunk Operations) ~ 125 ms
+    public static final int TPS_SIXTEENTH = 5; // EIGHTH OF TPS 
+
+    public static final int TPS_ONE = 1; // One tick ~ 12.5 ms
+    public static final int TPS_TWO = 2; // Two ticks ~ 25 ms (Used for Chunk Optimization) ~ default
+    public static final int TICKS_PER_UPDATE = config.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
+
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 4.0f;
+    public static final float AMOUNT = 5.5f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -55,8 +78,8 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    private static int ups; // current update per second    
-    private static int fpsMax = cfg.getFpsCap(); // fps max or fps cap  
+    private static int ups; // current handleInput per second    
+    private static int fpsMax = config.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 10.0;
@@ -88,32 +111,54 @@ public class Game {
     public static final String CACHE = "cache";
 
     public static final String INTRFACE_ENTRY = "intrface/";
-    public static final String PLAYER_ENTRY = "player/";
+    public static final String WEAPON_ENTRY = "weapons/";
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
 
-    protected static double upsTicks = 0.0;
     protected static double accumulator = 0.0;
+    protected static double gameTicks = 0.0;
+    protected final int version = 39;
 
     public static enum Mode {
-        FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
+        FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
     };
     private static Mode currentMode = Mode.SINGLE_PLAYER;
 
     protected static boolean actionPerformed = false; // movement for all actors (critters)
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
-
-    protected final GameObject gameObject;
+    protected boolean running = false;
+    protected static final int DEFAULT_PORT = 13667;
 
     /**
-     * Construct new game view
+     * Magic bytes of End-of-Stream
+     */
+    public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
+
+    /**
+     * Connect to server stuff & endpoint
+     */
+    protected Socket serverEndpoint;
+    protected InetAddress serverAddress;
+    protected int port = DEFAULT_PORT;
+    protected final int timeout = 30 * 1000; // 30 sec
+    public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+
+    /**
+     * Access to Game Engine.
+     */
+    public final GameObject gameObject;
+
+    /**
+     * Construct new game (client) view. Demolition Synergy client.
      *
      * @param gameObject game object
+     * @throws java.net.UnknownHostException if host unavailable
      */
-    public Game(GameObject gameObject) {
+    public Game(GameObject gameObject) throws UnknownHostException {
+        this.serverAddress = InetAddress.getLocalHost();
         this.gameObject = gameObject;
         Arrays.fill(keys, false);
         initCallbacks();
@@ -305,7 +350,7 @@ public class Game {
      *
      * @return did player do something..
      */
-    public boolean playerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
+    public boolean singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
         boolean changed = false;
         causingCollision = false;
         final Player player = lc.levelActors.player;
@@ -350,7 +395,7 @@ public class Game {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_SPACE] && (LevelContainer.isActorInFluid(lc) || (!jumpPerformed && !player.isUnderGravity()))) {
+        if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
             player.movePredictorYUp(amountY);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYDown(amountY);
@@ -420,6 +465,219 @@ public class Game {
         return changed;
     }
 
+    /**
+     * Handle input for player (Single player mode & Multiplayer mode)
+     *
+     * @param lc level (environment) container
+     * @param amountXZ movement amount on XZ plane
+     * @param amountY vertical movement amount on Y-axis when jump,
+     * @param amountYNeg vertical movement amount on Y-axis when sink,
+     * @param deltaTime tick time
+     *
+     * @return did player do something..
+     * @throws java.lang.Exception if deserialization fails
+     */
+    public boolean multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) throws Exception {
+        boolean changed = false;
+        causingCollision = false;
+        final Player player = lc.levelActors.player;
+
+        // Multiplayer-Join mode
+        if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
+            double ping = 0.000;
+            Vector3f playerServerPos = player.getPos();
+            double beginTime = GLFW.glfwGetTime();
+            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
+            playerPosReq.send(this, serverEndpoint);
+            ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
+            if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
+                playerServerPos = posInfo.pos;
+                double endTime = GLFW.glfwGetTime();
+                ping = endTime - beginTime;
+            } else {
+                DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
+                gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
+            }
+            final float interpFact = (float) ping / ((float) ping + deltaTime);
+
+            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+                player.movePredictorXZForward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZBackward(amountXZ);
+                } else {
+                    player.moveXZForward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+                player.movePredictorXZBackward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZForward(amountXZ);
+                } else {
+                    player.moveXZBackward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_A]) {
+                player.movePredictorXZLeft(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZRight(amountXZ);
+                } else {
+                    player.moveXZLeft(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_D]) {
+                player.movePredictorXZRight(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorXZLeft(amountXZ);
+                } else {
+                    player.moveXZRight(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
+                player.movePredictorYUp(amountY);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorYDown(amountY);
+                } else {
+                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+                player.movePredictorYDown(amountYNeg);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                    player.movePredictorYUp(amountYNeg);
+                } else {
+                    player.sinkY(amountYNeg);
+                    changed = true;
+                }
+            }
+
+        } else if (currentMode == Mode.MULTIPLAYER_HOST && gameObject.levelContainer.levelActors.player.isRegistered()) {
+            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+                player.movePredictorXZForward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZBackward(amountXZ);
+                } else {
+                    player.moveXZForward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+                player.movePredictorXZBackward(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZForward(amountXZ);
+                } else {
+                    player.moveXZBackward(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_A]) {
+                player.movePredictorXZLeft(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZRight(amountXZ);
+                } else {
+                    player.moveXZLeft(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_D]) {
+                player.movePredictorXZRight(amountXZ);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorXZLeft(amountXZ);
+                } else {
+                    player.moveXZRight(amountXZ);
+                    changed = true;
+                }
+            }
+
+            if (keys[GLFW.GLFW_KEY_SPACE] && (!jumpPerformed)) {
+                player.movePredictorYUp(amountY);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorYDown(amountY);
+                } else {
+                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    changed = true;
+                }
+            }
+
+            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
+                player.movePredictorYDown(amountYNeg);
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                    player.movePredictorYUp(amountYNeg);
+                } else {
+                    player.sinkY(amountYNeg);
+                    changed = true;
+                }
+            }
+        }
+
+        if (keys[GLFW.GLFW_KEY_LEFT]) {
+            lc.levelActors.player.turnLeft(ANGLE);
+            changed = true;
+        }
+        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+            lc.levelActors.player.turnRight(ANGLE);
+            changed = true;
+        }
+
+        if (moveMouse) {
+            lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
+            moveMouse = false;
+            changed = true;
+        }
+
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
+            changed = true;
+        }
+
+//        if (keys[GLFW.GLFW_KEY_1]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_2]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_3]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_4]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_5]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
+//            changed = true;
+//        }
+//        if (keys[GLFW.GLFW_KEY_6]) {
+//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
+//            changed = true;
+//        }
+        if (keys[GLFW.GLFW_KEY_R]) {
+            changed = true;
+        }
+
+        // in case of multiplayer join send to the server
+        if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN) {
+            this.requestSetPlayerPosition();
+        }
+
+        return changed;
+    }
+
     private void setCrosshairColor(Vector4f color) {
         gameObject.intrface.getCrosshair().setColor(color);
     }
@@ -443,7 +701,11 @@ public class Game {
                     gameObject.intrface.setShowHelp(false);
                     gameObject.intrface.getHelpText().setEnabled(false);
                     gameObject.intrface.getCollText().setEnabled(true);
-                    gameObject.intrface.getMainMenu().open();
+                    if (currentMode == Mode.SINGLE_PLAYER || (currentMode == Mode.MULTIPLAYER_HOST || currentMode == Mode.MULTIPLAYER_JOIN)) {
+                        gameObject.intrface.getGameMenu().open();
+                    } else {
+                        gameObject.intrface.getMainMenu().open();
+                    }
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     gameObject.intrface.getConsole().open();
@@ -478,6 +740,8 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_V && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     gameObject.levelContainer.levelActors.player.switchViewToggle();
+                } else if (key == GLFW.GLFW_KEY_Y && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     Editor.selectPrevTexture();
@@ -530,18 +794,144 @@ public class Game {
     }
 
     /**
-     * Starts the main (update) loop
+     * Updates game (client).
+     *
+     * @param deltaTime time interval between updates
+     */
+    public void update(double deltaTime) {
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
+            try {
+                double beginTime = GLFW.glfwGetTime();
+                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
+                playerPosReq.send(this, serverEndpoint);
+                ResponseIfc timeResp = ResponseIfc.receive(this, serverEndpoint);
+                double endTime = GLFW.glfwGetTime();
+                long tripTime = Math.round(endTime - beginTime) * 1000L;
+
+                Game.gameTicks = (double) timeResp.getData();
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+            } catch (Exception ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
+        // update with delta time like gravity or sun
+        if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+            gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
+
+            // Multiplayer update
+            if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected()) {
+                gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
+                    try {
+                        RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
+                        otherPlayerRequest.send(this, serverEndpoint);
+                        ResponseIfc otherPlayerResponse = ResponseIfc.receive(this, serverEndpoint);
+                        if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                            PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
+                            other.setPos(posInfo.pos);
+                            other.getFront().set(posInfo.front);
+                            other.setRotationXYZ(posInfo.front);
+                        } else {
+                            DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
+                            gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
+                        }
+                    } catch (Exception ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                });
+            }
+        }
+
+        // Heavy operations to run afterwards
+        // determine visible chunks (can be altered with player position)
+        if (gameObject.determineVisibleChunks() || (ups & (TPS_EIGHTH - 1)) == 0) {
+            // call utility functions (chunk loading etc.)
+            gameObject.utilChunkOperations();
+        }
+
+        // call utility functions (optimizing etc. - heavy operation)            
+        if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+            gameObject.utilOptimization();
+        }
+    }
+
+    /**
+     * Handle game input (client).
+     *
+     * @param deltaTime time interval between updates
+     */
+    public void handleInput(double deltaTime) {
+        try {
+            if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
+                GLFW.glfwPollEvents();
+                final float time = (float) deltaTime * Game.TICKS_PER_UPDATE;
+                final float amount = Game.AMOUNT * time;
+                actionPerformed = false;
+                switch (currentMode) {
+                    case FREE:
+                        // nobody has control
+                        break;
+                    case EDITOR:
+                        // observer has control
+                        actionPerformed |= observerDo(gameObject.levelContainer, amount);
+                        actionPerformed |= editorDo(gameObject.levelContainer);
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+                        break;
+                    case SINGLE_PLAYER:
+                        // player has control
+                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+
+                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        if (keys[GLFW.GLFW_KEY_SPACE]) {
+                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
+//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                        }
+                        break;
+                    case MULTIPLAYER_HOST:
+                    case MULTIPLAYER_JOIN:
+                        // player has control
+                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+
+                        if (actionPerformed) {
+                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        }
+
+                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        if (keys[GLFW.GLFW_KEY_SPACE]) {
+                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
+//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                        }
+                        break;
+                }
+                // display collision text
+                gameObject.assertCheckCollision(causingCollision);
+            }
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Starts the main loop. Main loop is called from main method. (From
+     * GameObject indirectly)
      */
     public void go() {
+        this.running = true;
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
-        // accumulator is progressive only ingame time
-        accumulator = cfg.getGameTicks();
-        double lastTime = GLFW.glfwGetTime();
+        // gameTicks is progressive only ingame time
+        gameTicks = config.getGameTicks();
+        double lastTime = GLFW.glfwGetTime(); // time is measured in seconds
         double currTime;
         double deltaTime;
-
         int index = 0; // track index
 
         // first time we got nothing
@@ -553,10 +943,10 @@ public class Game {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            // hunger time
-            double increment = deltaTime * Game.TPS;
-            accumulator += increment;
-            upsTicks += increment;
+            if (currentMode != Mode.MULTIPLAYER_JOIN) { // it updates time via request
+                gameTicks += deltaTime * Game.TPS;
+            }
+            accumulator += deltaTime;
             lastTime = currTime;
 
             // Detecting critical status
@@ -573,75 +963,273 @@ public class Game {
                 }
             }
 
-            if (upsTicks >= 1.0) {
-                // update with delta time like gravity
-                gameObject.update((float) (Game.upsTicks * TICK_TIME));
-                // call utility functions (optimizing etc.)
-                gameObject.utilOptimization();
-            } else if (upsTicks >= 0.5) {
-                // determine visible chunks (can be altered with player position)
-                gameObject.determineVisibleChunks();
-                // call utility functions (chunk loading etc.)
-                gameObject.utilChunkOperations();
-            }
+            while (accumulator >= TICK_TIME) {
+                // Update with fixed timestep (environment)
+                update(TICK_TIME);
 
-            while (upsTicks >= 1.0) {
-                GLFW.glfwPollEvents();
-                actionPerformed = false;
-                switch (currentMode) {
-                    case FREE:
-                        // nobody has control
-                        break;
-                    case EDITOR:
-                        // observer has control
-                        actionPerformed |= observerDo(gameObject.levelContainer, AMOUNT * (float) TICK_TIME);
-                        actionPerformed |= editorDo(gameObject.levelContainer);
-
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
-                        break;
-                    case SINGLE_PLAYER:
-                    case MULTIPLAYER:
-                        // player has control
-                        actionPerformed |= playerDo(gameObject.levelContainer, 1.1f * AMOUNT * (float) TICK_TIME, 3920.0f * Game.AMOUNT * (float) TICK_TIME, 1.1f * AMOUNT * (float) TICK_TIME, (float) TICK_TIME);
-
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
-
-                        jumpPerformed = keys[GLFW.GLFW_KEY_SPACE];
-
-                        if (!jumpPerformed) {
-                            Vector3f playerPos = gameObject.levelContainer.levelActors.player.getPos();
-
-                            Vector3f playerPosAlign = new Vector3f(
-                                    Math.round(playerPos.x + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.y + 0.5f) & 0xFFFFFFFE,
-                                    Math.round(playerPos.z + 0.5f) & 0xFFFFFFFE
-                            );
-
-                            jumpPerformed |= LevelContainer.AllBlockMap.isLocationPopulated(
-                                    Block.getAdjacentPos(
-                                            playerPosAlign, Block.BOTTOM, 1.05f),
-                                    false
-                            );
-                        }
-                        break;
-                }
-
-                // display collision text
-                gameObject.assertCheckCollision(causingCollision);
+                // Poll & handle events (keyboard & mouse)                                
+                handleInput(TICK_TIME);
 
                 ups++;
-                upsTicks--;
+                accumulator -= TICK_TIME;
             }
-
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
-
+        this.running = false;
         DSLogger.reportDebug("Main loop ended.", null);
+    }
+
+    /**
+     * Connect to server (host). Multiplayer. Requires acceptance test to be
+     * passed. According to protocol.
+     *
+     * @return endpoint if connection succeeds and acceptance test is passed
+     */
+    public boolean connectToServer() {
+        if (isConnected()) {
+            return false;
+        }
+        boolean okey = false;
+        Socket endpoint;
+        try {
+            endpoint = new Socket(serverAddress, port);
+            endpoint.setSoTimeout(timeout);
+            DSLogger.reportInfo("Connected to server!", null);
+
+            // Send a simple hello message with magic bytes prepended
+            final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
+            helloRequest.send(this, endpoint);
+
+            // Wait for response (assuming simple echo for demonstration)            
+            ResponseIfc response = ResponseIfc.receive(this, endpoint);
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
+                this.serverEndpoint = endpoint;
+                this.serverEndpoint.setSoTimeout(0);
+                okey = true;
+            }
+            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+            gameObject.intrface.getConsole().write(response.getData().toString());
+        } catch (IOException ex) {
+            DSLogger.reportError("Unable to connect to server!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return okey;
+    }
+
+    /**
+     * Connect to server (host). Multiplayer. Requires acceptance test to be
+     * passed. According to protocol.
+     *
+     * @return endpoint if connection succeeds and acceptance test is passed
+     */
+    public boolean registerPlayer() {
+        if (!isConnected()) {
+            return false;
+        }
+
+        boolean okey = false;
+
+        try {
+            // Send a simple 'goodbye' message with magic bytes prepended
+            final Player player = gameObject.levelContainer.levelActors.player;
+            final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER,
+                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor()).toString()
+            );
+            register.send(this, serverEndpoint);
+
+            // Wait for response (assuming simple echo for demonstration)            
+            ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
+                gameObject.levelContainer.levelActors.player.setRegistered(true);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString(), false);
+                okey |= true;
+            } else {
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString(), true);
+            }
+        } catch (IOException ex) {
+            DSLogger.reportError("Network error(s) occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return okey;
+    }
+
+    /**
+     * Checks if the end-of-stream marker is present in the received data.
+     *
+     * @param buffer The buffer containing the received data.
+     * @param bytesRead The number of bytes read into the buffer.
+     * @return True if the end-of-stream marker is found, otherwise false.
+     */
+    private static boolean isEndOfStream(byte[] buffer, int bytesRead) {
+        if (bytesRead >= Game.EOS.length) {
+            for (int i = 0; i <= bytesRead - Game.EOS.length; i++) {
+                if (Arrays.equals(Arrays.copyOfRange(buffer, i, i + Game.EOS.length), Game.EOS)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Download level (map) from the server
+     *
+     * @return true if the download was successful, false otherwise
+     */
+    public boolean downloadLevel() {
+        if (!isConnected()) { // Check if the client is connected to the server
+            return false;
+        }
+        boolean okey = false; // Variable to track if the download was successful
+        try {
+            // Send a request to begin downloading the level
+            final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
+            downlBeginRequest.send(this, serverEndpoint);
+
+            // Wait for response indicating the download can begin
+            ResponseIfc response0 = ResponseIfc.receive(this, serverEndpoint);
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Server is ready to send data
+                // Log server response
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
+                // Display server response in client console
+                gameObject.intrface.getConsole().write(response0.getData().toString());
+
+                // Define a buffer to hold the received data
+                byte[] buffer = new byte[Game.BUFF_SIZE];
+                int totalBytesRead = 0;
+
+                // Read until end-of-stream of socket
+                int bytesRead;
+                final InputStream in = serverEndpoint.getInputStream();
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    // Check if the end-of-stream marker is received
+                    if (isEndOfStream(buffer, bytesRead)) {
+                        // Write the received data to the buffer
+                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
+                        totalBytesRead += bytesRead - Game.EOS.length;
+                        // End of stream marker encountered, break the loop or handle accordingly
+                        DSLogger.reportInfo("End of stream (EOS) marker received", null);
+                        break;
+                    } else {
+                        // Write the received data to the buffer
+                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+                        totalBytesRead += bytesRead;
+                    }
+
+                    // Write the received data to the buffer
+                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+
+                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
+                }
+
+                // Logging download information
+                DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
+                gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
+                okey = true;
+            } else {
+                // Handle error response from server
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response0.getData().toString(), true);
+            }
+        } catch (IOException ex) {
+            // Handle IO exception
+            DSLogger.reportError("Unable to connect to server!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            // Handle other exceptions
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+
+        return okey; // Return whether the download was successful
+    }
+
+    /**
+     * Get Player Info (Json)
+     *
+     * @return Player Info
+     */
+    public PlayerInfo[] getPlayerInfo() {
+        PlayerInfo[] result = null;
+        if (isConnected()) {
+            try {
+                // Send a simple 'goodbye' message with magic bytes prepended
+                final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
+                piReq.send(this, serverEndpoint);
+
+                // Wait for response (assuming simple echo for demonstration)            
+                ResponseIfc objResp = ResponseIfc.receive(this, serverEndpoint);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), objResp.getData().toString()), null);
+                gameObject.intrface.getConsole().write(objResp.getData().toString());
+
+                Gson gson = new Gson();
+                result = gson.fromJson((String) objResp.getData(), PlayerInfo[].class);
+            } catch (IOException ex) {
+                DSLogger.reportError("Network error(s) occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportError("Error occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Disconnect (host) server. Multiplayer. If was no connected has no effect.
+     */
+    public void disconnectFromServer() {
+        if (isConnected()) {
+            try {
+                // Send a simple 'goodbye' message with magic bytes prepended
+                final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
+                goodByeRequest.send(this, serverEndpoint);
+
+                // Wait for response (assuming simple echo for demonstration)            
+                ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString());
+
+                serverEndpoint.close();
+                DSLogger.reportInfo("Disconnected from server!", null);
+
+                gameObject.levelContainer.levelActors.player.setRegistered(false);
+            } catch (IOException ex) {
+                DSLogger.reportError("Network error(s) occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportError("Error occurred!", ex);
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+    }
+
+    /**
+     * Request server to update player position.
+     */
+    public void requestSetPlayerPosition() {
+        try {
+            final Player player = gameObject.levelContainer.levelActors.player;
+            final PosInfo posInfo = new PosInfo(player.uniqueId, player.getPos(), player.getFront());
+            String posStr = posInfo.toString();
+            RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
+            posReq.send(this, serverEndpoint);
+        } catch (Exception ex) {
+            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
     }
 
     /*
@@ -676,6 +1264,10 @@ public class Game {
         return cfg;
     }
 
+    public boolean isConnected() {
+        return serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed();
+    }
+
     public static GLFWKeyCallback getDefaultKeyCallback() {
         return defaultKeyCallback;
     }
@@ -688,8 +1280,8 @@ public class Game {
         return defaultMouseButtonCallback;
     }
 
-    public static void setAccumulator(double accumulator) {
-        Game.accumulator = accumulator;
+    public static void setGameTicks(double gameTicks) {
+        Game.gameTicks = gameTicks;
     }
 
     public static int getUps() {
@@ -716,8 +1308,8 @@ public class Game {
         Game.mouseSensitivity = mouseSensitivity;
     }
 
-    public static double getUpsTicks() {
-        return upsTicks;
+    public static double getAccumulator() {
+        return accumulator;
     }
 
     public static Mode getCurrentMode() {
@@ -744,8 +1336,8 @@ public class Game {
         return yoffset;
     }
 
-    public static double getAccumulator() {
-        return accumulator;
+    public static double getGameTicks() {
+        return gameTicks;
     }
 
     public static boolean isChanged() {
@@ -762,6 +1354,77 @@ public class Game {
 
     public static void setCausingCollision(boolean causingCollision) {
         Game.causingCollision = causingCollision;
+    }
+
+    public static boolean isJumpPerformed() {
+        return jumpPerformed;
+    }
+
+    public static boolean isCausingCollision() {
+        return causingCollision;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    @Override
+    public MachineType getMachineType() {
+        return MachineType.DSCLIENT;
+    }
+
+    @Override
+    public int getVersion() {
+        return this.version;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    public boolean isMoveMouse() {
+        return moveMouse;
+    }
+
+    public void setMoveMouse(boolean moveMouse) {
+        this.moveMouse = moveMouse;
+    }
+
+    public int getCrosshairColorNum() {
+        return crosshairColorNum;
+    }
+
+    public void setCrosshairColorNum(int crosshairColorNum) {
+        this.crosshairColorNum = crosshairColorNum;
+    }
+
+    public Socket getServerEndpoint() {
+        return serverEndpoint;
+    }
+
+    public void setServerEndpoint(Socket serverEndpoint) {
+        this.serverEndpoint = serverEndpoint;
+    }
+
+    public InetAddress getServerAddress() {
+        return serverAddress;
+    }
+
+    public void setServerAddress(InetAddress serverAddress) {
+        this.serverAddress = serverAddress;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public int getTimeout() {
+        return timeout;
     }
 
 }

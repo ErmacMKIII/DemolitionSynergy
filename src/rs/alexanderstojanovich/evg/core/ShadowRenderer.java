@@ -36,7 +36,7 @@ public class ShadowRenderer implements CoreRenderer {
 
     public final Matrix4f projectionMatrix = new Matrix4f();
 
-    public static final float SCALE = 50.0f;
+    public static final float BASE = 25.0f;
     public static final Vector3f ORIGIN = new Vector3f();
     private final GameObject gameObject;
 
@@ -65,19 +65,24 @@ public class ShadowRenderer implements CoreRenderer {
     private void setDepthByQuality() {
         switch (effectsQuality) {
             case NONE:
+                ShadowBox.FOV_Factor = 0.0f;
                 shadowDistance = 0.0f;
                 break;
             case LOW:
-                shadowDistance = SCALE;
+                ShadowBox.FOV_Factor = 0.5f;
+                shadowDistance = BASE;
                 break;
             case MEDIUM:
-                shadowDistance = 2f * SCALE;
+                ShadowBox.FOV_Factor = 1f;
+                shadowDistance = 1.25f * BASE;
                 break;
             case HIGH:
-                shadowDistance = 5f * SCALE;
+                ShadowBox.FOV_Factor = 2.5f;
+                shadowDistance = 1.50f * BASE;
                 break;
             case ULTRA:
-                shadowDistance = 10f * SCALE;
+                ShadowBox.FOV_Factor = 4f;
+                shadowDistance = 1.75f * BASE;
                 break;
         }
     }
@@ -153,10 +158,8 @@ public class ShadowRenderer implements CoreRenderer {
         // PASS 1 .. render depth to texture
         prepare();
         final LightSource ls = LevelContainer.SUNLIGHT;
-        if (ls.getIntensity() > 0.0f) {
-            updateShadowBox();
-            capture(ls);
-        }
+        updateShadowBox();
+        capture(ls);
         FrameBuffer.unbind(gameObject);
         // PASS 2 .. render the scene
         for (ShaderProgram sp : ShaderProgram.ENVIRONMENTAL_SHADERS) {

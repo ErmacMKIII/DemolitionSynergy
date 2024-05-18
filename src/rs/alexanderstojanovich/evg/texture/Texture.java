@@ -36,6 +36,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  *
@@ -70,6 +71,7 @@ public class Texture {
     public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
 
     public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Format.RGBA8);
+    public static final Texture DAY = new Texture(Game.WORLD_ENTRY, "day.png", Format.RGBA8);
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Format.RGBA8);
 
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Format.RGBA8);
@@ -82,17 +84,12 @@ public class Texture {
 
     public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Format.RGBA8);
     public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Format.RGBA8);
-
-    public static final String[] TEX_PLAYER_WEAPONS = {
-        "W01M9", "W02M1", "W03DE", "W04UZ",
-        "W05M5", "W06P9", "W07AK", "W08M4",
-        "W09G3", "W10M6", "W11MS", "W12W2",
-        "W13B9", "W14R7", "W15DR", "W16M8"
-    };
     public static final int GRID_SIZE_PLAYER = 4;
 
     public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
-    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
+    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, Weapons.TEX_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
+
+    public static final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Format.RGB5_A1);
 
     public static IList<String> LIGHT_TEX_LIST = new GapList<String>() {
         {
@@ -199,7 +196,9 @@ public class Texture {
         SUN.bufferAll();
         QMARK.bufferAll();
         WORLD.bufferAll();
+        DAY.bufferAll();
         NIGHT.bufferAll();
+        WATERFX.bufferAll();
         // player
         ALEX.bufferAll();
         STEVE.bufferAll();

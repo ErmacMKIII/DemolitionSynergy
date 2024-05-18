@@ -64,7 +64,7 @@ public class MasterRenderer implements CoreRenderer {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
 
-        GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f);
+        GL11.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     }
 
     public void setResolution(int width, int height) {

@@ -63,12 +63,10 @@ public class Tuple extends Series {
 
     protected final int facesNum;
 
-    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
-        @Override
-        public int compare(Tuple o1, Tuple o2) {
-            return o1.getName().compareTo(o2.getName());
-        }
-    };
+    /**
+     * Tuple comparator sorting tuples by (String) name.
+     */
+    public static final Comparator<Tuple> TUPLE_COMP = (Tuple o1, Tuple o2) -> o1.getName().compareTo(o2.getName());
 
     /**
      * Construct new tuple by definition texName x face-enabled-bits
@@ -93,6 +91,22 @@ public class Tuple extends Series {
     }
 
     /**
+     * Construct new tuple by definition texName x face-enabled-bits from
+     * original tuple.
+     *
+     * @param original to copy properties from
+     */
+    public Tuple(Tuple original) {
+        this.name = String.format("%s%02d", original.texName(), original.faceBits());
+        this.facesNum = original.facesNum;
+        this.verticesNum = original.verticesNum; // affects buffering of vertices
+        this.indicesNum = original.indicesNum; // affect buffering of indices
+
+        this.blockList.clear();
+        this.blockList.addAll(original.blockList);
+    }
+
+    /**
      * Gets Block from the tuple block list (duplicates may exist but in very
      * low quantity). Complexity is O(log(n)+k).
      *
@@ -101,6 +115,66 @@ public class Tuple extends Series {
      */
     public Block getBlock(Vector3f pos) {
         Integer key = ModelUtils.blockSpecsToUniqueInt(isSolid(), this.texName(), this.faceBits(), pos);
+
+        int left = 0;
+        int right = this.blockList.size() - 1;
+        int startIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = this.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = this.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = this.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k). Faster than method with
+     * supplied Vec3f position.
+     *
+     * @param pos Vector3f position of the block
+     * @param blkId block unique id
+     * @return block if found (null if not found)
+     */
+    public Block getBlock(Vector3f pos, int blkId) {
+        Integer key = blkId;
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -278,10 +352,8 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList) {
-            if (!block.isSolid()) {
-                block.getMeshes().getFirst().triangSwap();
-            }
+        for (Block block : blockList.filter(blk -> !blk.isSolid())) {
+            block.getMeshes().getFirst().triangSwap();
         }
 
         subBufferVertices();
@@ -293,10 +365,22 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList) {
-            if (!block.isSolid() && cameraInFluid ^ block.isVerticesReversed()) {
-                block.reverseFaceVertexOrder();
-            }
+        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
+            block.reverseFaceVertexOrder();
+        }
+
+        subBufferVertices();
+    }
+
+    public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering                      
+        if (!buffered || blockList.isEmpty() || isSolid()) {
+            return;
+        }
+
+        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
+            final float degrees = (cameraInFluid ^ block.isVerticesReversed()) ? 0f : 45f;
+            // Improved one
+            block.reverseFaceVertexOrder(camFront, degrees);
         }
 
         subBufferVertices();

@@ -228,16 +228,46 @@ public class Mesh {
         buffered = false;
     }
 
+    /**
+     * Swaps the UV coordinates of the vertices in each triangle.
+     *
+     * This method iterates through the indices list in steps of three,
+     * corresponding to the vertices of each triangle. For each triangle, it
+     * swaps the UV coordinates of the vertices such that: - Vertex A gets the
+     * UV of Vertex C - Vertex B gets the UV of Vertex A - Vertex C gets the UV
+     * of Vertex B
+     *
+     * This operation is useful for modifying the texture mapping of the mesh.
+     * After performing the swap, the `buffered` flag is set to false,
+     * indicating that the vertex buffer needs to be updated.
+     */
     public void triangSwap() {
-        for (int i = 0; i < indices.size(); i += 3) {
-            Vertex a = vertices.get(indices.get(i));
-            Vertex b = vertices.get(indices.get(i + 1));
-            Vertex c = vertices.get(indices.get(i + 2));
-            Vector2f temp = c.getUv();
-            c.setUv(b.getUv());
-            b.setUv(a.getUv());
-            a.setUv(temp);
+        // Get the size of the indices list
+        int size = indices.size();
+
+        // Loop through each triangle (step by 3)
+        for (int i = 0; i < size; i += 3) {
+            // Get the indices for the vertices of the current triangle
+            int indexA = indices.get(i);
+            int indexB = indices.get(i + 1);
+            int indexC = indices.get(i + 2);
+
+            // Get the vertices corresponding to these indices
+            Vertex a = vertices.get(indexA);
+            Vertex b = vertices.get(indexB);
+            Vertex c = vertices.get(indexC);
+
+            // Get the UV coordinates of these vertices
+            Vector2f uvA = a.getUv();
+            Vector2f uvB = b.getUv();
+            Vector2f uvC = c.getUv();
+
+            // Swap the UV coordinates
+            c.setUv(uvB); // C gets UV of B
+            b.setUv(uvA); // B gets UV of A
+            a.setUv(uvC); // A gets UV of C
         }
+        // Mark the vertex buffer as needing an update
         buffered = false;
     }
 

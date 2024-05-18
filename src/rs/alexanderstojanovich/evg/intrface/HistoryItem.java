@@ -56,6 +56,7 @@ public class HistoryItem {
                 connector = " => ";
                 break;
             default:
+                break;
         }
         sb.append(connector);
         switch (cmd.mode) {
@@ -67,13 +68,13 @@ public class HistoryItem {
                 }
                 break;
             case SET:
+            default:
                 if (cmd.target == Command.Target.ERROR) {
                     sb.append("Invalid Command");
                 } else {
                     cmd.args.forEach(a -> sb.append(a.toString()).append(" "));
                 }
                 break;
-
         }
         cmdText.setContent(sb.toString());
     }

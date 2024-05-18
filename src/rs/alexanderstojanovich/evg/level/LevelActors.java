@@ -16,17 +16,22 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.Arrays;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -36,13 +41,26 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class LevelActors {
 
-    public Observer spectator = new Camera(); // spectator is separate camera from player instance
+    /**
+     * Spectator is separate camera from player instance
+     */
+    public final Observer spectator = new Camera(); // spectator is separate camera from player instance
 
     public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
+    /**
+     * Main player (Single Player & Multiplayer)
+     */
+    public final Player player = new Player(new Model(PLAYER_BODY));
+    /**
+     * Non-playable characters. Handled by client (SinglePlayer) or server host
+     * (MultiPlyer).
+     */
+    public final List<NPC> npcList = new GapList<>();
 
-    public final Player player = new Player(PLAYER_BODY);
-
-    protected final List<NPC> npcList = new GapList<>();
+    /**
+     * Other players (Multiplayer)
+     */
+    public final IList<Critter> otherPlayers = new GapList<>();
 
     public void freeze() {
 //        getMainActor().setGivenControl(false);
@@ -59,6 +77,11 @@ public class LevelActors {
     }
 
     public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
+        // Other players is used in Multiplayer
+//        DSLogger.reportInfo(""+otherPlayers.size(), null);
+        for (Critter otherPlayer : otherPlayers) {
+            otherPlayer.render(lightSrc, npcShader);
+        }
         // Npc list is for now empty
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
@@ -73,7 +96,7 @@ public class LevelActors {
 
     public Observer mainActor() {
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
-                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER) {
+                || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
             return player;
         } else if (Game.getCurrentMode() == Game.Mode.FREE
                 || Game.getCurrentMode() == Game.Mode.EDITOR) {
@@ -107,6 +130,18 @@ public class LevelActors {
 
     public List<NPC> getNpcList() {
         return npcList;
+    }
+
+    public void configOtherPlayers(PlayerInfo[] playerInfo) {
+        Arrays.asList(playerInfo).forEach(pi -> {
+            if (!pi.uniqueId.equals(player.uniqueId)) {
+                Critter op = new Critter(pi.uniqueId, new Model(LevelActors.PLAYER_BODY));
+                op.setName(pi.name);
+                op.body.setPrimaryRGBAColor(pi.color);
+                op.body.setTexName(pi.texModel);
+                otherPlayers.add(op);
+            }
+        });
     }
 
 }

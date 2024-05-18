@@ -138,7 +138,7 @@ public interface ComponentIfc {
      *
      * @return is buffered (if allocation memory fails it is not buffered)
      */
-    public boolean updateVertices();
+    public boolean subBufferVertices();
 
     /**
      * Buffer indices. The part of buffering. Vertices need additionally to be
@@ -154,7 +154,7 @@ public interface ComponentIfc {
      *
      * @return is buffered (if allocation memory fails it is not buffered)
      */
-    public boolean updateIndices();
+    public boolean subBufferIndices();
 
     /**
      * Buffer vertices and indices and set buffered flag accordingly.

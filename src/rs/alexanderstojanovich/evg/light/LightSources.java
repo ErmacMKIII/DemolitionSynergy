@@ -26,6 +26,7 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -50,7 +51,7 @@ public class LightSources {
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
     public LightSources() {
-        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, new Texture("loverlay", Texture.Format.RGB5_A1));
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, Texture.getOrDefault("waterfx"));
     }
 
     /**
@@ -78,12 +79,12 @@ public class LightSources {
      *
      * @param intrface intrface
      * @param camera camera (3D)
-     * @param lightSources Light Sources
+     * @param lc Level Container (contains Light Sources)
      * @param shaderProgram light shader program
      */
-    public static void render(Intrface intrface, Camera camera, LightSources lightSources, ShaderProgram shaderProgram) {
-        lightSources.lightOverlay.bufferSmart(intrface);
-        lightSources.lightOverlay.render(intrface, camera, lightSources, shaderProgram); // has shader bind
+    public static void render(Intrface intrface, Camera camera, LevelContainer lc, ShaderProgram shaderProgram) {
+        lc.lightSources.lightOverlay.bufferSmart(intrface);
+        lc.lightSources.lightOverlay.render(intrface, camera, lc, shaderProgram); // has shader bind
     }
 
     public void clearLights() {

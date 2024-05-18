@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -34,6 +35,10 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Request;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.Trie;
 
@@ -67,6 +72,9 @@ public class Command implements Callable<Object> {
         CACHE,
         CLEAR,
         NOP,
+        PING,
+        PRINT,
+        SAY,
         ERROR
     };
 
@@ -139,7 +147,7 @@ public class Command implements Callable<Object> {
     public static Command getCommand(String input) {
         Command command = new Command(input);
         command.args.clear();
-        String[] things = input.split(" ");
+        String[] things = input.split("\\s+|\".*\"");
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "monitor_get":
@@ -260,15 +268,37 @@ public class Command implements Callable<Object> {
                 case "clear":
                     command.target = Target.CLEAR;
                     break;
+                case "print": // Visual Basic
+                case "echo": // PHP
+                case "write": // C#
+                case "log": // JS
+                    command.target = Target.PRINT;
+                    if (things.length == 2) {
+                        command.args.add((String) things[1]);
+                    }
+                    break;
+                case "say":
+                    command.target = Target.SAY;
+                    if (things.length == 3) {
+                        command.args.add((String) things[1]);
+                        command.args.add((String) things[2]);
+                    }
+                    break;
                 default:
                     command.target = Target.ERROR;
                     break;
             }
         }
 
-        if (command.args.isEmpty() && command.target != Target.CLEAR || command.target == Target.SIZEOF) {
+        boolean argsEmpty = command.args.isEmpty();
+        boolean isGetOnly = command.target == Target.SIZEOF;
+        boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY;
+
+        if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
-        } else {
+        }
+
+        if (isSetOnly || !argsEmpty) {
             command.mode = Mode.SET;
         }
 
@@ -310,13 +340,13 @@ public class Command implements Callable<Object> {
             case GAME_TICKS:
                 switch (command.mode) {
                     case GET:
-                        result = Game.getAccumulator();
+                        result = Game.getGameTicks();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         float ticks = (float) command.args.get(0);
                         if (ticks >= 0.0f) {
-                            Game.setAccumulator(ticks);
+                            Game.setGameTicks(ticks);
 //                            GameRenderer.setFps(0);
                             GameRenderer.setFpsTicks(0.0f);
                             GameRenderer.setAnimationTimer((int) ticks);
@@ -600,10 +630,41 @@ public class Command implements Callable<Object> {
                 break;
             case CLEAR:
                 if (command.mode == Mode.SET) {
-                    Console console = gameObject.getIntrface().getConsole();
+                    Console console = gameObject.intrface.getConsole();
                     console.clear();
                 }
                 command.status = Status.SUCCEEDED;
+                break;
+            case PING:
+                if (command.mode == Mode.SET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                    try {
+                        double beginTime = GLFW.glfwGetTime();
+                        RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
+                        req.send(gameObject.game, gameObject.game.getServerEndpoint());
+                        ResponseIfc.receive(gameObject.game, gameObject.game.getServerEndpoint());
+                        double endTime = GLFW.glfwGetTime();
+                        result = Math.round((endTime - beginTime)) * 1000L;
+                        command.status = Status.SUCCEEDED;
+                    } catch (Exception ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                }
+                break;
+            case PRINT:
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        command.status = Status.SUCCEEDED;
+                    }
+                }
+                break;
+            case SAY:
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        command.status = Status.SUCCEEDED;
+                    }
+                }
+                // TODO Multiplayer
+                // All clients receive chat
                 break;
             case NOP:
             default:
@@ -648,13 +709,15 @@ public class Command implements Callable<Object> {
     // game commands
     public boolean isGameCommand() {
         return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS || this.target == Target.SHADOW_EFFECTS
-                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR;
+                || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR
+                || this.target == Target.PRINT || this.target == Target.SAY;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
         return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS || command.target == Target.SHADOW_EFFECTS
-                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR;
+                || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR
+                || command.target == Target.PRINT || command.target == Target.SAY;
     }
 
     // renderer commands need OpenGL whilst other doesn't

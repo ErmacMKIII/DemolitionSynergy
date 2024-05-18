@@ -22,11 +22,11 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
-import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -42,6 +42,8 @@ public class WaterRenderer implements CoreRenderer {
     private final FrameBuffer frameBuffer;
     private final Camera camera = new Camera();
 
+    public static final float BASE = Chunk.LENGTH / 4f;
+
     public static enum WaterEffectsQuality {
         NONE, LOW, MEDIUM, HIGH, ULTRA
     };
@@ -50,6 +52,8 @@ public class WaterRenderer implements CoreRenderer {
     public final IList<Float> waterHeights = new GapList<>();
     protected final GameObject gameObject;
 //    private final Quad debugQuad;
+
+    public float distance = 0.0f;
 
     public WaterRenderer(GameObject gameObject) throws Exception {
         this.frameBuffer = new FrameBuffer("Water", Texture.Format.RGB5_A1, FrameBuffer.Configuration.COLOR_ATTACHMENT);
@@ -64,15 +68,19 @@ public class WaterRenderer implements CoreRenderer {
         switch (effectsQuality) {
             case LOW:
                 maxWaterDepthSize = 3;
+                distance = BASE;
                 break;
             case MEDIUM:
                 maxWaterDepthSize = 5;
+                distance = 2.0f * BASE;
                 break;
             case HIGH:
                 maxWaterDepthSize = 8;
+                distance = 3.5f * BASE;
                 break;
             case ULTRA:
                 maxWaterDepthSize = 12;
+                distance = 4.0f * BASE;
                 break;
         }
     }
@@ -94,7 +102,7 @@ public class WaterRenderer implements CoreRenderer {
         if (dotYAxis > 0.0f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
-            for (Vector3f xyzLoc : LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid && ((~tb.byteValue & 63) & Block.Y_MASK) != 0)) {
+            for (Vector3f xyzLoc : LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid && (~tb.byteValue != 0), actCam.pos, distance)) {
                 if (chPosY >= xyzLoc.y) {
                     float delta = 2.0f * xyzLoc.y - chPosY;
                     float angleCos = actCam.pos.angleCos(xyzLoc);
@@ -234,4 +242,21 @@ public class WaterRenderer implements CoreRenderer {
     public Texture texture() {
         return frameBuffer.getTexture();
     }
+
+    public int getMaxWaterDepthSize() {
+        return maxWaterDepthSize;
+    }
+
+    public IList<Float> getWaterHeights() {
+        return waterHeights;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public float getDistance() {
+        return distance;
+    }
+
 }

@@ -25,52 +25,112 @@ import org.joml.Vector4f;
  */
 public class TexByte {
 
-    public String texName;
+    /**
+     * Block color
+     */
+    public final Vector4f color;
+    /**
+     * Texture Name
+     */
+    public final String texName;
+    /**
+     * Byte value (facebits)
+     */
     public byte byteValue;
-    public Vector4f lightColor = new Vector4f();
-    public boolean solid;
+    /**
+     * Solid property
+     */
+    public final boolean solid;
+    /**
+     * Unique block id (provide faster search)
+     */
+    public final int blkId;
 
-    public TexByte(String texName, byte byteValue, boolean solid) {
+    /**
+     * Get properties of block.
+     *
+     * @param color block color
+     * @param texName block texture name
+     * @param solid is block solid
+     * @param blkId block id (primary key) occupying the slot
+     */
+    public TexByte(Vector4f color, String texName, boolean solid, int blkId) {
+        this.color = color;
+        this.texName = texName;
+        this.solid = solid;
+        this.blkId = blkId;
+    }
+
+    /**
+     * Get properties of block.
+     *
+     * @param color block color
+     * @param texName block texture name
+     * @param byteValue facebits of the block
+     * @param solid is block solid
+     * @param blkId block id (primary key) occupying the slot
+     */
+    public TexByte(Vector4f color, String texName, byte byteValue, boolean solid, int blkId) {
+        this.color = color;
         this.texName = texName;
         this.byteValue = byteValue;
         this.solid = solid;
+        this.blkId = blkId;
     }
 
+    /**
+     * Get block color (RGBA)
+     *
+     * @return vec4 RGBA of color
+     */
+    public Vector4f getColor() {
+        return color;
+    }
+
+    /**
+     * Get texture name of block occupying the place
+     *
+     * @return occupying block texture name
+     */
     public String getTexName() {
         return texName;
     }
 
-    public void setTexName(String texName) {
-        this.texName = texName;
-    }
-
+    /**
+     * Get facebits of block occupying the place
+     *
+     * @return occupying block face bits
+     */
     public byte getByteValue() {
         return byteValue;
     }
 
-    public void setByteValue(byte byteValue) {
-        this.byteValue = byteValue;
-    }
-
+    /**
+     * Get solid property of block occuping the place
+     *
+     * @return occupying block texture name
+     */
     public boolean isSolid() {
         return solid;
     }
 
-    public void setSolid(boolean solid) {
-        this.solid = solid;
-    }
-
-    public Vector4f getLightColor() {
-        return lightColor;
+    /**
+     * Get unique id (primary key) of this block
+     *
+     * @return
+     */
+    public int getBlkId() {
+        return blkId;
     }
 
     @Override
     public int hashCode() {
-        int hash = 7;
+        int hash = 5;
+        hash = 97 * hash + Objects.hashCode(this.color);
         hash = 97 * hash + Objects.hashCode(this.texName);
         hash = 97 * hash + this.byteValue;
-        hash = 97 * hash + Objects.hashCode(this.lightColor);
         hash = 97 * hash + (this.solid ? 1 : 0);
+        hash = 97 * hash + this.blkId;
         return hash;
     }
 
@@ -92,22 +152,13 @@ public class TexByte {
         if (this.solid != other.solid) {
             return false;
         }
+        if (this.blkId != other.blkId) {
+            return false;
+        }
         if (!Objects.equals(this.texName, other.texName)) {
             return false;
         }
-        return Objects.equals(this.lightColor, other.lightColor);
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("TexByte{");
-        sb.append("texName=").append(texName);
-        sb.append(", byteValue=").append(byteValue);
-        sb.append(", lightColor=").append(lightColor);
-        sb.append(", solid=").append(solid);
-        sb.append('}');
-        return sb.toString();
+        return Objects.equals(this.color, other.color);
     }
 
 }

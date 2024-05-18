@@ -24,7 +24,6 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -167,7 +166,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public boolean updateVertices() {
+    public boolean subBufferVertices() {
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -247,7 +246,7 @@ public class Text implements ComponentIfc {
     }
 
     @Override
-    public boolean updateIndices() {
+    public boolean subBufferIndices() {
         if (ibo == 0) {
             DSLogger.reportError("Index buffer object is zero!", null);
             return false;
@@ -318,7 +317,7 @@ public class Text implements ComponentIfc {
     public void bufferSmart(Intrface intrface) {
         int deltaSize = setup(intrface);
         if (floatBuffer != null && vbo != 0 && deltaSize == 0 && ibo != 0) {
-            buffered = updateVertices() && updateIndices();
+            buffered = subBufferVertices() && subBufferIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
         }

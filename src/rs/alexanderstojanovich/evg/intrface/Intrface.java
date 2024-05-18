@@ -17,10 +17,13 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
+import org.lwjgl.glfw.GLFW;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
@@ -65,8 +68,10 @@ public class Intrface {
     private ConcurrentDialog loadDialog;
     private ConcurrentDialog randLvlDialog;
     private ConcurrentDialog singlePlayerDialog;
+    private ConcurrentDialog multiPlayerDialog;
 
     private Menu mainMenu;
+    private Menu gameMenu; // when player has is ingame session
 
     private OptionsMenu optionsMenu;
 
@@ -80,6 +85,9 @@ public class Intrface {
     public static final String FONT_IMG = "font.png"; // modified JetBrains font
 
     private OptionsMenu singlPlayerMenu;
+    private OptionsMenu multiPlayerMenu;
+    private OptionsMenu multiPlayerHostMenu;
+    private OptionsMenu multiPlayerJoinMenu;
 
     private final Console console;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
@@ -151,7 +159,9 @@ public class Intrface {
             mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
                 @Override
                 protected void leave() {
-
+                    viewText.setEnabled(true);
+                    posText.setEnabled(true);
+                    chunkText.setEnabled(true);
                 }
 
                 @Override
@@ -160,6 +170,9 @@ public class Intrface {
                     switch (s) {
                         case "SINGLE PLAYER":
                             singlPlayerMenu.open();
+                            break;
+                        case "MULTIPLAYER":
+                            multiPlayerMenu.open();
                             break;
                         case "EDITOR":
                             editorMenu.open();
@@ -172,6 +185,9 @@ public class Intrface {
                             break;
                         case "CREDITS":
                             creditsMenu.open();
+                            viewText.setEnabled(false);
+                            posText.setEnabled(false);
+                            chunkText.setEnabled(false);
                             break;
                         case "EXIT":
                             gameObject.WINDOW.close();
@@ -180,47 +196,85 @@ public class Intrface {
                 }
             };
             Quad logo = new Quad(120, 90, Texture.LOGO);
-            logo.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
+            logo.setColor(new Vector4f(2.0f, 1.37f, 0.1f, 1.0f));
             logo.setScale(1.5f);
             mainMenu.setLogo(logo);
             mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
+            // -----------------------------------------------------------------
+            IList<MenuItem> gameMenuItems = new GapList<>();
+            gameMenuItems.add(new MenuItem("RESUME", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
+            gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
+                @Override
+                protected void leave() {
 
+                }
+
+                @Override
+                protected void execute() {
+                    String s = gameMenu.items.get(gameMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "RESUME":
+                            break;
+                        case "OPTIONS":
+                            optionsMenu.open();
+                            viewText.setEnabled(false);
+                            posText.setEnabled(false);
+                            chunkText.setEnabled(false);
+                            break;
+                        case "EXIT":
+                            if (Game.getCurrentMode() == Mode.MULTIPLAYER_HOST) {
+                                if (gameObject.gameServer.isRunning()) {
+                                    gameObject.gameServer.stopServer();
+                                }
+                            } else if (Game.getCurrentMode() == Mode.MULTIPLAYER_JOIN) {
+                                gameObject.game.disconnectFromServer();
+                            }
+                            gameObject.clearEverything();
+                            break;
+                    }
+                }
+            };
+
+            gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
+            // -----------------------------------------------------------------
             saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
                 @Override
-                protected boolean execute(String command) {
+                protected ExecStatus execute(String command) {
                     Editor.deselect();
                     progText.enabled = true;
                     boolean ok = gameObject.saveLevelToFile(command);
                     if (ok) {
-                        Game.setCurrentMode(Mode.EDITOR);
+                        return ExecStatus.SUCCESS;
                     }
-                    return ok;
+                    return ExecStatus.FAILURE;
                 }
             };
 
             loadDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
                 @Override
-                protected boolean execute(String command) {
+                protected ExecStatus execute(String command) {
+                    ExecStatus status;
                     Editor.deselect();
                     progText.enabled = true;
                     boolean ok = gameObject.loadLevelFromFile(command);
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
+                        status = ExecStatus.SUCCESS;
+                    } else {
+                        status = ExecStatus.FAILURE;
                     }
-                    return ok;
+
+                    return status;
                 }
             };
             loadDialog.dialog.alignToNextChar(this);
 
             File currFile = new File("./");
-            String[] datFileList = currFile.list(new FilenameFilter() {
-                @Override
-                public boolean accept(File dir, String name) {
-                    return name.toLowerCase().endsWith(".dat");
-                }
-            });
+            String[] datFileList = currFile.list((File dir, String name) -> name.toLowerCase().endsWith(".dat"));
 
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
@@ -244,18 +298,20 @@ public class Intrface {
             randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                     "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
                 @Override
-                protected boolean execute(String command) {
-                    boolean ok = false;
+                protected ExecStatus execute(String command) {
+                    ExecStatus status = ExecStatus.IN_PROGRESS;
                     if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                         Editor.deselect();
-                        ok |= gameObject.generateRandomLevel(numBlocks);
+                        boolean ok = gameObject.generateRandomLevel(numBlocks);
                         if (ok) {
+                            status = ExecStatus.SUCCESS;
                             Game.setCurrentMode(Mode.EDITOR);
                         } else {
+                            status = ExecStatus.FAILURE;
                             Game.setCurrentMode(Mode.FREE);
                         }
                     }
-                    return ok;
+                    return status;
                 }
             };
             randLvlDialog.dialog.alignToNextChar(this);
@@ -265,7 +321,7 @@ public class Intrface {
             randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
-            randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+            randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
 
             randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -295,7 +351,7 @@ public class Intrface {
                         default:
                         case "SEED":
                             MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
-                            gameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
+                            gameObject.randomLevelGenerator.setSeed(Long.parseLong(selectedMenuItem.menuValue.getCurrentValue().toString()));
                             break;
                     }
 
@@ -309,22 +365,57 @@ public class Intrface {
 
             singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
                 @Override
-                protected boolean execute(String command) {
-                    boolean ok = false;
+                protected ExecStatus execute(String command) {
+                    ExecStatus status = ExecStatus.IN_PROGRESS;
                     if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                         Editor.deselect();
-                        ok |= gameObject.generateSinglePlayerLevel(numBlocks);
+                        boolean ok = gameObject.generateSinglePlayerLevel(numBlocks);
                         if (ok) {
+                            status = ExecStatus.SUCCESS;
                             Game.setCurrentMode(Mode.SINGLE_PLAYER);
+                            gameMenu.getTitle().setContent("SINGLE PLAYER");
                         } else {
+                            status = ExecStatus.FAILURE;
                             Game.setCurrentMode(Mode.FREE);
                         }
                     }
 
-                    return ok;
+                    return status;
                 }
             };
             singlePlayerDialog.dialog.alignToNextChar(this);
+
+            multiPlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
+                @Override
+                protected ExecStatus execute(String command) {
+                    ExecStatus status = ExecStatus.IN_PROGRESS;
+                    if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                        boolean ok = false;
+                        gameObject.clearEverything();
+                        if (!gameObject.gameServer.isRunning()) {
+                            progText.setEnabled(true);
+                            gameObject.gameServer.startServer();
+                            try {
+                                ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                            } catch (InterruptedException | ExecutionException ex) {
+                                DSLogger.reportError(ex.getMessage(), ex);
+                            }
+                        }
+
+                        if (ok) {
+                            Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
+                            gameMenu.getTitle().setContent("MUTLIPLAYER");
+                            status = ExecStatus.SUCCESS;
+                        } else {
+                            status = ExecStatus.FAILURE;
+                            Game.setCurrentMode(Mode.FREE);
+                        }
+                    }
+
+                    return status;
+                }
+            };
+            multiPlayerDialog.dialog.alignToNextChar(this);
 
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
@@ -354,7 +445,11 @@ public class Intrface {
             optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
-                    mainMenu.open();
+                    if (Game.getCurrentMode() == Mode.SINGLE_PLAYER || Game.getCurrentMode() == Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Mode.MULTIPLAYER_JOIN) {
+                        gameObject.intrface.getGameMenu().open();
+                    } else {
+                        gameObject.intrface.getMainMenu().open();
+                    }
                     viewText.setEnabled(true);
                     posText.setEnabled(true);
                     chunkText.setEnabled(true);
@@ -530,7 +625,7 @@ public class Intrface {
             singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
             singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
             singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
-            singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+            singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
 
             singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
@@ -547,7 +642,7 @@ public class Intrface {
                     }
                     if (singlPlayerMenu.selected == 4) {
                         isHugeLevel = false;
-                        Player player = gameObject.getLevelContainer().levelActors.player;
+                        final Player player = gameObject.levelContainer.levelActors.player;
                         player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                         player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                         // set level size & seed
@@ -569,7 +664,7 @@ public class Intrface {
                                 break;
                         }
                         long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
-                        gameObject.getRandomLevelGenerator().setSeed(seedValue);
+                        gameObject.randomLevelGenerator.setSeed(seedValue);
                         singlePlayerDialog.open(Intrface.this);
                     }
 
@@ -578,6 +673,185 @@ public class Intrface {
             };
             singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
+
+            //------------------------------------------------------------------
+            // MAIN MULTIPLAYER MENU
+            IList<MenuItem> multiPlayerMenuItems = new GapList<>();
+            multiPlayerMenuItems.add(new MenuItem("PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
+            multiPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            multiPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            multiPlayerMenuItems.add(new MenuItem("HOST GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenuItems.add(new MenuItem("JOIN GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    mainMenu.open();
+                }
+
+                @Override
+                protected void execute() { // TODO *
+                    String s = this.items.get(this.getSelected()).keyText.content;
+                    final Player player;
+                    switch (s) {
+                        case "PLAYER NAME":
+                            player = gameObject.levelContainer.levelActors.player;
+                            player.setName(this.items.getFirst().menuValue.getCurrentValue().toString());
+                            break;
+                        case "CHARACTER MODEL":
+                            player = gameObject.levelContainer.levelActors.player;
+                            player.body.texName = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
+                            break;
+                        case "COLOR":
+                            player = gameObject.levelContainer.levelActors.player;
+                            Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(this.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                            player.body.setPrimaryRGBAColor(colorRGBA);
+                            this.items.get(2).menuValue.getValueText().color = colorRGBA;
+                            break;
+                        case "HOST GAME":
+                            multiPlayerHostMenu.open();
+                            break;
+                        case "JOIN GAME":
+                            multiPlayerJoinMenu.open();
+                            break;
+                    }
+                }
+            };
+            multiPlayerMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+            multiPlayerMenu.items.get(3).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+
+            IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
+            multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
+            multiPlayerHostMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
+            multiPlayerHostMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
+            multiPlayerHostMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getPort(), MenuValue.Type.INT)));
+            multiPlayerHostMenuItems.add(new MenuItem("START", Menu.EditType.EditNoValue, null));
+            multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    multiPlayerMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String s = this.items.get(this.getSelected()).keyText.content;
+                    long seedValue;
+                    String levelSize;
+                    switch (s) {
+                        case "WORLD NAME":
+                            final String worldName = this.items.getFirst().menuValue.getCurrentValue().toString();
+                            gameObject.gameServer.setWorldName(worldName);
+                            break;
+                        case "LEVEL SIZE":
+                            // set level size & seed
+                            levelSize = this.items.get(1).menuValue.getCurrentValue().toString().toUpperCase();
+                            switch (levelSize) {
+                                default:
+                                case "SMALL":
+                                    numBlocks = 25000;
+                                    break;
+                                case "MEDIUM":
+                                    numBlocks = 50000;
+                                    break;
+                                case "LARGE":
+                                    numBlocks = 100000;
+                                    break;
+                                case "HUGE":
+                                    numBlocks = 131070;
+                                    isHugeLevel = true;
+                                    break;
+                            }
+                            break;
+                        case "SEED":
+                            seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
+                            gameObject.randomLevelGenerator.setSeed(seedValue);
+                            break;
+                        case "PORT":
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
+                            break;
+                        case "START":
+                            levelSize = this.items.get(1).menuValue.getCurrentValue().toString().toUpperCase();
+                            switch (levelSize) {
+                                default:
+                                case "SMALL":
+                                    numBlocks = 25000;
+                                    break;
+                                case "MEDIUM":
+                                    numBlocks = 50000;
+                                    break;
+                                case "LARGE":
+                                    numBlocks = 100000;
+                                    break;
+                                case "HUGE":
+                                    numBlocks = 131070;
+                                    isHugeLevel = true;
+                                    break;
+                            }
+                            seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
+                            gameObject.randomLevelGenerator.setSeed(seedValue);
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
+                            multiPlayerDialog.open(Intrface.this);
+                            break;
+                    }
+                }
+            };
+            multiPlayerHostMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+            multiPlayerHostMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            //------------------------------------------------------------------
+            IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
+            multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue("", MenuValue.Type.STRING)));
+            multiPlayerJoinMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getPort(), MenuValue.Type.INT)));
+            multiPlayerJoinMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
+            multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+                @Override
+                protected void leave() {
+                    multiPlayerMenu.open();
+                }
+
+                @Override
+                protected void execute() {
+                    String s = this.items.get(this.getSelected()).keyText.content;
+                    switch (s) {
+                        case "HOSTNAME":
+                            final String host = this.items.getFirst().menuValue.getCurrentValue().toString();
+                             {
+                                try {
+                                    gameObject.game.setServerAddress(InetAddress.getByName(host));
+                                } catch (UnknownHostException ex) {
+                                    DSLogger.reportError(String.format("Unable resolve host %s!", host), ex);
+                                }
+                            }
+                            break;
+                        case "PORT":
+                            gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
+                            break;
+                        case "PLAY":
+                            double beginTime = GLFW.glfwGetTime();
+                            boolean okey = gameObject.game.connectToServer();
+                            double endTime = GLFW.glfwGetTime();
+                            if (okey) {
+                                try {
+                                    console.write("Connected to server!");
+                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress().getHostName() + " ( " + tripTime + " ms )");
+                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                        Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
+                                        gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                    }
+                                } catch (InterruptedException | ExecutionException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
+                                }
+                            } else {
+                                console.write("Unable to connect to server!", true);
+                            }
+                            break;
+
+                    }
+                }
+            };
+            multiPlayerJoinMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
+            multiPlayerJoinMenu.items.get(2).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            //------------------------------------------------------------------
             DSLogger.reportDebug("Interface initialized.", null);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to initialize interface! => " + ex.getMessage(), ex);
@@ -626,6 +900,8 @@ public class Intrface {
         loadDialog.render(this, ifcShaderProgram);
         randLvlDialog.render(this, ifcShaderProgram);
         singlePlayerDialog.render(this, ifcShaderProgram);
+        multiPlayerDialog.render(this, ifcShaderProgram);
+
         if (!updText.isBuffered()) {
             updText.bufferSmart(this);
         }
@@ -673,15 +949,21 @@ public class Intrface {
 
         screenText.render(this, ifcShaderProgram);
         mainMenu.render(this, ifcShaderProgram);
+        gameMenu.render(this, ifcShaderProgram);
         optionsMenu.render(this, ifcShaderProgram);
         editorMenu.render(this, ifcShaderProgram);
-        creditsMenu.render(this, ifcShaderProgram);
+        creditsMenu.render(this, ifcContShaderProgram);
         randLvlMenu.render(this, ifcShaderProgram);
         loadLvlMenu.render(this, ifcShaderProgram);
         singlPlayerMenu.render(this, ifcShaderProgram);
+        multiPlayerMenu.render(this, ifcShaderProgram);
+        multiPlayerHostMenu.render(this, ifcShaderProgram);
+        multiPlayerMenu.render(this, ifcShaderProgram);
+        multiPlayerJoinMenu.render(this, ifcShaderProgram);
 
-        if (!mainMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
-                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp) {
+        if (!mainMenu.isEnabled() && !gameMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
+                && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled() && !singlPlayerMenu.isEnabled()
+                && !multiPlayerMenu.isEnabled() && !multiPlayerHostMenu.isEnabled() && !multiPlayerJoinMenu.isEnabled()) {
             if (!crosshair.isBuffered()) {
                 crosshair.bufferAll(this);
             }
@@ -693,13 +975,18 @@ public class Intrface {
     /**
      * Capturing mouse input for menus
      */
-    public void update() { // update menu components
+    public void update() { // handleInput menu components
         mainMenu.update();
+        gameMenu.update();
+
         optionsMenu.update();
         editorMenu.update();
         randLvlMenu.update();
         loadLvlMenu.update();
         singlPlayerMenu.update();
+        multiPlayerMenu.update();
+        multiPlayerHostMenu.update();
+        multiPlayerJoinMenu.update();
     }
 
     /**
@@ -707,6 +994,8 @@ public class Intrface {
      */
     public void cleanUp() {
         mainMenu.cleanUp();
+        gameMenu.cleanUp();
+
         optionsMenu.cleanUp();
         editorMenu.cleanUp();
 
@@ -720,6 +1009,9 @@ public class Intrface {
         loadDialog.cleanUp();
         randLvlDialog.cleanUp();
         singlePlayerDialog.cleanUp();
+        multiPlayerMenu.cleanUp();
+        multiPlayerHostMenu.cleanUp();
+        multiPlayerJoinMenu.cleanUp();
 
         console.cleanUp();
 
@@ -731,6 +1023,8 @@ public class Intrface {
      */
     public void release() {
         mainMenu.release();
+        gameMenu.release();
+
         optionsMenu.release();
         editorMenu.release();
 
@@ -755,6 +1049,10 @@ public class Intrface {
         loadDialog.release();
         randLvlDialog.release();
         singlePlayerDialog.release();
+        multiPlayerMenu.release();
+
+        multiPlayerHostMenu.release();
+        multiPlayerJoinMenu.release();
 
         console.release();
 
@@ -867,6 +1165,22 @@ public class Intrface {
 
     public boolean isHugeLevel() {
         return isHugeLevel;
+    }
+
+    public Menu getGameMenu() {
+        return gameMenu;
+    }
+
+    public ConcurrentDialog getMultiPlayerDialog() {
+        return multiPlayerDialog;
+    }
+
+    public OptionsMenu getSinglPlayerMenu() {
+        return singlPlayerMenu;
+    }
+
+    public OptionsMenu getMultiPlayerMenu() {
+        return multiPlayerMenu;
     }
 
 }

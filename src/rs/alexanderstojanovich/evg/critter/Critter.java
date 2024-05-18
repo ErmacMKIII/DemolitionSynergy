@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
+import java.util.UUID;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -31,6 +32,8 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  */
 public class Critter implements Predictable, Moveable, Renderable {
 
+    protected String name;
+    public final String uniqueId;
     public final Model body;
     protected Vector3f predictor;
     protected Vector3f front = Camera.Z_AXIS;
@@ -48,6 +51,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
+        this.uniqueId = UUID.randomUUID().toString();
     }
 
     /**
@@ -60,6 +64,19 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Vector3f pos, Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
+        this.uniqueId = UUID.randomUUID().toString();
+    }
+
+    /**
+     * Create new instance of the critter. If instanced in anonymous class
+     * specify the camera
+     *
+     * @param uniqueId to be assigned to the critter
+     * @param body model body for the critter
+     */
+    public Critter(String uniqueId, Model body) {
+        this.uniqueId = uniqueId;
+        this.body = body;
     }
 
     @Override
@@ -324,6 +341,18 @@ public class Critter implements Predictable, Moveable, Renderable {
         predictor = body.pos.sub(amountXYZ, temp);
     }
 
+    /**
+     * Set XYZ Body (Model) Rotation
+     *
+     * @param newFront new front vec3f
+     */
+    public void setRotationXYZ(Vector3f newFront) {
+        final float newYaw = org.joml.Math.atan2(-newFront.z, newFront.x);
+//        float newPitch = -org.joml.Math.atan2(newFront.y, org.joml.Math.sqrt(newFront.x * newFront.x + newFront.z * newFront.z));        
+        this.body.setrY(-3.0f * (float) (org.joml.Math.PI) / 2.0f + newYaw);
+        updateCameraVectors(newFront);
+    }
+
     public boolean isUnderGravity() {
         return underGravity;
     }
@@ -338,6 +367,30 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public void setIsInJump(boolean isJump) {
         this.inJump = isJump;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUniqueId() {
+        return uniqueId;
+    }
+
+    public Vector3f getFront() {
+        return front;
+    }
+
+    public Vector3f getUp() {
+        return up;
+    }
+
+    public Vector3f getRight() {
+        return right;
     }
 
 }

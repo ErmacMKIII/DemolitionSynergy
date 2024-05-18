@@ -22,12 +22,12 @@ import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
+import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
-import rs.alexanderstojanovich.evg.main.GameObject;
+import static rs.alexanderstojanovich.evg.main.GameObject.UPDATE_RENDER_IFC_MUTEX;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 
 /**
  *
@@ -78,7 +78,7 @@ public class Editor {
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
 
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
         final int mask = 1 << face;
 
         final float stepAmount = 0.125f;
@@ -138,7 +138,7 @@ public class Editor {
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
 
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront);
+        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
         final int mask = 1 << face;
 
         final float stepAmount = 0.125f;
@@ -319,7 +319,7 @@ public class Editor {
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (GameObject.UPDATE_RENDER_LC_MUTEX) { // potentially dangerous
+                synchronized (UPDATE_RENDER_IFC_MUTEX) {
                     lc.chunks.addBlock(selectedNew);
                 }
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
@@ -331,7 +331,7 @@ public class Editor {
 
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
-            synchronized (GameObject.UPDATE_RENDER_LC_MUTEX) { // potentially dangerous
+            synchronized (UPDATE_RENDER_IFC_MUTEX) {
                 lc.chunks.removeBlock(selectedCurr);
             }
             lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
@@ -341,10 +341,8 @@ public class Editor {
 
     private static void selectTexture() {
         if (selectedNew != null) {
-            synchronized (GameObject.UPDATE_RENDER_LC_MUTEX) {
-                String texName = Texture.TEX_WORLD[texValue];
-                selectedNew.setTexNameWithDeepCopy(texName);
-            }
+            String texName = Texture.TEX_WORLD[texValue];
+            selectedNew.setTexNameWithDeepCopy(texName);
         }
     }
 

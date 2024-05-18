@@ -43,7 +43,7 @@ public class GameTime {
      */
     public static GameTime Now() {
         final double gtm = cfg.getGameTimeMultiplier();
-        final double dt = gtm * (double) (Game.accumulator * Game.TICK_TIME / 16.0);
+        final double dt = gtm * (double) (Game.gameTicks * Game.TICK_TIME / 16.0);
         final int days = (int) (1.0f + dt / (2.0f * PI));
 
         final double sin = org.joml.Math.sin(dt);

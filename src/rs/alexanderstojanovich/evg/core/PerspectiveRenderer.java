@@ -31,8 +31,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 public class PerspectiveRenderer implements CoreRenderer {
 
     public static final float FOV = (float) (org.joml.Math.PI / 2.0f);
-    public static final float NEAR_PLANE = 0.1f;
-    public static final float FAR_PLANE = 20480.0f;
+    public static final float NEAR_PLANE = 0.15f;
+    public static final float FAR_PLANE = 24000.0f;
 
     private final GameObject gameObject;
     public final Matrix4f perspectiveMatrix = new Matrix4f();

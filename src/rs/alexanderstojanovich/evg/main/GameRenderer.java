@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
+import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -43,11 +44,11 @@ public class GameRenderer extends Thread implements Executor {
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
     protected FutureTask<Object> task;
-    protected static int animationTimer = 0;
-    protected static int glCommandTimer = 0;
+    protected static double animationTimer = 0.0;
+    protected static double glCommandTimer = 0.0;
 
-    protected static int ANIMATION_RATE = 20;
-    protected static int GL_COMMAND_POLL_RATE = 40;
+    protected static double ANIMATION_RATE = 0.25;
+    protected static double GL_COMMAND_POLL_RATE = Game.TICK_TIME;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -74,7 +75,7 @@ public class GameRenderer extends Thread implements Executor {
         }
         do {
             gameObject.render(); // render splash screen
-        } while (Game.upsTicks < 1.0);
+        } while (Game.accumulator < Game.TICK_TIME);
         gameObject.splashScreen.setEnabled(false);
 
         // resolution config
@@ -85,13 +86,13 @@ public class GameRenderer extends Thread implements Executor {
 
         fps = 0;
 
-        double lastTime = Game.accumulator * Game.TICK_TIME;
+        double lastTime = GLFW.glfwGetTime();
         double currTime;
-        double deltaTime = 0.0;
+        double deltaTime; // time between frames
 
         while (!gameObject.WINDOW.shouldClose()) {
-            currTime = Game.accumulator * Game.TICK_TIME;
-            deltaTime = Math.max(currTime - lastTime, 0.0);
+            currTime = GLFW.glfwGetTime();
+            deltaTime = currTime - lastTime;
             fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
@@ -102,31 +103,39 @@ public class GameRenderer extends Thread implements Executor {
                 break;
             }
 
-            numOfPasses = 0;
             // also avoid rendering when game is updating
+            numOfPasses = 0; // Start with PASS0
             while (fpsTicks >= 1.0 && couldRender()) {
+                // render the scene
                 gameObject.render();
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
             }
 
-            // update text which animates water every quarter of the second
-            if (Game.accumulator - animationTimer > GameRenderer.ANIMATION_RATE) {
-                if (!gameObject.isWorking()) {
-                    gameObject.animate(); // has internal no-update 
-                }
-
-                animationTimer += GameRenderer.ANIMATION_RATE;
+            // Changes are reflected to optimized
+            if (!couldRender()) {
+                gameObject.swap(); // swap happens only if not optimizing
             }
 
+            // animates water every quarter of the second
+            animationTimer += deltaTime;
+            if (animationTimer >= GameRenderer.ANIMATION_RATE) {
+                if (!gameObject.isWorking()) {
+                    gameObject.animate(); // avoid swap and animate in the same time - 'awful effect'
+                }
+
+                animationTimer = 0.0;
+            }
+
+            glCommandTimer += deltaTime;
             // lastly it executes the console tasks
-            if (Game.accumulator - glCommandTimer > GameRenderer.GL_COMMAND_POLL_RATE) {
+            if (glCommandTimer >= GameRenderer.GL_COMMAND_POLL_RATE) {
                 if ((task = TASK_QUEUE.poll()) != null) {
                     execute(task); // requires GL-context
                 }
 
-                glCommandTimer += GameRenderer.GL_COMMAND_POLL_RATE;
+                glCommandTimer = 0.0;
             }
         }
 
@@ -164,7 +173,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.upsTicks < 1.0;
+        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.accumulator < Game.TICK_TIME;
     }
 
 //    /**
@@ -213,11 +222,11 @@ public class GameRenderer extends Thread implements Executor {
         return cfg;
     }
 
-    public static int getAnimationTimer() {
+    public static double getAnimationTimer() {
         return animationTimer;
     }
 
-    public static int getGlCommandTimer() {
+    public static double getGlCommandTimer() {
         return glCommandTimer;
     }
 

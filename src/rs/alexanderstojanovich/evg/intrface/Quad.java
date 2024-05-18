@@ -138,7 +138,7 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public boolean updateVertices() {
+    public boolean subBufferVertices() {
         if (vbo == 0) {
             DSLogger.reportError("Vertex buffer object is zero!", null);
             throw new RuntimeException("Vertex buffer object is zero!");
@@ -213,7 +213,7 @@ public class Quad implements ComponentIfc {
     }
 
     @Override
-    public boolean updateIndices() {
+    public boolean subBufferIndices() {
         if (ibo == 0) {
             DSLogger.reportError("Index buffer object is zero!", null);
             return false;
@@ -252,7 +252,7 @@ public class Quad implements ComponentIfc {
     @Override
     public void bufferSmart(Intrface intrface) {
         if (FLOAT_BUFFER != null && vbo != 0 && ibo != 0) {
-            buffered = updateVertices() && updateIndices();
+            buffered = subBufferVertices() && subBufferIndices();
         } else {
             buffered = bufferVertices() && bufferIndices();
         }
@@ -342,6 +342,52 @@ public class Quad implements ComponentIfc {
     public float giveRelativeHeight(Intrface intrface) {
         float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
         return height * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
+    }
+
+    /**
+     * Animate2 (Subwater for instance)
+     *
+     * @param ifc Interface where is rendered.
+     */
+    public void triangSwap2(Intrface ifc) {
+        int length = INDICES.length;
+        for (int i = 0; i < length; i += 2) {
+            // Get the UV coordinates for the vertices
+            Vector2f a = uvs[INDICES[i]];
+            Vector2f b = uvs[INDICES[i + 1]];
+
+            // Swap the UV coordinates
+            Vector2f temp = new Vector2f(a);
+            a.set(b);
+            b.set(temp);
+        }
+
+        // Update the buffer
+        bufferSmart(ifc);
+    }
+
+    /**
+     * Animate3 (Subwater for instance). Derived from animated meshes for water.
+     *
+     * @param ifc Interface where is rendered.
+     */
+    public void triangSwap3(Intrface ifc) {
+        int length = INDICES.length;
+        for (int i = 0; i < length; i += 3) {
+            // Get the UV coordinates for the vertices
+            Vector2f a = uvs[INDICES[i]];
+            Vector2f b = uvs[INDICES[i + 1]];
+            Vector2f c = uvs[INDICES[i + 2]];
+
+            // Swap the UV coordinates
+            Vector2f temp = new Vector2f(c);
+            c.set(b);
+            b.set(a);
+            a.set(temp);
+        }
+
+        // Update the buffer
+        bufferSmart(ifc);
     }
 
     @Override

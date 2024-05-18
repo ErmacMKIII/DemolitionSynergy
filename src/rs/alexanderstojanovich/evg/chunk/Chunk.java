@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -43,7 +44,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final int BOUND = 768;
+    public static final int BOUND = 384;
     public static final float VISION = 256.0f; // determines visibility
     public static final int GRID_SIZE = 6;
 
@@ -138,6 +139,67 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
         Integer key = ModelUtils.blockSpecsToUniqueInt(tuple.isSolid(), tuple.texName(), tuple.faceBits(), pos);
+        int left = 0;
+        int right = tuple.blockList.size() - 1;
+        int startIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                startIndex = mid;
+                right = mid - 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        left = 0;
+        right = tuple.blockList.size() - 1;
+        int endIndex = -1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Block candidate = tuple.blockList.get(mid);
+            Integer candInt = candidate.getId();
+            int res = candInt.compareTo(key);
+            if (res < 0) {
+                left = mid + 1;
+            } else if (res == 0) {
+                endIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+
+        if (startIndex != -1 && endIndex != -1) {
+            for (int i = startIndex; i <= endIndex; i++) {
+                Block blk = tuple.blockList.get(i);
+                if (blk.pos.equals(pos)) {
+                    return blk;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets Block from the tuple block list (duplicates may exist but in very
+     * low quantity). Complexity is O(log(n)+k). Faster than method with
+     * supplied Vec3f position.
+     *
+     * @param tuple (chunk) tuple where block might be located
+     * @param pos Vector3f position of the block
+     * @param blkId block unique id
+     * @return block if found (null if not found)
+     */
+    public static Block getBlock(Tuple tuple, Vector3f pos, int blkId) {
+        Integer key = blkId;
+
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;
@@ -294,7 +356,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
                 TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
                 if (location != null) {
-                    String tupleTexName = location.getTexName();
+                    int blkId = location.blkId;
+                    String tupleTexName = location.texName;
                     int adjNBits = block.isSolid()
                             ? LevelContainer.AllBlockMap.getNeighborSolidBits(adjPos)
                             : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
@@ -304,9 +367,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     Tuple tuple = getTuple(tupleTexName, tupleBits);
                     Block adjBlock = null;
                     if (tuple != null) {
-                        adjBlock = Chunk.getBlock(tuple, adjPos);
+                        adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                     }
-                    if (adjBlock != null && adjBlock.pos.equals(adjPos)) {
+                    if (adjBlock != null) {
                         int adjFaceBitsBefore = adjBlock.getFaceBits();
                         adjBlock.setFaceBits(~adjNBits & 63);
                         int adjFaceBitsAfter = adjBlock.getFaceBits();
@@ -348,7 +411,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
             // location exists and has neighbors (otherwise pointless)
             if (location != null && nBits != 0) {
-                String tupleTexName = location.getTexName();
+                int blkId = location.blkId;
+                String tupleTexName = location.texName;
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
@@ -358,7 +422,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Tuple tuple = getTuple(tupleTexName, tupleBits);
                 Block adjBlock = null;
                 if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos);
+                    adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                 }
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -512,10 +576,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         float nz = (pos.z + BOUND) / (float) (BOUND << 1);
 
         // setSafeCheck which column of the interval
-        int col = Math.round(nx * (1.0f / STEP - 1.0f));
+        int col = (int) (nx * (1.0f / STEP - 1.0f));
 
         // setSafeCheck which rows of the interval
-        int row = Math.round(nz * (1.0f / STEP - 1.0f));
+        int row = (int) (nz * (1.0f / STEP - 1.0f));
 
         // determining chunk id -> row(z) & col(x)
         int cid = row * GRID_SIZE + col;
@@ -577,6 +641,37 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
 
         return false;
+    }
+
+    /**
+     * Does camera sees chunk. Useful.
+     *
+     * @param chunkId chunk id (number)
+     * @param camera main camera (or other camera)
+     * @return boolean condition see (or not see)
+     */
+    public static boolean doesSeeChunk(int chunkId, Camera camera) {
+        final Vector3f chunkPos = invChunkFunc(chunkId);
+        final Vector2f chunkPosXZ = new Vector2f(chunkPos.x, chunkPos.z);
+        final Vector2f camPosXZ = new Vector2f(camera.pos.x, camera.pos.z);
+        final Vector2f camFrontXZ = new Vector2f(camera.getFront().x, camera.getFront().z);
+
+        boolean yea = false;
+
+        // Now iterate and perform calculations
+        OUTER:
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                Vector2f temp = new Vector2f();
+                Vector2f tst = new Vector2f(x, z).add(chunkPosXZ.sub(camPosXZ, temp), temp).normalize();
+                if (tst.dot(camFrontXZ) >= -0.707107f) { // 135 degrees
+                    yea |= true;
+                    break OUTER;
+                }
+            }
+        }
+
+        return yea;
     }
 
     /**
