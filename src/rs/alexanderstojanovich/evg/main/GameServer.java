@@ -57,7 +57,7 @@ public class GameServer implements DSMachine, Runnable {
     protected final int version = 39;
     protected final int timeout = 30 * 1000; // 30 sec
 
-    protected final Object SYNC_OBJ = new Object();
+    public final Object SYNC_OBJ = new Object();
 
     /**
      * Magic bytes of End-of-Stream
@@ -221,11 +221,19 @@ public class GameServer implements DSMachine, Runnable {
             server = new ServerSocket();
             server.bind(new InetSocketAddress(host, port));
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-            DSLogger.reportInfo("Game Server started!", null);
-            gameObject.intrface.getConsole().write("Game Server started!");
+            DSLogger.reportInfo(String.format("Game Server (%s) started!", server.getInetAddress().getHostName()), null);
+            gameObject.intrface.getConsole().write(String.format("Game Server (%s) started!", server.getInetAddress().getHostName()));
+            running = true;
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
+            gameObject.intrface.getConsole().write("Cannot create Game Server!", true);
             DSLogger.reportError(ex.getMessage(), ex);
+            shutDownSignal = true;
+        } finally {
+            // wakeup client service
+            synchronized (SYNC_OBJ) {
+                SYNC_OBJ.notify();
+            } // so they realise what happened!
         }
         // Accept incoming connections and handle them
         while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
@@ -237,8 +245,8 @@ public class GameServer implements DSMachine, Runnable {
                 if (tst(client) && clients.size() <= MAX_CLIENTS) {
                     // Send "Welcome" Response
                     accept(client); // Authenticated
-                    DSLogger.reportInfo(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getCanonicalHostName()), null);
-                    gameObject.intrface.getConsole().write(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getCanonicalHostName()));
+                    DSLogger.reportInfo(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getHostName()), null);
+                    gameObject.intrface.getConsole().write(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getHostName()));
                     client.setSoTimeout(0);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
                     // Create handle client task ~ for handling requests and sending responses
@@ -261,7 +269,7 @@ public class GameServer implements DSMachine, Runnable {
                             // Code to execute finally
                             // This block will execute regardless of whether the CompletableFuture completed exceptionally or successfully
                             // You can perform cleanup tasks or any other final actions here
-                            performCleanUp(gameObject, whoIsMap.get(client));
+                            performCleanUp(gameObject, whoIsMap.get(client), result != HandleClientTask.Status.OK);
                             clients.remove(client);
                             client.close();
 
@@ -276,8 +284,8 @@ public class GameServer implements DSMachine, Runnable {
                     DSLogger.reportError("Acceptance test failure!", null);
                     reject(client);
                     clients.remove(client);
-                    DSLogger.reportInfo(String.format("Client %s rejected!", client.getInetAddress().getCanonicalHostName()), null);
-                    gameObject.intrface.getConsole().write(String.format("Client %s rejected!", client.getInetAddress().getCanonicalHostName()), true);
+                    DSLogger.reportInfo(String.format("Client %s rejected!", client.getInetAddress().getHostName()), null);
+                    gameObject.intrface.getConsole().write(String.format("Client %s rejected!", client.getInetAddress().getHostName()), true);
                 }
                 // Handle the client connection
             } catch (IOException ex) {
@@ -308,13 +316,14 @@ public class GameServer implements DSMachine, Runnable {
      *
      * @param gameObject game object
      * @param uniqueId player unique id (which was registered)
+     * @param isError
      */
-    public static void performCleanUp(GameObject gameObject, String uniqueId) {
+    public static void performCleanUp(GameObject gameObject, String uniqueId, boolean isError) {
         LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
 
         levelActors.otherPlayers.removeIf(ply -> ply.uniqueId.equals(uniqueId));
-        DSLogger.reportInfo(String.format("Player %s timed out.", uniqueId), null);
-        gameObject.intrface.getConsole().write(String.format("Player %s timed out.", uniqueId));
+        DSLogger.reportInfo(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), null);
+        gameObject.intrface.getConsole().write(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), isError);
     }
 
     public String getWorldName() {
@@ -378,6 +387,10 @@ public class GameServer implements DSMachine, Runnable {
     @Override
     public boolean isRunning() {
         return running;
+    }
+
+    public Object getSYNC_OBJ() {
+        return SYNC_OBJ;
     }
 
 }
