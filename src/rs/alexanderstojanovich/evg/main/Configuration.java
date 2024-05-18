@@ -160,11 +160,13 @@ public class Configuration {
                                 if (number > 0 && number <= Game.TPS * 2) {
                                     rendererPasses = number;
                                 }
+                                break;
                             case "optimizationpasses":
                                 number = Integer.parseInt(words[1]);
                                 if (number >= 1 && number <= 64) {
                                     optimizationPasses = number;
                                 }
+                                break;
                             case "texturesize":
                                 number = Integer.parseInt(words[1]);
                                 // if tex size is a non-zero power of two
