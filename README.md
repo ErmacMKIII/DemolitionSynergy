@@ -2,6 +2,9 @@
 Voxel Engine using latest LWJGL.
 Audio material was provided from freesound.org by Erokia.
 
+Demolition Synergy showing multiplayer setup.
+![Alt text](/misc/DSynergy7.png?raw=true "Demolition Synergy showing multiplayer setup")
+
 # Verbose Description
 Lightwight Game Engine writen in Java. 
 Features: Lighting, Water Reflections, Shadow Effects, Voxel based. 
@@ -17,7 +20,7 @@ Has Editor, Single player & Multiplayer as different modes.
 ![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
 ![Alt text](/misc/DSynergy4.png?raw=true "RPG Camera #1")
 ![Alt text](/misc/DSynergy5.png?raw=true "RPG Camera #2")
-![Alt text](/misc/DSynergy6.png?raw=true "Various Effects")
+![Alt text](/misc/DSynergy6.png?raw=true "Multiplayer")
 
 # How To Build
 Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
