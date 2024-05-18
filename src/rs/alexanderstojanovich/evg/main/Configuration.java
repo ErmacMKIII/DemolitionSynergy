@@ -199,6 +199,7 @@ public class Configuration {
                                 if (number > 0 && number <= 2) {
                                     ticksPerUpdate = number;
                                 }
+                                break;
                         }
                     }
                 }
@@ -227,7 +228,7 @@ public class Configuration {
         PrintWriter pw = null;
         try {
             pw = new PrintWriter(cfg);
-            pw.println("# Monitor (0 - Window; !=0 avaliable monitors)");
+            pw.println("# Monitor (0 - Window; !=0 available monitors)");
             pw.println("Monitor = " + monitor);
             pw.println("# Maximum framerate. Depedends on VSync.");
             pw.println("FPSCap = " + fpsCap);
@@ -238,7 +239,7 @@ public class Configuration {
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
-            pw.println("# Shadow Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
+            pw.println("# Shadow Effects (e.g. shadow effects) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("ShadowEffects = " + shadowEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);

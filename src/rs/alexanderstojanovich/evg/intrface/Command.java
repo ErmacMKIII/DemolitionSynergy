@@ -660,7 +660,7 @@ public class Command implements Callable<Object> {
             case SAY:
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
-                        command.status = Status.SUCCEEDED;
+//                        command.status = Status.SUCCEEDED;
                     }
                 }
                 // TODO Multiplayer
@@ -710,14 +710,14 @@ public class Command implements Callable<Object> {
     public boolean isGameCommand() {
         return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS || this.target == Target.SHADOW_EFFECTS
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR
-                || this.target == Target.PRINT || this.target == Target.SAY;
+                || this.target == Target.PRINT || this.target == Target.SAY || this.target == Target.PING;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
         return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS || command.target == Target.SHADOW_EFFECTS
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR
-                || command.target == Target.PRINT || command.target == Target.SAY;
+                || command.target == Target.PRINT || command.target == Target.SAY || command.target == Target.PING;
     }
 
     // renderer commands need OpenGL whilst other doesn't
