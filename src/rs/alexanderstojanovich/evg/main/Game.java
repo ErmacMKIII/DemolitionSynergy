@@ -111,7 +111,7 @@ public class Game implements DSMachine {
     public static final String CACHE = "cache";
 
     public static final String INTRFACE_ENTRY = "intrface/";
-    public static final String PLAYER_ENTRY = "player/";
+    public static final String WEAPON_ENTRY = "weapons/";
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";

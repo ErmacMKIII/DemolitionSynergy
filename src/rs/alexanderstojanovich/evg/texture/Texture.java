@@ -36,6 +36,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  *
@@ -83,17 +84,10 @@ public class Texture {
 
     public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Format.RGBA8);
     public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Format.RGBA8);
-
-    public static final String[] TEX_PLAYER_WEAPONS = {
-        "W01M9", "W02M1", "W03DE", "W04UZ",
-        "W05M5", "W06P9", "W07AK", "W08M4",
-        "W09G3", "W10M6", "W11MS", "W12W2",
-        "W13B9", "W14R7", "W15DR", "W16M8"
-    };
     public static final int GRID_SIZE_PLAYER = 4;
 
     public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
-    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.PLAYER_ENTRY, TEX_PLAYER_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
+    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, Weapons.TEX_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
 
     public static final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Format.RGB5_A1);
 

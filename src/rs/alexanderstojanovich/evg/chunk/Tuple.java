@@ -379,6 +379,7 @@ public class Tuple extends Series {
 
         for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
             final float degrees = (cameraInFluid ^ block.isVerticesReversed()) ? 0f : 45f;
+            // Improved one
             block.reverseFaceVertexOrder(camFront, degrees);
         }
 

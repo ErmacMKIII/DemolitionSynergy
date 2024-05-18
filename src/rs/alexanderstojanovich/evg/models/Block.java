@@ -446,20 +446,28 @@ public class Block extends Model {
      * @return [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] bits.
      */
     public static int getVisibleFaceBitsFast(Vector3f camFront, float degrees) {
-        int result = 0;
-
         final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
-        Vector3f temp = new Vector3f();
-        Vector3f camFrontNeg = camFront.negate(temp);
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
 
-        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
-        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
-        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
-        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
-        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
-        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
-
-        result = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        int result = 0;
+        if (camFrontNeg.z >= -cosine) {
+            result |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            result |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            result |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            result |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            result |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            result |= XNEG_MASK;
+        }
 
         return result;
     }
@@ -474,23 +482,31 @@ public class Block extends Model {
      * @return one of [LEFT, RIGHT, BOTTOM, TOP, BACK, FRONT] faces.
      */
     public static int getRayTraceSingleFaceFast(Vector3f camFront, float degrees) {
-
         final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
-        Vector3f temp = new Vector3f();
-        Vector3f camFrontNeg = camFront.negate(temp);
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
 
-        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
-        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
-        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
-        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
-        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
-        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
-
-        int someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        int someValue = 0;
+        if (camFrontNeg.z >= -cosine) {
+            someValue |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            someValue |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            someValue |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            someValue |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            someValue |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            someValue |= XNEG_MASK;
+        }
 
         for (int j = 0; j <= 5; j++) {
-            int tmpMask = 1 << j;
-            if ((someValue & tmpMask) != 0) {
+            if ((someValue & (1 << j)) != 0) {
                 return j;
             }
         }
@@ -508,24 +524,31 @@ public class Block extends Model {
      */
     public static IList<Integer> getRayTraceMultiFaceFast(Vector3f camFront, float degrees) {
         final IList<Integer> result = new GapList<>();
-        int someValue = 0;
-
         final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
-        Vector3f temp = new Vector3f();
-        Vector3f camFrontNeg = camFront.negate(temp);
+        Vector3f camFrontNeg = new Vector3f(-camFront.x, -camFront.y, -camFront.z);
 
-        int zPos = (camFrontNeg.z >= -cosine) ? Z_MASK : 0;
-        int zNeg = (camFrontNeg.z <= cosine) ? ZNEG_MASK : 0;
-        int yPos = (camFrontNeg.y >= -cosine) ? Y_MASK : 0;
-        int yNeg = (camFrontNeg.y <= cosine) ? YNEG_MASK : 0;
-        int xPos = (camFrontNeg.x >= -cosine) ? X_MASK : 0;
-        int xNeg = (camFrontNeg.x <= cosine) ? XNEG_MASK : 0;
-
-        someValue = zPos | zNeg | yPos | yNeg | xPos | xNeg;
+        int someValue = 0;
+        if (camFrontNeg.z >= -cosine) {
+            someValue |= Z_MASK;
+        }
+        if (camFrontNeg.z <= cosine) {
+            someValue |= ZNEG_MASK;
+        }
+        if (camFrontNeg.y >= -cosine) {
+            someValue |= Y_MASK;
+        }
+        if (camFrontNeg.y <= cosine) {
+            someValue |= YNEG_MASK;
+        }
+        if (camFrontNeg.x >= -cosine) {
+            someValue |= X_MASK;
+        }
+        if (camFrontNeg.x <= cosine) {
+            someValue |= XNEG_MASK;
+        }
 
         for (int j = 0; j <= 5; j++) {
-            int tmpMask = 1 << j;
-            if ((someValue & tmpMask) != 0) {
+            if ((someValue & (1 << j)) != 0) {
                 result.add(j);
             }
         }
@@ -579,8 +602,16 @@ public class Block extends Model {
      */
     public void reverseFaceVertexOrder() {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
-        for (int faceNum = 0; faceNum <= 5; faceNum++) {
-            Collections.reverse(getFaceVertices(vertices, faceNum));
+        for (int faceNum = Block.LEFT; faceNum <= Block.FRONT; faceNum++) {
+            int start = 4 * faceNum;
+            int end = start + 3;
+            while (start < end) {
+                Vertex temp = vertices.get(start);
+                vertices.set(start, vertices.get(end));
+                vertices.set(end, temp);
+                start++;
+                end--;
+            }
         }
         verticesReversed = !verticesReversed;
     }
@@ -594,8 +625,17 @@ public class Block extends Model {
     public void reverseFaceVertexOrder(Vector3f camFront, float degrees) {
         IList<Integer> faces = getRayTraceMultiFaceFast(camFront, degrees);
         final IList<Vertex> vertices = meshes.getFirst().vertices;
+
         for (int faceNum : faces) {
-            Collections.reverse(getFaceVertices(vertices, faceNum));
+            int start = 4 * faceNum;
+            int end = start + 3;
+            while (start < end) {
+                Vertex temp = vertices.get(start);
+                vertices.set(start, vertices.get(end));
+                vertices.set(end, temp);
+                start++;
+                end--;
+            }
         }
         verticesReversed = !verticesReversed;
     }

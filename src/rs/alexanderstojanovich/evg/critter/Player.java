@@ -22,11 +22,9 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.RPGCamera;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  *
@@ -44,17 +42,6 @@ public class Player extends Critter implements Observer {
 //    private Model currWeapon;
     private final RPGCamera camera;
     public final LightSource light;
-
-    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
-
-    public static final Model PISTOL = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W01M9.obj", "W01M9", true);
-    public static final Model SUB_MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W06P9.obj", "W06P9", true);
-    public static final Model SHOTGUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W13B9.obj", "W13B9", true);
-    public static final Model ASSAULT_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W07AK.obj", "W07AK", true);
-    public static final Model MACHINE_GUN = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W10M6.obj", "W10M6", true);
-    public static final Model SNIPER_RIFLE = ModelUtils.readFromObjFile(Game.PLAYER_ENTRY, "W16M8.obj", "W16M8", true);
-    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-
 //    static {
 //        for (Model weapon : WEAPONS) {
 //            weapon.pos = WEAPON_POS;
@@ -63,6 +50,7 @@ public class Player extends Critter implements Observer {
 //            weapon.setrY((float) (-Math.PI / 2.0f));
 //        }
 //    }
+
     /**
      * Create new player for Single Player
      *

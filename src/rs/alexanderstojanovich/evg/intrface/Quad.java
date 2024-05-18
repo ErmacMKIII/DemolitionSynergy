@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.Arrays;
-import java.util.List;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -352,14 +350,19 @@ public class Quad implements ComponentIfc {
      * @param ifc Interface where is rendered.
      */
     public void triangSwap2(Intrface ifc) {
-        for (int i = 0; i < INDICES.length; i += 2) {
+        int length = INDICES.length;
+        for (int i = 0; i < length; i += 2) {
+            // Get the UV coordinates for the vertices
             Vector2f a = uvs[INDICES[i]];
             Vector2f b = uvs[INDICES[i + 1]];
-            Vector2f temp = a;
-            b.set(a);
-            a.set(temp);
+
+            // Swap the UV coordinates
+            Vector2f temp = new Vector2f(a);
+            a.set(b);
+            b.set(temp);
         }
 
+        // Update the buffer
         bufferSmart(ifc);
     }
 
@@ -369,16 +372,21 @@ public class Quad implements ComponentIfc {
      * @param ifc Interface where is rendered.
      */
     public void triangSwap3(Intrface ifc) {
-        for (int i = 0; i < INDICES.length; i += 3) {
+        int length = INDICES.length;
+        for (int i = 0; i < length; i += 3) {
+            // Get the UV coordinates for the vertices
             Vector2f a = uvs[INDICES[i]];
             Vector2f b = uvs[INDICES[i + 1]];
             Vector2f c = uvs[INDICES[i + 2]];
-            Vector2f temp = c;
+
+            // Swap the UV coordinates
+            Vector2f temp = new Vector2f(c);
             c.set(b);
             b.set(a);
             a.set(temp);
         }
 
+        // Update the buffer
         bufferSmart(ifc);
     }
 
