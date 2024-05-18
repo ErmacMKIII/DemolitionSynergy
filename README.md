@@ -20,7 +20,7 @@ Has Editor, Single player & Multiplayer as different modes.
 ![Alt text](/misc/DSynergy3.png?raw=true "Random Level Huge")
 ![Alt text](/misc/DSynergy4.png?raw=true "RPG Camera #1")
 ![Alt text](/misc/DSynergy5.png?raw=true "RPG Camera #2")
-![Alt text](/misc/DSynergy6.png?raw=true "Multiplayer")
+![Alt text](/misc/DSynergy6.png?raw=true "Various effects")
 
 # How To Build
 Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
@@ -29,6 +29,7 @@ In order to build the project you are gonna need NetBeans IDE 16 (or later) and 
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) with dependecies (installed),
+5. Google Gson (installed)
 
 Download latest library LWJGL (3.3.3 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)
