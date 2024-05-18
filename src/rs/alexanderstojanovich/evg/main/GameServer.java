@@ -316,7 +316,7 @@ public class GameServer implements DSMachine, Runnable {
      *
      * @param gameObject game object
      * @param uniqueId player unique id (which was registered)
-     * @param isError
+     * @param isError was client disconnected with error (timed out)
      */
     public static void performCleanUp(GameObject gameObject, String uniqueId, boolean isError) {
         LevelActors levelActors = gameObject.game.gameObject.levelContainer.levelActors;
