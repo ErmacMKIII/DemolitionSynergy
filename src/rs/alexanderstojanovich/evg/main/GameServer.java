@@ -29,6 +29,7 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
 import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
@@ -40,6 +41,11 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class GameServer implements DSMachine, Runnable {
+
+    public static final int FAIL_ATTEMPT_MAX = 3;
+    public static final int TOTAL_FAIL_ATTEMPT_MAX = 15;
+
+    public static int TotalFailedAttempts = 0;
 
     protected String worldName = "My World";
     protected String host = "localhost";
@@ -78,6 +84,16 @@ public class GameServer implements DSMachine, Runnable {
      * Who is Client Socket <==> Player UniqueId
      */
     public final LinkedHashMap<Socket, String> whoIsMap = new LinkedHashMap<>();
+
+    /**
+     * Failed hosts with number of attempts
+     */
+    public final LinkedHashMap<String, Integer> failedAttempts = new LinkedHashMap<>();
+
+    /**
+     * Blacklisted hosts with number of attempts
+     */
+    public final IList<String> blacklist = new GapList<>();
 
     /**
      * Create new game server
@@ -155,6 +171,40 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
+     * Assert that failure has happen and client timed out or is about to be
+     * rejected. In other words client will fail the test.
+     *
+     * @param client client who is submit to test
+     */
+    public void assertTstFailure(Socket client) {
+        TotalFailedAttempts++;
+        String failedHost = client.getInetAddress().getHostName();
+        boolean contains = this.failedAttempts.containsKey(failedHost);
+        if (!contains) {
+            this.failedAttempts.put(failedHost, 1);
+        } else {
+            Integer failAttemptNum = this.failedAttempts.get(failedHost);
+            failAttemptNum++;
+
+            // Blacklisting (equals ban)
+            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHost)) {
+                blacklist.add(failedHost);
+                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", server.getInetAddress().getHostName()));
+                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", server.getInetAddress().getHostName()), null);
+            }
+
+            // Too much failed attempts, server is vulnerable .. try to shut down
+            if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
+                gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", server.getInetAddress().getHostName()));
+                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", server.getInetAddress().getHostName()), null);
+                shutDownSignal = true;
+            }
+
+            this.failedAttempts.replace(failedHost, failAttemptNum);
+        }
+    }
+
+    /**
      * Open client input stream and receive first request. Acceptance test.
      *
      * @param client client socket (tried to connect)
@@ -163,13 +213,16 @@ public class GameServer implements DSMachine, Runnable {
      */
     protected boolean tst(Socket client) throws IOException, Exception {
         RequestIfc request = RequestIfc.receive(this, client);
-        if (request == null) {
+        if (request == null || request == Request.INVALID) {
+            assertTstFailure(client);
             return false;
         }
 
         if (request.getRequestType() == RequestIfc.RequestType.HELLO) {
             return true;
         }
+
+        assertTstFailure(client);
 
         return false;
     }
@@ -241,8 +294,10 @@ public class GameServer implements DSMachine, Runnable {
                 final Socket client = server.accept();
                 client.setSoTimeout(timeout);
                 clients.add(client);
+                // Blacklist conjuction
                 // Acceptance test (examination)
-                if (tst(client) && clients.size() <= MAX_CLIENTS) {
+                // And max clients (maybe?)
+                if ((!blacklist.contains(client.getInetAddress().getHostName()) && tst(client) && clients.size() <= MAX_CLIENTS)) {
                     // Send "Welcome" Response
                     accept(client); // Authenticated
                     DSLogger.reportInfo(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getHostName()), null);
@@ -293,7 +348,8 @@ public class GameServer implements DSMachine, Runnable {
                 DSLogger.reportError(ex.getMessage(), ex);
             } catch (Exception ex) {
                 DSLogger.reportError("Serialization or Deserialization failed!", ex);
-            } finally {
+            }
+            /*finally {
                 if (!server.isClosed()) {
                     try {
                         server.close();
@@ -303,12 +359,23 @@ public class GameServer implements DSMachine, Runnable {
                     }
                 }
                 shutDownSignal = true;
+            }*/
+        }
+
+        if (!server.isClosed()) {
+            try {
+                server.close();
+            } catch (IOException ex) {
+                // Handle exceptions
+                DSLogger.reportError("Server error: " + ex.getMessage(), ex);
             }
         }
+        shutDownSignal = true;
 
         clients.clear();
         running = false;
         DSLogger.reportInfo("Game Server finished!", null);
+         gameObject.intrface.getConsole().write("Game Server finished!");
     }
 
     /**
