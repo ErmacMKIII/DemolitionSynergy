@@ -144,8 +144,18 @@ public class Game implements DSMachine {
     protected InetAddress serverInetAddr = null;
 
     protected int port = DEFAULT_PORT;
-    protected final int timeout = 3000 * 1000; // 30 sec
+    protected final int timeout = 30 * 1000; // 30 sec
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+
+    /**
+     * Number of successive packets to receive before confirmation (Client)
+     */
+    public static final int PACKETS_MAX = 8;
+
+    /**
+     * Is (game) client connected to (game) server
+     */
+    protected boolean connected = false;
 
     /**
      * Access to Game Engine.
@@ -798,6 +808,7 @@ public class Game implements DSMachine {
      * @param deltaTime time interval between updates
      */
     public void update(double deltaTime) {
+        // Time Synchronization
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
             try {
                 double beginTime = GLFW.glfwGetTime();
@@ -942,9 +953,8 @@ public class Game implements DSMachine {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            if (currentMode != Mode.MULTIPLAYER_JOIN) { // it updates time via request
-                gameTicks += deltaTime * Game.TPS;
-            }
+            gameTicks += deltaTime * Game.TPS;
+
             accumulator += deltaTime;
             lastTime = currTime;
 
@@ -1004,7 +1014,7 @@ public class Game implements DSMachine {
             if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated                
                 this.serverEndpoint.setSoTimeout(0);
                 DSLogger.reportInfo("Connected to server!", null);
-                okey = true;
+                okey = connected = true;
             }
             DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
             gameObject.intrface.getConsole().write(response.getData().toString());
@@ -1085,20 +1095,24 @@ public class Game implements DSMachine {
      *
      * @return true if the download was successful, false otherwise
      */
+    /**
+     * Download level (map) from the server
+     *
+     * @return true if the download was successful, false otherwise
+     */
     public boolean downloadLevel() {
-        if (!isConnected()) { // Check if the client is connected to the server
+        if (!isConnected()) {
             return false;
         }
-        boolean okey = false; // Variable to track if the download was successful
+
+        boolean success = false;
         try {
             // Send a request to begin downloading the level
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this);
 
-            // Wait for response indicating the download can begin
             ResponseIfc response0 = ResponseIfc.receive(this);
-            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Server is ready to send data
-                // Log server response
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
                 gameObject.intrface.getConsole().write(response0.getData().toString());
@@ -1107,13 +1121,26 @@ public class Game implements DSMachine {
                 byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
 
-                // Read until end-of-stream of socket
-                int bytesRead;
-                DatagramPacket dp = new DatagramPacket(buffer, buffer.length);
-                while (true) {
+                int packetnum = 0;
+                while (totalBytesRead < gameObject.levelContainer.buffer.length) {
+                    DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
                     serverEndpoint.receive(dp);
-                    bytesRead = dp.getLength();
-                    // Check if the end-of-stream marker is received
+                    int bytesRead = dp.getLength();
+
+                    if (++packetnum == PACKETS_MAX) {
+                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.VOID, null);
+                        DSLogger.reportInfo("Awaiting confirmation response..", null);
+                        reqConfirm.send(this);
+                        packetnum = 0;
+
+                        ResponseIfc response = ResponseIfc.receive(this);
+                        if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                            DSLogger.reportInfo("Confirmed! Download resumed.", null);
+                        } else {
+                            break;
+                        }
+                    }
+
                     if (isEndOfStream(buffer, bytesRead)) {
                         // Write the received data to the buffer
                         System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
@@ -1127,32 +1154,25 @@ public class Game implements DSMachine {
                         totalBytesRead += bytesRead;
                     }
 
-                    // Write the received data to the buffer
-                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-
                     DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
                 }
 
                 // Logging download information
                 DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
                 gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
-                okey = true;
+                success = true;
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response0.getData().toString(), true);
             }
         } catch (IOException ex) {
-            // Handle IO exception
             DSLogger.reportError("Unable to connect to server!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
         } catch (Exception ex) {
-            // Handle other exceptions
             DSLogger.reportError("Error occurred!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
         }
 
-        return okey; // Return whether the download was successful
+        return success;
     }
 
     /**
@@ -1164,7 +1184,7 @@ public class Game implements DSMachine {
         PlayerInfo[] result = null;
         if (isConnected()) {
             try {
-                // Send a simple 'goodbye' message with magic bytes prepended
+                // Send a simple player info message with magic bytes prepended
                 final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
                 piReq.send(this);
 
@@ -1197,7 +1217,9 @@ public class Game implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this);
 
-                // Wait for response (assuming simple echo for demonstration)            
+                // Wait for response (assuming simple echo for demonstration)    
+                serverEndpoint.setSoTimeout(timeout);
+
                 ResponseIfc response = ResponseIfc.receive(this);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response.getData().toString());
@@ -1212,6 +1234,8 @@ public class Game implements DSMachine {
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
+            } finally {
+                connected = false;
             }
         }
     }
@@ -1267,7 +1291,7 @@ public class Game implements DSMachine {
     }
 
     public boolean isConnected() {
-        return serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed();
+        return connected;
     }
 
     public static GLFWKeyCallback getDefaultKeyCallback() {

@@ -59,6 +59,11 @@ public class GameServerProcessor {
     public static int TotalFailedAttempts = 0;
 
     /**
+     * Number of successive packets to receive before confirmation (Server)
+     */
+    public static final int PACKETS_MAX = 8;
+
+    /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
      *
@@ -166,7 +171,7 @@ public class GameServerProcessor {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s has connected.", newPlayerUniqueId));
                             DSLogger.reportInfo(String.format("Player %s has connected.", newPlayerUniqueId), null);
 
-                            gameServer.whoIsMap.put(endpoint, newPlayerUniqueId);
+                            gameServer.whoIsMap.put(clientHostName, newPlayerUniqueId);
                         } else {
                             msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
@@ -188,7 +193,7 @@ public class GameServerProcessor {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s (%s) has connected.", info.name, info.uniqueId));
                             DSLogger.reportInfo(String.format("Player %s (%s) has connected.", info.name, info.uniqueId), null);
 
-                            gameServer.whoIsMap.put(endpoint, info.uniqueId);
+                            gameServer.whoIsMap.put(clientHostName, info.uniqueId);
 
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
@@ -209,6 +214,10 @@ public class GameServerProcessor {
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, clientAddress, clientPort);
                 gameServer.clients.remove(clientHostName);
+                String uniqueId = gameServer.whoIsMap.get(clientHostName);
+                if (uniqueId != null) {
+                    GameServer.performCleanUp(gameServer.gameObject, uniqueId, false);
+                }
                 break;
             case GET_TIME:
                 gameTime = Game.gameTicks;
@@ -295,14 +304,16 @@ public class GameServerProcessor {
                 }
                 break;
             case DOWNLOAD:
+                // Server-side code to handle sending the file
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");
                 response.send(gameServer, clientAddress, clientPort);
+
+                int packetnum = 0;
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
                     int bytesWrite = 0;
                     final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
-
                     final byte[] buff = new byte[BUFF_SIZE];
-                    // Upload in chunks
+
                     while (bytesWrite < totalBytesWrite) {
                         // Calculate the remaining bytes to write in this iteration
                         int remainingBytes = totalBytesWrite - bytesWrite;
@@ -311,8 +322,20 @@ public class GameServerProcessor {
 
                         // Write a chunk of data to the outbound datagram packet
                         System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
-                        DatagramPacket dp = new DatagramPacket(buff, chunkSize);
+                        DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
                         endpoint.send(dp);
+                        if (++packetnum == PACKETS_MAX) {
+                            DSLogger.reportInfo("Awaiting confirmation request..", null);
+                            RequestIfc received = RequestIfc.receive(gameServer);
+                            if (received.getRequestType() == RequestIfc.RequestType.CONFIRM) {
+                                DSLogger.reportInfo("Confirmed! Upload resumed.", null);
+                                packetnum = 0;
+                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VOID, null);
+                                response.send(gameServer, clientAddress, clientPort);
+                            } else {
+                                break;
+                            }
+                        }
 
                         // Increment the total bytes written
                         bytesWrite += chunkSize;
@@ -321,9 +344,10 @@ public class GameServerProcessor {
                         DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
                     }
 
-                    // signal end-of-stream
-                    DatagramPacket dp = new DatagramPacket(GameServer.EOS, GameServer.EOS.length);
-                    endpoint.send(dp);
+                    // Signal end-of-stream
+                    DatagramPacket eosPacket = new DatagramPacket(GameServer.EOS, GameServer.EOS.length, clientAddress, clientPort);
+                    endpoint.send(eosPacket);
+                    DSLogger.reportInfo("End of stream (EOS) marker sent", null);
                 }
                 break;
             case PLAYER_INFO:

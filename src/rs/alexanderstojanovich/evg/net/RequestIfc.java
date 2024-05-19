@@ -77,6 +77,10 @@ public interface RequestIfc extends DSObject {
          */
         DOWNLOAD,
         /**
+         * Confirm received packets (mandatory for UDP)
+         */
+        CONFIRM,
+        /**
          * Register player (UUID) to game server
          */
         REGISTER,

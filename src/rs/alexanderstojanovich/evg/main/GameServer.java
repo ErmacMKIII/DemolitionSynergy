@@ -69,14 +69,9 @@ public class GameServer implements DSMachine, Runnable {
     public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
-     * Client service
-     */
-    public final ExecutorService clientServiceExecutor = Executors.newFixedThreadPool(MAX_CLIENTS);
-
-    /**
      * Who is Client DatagramSocket <==> Player UniqueId
      */
-    public final LinkedHashMap<DatagramSocket, String> whoIsMap = new LinkedHashMap<>();
+    public final LinkedHashMap<String, String> whoIsMap = new LinkedHashMap<>();
 
     /**
      * Failed hosts with number of attempts
@@ -141,7 +136,6 @@ public class GameServer implements DSMachine, Runnable {
      * Shut down execution service. Server is not available anymore.
      */
     public void shutDown() {
-        this.clientServiceExecutor.shutdown();
         this.serverExecutor.shutdown();
     }
 
