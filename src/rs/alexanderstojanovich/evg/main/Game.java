@@ -809,7 +809,7 @@ public class Game implements DSMachine {
      */
     public void update(double deltaTime) {
         // Time Synchronization
-        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (Game.TPS_QUARTER - 1)) == 0 && isConnected()) {
             try {
                 double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
