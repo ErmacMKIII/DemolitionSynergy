@@ -16,8 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
-import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -50,29 +51,26 @@ public interface ResponseIfc extends DSObject {
      * Send response to client endpoint.
      *
      * @param server game server
-     * @param endpoint endpoint to (game) client.
+     * @param clientAddress (game) client address
+     * @param clientPort client port
      * @throws java.lang.Exception if serialization fails
      */
-    public void send(GameServer server, Socket endpoint) throws Exception;
+    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws Exception;
 
     /**
      * Receive response from server endpoint.
      *
      * @param client game client
-     * @param endpoint endpoint to (game) server.
      * @return Response.INVALID if deserialization failed otherwise valid
      * response
      * @throws java.io.IOException if network error
      */
-    public static ResponseIfc receive(Game client, Socket endpoint) throws IOException, Exception {
-        final byte[] content = new byte[512];
-        final int totalBytes = endpoint.getInputStream().read(content);
-        if (totalBytes > 0) {
-            ResponseIfc result = (ResponseIfc) new Response().deserialize(content); // new response
+    public static ResponseIfc receive(Game client) throws Exception {
+        final byte[] content = new byte[BUFF_SIZE];
+        DatagramPacket p = new DatagramPacket(content, content.length);
+        client.getServerEndpoint().receive(p);
+        ResponseIfc result = (ResponseIfc) new Response().deserialize(p.getData()); // new request
 
-            return result;
-        }
-
-        return Response.INVALID;
+        return result;
     }
 }

@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
-import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -99,28 +99,38 @@ public interface RequestIfc extends DSObject {
      * Send request to server endpoint.
      *
      * @param client game client
-     * @param endpoint endpoint to (game) server.
      * @throws java.lang.Exception
      */
-    public void send(Game client, Socket endpoint) throws Exception;
+    public void send(Game client) throws Exception;
+
+    /**
+     * Get client address from this request
+     *
+     * @return client address
+     */
+    public InetAddress getClientAddress();
+
+    /**
+     * Get client port from this request
+     *
+     * @return client port
+     */
+    public int getClientPort();
 
     /**
      * Receive request from client endpoint.
      *
      * @param server game server
-     * @param endpoint endpoint to (game) client.
      * @return null if deserialization failed otherwise valid request
      * @throws java.io.IOException if network error
      */
-    public static RequestIfc receive(GameServer server, Socket endpoint) throws IOException, Exception {
-        final byte[] content = new byte[512];
-        final int totalBytes = endpoint.getInputStream().read(content);
-        if (totalBytes > 0) {
-            RequestIfc result = (RequestIfc) new Request().deserialize(content); // new request
+    public static RequestIfc receive(GameServer server) throws Exception {
+        final byte[] content = new byte[BUFF_SIZE];
+        DatagramPacket p = new DatagramPacket(content, content.length);
+        server.getEndpoint().receive(p);
+        RequestIfc result = (RequestIfc) new Request(p.getAddress(), p.getPort()).deserialize(p.getData()); // new request        
 
-            return result;
-        }
-
-        return Request.INVALID;
+        return result;
     }
+
 }

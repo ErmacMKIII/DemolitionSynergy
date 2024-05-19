@@ -21,7 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.joml.Vector3f;
@@ -195,9 +198,10 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public void send(GameServer server, Socket endpoint) throws IOException {
+    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws Exception {
         serialize(server);
-        endpoint.getOutputStream().write(content);
+        DatagramPacket packet = new DatagramPacket(content, content.length, clientAddress, clientPort);
+        server.getEndpoint().send(packet);
     }
 
     @Override

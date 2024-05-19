@@ -284,6 +284,9 @@ public class Command implements Callable<Object> {
                         command.args.add((String) things[2]);
                     }
                     break;
+                case "ping":
+                    command.target = Target.PING;
+                    break;
                 default:
                     command.target = Target.ERROR;
                     break;
@@ -636,12 +639,12 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case PING:
-                if (command.mode == Mode.SET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
                     try {
                         double beginTime = GLFW.glfwGetTime();
                         RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
-                        req.send(gameObject.game, gameObject.game.getServerEndpoint());
-                        ResponseIfc.receive(gameObject.game, gameObject.game.getServerEndpoint());
+                        req.send(gameObject.game);
+                        ResponseIfc.receive(gameObject.game);
                         double endTime = GLFW.glfwGetTime();
                         result = Math.round((endTime - beginTime)) * 1000L;
                         command.status = Status.SUCCEEDED;

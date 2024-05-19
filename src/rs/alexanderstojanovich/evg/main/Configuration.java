@@ -53,6 +53,8 @@ public class Configuration {
     private int blocksPerRun = 1000;
     private int ticksPerUpdate = Game.TPS_TWO;
 
+    private String preferredServer = "";
+
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     private static Configuration instance;
@@ -92,6 +94,7 @@ public class Configuration {
                             .split("=");
                     int number;
                     float val;
+                    String str;
                     if (words.length == 2) {
                         switch (words[0].toLowerCase()) {
                             case "monitor":
@@ -200,6 +203,9 @@ public class Configuration {
                                     ticksPerUpdate = number;
                                 }
                                 break;
+                            case "preferredserver":
+                                preferredServer = words[1];
+                                break;
                         }
                     }
                 }
@@ -264,6 +270,8 @@ public class Configuration {
             pw.println("BlocksPerRun = " + blocksPerRun);
             pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
+            pw.println("# Preferred game server to connect");
+            pw.println("PreferredServer = " + preferredServer);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -407,6 +415,14 @@ public class Configuration {
 
     public int getTicksPerUpdate() {
         return ticksPerUpdate;
+    }
+
+    public String getPreferredServer() {
+        return preferredServer;
+    }
+
+    public void setPreferredServer(String preferredServer) {
+        this.preferredServer = preferredServer;
     }
 
 }
