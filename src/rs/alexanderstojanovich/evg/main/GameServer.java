@@ -140,8 +140,8 @@ public class GameServer implements DSMachine, Runnable {
                         }
                     });
                     // Log the new TTL value
-                    Integer newTimeToLive = timeToLiveMap.get(key);
-                    DSLogger.reportInfo("TimeToLive=" + newTimeToLive, null);
+//                    Integer newTimeToLive = timeToLiveMap.get(key);
+//                    DSLogger.reportInfo("TimeToLive=" + newTimeToLive, null);
                 });
             }
         };
@@ -259,9 +259,9 @@ public class GameServer implements DSMachine, Runnable {
                     default:
                     case OK:
                         timeToLiveMap.replace(procResult.client, GameServer.TIME_TO_LIVE);
-                        msg = String.format("OK (%s)", procResult.client);
-                        DSLogger.reportInfo(msg, null);
-                        gameObject.intrface.getConsole().write(msg, false);
+//                        msg = String.format("OK (%s)", procResult.client);
+//                        DSLogger.reportInfo(msg, null);
+//                        gameObject.intrface.getConsole().write(msg, false);
                         break;
                 }
             } catch (Exception ex) {

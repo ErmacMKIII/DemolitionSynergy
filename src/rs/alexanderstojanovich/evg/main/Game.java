@@ -901,7 +901,10 @@ public class Game implements DSMachine {
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         if (keys[GLFW.GLFW_KEY_SPACE]) {
                             jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                            jumpPerformed |= ((ups & (TPS_QUARTER - 1)) == 0);
+                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
+                            jumpPerformed &= ((ups & (TPS_QUARTER - 1)) == 0);
+                            jumpPerformed |= !LevelContainer.isActorInFluid();
                         }
                         break;
                     case MULTIPLAYER_HOST:
@@ -916,7 +919,10 @@ public class Game implements DSMachine {
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         if (keys[GLFW.GLFW_KEY_SPACE]) {
                             jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                            jumpPerformed |= ((ups & (TPS_QUARTER - 1)) == 0);
+                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
+                            jumpPerformed &= ((ups & (TPS_QUARTER - 1)) == 0);
+                            jumpPerformed |= !LevelContainer.isActorInFluid();
                         }
                         break;
                 }
