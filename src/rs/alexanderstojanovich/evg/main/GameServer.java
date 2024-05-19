@@ -18,8 +18,9 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.LinkedHashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
@@ -35,6 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServer implements DSMachine, Runnable {
 
+    public static final int TIME_TO_LIVE = 60;
     public static final int FAIL_ATTEMPT_MAX = 10;
     public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
 
@@ -54,7 +56,7 @@ public class GameServer implements DSMachine, Runnable {
     protected volatile boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
-    protected final int timeout = 120 * 1000; // 30 sec
+    protected final int timeout = 120 * 1000; // 2 minutes
 
     public final Object SYNC_OBJ = new Object();
 
@@ -69,9 +71,14 @@ public class GameServer implements DSMachine, Runnable {
     public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
-     * Who is Client DatagramSocket <==> Player UniqueId
+     * Who is Client hostname <==> Player UniqueId
      */
     public final LinkedHashMap<String, String> whoIsMap = new LinkedHashMap<>();
+
+    /**
+     * Who is Client hostname <==> Time to live (int)
+     */
+    public final LinkedHashMap<String, Integer> timeToLiveMap = new LinkedHashMap<>();
 
     /**
      * Failed hosts with number of attempts
@@ -93,6 +100,11 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
+     * Schedule timer task to check clients (Time-To-Live)
+     */
+    public final Timer timerClientChk = new Timer("Server Utils");
+
+    /**
      * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
@@ -108,6 +120,33 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void startServer() {
         this.shutDownSignal = false;
+
+        // Schedule timer task to decrease Time-to-live for clients
+        TimerTask task1 = new TimerTask() {
+            @Override
+            public void run() {
+                GapList<String> clientKeys = new GapList<>(timeToLiveMap.keySet());
+                clientKeys.forEach((String key) -> {
+                    timeToLiveMap.compute(key, (String t, Integer u) -> {
+                        if (u == null || u <= 1) {
+                            GameServer.this.clients.remove(key);
+                            String uniqueId = GameServer.this.whoIsMap.remove(key);
+                            if (uniqueId != null) {
+                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                            }
+                            return null; // Remove the key from timeToLiveMap
+                        } else {
+                            return u - 1; // Decrement TTL
+                        }
+                    });
+                    // Log the new TTL value
+                    Integer newTimeToLive = timeToLiveMap.get(key);
+                    DSLogger.reportInfo("TimeToLive=" + newTimeToLive, null);
+                });
+            }
+        };
+        timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
+
         serverExecutor.execute(this);
 
         DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
@@ -137,6 +176,7 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void shutDown() {
         this.serverExecutor.shutdown();
+        this.timerClientChk.cancel();
     }
 
     /**
@@ -218,6 +258,7 @@ public class GameServer implements DSMachine, Runnable {
                         break;
                     default:
                     case OK:
+                        timeToLiveMap.replace(procResult.client, GameServer.TIME_TO_LIVE);
                         msg = String.format("OK (%s)", procResult.client);
                         DSLogger.reportInfo(msg, null);
                         gameObject.intrface.getConsole().write(msg, false);
@@ -319,6 +360,30 @@ public class GameServer implements DSMachine, Runnable {
 
     public Object getSYNC_OBJ() {
         return SYNC_OBJ;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public ExecutorService getServerExecutor() {
+        return serverExecutor;
+    }
+
+    public LinkedHashMap<String, String> getWhoIsMap() {
+        return whoIsMap;
+    }
+
+    public LinkedHashMap<String, Integer> getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public IList<String> getBlacklist() {
+        return blacklist;
+    }
+
+    public Timer getTimerClientChk() {
+        return timerClientChk;
     }
 
 }

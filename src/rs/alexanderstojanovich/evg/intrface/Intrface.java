@@ -402,20 +402,18 @@ public class Intrface {
                                 // if game endpoint is running and not shut down
                                 if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
                                     ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                                    status = (ok) ? ExecStatus.SUCCESS : ExecStatus.FAILURE;
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
+                                    Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
+                                    gameMenu.getTitle().setContent("MUTLIPLAYER");
                                 }
                             } catch (InterruptedException | ExecutionException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
                         }
 
-                        if (ok) {
-                            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
-                            Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
-                            gameMenu.getTitle().setContent("MUTLIPLAYER");
-                            status = ExecStatus.SUCCESS;
-                        } else {
-                            status = ExecStatus.FAILURE;
-                            Game.setCurrentMode(Mode.FREE);
+                        if (!ok) {
+                            gameObject.clearEverything();
                         }
                     }
 

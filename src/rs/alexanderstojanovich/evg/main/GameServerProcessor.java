@@ -154,6 +154,7 @@ public class GameServerProcessor {
                     msg = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
                     response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                     gameServer.clients.add(clientHostName);
+                    gameServer.timeToLiveMap.putIfAbsent(clientHostName, GameServer.TIME_TO_LIVE);
                 }
                 response.send(gameServer, clientAddress, clientPort);
                 break;
@@ -213,6 +214,7 @@ public class GameServerProcessor {
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, clientAddress, clientPort);
+                gameServer.timeToLiveMap.remove(clientHostName);
                 gameServer.clients.remove(clientHostName);
                 String uniqueId = gameServer.whoIsMap.get(clientHostName);
                 if (uniqueId != null) {
