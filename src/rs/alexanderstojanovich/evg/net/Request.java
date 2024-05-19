@@ -21,7 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.joml.Vector3f;
@@ -48,19 +49,38 @@ public class Request implements RequestIfc {
     protected Object data;
     protected int version = 0;
 
+    public final InetAddress clientAddress;
+    public final int clientPort;
+
     /**
      * Invalid request. If receiving fails!
      */
     public static final Request INVALID = new Request(RequestType.INVALID, DataType.VOID, null);
 
-    public Request() {
-
+    /**
+     * Server side. Receiving request(s).
+     *
+     * @param clientAddress client Inet address who send request
+     * @param clientPort client port who send request
+     */
+    public Request(InetAddress clientAddress, int clientPort) {
+        this.clientAddress = clientAddress;
+        this.clientPort = clientPort;
     }
 
+    /**
+     * Server side. Receiving request(s).
+     *
+     * @param requestType request type (enum)
+     * @param dataType data type associated with this request
+     * @param data data object
+     */
     public Request(RequestType requestType, DataType dataType, Object data) {
         this.requestType = requestType;
         this.dataType = dataType;
         this.data = data;
+        this.clientAddress = null;
+        this.clientPort = 0;
     }
 
     @Override
@@ -218,8 +238,24 @@ public class Request implements RequestIfc {
     }
 
     @Override
-    public void send(Game client, Socket endpoint) throws Exception {
+    public void send(Game client) throws Exception {
         serialize(client);
-        endpoint.getOutputStream().write(content);
+        DatagramPacket packet = new DatagramPacket(content, content.length, client.getServerInetAddr(), client.getPort());
+        client.getServerEndpoint().send(packet);
     }
+
+    public int getVersion() {
+        return version;
+    }
+
+    @Override
+    public InetAddress getClientAddress() {
+        return clientAddress;
+    }
+
+    @Override
+    public int getClientPort() {
+        return clientPort;
+    }
+
 }

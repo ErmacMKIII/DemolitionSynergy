@@ -17,15 +17,15 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.util.function.Supplier;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.level.LevelActors;
+import static rs.alexanderstojanovich.evg.main.GameServer.MAX_CLIENTS;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
@@ -45,59 +45,118 @@ import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
- * Task to handle each client asynchronously.
+ * Task to handle each endpoint asynchronously.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class HandleClientTask implements Supplier<HandleClientTask.Status> {
+public class GameServerProcessor {
 
     public static final int BUFF_SIZE = 8192; // write bytes (chunk) buffer size
 
-    public final Socket client;
-    public final GameServer gameServer;
+    public static final int FAIL_ATTEMPT_MAX = 10;
+    public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
 
-    protected boolean goodBye = false;
+    public static int TotalFailedAttempts = 0;
 
     /**
-     * Constructor for HandleClientTask.
-     *
-     * @param client The client socket to handle.
-     * @param gameServer game server handling the clients.
+     * Number of successive packets to receive before confirmation (Server)
      */
-    public HandleClientTask(Socket client, GameServer gameServer) {
-        this.client = client;
-        this.gameServer = gameServer;
+    public static final int PACKETS_MAX = 8;
+
+    /**
+     * Assert that failure has happen and client timed out or is about to be
+     * rejected. In other words client will fail the test.
+     *
+     * @param gameServer game server
+     * @param failedHostName client who is submit to test
+     */
+    public static void assertTstFailure(GameServer gameServer, String failedHostName) {
+        TotalFailedAttempts++;
+        boolean contains = gameServer.failedAttempts.containsKey(failedHostName);
+        if (!contains) {
+            gameServer.failedAttempts.put(failedHostName, 1);
+        } else {
+            Integer failAttemptNum = gameServer.failedAttempts.get(failedHostName);
+            failAttemptNum++;
+
+            // Blacklisting (equals ban)
+            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !gameServer.blacklist.contains(failedHostName)) {
+                gameServer.blacklist.add(failedHostName);
+                gameServer.gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
+                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
+            }
+
+            // Too much failed attempts, endpoint is vulnerable .. try to shut down
+            if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
+                gameServer.gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", failedHostName));
+                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", failedHostName), null);
+                gameServer.stopServer();
+            }
+
+            gameServer.failedAttempts.replace(failedHostName, failAttemptNum);
+        }
     }
 
     /**
      * Process request from clients and send response.
      *
+     * @param endpoint The endpoint socket to handle.
+     * @param gameServer game endpoint handling the clients.
+     * @return result status of processing to the end point
      * @throws java.lang.Exception if errors on serialization
      */
-    public void process() throws Exception {
-        // Handle client request and response
-        RequestIfc request = RequestIfc.receive(gameServer, client);
+    public static GameServerProcessor.Result process(GameServer gameServer, DatagramSocket endpoint) throws Exception {
+        // Handle endpoint request and response
+        RequestIfc request = RequestIfc.receive(gameServer);
+        if (request == null) {
+            // avoid processing invalid requests requests
+            return new Result(Status.INTERNAL_ERROR, null);
+        }
+
+        final InetAddress clientAddress = request.getClientAddress();
+        final int clientPort = request.getClientPort();
+        String clientHostName = clientAddress.getHostName();
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
-            return;
+            return new Result(Status.INTERNAL_ERROR, request.getClientAddress().getHostName());
         }
 
         // Handle null data type (Possible & always erroneous)
         if (request.getDataType() == null) {
             Response response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
-            response.send(gameServer, client);
-            return;
+            response.send(gameServer, clientAddress, clientPort);
+
+            return new Result(Status.INTERNAL_ERROR, clientHostName);
+        }
+
+        if (!gameServer.clients.contains(clientHostName) && request.getRequestType() != RequestIfc.RequestType.HELLO) {
+            GameServerProcessor.assertTstFailure(gameServer, clientHostName);
+            return new Result(Status.CLIENT_ERROR, clientHostName);
+        }
+
+        if (gameServer.blacklist.contains(clientHostName) || gameServer.clients.size() >= MAX_CLIENTS) {
+            GameServerProcessor.assertTstFailure(gameServer, clientHostName);
+            return new Result(Status.CLIENT_ERROR, clientHostName);
         }
 
         ResponseIfc response;
         String msg;
         LevelActors levelActors;
+
         double gameTime;
         switch (request.getRequestType()) {
             case HELLO:
-                msg = String.format("Bad Request - You are alerady connected to %s, v%s!", gameServer.worldName, gameServer.version);
-                response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
-                response.send(gameServer, client);
+                if (gameServer.clients.contains(clientHostName)) {
+                    msg = String.format("Bad Request - You are alerady connected to %s, v%s!", gameServer.worldName, gameServer.version);
+                    response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
+                } else {
+                    // Send a simple message with magic bytes prepended
+                    msg = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
+                    response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                    gameServer.clients.add(clientHostName);
+                    gameServer.timeToLiveMap.putIfAbsent(clientHostName, GameServer.TIME_TO_LIVE);
+                }
+                response.send(gameServer, clientAddress, clientPort);
                 break;
             case REGISTER:
                 switch (request.getDataType()) {
@@ -113,7 +172,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s has connected.", newPlayerUniqueId));
                             DSLogger.reportInfo(String.format("Player %s has connected.", newPlayerUniqueId), null);
 
-                            gameServer.whoIsMap.put(client, newPlayerUniqueId);
+                            gameServer.whoIsMap.put(clientHostName, newPlayerUniqueId);
                         } else {
                             msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
@@ -135,7 +194,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s (%s) has connected.", info.name, info.uniqueId));
                             DSLogger.reportInfo(String.format("Player %s (%s) has connected.", info.name, info.uniqueId), null);
 
-                            gameServer.whoIsMap.put(client, info.uniqueId);
+                            gameServer.whoIsMap.put(clientHostName, info.uniqueId);
 
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
@@ -149,23 +208,28 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
                         break;
                 }
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
                 break;
             case GOODBYE:
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                response.send(gameServer, client);
-                goodBye = true;
+                response.send(gameServer, clientAddress, clientPort);
+                gameServer.timeToLiveMap.remove(clientHostName);
+                gameServer.clients.remove(clientHostName);
+                String uniqueId = gameServer.whoIsMap.get(clientHostName);
+                if (uniqueId != null) {
+                    GameServer.performCleanUp(gameServer.gameObject, uniqueId, false);
+                }
                 break;
             case GET_TIME:
                 gameTime = Game.gameTicks;
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, gameTime);
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
                 break;
             case PING:
                 msg = String.format("You pinged %s", gameServer);
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
                 break;
             case GET_POS:
                 switch (request.getDataType()) {
@@ -224,7 +288,7 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
                         break;
                 }
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
                 break;
             case SET_POS:
                 String jsonStr = request.getData().toString();
@@ -242,22 +306,39 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 }
                 break;
             case DOWNLOAD:
+                // Server-side code to handle sending the file
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
+
+                int packetnum = 0;
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
-                    OutputStream out = client.getOutputStream();
                     int bytesWrite = 0;
                     final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
+                    final byte[] buff = new byte[BUFF_SIZE];
 
-                    // Upload in chunks
                     while (bytesWrite < totalBytesWrite) {
                         // Calculate the remaining bytes to write in this iteration
                         int remainingBytes = totalBytesWrite - bytesWrite;
                         // Determine the size of the chunk to write in this iteration
                         int chunkSize = Math.min(remainingBytes, BUFF_SIZE);
 
-                        // Write a chunk of data to the output stream
-                        out.write(gameServer.gameObject.levelContainer.buffer, bytesWrite, chunkSize);
+                        // Write a chunk of data to the outbound datagram packet
+                        System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
+                        DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
+                        endpoint.send(dp);
+                        if (++packetnum == PACKETS_MAX) {
+                            DSLogger.reportInfo("Awaiting confirmation request..", null);
+                            RequestIfc received = RequestIfc.receive(gameServer);
+                            if (received.getRequestType() == RequestIfc.RequestType.CONFIRM) {
+                                DSLogger.reportInfo("Confirmed! Upload resumed.", null);
+                                packetnum = 0;
+                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VOID, null);
+                                response.send(gameServer, clientAddress, clientPort);
+                            } else {
+                                break;
+                            }
+                        }
+
                         // Increment the total bytes written
                         bytesWrite += chunkSize;
 
@@ -265,8 +346,10 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                         DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
                     }
 
-                    // signal end-of-stream
-                    out.write(GameServer.EOS);
+                    // Signal end-of-stream
+                    DatagramPacket eosPacket = new DatagramPacket(GameServer.EOS, GameServer.EOS.length, clientAddress, clientPort);
+                    endpoint.send(eosPacket);
+                    DSLogger.reportInfo("End of stream (EOS) marker sent", null);
                 }
                 break;
             case PLAYER_INFO:
@@ -279,56 +362,79 @@ public class HandleClientTask implements Supplier<HandleClientTask.Status> {
                 });
                 String obj = gson.toJson(playerInfos, IList.class);
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
-                response.send(gameServer, client);
+                response.send(gameServer, clientAddress, clientPort);
                 break;
         }
+
+        return new Result(Status.OK, clientHostName);
     }
 
     /**
-     * Asynchronous task to handle the client.
-     *
-     * @return null.
+     * Result of the processing
      */
-    @Override
-    public HandleClientTask.Status get() {
-        HandleClientTask.Status status;
-        try {
-            // Handle client request and response
-            while ((client.isConnected() && !client.isClosed()) && !goodBye && !gameServer.isShutDownSignal()) {
-                process();
-            }
-            status = Status.OK;
-        } catch (IOException ex) {
-            // Handle IOException
-            status = Status.CLIENT_ERROR;
-            DSLogger.reportError("IOException occurred!", ex);
-        } catch (Exception ex) {
-            // Handle other exceptions
-            status = Status.INTERNAL_ERROR;
-            DSLogger.reportError("Exception occurred!", ex);
+    public static class Result {
+
+        /**
+         * Status of the processing result
+         */
+        public final Status status;
+        /**
+         * Client who was processed
+         */
+        public final String client;
+
+        /**
+         * Result of the processing
+         *
+         * @param status Status of the processing result
+         * @param client Client who was processed
+         */
+        public Result(Status status, String client) {
+            this.status = status;
+            this.client = client;
         }
 
-        return status;
+        /**
+         * Processing result status. One of the following {INTERNAL_ERROR,
+         * CLIENT_ERROR, OK }
+         *
+         * @return
+         */
+        public Status getStatus() {
+            return status;
+        }
+
+        /**
+         * Get Client who was processed
+         *
+         * @return client hostname
+         */
+        public String getClient() {
+            return client;
+        }
+
     }
 
-    public Socket getClient() {
-        return client;
-    }
-
-    public GameServer getGameServer() {
-        return gameServer;
-    }
-
+    /**
+     * Processing result status
+     */
     public static enum Status {
-        INTERNAL_ERROR, CLIENT_ERROR, OK
+        /**
+         * Error on server side
+         */
+        INTERNAL_ERROR,
+        /**
+         * Error on client side (such as wrong protocol)
+         */
+        CLIENT_ERROR,
+        /**
+         * Result Is okey
+         */
+        OK;
     }
 
     public static int getBUFF_SIZE() {
         return BUFF_SIZE;
-    }
-
-    public boolean isGoodBye() {
-        return goodBye;
     }
 
 }

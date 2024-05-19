@@ -1424,6 +1424,10 @@ public class LevelContainer implements GravityEnviroment {
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.sinkY(deltaHeight);
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+//            DSLogger.reportInfo("fallVelo" + fallVelocity, null);
+            if (fallVelocity == TERMINAL_VELOCITY) {
+                spawnPlayer();
+            }
         }
 
         return !collision;

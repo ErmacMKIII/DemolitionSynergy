@@ -24,9 +24,9 @@ import rs.alexanderstojanovich.evg.critter.Critter;
  */
 public interface GravityEnviroment {
 
-    public static final float WATER_DENSITY = 1000f;
+    public static final float WATER_DENSITY = 4600f;
     public static final float GRAVITY_CONSTANT = 9.8f; // apply only if Game.upsTicks >= 1.0
-    public static final float TERMINAL_VELOCITY = 2000f; // apply only if Game.upsTicks >= 1.0
+    public static final float TERMINAL_VELOCITY = 150f; // apply only if Game.upsTicks >= 1.0
 
     /**
      * Affect Environment with gravity. Object not supported from bottom will

@@ -18,8 +18,9 @@ package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector3f;
@@ -138,11 +139,23 @@ public class Game implements DSMachine {
     /**
      * Connect to server stuff & endpoint
      */
-    protected Socket serverEndpoint;
-    protected String serverAddress = "";
+    protected DatagramSocket serverEndpoint;
+    protected String serverHostName = config.getPreferredServer();
+    protected InetAddress serverInetAddr = null;
+
     protected int port = DEFAULT_PORT;
     protected final int timeout = 30 * 1000; // 30 sec
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+
+    /**
+     * Number of successive packets to receive before confirmation (Client)
+     */
+    public static final int PACKETS_MAX = 8;
+
+    /**
+     * Is (game) client connected to (game) server
+     */
+    protected boolean connected = false;
 
     /**
      * Access to Game Engine.
@@ -484,8 +497,8 @@ public class Game implements DSMachine {
             Vector3f playerServerPos = player.getPos();
             double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
-            playerPosReq.send(this, serverEndpoint);
-            ResponseIfc playerPosResp = ResponseIfc.receive(this, serverEndpoint);
+            playerPosReq.send(this);
+            ResponseIfc playerPosResp = ResponseIfc.receive(this);
             if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                 PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
                 playerServerPos = posInfo.pos;
@@ -795,17 +808,18 @@ public class Game implements DSMachine {
      * @param deltaTime time interval between updates
      */
     public void update(double deltaTime) {
+        // Time Synchronization
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (TICKS_PER_UPDATE - 1)) == 0 && isConnected()) {
             try {
                 double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
-                playerPosReq.send(this, serverEndpoint);
-                ResponseIfc timeResp = ResponseIfc.receive(this, serverEndpoint);
+                playerPosReq.send(this);
+                ResponseIfc timeResp = ResponseIfc.receive(this);
                 double endTime = GLFW.glfwGetTime();
                 long tripTime = Math.round(endTime - beginTime) * 1000L;
 
                 Game.gameTicks = (double) timeResp.getData();
-                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress() + " ( " + tripTime + " ms )");
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
             }
@@ -820,8 +834,8 @@ public class Game implements DSMachine {
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
-                        otherPlayerRequest.send(this, serverEndpoint);
-                        ResponseIfc otherPlayerResponse = ResponseIfc.receive(this, serverEndpoint);
+                        otherPlayerRequest.send(this);
+                        ResponseIfc otherPlayerResponse = ResponseIfc.receive(this);
                         if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                             PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
                             other.setPos(posInfo.pos);
@@ -887,7 +901,10 @@ public class Game implements DSMachine {
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         if (keys[GLFW.GLFW_KEY_SPACE]) {
                             jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                            jumpPerformed |= ((ups & (TPS_QUARTER - 1)) == 0);
+                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
+                            jumpPerformed &= ((ups & (TPS_QUARTER - 1)) == 0);
+                            jumpPerformed |= !LevelContainer.isActorInFluid();
                         }
                         break;
                     case MULTIPLAYER_HOST:
@@ -902,7 +919,10 @@ public class Game implements DSMachine {
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         if (keys[GLFW.GLFW_KEY_SPACE]) {
                             jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-//                            jumpPerformed |= LevelContainer.isActorInFluid() && (ups & (TPS_EIGHTH - 1)) == 0;
+                            jumpPerformed |= ((ups & (TPS_QUARTER - 1)) == 0);
+                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
+                            jumpPerformed &= ((ups & (TPS_QUARTER - 1)) == 0);
+                            jumpPerformed |= !LevelContainer.isActorInFluid();
                         }
                         break;
                 }
@@ -939,9 +959,8 @@ public class Game implements DSMachine {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            if (currentMode != Mode.MULTIPLAYER_JOIN) { // it updates time via request
-                gameTicks += deltaTime * Game.TPS;
-            }
+            gameTicks += deltaTime * Game.TPS;
+
             accumulator += deltaTime;
             lastTime = currTime;
 
@@ -987,22 +1006,21 @@ public class Game implements DSMachine {
             return false;
         }
         boolean okey = false;
-        Socket endpoint;
         try {
-            endpoint = new Socket(serverAddress, port);
-            endpoint.setSoTimeout(timeout);
-            DSLogger.reportInfo("Connected to server!", null);
+            this.serverInetAddr = InetAddress.getByName(serverHostName);
+            this.serverEndpoint = new DatagramSocket();
+            serverEndpoint.setSoTimeout(timeout);
 
             // Send a simple hello message with magic bytes prepended
             final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
-            helloRequest.send(this, endpoint);
+            helloRequest.send(this);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc response = ResponseIfc.receive(this, endpoint);
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
-                this.serverEndpoint = endpoint;
+            ResponseIfc response = ResponseIfc.receive(this);
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated                
                 this.serverEndpoint.setSoTimeout(0);
-                okey = true;
+                DSLogger.reportInfo("Connected to server!", null);
+                okey = connected = true;
             }
             DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
             gameObject.intrface.getConsole().write(response.getData().toString());
@@ -1036,10 +1054,10 @@ public class Game implements DSMachine {
             final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER,
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor()).toString()
             );
-            register.send(this, serverEndpoint);
+            register.send(this);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+            ResponseIfc response = ResponseIfc.receive(this);
             if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
@@ -1083,20 +1101,24 @@ public class Game implements DSMachine {
      *
      * @return true if the download was successful, false otherwise
      */
+    /**
+     * Download level (map) from the server
+     *
+     * @return true if the download was successful, false otherwise
+     */
     public boolean downloadLevel() {
-        if (!isConnected()) { // Check if the client is connected to the server
+        if (!isConnected()) {
             return false;
         }
-        boolean okey = false; // Variable to track if the download was successful
+
+        boolean success = false;
         try {
             // Send a request to begin downloading the level
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
-            downlBeginRequest.send(this, serverEndpoint);
+            downlBeginRequest.send(this);
 
-            // Wait for response indicating the download can begin
-            ResponseIfc response0 = ResponseIfc.receive(this, serverEndpoint);
-            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Server is ready to send data
-                // Log server response
+            ResponseIfc response0 = ResponseIfc.receive(this);
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
                 gameObject.intrface.getConsole().write(response0.getData().toString());
@@ -1105,11 +1127,26 @@ public class Game implements DSMachine {
                 byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
 
-                // Read until end-of-stream of socket
-                int bytesRead;
-                final InputStream in = serverEndpoint.getInputStream();
-                while ((bytesRead = in.read(buffer)) != -1) {
-                    // Check if the end-of-stream marker is received
+                int packetnum = 0;
+                while (totalBytesRead < gameObject.levelContainer.buffer.length) {
+                    DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
+                    serverEndpoint.receive(dp);
+                    int bytesRead = dp.getLength();
+
+                    if (++packetnum == PACKETS_MAX) {
+                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.VOID, null);
+                        DSLogger.reportInfo("Awaiting confirmation response..", null);
+                        reqConfirm.send(this);
+                        packetnum = 0;
+
+                        ResponseIfc response = ResponseIfc.receive(this);
+                        if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                            DSLogger.reportInfo("Confirmed! Download resumed.", null);
+                        } else {
+                            break;
+                        }
+                    }
+
                     if (isEndOfStream(buffer, bytesRead)) {
                         // Write the received data to the buffer
                         System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
@@ -1123,32 +1160,25 @@ public class Game implements DSMachine {
                         totalBytesRead += bytesRead;
                     }
 
-                    // Write the received data to the buffer
-                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-
                     DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
                 }
 
                 // Logging download information
                 DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
                 gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
-                okey = true;
+                success = true;
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response0.getData().toString(), true);
             }
         } catch (IOException ex) {
-            // Handle IO exception
             DSLogger.reportError("Unable to connect to server!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
         } catch (Exception ex) {
-            // Handle other exceptions
             DSLogger.reportError("Error occurred!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
         }
 
-        return okey; // Return whether the download was successful
+        return success;
     }
 
     /**
@@ -1160,12 +1190,12 @@ public class Game implements DSMachine {
         PlayerInfo[] result = null;
         if (isConnected()) {
             try {
-                // Send a simple 'goodbye' message with magic bytes prepended
+                // Send a simple player info message with magic bytes prepended
                 final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
-                piReq.send(this, serverEndpoint);
+                piReq.send(this);
 
                 // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc objResp = ResponseIfc.receive(this, serverEndpoint);
+                ResponseIfc objResp = ResponseIfc.receive(this);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), objResp.getData().toString()), null);
                 gameObject.intrface.getConsole().write(objResp.getData().toString());
 
@@ -1191,10 +1221,12 @@ public class Game implements DSMachine {
             try {
                 // Send a simple 'goodbye' message with magic bytes prepended
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
-                goodByeRequest.send(this, serverEndpoint);
+                goodByeRequest.send(this);
 
-                // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc response = ResponseIfc.receive(this, serverEndpoint);
+                // Wait for response (assuming simple echo for demonstration)    
+                serverEndpoint.setSoTimeout(timeout);
+
+                ResponseIfc response = ResponseIfc.receive(this);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                 gameObject.intrface.getConsole().write(response.getData().toString());
 
@@ -1208,6 +1240,8 @@ public class Game implements DSMachine {
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
+            } finally {
+                connected = false;
             }
         }
     }
@@ -1221,7 +1255,7 @@ public class Game implements DSMachine {
             final PosInfo posInfo = new PosInfo(player.uniqueId, player.getPos(), player.getFront());
             String posStr = posInfo.toString();
             RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
-            posReq.send(this, serverEndpoint);
+            posReq.send(this);
         } catch (Exception ex) {
             DSLogger.reportError("Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -1257,11 +1291,13 @@ public class Game implements DSMachine {
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
+        cfg.setPreferredServer(gameObject.game.serverHostName);
+
         return cfg;
     }
 
     public boolean isConnected() {
-        return serverEndpoint != null && serverEndpoint.isConnected() && !serverEndpoint.isClosed();
+        return connected;
     }
 
     public static GLFWKeyCallback getDefaultKeyCallback() {
@@ -1395,20 +1431,24 @@ public class Game implements DSMachine {
         this.crosshairColorNum = crosshairColorNum;
     }
 
-    public Socket getServerEndpoint() {
+    public DatagramSocket getServerEndpoint() {
         return serverEndpoint;
     }
 
-    public void setServerEndpoint(Socket serverEndpoint) {
+    public void setServerEndpoint(DatagramSocket serverEndpoint) {
         this.serverEndpoint = serverEndpoint;
     }
 
-    public String getServerAddress() {
-        return serverAddress;
+    public String getServerHostName() {
+        return serverHostName;
     }
 
-    public void setServerAddress(String serverAddress) {
-        this.serverAddress = serverAddress;
+    public void setServerHostName(String serverHostName) {
+        this.serverHostName = serverHostName;
+    }
+
+    public InetAddress getServerInetAddr() {
+        return serverInetAddr;
     }
 
     public int getPort() {

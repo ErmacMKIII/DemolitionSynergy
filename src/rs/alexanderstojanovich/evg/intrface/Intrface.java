@@ -394,28 +394,26 @@ public class Intrface {
                             progText.setEnabled(true);
                             gameObject.gameServer.startServer();
                             try {
-                                // wait for server thread to wake up
+                                // wait for endpoint thread to wake up
                                 synchronized (gameObject.gameServer.SYNC_OBJ) {
                                     gameObject.gameServer.SYNC_OBJ.wait(30 * 1000L);
                                 }
 
-                                // if game server is running and not shut down
+                                // if game endpoint is running and not shut down
                                 if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
                                     ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                                    status = (ok) ? ExecStatus.SUCCESS : ExecStatus.FAILURE;
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
+                                    Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
+                                    gameMenu.getTitle().setContent("MUTLIPLAYER");
                                 }
                             } catch (InterruptedException | ExecutionException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
                         }
 
-                        if (ok) {
-                            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
-                            Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
-                            gameMenu.getTitle().setContent("MUTLIPLAYER");
-                            status = ExecStatus.SUCCESS;
-                        } else {
-                            status = ExecStatus.FAILURE;
-                            Game.setCurrentMode(Mode.FREE);
+                        if (!ok) {
+                            gameObject.clearEverything();
                         }
                     }
 
@@ -811,7 +809,7 @@ public class Intrface {
             multiPlayerHostMenu.items.get(5).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             //------------------------------------------------------------------
             IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
-            multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue("", MenuValue.Type.STRING)));
+            multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getServerHostName(), MenuValue.Type.STRING)));
             multiPlayerJoinMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getPort(), MenuValue.Type.INT)));
             multiPlayerJoinMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
             multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
@@ -826,7 +824,7 @@ public class Intrface {
                     switch (s) {
                         case "HOSTNAME":
                             final String host = this.items.getFirst().menuValue.getCurrentValue().toString();
-                            gameObject.game.setServerAddress(host);
+                            gameObject.game.setServerHostName(host);
                             break;
                         case "PORT":
                             gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
@@ -839,7 +837,7 @@ public class Intrface {
                                 try {
                                     console.write("Connected to server!");
                                     long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerAddress() + " ( " + tripTime + " ms )");
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
                                     if (gameObject.generateMultiPlayerLevelAsJoin()) {
                                         Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                         gameMenu.getTitle().setContent("MUTLIPLAYER");

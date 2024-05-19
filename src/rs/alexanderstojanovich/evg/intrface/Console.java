@@ -23,6 +23,7 @@ import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWScrollCallback;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
@@ -52,6 +53,8 @@ public class Console {
     public static final int HISTORY_CAPACITY = 12;
     protected GLFWCharCallback glfwCharCallback;
     protected GLFWKeyCallback glfwKeyCallback;
+    protected GLFWScrollCallback glfwScrollCallback;
+
     protected Intrface intrface;
 
     public Console(Intrface intrface) {
@@ -92,6 +95,7 @@ public class Console {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetScrollCallback(window, null);
                     inText.setContent("");
                     completes.setContent("");
                     input.setLength(0);
@@ -177,6 +181,24 @@ public class Console {
                 inText.setContent("]" + input + "_");
             }
         };
+
+        glfwScrollCallback = new GLFWScrollCallback() {
+            @Override
+            public void invoke(long window, double xoffset, double yoffset) {
+//                float xposGL = (float) (xoffset /onsole.this.intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
+//                float yOffsetGl = (float) (0.5f - yoffset / Console.this.intrface.gameObject.WINDOW.getHeight()) * 2.0f;
+//                DSLogger.reportInfo(""+yoffset, null);
+                if (yoffset != 0.0f) {
+                    // shift them
+                    history.forEach(hi -> {
+                        hi.cmdText.pos.y += (float) yoffset * 0.25f;
+                        hi.cmdText.enabled = (hi.cmdText.pos.y >= hi.cmdText.getRelativeCharHeight(intrface));
+                        hi.quad.pos.y = hi.cmdText.pos.y;
+                        hi.quad.enabled = hi.cmdText.enabled;
+                    });
+                }
+            }
+        };
     }
 
     /**
@@ -194,6 +216,7 @@ public class Console {
             GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
             GLFW.glfwWaitEvents();
             GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
+            GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), glfwScrollCallback);
         }
     }
 
@@ -321,6 +344,7 @@ public class Console {
     public void cleanUp() {
         this.glfwCharCallback.free();
         this.glfwKeyCallback.free();
+        this.glfwScrollCallback.free();
     }
 
     /*

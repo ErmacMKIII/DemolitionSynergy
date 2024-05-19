@@ -17,22 +17,16 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.DatagramSocket;
 import java.util.LinkedHashMap;
-import java.util.concurrent.CompletableFuture;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.DSMachine;
-import rs.alexanderstojanovich.evg.net.DSObject;
-import rs.alexanderstojanovich.evg.net.Request;
-import rs.alexanderstojanovich.evg.net.RequestIfc;
-import rs.alexanderstojanovich.evg.net.Response;
-import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -42,8 +36,9 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServer implements DSMachine, Runnable {
 
-    public static final int FAIL_ATTEMPT_MAX = 3;
-    public static final int TOTAL_FAIL_ATTEMPT_MAX = 15;
+    public static final int TIME_TO_LIVE = 60;
+    public static final int FAIL_ATTEMPT_MAX = 10;
+    public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
 
     public static int TotalFailedAttempts = 0;
 
@@ -52,16 +47,16 @@ public class GameServer implements DSMachine, Runnable {
     public static int DEFAULT_PORT = 13667;
     protected int port = DEFAULT_PORT;
 
-    protected static final int MAX_CLIENTS = 8;
+    protected static final int MAX_CLIENTS = 16;
 
-    protected ServerSocket server;
-    public final IList<Socket> clients = new GapList<>();
+    protected DatagramSocket endpoint;
+    public final IList<String> clients = new GapList<>();
     protected final GameObject gameObject;
 
     protected volatile boolean running = false;
     protected boolean shutDownSignal = false;
     protected final int version = 39;
-    protected final int timeout = 30 * 1000; // 30 sec
+    protected final int timeout = 120 * 1000; // 2 minutes
 
     public final Object SYNC_OBJ = new Object();
 
@@ -76,14 +71,14 @@ public class GameServer implements DSMachine, Runnable {
     public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
-     * Client service
+     * Who is Client hostname <==> Player UniqueId
      */
-    public final ExecutorService clientServiceExecutor = Executors.newFixedThreadPool(MAX_CLIENTS);
+    public final LinkedHashMap<String, String> whoIsMap = new LinkedHashMap<>();
 
     /**
-     * Who is Client Socket <==> Player UniqueId
+     * Who is Client hostname <==> Time to live (int)
      */
-    public final LinkedHashMap<Socket, String> whoIsMap = new LinkedHashMap<>();
+    public final LinkedHashMap<String, Integer> timeToLiveMap = new LinkedHashMap<>();
 
     /**
      * Failed hosts with number of attempts
@@ -96,7 +91,7 @@ public class GameServer implements DSMachine, Runnable {
     public final IList<String> blacklist = new GapList<>();
 
     /**
-     * Create new game server
+     * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
      */
@@ -105,7 +100,12 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
-     * Create new game server
+     * Schedule timer task to check clients (Time-To-Live)
+     */
+    public final Timer timerClientChk = new Timer("Server Utils");
+
+    /**
+     * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
      * @param name world name
@@ -116,46 +116,55 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
-     * Start server.
+     * Start endpoint.
      */
     public void startServer() {
         this.shutDownSignal = false;
+
+        // Schedule timer task to decrease Time-to-live for clients
+        TimerTask task1 = new TimerTask() {
+            @Override
+            public void run() {
+                GapList<String> clientKeys = new GapList<>(timeToLiveMap.keySet());
+                clientKeys.forEach((String key) -> {
+                    timeToLiveMap.compute(key, (String t, Integer u) -> {
+                        if (u == null || u <= 1) {
+                            GameServer.this.clients.remove(key);
+                            String uniqueId = GameServer.this.whoIsMap.remove(key);
+                            if (uniqueId != null) {
+                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                            }
+                            return null; // Remove the key from timeToLiveMap
+                        } else {
+                            return u - 1; // Decrement TTL
+                        }
+                    });
+                    // Log the new TTL value
+//                    Integer newTimeToLive = timeToLiveMap.get(key);
+//                    DSLogger.reportInfo("TimeToLive=" + newTimeToLive, null);
+                });
+            }
+        };
+        timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
+
         serverExecutor.execute(this);
 
         DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
     }
 
     /**
-     * Stop running server server.
+     * Stop running server endpoint. Server would have to be start again.
      */
     public void stopServer() {
         if (running) {
-            // Attempt to disconnect clients
-            for (Socket client : clients) {
-                try {
-                    client.close();
-                } catch (IOException ex) {
-                    DSLogger.reportError("Unable to close client!", ex);
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-            }
+            // Attempt to disconnect clients            
+            this.endpoint.close();
 
-            // Attempt to close the server
-            if (server != null && !server.isClosed()) {
-                try {
-                    server.close();
-                } catch (IOException ex) {
-                    DSLogger.reportError("Unable to close server!", ex);
-                    DSLogger.reportError(ex.getMessage(), ex);
-                } finally {
-                    // revert back title
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
-                    this.shutDownSignal = true;
-                    // wakeup client service
-                    synchronized (SYNC_OBJ) {
-                        SYNC_OBJ.notify();
-                    }
-                }
+            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
+            this.shutDownSignal = true;
+            // wakeup client service
+            synchronized (SYNC_OBJ) {
+                SYNC_OBJ.notify();
             }
 
             clients.clear();
@@ -166,101 +175,41 @@ public class GameServer implements DSMachine, Runnable {
      * Shut down execution service. Server is not available anymore.
      */
     public void shutDown() {
-        this.clientServiceExecutor.shutdown();
         this.serverExecutor.shutdown();
+        this.timerClientChk.cancel();
     }
 
     /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
      *
-     * @param client client who is submit to test
+     * @param failedHostName client who is submit to test
      */
-    public void assertTstFailure(Socket client) {
+    public void assertTstFailure(String failedHostName) {
         TotalFailedAttempts++;
-        String failedHost = client.getInetAddress().getHostName();
-        boolean contains = this.failedAttempts.containsKey(failedHost);
+        boolean contains = this.failedAttempts.containsKey(failedHostName);
         if (!contains) {
-            this.failedAttempts.put(failedHost, 1);
+            this.failedAttempts.put(failedHostName, 1);
         } else {
-            Integer failAttemptNum = this.failedAttempts.get(failedHost);
+            Integer failAttemptNum = this.failedAttempts.get(failedHostName);
             failAttemptNum++;
 
             // Blacklisting (equals ban)
-            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHost)) {
-                blacklist.add(failedHost);
-                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", server.getInetAddress().getHostName()));
-                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", server.getInetAddress().getHostName()), null);
+            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
+                blacklist.add(failedHostName);
+                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", endpoint.getInetAddress().getHostName()));
+                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", endpoint.getInetAddress().getHostName()), null);
             }
 
-            // Too much failed attempts, server is vulnerable .. try to shut down
+            // Too much failed attempts, endpoint is vulnerable .. try to shut down
             if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", server.getInetAddress().getHostName()));
-                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", server.getInetAddress().getHostName()), null);
+                gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", endpoint.getInetAddress().getHostName()));
+                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", endpoint.getInetAddress().getHostName()), null);
                 shutDownSignal = true;
             }
 
-            this.failedAttempts.replace(failedHost, failAttemptNum);
+            this.failedAttempts.replace(failedHostName, failAttemptNum);
         }
-    }
-
-    /**
-     * Open client input stream and receive first request. Acceptance test.
-     *
-     * @param client client socket (tried to connect)
-     * @return
-     * @throws java.io.IOException if something happens
-     */
-    protected boolean tst(Socket client) throws IOException, Exception {
-        RequestIfc request = RequestIfc.receive(this, client);
-        if (request == null || request == Request.INVALID) {
-            assertTstFailure(client);
-            return false;
-        }
-
-        if (request.getRequestType() == RequestIfc.RequestType.HELLO) {
-            return true;
-        }
-
-        assertTstFailure(client);
-
-        return false;
-    }
-
-    /**
-     * Open client output stream and send first (welcome) response. Acceptance
-     * test passed.
-     *
-     * @param client client socket (tried to connect)
-     * @throws java.io.IOException if something happens
-     */
-    public void accept(Socket client) throws IOException, Exception {
-        // Send a simple message with magic bytes prepended
-        String welcome = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", this.worldName, this.version);
-
-        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, welcome);
-
-        response.send(this, client);
-        // wakeup client service
-        synchronized (SYNC_OBJ) {
-            SYNC_OBJ.notify();
-        }
-    }
-
-    /**
-     * Open client output stream and not accepted response. Acceptance test
-     * failed.
-     *
-     * @param client client socket (tried to connect)
-     * @throws java.io.IOException if something happens
-     */
-    public void reject(Socket client) throws IOException, Exception {
-        // Send a simple message with magic bytes prepended
-        String message = "Sorry, your connection refused!";
-
-        ResponseIfc response = new Response(ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, message);
-
-        response.send(this, client);
     }
 
     /**
@@ -270,13 +219,11 @@ public class GameServer implements DSMachine, Runnable {
     public void run() {
         running = true;
         try {
-            // Bind the server socket to a specific IP address and port
-            server = new ServerSocket();
-            server.bind(new InetSocketAddress(host, port));
+            // Bind the endpoint socket to a specific IP address and port
+            endpoint = new DatagramSocket(port/*, InetAddress.getByName(host)*/);
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-            DSLogger.reportInfo(String.format("Game Server (%s) started!", server.getInetAddress().getHostName()), null);
-            gameObject.intrface.getConsole().write(String.format("Game Server (%s) started!", server.getInetAddress().getHostName()));
-            running = true;
+            DSLogger.reportInfo(String.format("Game Server (%s) started!", this.host), null);
+            gameObject.intrface.getConsole().write(String.format("Game Server (%s) started!", this.host));
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             gameObject.intrface.getConsole().write("Cannot create Game Server!", true);
@@ -291,91 +238,46 @@ public class GameServer implements DSMachine, Runnable {
         // Accept incoming connections and handle them
         while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
             try {
-                final Socket client = server.accept();
-                client.setSoTimeout(timeout);
-                clients.add(client);
-                // Blacklist conjuction
-                // Acceptance test (examination)
-                // And max clients (maybe?)
-                if ((!blacklist.contains(client.getInetAddress().getHostName()) && tst(client) && clients.size() <= MAX_CLIENTS)) {
-                    // Send "Welcome" Response
-                    accept(client); // Authenticated
-                    DSLogger.reportInfo(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getHostName()), null);
-                    gameObject.intrface.getConsole().write(String.format("Client %s accepted. Awaiting registration.", client.getInetAddress().getHostName()));
-                    client.setSoTimeout(0);
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-                    // Create handle client task ~ for handling requests and sending responses
-                    CompletableFuture.supplyAsync(new HandleClientTask(client, this), this.clientServiceExecutor)
-                            .exceptionally(ex -> {
-                                // Handle exceptions
-                                DSLogger.reportError("Error handling client: " + ex.getMessage(), ex);
-                                clients.remove(client);
-                                try {
-                                    client.close();
-                                } catch (IOException ex1) {
-                                    DSLogger.reportError(ex1.getMessage(), ex1);
-                                }
-
-                                return HandleClientTask.Status.INTERNAL_ERROR;
-                            }).whenComplete((result, ex) -> {
-                        try {
-                            DSLogger.reportInfo(String.format("Client task returned %s!", result), ex);
-                            gameObject.intrface.getConsole().write("Client task returned " + result.toString(), result != HandleClientTask.Status.OK);
-                            // Code to execute finally
-                            // This block will execute regardless of whether the CompletableFuture completed exceptionally or successfully
-                            // You can perform cleanup tasks or any other final actions here
-                            performCleanUp(gameObject, whoIsMap.get(client), result != HandleClientTask.Status.OK);
-                            clients.remove(client);
-                            client.close();
-
-                            whoIsMap.remove(client);
-
-                            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-                        } catch (IOException ex1) {
-                            DSLogger.reportError(ex1.getMessage(), ex1);
+                GameServerProcessor.Result procResult = GameServerProcessor.process(this, endpoint);
+                final String msg;
+                switch (procResult.status) {
+                    case INTERNAL_ERROR:
+                        msg = String.format("Server %s error!", procResult.client);
+                        DSLogger.reportError(msg, null);
+                        gameObject.intrface.getConsole().write(msg, true);
+                        break;
+                    case CLIENT_ERROR:
+                        assertTstFailure(procResult.client);
+                        msg = String.format("Client %s error!", procResult.client);
+                        DSLogger.reportError(msg, null);
+                        gameObject.intrface.getConsole().write(msg, true);
+                        if (blacklist.contains(procResult.client)) {
+                            DSLogger.reportWarning(msg, null);
+                            gameObject.intrface.getConsole().write(msg, false);
                         }
-                    });
-                } else {
-                    DSLogger.reportError("Acceptance test failure!", null);
-                    reject(client);
-                    clients.remove(client);
-                    DSLogger.reportInfo(String.format("Client %s rejected!", client.getInetAddress().getHostName()), null);
-                    gameObject.intrface.getConsole().write(String.format("Client %s rejected!", client.getInetAddress().getHostName()), true);
+                        break;
+                    default:
+                    case OK:
+                        timeToLiveMap.replace(procResult.client, GameServer.TIME_TO_LIVE);
+//                        msg = String.format("OK (%s)", procResult.client);
+//                        DSLogger.reportInfo(msg, null);
+//                        gameObject.intrface.getConsole().write(msg, false);
+                        break;
                 }
-                // Handle the client connection
-            } catch (IOException ex) {
-                DSLogger.reportError("Network Error(s) Occurred!", ex);
-                DSLogger.reportError(ex.getMessage(), ex);
             } catch (Exception ex) {
-                DSLogger.reportError("Serialization or Deserialization failed!", ex);
-            }
-            /*finally {
-                if (!server.isClosed()) {
-                    try {
-                        server.close();
-                    } catch (IOException ex) {
-                        // Handle exceptions
-                        DSLogger.reportError("Server error: " + ex.getMessage(), ex);
-                    }
-                }
-                shutDownSignal = true;
-            }*/
-        }
-
-        if (!server.isClosed()) {
-            try {
-                server.close();
-            } catch (IOException ex) {
-                // Handle exceptions
                 DSLogger.reportError("Server error: " + ex.getMessage(), ex);
             }
+        }
+
+        if (endpoint != null && !endpoint.isClosed()) {
+            endpoint.close(); // Handle exceptions
         }
         shutDownSignal = true;
 
         clients.clear();
         running = false;
         DSLogger.reportInfo("Game Server finished!", null);
-         gameObject.intrface.getConsole().write("Game Server finished!");
+        gameObject.intrface.getConsole().write("Game Server finished!");
     }
 
     /**
@@ -405,11 +307,11 @@ public class GameServer implements DSMachine, Runnable {
         return port;
     }
 
-    public ServerSocket getServer() {
-        return server;
+    public DatagramSocket getEndpoint() {
+        return endpoint;
     }
 
-    public IList<Socket> getClients() {
+    public IList<String> getClients() {
         return clients;
     }
 
@@ -447,8 +349,8 @@ public class GameServer implements DSMachine, Runnable {
         this.port = port;
     }
 
-    public void setServer(ServerSocket server) {
-        this.server = server;
+    public void setEndpoint(DatagramSocket endpoint) {
+        this.endpoint = endpoint;
     }
 
     @Override
@@ -458,6 +360,30 @@ public class GameServer implements DSMachine, Runnable {
 
     public Object getSYNC_OBJ() {
         return SYNC_OBJ;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public ExecutorService getServerExecutor() {
+        return serverExecutor;
+    }
+
+    public LinkedHashMap<String, String> getWhoIsMap() {
+        return whoIsMap;
+    }
+
+    public LinkedHashMap<String, Integer> getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    public IList<String> getBlacklist() {
+        return blacklist;
+    }
+
+    public Timer getTimerClientChk() {
+        return timerClientChk;
     }
 
 }
