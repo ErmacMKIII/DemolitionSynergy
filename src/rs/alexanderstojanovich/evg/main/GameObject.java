@@ -653,7 +653,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             boolean downOkey = false;
             // if successful download level
             do {
-                downOkey |= game.downloadLevel();                    
+                downOkey |= game.downloadLevel();
             } while (!downOkey && ++numberOfAttempts <= MAX_ATTEMPTS);
 
             if (downOkey) {

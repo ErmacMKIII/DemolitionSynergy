@@ -1155,7 +1155,7 @@ public class Game implements DSMachine {
                     if (++packetnum == PACKETS_MAX) {
                         chkSum.update(gameObject.levelContainer.buffer, totalBytesRead, PACKETS_MAX * BUFF_SIZE);
                         RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.LONG, chkSum.getValue());
-                        DSLogger.reportInfo("Awaiting confirmation response..", null);
+                        DSLogger.reportInfo(String.format("Awaiting confirmation response..(CHKSUM = %d) .. ", chkSum.getValue()), null);
                         reqConfirm.send(this);
                         packetnum = 0;
 

@@ -332,12 +332,12 @@ public class GameServerProcessor {
                         int chunkSize = Math.min(remainingBytes, BUFF_SIZE);
 
                         // Write a chunk of data to the outbound datagram packet
-                        System.arraycopy(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, buff, 0, chunkSize);
+                        System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
                         DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
                         endpoint.send(dp);
                         if (++packetnum == PACKETS_MAX) {
-                            DSLogger.reportInfo("Awaiting confirmation request..", null);
                             chkSum.update(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, PACKETS_MAX * BUFF_SIZE);
+                            DSLogger.reportInfo(String.format("Awaiting confirmation request (CHKSUM = %d) .. ", chkSum.getValue()), null);
                             RequestIfc received = RequestIfc.receive(gameServer);
                             if (received == null) {
                                 continue;
