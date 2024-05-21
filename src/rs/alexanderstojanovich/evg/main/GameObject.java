@@ -61,7 +61,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 40;
+    public static final int VERSION = 41;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
     public final Window WINDOW;
@@ -81,6 +81,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public final Game game;
     public final GameServer gameServer;
     public final GameRenderer renderer;
+
+    /**
+     * Max number of attempts to download the level
+     */
+    public static final int MAX_ATTEMPTS = 3;
 
     /**
      * Async Task Executor
@@ -644,8 +649,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.clearEverything();
         // register player with Unique ID (UUID)
         if (game.registerPlayer()) {
+            int numberOfAttempts = 0;
+            boolean downOkey = false;
             // if successful download level
-            if (game.downloadLevel()) {
+            do {
+                downOkey |= game.downloadLevel();
+            } while (!downOkey && ++numberOfAttempts <= MAX_ATTEMPTS);
+
+            if (downOkey) {
                 // load level to buffer
                 if (levelContainer.loadLevelFromBufferAsync().get()) {
                     PlayerInfo[] playerInfo = game.getPlayerInfo();
@@ -657,6 +668,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     game.requestSetPlayerPosition();
                     okey = true;
                 }
+            } else {
+                // if player cannot be registered disconnect
+                game.disconnectFromServer();
+                // revert back
+                this.clearEverything();
             }
         } else {
             // if player cannot be registered disconnect

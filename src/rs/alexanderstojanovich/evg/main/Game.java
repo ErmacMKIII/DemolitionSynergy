@@ -23,6 +23,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -118,7 +119,7 @@ public class Game implements DSMachine {
 
     protected static double accumulator = 0.0;
     protected static double gameTicks = 0.0;
-    protected final int version = 39;
+    protected final int version = GameObject.VERSION;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
@@ -146,6 +147,13 @@ public class Game implements DSMachine {
     protected int port = DEFAULT_PORT;
     protected final int timeout = 30 * 1000; // 30 sec
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+
+    public static int TPS_PING_CHK = 1;
+
+    /**
+     * Maximum number of level attempts (retransmission)
+     */
+    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
     /**
      * Number of successive packets to receive before confirmation (Client)
@@ -493,26 +501,37 @@ public class Game implements DSMachine {
 
         // Multiplayer-Join mode
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
-            double ping = 0.000;
+            double ping;
+            double interpFact;
             Vector3f playerServerPos = player.getPos();
-            double beginTime = GLFW.glfwGetTime();
-            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
-            playerPosReq.send(this);
-            ResponseIfc playerPosResp = ResponseIfc.receive(this);
-            if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
-                playerServerPos = posInfo.pos;
+            if ((ups & (TPS_PING_CHK - 1)) == 0) {
+                double beginTime = GLFW.glfwGetTime();
+                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
+                playerPosReq.send(this);
+                ResponseIfc playerPosResp = ResponseIfc.receive(this);
                 double endTime = GLFW.glfwGetTime();
                 ping = endTime - beginTime;
+                if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                    PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
+                    playerServerPos = posInfo.pos;
+                } else {
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
+                    gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
+                }
+                // calculate interpolation factor
+                interpFact = (double) ping / ((double) ping + deltaTime);
+                // determine when to ask about player position next time
+                TPS_PING_CHK = 1 + (int) (interpFact * Game.TPS);
             } else {
-                DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
-                gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
+                // take value from last time
+                ping = TPS_PING_CHK * TICK_TIME;
+                // calculate interpolation factor
+                interpFact = (double) ping / ((double) ping + deltaTime);
             }
-            final float interpFact = (float) ping / ((float) ping + deltaTime);
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorXZBackward(amountXZ);
                 } else {
                     player.moveXZForward(amountXZ);
@@ -522,7 +541,7 @@ public class Game implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
                 player.movePredictorXZBackward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorXZForward(amountXZ);
                 } else {
                     player.moveXZBackward(amountXZ);
@@ -532,7 +551,7 @@ public class Game implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_A]) {
                 player.movePredictorXZLeft(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorXZRight(amountXZ);
                 } else {
                     player.moveXZLeft(amountXZ);
@@ -542,7 +561,7 @@ public class Game implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_D]) {
                 player.movePredictorXZRight(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorXZLeft(amountXZ);
                 } else {
                     player.moveXZRight(amountXZ);
@@ -552,7 +571,7 @@ public class Game implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
                 player.movePredictorYUp(amountY);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorYDown(amountY);
                 } else {
                     jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -562,7 +581,7 @@ public class Game implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL])) {
                 player.movePredictorYDown(amountYNeg);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, interpFact)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpFact)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
                     player.sinkY(amountYNeg);
@@ -830,17 +849,25 @@ public class Game implements DSMachine {
             gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
 
             // Multiplayer update
-            if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected()) {
+            if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && ((ups & (TPS_PING_CHK - 1)) == 0)) {
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
+                        double beginTime = GLFW.glfwGetTime();
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this);
                         ResponseIfc otherPlayerResponse = ResponseIfc.receive(this);
+                        double endTime = GLFW.glfwGetTime();
+                        double ping = endTime - beginTime;
                         if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                             PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
                             other.setPos(posInfo.pos);
                             other.getFront().set(posInfo.front);
                             other.setRotationXYZ(posInfo.front);
+
+                            // calculate interpolation factor
+                            double interpFact = (double) ping / ((double) ping + deltaTime);
+                            // determine when to ask about player position next time
+                            TPS_PING_CHK = 1 + (int) (interpFact * Game.TPS);
                         } else {
                             DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
                             gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
@@ -854,7 +881,7 @@ public class Game implements DSMachine {
 
         // Heavy operations to run afterwards
         // determine visible chunks (can be altered with player position)
-        if (gameObject.determineVisibleChunks() || (ups & (TPS_EIGHTH - 1)) == 0) {
+        if (gameObject.determineVisibleChunks() || (ups & (TPS_QUARTER - 1)) == 0) {
             // call utility functions (chunk loading etc.)
             gameObject.utilChunkOperations();
         }
@@ -1101,11 +1128,6 @@ public class Game implements DSMachine {
      *
      * @return true if the download was successful, false otherwise
      */
-    /**
-     * Download level (map) from the server
-     *
-     * @return true if the download was successful, false otherwise
-     */
     public boolean downloadLevel() {
         if (!isConnected()) {
             return false;
@@ -1128,21 +1150,37 @@ public class Game implements DSMachine {
                 int totalBytesRead = 0;
 
                 int packetnum = 0;
+                CRC32C chkSum = new CRC32C();
+
+                int retransmissionAttempts = 0;
+
                 while (totalBytesRead < gameObject.levelContainer.buffer.length) {
                     DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
                     serverEndpoint.receive(dp);
                     int bytesRead = dp.getLength();
 
                     if (++packetnum == PACKETS_MAX) {
-                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.VOID, null);
-                        DSLogger.reportInfo("Awaiting confirmation response..", null);
+                        chkSum.update(gameObject.levelContainer.buffer, totalBytesRead, PACKETS_MAX * BUFF_SIZE);
+                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.LONG, chkSum.getValue());
+                        DSLogger.reportInfo(String.format("Awaiting confirmation response..(CHKSUM = %d) .. ", chkSum.getValue()), null);
                         reqConfirm.send(this);
                         packetnum = 0;
 
                         ResponseIfc response = ResponseIfc.receive(this);
+                        if (response == null) {
+                            continue;
+                        }
+
                         if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                            DSLogger.reportInfo("Confirmed! Download resumed.", null);
+                            DSLogger.reportInfo("Confirmed OK checksum! Download resumed.", null);
                         } else {
+                            if (++retransmissionAttempts < Game.RETRANSMISSION_MAX_ATTEMPTS) {
+                                DSLogger.reportInfo("Confirmed is ERR (checksum)! Awaiting retransmission.", null);
+                                totalBytesRead -= (PACKETS_MAX - 1) * BUFF_SIZE;
+                                continue;
+                            }
+
+                            DSLogger.reportInfo("Confirmed is ERR (checksum)! Download will be cancelled", null);
                             break;
                         }
                     }

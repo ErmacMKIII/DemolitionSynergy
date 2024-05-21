@@ -3,7 +3,7 @@ Voxel Engine using latest LWJGL.
 Audio material was provided from freesound.org by Erokia.
 
 Demolition Synergy showing multiplayer setup.
-![Alt text](/misc/DSynergy7.png?raw=true "Demolition Synergy showing multiplayer setup")
+![Alt text](/misc/DSynergy8.png?raw=true "Demolition Synergy showing multiplayer setup")
 
 # Verbose Description
 Lightwight Game Engine writen in Java. 
@@ -74,7 +74,7 @@ Done.
 - intrface 	=> Ingame interface & 2d rendering components.
 - level 	=> Level container, level actors, level editor, random level generator.
 - light 	=> Light projection on the screen, light source(s).
-- location 	=> Block location matrix 512x512x512 on X,Z & Y axis.
+- location 	=> Block location matrix 384x384x384 on X,Z & Y axis.
 - main 		=> Main inependable classes, `Game` (client with main loop), `GameRenderer` (separate thread) & `GameObject` links them together.
 			   `GameServer` is relevant class for hosting a server on the PC.
 - models 	=> 3d looking models and their part(s) - vertex, mesh, material.

@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -62,6 +63,11 @@ public class GameServerProcessor {
      * Number of successive packets to receive before confirmation (Server)
      */
     public static final int PACKETS_MAX = 8;
+
+    /**
+     * Maximum number of level attempts (retransmission)
+     */
+    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
     /**
      * Assert that failure has happen and client timed out or is about to be
@@ -313,6 +319,10 @@ public class GameServerProcessor {
                 response.send(gameServer, clientAddress, clientPort);
 
                 int packetnum = 0;
+                CRC32C chkSum = new CRC32C();
+
+                int retransmissionAttempts = 0;
+
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
                     int bytesWrite = 0;
                     final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
@@ -329,12 +339,27 @@ public class GameServerProcessor {
                         DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
                         endpoint.send(dp);
                         if (++packetnum == PACKETS_MAX) {
-                            DSLogger.reportInfo("Awaiting confirmation request..", null);
+                            chkSum.update(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, PACKETS_MAX * BUFF_SIZE);
+                            DSLogger.reportInfo(String.format("Awaiting confirmation request (CHKSUM = %d) .. ", chkSum.getValue()), null);
                             RequestIfc received = RequestIfc.receive(gameServer);
+                            if (received == null) {
+                                continue;
+                            }
+
                             if (received.getRequestType() == RequestIfc.RequestType.CONFIRM) {
-                                DSLogger.reportInfo("Confirmed! Upload resumed.", null);
                                 packetnum = 0;
-                                response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.VOID, null);
+                                boolean okey = (chkSum.getValue() == (long) received.getData());
+                                if (okey) {
+                                    DSLogger.reportInfo("Confirmed! Checksum is OK. Upload resumed.", null);
+                                } else {
+                                    if (retransmissionAttempts < GameServerProcessor.RETRANSMISSION_MAX_ATTEMPTS) {
+                                        bytesWrite -= PACKETS_MAX * BUFF_SIZE;
+                                        DSLogger.reportError("ERR (checksum)! Attempting rentransmission.", null);
+                                    }
+                                    DSLogger.reportError("ERR (checksum)! Upload will be cancelled", null);
+                                }
+
+                                response = new Response(okey ? ResponseIfc.ResponseStatus.OK : ResponseIfc.ResponseStatus.ERR, DSObject.DataType.VOID, null);
                                 response.send(gameServer, clientAddress, clientPort);
                             } else {
                                 break;

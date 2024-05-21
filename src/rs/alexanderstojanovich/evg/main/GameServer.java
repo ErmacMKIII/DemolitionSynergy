@@ -55,7 +55,7 @@ public class GameServer implements DSMachine, Runnable {
 
     protected volatile boolean running = false;
     protected boolean shutDownSignal = false;
-    protected final int version = 39;
+    protected final int version = GameObject.VERSION;
     protected final int timeout = 120 * 1000; // 2 minutes
 
     public final Object SYNC_OBJ = new Object();
