@@ -22,14 +22,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.GameServer;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.LONG;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.OBJECT;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VOID;
 
@@ -100,6 +100,12 @@ public class Response implements ResponseIfc {
                         // Write boolean
                         out.writeBoolean((boolean) data);
                         break;
+                    case INT:
+                        out.writeInt((int) data);
+                        break;
+                    case LONG:
+                        out.writeLong((long) data);
+                        break;
                     case FLOAT:
                         // Write float
                         out.writeFloat((float) data);
@@ -167,6 +173,12 @@ public class Response implements ResponseIfc {
                     break;
                 case BOOL:
                     data = in.readBoolean();
+                    break;
+                case INT:
+                    data = in.readInt();
+                    break;
+                case LONG:
+                    data = in.readLong();
                     break;
                 case FLOAT:
                     data = in.readFloat();

@@ -31,6 +31,8 @@ import rs.alexanderstojanovich.evg.main.Game;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.BOOL;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.DOUBLE;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.FLOAT;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.LONG;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VEC3F;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VEC4F;
@@ -133,6 +135,12 @@ public class Request implements RequestIfc {
                     case BOOL:
                         out.writeBoolean((boolean) data);
                         break;
+                    case INT:
+                        out.writeInt((int) data);
+                        break;
+                    case LONG:
+                        out.writeLong((long) data);
+                        break;
                     case FLOAT:
                         out.writeFloat((float) data);
                         break;
@@ -198,6 +206,12 @@ public class Request implements RequestIfc {
                     break;
                 case BOOL:
                     data = in.readBoolean();
+                    break;
+                case INT:
+                    data = in.readInt();
+                    break;
+                case LONG:
+                    data = in.readLong();
                     break;
                 case FLOAT:
                     data = in.readFloat();
