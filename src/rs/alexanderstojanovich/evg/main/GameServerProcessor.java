@@ -67,7 +67,7 @@ public class GameServerProcessor {
     /**
      * Maximum number of level attempts (retransmission)
      */
-    public static final int MAX_RETRANSMISSION_ATTEMPTS = 3;
+    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
     /**
      * Assert that failure has happen and client timed out or is about to be
@@ -320,6 +320,9 @@ public class GameServerProcessor {
 
                 int packetnum = 0;
                 CRC32C chkSum = new CRC32C();
+
+                int retransmissionAttempts = 0;
+
                 if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
                     int bytesWrite = 0;
                     final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
@@ -349,6 +352,10 @@ public class GameServerProcessor {
                                 if (okey) {
                                     DSLogger.reportInfo("Confirmed! Checksum is OK. Upload resumed.", null);
                                 } else {
+                                    if (retransmissionAttempts < GameServerProcessor.RETRANSMISSION_MAX_ATTEMPTS) {
+                                        bytesWrite -= PACKETS_MAX * BUFF_SIZE;
+                                        DSLogger.reportError("ERR (checksum)! Attempting rentransmission.", null);
+                                    }
                                     DSLogger.reportError("ERR (checksum)! Upload will be cancelled", null);
                                 }
 

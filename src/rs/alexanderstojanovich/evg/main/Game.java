@@ -151,6 +151,11 @@ public class Game implements DSMachine {
     public static int TPS_PING_CHK = 1;
 
     /**
+     * Maximum number of level attempts (retransmission)
+     */
+    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
+
+    /**
      * Number of successive packets to receive before confirmation (Client)
      */
     public static final int PACKETS_MAX = 8;
@@ -496,8 +501,8 @@ public class Game implements DSMachine {
 
         // Multiplayer-Join mode
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
-            double ping = 0.000;
-            double interpFact = 0.0;
+            double ping;
+            double interpFact;
             Vector3f playerServerPos = player.getPos();
             if ((ups & (TPS_PING_CHK - 1)) == 0) {
                 double beginTime = GLFW.glfwGetTime();
@@ -1147,6 +1152,8 @@ public class Game implements DSMachine {
                 int packetnum = 0;
                 CRC32C chkSum = new CRC32C();
 
+                int retransmissionAttempts = 0;
+
                 while (totalBytesRead < gameObject.levelContainer.buffer.length) {
                     DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
                     serverEndpoint.receive(dp);
@@ -1167,6 +1174,12 @@ public class Game implements DSMachine {
                         if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                             DSLogger.reportInfo("Confirmed OK checksum! Download resumed.", null);
                         } else {
+                            if (++retransmissionAttempts < Game.RETRANSMISSION_MAX_ATTEMPTS) {
+                                DSLogger.reportInfo("Confirmed is ERR (checksum)! Awaiting retransmission.", null);
+                                totalBytesRead -= (PACKETS_MAX - 1) * BUFF_SIZE;
+                                continue;
+                            }
+
                             DSLogger.reportInfo("Confirmed is ERR (checksum)! Download will be cancelled", null);
                             break;
                         }

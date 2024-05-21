@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -233,6 +234,7 @@ public class BlockEnvironment {
                 final Tuple optmTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                 if (optmTuple == null) {
                     workingTuples.add(new Tuple(tex, faceBits));
+                    workingTuples.sort(Tuple.TUPLE_COMP);
                 }
             }
         }
@@ -294,7 +296,6 @@ public class BlockEnvironment {
 
         // if full circle with all textures & facebits has been completed
         if (texProcIndex == 0 && lastFaceBits == 0) {
-            workingTuples.sort(Tuple.TUPLE_COMP);
             fullyOptimized = true; // it is (fully) fullyOptimized  
         }
 
@@ -308,7 +309,7 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (optimizedTuples.isEmpty()) {
+        if (optimizing || optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -320,16 +321,18 @@ public class BlockEnvironment {
     /**
      * Reorder group of vertices of fullyOptimized tuples if underwater
      *
+     * Still very heavy operation.
+     *
      * @param camFront camera front (used for ray-trace)
      * @param cameraInFluid is camera in fluid (checked by level container
      * externally)
      */
     public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (optimizedTuples.isEmpty()) {
+        if (optimizing || optimizedTuples.isEmpty()) {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ((ot.faceBits() & GameRenderer.getFps()) == 0))) {
             tuple.prepare(camFront, cameraInFluid);
         }
     }
@@ -338,7 +341,7 @@ public class BlockEnvironment {
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        if (optimizedTuples.isEmpty()) {
+        if (optimizing || optimizedTuples.isEmpty()) {
             return;
         }
 
@@ -394,9 +397,10 @@ public class BlockEnvironment {
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
         Tuple.renderInstanced(
-                optimizedTuples.filter(ot -> ot.faceBits() > 0),
+                optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
                 shaderProgram, lightSources, waterTexture, shadowTexture
         );
+        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
     }
 
     /**
@@ -423,6 +427,7 @@ public class BlockEnvironment {
      */
     public synchronized void pull() {
         workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
+        workingTuples.sort(Tuple.TUPLE_COMP);
     }
 
     /**
