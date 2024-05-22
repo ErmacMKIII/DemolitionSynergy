@@ -198,14 +198,14 @@ public class GameServer implements DSMachine, Runnable {
             // Blacklisting (equals ban)
             if (failAttemptNum >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
                 blacklist.add(failedHostName);
-                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", endpoint.getInetAddress().getHostName()));
-                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", endpoint.getInetAddress().getHostName()), null);
+                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
+                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
             }
 
             // Too much failed attempts, endpoint is vulnerable .. try to shut down
             if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", endpoint.getInetAddress().getHostName()));
-                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", endpoint.getInetAddress().getHostName()), null);
+                gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.host, this.port));
+                DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.host, this.port), null);
                 shutDownSignal = true;
             }
 
@@ -223,8 +223,8 @@ public class GameServer implements DSMachine, Runnable {
             // Bind the endpoint socket to a specific IP address and port
             endpoint = new DatagramSocket(port/*, InetAddress.getByName(host)*/);
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-            DSLogger.reportInfo(String.format("Game Server (%s) started!", this.host), null);
-            gameObject.intrface.getConsole().write(String.format("Game Server (%s) started!", this.host));
+            DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.host, this.port), null);
+            gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.host, this.port));
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             gameObject.intrface.getConsole().write("Cannot create Game Server!", true);

@@ -519,14 +519,14 @@ public class Game implements DSMachine {
                     gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
                 }
                 // calculate interpolation factor
-                interpFact = (double) ping / ((double) ping + deltaTime);
+                interpFact = (double) deltaTime / ((double) ping + deltaTime);
                 // determine when to ask about player position next time
-                TPS_PING_CHK = 1 + (int) (interpFact * Game.TPS);
+                TPS_PING_CHK = (int) (interpFact * Game.TPS);
             } else {
                 // take value from last time
-                ping = TPS_PING_CHK * TICK_TIME;
+                ping = TPS_PING_CHK * deltaTime;
                 // calculate interpolation factor
-                interpFact = (double) ping / ((double) ping + deltaTime);
+                interpFact = (double) deltaTime / ((double) ping + deltaTime);
             }
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
@@ -865,9 +865,9 @@ public class Game implements DSMachine {
                             other.setRotationXYZ(posInfo.front);
 
                             // calculate interpolation factor
-                            double interpFact = (double) ping / ((double) ping + deltaTime);
+                            double interpFact = (double) deltaTime / ((double) ping + deltaTime);
                             // determine when to ask about player position next time
-                            TPS_PING_CHK = 1 + (int) (interpFact * Game.TPS);
+                            TPS_PING_CHK = (int) (interpFact * Game.TPS);
                         } else {
                             DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
                             gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
