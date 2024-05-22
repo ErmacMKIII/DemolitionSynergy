@@ -629,7 +629,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = false;
 
         this.clearEverything();
-        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks) && levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat").get();
+        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
+        levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat");
 
         levelContainer.levelActors.player.setRegistered(true);
 

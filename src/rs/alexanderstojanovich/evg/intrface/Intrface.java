@@ -830,24 +830,26 @@ public class Intrface {
                             gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
                             break;
                         case "PLAY":
-                            double beginTime = GLFW.glfwGetTime();
-                            boolean okey = gameObject.game.connectToServer();
-                            double endTime = GLFW.glfwGetTime();
-                            if (okey) {
-                                try {
-                                    console.write("Connected to server!");
-                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                        Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
-                                        gameMenu.getTitle().setContent("MUTLIPLAYER");
+                            GameObject.TASK_EXECUTOR.execute(() -> {
+                                double beginTime = GLFW.glfwGetTime();
+                                boolean okey = gameObject.game.connectToServer();
+                                double endTime = GLFW.glfwGetTime();
+                                if (okey) {
+                                    try {
+                                        console.write("Connected to server!");
+                                        long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                        if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                            Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
+                                            gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                        }
+                                    } catch (InterruptedException | ExecutionException ex) {
+                                        DSLogger.reportError(ex.getMessage(), ex);
                                     }
-                                } catch (InterruptedException | ExecutionException ex) {
-                                    DSLogger.reportError(ex.getMessage(), ex);
+                                } else {
+                                    console.write("Unable to connect to server!", true);
                                 }
-                            } else {
-                                console.write("Unable to connect to server!", true);
-                            }
+                            });
                             break;
 
                     }

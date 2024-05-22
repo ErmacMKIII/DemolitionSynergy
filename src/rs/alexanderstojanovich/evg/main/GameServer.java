@@ -72,6 +72,11 @@ public class GameServer implements DSMachine, Runnable {
     public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
+     * Server Task worker (handles heavy tasks)
+     */
+    public final ExecutorService serverTaskExecutor = Executors.newFixedThreadPool(GameServer.MAX_CLIENTS);
+
+    /**
      * Who is Client hostname <==> Player UniqueId
      */
     public final LinkedHashMap<String, String> whoIsMap = new LinkedHashMap<>();
@@ -174,10 +179,11 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     /**
-     * Shut down execution service. Server is not available anymore.
+     * Shut down execution service(s). Server is not available anymore.
      */
     public void shutDown() {
         this.serverExecutor.shutdown();
+        this.serverTaskExecutor.shutdown();
         this.timerClientChk.cancel();
     }
 

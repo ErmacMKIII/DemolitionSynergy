@@ -132,6 +132,9 @@ public class Game implements DSMachine {
     protected boolean running = false;
     protected static final int DEFAULT_PORT = 13667;
 
+    protected static final int DEFAULT_TIMEOUT = 30000; // 30 sec
+    protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
+
     /**
      * Magic bytes of End-of-Stream
      */
@@ -145,7 +148,7 @@ public class Game implements DSMachine {
     protected InetAddress serverInetAddr = null;
 
     protected int port = DEFAULT_PORT;
-    protected final int timeout = 30 * 1000; // 30 sec
+    protected int timeout = DEFAULT_TIMEOUT;
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
 
     public static int TPS_PING_CHK = 1;
@@ -1044,8 +1047,9 @@ public class Game implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this);
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated                
-                this.serverEndpoint.setSoTimeout(0);
+            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
+                this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
+                this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
                 DSLogger.reportInfo("Connected to server!", null);
                 okey = connected = true;
             }
