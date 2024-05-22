@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -221,7 +222,7 @@ public class GameServer implements DSMachine, Runnable {
         running = true;
         try {
             // Bind the endpoint socket to a specific IP address and port
-            endpoint = new DatagramSocket(port/*, InetAddress.getByName(host)*/);
+            endpoint = new DatagramSocket(port, InetAddress.getByName(host));
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.host, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.host, this.port));
