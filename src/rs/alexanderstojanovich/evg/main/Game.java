@@ -23,6 +23,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -83,6 +84,7 @@ public class Game implements DSMachine {
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 10.0;
+    public static final int AWAIT_TIME = 10; // 10 Seconds
 
     private final boolean[] keys = new boolean[512];
 
@@ -134,6 +136,10 @@ public class Game implements DSMachine {
 
     protected static final int DEFAULT_TIMEOUT = 30000; // 30 sec
     protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
+    protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds
+
+    protected int faultNum = 0;
+    protected static final int MAX_FAULTS = 3;
 
     /**
      * Magic bytes of End-of-Stream
@@ -511,7 +517,7 @@ public class Game implements DSMachine {
                 double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
                 playerPosReq.send(this);
-                ResponseIfc playerPosResp = ResponseIfc.receive(this);
+                ResponseIfc playerPosResp = ResponseIfc.receiveAsync(this, GameObject.TASK_EXECUTOR).get(AWAIT_TIME, TimeUnit.SECONDS);
                 double endTime = GLFW.glfwGetTime();
                 ping = endTime - beginTime;
                 if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
@@ -836,13 +842,17 @@ public class Game implements DSMachine {
                 double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 playerPosReq.send(this);
-                ResponseIfc timeResp = ResponseIfc.receive(this);
+                ResponseIfc timeResp = ResponseIfc.receiveAsync(this, GameObject.TASK_EXECUTOR).get(AWAIT_TIME, TimeUnit.SECONDS);
                 double endTime = GLFW.glfwGetTime();
                 long tripTime = Math.round(endTime - beginTime) * 1000L;
 
                 Game.gameTicks = (double) timeResp.getData();
                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
             } catch (Exception ex) {
+                if (++faultNum >= MAX_FAULTS) {
+                    this.disconnectFromServer();
+                    gameObject.clearEverything();
+                }
                 DSLogger.reportError(ex.getMessage(), ex);
             }
         }
@@ -852,13 +862,13 @@ public class Game implements DSMachine {
             gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
 
             // Multiplayer update
-            if ((Game.currentMode == Mode.MULTIPLAYER_HOST || Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && ((ups & (TPS_PING_CHK - 1)) == 0)) {
+            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && ((ups & (TPS_PING_CHK - 1)) == 0)) {
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
                         double beginTime = GLFW.glfwGetTime();
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this);
-                        ResponseIfc otherPlayerResponse = ResponseIfc.receive(this);
+                        ResponseIfc otherPlayerResponse = ResponseIfc.receiveAsync(this, GameObject.TASK_EXECUTOR).get(AWAIT_TIME, TimeUnit.SECONDS);
                         double endTime = GLFW.glfwGetTime();
                         double ping = endTime - beginTime;
                         if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
@@ -876,6 +886,10 @@ public class Game implements DSMachine {
                             gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
                         }
                     } catch (Exception ex) {
+                        if (++faultNum >= MAX_FAULTS) {
+                            this.disconnectFromServer();
+                            gameObject.clearEverything();
+                        }
                         DSLogger.reportError(ex.getMessage(), ex);
                     }
                 });
@@ -960,6 +974,11 @@ public class Game implements DSMachine {
                 gameObject.assertCheckCollision(causingCollision);
             }
         } catch (Exception ex) {
+            if (++faultNum >= MAX_FAULTS) {
+                DSLogger.reportError("Max faults reached! Server taking too long to respond!", ex);
+                this.disconnectFromServer();
+                gameObject.clearEverything();
+            }
             DSLogger.reportError(ex.getMessage(), ex);
         }
     }
@@ -1037,8 +1056,10 @@ public class Game implements DSMachine {
         }
         boolean okey = false;
         try {
+            DSLogger.reportInfo(String.format("Trying to connect to server %s:%d!", serverHostName, port), null);
             this.serverInetAddr = InetAddress.getByName(serverHostName);
             this.serverEndpoint = new DatagramSocket();
+            this.timeout = DEFAULT_TIMEOUT;
             serverEndpoint.setSoTimeout(timeout);
 
             // Send a simple hello message with magic bytes prepended
@@ -1266,6 +1287,7 @@ public class Game implements DSMachine {
                 goodByeRequest.send(this);
 
                 // Wait for response (assuming simple echo for demonstration)    
+                timeout = DEFAULT_SHORTENED_TIMEOUT;
                 serverEndpoint.setSoTimeout(timeout);
 
                 ResponseIfc response = ResponseIfc.receive(this);
@@ -1283,6 +1305,7 @@ public class Game implements DSMachine {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
             } finally {
+                faultNum = 0;
                 connected = false;
             }
         }

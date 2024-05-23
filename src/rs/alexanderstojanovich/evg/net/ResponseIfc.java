@@ -19,6 +19,10 @@ package rs.alexanderstojanovich.evg.net;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -72,5 +76,25 @@ public interface ResponseIfc extends DSObject {
         ResponseIfc result = (ResponseIfc) new Response().deserialize(p.getData()); // new request
 
         return result;
+    }
+
+    /**
+     * Receive async response from server endpoint. For game client.
+     *
+     * @param client game client
+     * @param executor
+     * @return Response.INVALID if deserialization failed otherwise valid
+     * response
+     * @throws java.io.IOException if network error
+     */
+    public static Future<ResponseIfc> receiveAsync(Game client, ExecutorService executor) throws Exception {
+        return executor.submit(() -> {
+            final byte[] content = new byte[BUFF_SIZE];
+            DatagramPacket p = new DatagramPacket(content, content.length);
+            client.getServerEndpoint().receive(p);
+            ResponseIfc result = (ResponseIfc) new Response().deserialize(p.getData()); // new request
+
+            return result;
+        });
     }
 }

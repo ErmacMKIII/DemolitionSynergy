@@ -831,6 +831,7 @@ public class Intrface {
                             break;
                         case "PLAY":
                             GameObject.TASK_EXECUTOR.execute(() -> {
+                                console.write(String.format("Trying to connect to server %s:%d!", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
                                 double beginTime = GLFW.glfwGetTime();
                                 boolean okey = gameObject.game.connectToServer();
                                 double endTime = GLFW.glfwGetTime();

@@ -145,7 +145,7 @@ public class Response implements ResponseIfc {
             byte[] magicBytes = new byte[ResponseIfc.MAGIC_BYTES.length];
             in.readFully(magicBytes);
             if (!Arrays.equals(magicBytes, ResponseIfc.MAGIC_BYTES)) {
-                return null; // Magic bytes mismatch
+                return Response.INVALID; // Magic bytes mismatch
             }
 
             // Read machine type, object type, status type, and data type

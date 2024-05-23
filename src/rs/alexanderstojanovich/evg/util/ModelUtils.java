@@ -26,7 +26,6 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Collections;
-import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.joml.Vector2f;
