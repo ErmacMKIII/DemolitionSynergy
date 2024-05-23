@@ -255,7 +255,7 @@ public class BlockEnvironment {
                             final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                             if (workTuple != null) {
                                 boolean modified = false;
-                                // if fullyOptimized doesn't exist
+                                // if fullyOptimized doesn't exist                                
                                 for (Block blk : st.blockList) {
                                     // take into consideration if could be seen by camera (impr. method)                                
                                     if (camera.doesSeeEff(blk)) {

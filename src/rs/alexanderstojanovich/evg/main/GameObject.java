@@ -96,7 +96,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Update/Generate for Level Container Mutex. Responsible for read/write to
      * chunks.
      */
-    private static final Lock updateRenderLCLock = new ReentrantLock();
+    public static final Lock updateRenderLCLock = new ReentrantLock();
 
     /**
      * Update/Render for Interface Mutex
@@ -241,11 +241,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * with blocklist from all chunks into one tuple selection.
      */
     public void utilOptimization() {
-        updateRenderLCLock.lock();
-        try {
-            this.optimize();
-        } finally {
-            updateRenderLCLock.unlock();
+        if (!isWorking()) {
+            updateRenderLCLock.lock();
+            try {
+                levelContainer.optimize();
+            } finally {
+                updateRenderLCLock.unlock();
+            }
         }
     }
 
@@ -366,23 +368,27 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders
-            this.prepare();
-            updateRenderLCLock.lock();
-            try {
-                // Render Effects
-                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                    waterRenderer.render();
-                }
 
-                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                    shadowRenderer.render();
-                }
+            if (!isWorking()) {
+                this.prepare();
+                updateRenderLCLock.lock();
+                try {
+                    // Render Effects
+                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                        waterRenderer.render();
+                    }
 
-                // Render Original Scene
-                levelContainer.render(renderFlag);
-            } finally {
-                updateRenderLCLock.unlock();
+                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                        shadowRenderer.render();
+                    }
+
+                    // Render Original Scene
+                    levelContainer.render(renderFlag);
+                } finally {
+                    updateRenderLCLock.unlock();
+                }
             }
+
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
                 intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
             }
@@ -395,7 +401,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Pull fullyOptimized tuples to working tuples in Block Environment.
      */
     public void pull() {
-        if (levelContainer.isWorking()) {
+        if (isWorking()) {
             return;
         }
         levelContainer.blockEnvironment.pull();
@@ -405,7 +411,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Push working to fullyOptimized tuples tuples in Block Environment.
      */
     public void push() {
-        if (levelContainer.isWorking()) {
+        if (isWorking()) {
             return;
         }
         levelContainer.blockEnvironment.push();
@@ -416,7 +422,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (levelContainer.isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
+        if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
             return;
         }
         if (GameRenderer.isLastFrame()) {
@@ -460,7 +466,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void prepare() {
-        if (GameRenderer.isFirstFrame()) {
+        if (!isWorking() && GameRenderer.isFirstFrame()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.prepare();
@@ -475,7 +481,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        if (GameRenderer.isLastFrame()) {
+        if (!isWorking() && GameRenderer.isLastFrame()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.animate();
@@ -493,18 +499,17 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         }
     }
 
-    /**
-     * Optimize with working/special tuples
-     */
-    private void optimize() {
-        updateRenderLCLock.lock();
-        try {
-            levelContainer.optimize();
-        } finally {
-            updateRenderLCLock.unlock();
-        }
-    }
-
+//    /**
+//     * Optimize with working/special tuples
+//     */
+//    private void optimize() {
+//        updateRenderLCLock.lock();
+//        try {
+//            levelContainer.optimize();
+//        } finally {
+//            updateRenderLCLock.unlock();
+//        }
+//    }
     /**
      * Is level container fullyOptimized
      */
@@ -593,7 +598,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
     }
@@ -611,7 +616,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        ok = levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
 
         return ok;
     }
@@ -629,7 +634,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = false;
 
         this.clearEverything();
-        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks) && levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat").get();
+        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
+
+        levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat");
 
         levelContainer.levelActors.player.setRegistered(true);
 
@@ -657,8 +664,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             } while (!downOkey && ++numberOfAttempts <= MAX_ATTEMPTS);
 
             if (downOkey) {
+                boolean ldOkey = false;
                 // load level to buffer
-                if (levelContainer.loadLevelFromBufferAsync().get()) {
+                if (updateRenderLCLock.tryLock()) {
+                    try {
+                        ldOkey |= levelContainer.loadLevelFromBufferAsync().get();
+                    } finally {
+                        updateRenderLCLock.unlock();
+                    }
+                }
+                if (ldOkey) {
                     PlayerInfo[] playerInfo = game.getPlayerInfo();
                     // config other players
                     levelContainer.levelActors.configOtherPlayers(playerInfo);

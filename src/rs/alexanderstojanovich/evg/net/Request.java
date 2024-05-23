@@ -180,7 +180,7 @@ public class Request implements RequestIfc {
             byte[] magicBytes = new byte[RequestIfc.MAGIC_BYTES.length];
             in.readFully(magicBytes);
             if (!Arrays.equals(magicBytes, RequestIfc.MAGIC_BYTES)) {
-                return null; // Magic bytes mismatch
+                return Request.INVALID; // Magic bytes mismatch
             }   // Read machine type, object type, request type, and data type
             int machineTypeOrdinal = in.readInt();
             int objTypeOrdinal = in.readInt();
@@ -191,7 +191,7 @@ public class Request implements RequestIfc {
                     || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
                     || reqTypeOrdinal < 0 || reqTypeOrdinal >= RequestType.values().length
                     || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
-                return null; // Invalid machine type, object type, request type, or data type
+                return Request.INVALID; // Invalid machine type, object type, request type, or data type
             }   // Read version
             version = in.readInt();
             // Read data

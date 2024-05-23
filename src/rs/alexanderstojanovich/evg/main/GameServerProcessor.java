@@ -17,9 +17,12 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -70,6 +73,16 @@ public class GameServerProcessor {
     public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
     /**
+     * Internal Mutex object
+     */
+    public static final Object InternMutex = new Object();
+
+    /**
+     * Is waiting confirm
+     */
+    public static volatile boolean waitOnDownload = false;
+
+    /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
      *
@@ -113,7 +126,17 @@ public class GameServerProcessor {
      */
     public static GameServerProcessor.Result process(GameServer gameServer, DatagramSocket endpoint) throws Exception {
         // Handle endpoint request and response
-        RequestIfc request = RequestIfc.receive(gameServer);
+        final RequestIfc request;
+        if (waitOnDownload) { // no requests will be taken into consideration 
+            // when processing download request
+            synchronized (GameServerProcessor.InternMutex) {
+                GameServerProcessor.InternMutex.wait();
+                request = null;
+            }
+        } else {
+            request = RequestIfc.receive(gameServer);
+        }
+
         if (request == null) {
             // avoid processing invalid requests requests
             return new Result(Status.INTERNAL_ERROR, null);
@@ -145,7 +168,7 @@ public class GameServerProcessor {
             return new Result(Status.CLIENT_ERROR, clientHostName);
         }
 
-        ResponseIfc response;
+        final ResponseIfc response;
         String msg;
         LevelActors levelActors;
 
@@ -317,67 +340,82 @@ public class GameServerProcessor {
                 // Server-side code to handle sending the file
                 response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");
                 response.send(gameServer, clientAddress, clientPort);
+                waitOnDownload = true;
+                gameServer.serverTaskExecutor.execute(() -> {
+                    try {
+                        int packetnum = 0;
+                        CRC32C chkSum = new CRC32C();
 
-                int packetnum = 0;
-                CRC32C chkSum = new CRC32C();
+                        int retransmissionAttempts = 0;
 
-                int retransmissionAttempts = 0;
+                        Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
+                        if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
+                            int bytesWrite = 0;
+                            final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
+                            final byte[] buff = new byte[BUFF_SIZE];
 
-                if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
-                    int bytesWrite = 0;
-                    final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
-                    final byte[] buff = new byte[BUFF_SIZE];
+                            while (bytesWrite < totalBytesWrite) {
+                                // Calculate the remaining bytes to write in this iteration
+                                int remainingBytes = totalBytesWrite - bytesWrite;
+                                // Determine the size of the chunk to write in this iteration
+                                int chunkSize = Math.min(remainingBytes, BUFF_SIZE);
 
-                    while (bytesWrite < totalBytesWrite) {
-                        // Calculate the remaining bytes to write in this iteration
-                        int remainingBytes = totalBytesWrite - bytesWrite;
-                        // Determine the size of the chunk to write in this iteration
-                        int chunkSize = Math.min(remainingBytes, BUFF_SIZE);
+                                // Write a chunk of data to the outbound datagram packet
+                                System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
+                                DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
+                                endpoint.send(dp);
+                                if (++packetnum == PACKETS_MAX) {
+                                    chkSum.update(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, PACKETS_MAX * BUFF_SIZE);
+                                    DSLogger.reportInfo(String.format("Awaiting confirmation request (CHKSUM = %d) .. ", chkSum.getValue()), null);
+                                    final RequestIfc chkReq = RequestIfc.receive(gameServer);
 
-                        // Write a chunk of data to the outbound datagram packet
-                        System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
-                        DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
-                        endpoint.send(dp);
-                        if (++packetnum == PACKETS_MAX) {
-                            chkSum.update(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, PACKETS_MAX * BUFF_SIZE);
-                            DSLogger.reportInfo(String.format("Awaiting confirmation request (CHKSUM = %d) .. ", chkSum.getValue()), null);
-                            RequestIfc received = RequestIfc.receive(gameServer);
-                            if (received == null) {
-                                continue;
-                            }
-
-                            if (received.getRequestType() == RequestIfc.RequestType.CONFIRM) {
-                                packetnum = 0;
-                                boolean okey = (chkSum.getValue() == (long) received.getData());
-                                if (okey) {
-                                    DSLogger.reportInfo("Confirmed! Checksum is OK. Upload resumed.", null);
-                                } else {
-                                    if (retransmissionAttempts < GameServerProcessor.RETRANSMISSION_MAX_ATTEMPTS) {
-                                        bytesWrite -= PACKETS_MAX * BUFF_SIZE;
-                                        DSLogger.reportError("ERR (checksum)! Attempting rentransmission.", null);
+                                    if (chkReq == null) {
+                                        continue;
                                     }
-                                    DSLogger.reportError("ERR (checksum)! Upload will be cancelled", null);
+
+                                    if (chkReq.getRequestType() == RequestIfc.RequestType.CONFIRM) {
+                                        packetnum = 0;
+                                        boolean okey = (chkSum.getValue() == (long) chkReq.getData());
+                                        if (okey) {
+                                            DSLogger.reportInfo("Confirmed! Checksum is OK. Upload resumed.", null);
+                                        } else {
+                                            if (retransmissionAttempts < GameServerProcessor.RETRANSMISSION_MAX_ATTEMPTS) {
+                                                bytesWrite -= PACKETS_MAX * BUFF_SIZE;
+                                                DSLogger.reportError("ERR (checksum)! Attempting rentransmission.", null);
+                                            }
+                                            DSLogger.reportError("ERR (checksum)! Upload will be cancelled", null);
+                                        }
+
+                                        final Response chkRsp = new Response(okey ? ResponseIfc.ResponseStatus.OK : ResponseIfc.ResponseStatus.ERR, DSObject.DataType.VOID, null);
+                                        chkRsp.send(gameServer, clientAddress, clientPort);
+                                    } else {
+                                        break;
+                                    }
                                 }
 
-                                response = new Response(okey ? ResponseIfc.ResponseStatus.OK : ResponseIfc.ResponseStatus.ERR, DSObject.DataType.VOID, null);
-                                response.send(gameServer, clientAddress, clientPort);
-                            } else {
-                                break;
+                                // Increment the total bytes written
+                                bytesWrite += chunkSize;
+
+                                // Logging the bytes written
+                                DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
                             }
+
+                            // Signal end-of-stream
+                            DatagramPacket eosPacket = new DatagramPacket(GameServer.EOS, GameServer.EOS.length, clientAddress, clientPort);
+                            endpoint.send(eosPacket);
+                            DSLogger.reportInfo("End of stream (EOS) marker sent", null);
                         }
-
-                        // Increment the total bytes written
-                        bytesWrite += chunkSize;
-
-                        // Logging the bytes written
-                        DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
+                    } catch (InterruptedException | ExecutionException | IOException ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    } catch (Exception ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    } finally {
+                        waitOnDownload = false;
+                        synchronized (GameServerProcessor.InternMutex) {
+                            GameServerProcessor.InternMutex.notify();
+                        }
                     }
-
-                    // Signal end-of-stream
-                    DatagramPacket eosPacket = new DatagramPacket(GameServer.EOS, GameServer.EOS.length, clientAddress, clientPort);
-                    endpoint.send(eosPacket);
-                    DSLogger.reportInfo("End of stream (EOS) marker sent", null);
-                }
+                });
                 break;
             case PLAYER_INFO:
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
@@ -462,6 +500,18 @@ public class GameServerProcessor {
 
     public static int getBUFF_SIZE() {
         return BUFF_SIZE;
+    }
+
+    public static int getTotalFailedAttempts() {
+        return TotalFailedAttempts;
+    }
+
+    public static Object getInternMutex() {
+        return InternMutex;
+    }
+
+    public static boolean isWaitOnDownload() {
+        return waitOnDownload;
     }
 
 }
