@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.zip.CRC32C;
 import org.joml.Vector3f;
@@ -347,6 +348,7 @@ public class GameServerProcessor {
 
                         int retransmissionAttempts = 0;
 
+                        Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
                         if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
                             int bytesWrite = 0;
                             final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;

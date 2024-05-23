@@ -174,6 +174,7 @@ public class GameServer implements DSMachine, Runnable {
                 SYNC_OBJ.notify();
             }
 
+            timeToLiveMap.clear();
             clients.clear();
         }
     }

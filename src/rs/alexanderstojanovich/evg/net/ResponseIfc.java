@@ -16,15 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -79,22 +77,35 @@ public interface ResponseIfc extends DSObject {
     }
 
     /**
-     * Receive async response from server endpoint. For game client.
+     * Receive async response from server endpoint. For game client. Provides
+     * no-blocking.
      *
      * @param client game client
-     * @param executor
      * @return Response.INVALID if deserialization failed otherwise valid
      * response
-     * @throws java.io.IOException if network error
      */
-    public static Future<ResponseIfc> receiveAsync(Game client, ExecutorService executor) throws Exception {
-        return executor.submit(() -> {
-            final byte[] content = new byte[BUFF_SIZE];
-            DatagramPacket p = new DatagramPacket(content, content.length);
-            client.getServerEndpoint().receive(p);
-            ResponseIfc result = (ResponseIfc) new Response().deserialize(p.getData()); // new request
+    public static CompletableFuture<ResponseIfc> receiveAsync(Game client) {
+        CompletableFuture<ResponseIfc> future = CompletableFuture.supplyAsync(() -> {
+            ResponseIfc result = Response.INVALID;
+            try {
+                final byte[] content = new byte[BUFF_SIZE];
+                DatagramPacket p = new DatagramPacket(content, content.length);
+                client.getServerEndpoint().receive(p);
+                result = (ResponseIfc) new Response().deserialize(p.getData()); // new request                
+            } catch (IOException ex) {
+                DSLogger.reportError("Error with server, while getting response!", ex);
+                client.gameObject.intrface.getConsole().write("Error with server, while getting response!", true);
+                DSLogger.reportError(ex.getMessage(), ex);
+                client.disconnectFromServer();
+                client.gameObject.clearEverything();
+            }
 
             return result;
+
+        }).exceptionally((ex) -> {
+            return Response.INVALID;
         });
+
+        return future;
     }
 }
