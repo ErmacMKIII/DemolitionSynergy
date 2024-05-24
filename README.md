@@ -1,19 +1,31 @@
-# DemolitionSynergy
-Voxel Engine using latest LWJGL.
+# Demolition Synergy
+Voxel Engine using latest LWJGL (The Lightweight Java Game Library).
 Audio material was provided from freesound.org by Erokia.
+
+Please checkout Erokia & (his) work at: https://freesound.org/people/erokia
 
 Demolition Synergy showing multiplayer setup.
 ![Alt text](/misc/DSynergy8.png?raw=true "Demolition Synergy showing multiplayer setup")
 
 # Verbose Description
-Lightwight Game Engine writen in Java. 
-Features: Lighting, Water Reflections, Shadow Effects, Voxel based. 
-With it's own Console & ingame commands. 
-Has ambient soundtracks. 
-Random level building & manual level building via Editor.
-Many tweaked optimizations in rendering. Instanced rendering.
-Highly modular and support visual & GLSL modifications.
-Has Editor, Single player & Multiplayer as different modes.
+Robust (yet still uncomplete) Game Engine writen in Java. Free & Open-Source.
+Project started back in a day on October 15, 2017. And possible earlier.
+
+Key features: 
+    - Dynamic lights.
+    - Water Reflections.
+    - Shadow Effects.
+    - Voxel based. Minecraft-like. Not a Minecraft-clone.
+    - Varying update with one tick per update or two ticks per update.
+	  (inspired by classic Doom port Zandronum)
+	
+Unique features:
+    - Console (similar to Quake III Arena) with ingame commands. 
+    - Ambient soundtracks (credits to Erokia). 
+    - Random level building & manual level building via Editor.
+    - Tweaked and unique renderer. Instanced rendering.
+    - Highly modular and support visual & GLSL modifications.
+    - Editor, Single player & Multiplayer as different modes.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Light trough air")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")
@@ -23,9 +35,9 @@ Has Editor, Single player & Multiplayer as different modes.
 ![Alt text](/misc/DSynergy6.png?raw=true "Various effects")
 
 # How To Build
-Build was coded in Apache NetBeans 16. Requires Java JDK 11 (or later).
+Build was coded in Apache NetBeans IDE 16. Requires Java JDK 11 (or later).
 In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
-1. LWJGL 3.3.3 with JOML 1.10.5,
+1. LWJGL 3.3.3 with JOML 1.10.5 (not installed, follow the steps below),
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) with dependecies (installed),
@@ -64,7 +76,8 @@ Done.
             ├───resources
             ├───shaders
             ├───texture
-            └───util
+			├───util
+            └───weapons
 ```
 - audio		=> Music/soundFX effects.
 - cache 	=> Contains chunk ssd/hdd disk caching.
@@ -76,13 +89,14 @@ Done.
 - light 	=> Light projection on the screen, light source(s).
 - location 	=> Block location matrix 384x384x384 on X,Z & Y axis.
 - main 		=> Main inependable classes, `Game` (client with main loop), `GameRenderer` (separate thread) & `GameObject` links them together.
-			   `GameServer` is relevant class for hosting a server on the PC.
+			   `GameServer` is relevant class for hosting a server on the PC. UDP (User datagram) protocol is being used with 13667-13668 ports. 
 - models 	=> 3d looking models and their part(s) - vertex, mesh, material.
-- net 		=> DSObject to be send over network - Request and Response.
+- net 		=> DSObject to be send over network - Request and Response. Stuff for multiplayer.
 - resources => Ingame block (models) cube.txt (deprecated) & cubex.txt.
 - shaders 	=> Shader - Vertex & Fragment GLSL, Shader Program - binds them together.
 - texture 	=> Ingame textures & texture store hashmap.
-- util 		=> Various utils & auxillary methods including logging, math & image utils.
+- util 		=> Various utils & auxillary methods including logging, math, image & model utils.
+- weapons 	=> Planned First person shooter weapons & gameplay (TODO).
 
 # Mentions
 Author: Ermac(MKIII); 
