@@ -12,20 +12,20 @@ Robust (yet still uncomplete) Game Engine writen in Java. Free & Open-Source.
 Project started back in a day on October 15, 2017. And possible earlier.
 
 Key features: 
-    - Dynamic lights.
-    - Water Reflections.
-    - Shadow Effects.
-    - Voxel based. Minecraft-like. Not a Minecraft-clone.
-    - Varying update with one tick per update or two ticks per update.
-	  (inspired by classic Doom port Zandronum)
+- Dynamic lights.
+- Water Reflections.
+- Shadow Effects.
+- Voxel based. Minecraft-like. Not a Minecraft-clone.
+- Varying update with one tick per update or two ticks per update.
+  (inspired by classic Doom port Zandronum)
 	
 Unique features:
-    - Console (similar to Quake III Arena) with ingame commands. 
-    - Ambient soundtracks (credits to Erokia). 
-    - Random level building & manual level building via Editor.
-    - Tweaked and unique renderer. Instanced rendering.
-    - Highly modular and support visual & GLSL modifications.
-    - Editor, Single player & Multiplayer as different modes.
+- Console (similar to Quake III Arena) with ingame commands. 
+- Ambient soundtracks (credits to Erokia). 
+- Random level building & manual level building via Editor.
+- Tweaked and unique renderer. Instanced rendering.
+- Highly modular and support visual & GLSL modifications.
+- Editor, Single player & Multiplayer as different modes.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Light trough air")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")
@@ -76,7 +76,7 @@ Done.
             ├───resources
             ├───shaders
             ├───texture
-			├───util
+            ├───util
             └───weapons
 ```
 - audio		=> Music/soundFX effects.
