@@ -503,10 +503,11 @@ public class Tuple extends Series {
      * @param tuples selected tuples
      * @param shaderProgram shader Program to use (instanced voxel)
      * @param lightSources light source (max 256 lights)
+     * @param blocksTexture world block texture
      * @param waterTexture water texture (water reflections)
      * @param shadowTexture shadow texture (shadow mapping
      */
-    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
+    public static void renderInstanced(IList<Tuple> tuples, ShaderProgram shaderProgram, LightSources lightSources, Texture blocksTexture, Texture waterTexture, Texture shadowTexture) {
         if (!tuples.isEmpty()) {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -521,7 +522,6 @@ public class Tuple extends Series {
             // -- Lights            
             lightSources.updateLightsInShaderIfModified(shaderProgram);
             // --
-            Texture blocksTexture = Texture.WORLD;
             if (blocksTexture != null) {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -618,11 +618,13 @@ public class Tuple extends Series {
      * @param tbo mutual buffers
      * @param shaderProgram shader Program to use (instanced voxel)
      * @param lightSources light source (max 256 lights)
+     * @param blocksTexture world block texture
      * @param waterTexture water texture (water reflections)
      * @param shadowTexture shadow texture (shadow mapping
      */
+    @Deprecated
     public static void renderInstanced(IList<Tuple> tuples, TupleBufferObject tbo,
-            ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
+            ShaderProgram shaderProgram, LightSources lightSources, Texture blocksTexture, Texture waterTexture, Texture shadowTexture) {
         if (!tuples.isEmpty()) {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -637,7 +639,6 @@ public class Tuple extends Series {
             // -- Lights            
             lightSources.updateLightsInShaderIfModified(shaderProgram);
             // --
-            Texture blocksTexture = Texture.WORLD;
             if (blocksTexture != null) {
                 blocksTexture.bind(0, shaderProgram, "modelTexture0");
             }

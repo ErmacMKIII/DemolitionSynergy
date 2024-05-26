@@ -29,9 +29,9 @@ public final class SingleValue implements MenuValue {
     private Object value = new Object();
     protected Type type;
 
-    public SingleValue(Object value, Type type) throws Exception {
+    public SingleValue(Intrface ifc, Object value, Type type) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(Texture.FONT, String.valueOf(value));
+        this.valueText = new DynamicText(ifc.gameObject.GameAssets.FONT, String.valueOf(value));
         this.setCurrentValue(value);
     }
 

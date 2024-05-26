@@ -16,8 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  * Menu item. Used widely in menus.
@@ -26,21 +26,23 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class MenuItem {
 
+    public final Intrface intrface;
     protected final DynamicText keyText;
 
     protected final MenuValue menuValue;
     protected final Menu.EditType editType;
 
     /**
-     * Game intrface
+     * Game menu item
      *
+     * @param intrface intrface with game object (to access assets)
      * @param string display text
      * @param editType editable type {NoValue, SingleValue, MultiValue}
-     * @param menuValue
-     * @throws java.lang.Exception
+     * @param menuValue actual menu value
      */
-    public MenuItem(String string, Menu.EditType editType, MenuValue menuValue) throws Exception {
-        this.keyText = new DynamicText(Texture.FONT, string);
+    public MenuItem(Intrface intrface, String string, Menu.EditType editType, MenuValue menuValue) {
+        this.intrface = intrface;
+        this.keyText = new DynamicText(this.intrface.gameObject.GameAssets.FONT, string);
         this.editType = editType;
         this.menuValue = menuValue;
     }

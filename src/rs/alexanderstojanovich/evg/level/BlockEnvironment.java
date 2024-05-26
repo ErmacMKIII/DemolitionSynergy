@@ -44,7 +44,7 @@ public class BlockEnvironment {
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
 
-    private final GameObject gameObject;
+    public final GameObject gameObject;
 
     /**
      * Working tuples (from update)
@@ -89,7 +89,7 @@ public class BlockEnvironment {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         while (faceBits <= 63) {
-            for (String tex : Texture.TEX_WORLD) {
+            for (String tex : gameObject.GameAssets.TEX_WORLD) {
                 Tuple optmTuple = null;
                 for (int chunkId : queue) {
                     Chunk chunk = chunks.getChunk(chunkId);
@@ -133,11 +133,11 @@ public class BlockEnvironment {
         }
 
         // determine texture type to process - split
-        if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
+        if (texProcIndex++ == gameObject.GameAssets.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
 
-        final String tex = Texture.TEX_WORLD[texProcIndex];
+        final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
 
         // PASS 1 : CREATE TUPLES
         int lastFaceBitsCopy = lastFaceBits;
@@ -223,7 +223,7 @@ public class BlockEnvironment {
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
-        final String tex = Texture.TEX_WORLD[texProcIndex];
+        final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
 
         // PASS 1 : CREATE TUPLES
         int lastFaceBitsCopy = lastFaceBits;
@@ -282,7 +282,7 @@ public class BlockEnvironment {
         lastFaceBits += NUM_OF_PASSES_MAX;
 
         // determine texture type to process - split
-        if (texProcIndex++ == Texture.TEX_WORLD.length - 1) {
+        if (texProcIndex++ == gameObject.GameAssets.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
 
@@ -398,7 +398,7 @@ public class BlockEnvironment {
 
         Tuple.renderInstanced(
                 optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
-                shaderProgram, lightSources, waterTexture, shadowTexture
+                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
         );
         optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
     }
@@ -457,7 +457,7 @@ public class BlockEnvironment {
 
         Tuple.renderInstanced(
                 optimizedTuples, tupleBuffObj,
-                shaderProgram, lightSources, waterTexture, shadowTexture
+                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
         );
     }
 

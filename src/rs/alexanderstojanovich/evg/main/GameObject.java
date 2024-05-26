@@ -43,6 +43,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -56,14 +57,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
     // game logic is contained in here
 
+    /**
+     * All Game Assets (Models, Textures etc.)
+     */
+    public final Assets GameAssets = new Assets();
+
     protected boolean initializedWindow = false;
     protected boolean initializedCore = false;
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 41;
+    public static final int VERSION = 42;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
+
+    /**
+     * Game GLFW Window
+     */
     public final Window WINDOW;
 
     public final MasterRenderer masterRenderer;
@@ -137,7 +147,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         WINDOW.centerTheWindow();
         //----------------------------------------------------------------------        
-        this.splashScreen = new Quad(width, height, Texture.SPLASH, true);
+        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
@@ -368,7 +378,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders
-
+            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
+                    || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN)) {
+                levelContainer.levelActors.player.renderWeaponInHand(levelContainer.lightSources, ShaderProgram.getWeaponShader());
+            }
             if (!isWorking()) {
                 this.prepare();
                 updateRenderLCLock.lock();

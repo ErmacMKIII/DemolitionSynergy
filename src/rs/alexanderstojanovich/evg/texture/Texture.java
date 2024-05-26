@@ -20,10 +20,15 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL14;
@@ -36,7 +41,7 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ImageUtils;
-import rs.alexanderstojanovich.evg.weapons.Weapons;
+import rs.alexanderstojanovich.evg.weapons.WeaponConstants;
 
 /**
  *
@@ -61,42 +66,14 @@ public class Texture {
     public static final int TEX_SIZE = Configuration.getInstance().getTextureSize();
     public static final Map<String, TexValue> TEX_STORE = new LinkedHashMap<>();
 
+    /**
+     * Placeholder for Empty texture
+     */
     public static final Texture EMPTY = new Texture("EMPTY", Format.NONE);
-
-    public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
-    public static final int GRID_SIZE_WORLD = 3;
-
-    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Format.RGBA8);
-    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png", Format.RGBA8);
-    public static final TexValue QMARK_TV = new TexValue(QMARK, -1, 1);
-
-    public static final Texture SUN = new Texture(Game.WORLD_ENTRY, "suntx.png", Format.RGBA8);
-    public static final Texture DAY = new Texture(Game.WORLD_ENTRY, "day.png", Format.RGBA8);
-    public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Format.RGBA8);
-
-    public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Format.RGBA8);
-    public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Format.RGBA8);
-    public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Format.RGBA8);
-    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Format.RGBA8);
-    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png", Format.RGBA8);
-    public static final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png", Format.RGBA8);
-    public static final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png", Format.RGBA8);
-
-    public static final Texture ALEX = new Texture(Game.CHARACTER_ENTRY, "alex.png", Format.RGBA8);
-    public static final Texture STEVE = new Texture(Game.CHARACTER_ENTRY, "steve.png", Format.RGBA8);
-    public static final int GRID_SIZE_PLAYER = 4;
-
-    public static final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
-    public static final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, Weapons.TEX_WEAPONS, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
-
-    public static final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Format.RGB5_A1);
-
-    public static IList<String> LIGHT_TEX_LIST = new GapList<String>() {
-        {
-            add("suntx");
-            add("reflc");
-        }
-    };
+    /**
+     * Placeholder for Empty value (from 'Empty' texture)
+     */
+    public static final TexValue EMPTY_VALUE = new TexValue(Texture.EMPTY, -1, 1);
 
     /**
      * Creates blank Texture (TEXSIZE x TEXSIZE)
@@ -183,28 +160,6 @@ public class Texture {
     public static void bufferAllTextures() {
         // EMPTY Texture (Water etc)
         Texture.bufferAll(EMPTY, null);
-        // intrface
-        SPLASH.bufferAll();
-        LOGO.bufferAll();
-        CROSSHAIR.bufferAll();
-        MINIGUN.bufferAll();
-        FONT.bufferAll();
-        CONSOLE.bufferAll();
-        LIGHT_BULB.bufferAll();
-        // world        
-        DECAL.bufferAll();
-        SUN.bufferAll();
-        QMARK.bufferAll();
-        WORLD.bufferAll();
-        DAY.bufferAll();
-        NIGHT.bufferAll();
-        WATERFX.bufferAll();
-        // player
-        ALEX.bufferAll();
-        STEVE.bufferAll();
-        PLAYER_WEAPONS.bufferAll();
-
-        DSLogger.reportDebug("Textures loaded!", null);
     }
 
     private void loadTexture(ByteBuffer imgDatBuff, int internFmt, int pixFmt, Type type) {
@@ -375,6 +330,11 @@ public class Texture {
             index++;
         }
 
+//        try {
+//            ImageIO.write(result.image, "PNG", new File(atlasName+ ".png"));
+//        } catch (IOException ex) {
+//            Logger.getLogger(Texture.class.getName()).log(Level.SEVERE, null, ex);
+//        }
         return result;
     }
 
@@ -385,7 +345,7 @@ public class Texture {
      * @return texture name
      */
     public static Texture getOrDefault(String texName) {
-        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).texture;
+        return TEX_STORE.getOrDefault(texName, Texture.EMPTY_VALUE).texture;
     }
 
     /**
@@ -395,7 +355,7 @@ public class Texture {
      * @return texture index
      */
     public static int getOrDefaultIndex(String texName) {
-        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).value;
+        return TEX_STORE.getOrDefault(texName, Texture.EMPTY_VALUE).value;
     }
 
     /**
@@ -405,7 +365,7 @@ public class Texture {
      * @return texture index
      */
     public static int getOrDefaultGridSize(String texName) {
-        return TEX_STORE.getOrDefault(texName, Texture.QMARK_TV).gridSize;
+        return TEX_STORE.getOrDefault(texName, Texture.EMPTY_VALUE).gridSize;
     }
 
     @Override
@@ -431,10 +391,6 @@ public class Texture {
 
     public String getTexName() {
         return texName;
-    }
-
-    public static boolean isLightSource(String texName) {
-        return LIGHT_TEX_LIST.contains(texName);
     }
 
     public Format getTexFmt() {

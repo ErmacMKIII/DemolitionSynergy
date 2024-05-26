@@ -26,7 +26,7 @@ import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import static rs.alexanderstojanovich.evg.main.GameObject.UPDATE_RENDER_IFC_MUTEX;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
@@ -50,7 +50,7 @@ public class Editor {
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }
-        selectTexture();
+        selectTexture(lc.gameObject.GameAssets);
         // fetching..
         Camera camera = lc.levelActors.mainCamera();
         Vector3f pos = camera.getPos();
@@ -206,7 +206,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture();
+            selectTexture(lc.gameObject.GameAssets);
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -250,7 +250,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture();
+            selectTexture(lc.gameObject.GameAssets);
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -323,7 +323,7 @@ public class Editor {
                     lc.chunks.addBlock(selectedNew);
                 }
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                selectedNew = new Block(Texture.TEX_WORLD[texValue]);
+                selectedNew = new Block(lc.gameObject.GameAssets.TEX_WORLD[texValue]);
             }
         }
         deselect();
@@ -339,27 +339,27 @@ public class Editor {
         deselect();
     }
 
-    private static void selectTexture() {
+    private static void selectTexture(Assets assets) {
         if (selectedNew != null) {
-            String texName = Texture.TEX_WORLD[texValue];
+            String texName = assets.TEX_WORLD[texValue];
             selectedNew.setTexNameWithDeepCopy(texName);
         }
     }
 
-    public static void selectPrevTexture() {
+    public static void selectPrevTexture(Assets assets) {
         if (selectedNew != null) {
             if (texValue > 0) {
                 texValue--;
-                selectTexture();
+                selectTexture(assets);
             }
         }
     }
 
-    public static void selectNextTexture() {
+    public static void selectNextTexture(Assets assets) {
         if (selectedNew != null) {
-            if (texValue < Texture.TEX_WORLD.length - 1) {
+            if (texValue < assets.TEX_WORLD.length - 1) {
                 texValue++;
-                selectTexture();
+                selectTexture(assets);
             }
         }
     }

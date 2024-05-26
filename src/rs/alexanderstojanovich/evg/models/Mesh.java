@@ -157,6 +157,8 @@ public class Mesh {
         // Allocate memory for index data
         if (ib == null) {
             ib = MemoryUtil.memCallocInt(someSize);
+        } else if (ib.capacity() < someSize) {
+            ib = MemoryUtil.memRealloc(ib, someSize);
         }
         ib.position(0);
         ib.limit(someSize);

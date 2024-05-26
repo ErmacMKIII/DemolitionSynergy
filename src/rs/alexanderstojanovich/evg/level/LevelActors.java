@@ -31,7 +31,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
@@ -46,7 +45,7 @@ public class LevelActors {
      */
     public final Observer spectator = new Camera(); // spectator is separate camera from player instance
 
-    public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
+    public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", 1, true);
     /**
      * Main player (Single Player & Multiplayer)
      */

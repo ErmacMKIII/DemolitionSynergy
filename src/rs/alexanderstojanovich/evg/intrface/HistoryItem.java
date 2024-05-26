@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import org.joml.Vector2f;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  * Item used in a console. Of previous command inputs.
@@ -30,11 +29,13 @@ public class HistoryItem {
     protected Command cmd;
     protected final DynamicText cmdText;
     protected final Quad quad;
+    public final Console console;
 
-    public HistoryItem(Command command) throws Exception {
+    public HistoryItem(Console console, Command command) throws Exception {
+        this.console = console;
         this.cmd = command;
-        this.cmdText = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
-        this.quad = new Quad(14, 14, Texture.LIGHT_BULB);
+        this.cmdText = new DynamicText(console.intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18);
+        this.quad = new Quad(14, 14, console.intrface.gameObject.GameAssets.LIGHT_BULB);
     }
 
     /**

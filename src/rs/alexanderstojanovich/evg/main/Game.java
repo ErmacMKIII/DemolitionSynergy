@@ -185,6 +185,8 @@ public class Game implements DSMachine {
      */
     public final GameObject gameObject;
 
+    public int weaponIndex = 0;
+
     /**
      * Construct new game (client) view. Demolition Synergy client.
      *
@@ -466,31 +468,15 @@ public class Game implements DSMachine {
             changed = true;
         }
 
-//        if (keys[GLFW.GLFW_KEY_1]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_2]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_3]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_4]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_5]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_6]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
-//            changed = true;
-//        }
-        if (keys[GLFW.GLFW_KEY_R]) {
+        if (keys[GLFW.GLFW_KEY_1]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            changed = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_2]) {
+            weaponIndex = (--weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
             changed = true;
         }
 
@@ -677,30 +663,18 @@ public class Game implements DSMachine {
             changed = true;
         }
 
-//        if (keys[GLFW.GLFW_KEY_1]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_2]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_3]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_4]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_5]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_6]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
-//            changed = true;
-//        }
+        if (keys[GLFW.GLFW_KEY_1]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            changed = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_2]) {
+            weaponIndex = (--weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            changed = true;
+        }
+
         if (keys[GLFW.GLFW_KEY_R]) {
             changed = true;
         }
@@ -779,10 +753,10 @@ public class Game implements DSMachine {
                     Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectPrevTexture();
+                    Editor.selectPrevTexture(gameObject.GameAssets);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectNextTexture();
+                    Editor.selectNextTexture(gameObject.GameAssets);
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;

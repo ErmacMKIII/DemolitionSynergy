@@ -97,11 +97,6 @@ public class ModelUtils {
             return null;
         }
 
-        int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
-
         Model result = new Model(fileName, texName);
         Mesh mesh = new Mesh();
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
@@ -130,10 +125,10 @@ public class ModelUtils {
                         Vertex vertex = mesh.vertices.get(index);
                         if (data.length >= 2 && !data[1].isEmpty()) {
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                            if (texIndex != -1) {
-                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
-                            }
+//                            if (texIndex != -1) {
+//                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
+//                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
+//                            }
                         }
                         if (data.length >= 3 && !data[2].isEmpty()) {
                             mesh.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
@@ -175,10 +170,11 @@ public class ModelUtils {
      * @param dirEntry directory entry for the model & texture
      * @param fileName obj filename
      * @param texName texName (in the cache)
+     * @param gridSize grid size of texture atlas (non-zero, positive number)
      * @param reverseFaces reverse face (for face culling)
      * @return new Model
      */
-    public static Model readFromObjFile(String dirEntry, String fileName, String texName, boolean reverseFaces) {
+    public static Model readFromObjFile(String dirEntry, String fileName, String texName, int gridSize, boolean reverseFaces) {
         File extern = new File(dirEntry + fileName);
         File archive = new File(Game.DATA_ZIP);
         ZipFile zipFile = null;
@@ -211,9 +207,9 @@ public class ModelUtils {
         }
 
         int texIndex = Texture.getOrDefaultIndex(texName);
-        int row = texIndex / Texture.GRID_SIZE_WORLD;
-        int col = texIndex % Texture.GRID_SIZE_WORLD;
-        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+        int row = texIndex / gridSize;
+        int col = texIndex % gridSize;
+        final float oneOver = 1.0f / (float) gridSize;
 
         Model result = new Model(fileName, texName);
         Mesh mesh = new Mesh();

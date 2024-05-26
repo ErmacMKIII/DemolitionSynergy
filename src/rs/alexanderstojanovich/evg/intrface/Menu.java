@@ -69,10 +69,10 @@ public abstract class Menu {
 
     public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
         this.intrface = intrface;
-        this.title = new DynamicText(Texture.FONT, title);
+        this.title = new DynamicText(intrface.gameObject.GameAssets.FONT, title);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
-        Texture mngTexture = Texture.MINIGUN;
+        Texture mngTexture = intrface.gameObject.GameAssets.MINIGUN;
         iterator = new Quad(24, 24, mngTexture);
         iterator.scale = itemScale;
         makeItems(intrface);
@@ -82,14 +82,14 @@ public abstract class Menu {
 
     public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName, Vector2f pos, float scale) throws Exception {
         this.intrface = intrface;
-        this.title = new DynamicText(Texture.FONT, title);
+        this.title = new DynamicText(intrface.gameObject.GameAssets.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
         this.enabled = false;
         this.pos = pos;
         this.itemScale = scale;
-        Texture mngTexture = Texture.MINIGUN;
+        Texture mngTexture = intrface.gameObject.GameAssets.MINIGUN;
         iterator = new Quad(24, 24, mngTexture);
         iterator.scale = scale;
         makeItems(intrface);

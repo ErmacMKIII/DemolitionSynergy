@@ -34,7 +34,6 @@ import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
@@ -111,49 +110,49 @@ public class Intrface {
             AudioPlayer musicPlayer = gameObject.getMusicPlayer();
             AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-            updText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
+            updText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
             updText.alignToNextChar(this);
-            fpsText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
+            fpsText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
             fpsText.alignToNextChar(this);
 
-            posText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
+            posText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
             posText.setAlignment(Text.ALIGNMENT_RIGHT);
             posText.alignToNextChar(this);
 
-            viewText = new DynamicText(Texture.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+            viewText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
             viewText.setAlignment(Text.ALIGNMENT_RIGHT);
             viewText.alignToNextChar(this);
 
-            chunkText = new DynamicText(Texture.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
+            chunkText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
             chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
             chunkText.alignToNextChar(this);
 
-            collText = new DynamicText(Texture.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
+            collText = new DynamicText(gameObject.GameAssets.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
             collText.alignToNextChar(this);
-            helpText = new DynamicText(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
+            helpText = new DynamicText(gameObject.GameAssets.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
             helpText.alignToNextChar(this);
             helpText.setEnabled(false);
-            progText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
+            progText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
             progText.alignToNextChar(this);
-            screenText = new DynamicText(Texture.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
+            screenText = new DynamicText(gameObject.GameAssets.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
             screenText.alignToNextChar(this);
-            gameModeText = new DynamicText(Texture.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
+            gameModeText = new DynamicText(gameObject.GameAssets.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
             gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
             gameModeText.alignToNextChar(this);
 
-            gameTimeText = new DynamicText(Texture.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
+            gameTimeText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
             gameTimeText.alignToNextChar(this);
 
-            crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+            crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
             crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
             IList<MenuItem> mainMenuItems = new GapList<>();
-            mainMenuItems.add(new MenuItem("SINGLE PLAYER", Menu.EditType.EditNoValue, null));
-            mainMenuItems.add(new MenuItem("MULTIPLAYER", Menu.EditType.EditNoValue, null));
-            mainMenuItems.add(new MenuItem("EDITOR", Menu.EditType.EditNoValue, null));
-            mainMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
-            mainMenuItems.add(new MenuItem("CREDITS", Menu.EditType.EditNoValue, null));
-            mainMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "SINGLE PLAYER", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "MULTIPLAYER", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "EDITOR", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "OPTIONS", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "CREDITS", Menu.EditType.EditNoValue, null));
+            mainMenuItems.add(new MenuItem(this, "EXIT", Menu.EditType.EditNoValue, null));
             mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
                 @Override
                 protected void leave() {
@@ -193,16 +192,16 @@ public class Intrface {
                     }
                 }
             };
-            Quad logo = new Quad(120, 90, Texture.LOGO);
+            Quad logo = new Quad(120, 90, gameObject.GameAssets.LOGO);
             logo.setColor(new Vector4f(2.0f, 1.37f, 0.1f, 1.0f));
             logo.setScale(1.5f);
             mainMenu.setLogo(logo);
             mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
             // -----------------------------------------------------------------
             IList<MenuItem> gameMenuItems = new GapList<>();
-            gameMenuItems.add(new MenuItem("RESUME", Menu.EditType.EditNoValue, null));
-            gameMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
-            gameMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem(this, "RESUME", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem(this, "OPTIONS", Menu.EditType.EditNoValue, null));
+            gameMenuItems.add(new MenuItem(this, "EXIT", Menu.EditType.EditNoValue, null));
             gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
                 @Override
                 protected void leave() {
@@ -237,7 +236,7 @@ public class Intrface {
 
             gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
             // -----------------------------------------------------------------
-            saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
+            saveDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
                     "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
                 @Override
                 protected ExecStatus execute(String command) {
@@ -251,7 +250,7 @@ public class Intrface {
                 }
             };
 
-            loadDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
+            loadDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
                     "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
                 @Override
                 protected ExecStatus execute(String command) {
@@ -276,7 +275,7 @@ public class Intrface {
 
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
-                loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
+                loadLvlMenuPairs.add(new MenuItem(this, datFile, Menu.EditType.EditNoValue, null));
             }
 
             loadLvlMenu = new Menu(this, "LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
@@ -293,7 +292,7 @@ public class Intrface {
             };
             loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
-            randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
+            randLvlDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
                     "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
                 @Override
                 protected ExecStatus execute(String command) {
@@ -315,11 +314,11 @@ public class Intrface {
             randLvlDialog.dialog.alignToNextChar(this);
 
             IList<MenuItem> randLvlMenuItems = new GapList<>();
-            randLvlMenuItems.add(new MenuItem("SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
-            randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
-            randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
-            randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
-            randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
+            randLvlMenuItems.add(new MenuItem(this, "SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
+            randLvlMenuItems.add(new MenuItem(this, "SEED  ", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
 
             randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -361,7 +360,7 @@ public class Intrface {
             };
             randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
 
-            singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+            singlePlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;
@@ -383,7 +382,7 @@ public class Intrface {
             };
             singlePlayerDialog.dialog.alignToNextChar(this);
 
-            multiPlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
+            multiPlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;
@@ -434,18 +433,19 @@ public class Intrface {
             }
 
             IList<MenuItem> optionsMenuPairs = new GapList<>();
-            optionsMenuPairs.add(new MenuItem("FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
-            optionsMenuPairs.add(new MenuItem("RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
+            optionsMenuPairs.add(new MenuItem(this, "FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(this, fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
+            optionsMenuPairs.add(new MenuItem(this, "RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
+                    this,
                     resolutions,
                     MenuValue.Type.STRING,
                     String.valueOf(gameObject.WINDOW.getWidth()) + "x" + String.valueOf(gameObject.WINDOW.getHeight()))));
-            optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, gameObject.WINDOW.isFullscreen() ? "ON" : "OFF")));
-            optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, gameObject.WINDOW.isVsync() ? "ON" : "OFF")));
-            optionsMenuPairs.add(new MenuItem("WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, gameObject.waterRenderer.getEffectsQuality().toString())));
-            optionsMenuPairs.add(new MenuItem("SHADOW EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(swtchFX, MenuValue.Type.STRING, gameObject.shadowRenderer.getEffectsQuality().toString())));
-            optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
-            optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
-            optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
+            optionsMenuPairs.add(new MenuItem(this, "FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isFullscreen() ? "ON" : "OFF")));
+            optionsMenuPairs.add(new MenuItem(this, "VSYNC", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isVsync() ? "ON" : "OFF")));
+            optionsMenuPairs.add(new MenuItem(this, "WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(this, swtchFX, MenuValue.Type.STRING, gameObject.waterRenderer.getEffectsQuality().toString())));
+            optionsMenuPairs.add(new MenuItem(this, "SHADOW EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(this, swtchFX, MenuValue.Type.STRING, gameObject.shadowRenderer.getEffectsQuality().toString())));
+            optionsMenuPairs.add(new MenuItem(this, "MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(this, mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
+            optionsMenuPairs.add(new MenuItem(this, "MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
+            optionsMenuPairs.add(new MenuItem(this, "SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
 
             optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -552,10 +552,10 @@ public class Intrface {
             optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
 
             IList<MenuItem> editorMenuPairs = new GapList<>();
-            editorMenuPairs.add(new MenuItem("START NEW LEVEL", Menu.EditType.EditNoValue, null));
-            editorMenuPairs.add(new MenuItem("GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
-            editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
-            editorMenuPairs.add(new MenuItem("LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "START NEW LEVEL", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
+            editorMenuPairs.add(new MenuItem(this, "LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
 
             editorMenu = new Menu(this, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -591,15 +591,15 @@ public class Intrface {
             editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
             IList<MenuItem> creditsMenuPairs = new GapList<>();
-            creditsMenuPairs.add(new MenuItem("Programmer", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Testers", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("\n", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Art", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem("Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Programmer", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Testers", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "\n", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Art", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Music/FX", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
 
             creditsMenu = new Menu(this, "CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -627,11 +627,11 @@ public class Intrface {
             creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
-            singlPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
-            singlPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
-            singlPlayerMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
-            singlPlayerMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
-            singlPlayerMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
+            singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
+            singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
+            singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
 
             singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
@@ -682,11 +682,11 @@ public class Intrface {
             //------------------------------------------------------------------
             // MAIN MULTIPLAYER MENU
             IList<MenuItem> multiPlayerMenuItems = new GapList<>();
-            multiPlayerMenuItems.add(new MenuItem("PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
-            multiPlayerMenuItems.add(new MenuItem("CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
-            multiPlayerMenuItems.add(new MenuItem("COLOR", Menu.EditType.EditMultiValue, new MultiValue(GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
-            multiPlayerMenuItems.add(new MenuItem("HOST GAME", Menu.EditType.EditNoValue, null));
-            multiPlayerMenuItems.add(new MenuItem("JOIN GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenuItems.add(new MenuItem(this, "PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
+            multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
+            multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
@@ -726,12 +726,12 @@ public class Intrface {
             multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
 
             IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
-            multiPlayerHostMenuItems.add(new MenuItem("WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
-            multiPlayerHostMenuItems.add(new MenuItem("LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
-            multiPlayerHostMenuItems.add(new MenuItem("SEED", Menu.EditType.EditSingleValue, new SingleValue(gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
-            multiPlayerHostMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getHost(), MenuValue.Type.STRING)));
-            multiPlayerHostMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.gameServer.getPort(), MenuValue.Type.INT)));
-            multiPlayerHostMenuItems.add(new MenuItem("START", Menu.EditType.EditNoValue, null));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getHost(), MenuValue.Type.STRING)));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "PORT", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getPort(), MenuValue.Type.INT)));
+            multiPlayerHostMenuItems.add(new MenuItem(this, "START", Menu.EditType.EditNoValue, null));
             multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {
@@ -809,9 +809,9 @@ public class Intrface {
             multiPlayerHostMenu.items.get(5).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             //------------------------------------------------------------------
             IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
-            multiPlayerJoinMenuItems.add(new MenuItem("HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getServerHostName(), MenuValue.Type.STRING)));
-            multiPlayerJoinMenuItems.add(new MenuItem("PORT", Menu.EditType.EditSingleValue, new SingleValue(gameObject.game.getPort(), MenuValue.Type.INT)));
-            multiPlayerJoinMenuItems.add(new MenuItem("PLAY", Menu.EditType.EditNoValue, null));
+            multiPlayerJoinMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.game.getServerHostName(), MenuValue.Type.STRING)));
+            multiPlayerJoinMenuItems.add(new MenuItem(this, "PORT", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.game.getPort(), MenuValue.Type.INT)));
+            multiPlayerJoinMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
             multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
                 @Override
                 protected void leave() {

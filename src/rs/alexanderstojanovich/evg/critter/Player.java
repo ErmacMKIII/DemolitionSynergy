@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.Weapon;
 
 /**
  *
@@ -39,17 +40,9 @@ public class Player extends Critter implements Observer {
     }
     protected CameraView cameraView = CameraView.THIRD_PERSON;
 
-//    private Model currWeapon;
+    protected Model weaponInHands = Weapon.M9_PISTOL.hndMdl;
     private final RPGCamera camera;
     public final LightSource light;
-//    static {
-//        for (Model weapon : WEAPONS) {
-//            weapon.pos = WEAPON_POS;
-//            weapon.setPrimaryColor(GlobalColors.WHITE);
-//            weapon.setScale(6.0f);
-//            weapon.setrY((float) (-Math.PI / 2.0f));
-//        }
-//    }
 
     /**
      * Create new player for Single Player
@@ -92,9 +85,15 @@ public class Player extends Critter implements Observer {
         this.light = light;
     }
 
-//    public void switchWeapon(int num) {
-//        currWeapon = WEAPONS[num - 1];
-//    }
+    /**
+     * Switch to weapon in hands
+     *
+     * @param index index of (weapon) enumeration
+     */
+    public void switchWeapon(int index) {
+        this.weaponInHands = Weapon.values()[index].hndMdl;
+    }
+
     /**
      * Toggle Between 1st Person / Third Person
      */
@@ -106,6 +105,19 @@ public class Player extends Critter implements Observer {
             this.camera.setDistanceFromTarget(2.1f);
             this.cameraView = CameraView.FIRST_PERSON;
         }
+    }
+
+    /**
+     * Render player's weapon in hands.
+     *
+     * @param ls Light Source (from level container or NONE)
+     * @param sp Shader Program (default is Weapon GLSL Shader)
+     */
+    public void renderWeaponInHand(LightSources ls, ShaderProgram sp) {
+        if (!weaponInHands.isBuffered()) {
+            weaponInHands.bufferAll();
+        }
+        weaponInHands.render(ls, sp);
     }
 
     @Override
@@ -285,4 +297,9 @@ public class Player extends Critter implements Observer {
     public boolean isRegistered() {
         return registered;
     }
+
+    public Model getWeaponInHands() {
+        return weaponInHands;
+    }
+
 }
