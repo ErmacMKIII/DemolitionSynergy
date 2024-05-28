@@ -25,7 +25,8 @@ import rs.alexanderstojanovich.evg.models.Model;
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public enum Weapon implements WeaponIfc {
+public class Weapon implements WeaponIfc {
+
     /*
         01 - M9 Pistol                - "W01M9.obj"
         02 - M1911 Pistol             - "W02M1.obj"
@@ -44,33 +45,21 @@ public enum Weapon implements WeaponIfc {
         15 - Dragunov Sniper          - "W15DR.obj"
         16 - M82 Sniper               - "W16M8.obj"
      */
-    M9_PISTOL(WeaponConstants.M9_PISTOL),
-    M1911_PISTOL(WeaponConstants.M1911_PISTOL),
-    DESERT_EAGLE(WeaponConstants.DESERT_EAGLE),
-    MINI_UZI_SMG(WeaponConstants.MINI_UZI_SMG),
-    MP5_SMG(WeaponConstants.MP5_SMG),
-    P90_SMG(WeaponConstants.P90_SMG),
-    AK47_RIFLE(WeaponConstants.AK47_RIFLE),
-    M4A1_RIFLE(WeaponConstants.M4A1_RIFLE),
-    G36_RIFLE(WeaponConstants.G36_RIFLE),
-    M60_MG(WeaponConstants.M60_MG),
-    SAW_MG(WeaponConstants.SAW_MG),
-    WINCHESTER_1200_SHOTGUN(WeaponConstants.WINCHESTER_1200_SHOTGUN),
-    BENELLI_SUPER_90_SHOTGUN(WeaponConstants.BENELLI_SUPER_90_SHOTGUN),
-    REMINGTON_700_SNIPER(WeaponConstants.REMINGTON_700_SNIPER),
-    DRAGUNOV_SNIPER(WeaponConstants.DRAGUNOV_SNIPER),
-    M82_SNIPER(WeaponConstants.M82_SNIPER);
-
     public final Model model;
     public final Model chrMdl;
     public final Model gndMdl;
     public final Model hndMdl;
 
-    private Weapon(Model model) {
-        this.model = model;
-        this.hndMdl = new Model(model);
-        this.hndMdl.pos = WeaponConstants.WEAPON_POS;
-        this.hndMdl.setScale(1.0f);
+    /**
+     * Create new weapon from base model
+     *
+     * @param baseModel base model (to create weapon from)
+     */
+    protected Weapon(Model baseModel) {
+        this.model = baseModel;
+        this.hndMdl = new Model(baseModel);
+        this.hndMdl.pos = WeaponIfc.WEAPON_POS;
+        this.hndMdl.setScale(2.71f);
         this.hndMdl.setrY((float) (-Math.PI / 2.0f));
 
         // TODO

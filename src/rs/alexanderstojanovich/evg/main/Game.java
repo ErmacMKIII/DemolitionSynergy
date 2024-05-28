@@ -470,13 +470,13 @@ public class Game implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_2]) {
             weaponIndex = (--weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
             changed = true;
         }
 
@@ -665,13 +665,13 @@ public class Game implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_2]) {
             weaponIndex = (--weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(weaponIndex);
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
             changed = true;
         }
 

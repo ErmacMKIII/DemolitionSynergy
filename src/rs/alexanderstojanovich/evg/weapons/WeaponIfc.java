@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.weapons;
 
+import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.models.Model;
 
@@ -26,6 +27,11 @@ import rs.alexanderstojanovich.evg.models.Model;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public interface WeaponIfc {
+
+    /**
+     * Position of the weapon in the game world (uses Weapon GLSL Shader)
+     */
+    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 2.2f);
 
     /**
      * Get Texture name associated with this

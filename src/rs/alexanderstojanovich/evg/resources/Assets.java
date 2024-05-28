@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.resources;
 
-import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -24,7 +23,6 @@ import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
-import rs.alexanderstojanovich.evg.weapons.WeaponConstants;
 
 /**
  * Game assets.
@@ -58,7 +56,7 @@ public class Assets {
     public final int GRID_SIZE_PLAYER_WEAPONS = 4;
 
     public final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
-    public final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, WeaponConstants.TEX_WEAPONS, GRID_SIZE_PLAYER_WEAPONS, Texture.Format.RGBA8);
+    public final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, TEX_WEAPONS, GRID_SIZE_PLAYER_WEAPONS, Texture.Format.RGBA8);
 
     public final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Texture.Format.RGB5_A1);
 
@@ -72,7 +70,7 @@ public class Assets {
     /**
      * Position of the weapon in the game world
      */
-    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
+//    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
 
     // WeaponConstants for weapon texture names
     public static final String W01M9 = "W01M9";
@@ -92,22 +90,44 @@ public class Assets {
     public static final String W15DR = "W15DR";
     public static final String W16M8 = "W16M8";
 
-    public final Model M9_PISTOL = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W01M9 + ".obj", W01M9, 4, false);
-    public final Model M1911_PISTOL = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W02M1 + ".obj", W02M1, 4, false);
-    public final Model DESERT_EAGLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W03DE + ".obj", W03DE, 4, false);
-    public final Model MINI_UZI_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W04UZ + ".obj", W04UZ, 4, false);
-    public final Model MP5_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W05M5 + ".obj", W05M5, 4, false);
-    public final Model P90_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W06P9 + ".obj", W06P9, 4, false);
-    public final Model AK47_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W07AK + ".obj", W07AK, 4, false);
-    public final Model M4A1_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W08M4 + ".obj", W08M4, 4, false);
-    public final Model G36_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W09G3 + ".obj", W09G3, 4, false);
-    public final Model M60_MG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W10M6 + ".obj", W10M6, 4, false);
-    public final Model SAW_MG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W11MS + ".obj", W11MS, 4, false);
-    public final Model WINCHESTER_1200_SHOTGUN = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W12W2 + ".obj", W12W2, 4, false);
-    public final Model BENELLI_SUPER_90_SHOTGUN = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W13B9 + ".obj", W13B9, 4, false);
-    public final Model REMINGTON_700_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W14R7 + ".obj", W14R7, 4, false);
-    public final Model DRAGUNOV_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W15DR + ".obj", W15DR, 4, false);
-    public final Model M82_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W16M8 + ".obj", W16M8, 4, false);
+    /**
+     * * Array of weapon texture names
+     */
+    public static final String[] TEX_WEAPONS = {
+        W01M9,
+        W02M1,
+        W03DE,
+        W04UZ,
+        W05M5,
+        W06P9,
+        W07AK,
+        W08M4,
+        W09G3,
+        W10M6,
+        W11MS,
+        W12W2,
+        W13B9,
+        W14R7,
+        W15DR,
+        W16M8
+    };
+
+    public final Model M9_PISTOL = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W01M9 + ".obj", W01M9, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model M1911_PISTOL = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W02M1 + ".obj", W02M1, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model DESERT_EAGLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W03DE + ".obj", W03DE, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model MINI_UZI_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W04UZ + ".obj", W04UZ, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model MP5_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W05M5 + ".obj", W05M5, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model P90_SMG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W06P9 + ".obj", W06P9, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model AK47_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W07AK + ".obj", W07AK, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model M4A1_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W08M4 + ".obj", W08M4, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model G36_RIFLE = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W09G3 + ".obj", W09G3, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model M60_MG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W10M6 + ".obj", W10M6, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model SAW_MG = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W11MS + ".obj", W11MS, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model WINCHESTER_1200_SHOTGUN = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W12W2 + ".obj", W12W2, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model BENELLI_SUPER_90_SHOTGUN = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W13B9 + ".obj", W13B9, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model REMINGTON_700_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W14R7 + ".obj", W14R7, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model DRAGUNOV_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W15DR + ".obj", W15DR, GRID_SIZE_PLAYER_WEAPONS, false);
+    public final Model M82_SNIPER = ModelUtils.readFromObjFile(Game.WEAPON_ENTRY, W16M8 + ".obj", W16M8, GRID_SIZE_PLAYER_WEAPONS, false);
 
     /**
      * Buffer All Textures. Call from Game Renderer.
@@ -132,6 +152,7 @@ public class Assets {
         // player
         ALEX.bufferAll();
         STEVE.bufferAll();
+        // weapons
         PLAYER_WEAPONS.bufferAll();
 
         DSLogger.reportDebug("Textures loaded!", null);

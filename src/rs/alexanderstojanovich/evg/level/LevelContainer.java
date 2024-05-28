@@ -58,6 +58,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  *
@@ -138,6 +139,8 @@ public class LevelContainer implements GravityEnviroment {
 
     protected float fallVelocity = 0.0f;
 
+    public final Weapons weapons;
+
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -213,6 +216,8 @@ public class LevelContainer implements GravityEnviroment {
 
         lightSources.addLight(levelActors.player.light);
         lightSources.addLight(SUNLIGHT);
+
+        this.weapons = new Weapons(this);
     }
 
     public static void printPositionMaps() {

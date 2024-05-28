@@ -98,6 +98,19 @@ Done.
 - util 		=> Various utils & auxillary methods including logging, math, image & model utils.
 - weapons 	=> Planned First person shooter weapons & gameplay (TODO).
 
+# Game Assets
+Project assets come from various sources.
+
+Character models are from Minecraft.
+Guns are originating from potentially leaked or ripped sources from Call of Duty 4 (COD4).
+Blender project could be downloaded from Author's mediafire account:
+https://www.mediafire.com/file/rilu34pbbzr48zc/DS42Weapons.zip/file
+
+Sounds were made by Erokia and modified by Author.
+Font is 'Jet Brains Mono', free & open typeface.
+As font (image) atlas Author used, program 'F2IBuilder' which could be obtained from following Url:
+https://f2ibuilder.dukitan.com.br/
+
 # Mentions
 Author: Ermac(MKIII); 
 Testers: 13;

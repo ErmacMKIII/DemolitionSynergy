@@ -25,7 +25,8 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.weapons.Weapon;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  *
@@ -40,7 +41,11 @@ public class Player extends Critter implements Observer {
     }
     protected CameraView cameraView = CameraView.THIRD_PERSON;
 
-    protected Model weaponInHands = Weapon.M9_PISTOL.hndMdl;
+    /**
+     * Player has nothing in hands (no-weapon)
+     */
+    protected Model weaponInHands = Weapons.NONE.inHands();
+
     private final RPGCamera camera;
     public final LightSource light;
 
@@ -88,10 +93,20 @@ public class Player extends Critter implements Observer {
     /**
      * Switch to weapon in hands
      *
+     * @param weapons all weapons instance (wraps array)
      * @param index index of (weapon) enumeration
      */
-    public void switchWeapon(int index) {
-        this.weaponInHands = Weapon.values()[index].hndMdl;
+    public void switchWeapon(Weapons weapons, int index) {
+        this.weaponInHands = weapons.AllWeapons[index].inHands();
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapon weapon to switch to
+     */
+    public void switchWeapon(WeaponIfc weapon) {
+        this.weaponInHands = weapon.inHands();
     }
 
     /**
