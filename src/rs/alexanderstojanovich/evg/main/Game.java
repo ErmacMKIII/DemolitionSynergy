@@ -781,10 +781,10 @@ public class Game implements DSMachine {
 
                 if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
-                }
 
-                lastX = (float) xposGL;
-                lastY = (float) yposGL;
+                    lastX = (float) xposGL;
+                    lastY = (float) yposGL;
+                }
             }
         };
         GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);

@@ -1169,9 +1169,10 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float precision = 32.0f;
+        final float precision = 16.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
-        final float maxAmount = (float) Game.AMOUNT * 1.98f;
+        final float minAmount = (float) -Game.AMOUNT;
+        final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = predictable.getPredictor();
 
         // Round the predictor's coordinates to align with the grid.
@@ -1188,7 +1189,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate through adjacent positions.
         for (int j = 0; j <= 13; j++) {
-            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+            for (float amount = minAmount; amount <= maxAmount; amount += stepAmount) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -1221,9 +1222,10 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 32.0f;
+        final float precision = 16.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
-        final float maxAmount = (float) Game.AMOUNT * 1.98f;
+        final float minAmount = (float) -Game.AMOUNT;
+        final float maxAmount = (float) Game.AMOUNT;
         Vector3f observerPos = observer.getPos();
 
         // Round the observer's coordinates to align with the grid.
@@ -1241,7 +1243,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+            for (float amount = minAmount; amount <= maxAmount; amount += stepAmount) {
                 Vector3f adjPos = Block.getAdjacentPos(observerPos, j, amount);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -1276,9 +1278,10 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 32.0f;
+        final float precision = 16.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
-        final float maxAmount = (float) Game.AMOUNT * 1.98f;
+        final float minAmount = (float) -Game.AMOUNT;
+        final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1296,7 +1299,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+            for (float amount = minAmount; amount <= maxAmount; amount += stepAmount) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = new Vector3f(
                         Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
@@ -1336,8 +1339,9 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 32.0f;
+        final float precision = 16.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
+        final float minAmount = (float) -Game.AMOUNT;
         final float maxAmount = (float) Game.AMOUNT;
         Vector3f predictor = critter.getPredictor();
 
@@ -1356,7 +1360,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = 0.0f; amount <= maxAmount; amount += stepAmount) {
+            for (float amount = minAmount; amount <= maxAmount; amount += stepAmount) {
                 // Interpolate the critter's position based on the current interpolation time.
                 Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
 

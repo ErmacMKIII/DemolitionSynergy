@@ -215,65 +215,59 @@ public class BlockEnvironment {
      * @param vqueue visible chunkId queue
      * @param camera ingame camera
      */
-    public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+    public synchronized void optimizeByControl(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
         pull(); // pull from optimized stream
 
         // determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 30f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
-
-        // PASS 1 : CREATE TUPLES
         int lastFaceBitsCopy = lastFaceBits;
+
         for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-            // assign last value & increment to next value with limit to 63
             final int faceBits = (++lastFaceBitsCopy) & 63;
             if ((faceBits & (mask0 & 63)) != 0) {
-                final Tuple optmTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                // PASS 1 : CREATE TUPLES
+                // assign last value & increment to next value with limit to 63
+                Tuple optmTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
                 if (optmTuple == null) {
-                    workingTuples.add(new Tuple(tex, faceBits));
+                    optmTuple = new Tuple(tex, faceBits);
+                    workingTuples.add(optmTuple);
                     workingTuples.sort(Tuple.TUPLE_COMP);
                 }
-            }
-        }
-
-        // PASS 2 : FILL TUPLES
-        lastFaceBitsCopy = lastFaceBits;
-        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-            // assign last value & increment to next value with limit to 63
-            final int faceBits = (++lastFaceBitsCopy) & 63;
-            if ((faceBits & (mask0 & 63)) != 0) {
-                chunks.chunkList.forEach(chnk -> { // for all chunks
-                    if (vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera)) { // visible ones && not cached!                        
-                        // select correlated tuples
-                        final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
-                        // for each selected tuple
+                optmTuple.blockList.removeIf(blk -> !camera.doesSeeEff(blk, 100f));
+                // PASS 2 : FILL TUPLES
+                // assign last value & increment to next value with limit to 63
+                chunks.chunkList.filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f)).forEach(chnk -> { // for all chunks -? visible ones && not cached!
+                    // get tuple from PASS 1
+                    final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
+                    // select correlated tuples
+                    final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
+                    // for each selected tuple
+                    if (workTuple != null) {
                         selectedTuples.forEach(st -> {
-                            // get tuple from PASS 1
-                            final Tuple workTuple = workingTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                            if (workTuple != null) {
-                                boolean modified = false;
-                                // if fullyOptimized doesn't exist                                
-                                for (Block blk : st.blockList) {
-                                    // take into consideration if could be seen by camera (impr. method)                                
-                                    if (camera.doesSeeEff(blk)) {
-                                        // add absent blocks                                    
-                                        modified |= workTuple.blockList.addIfAbsent(blk);
-                                    }
-                                }
-                                if (modified) {
-                                    // single modification means no fullyOptimized
-                                    fullyOptimized = false;
-                                    // sort so it does remains ordered
-                                    workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                    // unbuffer working tuple
-                                    workTuple.setBuffered(false);
-                                }
+                            // take into consideration if could be seen by camera (impr. method)                                
+                            boolean modified = workTuple.blockList.addAll(
+                                    st.blockList.filter(blk -> camera.doesSeeEff(blk, 80f) && !workTuple.blockList.contains(blk))
+                            );
+
+                            if (modified) {
+                                // single modification means no fullyOptimized
+                                fullyOptimized = false;
+
+                                // unbuffer working tuple
+                                workTuple.setBuffered(false);
                             }
                         });
+
+                        if (!workTuple.blockList.isEmpty()) {
+                            // sort so it does remains ordered
+                            workTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                        }
                     }
+
                 });
             }
         }
@@ -407,7 +401,7 @@ public class BlockEnvironment {
      * Push changes. Push working tuples to optimizing tuples. By coping each
      * optimizing to working.
      */
-    public synchronized void push() {
+    public void push() {
         optimizedTuples = workingTuples.copy();
     }
 
@@ -425,7 +419,7 @@ public class BlockEnvironment {
      * Pull from recent. Pull optimized tuples to working tuples. By coping each
      * working to optimized.
      */
-    public synchronized void pull() {
+    public void pull() {
         workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
         workingTuples.sort(Tuple.TUPLE_COMP);
     }

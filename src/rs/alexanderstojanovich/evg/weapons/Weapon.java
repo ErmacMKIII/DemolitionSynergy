@@ -55,7 +55,7 @@ public class Weapon implements WeaponIfc {
      * Weapon model on character first-person-shooter 'in hands'.
      */
     public final Model inHands;
-    
+
     public final Clazz clazz;
 
     /**
@@ -97,9 +97,9 @@ public class Weapon implements WeaponIfc {
                 result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, 1.5f * critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
                 break;
         }
-        
+
         result.setScale(0.5f);
-        
+
         return result;
     }
 
@@ -111,37 +111,37 @@ public class Weapon implements WeaponIfc {
     @Override
     public Model deriveOnGroundItem() {
         Model result = new Model(model);
-        
+
         return result;
     }
-    
+
     public Model getInHands() {
         return inHands;
     }
-    
+
     @Override
     public String getTexName() {
         return model.texName;
     }
-    
+
     @Override
     public Model getModel() {
         return model;
     }
-    
+
     @Override
     public Model inHands() {
         return inHands;
     }
-    
+
     @Override
     public AudioFile getFireSoundFX() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-    
+
     @Override
     public Clazz getClazz() {
         return clazz;
     }
-    
+
 }

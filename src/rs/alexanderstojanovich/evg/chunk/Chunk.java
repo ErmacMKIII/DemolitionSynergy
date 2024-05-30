@@ -648,14 +648,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      *
      * @param chunkId chunk id (number)
      * @param camera main camera (or other camera)
+     * @param angleDegrees angle degrees
      * @return boolean condition see (or not see)
      */
-    public static boolean doesSeeChunk(int chunkId, Camera camera) {
+    public static boolean doesSeeChunk(int chunkId, Camera camera, float angleDegrees) {
         final Vector3f chunkPos = invChunkFunc(chunkId);
         final Vector2f chunkPosXZ = new Vector2f(chunkPos.x, chunkPos.z);
         final Vector2f camPosXZ = new Vector2f(camera.pos.x, camera.pos.z);
-        final Vector2f camFrontXZ = new Vector2f(camera.getFront().x, camera.getFront().z);
-
+        final Vector2f camFrontXZNeg = new Vector2f(-camera.getFront().x, -camera.getFront().z);
+        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(angleDegrees));
         boolean yea = false;
 
         // Now iterate and perform calculations
@@ -664,7 +665,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             for (int z = -1; z <= 1; z++) {
                 Vector2f temp = new Vector2f();
                 Vector2f tst = new Vector2f(x, z).add(chunkPosXZ.sub(camPosXZ, temp), temp).normalize();
-                if (tst.dot(camFrontXZ) >= -0.707107f) { // 135 degrees
+                if (tst.dot(camFrontXZNeg) <= cosine) {
                     yea |= true;
                     break OUTER;
                 }
