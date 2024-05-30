@@ -47,7 +47,7 @@ public class Weapons {
         16 - M82 Sniper               - "W16M8.obj"
      */
 
-    public static final WeaponIfc NONE = new Weapon(Model.NONE);
+    public static final WeaponIfc NONE = new Weapon(WeaponIfc.Clazz.None, Model.NONE);
 
     public final WeaponIfc M9_PISTOL;
     public final WeaponIfc M1911_PISTOL;
@@ -74,22 +74,23 @@ public class Weapons {
     public Weapons(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
 
-        this.M9_PISTOL = new Weapon(levelContainer.gameObject.GameAssets.M9_PISTOL);
-        this.M1911_PISTOL = new Weapon(levelContainer.gameObject.GameAssets.M1911_PISTOL);
-        this.DESERT_EAGLE = new Weapon(levelContainer.gameObject.GameAssets.DESERT_EAGLE);
-        this.MINI_UZI_SMG = new Weapon(levelContainer.gameObject.GameAssets.MINI_UZI_SMG);
-        this.MP5_SMG = new Weapon(levelContainer.gameObject.GameAssets.MP5_SMG);
-        this.P90_SMG = new Weapon(levelContainer.gameObject.GameAssets.P90_SMG);
-        this.AK47_RIFLE = new Weapon(levelContainer.gameObject.GameAssets.AK47_RIFLE);
-        this.M4A1_RIFLE = new Weapon(levelContainer.gameObject.GameAssets.M4A1_RIFLE);
-        this.G36_RIFLE = new Weapon(levelContainer.gameObject.GameAssets.G36_RIFLE);
-        this.M60_MG = new Weapon(levelContainer.gameObject.GameAssets.M60_MG);
-        this.SAW_MG = new Weapon(levelContainer.gameObject.GameAssets.SAW_MG);
-        this.WINCHESTER_1200_SHOTGUN = new Weapon(levelContainer.gameObject.GameAssets.WINCHESTER_1200_SHOTGUN);
-        this.BENELLI_SUPER_90_SHOTGUN = new Weapon(levelContainer.gameObject.GameAssets.BENELLI_SUPER_90_SHOTGUN);
-        this.REMINGTON_700_SNIPER = new Weapon(levelContainer.gameObject.GameAssets.REMINGTON_700_SNIPER);
-        this.DRAGUNOV_SNIPER = new Weapon(levelContainer.gameObject.GameAssets.DRAGUNOV_SNIPER);
-        this.M82_SNIPER = new Weapon(levelContainer.gameObject.GameAssets.M82_SNIPER);
+        this.M9_PISTOL = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.M9_PISTOL) {
+        };
+        this.M1911_PISTOL = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.M1911_PISTOL);
+        this.DESERT_EAGLE = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.DESERT_EAGLE);
+        this.MINI_UZI_SMG = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.MINI_UZI_SMG);
+        this.MP5_SMG = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.MP5_SMG);
+        this.P90_SMG = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.P90_SMG);
+        this.AK47_RIFLE = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.AK47_RIFLE);
+        this.M4A1_RIFLE = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.M4A1_RIFLE);
+        this.G36_RIFLE = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.G36_RIFLE);
+        this.M60_MG = new Weapon(WeaponIfc.Clazz.TwoHandedBigGuns, levelContainer.gameObject.GameAssets.M60_MG);
+        this.SAW_MG = new Weapon(WeaponIfc.Clazz.TwoHandedBigGuns, levelContainer.gameObject.GameAssets.SAW_MG);
+        this.WINCHESTER_1200_SHOTGUN = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.WINCHESTER_1200_SHOTGUN);
+        this.BENELLI_SUPER_90_SHOTGUN = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.BENELLI_SUPER_90_SHOTGUN);
+        this.REMINGTON_700_SNIPER = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.REMINGTON_700_SNIPER);
+        this.DRAGUNOV_SNIPER = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.DRAGUNOV_SNIPER);
+        this.M82_SNIPER = new Weapon(WeaponIfc.Clazz.TwoHandedBigGuns, levelContainer.gameObject.GameAssets.M82_SNIPER);
         this.AllWeapons = new WeaponIfc[]{
             M9_PISTOL,
             M1911_PISTOL,

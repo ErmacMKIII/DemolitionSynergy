@@ -195,7 +195,7 @@ public class GameServerProcessor {
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
                                 && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
-                            levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, new Model(LevelActors.PLAYER_BODY)));
+                            levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, new Model(gameServer.gameObject.GameAssets.PLAYER_BODY_DEFAULT)));
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
 
@@ -215,7 +215,7 @@ public class GameServerProcessor {
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if (!levelActors.player.uniqueId.equals(info.uniqueId)
                                 && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId)) == null)) {
-                            Critter critter = new Critter(info.uniqueId, new Model(LevelActors.PLAYER_BODY));
+                            Critter critter = new Critter(info.uniqueId, new Model(gameServer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
                             critter.setName(info.name);
                             critter.body.setPrimaryRGBAColor(info.color);
                             critter.body.texName = info.texModel;

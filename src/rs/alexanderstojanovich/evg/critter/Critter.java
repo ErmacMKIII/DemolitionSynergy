@@ -23,6 +23,8 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Critter is class of living things. Has capabilities moving. Is collision
@@ -41,6 +43,16 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected Vector3f right = Camera.X_AXIS;
     protected boolean underGravity = false;
     protected boolean inJump = false;
+
+    /**
+     * Weapon model on character body with the weapon
+     */
+    protected Model charBodyWeaponModel = Model.NONE;
+
+    /**
+     * Critter (could be Player) has nothing in hands (no-weapon)
+     */
+    protected WeaponIfc weapon = Weapons.NONE;
 
     /**
      * Create new instance of the critter. If instanced in anonymous class
@@ -203,6 +215,13 @@ public class Critter implements Predictable, Moveable, Renderable {
             body.bufferAll();
         }
         body.render(lightSrc, shaderProgram);
+        // weapon which critte
+        if (weapon != Weapons.NONE) {
+            if (!charBodyWeaponModel.isBuffered()) {
+                charBodyWeaponModel.bufferAll();
+            }
+            charBodyWeaponModel.render(lightSrc, shaderProgram);
+        }
     }
 
     @Override
@@ -211,6 +230,33 @@ public class Critter implements Predictable, Moveable, Renderable {
             body.bufferAll();
         }
         body.renderContour(lightSources, shaderProgram);
+        if (weapon != Weapons.NONE) {
+            if (!charBodyWeaponModel.isBuffered()) {
+                charBodyWeaponModel.bufferAll();
+            }
+            charBodyWeaponModel.renderContour(lightSources, shaderProgram);
+        }
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapons all weapons instance (wraps array)
+     * @param index index of (weapon) enumeration
+     */
+    public void switchWeapon(Weapons weapons, int index) {
+        this.weapon = weapons.AllWeapons[index];
+        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapon weapon to switch to
+     */
+    public void switchWeapon(WeaponIfc weapon) {
+        this.weapon = weapon;
+        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     @Override
@@ -391,6 +437,14 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public Vector3f getRight() {
         return right;
+    }
+
+    public Model getCharBodyWeaponModel() {
+        return charBodyWeaponModel;
+    }
+
+    public WeaponIfc getWeapon() {
+        return weapon;
     }
 
 }

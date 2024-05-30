@@ -17,7 +17,9 @@
 package rs.alexanderstojanovich.evg.weapons;
 
 import rs.alexanderstojanovich.evg.audio.AudioFile;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Model;
+import static rs.alexanderstojanovich.evg.weapons.WeaponIfc.Clazz.TwoHandedSmallGun;
 
 /**
  * Demolition Synergy weapon interface. Contains all texture, models and sounds
@@ -45,55 +47,101 @@ public class Weapon implements WeaponIfc {
         15 - Dragunov Sniper          - "W15DR.obj"
         16 - M82 Sniper               - "W16M8.obj"
      */
+    /**
+     * Base weapon model
+     */
     public final Model model;
-    public final Model chrMdl;
-    public final Model gndMdl;
-    public final Model hndMdl;
+    /**
+     * Weapon model on character first-person-shooter 'in hands'.
+     */
+    public final Model inHands;
+    
+    public final Clazz clazz;
 
     /**
-     * Create new weapon from base model
+     * Create new weapon from base model and weapon clazz.
      *
+     * @param clazz weapon clazz (does not change)
      * @param baseModel base model (to create weapon from)
      */
-    protected Weapon(Model baseModel) {
+    protected Weapon(Clazz clazz, Model baseModel) {
+        this.clazz = clazz;
         this.model = baseModel;
-        this.hndMdl = new Model(baseModel);
-        this.hndMdl.pos = WeaponIfc.WEAPON_POS;
-        this.hndMdl.setScale(2.71f);
-        this.hndMdl.setrY((float) (-Math.PI / 2.0f));
-
-        // TODO
-        this.chrMdl = this.gndMdl = null;
+        this.inHands = new Model(baseModel);
+        this.inHands.pos = WeaponIfc.WEAPON_POS;
+        this.inHands.setScale(2.71f);
+        this.inHands.setrY((float) (-Math.PI / 2.0f));
     }
 
+    /**
+     * Derive model for character (or critter)
+     *
+     * @param critter critter having weapon
+     * @return weapon on body for that critter
+     */
+    @Override
+    public Model deriveBodyModel(Critter critter) {
+        Model result = new Model(model);
+        switch (clazz) {
+            case None:
+            default:
+                break;
+            case OneHandedSmallGun:
+                result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
+                break;
+            case TwoHandedSmallGun:
+                result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
+                result.setrY((float) Math.PI / 4.0f);
+                break;
+            case TwoHandedBigGuns:
+                result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, 1.5f * critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
+                break;
+        }
+        
+        result.setScale(0.5f);
+        
+        return result;
+    }
+
+    /**
+     * Derive model on ground (as level container item).
+     *
+     * @return
+     */
+    @Override
+    public Model deriveOnGroundItem() {
+        Model result = new Model(model);
+        
+        return result;
+    }
+    
+    public Model getInHands() {
+        return inHands;
+    }
+    
     @Override
     public String getTexName() {
         return model.texName;
     }
-
+    
     @Override
     public Model getModel() {
         return model;
     }
-
-    @Override
-    public Model onCharacter() {
-        return chrMdl;
-    }
-
-    @Override
-    public Model onGround() {
-        return gndMdl;
-    }
-
+    
     @Override
     public Model inHands() {
-        return hndMdl;
+        return inHands;
     }
-
+    
     @Override
     public AudioFile getFireSoundFX() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-
+    
+    @Override
+    public Clazz getClazz() {
+        return clazz;
+    }
+    
 }

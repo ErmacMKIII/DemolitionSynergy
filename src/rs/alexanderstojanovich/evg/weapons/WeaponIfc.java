@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.weapons;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
@@ -28,10 +29,57 @@ import rs.alexanderstojanovich.evg.models.Model;
  */
 public interface WeaponIfc {
 
+    /*
+        01 - M9 Pistol                - "W01M9.obj"
+        02 - M1911 Pistol             - "W02M1.obj"
+        03 - Desert Eagle             - "W03DE.obj"
+        04 - Mini Uzi SMG             - "W04UZ.obj"
+        05 - MP5 SMG                  - "W05M5.obj"
+        06 - P90 SMG                  - "W06P9.obj"
+        07 - AK47 Rifle               - "W07AK.obj"
+        08 - M4A1 Rifle               - "W08M4.obj"
+        09 - G36 Rifle                - "W09G3.obj"
+        10 - M60 MG                   - "W10M6.obj"
+        11 - SAW MG                   - "W11MS.obj"
+        12 - Winchester 1200 Shotgun  - "W12W2.obj"
+        13 - Benelli Super 90 Shotgun - "W13B9.obj"
+        14 - Remington 700 Sniper     - "W14R7.obj"
+        15 - Dragunov Sniper          - "W15DR.obj"
+        16 - M82 Sniper               - "W16M8.obj"
+     */
+    /**
+     * Weapon class definition
+     */
+    public static enum Clazz {
+        /**
+         * Class None. Unarmed.
+         */
+        None,
+        /**
+         * All Pistols. M9 Pistol, M1911 Pistol, Desert Eagle
+         */
+        OneHandedSmallGun,
+        /**
+         * All SMGs, Rifles, Shotguns and Snipers apart from M82 Sniper.
+         */
+        TwoHandedSmallGun,
+        /**
+         * Big guns. Machine guns. M60 MG, SAW MG. Plus M82 Sniper.
+         */
+        TwoHandedBigGuns
+    }
+
     /**
      * Position of the weapon in the game world (uses Weapon GLSL Shader)
      */
     public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 2.2f);
+
+    /**
+     * Get Weapon class definition
+     *
+     * @return
+     */
+    public Clazz getClazz();
 
     /**
      * Get Texture name associated with this
@@ -50,16 +98,17 @@ public interface WeaponIfc {
     /**
      * Model on character. Use Main GLSL Shader.
      *
+     * @param critter critter having that weapon
      * @return model on character
      */
-    public Model onCharacter();
+    public Model deriveBodyModel(Critter critter);
 
     /**
      * Model on ground. Use Main GLSL Shader.
      *
      * @return
      */
-    public Model onGround();
+    public Model deriveOnGroundItem();
 
     /**
      * Model in hands. Use Player GLSL Shader.

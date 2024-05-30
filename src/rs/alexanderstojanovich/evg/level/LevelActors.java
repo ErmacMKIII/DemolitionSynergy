@@ -31,7 +31,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  * Define all the level observers & critters. Present in the level container.
@@ -41,15 +40,20 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class LevelActors {
 
     /**
+     * Access to level container containing actors
+     */
+    public final LevelContainer levelContainer;
+
+    /**
      * Spectator is separate camera from player instance
      */
     public final Observer spectator = new Camera(); // spectator is separate camera from player instance
 
-    public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", 1, true);
     /**
      * Main player (Single Player & Multiplayer)
      */
-    public final Player player = new Player(new Model(PLAYER_BODY));
+    public final Player player;
+
     /**
      * Non-playable characters. Handled by client (SinglePlayer) or server host
      * (MultiPlyer).
@@ -60,6 +64,16 @@ public class LevelActors {
      * Other players (Multiplayer)
      */
     public final IList<Critter> otherPlayers = new GapList<>();
+
+    /**
+     * Generate new Level Actors residing in this level (map) container.
+     *
+     * @param levelContainer level container containing (level) actors
+     */
+    public LevelActors(LevelContainer levelContainer) {
+        this.levelContainer = levelContainer;
+        this.player = new Player(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
+    }
 
     public void freeze() {
 //        getMainActor().setGivenControl(false);
@@ -134,7 +148,7 @@ public class LevelActors {
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
         Arrays.asList(playerInfo).forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
-                Critter op = new Critter(pi.uniqueId, new Model(LevelActors.PLAYER_BODY));
+                Critter op = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
                 op.setName(pi.name);
                 op.body.setPrimaryRGBAColor(pi.color);
                 op.body.setTexName(pi.texModel);

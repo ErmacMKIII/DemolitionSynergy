@@ -68,10 +68,27 @@ public class Assets {
     };
 
     /**
+     * Model of player unarmed (Default)
+     */
+    public final Model PLAYER_BODY_DEFAULT = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", 1, true);
+    /**
+     * Model of player with one-handed small guns (Pistols)
+     */
+    public final Model PLAYER_BODY_1H_SG = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG.obj", "alex", 1, true);
+    /**
+     * Model of player with two-handed small guns (SMGs, Rifles, Shotguns &
+     * Sniper non M82)
+     */
+    public final Model PLAYER_BODY_2H_SG = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG.obj", "alex", 1, true);
+    /**
+     * Model of player with two-handed big guns (M60, SAW & M82)
+     */
+    public final Model PLAYER_BODY_2H_BG = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG.obj", "alex", 1, true);
+
+    /**
      * Position of the weapon in the game world
      */
 //    public static final Vector3f WEAPON_POS = new Vector3f(1.0f, -1.0f, 3.0f);
-
     // WeaponConstants for weapon texture names
     public static final String W01M9 = "W01M9";
     public static final String W02M1 = "W02M1";

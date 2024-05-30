@@ -106,6 +106,9 @@ Guns are originating from potentially leaked or ripped sources from Call of Duty
 Blender project could be downloaded from Author's mediafire account:
 https://www.mediafire.com/file/rilu34pbbzr48zc/DS42Weapons.zip/file
 
+Author recently created player models which could obtained from:
+https://www.mediafire.com/file/tx3bk2roz0irgcp/DS42PlayerModels.zip/file
+
 Sounds were made by Erokia and modified by Author.
 Font is 'Jet Brains Mono', free & open typeface.
 As font (image) atlas Author used, program 'F2IBuilder' which could be obtained from following Url:

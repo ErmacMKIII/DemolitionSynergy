@@ -123,7 +123,7 @@ public class LevelContainer implements GravityEnviroment {
 
     private boolean working = false;
 
-    public final LevelActors levelActors = new LevelActors();
+    public final LevelActors levelActors;
 
     // position of all the solid blocks to texture name & neighbors
     public static final BlockLocation AllBlockMap = new BlockLocation();
@@ -214,10 +214,11 @@ public class LevelContainer implements GravityEnviroment {
         this.cacheModule = new CacheModule(this);
         this.lightSources = new LightSources();
 
+        this.weapons = new Weapons(this);
+        this.levelActors = new LevelActors(this);
+
         lightSources.addLight(levelActors.player.light);
         lightSources.addLight(SUNLIGHT);
-
-        this.weapons = new Weapons(this);
     }
 
     public static void printPositionMaps() {
