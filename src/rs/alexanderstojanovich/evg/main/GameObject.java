@@ -435,7 +435,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
+        if (isWorking() || levelContainer.blockEnvironment.isOptimizing() || !levelContainer.blockEnvironment.isFullyOptimized()) {
             return;
         }
         if (GameRenderer.isLastFrame()) {
@@ -523,22 +523,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //            updateRenderLCLock.unlock();
 //        }
 //    }
-    /**
-     * Is level container fullyOptimized
-     */
-    public void isOptimized() {
-        levelContainer.blockEnvironment.isFullyOptimized();
-    }
-
-    /**
-     * Set level container optimization flag
-     *
-     * @param optimized fullyOptimized flag to set
-     */
-    public void setOptimized(boolean optimized) {
-        levelContainer.blockEnvironment.setFullyOptimized(optimized);
-    }
-
     // -------------------------------------------------------------------------
     /**
      * Clear Everything. Game will be 'Free'.

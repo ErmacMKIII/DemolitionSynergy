@@ -68,7 +68,7 @@ public class GameRenderer extends Thread implements Executor {
         gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
         gameObject.GameAssets.bufferAllTextures();
-        DSLogger.reportDebug("Textures loaded!", null);
+//        DSLogger.reportDebug("Textures loaded!", null);
         try {
             gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (color & depth buffer)
             gameObject.shadowRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (depth buffer only) 
