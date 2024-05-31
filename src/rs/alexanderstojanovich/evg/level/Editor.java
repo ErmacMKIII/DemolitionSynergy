@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import static rs.alexanderstojanovich.evg.main.GameObject.UPDATE_RENDER_IFC_MUTEX;
+import static rs.alexanderstojanovich.evg.main.GameObject.updateRenderLCLock;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -319,8 +320,11 @@ public class Editor {
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
-                synchronized (UPDATE_RENDER_IFC_MUTEX) {
+                updateRenderLCLock.lock();
+                try {
                     lc.chunks.addBlock(selectedNew);
+                } finally {
+                    updateRenderLCLock.unlock();
                 }
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
                 selectedNew = new Block(lc.gameObject.GameAssets.TEX_WORLD[texValue]);
@@ -332,7 +336,12 @@ public class Editor {
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
-                lc.chunks.removeBlock(selectedCurr);
+                updateRenderLCLock.lock();
+                try {
+                    lc.chunks.removeBlock(selectedCurr);
+                } finally {
+                    updateRenderLCLock.unlock();
+                }
             }
             lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }

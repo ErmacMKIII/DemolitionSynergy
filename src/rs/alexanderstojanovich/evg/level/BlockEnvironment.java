@@ -210,12 +210,11 @@ public class BlockEnvironment {
      * @param vqueue visible chunkId queue
      * @param camera in-game camera
      */
-    public synchronized void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+    public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
-        pull(); // Pull from optimized stream
 
         // Determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 30f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
@@ -232,23 +231,22 @@ public class BlockEnvironment {
                     optmTuple = new Tuple(tex, faceBits);
                     workingTuples.add(optmTuple);
                 }
-                optmTuple.blockList.removeIf(blk -> !camera.doesSeeEff(blk, 100f));
+                optmTuple.blockList.clear(); // cleaning!
 
                 // PASS 2: Fill Tuples
-                chunks.chunkList.stream()
+                chunks.chunkList
                         .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
                         .forEach(chnk -> {
-                            final Tuple workTuple = workingTuples.stream()
+                            final Tuple workTuple = workingTuples
                                     .filter(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits)
-                                    .findFirst()
-                                    .orElse(null);
+                                    .getFirstOrNull();
                             final IList<Tuple> selectedTuples = chnk.tupleList
                                     .filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
 
                             if (workTuple != null) {
                                 selectedTuples.forEach(st -> {
                                     boolean modified = workTuple.blockList.addAll(
-                                            st.blockList.filter(blk -> camera.doesSeeEff(blk, 80f) && !workTuple.blockList.contains(blk))
+                                            st.blockList.filter(blk -> camera.doesSeeEff(blk, 75f) && !workTuple.blockList.contains(blk))
                                     );
                                     if (modified) {
                                         modifiedWorkingTupleNames.addIfAbsent(workTuple.getName());
@@ -272,6 +270,7 @@ public class BlockEnvironment {
         }
 
         if (texProcIndex == 0 && lastFaceBits == 0) {
+            workingTuples.sort(Tuple.TUPLE_COMP);
             workingTuples
                     .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
                     .forEach(wt -> {
@@ -380,11 +379,11 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
+        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
         Tuple.renderInstanced(
                 optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
                 shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
         );
-        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
     }
 
     /**
@@ -399,7 +398,7 @@ public class BlockEnvironment {
      * Swap working tuples with optimized tuples. What was built by optimization
      * could be rendered (drawn). Called from Game Renderer.
      */
-    public synchronized void swap() {
+    public void swap() {
         IList<Tuple> temp = optimizedTuples;
         optimizedTuples = workingTuples;
         workingTuples = temp;
