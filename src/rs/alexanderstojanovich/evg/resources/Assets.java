@@ -43,7 +43,7 @@ public class Assets {
     public final Texture DAY = new Texture(Game.WORLD_ENTRY, "day.png", Texture.Format.RGBA8);
     public final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png", Texture.Format.RGBA8);
 
-    public final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png", Texture.Format.RGBA8);
+    public final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "dsynergy-title.png", Texture.Format.RGBA8);
     public final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Texture.Format.RGBA8);
     public final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Texture.Format.RGBA8);
     public final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Texture.Format.RGBA8);

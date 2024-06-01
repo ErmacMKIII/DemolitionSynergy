@@ -104,7 +104,6 @@ public class LevelActors {
         } else if (mainActor() == spectator) {
             spectator.render(mainActorShader);
         }
-
     }
 
     public Observer mainActor() {

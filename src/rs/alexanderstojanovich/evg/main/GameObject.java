@@ -177,7 +177,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Game Renderer initialized.", null);
         // Intrface holding stuff initialized
         intrface = new Intrface(this);
-        DSLogger.reportDebug("Game Inetrface initialized.", null);
+        DSLogger.reportDebug("Game Interface initialized.", null);
         instance = this;
     }
 

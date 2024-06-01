@@ -16,8 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.util.Arrays;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -129,10 +131,15 @@ public interface RequestIfc extends DSObject {
      * @throws java.io.IOException if network error
      */
     public static RequestIfc receive(GameServer server) throws Exception {
-        final byte[] content = new byte[BUFF_SIZE];
-        DatagramPacket p = new DatagramPacket(content, content.length);
+        final byte[] buff = new byte[BUFF_SIZE];
+        DatagramPacket p = new DatagramPacket(buff, buff.length);
         server.getEndpoint().receive(p);
-        RequestIfc result = (RequestIfc) new Request(p.getAddress(), p.getPort()).deserialize(p.getData()); // new request        
+
+        byte[] dataContent = Arrays.copyOfRange(p.getData(), 0, p.getLength() - Long.BYTES);
+        byte[] dataChksum = Arrays.copyOfRange(p.getData(), p.getLength() - Long.BYTES, p.getLength());
+        long checksum = Long.reverseBytes(new BigInteger(dataChksum).longValue());
+
+        RequestIfc result = (RequestIfc) new Request(p.getAddress(), p.getPort(), checksum).deserialize(dataContent); // new request                
 
         return result;
     }

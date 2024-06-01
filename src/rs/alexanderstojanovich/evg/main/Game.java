@@ -505,10 +505,12 @@ public class Game implements DSMachine {
             final double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this);
-            ResponseIfc.receiveAsync(this).thenApply((ResponseIfc playerPosResp) -> {
+            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc playerPosResp) -> {
                 if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                    PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
-                    playerServerPos.set(posInfo.pos);
+                    if (playerPosResp.getChecksum() == playerPosReq.getChecksum()) {
+                        PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
+                        playerServerPos.set(posInfo.pos);
+                    }
                 } else {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
                     gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
@@ -518,8 +520,6 @@ public class Game implements DSMachine {
 
                 // calculate interpolation factor
                 interpolationFactor = (double) deltaTime / ((double) ping + deltaTime);
-
-                return playerPosResp;
             });
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
@@ -814,14 +814,15 @@ public class Game implements DSMachine {
                 final double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 playerPosReq.send(this);
-                ResponseIfc.receiveAsync(this).thenApply((ResponseIfc timeResp) -> {
-                    double endTime = GLFW.glfwGetTime();
-                    long tripTime = Math.round(endTime - beginTime) * 1000L;
 
-                    Game.gameTicks = (double) timeResp.getData();
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc timeResp) -> {
+                    if (timeResp.getChecksum() == playerPosReq.getChecksum() && timeResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                        double endTime = GLFW.glfwGetTime();
+                        long tripTime = Math.round(endTime - beginTime) * 1000L;
 
-                    return timeResp;
+                        Game.gameTicks = (double) timeResp.getData();
+                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                    }
                 });
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -838,18 +839,20 @@ public class Game implements DSMachine {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this);
-                        ResponseIfc.receiveAsync(this).thenApply((ResponseIfc otherPlayerResponse) -> {
+
+                        ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc otherPlayerResponse) -> {
                             if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                                 PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
-                                other.setPos(posInfo.pos);
-                                other.getFront().set(posInfo.front);
-                                other.setRotationXYZ(posInfo.front);
+                                // Verify Match!
+                                if (otherPlayerResponse.getChecksum() == otherPlayerRequest.getChecksum() && posInfo.uniqueId.equals(other.uniqueId)) {
+                                    other.setPos(posInfo.pos);
+                                    other.getFront().set(posInfo.front);
+                                    other.setRotationXYZ(posInfo.front);
+                                }
                             } else {
                                 DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
                                 gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
                             }
-
-                            return otherPlayerResponse;
                         });
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);
@@ -1025,7 +1028,7 @@ public class Game implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this);
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
+            if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
                 this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
                 this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
                 DSLogger.reportInfo("Connected to server!", null);

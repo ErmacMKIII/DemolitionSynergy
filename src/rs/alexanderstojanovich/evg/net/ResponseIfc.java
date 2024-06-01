@@ -16,13 +16,13 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
-import java.io.IOException;
+import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
@@ -65,13 +65,18 @@ public interface ResponseIfc extends DSObject {
      * @param client game client
      * @return Response.INVALID if deserialization failed otherwise valid
      * response
-     * @throws java.io.IOException if network error
+     * @throws java.lang.Exception if network error
      */
     public static ResponseIfc receive(Game client) throws Exception {
-        final byte[] content = new byte[BUFF_SIZE];
-        DatagramPacket p = new DatagramPacket(content, content.length);
+        final byte[] buff = new byte[BUFF_SIZE];
+        DatagramPacket p = new DatagramPacket(buff, buff.length);
         client.getServerEndpoint().receive(p);
-        ResponseIfc result = (ResponseIfc) new Response().deserialize(p.getData()); // new request
+
+        byte[] dataContent = Arrays.copyOfRange(p.getData(), 0, p.getLength() - Long.BYTES);
+        byte[] dataChksum = Arrays.copyOfRange(p.getData(), p.getLength() - Long.BYTES, p.getLength());
+        long checksum = Long.reverseBytes(new BigInteger(dataChksum).longValue());
+
+        ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent); // new response
 
         return result;
     }
@@ -85,27 +90,12 @@ public interface ResponseIfc extends DSObject {
      * response
      */
     public static CompletableFuture<ResponseIfc> receiveAsync(Game client) {
-        CompletableFuture<ResponseIfc> future = CompletableFuture.supplyAsync(() -> {
-            ResponseIfc result = Response.INVALID;
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                final byte[] content = new byte[BUFF_SIZE];
-                DatagramPacket p = new DatagramPacket(content, content.length);
-                client.getServerEndpoint().receive(p);
-                result = (ResponseIfc) new Response().deserialize(p.getData()); // new request                
-            } catch (IOException ex) {
-                DSLogger.reportError("Error with server, while getting response!", ex);
-                client.gameObject.intrface.getConsole().write("Error with server, while getting response!", true);
-                DSLogger.reportError(ex.getMessage(), ex);
-                client.disconnectFromServer();
-                client.gameObject.clearEverything();
+                return receive(client);
+            } catch (Exception e) {
+                return Response.INVALID;
             }
-
-            return result;
-
-        }).exceptionally((ex) -> {
-            return Response.INVALID;
         });
-
-        return future;
     }
 }
