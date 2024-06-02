@@ -381,7 +381,7 @@ public class Camera implements Observer { // is 3D looking camera
     @Override
     public void setPos(Vector3f pos) {
         this.pos = pos;
-        calcViewMatrix();
+//        calcViewMatrix();
     }
 
     public Matrix4f getViewMatrix() {

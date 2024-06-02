@@ -70,7 +70,8 @@ public class Game implements DSMachine {
 
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 5.5f;
+    public static final float AMOUNT = 4.45f;
+    public static final float JUMP_STR_AMOUNT = 107.8f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -901,7 +902,7 @@ public class Game implements DSMachine {
                         break;
                     case SINGLE_PLAYER:
                         // player has control
-                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, amount, (float) (deltaTime));
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -919,7 +920,7 @@ public class Game implements DSMachine {
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
-                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, amount, (float) (deltaTime));
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);

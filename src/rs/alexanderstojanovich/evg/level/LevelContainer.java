@@ -1402,15 +1402,16 @@ public class LevelContainer implements GravityEnviroment {
 
         boolean collision = false;
         final float precision = 32.0f;
-        final float stepAmount = (float) deltaTime / precision;
-        final float maxAmount = Game.AMOUNT * (float) deltaTime;
+        // deriative (of tstHeight)
+        final float minAmount = -fallVelocity / GRAVITY_CONSTANT;
+        // 32 iterations
+        final float stepAmount = (deltaTime - minAmount) / (float) (precision);
 
-        int[] testSides = {Block.BOTTOM, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT};
         SCAN:
-        for (float tstTime = maxAmount; tstTime >= 0.0f; tstTime -= stepAmount) {
+        for (float tstTime = minAmount; tstTime <= deltaTime; tstTime += stepAmount) {
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-            for (int side : testSides) {
-                Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), side, tstHeight + 2.1f);
+            for (int side = 0; side <= 13; side++) {
+                Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), side, tstHeight + 2.0f);
                 Vector3f adjBottomAlign = alignVector(adjBottom);
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
@@ -1481,12 +1482,14 @@ public class LevelContainer implements GravityEnviroment {
         float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
         final float precision = 32.0f;
-        final float stepAmount = (float) deltaTime / precision;
-        final float maxAmount = Game.AMOUNT * (float) deltaTime;
+        // deriative (of tstHeight)
+        final float minAmount = -fallVelocity / GRAVITY_CONSTANT;
+        // 32 iterations
+        final float stepAmount = (deltaTime - minAmount) / (float) (precision);
 
         boolean collision = false;
         SCAN:
-        for (float tstTime = maxAmount; tstTime >= 0.0f; tstTime -= stepAmount) {
+        for (float tstTime = minAmount; tstTime <= deltaTime; tstTime += stepAmount) {
             for (int side = 0; side <= 13; side++) {
                 float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
                 Vector3f adjTop = Block.getAdjacentPos(critter.getPos(), side, tstHeight);

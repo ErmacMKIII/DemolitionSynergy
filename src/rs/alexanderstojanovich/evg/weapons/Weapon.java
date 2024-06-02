@@ -98,7 +98,7 @@ public class Weapon implements WeaponIfc {
                 break;
         }
 
-        result.setScale(0.5f);
+        result.setScale(0.38f);
 
         return result;
     }
