@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 public class Camera implements Observer { // is 3D looking camera
 
     public Vector3f pos; // is camera position in space; it's uniform
-    public final Matrix4f viewMatrix = new Matrix4f(); // is view matrix as uniform
+    public final Matrix4f viewMatrix = new Matrix4f().zero(); // is view matrix as uniform
 
     public static final Vector3f X_AXIS = new Vector3f(1.0f, 0.0f, 0.0f);
     public static final Vector3f Y_AXIS = new Vector3f(0.0f, 1.0f, 0.0f);
@@ -381,7 +381,7 @@ public class Camera implements Observer { // is 3D looking camera
     @Override
     public void setPos(Vector3f pos) {
         this.pos = pos;
-//        calcViewMatrix();
+        calcViewMatrix();
     }
 
     public Matrix4f getViewMatrix() {
@@ -438,56 +438,58 @@ public class Camera implements Observer { // is 3D looking camera
 
     @Override
     public void moveXZForward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        pos = pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        this.pos = this.pos.add(frontXZ, temp2);
     }
 
     @Override
     public void moveXZBackward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        pos = pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        this.pos = this.pos.sub(frontXZ, temp2);
     }
 
     @Override
     public void moveXZLeft(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        pos = pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        this.pos = this.pos.sub(rightXZ, temp2);
     }
 
     @Override
     public void moveXZRight(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        pos = pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        this.pos = this.pos.add(rightXZ, temp2);
     }
 
     @Override
     public void jumpY(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        pos = pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        this.pos = this.pos.add(upAmount, temp2);
     }
 
     @Override
     public void sinkY(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        pos = pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        this.pos = this.pos.sub(upAmount, temp2);
     }
 
 }

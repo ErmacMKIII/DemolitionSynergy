@@ -730,10 +730,10 @@ public class Game implements DSMachine {
                     gameObject.intrface.getLoadDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.levelContainer.chunks.printInfo();
+//                    gameObject.levelContainer.chunks.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    LevelContainer.printPositionMaps();
+//                    LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     gameObject.levelContainer.printQueues();

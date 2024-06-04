@@ -269,7 +269,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } else { // working check avoids locking the monitor
             levelContainer.update();
             // if single player gravity is affected or if multiplayer and player is registered
-            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
+            if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
                     || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
                 boolean underGravity = levelContainer.gravityDo(deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
@@ -316,10 +316,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getScreenText().setEnabled(false);
         }
 
-        if (this.getLevelContainer().getProgress() == 0.0f
-                || this.getLevelContainer().getProgress() == 100.0f) {
-            this.intrface.getProgText().setEnabled(false);
+        if (!isWorking() && this.getLevelContainer().getProgress() == 100.0f) {
             this.getLevelContainer().setProgress(0.0f);
+            this.intrface.getProgText().setEnabled(false);
         }
 
         synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -683,6 +682,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     PlayerInfo[] playerInfo = game.getPlayerInfo();
                     // config other players
                     levelContainer.levelActors.configOtherPlayers(playerInfo);
+                    // config-set main actor
                     // spawn player (set position)
                     levelContainer.spawnPlayer();
                     // player set pos
@@ -758,7 +758,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // prints general and detailed information about solid and fluid chunks
     public void printInfo() {
-        levelContainer.chunks.printInfo();
+//        levelContainer.chunks.printInfo();
     }
 
     public LevelContainer getLevelContainer() {

@@ -541,7 +541,7 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
-                Observer mainActor = gameObject.getLevelContainer().levelActors.mainActor();
+                Observer mainActor = gameObject.levelContainer.levelActors.mainActor();
                 int chunkId;
                 switch (command.mode) {
                     case GET:
