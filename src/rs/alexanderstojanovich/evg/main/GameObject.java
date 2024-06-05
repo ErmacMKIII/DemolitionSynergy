@@ -316,7 +316,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getScreenText().setEnabled(false);
         }
 
-        if (!isWorking() && this.getLevelContainer().getProgress() == 100.0f) {
+        if (!isWorking() || this.getLevelContainer().getProgress() == 100.0f) {
             this.getLevelContainer().setProgress(0.0f);
             this.intrface.getProgText().setEnabled(false);
         }

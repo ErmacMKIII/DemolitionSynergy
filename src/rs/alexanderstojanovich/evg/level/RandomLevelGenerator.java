@@ -20,6 +20,7 @@ import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -455,8 +456,8 @@ public class RandomLevelGenerator {
     private void generateFluidSeries(int solidBlocks) {
 //        DSLogger.reportDebug("By Noise: solidBlks = " + solidBlocks, null);
         levelContainer.setProgress(0.0f);
-        List<Block> totalFldBlkList = levelContainer.chunks.getTotalList();
-        for (Block fluidBlock : totalFldBlkList) {
+        IList<Vector3f> allFluidPos = LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
+        for (Vector3f fldPos : allFluidPos) {
             if (levelContainer.getMyWindow().shouldClose()) {
                 break;
             }
@@ -465,12 +466,12 @@ public class RandomLevelGenerator {
                 break;
             }
 
-            List<Integer> freeFaces = fluidBlock.getAdjacentFreeFaceNumbers();
+            List<Integer> freeFaces = Block.getAdjacentFreeFaceNumbers(fldPos);
             for (int faceNum : freeFaces) {
                 if (faceNum == Block.TOP && random.nextFloat() >= 0.25f) {
                     continue;
                 }
-                Vector3f spos = fluidBlock.getAdjacentPos(faceNum);
+                Vector3f spos = Block.getAdjacentPos(fldPos, faceNum);
                 Block solidBlock = new Block("stone", spos, GlobalColors.WHITE_RGBA, true);
                 levelContainer.chunks.addBlock(solidBlock);
                 solidBlocks--;
@@ -478,7 +479,7 @@ public class RandomLevelGenerator {
                     break;
                 }
             }
-            levelContainer.incProgress(100.0f / (float) totalFldBlkList.size());
+            levelContainer.incProgress(100.0f / (float) allFluidPos.size());
         }
     }
 
@@ -487,7 +488,7 @@ public class RandomLevelGenerator {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportDebug("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
             // define alpha: solid to fluid ratio
-            final float alpha = 0.56f;
+            final float alpha = 0.46f;
 
             // define beta: random to noise ratio
             final float beta = 0.16f;
@@ -520,8 +521,8 @@ public class RandomLevelGenerator {
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
                 final int posR_Max = Math.round(valueR) & 0xFFFFFFFE;
 
-                final int hRMin = posR_Min >> 1;
-                final int hRMax = posR_Max >> 1;
+                final int hRMin = posR_Min >> 2;
+                final int hRMax = posR_Max >> 2;
 
                 DSLogger.reportDebug(String.format("Generating Part I - Noise (%d blocks)", totalNoise), null);
                 // 1. Noise Part                                   
