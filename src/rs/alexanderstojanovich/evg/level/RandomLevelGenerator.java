@@ -514,8 +514,8 @@ public class RandomLevelGenerator {
                 final int posN_Min = -valueK0;
                 final int posN_Max = valueK0;
 
-                final int hNMin = posN_Min >> 1;
-                final int hNMax = posN_Max >> 1;
+                final int hNMin = posN_Min >> 2;
+                final int hNMax = posN_Max >> 2;
 
                 float valueR = (float) MathUtils.pow(totalRandom, 0.33f) * 2.0f;
                 final int posR_Min = Math.round(-valueR) & 0xFFFFFFFE;
