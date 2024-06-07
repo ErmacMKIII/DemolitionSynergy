@@ -185,7 +185,7 @@ public class Chunks {
      *
      * @param block block to add
      */
-    public void addBlock(Block block) {
+    public synchronized void addBlock(Block block) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -206,7 +206,7 @@ public class Chunks {
      *
      * @param block block to remove
      */
-    public void removeBlock(Block block) {
+    public synchronized void removeBlock(Block block) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
@@ -268,6 +268,7 @@ public class Chunks {
     }
 
     // all blocks from all the chunks in one big list
+    @Deprecated
     public IList<Block> getTotalList() {
         IList<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {

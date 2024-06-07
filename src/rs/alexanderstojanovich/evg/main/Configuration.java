@@ -48,7 +48,7 @@ public class Configuration {
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 10;
-    private int optimizationPasses = 8;
+    private int optimizationPasses = 16;
     private double gameTicks = 0.0;
     private int blocksPerRun = 1000;
     private int ticksPerUpdate = Game.TPS_TWO;
@@ -166,7 +166,7 @@ public class Configuration {
                                 break;
                             case "optimizationpasses":
                                 number = Integer.parseInt(words[1]);
-                                if (number >= 1 && number <= 64) {
+                                if (number != 0 && (number & (number - 1)) == 0 && number <= 64) {
                                     optimizationPasses = number;
                                 }
                                 break;

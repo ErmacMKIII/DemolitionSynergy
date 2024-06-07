@@ -23,8 +23,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -54,6 +56,8 @@ public class Request implements RequestIfc {
     public final InetAddress clientAddress;
     public final int clientPort;
 
+    protected long checksum = 0L;
+
     /**
      * Invalid request. If receiving fails!
      */
@@ -64,10 +68,12 @@ public class Request implements RequestIfc {
      *
      * @param clientAddress client Inet address who send request
      * @param clientPort client port who send request
+     * @param checksum checksum of received data
      */
-    public Request(InetAddress clientAddress, int clientPort) {
+    public Request(InetAddress clientAddress, int clientPort, long checksum) {
         this.clientAddress = clientAddress;
         this.clientPort = clientPort;
+        this.checksum = checksum;
     }
 
     /**
@@ -254,8 +260,27 @@ public class Request implements RequestIfc {
     @Override
     public void send(Game client) throws Exception {
         serialize(client);
-        DatagramPacket packet = new DatagramPacket(content, content.length, client.getServerInetAddr(), client.getPort());
+        // computing checksum
+        CRC32C csObj = new CRC32C();
+        csObj.update(content);
+        this.checksum = csObj.getValue();
+        // storing content with checksum
+        final int capacity = content.length + Long.BYTES;
+        ByteBuffer byteBuff = org.lwjgl.BufferUtils.createByteBuffer(capacity);
+        byteBuff.put(content);
+        byteBuff.putLong(checksum);
+        byteBuff.flip();
+
+        byte[] packetData = new byte[byteBuff.remaining()];
+        byteBuff.get(packetData);
+
+        DatagramPacket packet = new DatagramPacket(packetData, packetData.length, client.getServerInetAddr(), client.getPort());
         client.getServerEndpoint().send(packet);
+    }
+
+    @Override
+    public long getChecksum() {
+        return checksum;
     }
 
     public int getVersion() {

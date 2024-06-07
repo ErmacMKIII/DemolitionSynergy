@@ -84,4 +84,11 @@ public interface DSObject {
      * encountered
      */
     public DSObject deserialize(byte[] content) throws Exception;
+
+    /**
+     * Get checksum of data. This is the only way to pair request with response.
+     *
+     * @return checksum
+     */
+    public long getChecksum();
 }

@@ -43,6 +43,7 @@ import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -56,14 +57,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
     // game logic is contained in here
 
+    /**
+     * All Game Assets (Models, Textures etc.)
+     */
+    public final Assets GameAssets = new Assets();
+
     protected boolean initializedWindow = false;
     protected boolean initializedCore = false;
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 41;
+    public static final int VERSION = 42;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
+
+    /**
+     * Game GLFW Window
+     */
     public final Window WINDOW;
 
     public final MasterRenderer masterRenderer;
@@ -137,7 +147,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         WINDOW.centerTheWindow();
         //----------------------------------------------------------------------        
-        this.splashScreen = new Quad(width, height, Texture.SPLASH, true);
+        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
@@ -167,7 +177,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Game Renderer initialized.", null);
         // Intrface holding stuff initialized
         intrface = new Intrface(this);
-        DSLogger.reportDebug("Game Inetrface initialized.", null);
+        DSLogger.reportDebug("Game Interface initialized.", null);
         instance = this;
     }
 
@@ -227,12 +237,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return any chunk operation performed
      */
     public boolean utilChunkOperations() {
-        updateRenderLCLock.lock();
-        try {
-            chunkOperationPerformed = this.levelContainer.chunkOperations();
-        } finally {
-            updateRenderLCLock.unlock();
-        }
+        this.chunkOperationPerformed = this.levelContainer.chunkOperations();
+
         return chunkOperationPerformed;
     }
 
@@ -242,12 +248,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void utilOptimization() {
         if (!isWorking()) {
-            updateRenderLCLock.lock();
-            try {
-                levelContainer.optimize();
-            } finally {
-                updateRenderLCLock.unlock();
-            }
+            levelContainer.optimize();
         }
     }
 
@@ -268,7 +269,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         } else { // working check avoids locking the monitor
             levelContainer.update();
             // if single player gravity is affected or if multiplayer and player is registered
-            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
+            if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
                     || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
                 boolean underGravity = levelContainer.gravityDo(deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
@@ -315,10 +316,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getScreenText().setEnabled(false);
         }
 
-        if (this.getLevelContainer().getProgress() == 0.0f
-                || this.getLevelContainer().getProgress() == 100.0f) {
-            this.intrface.getProgText().setEnabled(false);
+        if (!isWorking() || this.getLevelContainer().getProgress() == 100.0f) {
             this.getLevelContainer().setProgress(0.0f);
+            this.intrface.getProgText().setEnabled(false);
         }
 
         synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -368,25 +368,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
 
             perspectiveRenderer.render(); // it sets projection matrix {perspective, orthogonal} accross shaders
-
+            if ((Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
+                    || (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN)) {
+                levelContainer.levelActors.player.renderWeaponInHand(levelContainer.lightSources, ShaderProgram.getWeaponShader());
+            }
             if (!isWorking()) {
                 this.prepare();
-                updateRenderLCLock.lock();
-                try {
-                    // Render Effects
-                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                        waterRenderer.render();
-                    }
-
-                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                        shadowRenderer.render();
-                    }
-
-                    // Render Original Scene
-                    levelContainer.render(renderFlag);
-                } finally {
-                    updateRenderLCLock.unlock();
+                // Render Effects
+                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                    waterRenderer.render();
                 }
+
+                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                    shadowRenderer.render();
+                }
+
+                // Render Original Scene
+                levelContainer.render(renderFlag);
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -422,12 +420,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
+        if (isWorking() || levelContainer.blockEnvironment.isOptimizing() || !levelContainer.blockEnvironment.isFullyOptimized()) {
             return;
         }
-        if (GameRenderer.isLastFrame()) {
-            levelContainer.blockEnvironment.swap();
-        }
+        levelContainer.blockEnvironment.swap();
     }
 
     /*
@@ -510,22 +506,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //            updateRenderLCLock.unlock();
 //        }
 //    }
-    /**
-     * Is level container fullyOptimized
-     */
-    public void isOptimized() {
-        levelContainer.blockEnvironment.isFullyOptimized();
-    }
-
-    /**
-     * Set level container optimization flag
-     *
-     * @param optimized fullyOptimized flag to set
-     */
-    public void setOptimized(boolean optimized) {
-        levelContainer.blockEnvironment.setFullyOptimized(optimized);
-    }
-
     // -------------------------------------------------------------------------
     /**
      * Clear Everything. Game will be 'Free'.
@@ -565,7 +545,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean loadLevelFromFile(String fileName) {
         boolean ok = false;
         this.clearEverything();
-        ok = levelContainer.loadLevelFromFile(fileName);
+        updateRenderLCLock.lock();
+        try {
+            ok |= levelContainer.loadLevelFromFile(fileName);
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         return ok;
     }
@@ -579,7 +564,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public boolean saveLevelToFile(String fileName) {
         boolean ok = false;
-        ok = levelContainer.saveLevelToFile(fileName);
+        updateRenderLCLock.lock();
+        try {
+            ok |= levelContainer.saveLevelToFile(fileName);
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         return ok;
     }
@@ -598,7 +588,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        updateRenderLCLock.lock();
+        try {
+            ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         return ok;
     }
@@ -616,7 +611,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        updateRenderLCLock.lock();
+        try {
+            ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         return ok;
     }
@@ -634,7 +634,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = false;
 
         this.clearEverything();
-        ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
+        updateRenderLCLock.lock();
+        try {
+            ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat");
 
@@ -677,6 +682,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     PlayerInfo[] playerInfo = game.getPlayerInfo();
                     // config other players
                     levelContainer.levelActors.configOtherPlayers(playerInfo);
+                    // config-set main actor
                     // spawn player (set position)
                     levelContainer.spawnPlayer();
                     // player set pos
@@ -752,7 +758,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // prints general and detailed information about solid and fluid chunks
     public void printInfo() {
-        levelContainer.chunks.printInfo();
+//        levelContainer.chunks.printInfo();
     }
 
     public LevelContainer getLevelContainer() {

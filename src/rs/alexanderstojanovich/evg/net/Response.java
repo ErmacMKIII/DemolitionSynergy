@@ -23,6 +23,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.joml.Vector3f;
@@ -44,15 +45,32 @@ public class Response implements ResponseIfc {
     protected ObjType objectType;
     protected int version = 0;
 
+    public final long checksum;
+
     /**
      * Invalid response. If receiving fails!
      */
-    public static final Response INVALID = new Response(ResponseStatus.INVALID, VOID, null);
+    public static final Response INVALID = new Response(0L, ResponseStatus.INVALID, VOID, null);
 
-    public Response() {
+    /**
+     * Create empty response with given checksum
+     *
+     * @param checksum checksum to assign
+     */
+    public Response(long checksum) {
+        this.checksum = checksum;
     }
 
-    public Response(ResponseStatus responseStatus, DataType dataType, Object data) {
+    /**
+     * Create given response with response status
+     *
+     * @param checksum checksum to assign
+     * @param responseStatus reponse status {INVALID, ERR, OK}
+     * @param dataType data type (most often 'STRING')
+     * @param data data (argument)
+     */
+    public Response(long checksum, ResponseStatus responseStatus, DataType dataType, Object data) {
+        this.checksum = checksum;
         this.responseStatus = responseStatus;
         this.dataType = dataType;
         this.data = data;
@@ -210,9 +228,20 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws Exception {
+    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws IOException {
         serialize(server);
-        DatagramPacket packet = new DatagramPacket(content, content.length, clientAddress, clientPort);
+        // storing content with checksum
+        final int capacity = content.length + Long.BYTES;
+        ByteBuffer byteBuff = org.lwjgl.BufferUtils.createByteBuffer(capacity);
+        byteBuff.put(content);
+        // checksum
+        byteBuff.putLong(checksum);
+        byteBuff.flip();
+
+        byte[] packetData = new byte[byteBuff.remaining()];
+        byteBuff.get(packetData);
+
+        DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientAddress, clientPort);
         server.getEndpoint().send(packet);
     }
 
@@ -224,6 +253,11 @@ public class Response implements ResponseIfc {
     @Override
     public ObjType getObjectType() {
         return ObjType.RESPONSE;
+    }
+
+    @Override
+    public long getChecksum() {
+        return checksum;
     }
 
 }

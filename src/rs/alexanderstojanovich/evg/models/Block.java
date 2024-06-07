@@ -1083,7 +1083,47 @@ public class Block extends Model {
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
     // used by Random Level Generator
+    /**
+     * Returns array of adjacent free face numbers (those faces without adjacent
+     * neighbor nearby) used by Random Level Generator
+     *
+     * @return free face numbers (not block on that side
+     */
     public List<Integer> getAdjacentFreeFaceNumbers() {
+        List<Integer> result = new ArrayList<>();
+
+        int sbits = 0;
+        TexByte pair = LevelContainer.AllBlockMap.getLocation(pos);
+        if (pair != null && pair.isSolid()) {
+            sbits = pair.getByteValue();
+        }
+
+        int fbits = 0;
+
+        if (pair != null && sbits == 0 && !pair.isSolid()) {
+            fbits = pair.getByteValue();
+        }
+
+        int tbits = sbits | fbits;
+
+        for (int j = 0; j <= 5; j++) {
+            int mask = 1 << j;
+            if ((tbits & mask) == 0) {
+                result.add(j);
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns array of adjacent free face numbers (those faces without adjacent
+     * neighbor nearby) used by Random Level Generator
+     *
+     * @param pos block position
+     * @return free face numbers (not block on that side
+     */
+    public static List<Integer> getAdjacentFreeFaceNumbers(Vector3f pos) {
         List<Integer> result = new ArrayList<>();
 
         int sbits = 0;

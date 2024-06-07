@@ -23,6 +23,8 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Critter is class of living things. Has capabilities moving. Is collision
@@ -41,6 +43,16 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected Vector3f right = Camera.X_AXIS;
     protected boolean underGravity = false;
     protected boolean inJump = false;
+
+    /**
+     * Weapon model on character body with the weapon
+     */
+    protected Model charBodyWeaponModel = Model.NONE;
+
+    /**
+     * Critter (could be Player) has nothing in hands (no-weapon)
+     */
+    protected WeaponIfc weapon = Weapons.NONE;
 
     /**
      * Create new instance of the critter. If instanced in anonymous class
@@ -129,37 +141,49 @@ public class Critter implements Predictable, Moveable, Renderable {
     @Override
     public void moveForward(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(front.mul(amount, temp), temp);
+        Vector3f frontAmpl = front.mul(amount, temp);
+        body.pos = body.pos.add(frontAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(frontAmpl, temp);
     }
 
     @Override
     public void moveBackward(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(front.mul(amount, temp), temp);
+        Vector3f frontAmpl = front.mul(amount, temp);
+        body.pos = body.pos.sub(frontAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(frontAmpl, temp);
     }
 
     @Override
     public void moveLeft(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(right.mul(amount, temp), temp);
+        Vector3f rightAmpl = right.mul(amount, temp);
+        body.pos = body.pos.sub(rightAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(rightAmpl, temp);
     }
 
     @Override
     public void moveRight(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(right.mul(amount, temp), temp);
+        Vector3f rightAmpl = right.mul(amount, temp);
+        body.pos = body.pos.add(rightAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(rightAmpl, temp);
     }
 
     @Override
     public void ascend(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.add(up.mul(amount, temp), temp);
+        Vector3f upAmpl = up.mul(amount, temp);
+        body.pos = body.pos.add(upAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(upAmpl, temp);
     }
 
     @Override
     public void descend(float amount) {
         Vector3f temp = new Vector3f();
-        body.pos = body.pos.sub(up.mul(amount, temp), temp);
+        Vector3f upAmpl = up.mul(amount, temp);
+        body.pos = body.pos.sub(upAmpl, temp);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(upAmpl, temp);
     }
 
     protected void updateCameraVectors() {
@@ -203,6 +227,13 @@ public class Critter implements Predictable, Moveable, Renderable {
             body.bufferAll();
         }
         body.render(lightSrc, shaderProgram);
+        // weapon which critte
+        if (weapon != Weapons.NONE) {
+            if (!charBodyWeaponModel.isBuffered()) {
+                charBodyWeaponModel.bufferAll();
+            }
+            charBodyWeaponModel.render(lightSrc, shaderProgram);
+        }
     }
 
     @Override
@@ -211,6 +242,33 @@ public class Critter implements Predictable, Moveable, Renderable {
             body.bufferAll();
         }
         body.renderContour(lightSources, shaderProgram);
+        if (weapon != Weapons.NONE) {
+            if (!charBodyWeaponModel.isBuffered()) {
+                charBodyWeaponModel.bufferAll();
+            }
+            charBodyWeaponModel.renderContour(lightSources, shaderProgram);
+        }
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapons all weapons instance (wraps array)
+     * @param index index of (weapon) enumeration
+     */
+    public void switchWeapon(Weapons weapons, int index) {
+//        this.weapon = weapons.AllWeapons[index];
+//        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapon weapon to switch to
+     */
+    public void switchWeapon(WeaponIfc weapon) {
+//        this.weapon = weapon;
+//        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     @Override
@@ -235,110 +293,120 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     @Override
     public void moveXZForward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        body.pos = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        body.pos = body.pos.add(frontXZ, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(frontXZ, temp);
     }
 
     @Override
     public void moveXZBackward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        body.pos = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        body.pos = body.pos.sub(frontXZ, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(frontXZ, temp);
     }
 
     @Override
     public void moveXZLeft(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        body.pos = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        body.pos = body.pos.sub(rightXZ, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(rightXZ, temp);
     }
 
     @Override
     public void moveXZRight(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        body.pos = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        body.pos = body.pos.add(rightXZ, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(rightXZ, temp);
     }
 
     @Override
     public void jumpY(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        body.pos = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        body.pos = body.pos.add(upAmount, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.add(upAmount, temp);
     }
 
     @Override
     public void sinkY(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        body.pos = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        body.pos = body.pos.sub(upAmount, temp2);
+//        charBodyWeaponModel.pos = charBodyWeaponModel.pos.sub(upAmount, temp);
     }
 
     @Override
     public void movePredictorXZForward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        predictor = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        predictor = body.pos.add(frontXZ, temp2);
     }
 
     @Override
     public void movePredictorXZBackward(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f frontXZ = new Vector3f(front);
-        frontXZ.y = 0.0f;
-        Vector3f amountXYZ = frontXZ.mul(amount, temp);
-        predictor = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f frontXZ = new Vector3f(front.x, 0.0f, front.z);
+        float scale = front.length() / frontXZ.length();
+        frontXZ = frontXZ.mul(amount * scale, temp1);
+        predictor = body.pos.sub(frontXZ, temp2);
     }
 
     @Override
     public void movePredictorXZLeft(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        predictor = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        predictor = body.pos.sub(rightXZ, temp2);
     }
 
     @Override
     public void movePredictorXZRight(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f rightXZ = new Vector3f(right);
-        rightXZ.y = 0.0f;
-        Vector3f amountXYZ = rightXZ.mul(amount, temp);
-        predictor = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f rightXZ = new Vector3f(right.x, 0.0f, right.z);
+        float scale = right.length() / rightXZ.length();
+        rightXZ = rightXZ.mul(amount * scale, temp1);
+        predictor = body.pos.add(rightXZ, temp2);
     }
 
     @Override
     public void movePredictorYUp(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        predictor = body.pos.add(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        predictor = body.pos.add(upAmount, temp2);
     }
 
     @Override
     public void movePredictorYDown(float amount) {
-        Vector3f temp = new Vector3f();
-        Vector3f amountXYZ = Camera.Y_AXIS.mul(amount, temp);
-        amountXYZ.x = 0.0f;
-        amountXYZ.z = 0.0f;
-        predictor = body.pos.sub(amountXYZ, temp);
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
+        predictor = body.pos.sub(upAmount, temp2);
     }
 
     /**
@@ -391,6 +459,14 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public Vector3f getRight() {
         return right;
+    }
+
+    public Model getCharBodyWeaponModel() {
+        return charBodyWeaponModel;
+    }
+
+    public WeaponIfc getWeapon() {
+        return weapon;
     }
 
 }

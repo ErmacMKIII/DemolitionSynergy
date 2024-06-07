@@ -27,6 +27,10 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
+ * Player class.
+ *
+ * Player is rendered from Third Person and First Person as two different modes
+ * of same camera.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -39,18 +43,13 @@ public class Player extends Critter implements Observer {
     }
     protected CameraView cameraView = CameraView.THIRD_PERSON;
 
-//    private Model currWeapon;
-    private final RPGCamera camera;
+    protected final RPGCamera camera;
     public final LightSource light;
-//    static {
-//        for (Model weapon : WEAPONS) {
-//            weapon.pos = WEAPON_POS;
-//            weapon.setPrimaryColor(GlobalColors.WHITE);
-//            weapon.setScale(6.0f);
-//            weapon.setrY((float) (-Math.PI / 2.0f));
-//        }
-//    }
 
+//    /**
+//     * Weapon model on character first-person-shooter 'in hands'.
+//     */
+//    protected Model inHandsWeaponModel = Model.NONE;
     /**
      * Create new player for Single Player
      *
@@ -92,19 +91,32 @@ public class Player extends Critter implements Observer {
         this.light = light;
     }
 
-//    public void switchWeapon(int num) {
-//        currWeapon = WEAPONS[num - 1];
-//    }
     /**
      * Toggle Between 1st Person / Third Person
      */
     public void switchViewToggle() {
         if (cameraView == CameraView.FIRST_PERSON) {
-            this.camera.setDistanceFromTarget(0f);
+            this.camera.setDistanceFromTarget(2.1f);
             this.cameraView = CameraView.THIRD_PERSON;
         } else if (cameraView == CameraView.THIRD_PERSON) {
-            this.camera.setDistanceFromTarget(2.1f);
+            this.camera.setDistanceFromTarget(0f);
             this.cameraView = CameraView.FIRST_PERSON;
+        }
+    }
+
+    /**
+     * Render player's weapon in hands.
+     *
+     * @param ls Light Source (from level container or NONE)
+     * @param sp Shader Program (default is Weapon GLSL Shader)
+     */
+    public void renderWeaponInHand(LightSources ls, ShaderProgram sp) {
+        if (cameraView == CameraView.FIRST_PERSON) {
+            if (!weapon.inHands().isBuffered()) {
+                weapon.inHands().bufferAll();
+            }
+            // render gun on the screen
+            weapon.inHands().render(ls, sp);
         }
     }
 
@@ -192,13 +204,17 @@ public class Player extends Critter implements Observer {
     @Override
     public void renderContour(LightSources lightSources, ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
-        super.renderContour(lightSources, shaderProgram);
+        if (cameraView == CameraView.THIRD_PERSON) {
+            super.renderContour(lightSources, shaderProgram);
+        }
     }
 
     @Override
     public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
-        super.render(lightSrc, shaderProgram);
+        if (cameraView == CameraView.THIRD_PERSON) {
+            super.render(lightSrc, shaderProgram);
+        }
     }
 
     @Override
@@ -285,4 +301,5 @@ public class Player extends Critter implements Observer {
     public boolean isRegistered() {
         return registered;
     }
+
 }

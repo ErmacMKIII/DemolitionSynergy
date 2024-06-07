@@ -62,6 +62,11 @@ public class Model implements Renderable, Comparable<Model> {
 
     protected Matrix4f modelMatrix = new Matrix4f();
 
+    /**
+     * Placeholder for empty model. Use it instead of null.
+     */
+    public static final Model NONE = new Model("NONE", "EMPTY");
+
     public Model(String modelFileName, String texName) {
         this.modelFileName = modelFileName;
         this.texName = texName;

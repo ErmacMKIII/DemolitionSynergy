@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
@@ -55,19 +54,19 @@ public class Console {
     protected GLFWKeyCallback glfwKeyCallback;
     protected GLFWScrollCallback glfwScrollCallback;
 
-    protected Intrface intrface;
+    public final Intrface intrface;
 
     public Console(Intrface intrface) {
         this.intrface = intrface;
         int conwidth = cfg.getWidth();
         int conheight = cfg.getHeight() / 2;
 
-        this.panel = new Quad(conwidth, conheight, Texture.CONSOLE);
+        this.panel = new Quad(conwidth, conheight, intrface.gameObject.GameAssets.CONSOLE);
         this.panel.setColor(new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
-        this.inText = new DynamicText(Texture.FONT, "]_", new Vector2f(), 18, 18);
+        this.inText = new DynamicText(intrface.gameObject.GameAssets.FONT, "]_", new Vector2f(), 18, 18);
         this.inText.setColor(new Vector4f(GlobalColors.GREEN, 1.0f));
         this.inText.pos.x = -1.0f;
         this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
@@ -75,7 +74,7 @@ public class Console {
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
         this.inText.alignToNextChar(intrface);
 
-        this.completes = new DynamicText(Texture.FONT, "", new Vector2f(), 18, 18);
+        this.completes = new DynamicText(intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18);
         this.completes.color = new Vector4f(GlobalColors.YELLOW, 1.0f);
         this.completes.pos.x = -1.0f;
         this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight(intrface);
@@ -126,7 +125,7 @@ public class Console {
                             // add to queue
                             HistoryItem item;
                             try {
-                                item = new HistoryItem(cmd);
+                                item = new HistoryItem(Console.this, cmd);
                                 history.addFirst(item);
                             } catch (Exception ex) {
                                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
@@ -235,7 +234,7 @@ public class Console {
         // add to queue
         HistoryItem item;
         try {
-            item = new HistoryItem(cmd);
+            item = new HistoryItem(this, cmd);
             history.addFirst(item);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
@@ -279,7 +278,7 @@ public class Console {
         // add to queue
         HistoryItem item;
         try {
-            item = new HistoryItem(cmd);
+            item = new HistoryItem(this, cmd);
             history.addFirst(item);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);

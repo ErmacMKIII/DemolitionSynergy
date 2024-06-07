@@ -23,7 +23,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -70,7 +69,8 @@ public class Game implements DSMachine {
 
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 5.5f;
+    public static final float AMOUNT = 4.45f;
+    public static final float JUMP_STR_AMOUNT = 107.8f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -184,6 +184,8 @@ public class Game implements DSMachine {
      * Access to Game Engine.
      */
     public final GameObject gameObject;
+
+    public int weaponIndex = 0;
 
     /**
      * Construct new game (client) view. Demolition Synergy client.
@@ -466,31 +468,15 @@ public class Game implements DSMachine {
             changed = true;
         }
 
-//        if (keys[GLFW.GLFW_KEY_1]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_2]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_3]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_4]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_5]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_6]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
-//            changed = true;
-//        }
-        if (keys[GLFW.GLFW_KEY_R]) {
+        if (keys[GLFW.GLFW_KEY_1]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            changed = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_2]) {
+            weaponIndex = (--weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
             changed = true;
         }
 
@@ -519,10 +505,12 @@ public class Game implements DSMachine {
             final double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this);
-            ResponseIfc.receiveAsync(this).thenApply((ResponseIfc playerPosResp) -> {
+            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc playerPosResp) -> {
                 if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                    PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
-                    playerServerPos.set(posInfo.pos);
+                    if (playerPosResp.getChecksum() == playerPosReq.getChecksum()) {
+                        PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
+                        playerServerPos.set(posInfo.pos);
+                    }
                 } else {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
                     gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
@@ -532,8 +520,6 @@ public class Game implements DSMachine {
 
                 // calculate interpolation factor
                 interpolationFactor = (double) deltaTime / ((double) ping + deltaTime);
-
-                return playerPosResp;
             });
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
@@ -677,30 +663,18 @@ public class Game implements DSMachine {
             changed = true;
         }
 
-//        if (keys[GLFW.GLFW_KEY_1]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(1);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_2]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(2);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_3]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(3);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_4]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(4);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_5]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(5);
-//            changed = true;
-//        }
-//        if (keys[GLFW.GLFW_KEY_6]) {
-//            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(6);
-//            changed = true;
-//        }
+        if (keys[GLFW.GLFW_KEY_1]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            changed = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_2]) {
+            weaponIndex = (--weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            changed = true;
+        }
+
         if (keys[GLFW.GLFW_KEY_R]) {
             changed = true;
         }
@@ -755,10 +729,10 @@ public class Game implements DSMachine {
                     gameObject.intrface.getLoadDialog().open(gameObject.intrface);
                 } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    gameObject.levelContainer.chunks.printInfo();
+//                    gameObject.levelContainer.chunks.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    LevelContainer.printPositionMaps();
+//                    LevelContainer.printPositionMaps();
                 } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     gameObject.levelContainer.printQueues();
@@ -779,10 +753,10 @@ public class Game implements DSMachine {
                     Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectPrevTexture();
+                    Editor.selectPrevTexture(gameObject.GameAssets);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectNextTexture();
+                    Editor.selectNextTexture(gameObject.GameAssets);
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;
@@ -807,10 +781,10 @@ public class Game implements DSMachine {
 
                 if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
-                }
 
-                lastX = (float) xposGL;
-                lastY = (float) yposGL;
+                    lastX = (float) xposGL;
+                    lastY = (float) yposGL;
+                }
             }
         };
         GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
@@ -840,14 +814,15 @@ public class Game implements DSMachine {
                 final double beginTime = GLFW.glfwGetTime();
                 RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 playerPosReq.send(this);
-                ResponseIfc.receiveAsync(this).thenApply((ResponseIfc timeResp) -> {
-                    double endTime = GLFW.glfwGetTime();
-                    long tripTime = Math.round(endTime - beginTime) * 1000L;
 
-                    Game.gameTicks = (double) timeResp.getData();
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc timeResp) -> {
+                    if (timeResp.getChecksum() == playerPosReq.getChecksum() && timeResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                        double endTime = GLFW.glfwGetTime();
+                        long tripTime = Math.round(endTime - beginTime) * 1000L;
 
-                    return timeResp;
+                        Game.gameTicks = (double) timeResp.getData();
+                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                    }
                 });
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -864,18 +839,20 @@ public class Game implements DSMachine {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this);
-                        ResponseIfc.receiveAsync(this).thenApply((ResponseIfc otherPlayerResponse) -> {
+
+                        ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc otherPlayerResponse) -> {
                             if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                                 PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
-                                other.setPos(posInfo.pos);
-                                other.getFront().set(posInfo.front);
-                                other.setRotationXYZ(posInfo.front);
+                                // Verify Match!
+                                if (otherPlayerResponse.getChecksum() == otherPlayerRequest.getChecksum() && posInfo.uniqueId.equals(other.uniqueId)) {
+                                    other.setPos(posInfo.pos);
+                                    other.getFront().set(posInfo.front);
+                                    other.setRotationXYZ(posInfo.front);
+                                }
                             } else {
                                 DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
                                 gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
                             }
-
-                            return otherPlayerResponse;
                         });
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);
@@ -924,7 +901,7 @@ public class Game implements DSMachine {
                         break;
                     case SINGLE_PLAYER:
                         // player has control
-                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, amount, (float) (deltaTime));
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -942,7 +919,7 @@ public class Game implements DSMachine {
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
-                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, 1.1f * amount, 14790f * (float) deltaTime, 1.1f * amount, (float) (deltaTime));
+                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, amount, (float) (deltaTime));
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1051,7 +1028,7 @@ public class Game implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this);
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
+            if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
                 this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
                 this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
                 DSLogger.reportInfo("Connected to server!", null);
@@ -1149,7 +1126,7 @@ public class Game implements DSMachine {
             downlBeginRequest.send(this);
 
             ResponseIfc response0 = ResponseIfc.receive(this);
-            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
                 gameObject.intrface.getConsole().write(response0.getData().toString());
@@ -1157,57 +1134,23 @@ public class Game implements DSMachine {
                 // Define a buffer to hold the received data
                 byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
+                final int totalIndices = (int) response0.getData();
 
-                int packetnum = 0;
-                CRC32C chkSum = new CRC32C();
+                for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
+                    // Request the next fragment
+                    RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
+                    fragmentRequest.send(this);
 
-                int retransmissionAttempts = 0;
-
-                while (totalBytesRead < gameObject.levelContainer.buffer.length) {
+                    // Receive the fragment
                     DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
                     serverEndpoint.receive(dp);
                     int bytesRead = dp.getLength();
 
-                    if (++packetnum == PACKETS_MAX) {
-                        chkSum.update(gameObject.levelContainer.buffer, totalBytesRead, PACKETS_MAX * BUFF_SIZE);
-                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.LONG, chkSum.getValue());
-                        DSLogger.reportInfo(String.format("Awaiting confirmation response..(CHKSUM = %d) .. ", chkSum.getValue()), null);
-                        reqConfirm.send(this);
-                        packetnum = 0;
+                    // Write the received data to the buffer
+                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+                    totalBytesRead += bytesRead;
 
-                        ResponseIfc response = ResponseIfc.receive(this);
-                        if (response == null) {
-                            continue;
-                        }
-
-                        if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                            DSLogger.reportInfo("Confirmed OK checksum! Download resumed.", null);
-                        } else {
-                            if (++retransmissionAttempts < Game.RETRANSMISSION_MAX_ATTEMPTS) {
-                                DSLogger.reportInfo("Confirmed is ERR (checksum)! Awaiting retransmission.", null);
-                                totalBytesRead -= (PACKETS_MAX - 1) * BUFF_SIZE;
-                                continue;
-                            }
-
-                            DSLogger.reportInfo("Confirmed is ERR (checksum)! Download will be cancelled", null);
-                            break;
-                        }
-                    }
-
-                    if (isEndOfStream(buffer, bytesRead)) {
-                        // Write the received data to the buffer
-                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
-                        totalBytesRead += bytesRead - Game.EOS.length;
-                        // End of stream marker encountered, break the loop or handle accordingly
-                        DSLogger.reportInfo("End of stream (EOS) marker received", null);
-                        break;
-                    } else {
-                        // Write the received data to the buffer
-                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-                        totalBytesRead += bytesRead;
-                    }
-
-                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
+                    DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
                 }
 
                 // Logging download information

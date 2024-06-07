@@ -22,17 +22,18 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.core.RPGCamera;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.NPC;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.ModelUtils;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Define all the level observers & critters. Present in the level container.
@@ -42,15 +43,20 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class LevelActors {
 
     /**
+     * Access to level container containing actors
+     */
+    public final LevelContainer levelContainer;
+
+    /**
      * Spectator is separate camera from player instance
      */
     public final Observer spectator = new Camera(); // spectator is separate camera from player instance
 
-    public static final Model PLAYER_BODY = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", true);
     /**
      * Main player (Single Player & Multiplayer)
      */
-    public final Player player = new Player(new Model(PLAYER_BODY));
+    public final Player player;
+
     /**
      * Non-playable characters. Handled by client (SinglePlayer) or server host
      * (MultiPlyer).
@@ -61,6 +67,27 @@ public class LevelActors {
      * Other players (Multiplayer)
      */
     public final IList<Critter> otherPlayers = new GapList<>();
+
+    /**
+     * Main actor (view matrix) who sees the level. In Free & Editor mode is
+     * spectator. In Single player and Multi-Player is player.
+     */
+    public Observer mainActor = spectator;
+
+    /**
+     * Generate new Level Actors residing in this level (map) container.
+     *
+     * @param levelContainer level container containing (level) actors
+     */
+    public LevelActors(LevelContainer levelContainer) {
+        this.levelContainer = levelContainer;
+        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
+        this.player = new Player(
+                new RPGCamera(bodyCopy),
+                new LightSource(bodyCopy.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY),
+                bodyCopy
+        );
+    }
 
     public void freeze() {
 //        getMainActor().setGivenControl(false);
@@ -86,14 +113,19 @@ public class LevelActors {
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }
+        // Render main actor
         if ((mainActor() == player)) {
             player.render(lightSrc, mainActorShader);
         } else if (mainActor() == spectator) {
             spectator.render(mainActorShader);
         }
-
     }
 
+    /**
+     * Main Actor of the Level Map. Observer or Player.
+     *
+     * @return main actor (spectator/player)
+     */
     public Observer mainActor() {
         if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER
                 || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
@@ -105,6 +137,11 @@ public class LevelActors {
         return null;
     }
 
+    /**
+     * Configure level map main actor
+     *
+     * @param pos main actor position
+     */
     public void configureMainObserver(Vector3f pos) {
         mainActor().setPos(pos);
         mainActor().getCamera().setFront(Camera.Z_AXIS);
@@ -112,6 +149,14 @@ public class LevelActors {
         mainActor().getCamera().setRight(Camera.X_AXIS);
     }
 
+    /**
+     * Configure level map main actor
+     *
+     * @param pos pos of the main actor
+     * @param front front (view) vec3
+     * @param up up vec3
+     * @param right right vec3
+     */
     public void configureMainObserver(Vector3f pos, Vector3f front, Vector3f up, Vector3f right) {
         mainActor().setPos(pos);
         mainActor().getCamera().setFront(front);
@@ -120,8 +165,8 @@ public class LevelActors {
     }
 
     public Camera mainCamera() {
-        Observer mainActor = mainActor();
-        return mainActor.getCamera();
+        Observer mainActor1 = mainActor();
+        return mainActor1.getCamera();
     }
 
     public Player getPlayer() {
@@ -135,7 +180,7 @@ public class LevelActors {
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
         Arrays.asList(playerInfo).forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
-                Critter op = new Critter(pi.uniqueId, new Model(LevelActors.PLAYER_BODY));
+                Critter op = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
                 op.setName(pi.name);
                 op.body.setPrimaryRGBAColor(pi.color);
                 op.body.setTexName(pi.texModel);

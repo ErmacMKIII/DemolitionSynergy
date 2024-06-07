@@ -36,7 +36,7 @@ public class GameRenderer extends Thread implements Executor {
     protected static final Configuration cfg = Configuration.getInstance();
     protected final GameObject gameObject;
 
-    public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses();
+    public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses(); // DEFAULT is 10.
     private static double fpsTicks = 0.0;
     private static int fps = 0;
     private static int numOfPasses = 0;
@@ -67,6 +67,8 @@ public class GameRenderer extends Thread implements Executor {
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
+        gameObject.GameAssets.bufferAllTextures();
+//        DSLogger.reportDebug("Textures loaded!", null);
         try {
             gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (color & depth buffer)
             gameObject.shadowRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (depth buffer only) 
@@ -75,7 +77,7 @@ public class GameRenderer extends Thread implements Executor {
         }
         do {
             gameObject.render(); // render splash screen
-        } while (Game.accumulator < Game.TICK_TIME);
+        } while ((Game.accumulator * Game.TPS) < 2.0);
         gameObject.splashScreen.setEnabled(false);
 
         // resolution config
@@ -105,17 +107,16 @@ public class GameRenderer extends Thread implements Executor {
 
             // also avoid rendering when game is updating
             numOfPasses = 0; // Start with PASS0
-            while (fpsTicks >= 1.0 && couldRender()) {
+            while (couldRender()) {
                 // render the scene
                 gameObject.render();
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
             }
-
-            // Changes are reflected to optimized
+            // swap happens only if not optimizing
             if (!couldRender()) {
-                gameObject.swap(); // swap happens only if not optimizing
+                gameObject.swap();
             }
 
             // animates water every quarter of the second
@@ -173,7 +174,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && Game.accumulator < Game.TICK_TIME;
+        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator * Game.TPS) < 2.0;
     }
 
 //    /**

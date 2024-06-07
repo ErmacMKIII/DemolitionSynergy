@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -33,24 +32,24 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     private int selected = -1;
     protected Type type;
 
-    public MultiValue(Object[] valueArray, Type type) throws Exception {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(Texture.FONT, "");
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, "");
         values.addAll(Arrays.asList(valueArray));
     }
 
-    public MultiValue(Object[] valueArray, Type type, int selected) throws Exception {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type, int selected) throws Exception {
         this.type = type;
         this.selected = selected;
-        this.valueText = new DynamicText(Texture.FONT, String.valueOf(valueArray[selected]));
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(valueArray[selected]));
         for (Object object : valueArray) {
             values.add(object);
         }
     }
 
-    public MultiValue(Object[] valueArray, Type type, Object currentValue) throws Exception {
+    public MultiValue(Intrface intrface, Object[] valueArray, Type type, Object currentValue) throws Exception {
         this.type = type;
-        this.valueText = new DynamicText(Texture.FONT, String.valueOf(currentValue));
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(currentValue));
         values.addAll(Arrays.asList(valueArray));
         this.selected = values.indexOf(currentValue);
     }
