@@ -79,6 +79,10 @@ public interface RequestIfc extends DSObject {
          */
         DOWNLOAD,
         /**
+         * Get (Download) Level (Map) N-Fragment
+         */
+        GET_FRAGMENT,
+        /**
          * Confirm received packets (mandatory for UDP)
          */
         CONFIRM,

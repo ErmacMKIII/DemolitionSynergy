@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import org.joml.Random;
 import org.joml.Vector3f;
@@ -996,10 +997,10 @@ public class LevelContainer implements GravityEnviroment {
         if (file.exists()) {
             file.delete();
         }
-        success = storeLevelToBuffer(); // saves level to bufferVertices first
+        success = storeLevelToBuffer(); // saves level to buffer first
         try {
             bos = new BufferedOutputStream(new FileOutputStream(file));
-            bos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
+            bos.write(buffer, 0, pos); // save buffer to file at pos mark
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
@@ -1015,19 +1016,19 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public Future<Boolean> saveLevelToFileAsync(String filename) {
-        Callable<Boolean> task = () -> {
-            boolean result = false;
+    public CompletableFuture<Void> saveLevelToFileAsync(String filename) {
+        return CompletableFuture.runAsync(() -> {
             BufferedOutputStream bos = null;
             File file = new File(filename);
             if (file.exists()) {
                 file.delete();
             }
-            result |= storeLevelToBufferAsync(); // saves level to bufferVertices first
+
+            storeLevelToBufferAsync(); // saves level to buffer first
 
             try {
                 bos = new BufferedOutputStream(new FileOutputStream(file));
-                bos.write(buffer, 0, pos); // save bufferVertices to file at pos mark
+                bos.write(buffer, 0, pos); // save buffer to file at pos mark
             } catch (FileNotFoundException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             } catch (IOException ex) {
@@ -1040,11 +1041,7 @@ public class LevelContainer implements GravityEnviroment {
                     DSLogger.reportFatalError(ex.getMessage(), ex);
                 }
             }
-
-            return result;
-        };
-
-        return GameObject.TASK_EXECUTOR.submit(task);
+        });
     }
 
     public boolean loadLevelFromFile(String filename) {

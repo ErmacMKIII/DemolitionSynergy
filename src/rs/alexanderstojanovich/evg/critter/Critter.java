@@ -257,8 +257,8 @@ public class Critter implements Predictable, Moveable, Renderable {
      * @param index index of (weapon) enumeration
      */
     public void switchWeapon(Weapons weapons, int index) {
-        this.weapon = weapons.AllWeapons[index];
-        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+//        this.weapon = weapons.AllWeapons[index];
+//        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     /**
@@ -267,8 +267,8 @@ public class Critter implements Predictable, Moveable, Renderable {
      * @param weapon weapon to switch to
      */
     public void switchWeapon(WeaponIfc weapon) {
-        this.weapon = weapon;
-        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+//        this.weapon = weapon;
+//        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     @Override

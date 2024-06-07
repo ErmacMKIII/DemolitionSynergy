@@ -23,7 +23,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -1127,7 +1126,7 @@ public class Game implements DSMachine {
             downlBeginRequest.send(this);
 
             ResponseIfc response0 = ResponseIfc.receive(this);
-            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
                 gameObject.intrface.getConsole().write(response0.getData().toString());
@@ -1135,57 +1134,23 @@ public class Game implements DSMachine {
                 // Define a buffer to hold the received data
                 byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
+                final int totalIndices = (int) response0.getData();
 
-                int packetnum = 0;
-                CRC32C chkSum = new CRC32C();
+                for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
+                    // Request the next fragment
+                    RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
+                    fragmentRequest.send(this);
 
-                int retransmissionAttempts = 0;
-
-                while (totalBytesRead < gameObject.levelContainer.buffer.length) {
+                    // Receive the fragment
                     DatagramPacket dp = new DatagramPacket(buffer, Game.BUFF_SIZE);
                     serverEndpoint.receive(dp);
                     int bytesRead = dp.getLength();
 
-                    if (++packetnum == PACKETS_MAX) {
-                        chkSum.update(gameObject.levelContainer.buffer, totalBytesRead, PACKETS_MAX * BUFF_SIZE);
-                        RequestIfc reqConfirm = new Request(RequestIfc.RequestType.CONFIRM, DSObject.DataType.LONG, chkSum.getValue());
-                        DSLogger.reportInfo(String.format("Awaiting confirmation response..(CHKSUM = %d) .. ", chkSum.getValue()), null);
-                        reqConfirm.send(this);
-                        packetnum = 0;
+                    // Write the received data to the buffer
+                    System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
+                    totalBytesRead += bytesRead;
 
-                        ResponseIfc response = ResponseIfc.receive(this);
-                        if (response == null) {
-                            continue;
-                        }
-
-                        if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                            DSLogger.reportInfo("Confirmed OK checksum! Download resumed.", null);
-                        } else {
-                            if (++retransmissionAttempts < Game.RETRANSMISSION_MAX_ATTEMPTS) {
-                                DSLogger.reportInfo("Confirmed is ERR (checksum)! Awaiting retransmission.", null);
-                                totalBytesRead -= (PACKETS_MAX - 1) * BUFF_SIZE;
-                                continue;
-                            }
-
-                            DSLogger.reportInfo("Confirmed is ERR (checksum)! Download will be cancelled", null);
-                            break;
-                        }
-                    }
-
-                    if (isEndOfStream(buffer, bytesRead)) {
-                        // Write the received data to the buffer
-                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead - Game.EOS.length);
-                        totalBytesRead += bytesRead - Game.EOS.length;
-                        // End of stream marker encountered, break the loop or handle accordingly
-                        DSLogger.reportInfo("End of stream (EOS) marker received", null);
-                        break;
-                    } else {
-                        // Write the received data to the buffer
-                        System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-                        totalBytesRead += bytesRead;
-                    }
-
-                    DSLogger.reportInfo("Bytes read: " + totalBytesRead, null);
+                    DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
                 }
 
                 // Logging download information

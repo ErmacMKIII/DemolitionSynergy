@@ -22,8 +22,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
-import java.util.zip.CRC32C;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -338,84 +336,52 @@ public class GameServerProcessor {
                 break;
             case DOWNLOAD:
                 // Server-side code to handle sending the file
-                response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "Level download request is OK.");
-                response.send(gameServer, clientAddress, clientPort);
-                waitOnDownload = true;
-                gameServer.serverTaskExecutor.execute(() -> {
+                Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
+                gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").thenAccept((Void v) -> {
+                    final int totalBytes = gameServer.gameObject.levelContainer.pos;
+                    final int bytesPerFragment = BUFF_SIZE;
+                    int fullFragments = totalBytes / bytesPerFragment;
+                    int remainingBytes = totalBytes % bytesPerFragment;
+
+                    int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
+                    final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
                     try {
-                        int packetnum = 0;
-                        CRC32C chkSum = new CRC32C();
-
-                        int retransmissionAttempts = 0;
-
-                        Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
-                        if (gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").get()) {
-                            int bytesWrite = 0;
-                            final int totalBytesWrite = gameServer.gameObject.levelContainer.pos;
-                            final byte[] buff = new byte[BUFF_SIZE];
-
-                            while (bytesWrite < totalBytesWrite) {
-                                // Calculate the remaining bytes to write in this iteration
-                                int remainingBytes = totalBytesWrite - bytesWrite;
-                                // Determine the size of the chunk to write in this iteration
-                                int chunkSize = Math.min(remainingBytes, BUFF_SIZE);
-
-                                // Write a chunk of data to the outbound datagram packet
-                                System.arraycopy(gameServer.gameObject.levelContainer.buffer, bytesWrite, buff, 0, chunkSize);
-                                DatagramPacket dp = new DatagramPacket(buff, chunkSize, clientAddress, clientPort);
-                                endpoint.send(dp);
-                                if (++packetnum == PACKETS_MAX) {
-                                    chkSum.update(gameServer.gameObject.levelContainer.buffer, totalBytesWrite, PACKETS_MAX * BUFF_SIZE);
-                                    DSLogger.reportInfo(String.format("Awaiting confirmation request (CHKSUM = %d) .. ", chkSum.getValue()), null);
-                                    final RequestIfc chkReq = RequestIfc.receive(gameServer);
-
-                                    if (chkReq == null) {
-                                        continue;
-                                    }
-
-                                    if (chkReq.getRequestType() == RequestIfc.RequestType.CONFIRM) {
-                                        packetnum = 0;
-                                        boolean okey = (chkSum.getValue() == (long) chkReq.getData());
-                                        if (okey) {
-                                            DSLogger.reportInfo("Confirmed! Checksum is OK. Upload resumed.", null);
-                                        } else {
-                                            if (retransmissionAttempts < GameServerProcessor.RETRANSMISSION_MAX_ATTEMPTS) {
-                                                bytesWrite -= PACKETS_MAX * BUFF_SIZE;
-                                                DSLogger.reportError("ERR (checksum)! Attempting rentransmission.", null);
-                                            }
-                                            DSLogger.reportError("ERR (checksum)! Upload will be cancelled", null);
-                                        }
-
-                                        final Response chkRsp = new Response(request.getChecksum(), okey ? ResponseIfc.ResponseStatus.OK : ResponseIfc.ResponseStatus.ERR, DSObject.DataType.VOID, null);
-                                        chkRsp.send(gameServer, clientAddress, clientPort);
-                                    } else {
-                                        break;
-                                    }
-                                }
-
-                                // Increment the total bytes written
-                                bytesWrite += chunkSize;
-
-                                // Logging the bytes written
-                                DSLogger.reportInfo("Bytes written: " + bytesWrite + " / " + totalBytesWrite, null);
-                            }
-
-                            // Signal end-of-stream
-                            DatagramPacket eosPacket = new DatagramPacket(GameServer.EOS, GameServer.EOS.length, clientAddress, clientPort);
-                            endpoint.send(eosPacket);
-                            DSLogger.reportInfo("End of stream (EOS) marker sent", null);
-                        }
-                    } catch (InterruptedException | ExecutionException | IOException ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    } catch (Exception ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    } finally {
-                        waitOnDownload = false;
-                        synchronized (GameServerProcessor.InternMutex) {
-                            GameServerProcessor.InternMutex.notify();
-                        }
+                        downloadResponse.send(gameServer, clientAddress, clientPort);
+                    } catch (Exception ex1) {
+                        DSLogger.reportError(ex1.getMessage(), ex1);
                     }
+                }).exceptionally((Throwable ex) -> {
+                    final Response errorResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.INT, -1);
+                    try {
+                        errorResponse.send(gameServer, clientAddress, clientPort);
+                    } catch (IOException ex1) {
+                        DSLogger.reportError(ex1.getMessage(), ex1);
+                    }
+
+                    return null;
                 });
+                break;
+            case GET_FRAGMENT:
+                int n = (int) request.getData(); // Assuming the N-th fragment number is sent in the request data
+                final int totalBytes = gameServer.gameObject.levelContainer.pos;
+                final byte[] buffer = gameServer.gameObject.levelContainer.buffer;
+
+                if (n < 0 || n * BUFF_SIZE >= totalBytes) {
+                    response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
+                    response.send(gameServer, clientAddress, clientPort);
+                    return new Result(Status.CLIENT_ERROR, clientHostName);
+                }
+
+                int fragmentStart = n * BUFF_SIZE;
+                int fragmentEnd = Math.min(fragmentStart + BUFF_SIZE, totalBytes);
+                int fragmentSize = fragmentEnd - fragmentStart;
+                byte[] fragment = new byte[fragmentSize];
+                System.arraycopy(buffer, fragmentStart, fragment, 0, fragmentSize);
+
+                DatagramPacket packet = new DatagramPacket(fragment, fragmentSize, clientAddress, clientPort);
+                endpoint.send(packet);
+
+                DSLogger.reportInfo(String.format("Sent %d fragment, %d total bytes written", n, fragmentSize), null);
                 break;
             case PLAYER_INFO:
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
