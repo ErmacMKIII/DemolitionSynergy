@@ -70,7 +70,7 @@ public class Game implements DSMachine {
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
     public static final float AMOUNT = 4.45f;
-    public static final float JUMP_STR_AMOUNT = 107.8f;
+    public static final float JUMP_STR_AMOUNT = 110f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -443,7 +443,7 @@ public class Game implements DSMachine {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
-                player.sinkY(amountYNeg);
+                player.dropY(amountYNeg);
                 changed = true;
             }
         }
@@ -576,7 +576,7 @@ public class Game implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    player.sinkY(amountYNeg);
+                    player.dropY(amountYNeg);
                     changed = true;
                 }
             }
@@ -637,7 +637,7 @@ public class Game implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    player.sinkY(amountYNeg);
+                    player.dropY(amountYNeg);
                     changed = true;
                 }
             }

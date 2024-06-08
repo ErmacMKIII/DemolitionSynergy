@@ -136,6 +136,6 @@ public interface Moveable {
      *
      * @param amount
      */
-    public void sinkY(float amount);
+    public void dropY(float amount);
 
 }

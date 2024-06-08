@@ -287,11 +287,11 @@ public class Configuration {
             pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
             pw.println("# Preferred game server for client to connect");
-            pw.println("PreferredServer = " + serverIP);
-            pw.println("# Preferred game server port (to run the server)");
-            pw.println("PreferredServer = " + serverPort);
-            pw.println("# Client port set to connect to game server");
-            pw.println("PreferredServer = " + clientPort);
+            pw.println("ServerIP = " + serverIP);
+            pw.println("# Preferred game server port (to run the server). Must be in range 13660-13669");
+            pw.println("ServerPort = " + serverPort);
+            pw.println("# Client port set to connect to game server. Must be in range 13660-13669");
+            pw.println("ClientPort = " + clientPort);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {

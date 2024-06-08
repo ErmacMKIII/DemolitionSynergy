@@ -245,9 +245,9 @@ public class Player extends Critter implements Observer {
     }
 
     @Override
-    public void sinkY(float amount) {
-        super.sinkY(amount);
-        camera.sinkY(amount);
+    public void dropY(float amount) {
+        super.dropY(amount);
+        camera.dropY(amount);
         light.pos = body.pos;
     }
 

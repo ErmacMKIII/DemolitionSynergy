@@ -139,6 +139,7 @@ public class LevelContainer implements GravityEnviroment {
     protected float lastCycledDayTime = 0.0f;
 
     protected float fallVelocity = 0.0f;
+    protected float jumpVelocity = 0.0f;
 
     public final Weapons weapons;
 
@@ -485,7 +486,7 @@ public class LevelContainer implements GravityEnviroment {
         if (playerSpawned) {
             gravityOn = true; // Re-enable gravity
             player.jumpY(0.0f); // some work-around
-            player.sinkY(0.0f); // some work-around
+            player.dropY(0.0f); // some work-around
         } else {
             // Handle case where no valid spawn location was found (optional)
             throw new IllegalStateException("Failed to spawn player in a valid location.");
@@ -1184,7 +1185,7 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float minAmount = (float) -Game.AMOUNT;
         final float maxAmount = (float) Game.AMOUNT;
@@ -1237,7 +1238,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float minAmount = (float) -Game.AMOUNT;
         final float maxAmount = (float) Game.AMOUNT;
@@ -1293,7 +1294,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float minAmount = (float) -Game.AMOUNT;
         final float maxAmount = (float) Game.AMOUNT;
@@ -1354,7 +1355,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 16.0f;
+        final float precision = 32.0f;
         final float stepAmount = (float) Game.TICK_TIME / precision;
         final float minAmount = (float) -Game.AMOUNT;
         final float maxAmount = (float) Game.AMOUNT;
@@ -1416,24 +1417,26 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         boolean collision = false;
-        final float precision = 32.0f;
+        final float precision = 128.0f;
         // deriative (of tstHeight)
         final float minAmount = -fallVelocity / GRAVITY_CONSTANT;
-        // 32 iterations
+        // 128 iterations
         final float stepAmount = (deltaTime - minAmount) / (float) (precision);
 
+        // initial predictor Vec3f value
+        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
         SCAN:
         for (float tstTime = minAmount; tstTime <= deltaTime; tstTime += stepAmount) {
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-            for (int side = 0; side <= 13; side++) {
-                Vector3f adjBottom = Block.getAdjacentPos(levelActors.player.getPos(), side, tstHeight + 2.0f);
-                Vector3f adjBottomAlign = alignVector(adjBottom);
+            levelActors.player.getPredictor().set(predInit.x, predInit.y - tstHeight, predInit.z);
 
-                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjBottomAlign, true);
+            for (int side = 0; side <= 13; side++) {
+                Vector3f adjPos = Block.getAdjacentPos(levelActors.player.getPredictor(), side, 2.0f);
+                Vector3f adjPosAlign = alignVector(adjPos);
+
+                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    levelActors.player.movePredictorYDown(tstHeight);
-                    collision = checkCollision(adjBottomAlign, levelActors.player);
-                    levelActors.player.movePredictorYUp(tstHeight);
+                    collision = checkCollision(adjPosAlign, levelActors.player);
                     if (collision) {
                         fallVelocity = 0.0f;
                         break SCAN;
@@ -1441,6 +1444,7 @@ public class LevelContainer implements GravityEnviroment {
                 }
             }
         }
+        levelActors.player.getPredictor().set(predInit);
 
         if (!collision) {
             float deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
@@ -1448,9 +1452,8 @@ public class LevelContainer implements GravityEnviroment {
                 deltaHeight -= calculateFluidThrust(deltaTime);
             }
             levelActors.player.movePredictorYDown(deltaHeight);
-            levelActors.player.sinkY(deltaHeight);
+            levelActors.player.dropY(deltaHeight);
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
-//            DSLogger.reportInfo("fallVelo" + fallVelocity, null);
             if (fallVelocity == TERMINAL_VELOCITY) {
                 spawnPlayer();
             }
@@ -1461,10 +1464,10 @@ public class LevelContainer implements GravityEnviroment {
 
     private float calculateFluidThrust(float deltaTime) {
         final float thrustArea = 4.2f;
-        final float velocity = deltaTime * 2.1f;
+        final float thrustVelocity = deltaTime * 2.1f;
 
         // FORCE = DENS * AREA * VELOCITY * VELOCITY
-        final float thrustForce = WATER_DENSITY * thrustArea * velocity * velocity;
+        final float thrustForce = WATER_DENSITY * thrustArea * thrustVelocity * thrustVelocity;
         final float mass = 75f;
         final float accel = thrustForce / mass;
 
@@ -1477,54 +1480,60 @@ public class LevelContainer implements GravityEnviroment {
      * Makes the player jump upwards.
      *
      * @param critter The player.
-     * @param amountY The amount of upward movement.
+     * @param jumpStrength The amount of upward movement.
      * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player successfully jumped, {@code false}
      * otherwise.
      */
     @Override
-    public boolean jump(Critter critter, float amountY, float deltaTime) {
+    public boolean jump(Critter critter, float jumpStrength, float deltaTime) {
         if (working) {
             return false;
         }
 
-        float height0 = amountY * deltaTime;
-        float heightThrust = 0.0f;
-        if (actorInFluid) {
-            heightThrust = calculateFluidThrust(deltaTime);
+        if (fallVelocity == 0.0f) {
+            jumpVelocity = jumpStrength;
         }
-        float deltaHeight = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-        float height1 = Math.max(height0 + heightThrust - deltaHeight, 0.0f);
 
-        final float precision = 32.0f;
+        if (actorInFluid) {
+            jumpVelocity += calculateFluidThrust(deltaTime);
+        }
+
+        final float precision = 128.0f;
         // deriative (of tstHeight)
-        final float minAmount = -fallVelocity / GRAVITY_CONSTANT;
-        // 32 iterations
-        final float stepAmount = (deltaTime - minAmount) / (float) (precision);
+        final float maxAmount = jumpVelocity / GRAVITY_CONSTANT;
+        // 128 iterations
+        final float stepAmount = (maxAmount - deltaTime) / (float) (precision);
 
+        // initial predictor Vec3f value
+        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
         boolean collision = false;
         SCAN:
-        for (float tstTime = minAmount; tstTime <= deltaTime; tstTime += stepAmount) {
-            for (int side = 0; side <= 13; side++) {
-                float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                Vector3f adjTop = Block.getAdjacentPos(critter.getPos(), side, tstHeight);
-                Vector3f adjTopAlign = alignVector(adjTop);
+        for (float tstTime = maxAmount; tstTime > deltaTime; tstTime -= stepAmount) {
+            float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+            levelActors.player.getPredictor().set(predInit.x, predInit.y + tstHeight, predInit.z);
 
-                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjTopAlign, true);
+            for (int side = 0; side <= 13; side++) {
+                Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
+                Vector3f adjPosAlign = alignVector(adjPos);
+
+                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    critter.movePredictorYUp(height1);
-                    collision = checkCollision(adjTopAlign, critter);
-                    critter.movePredictorYDown(height1);
+                    collision = checkCollision(adjPosAlign, critter);
                     if (collision) {
+                        jumpVelocity = 0.0f;
                         break SCAN;
                     }
                 }
             }
         }
+        levelActors.player.getPredictor().set(predInit);
 
         if (!collision) {
-            critter.movePredictorYUp(height1);
-            critter.jumpY(height1);
+            float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            critter.movePredictorYUp(deltaHeight);
+            critter.jumpY(deltaHeight);
+            jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
         }
 
         return !collision;
@@ -1849,6 +1858,14 @@ public class LevelContainer implements GravityEnviroment {
     @Override
     public boolean isGravityOn() {
         return gravityOn;
+    }
+
+    public float getJumpVelocity() {
+        return jumpVelocity;
+    }
+
+    public Weapons getWeapons() {
+        return weapons;
     }
 
 }
