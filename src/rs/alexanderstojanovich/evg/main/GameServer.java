@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -43,10 +42,10 @@ public class GameServer implements DSMachine, Runnable {
 
     public static int TotalFailedAttempts = 0;
 
+    public final Configuration config = Configuration.getInstance();
     protected String worldName = "My World";
-    protected String host = "localhost";
     public static int DEFAULT_PORT = 13667;
-    protected int port = DEFAULT_PORT;
+    protected int port = config.getServerPort();
 
     protected static final int MAX_CLIENTS = 16;
 
@@ -58,8 +57,6 @@ public class GameServer implements DSMachine, Runnable {
     protected boolean shutDownSignal = false;
     protected final int version = GameObject.VERSION;
     protected final int timeout = 120 * 1000; // 2 minutes
-
-    public final Object SYNC_OBJ = new Object();
 
     /**
      * Magic bytes of End-of-Stream
@@ -156,7 +153,7 @@ public class GameServer implements DSMachine, Runnable {
 
         serverExecutor.execute(this);
 
-        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", host, port), null);
+        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on :%d", port), null);
     }
 
     /**
@@ -169,11 +166,6 @@ public class GameServer implements DSMachine, Runnable {
 
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
-            // wakeup client service
-            synchronized (SYNC_OBJ) {
-                SYNC_OBJ.notify();
-            }
-
             timeToLiveMap.clear();
             clients.clear();
         }
@@ -212,8 +204,8 @@ public class GameServer implements DSMachine, Runnable {
 
             // Too much failed attempts, endpoint is vulnerable .. try to shut down
             if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.host, this.port));
-                DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.host, this.port), null);
+                gameObject.intrface.getConsole().write(String.format("Game Server (%d) status critical! Trying to shut down!", this.port));
+                DSLogger.reportWarning(String.format("Game Server (%d) status critical! Trying to shut down!", this.port), null);
                 shutDownSignal = true;
             }
 
@@ -228,21 +220,16 @@ public class GameServer implements DSMachine, Runnable {
     public void run() {
         running = true;
         try {
-            // Bind the endpoint socket to a specific IP address and port
-            endpoint = new DatagramSocket(port, InetAddress.getByName(host));
+            // Bind the endpoint socket to a 'wildcard' IP address amd given port
+            endpoint = new DatagramSocket(port);//, InetAddress.getByName(host));
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-            DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.host, this.port), null);
-            gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.host, this.port));
+            DSLogger.reportInfo(String.format("Game Server (%d) started!", this.port), null);
+            gameObject.intrface.getConsole().write(String.format("Game Server (%d) started!", this.port));
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             gameObject.intrface.getConsole().write("Cannot create Game Server!", true);
             DSLogger.reportError(ex.getMessage(), ex);
             shutDownSignal = true;
-        } finally {
-            // wakeup client service
-            synchronized (SYNC_OBJ) {
-                SYNC_OBJ.notify();
-            } // so they realise what happened!
         }
         // Accept incoming connections and handle them
         while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
@@ -308,10 +295,6 @@ public class GameServer implements DSMachine, Runnable {
         return worldName;
     }
 
-    public String getHost() {
-        return host;
-    }
-
     public int getPort() {
         return port;
     }
@@ -350,10 +333,6 @@ public class GameServer implements DSMachine, Runnable {
         this.worldName = worldName;
     }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
     public void setPort(int port) {
         this.port = port;
     }
@@ -365,10 +344,6 @@ public class GameServer implements DSMachine, Runnable {
     @Override
     public boolean isRunning() {
         return running;
-    }
-
-    public Object getSYNC_OBJ() {
-        return SYNC_OBJ;
     }
 
     public int getTimeout() {
