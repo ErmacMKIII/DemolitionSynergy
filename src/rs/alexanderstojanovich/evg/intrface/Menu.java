@@ -175,11 +175,12 @@ public abstract class Menu {
                     intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_ACCEPT, new Vector3f());
                     execute();
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Menu.this.items.get(selected).menuValue.getValueText().content);
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Menu.this.items.get(selected).menuValue.getCurrentValue().toString());
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
                     final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
                     if (clipboard != null) {
-                        Menu.this.items.get(selected).menuValue.getValueText().setContent(clipboard);
+                        Menu.this.items.get(selected).menuValue.setCurrentValue(clipboard);
+                        execute();
                     }
                 }
 

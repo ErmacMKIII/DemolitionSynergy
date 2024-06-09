@@ -1061,6 +1061,10 @@ public class Intrface {
         DSLogger.reportDebug("Interface buffers deleted.", null);
     }
 
+    public void setNumBlocks(int numBlocks) {
+        this.numBlocks = numBlocks;
+    }
+
     public Quad getCrosshair() {
         return crosshair;
     }

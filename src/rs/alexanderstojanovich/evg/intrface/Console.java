@@ -180,11 +180,12 @@ public class Console {
                         inText.setContent("]" + input + "_");
                     }
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Console.this.inText.content);
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
                     final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
                     if (clipboard != null) {
-                        Console.this.inText.setContent("]" + input.toString() + clipboard + "_");
+                        input.append(clipboard);
+                        Console.this.inText.setContent("]" + input.toString() + "_");
                     }
                 }
             }

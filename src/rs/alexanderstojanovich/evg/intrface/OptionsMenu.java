@@ -141,11 +141,12 @@ public abstract class OptionsMenu extends Menu {
                     }
                     selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), OptionsMenu.this.items.get(selected).menuValue.getValueText().content);
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), OptionsMenu.this.items.get(selected).menuValue.getCurrentValue().toString());
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
                     final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
                     if (clipboard != null) {
-                        OptionsMenu.this.items.get(selected).menuValue.getValueText().setContent(clipboard);
+                        OptionsMenu.this.items.get(selected).menuValue.setCurrentValue(clipboard);
+                        execute();
                     }
                 }
             }
