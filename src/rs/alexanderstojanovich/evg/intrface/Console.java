@@ -205,7 +205,8 @@ public class Console {
 //                float xposGL = (float) (xoffset /onsole.this.intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
 //                float yOffsetGl = (float) (0.5f - yoffset / Console.this.intrface.gameObject.WINDOW.getHeight()) * 2.0f;
 //                DSLogger.reportInfo(""+yoffset, null);
-                if (yoffset != 0.0f) {
+                if (yoffset > 0.0f && history.getLast().cmdText.pos.y < 1.0f
+                        || yoffset < 0.0f && history.getFirst().cmdText.pos.y > -1.0f) {
                     // shift them
                     history.forEach(hi -> {
                         hi.cmdText.pos.y += (float) yoffset * 0.25f;
