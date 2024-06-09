@@ -49,7 +49,7 @@ public class Player extends Critter implements Observer {
 //    /**
 //     * Weapon model on character first-person-shooter 'in hands'.
 //     */
-//    protected Model inHandsWeaponModel = Model.NONE;
+//    protected Model inHandsWeaponModel = Model.MODEL_NONE;
     /**
      * Create new player for Single Player
      *
@@ -107,7 +107,7 @@ public class Player extends Critter implements Observer {
     /**
      * Render player's weapon in hands.
      *
-     * @param ls Light Source (from level container or NONE)
+     * @param ls Light Source (from level container or MODEL_NONE)
      * @param sp Shader Program (default is Weapon GLSL Shader)
      */
     public void renderWeaponInHand(LightSources ls, ShaderProgram sp) {

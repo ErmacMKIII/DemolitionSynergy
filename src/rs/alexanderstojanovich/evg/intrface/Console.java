@@ -56,6 +56,8 @@ public class Console {
 
     public final Intrface intrface;
 
+    protected boolean ctrlPressed = false;
+
     public Console(Intrface intrface) {
         this.intrface = intrface;
         int conwidth = cfg.getWidth();
@@ -89,6 +91,14 @@ public class Console {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (key == GLFW.GLFW_KEY_LEFT_CONTROL) {
+                    if (action == GLFW.GLFW_PRESS) {
+                        ctrlPressed = true;
+                    } else if (action == GLFW.GLFW_RELEASE) {
+                        ctrlPressed = false;
+                    }
+                }
+
                 if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
                     GLFW.glfwSetCharCallback(window, null);
@@ -168,6 +178,13 @@ public class Console {
                         input.setLength(0);
                         input.append(candidates.get(0));
                         inText.setContent("]" + input + "_");
+                    }
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Console.this.inText.content);
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
+                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    if (clipboard != null) {
+                        Console.this.inText.setContent("]" + inText + clipboard + "_");
                     }
                 }
             }
@@ -403,6 +420,14 @@ public class Console {
 
     public List<HistoryItem> getHistory() {
         return history;
+    }
+
+    public Intrface getIntrface() {
+        return intrface;
+    }
+
+    public boolean isCtrlPressed() {
+        return ctrlPressed;
     }
 
 }

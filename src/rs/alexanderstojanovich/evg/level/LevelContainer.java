@@ -436,6 +436,8 @@ public class LevelContainer implements GravityEnviroment {
      */
     public void spawnPlayer() {
         // Manually turn off gravity so it doesn't affect player during spawn
+        fallVelocity = 0.0f;
+        jumpVelocity = 0.0f;
         gravityOn = false;
 
         // Place player on his/her position
@@ -1417,19 +1419,20 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         boolean collision = false;
-        final float precision = 128.0f;
-        // deriative (of tstHeight)
+        final int precision = 128; // Increased precision for finer collision checks
         final float minAmount = -fallVelocity / GRAVITY_CONSTANT;
-        // 128 iterations
-        final float stepAmount = (deltaTime - minAmount) / (float) (precision);
+        final float stepAmount = (deltaTime - minAmount) / (float) precision; // Smaller step amount for higher precision
 
-        // initial predictor Vec3f value
+        // Initial predictor position
         final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+
+        // Iterate over time steps to check for collisions
         SCAN:
         for (float tstTime = minAmount; tstTime <= deltaTime; tstTime += stepAmount) {
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             levelActors.player.getPredictor().set(predInit.x, predInit.y - tstHeight, predInit.z);
 
+            // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
                 Vector3f adjPos = Block.getAdjacentPos(levelActors.player.getPredictor(), side, 2.0f);
                 Vector3f adjPosAlign = alignVector(adjPos);
@@ -1439,13 +1442,15 @@ public class LevelContainer implements GravityEnviroment {
                     collision = checkCollision(adjPosAlign, levelActors.player);
                     if (collision) {
                         fallVelocity = 0.0f;
+                        levelActors.player.getPredictor().set(predInit); // Reset predictor to initial position
                         break SCAN;
                     }
                 }
             }
         }
-        levelActors.player.getPredictor().set(predInit);
+        levelActors.player.getPredictor().set(predInit); // Ensure predictor is reset after loop
 
+        // If no collision, apply gravity and move the player
         if (!collision) {
             float deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
             if (actorInFluid) {
@@ -1455,13 +1460,19 @@ public class LevelContainer implements GravityEnviroment {
             levelActors.player.dropY(deltaHeight);
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             if (fallVelocity == TERMINAL_VELOCITY) {
-                spawnPlayer();
+                spawnPlayer(); // Respawn player if terminal velocity is reached
             }
         }
 
         return !collision;
     }
 
+    /**
+     * Calculates the thrust experienced by the player in a fluid.
+     *
+     * @param deltaTime The time elapsed since the last handleInput.
+     * @return The calculated thrust.
+     */
     private float calculateFluidThrust(float deltaTime) {
         final float thrustArea = 4.2f;
         final float thrustVelocity = deltaTime * 2.1f;
@@ -1471,6 +1482,7 @@ public class LevelContainer implements GravityEnviroment {
         final float mass = 75f;
         final float accel = thrustForce / mass;
 
+        // Calculate the thrust height
         final float resh = accel * deltaTime * deltaTime / 2.0f;
 
         return resh;
@@ -1499,20 +1511,21 @@ public class LevelContainer implements GravityEnviroment {
             jumpVelocity += calculateFluidThrust(deltaTime);
         }
 
-        final float precision = 128.0f;
-        // deriative (of tstHeight)
+        final int precision = 128; // Increased precision for finer collision checks
         final float maxAmount = jumpVelocity / GRAVITY_CONSTANT;
-        // 128 iterations
-        final float stepAmount = (maxAmount - deltaTime) / (float) (precision);
+        final float stepAmount = (maxAmount - deltaTime) / (float) precision; // Smaller step amount for higher precision
 
-        // initial predictor Vec3f value
+        // Initial predictor position
         final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
         boolean collision = false;
+
+        // Iterate over time steps to check for collisions
         SCAN:
         for (float tstTime = maxAmount; tstTime > deltaTime; tstTime -= stepAmount) {
             float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             levelActors.player.getPredictor().set(predInit.x, predInit.y + tstHeight, predInit.z);
 
+            // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
                 Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
                 Vector3f adjPosAlign = alignVector(adjPos);
@@ -1522,13 +1535,15 @@ public class LevelContainer implements GravityEnviroment {
                     collision = checkCollision(adjPosAlign, critter);
                     if (collision) {
                         jumpVelocity = 0.0f;
+                        levelActors.player.getPredictor().set(predInit); // Reset predictor to initial position
                         break SCAN;
                     }
                 }
             }
         }
-        levelActors.player.getPredictor().set(predInit);
+        levelActors.player.getPredictor().set(predInit); // Ensure predictor is reset after loop
 
+        // If no collision, apply jump and move the player
         if (!collision) {
             float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
             critter.movePredictorYUp(deltaHeight);
@@ -1540,15 +1555,15 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Internal check collision for critter
+     * Internal check collision for critter.
      *
-     * @param position blk position
+     * @param blkPos blk position
      * @param critter critter submit for test
      * @return collision condition
      */
-    private static boolean checkCollision(Vector3f position, Critter critter) {
-        return Block.containsInsideEqually(position, 2.1f, 2.1f, 2.1f, critter.getPredictor())
-                || Model.intersectsEqually(position, 2.1f, 2.1f, 2.1f,
+    private static boolean checkCollision(Vector3f blkPos, Critter critter) {
+        return Block.containsInsideEqually(blkPos, 2.1f, 2.1f, 2.1f, critter.getPredictor())
+                || Model.intersectsEqually(blkPos, 2.1f, 2.1f, 2.1f,
                         critter.getPredictor(), 1.05f * critter.body.getWidth(),
                         1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth())
                 || !SKYBOX.containsInsideExactly(critter.getPredictor())

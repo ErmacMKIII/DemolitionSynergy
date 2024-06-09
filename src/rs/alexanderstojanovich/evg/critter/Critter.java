@@ -47,7 +47,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     /**
      * Weapon model on character body with the weapon
      */
-    protected Model charBodyWeaponModel = Model.NONE;
+    protected Model charBodyWeaponModel = Model.MODEL_NONE;
 
     /**
      * Critter (could be Player) has nothing in hands (no-weapon)

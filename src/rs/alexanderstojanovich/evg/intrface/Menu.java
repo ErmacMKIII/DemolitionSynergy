@@ -67,6 +67,8 @@ public abstract class Menu {
     protected GLFWMouseButtonCallback glfwMouseButtonCallback;
     protected final Intrface intrface;
 
+    protected boolean ctrlPressed = false;
+
     public Menu(Intrface intrface, String title, IList<MenuItem> items, String textureFileName) throws Exception {
         this.intrface = intrface;
         this.title = new DynamicText(intrface.gameObject.GameAssets.FONT, title);
@@ -139,6 +141,14 @@ public abstract class Menu {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (key == GLFW.GLFW_KEY_LEFT_CONTROL) {
+                    if (action == GLFW.GLFW_PRESS) {
+                        ctrlPressed = true;
+                    } else if (action == GLFW.GLFW_RELEASE) {
+                        ctrlPressed = false;
+                    }
+                }
+
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
                     enabled = false;
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
@@ -164,7 +174,15 @@ public abstract class Menu {
                     GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
                     intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_ACCEPT, new Vector3f());
                     execute();
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Menu.this.items.get(selected).menuValue.getValueText().content);
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
+                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    if (clipboard != null) {
+                        Menu.this.items.get(selected).menuValue.getValueText().setContent(clipboard);
+                    }
                 }
+
             }
         };
         glfwMouseButtonCallback = new GLFWMouseButtonCallback() {
