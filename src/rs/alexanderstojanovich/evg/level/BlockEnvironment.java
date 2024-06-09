@@ -239,15 +239,15 @@ public class BlockEnvironment {
                             .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
                             .forEach(chnk -> {
                                 final Tuple workTuple = workingTuples
-                                        .filter(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits)
+                                        .filter(ot -> ot != null && ot.texName().equals(tex) && ot.faceBits() == faceBits)
                                         .getFirstOrNull();
                                 final IList<Tuple> selectedTuples = chnk.tupleList
-                                        .filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
+                                        .filter(t -> t != null && t.texName().equals(tex) && t.faceBits() == faceBits);
 
                                 if (workTuple != null) {
                                     selectedTuples.forEach(st -> {
                                         boolean modified = workTuple.blockList.addAll(
-                                                st.blockList.filter(blk -> camera.doesSeeEff(blk, 75f) && !workTuple.blockList.contains(blk))
+                                                st.blockList.filter(blk -> blk != null && camera.doesSeeEff(blk, 75f) && !workTuple.blockList.contains(blk))
                                         );
                                         if (modified) {
                                             modifiedWorkingTupleNames.addIfAbsent(workTuple.getName());

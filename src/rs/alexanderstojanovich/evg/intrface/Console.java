@@ -184,7 +184,7 @@ public class Console {
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
                     final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
                     if (clipboard != null) {
-                        Console.this.inText.setContent("]" + inText + clipboard + "_");
+                        Console.this.inText.setContent("]" + input.toString() + clipboard + "_");
                     }
                 }
             }

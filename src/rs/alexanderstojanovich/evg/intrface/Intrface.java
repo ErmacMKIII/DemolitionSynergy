@@ -105,7 +105,7 @@ public class Intrface {
      */
     private void initSelf() {
         try {
-            final float menuScale = 1.75f;
+            final float menuScale = 2.0f;
 
             AudioPlayer musicPlayer = gameObject.getMusicPlayer();
             AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
