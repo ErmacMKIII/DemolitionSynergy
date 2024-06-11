@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 
@@ -90,7 +91,7 @@ public class BlockEnvironment {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
         while (faceBits <= 63) {
-            for (String tex : gameObject.GameAssets.TEX_WORLD) {
+            for (String tex : Assets.TEX_WORLD) {
                 Tuple optmTuple = null;
                 for (int chunkId : queue) {
                     Chunk chunk = chunks.getChunk(chunkId);
@@ -128,11 +129,11 @@ public class BlockEnvironment {
         optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);// some removals are made
 
         // determine texture type to process - split
-        if (texProcIndex++ == gameObject.GameAssets.TEX_WORLD.length - 1) {
+        if (texProcIndex++ == Assets.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
 
-        final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
+        final String tex = Assets.TEX_WORLD[texProcIndex];
 
         // PASS 1 : CREATE TUPLES
         int lastFaceBitsCopy = lastFaceBits;
@@ -217,7 +218,7 @@ public class BlockEnvironment {
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
-        final String tex = gameObject.GameAssets.TEX_WORLD[texProcIndex];
+        final String tex = Assets.TEX_WORLD[texProcIndex];
         int lastFaceBitsCopy = lastFaceBits;
 
         for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
@@ -261,7 +262,7 @@ public class BlockEnvironment {
 
         lastFaceBits += NUM_OF_PASSES_MAX;
 
-        if (texProcIndex++ == gameObject.GameAssets.TEX_WORLD.length - 1) {
+        if (texProcIndex++ == Assets.TEX_WORLD.length - 1) {
             texProcIndex = 0;
         }
 

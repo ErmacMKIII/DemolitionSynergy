@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -725,7 +726,7 @@ public class Command implements Callable<Object> {
                                         gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
                                         command.status = Status.SUCCEEDED;
                                     }
-                                } catch (InterruptedException | ExecutionException ex) {
+                                } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
                             } else {

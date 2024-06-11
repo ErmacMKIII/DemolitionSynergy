@@ -17,8 +17,12 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -271,7 +275,8 @@ public class Intrface {
             loadDialog.dialog.alignToNextChar(this);
 
             File currFile = new File("./");
-            String[] datFileList = currFile.list((File dir, String name) -> name.toLowerCase().endsWith(".dat"));
+            final Pattern pattern = Pattern.compile("\\.(dat|ndat)$");
+            String[] datFileList = currFile.list((File dir, String name) -> pattern.matcher(name.toLowerCase()).find());
 
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
@@ -839,7 +844,7 @@ public class Intrface {
                                             Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                             gameMenu.getTitle().setContent("MUTLIPLAYER");
                                         }
-                                    } catch (InterruptedException | ExecutionException ex) {
+                                    } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                         DSLogger.reportError(ex.getMessage(), ex);
                                     }
                                 } else {
