@@ -18,11 +18,13 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
@@ -75,6 +77,10 @@ public class Command implements Callable<Object> {
         PING,
         PRINT,
         SAY,
+        CONNECT,
+        DISCONNECT,
+        START_SERVER,
+        STOP_SERVER,
         ERROR
     };
 
@@ -287,6 +293,27 @@ public class Command implements Callable<Object> {
                 case "ping":
                     command.target = Target.PING;
                     break;
+                case "connect":
+                    command.target = Target.CONNECT;
+                    if (things.length == 2) {
+                        command.args.add((String) things[1]);
+                    }
+                    break;
+                case "disconnect":
+                    command.target = Target.DISCONNECT;
+                    break;
+                case "startserver":
+                    command.target = Target.START_SERVER;
+                    if (things.length == 2) {
+                        command.args.add((String) things[1]);
+                    } else if (things.length == 3) {
+                        command.args.add((String) things[1]);
+                        command.args.add((String) things[2]);
+                    }
+                    break;
+                case "stopserver":
+                    command.target = Target.STOP_SERVER;
+                    break;
                 default:
                     command.target = Target.ERROR;
                     break;
@@ -295,7 +322,8 @@ public class Command implements Callable<Object> {
 
         boolean argsEmpty = command.args.isEmpty();
         boolean isGetOnly = command.target == Target.SIZEOF;
-        boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY;
+        boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY
+                || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER;
 
         if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
@@ -669,6 +697,126 @@ public class Command implements Callable<Object> {
                 // TODO Multiplayer
                 // All clients receive chat
                 break;
+            case CONNECT:
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        String parts[] = command.args.get(0).toString().split(":");
+
+                        if (parts.length >= 1) {
+                            String serverHostName = parts[0];
+                            gameObject.game.setServerHostName(serverHostName);
+                        }
+                        if (parts.length <= 2) {
+                            int port = Integer.parseInt(parts[1]);
+                            gameObject.game.setPort(port);
+                        }
+
+                        GameObject.TASK_EXECUTOR.execute(() -> {
+                            gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
+                            double beginTime = GLFW.glfwGetTime();
+                            boolean okey = gameObject.game.connectToServer();
+                            double endTime = GLFW.glfwGetTime();
+                            if (okey) {
+                                try {
+                                    gameObject.intrface.getConsole().write("Connected to server!");
+                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                        Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
+                                        gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
+                                        command.status = Status.SUCCEEDED;
+                                    }
+                                } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
+                                }
+                            } else {
+                                gameObject.intrface.getConsole().write("Unable to connect to server!", true);
+                            }
+                        });
+                    }
+                }
+            case DISCONNECT:
+                if (command.mode == Command.Mode.SET) {
+                    gameObject.game.disconnectFromServer();
+                    command.status = Status.SUCCEEDED;
+                }
+                break;
+            case START_SERVER:
+                if (command.mode == Command.Mode.SET) {
+                    if (!command.args.isEmpty()) {
+                        final int numBlocks;
+                        // set number of blocks
+                        switch (command.args.get(0).toString().toUpperCase()) {
+                            case "SMALL":
+                                numBlocks = 25000;
+                                break;
+                            case "MEDIUM":
+                                numBlocks = 50000;
+                                break;
+                            case "LARGE":
+                                numBlocks = 100000;
+                                break;
+                            case "HUGE":
+                                numBlocks = 131070;
+                                break;
+                            default:
+                                numBlocks = 0;
+                                break;
+                        }
+
+                        gameObject.intrface.setNumBlocks(numBlocks);
+                        gameObject.randomLevelGenerator.setNumberOfBlocks(numBlocks);
+
+                        if (command.args.size() == 2) {
+                            gameObject.randomLevelGenerator.setSeed(Long.parseLong(command.args.get(1).toString()));
+                        }
+
+                        gameObject.clearEverything();
+                        if (!gameObject.gameServer.isRunning() && numBlocks != 0) {
+                            gameObject.intrface.getProgText().setEnabled(true);
+                            gameObject.gameServer.startServer();
+
+                            // if game endpoint is running and not shut down
+                            GameObject.TASK_EXECUTOR.execute(() -> {
+                                try {
+                                    boolean ok = false;
+                                    if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
+                                        ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
+                                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
+                                        Game.setCurrentMode(Game.Mode.MULTIPLAYER_HOST);
+                                        gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
+                                    }
+
+                                    if (!ok) {
+                                        command.status = Status.FAILED;
+                                        gameObject.clearEverything();
+                                    } else {
+                                        command.status = Status.SUCCEEDED;
+                                    }
+                                } catch (InterruptedException | ExecutionException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
+                                }
+
+                            });
+
+                        }
+                        command.status = Status.PENDING;
+                    }
+                }
+                break;
+            case STOP_SERVER:
+                if (command.mode == Command.Mode.SET) {
+                    if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST) {
+                        if (gameObject.gameServer.isRunning()) {
+                            gameObject.gameServer.stopServer();
+                        }
+                    } else if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                        gameObject.game.disconnectFromServer();
+                    }
+                    gameObject.clearEverything();
+                    command.status = Status.SUCCEEDED;
+                }
+                break;
             case NOP:
             default:
                 break;
@@ -713,14 +861,18 @@ public class Command implements Callable<Object> {
     public boolean isGameCommand() {
         return this.target == Target.MONITOR_GET || this.target == Target.MONITOR_ID || this.target == Target.GAME_TICKS || this.target == Target.FPS_MAX || this.target == Target.FULLSCREEN || this.target == Target.WATER_EFFECTS || this.target == Target.SHADOW_EFFECTS
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR
-                || this.target == Target.PRINT || this.target == Target.SAY || this.target == Target.PING;
+                || this.target == Target.PRINT || this.target == Target.SAY || this.target == Target.PING
+                || this.target == Target.CONNECT || this.target == Target.DISCONNECT
+                || this.target == Target.START_SERVER || this.target == Target.STOP_SERVER;
     }
 
     // game commands
     public static boolean isGameCommand(Command command) {
         return command.target == Target.MONITOR_GET || command.target == Target.MONITOR_ID || command.target == Target.GAME_TICKS || command.target == Target.FPS_MAX || command.target == Target.FULLSCREEN || command.target == Target.WATER_EFFECTS || command.target == Target.SHADOW_EFFECTS
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR
-                || command.target == Target.PRINT || command.target == Target.SAY || command.target == Target.PING;
+                || command.target == Target.PRINT || command.target == Target.SAY || command.target == Target.PING
+                || command.target == Target.CONNECT || command.target == Target.DISCONNECT
+                || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER;
     }
 
     // renderer commands need OpenGL whilst other doesn't

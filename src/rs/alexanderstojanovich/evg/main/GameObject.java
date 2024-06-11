@@ -16,8 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,7 +69,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 42;
+    public static final int VERSION = 43;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
 
@@ -641,9 +643,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             updateRenderLCLock.unlock();
         }
 
-        levelContainer.saveLevelToFileAsync(gameServer.getWorldName() + ".dat");
-
-        levelContainer.levelActors.player.setRegistered(true);
+        // Save level to file asynchronously
+        CompletableFuture.supplyAsync(() -> {
+            return levelContainer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
+        }).thenApply((Boolean rez) -> {
+            levelContainer.levelActors.player.setRegistered(rez);
+            return null;
+        });
 
         return ok;
     }
@@ -655,50 +661,60 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return success of operation
      * @throws java.lang.InterruptedException
      * @throws java.util.concurrent.ExecutionException
+     * @throws java.io.UnsupportedEncodingException
      */
-    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException {
+    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException, UnsupportedEncodingException {
         boolean okey = false;
         this.clearEverything();
-        // register player with Unique ID (UUID)
+        // Register player with Unique ID (UUID)
         if (game.registerPlayer()) {
             int numberOfAttempts = 0;
             boolean downOkey = false;
-            // if successful download level
+            // If successful, download level
             do {
                 downOkey |= game.downloadLevel();
             } while (!downOkey && ++numberOfAttempts <= MAX_ATTEMPTS);
 
             if (downOkey) {
-                boolean ldOkey = false;
-                // load level to buffer
-                if (updateRenderLCLock.tryLock()) {
-                    try {
-                        ldOkey |= levelContainer.loadLevelFromBufferAsync().get();
-                    } finally {
-                        updateRenderLCLock.unlock();
+                // Load level to buffer asynchronously
+                CompletableFuture<Boolean> loadLevelFuture = CompletableFuture.supplyAsync(() -> {
+                    boolean ldOkey = false;
+                    if (updateRenderLCLock.tryLock()) {
+                        try {
+                            ldOkey = levelContainer.loadLevelFromBufferNewFormat();
+                        } catch (UnsupportedEncodingException ex) {
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        } finally {
+                            updateRenderLCLock.unlock();
+                        }
                     }
-                }
+                    return ldOkey;
+                });
+
+                // Wait for the level to be loaded
+                boolean ldOkey = loadLevelFuture.get();
+
                 if (ldOkey) {
                     PlayerInfo[] playerInfo = game.getPlayerInfo();
-                    // config other players
+                    // Configure other players
                     levelContainer.levelActors.configOtherPlayers(playerInfo);
-                    // config-set main actor
-                    // spawn player (set position)
+                    // Configure-set main actor
+                    // Spawn player (set position)
                     levelContainer.spawnPlayer();
-                    // player set pos
+                    // Player set pos
                     game.requestSetPlayerPosition();
                     okey = true;
+                } else {
+                    // If player cannot be registered, disconnect
+                    game.disconnectFromServer();
+                    // Revert back
+                    this.clearEverything();
                 }
-            } else {
-                // if player cannot be registered disconnect
-                game.disconnectFromServer();
-                // revert back
-                this.clearEverything();
             }
         } else {
-            // if player cannot be registered disconnect
+            // If player cannot be registered, disconnect
             game.disconnectFromServer();
-            // revert back
+            // Revert back
             this.clearEverything();
         }
 

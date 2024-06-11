@@ -33,8 +33,8 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  */
 public class Assets {
 
-    public final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
-    public final int GRID_SIZE_WORLD = 3;
+    public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
+    public static final int GRID_SIZE_WORLD = 3;
 
     public final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Texture.Format.RGBA8);
     public final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png", Texture.Format.RGBA8);

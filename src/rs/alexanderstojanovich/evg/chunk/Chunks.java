@@ -268,7 +268,6 @@ public class Chunks {
     }
 
     // all blocks from all the chunks in one big list
-    @Deprecated
     public IList<Block> getTotalList() {
         IList<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {

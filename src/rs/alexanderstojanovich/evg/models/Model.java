@@ -65,7 +65,7 @@ public class Model implements Renderable, Comparable<Model> {
     /**
      * Placeholder for empty model. Use it instead of null.
      */
-    public static final Model NONE = new Model("NONE", "EMPTY");
+    public static final Model MODEL_NONE = new Model("NONE", "EMPTY");
 
     public Model(String modelFileName, String texName) {
         this.modelFileName = modelFileName;

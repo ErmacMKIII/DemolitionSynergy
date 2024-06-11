@@ -70,7 +70,7 @@ public class Game implements DSMachine {
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
     public static final float AMOUNT = 4.45f;
-    public static final float JUMP_STR_AMOUNT = 107.8f;
+    public static final float JUMP_STR_AMOUNT = 110f;
     public static final float ANGLE = (float) (Math.PI / 180);
 
     public static final int FORWARD = 0;
@@ -131,7 +131,6 @@ public class Game implements DSMachine {
     protected static boolean jumpPerformed = false; // jump for player
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
     protected boolean running = false;
-    protected static final int DEFAULT_PORT = 13667;
 
     protected static final int DEFAULT_TIMEOUT = 30000; // 30 sec
     protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
@@ -148,10 +147,10 @@ public class Game implements DSMachine {
      * Connect to server stuff & endpoint
      */
     protected DatagramSocket serverEndpoint;
-    protected String serverHostName = config.getPreferredServer();
+    protected String serverHostName = config.getServerIP();
     protected InetAddress serverInetAddr = null;
 
-    protected int port = DEFAULT_PORT;
+    protected int port = config.getClientPort();
     protected int timeout = DEFAULT_TIMEOUT;
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
 
@@ -444,7 +443,7 @@ public class Game implements DSMachine {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
-                player.sinkY(amountYNeg);
+                player.dropY(amountYNeg);
                 changed = true;
             }
         }
@@ -577,7 +576,7 @@ public class Game implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    player.sinkY(amountYNeg);
+                    player.dropY(amountYNeg);
                     changed = true;
                 }
             }
@@ -638,7 +637,7 @@ public class Game implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    player.sinkY(amountYNeg);
+                    player.dropY(amountYNeg);
                     changed = true;
                 }
             }
@@ -969,6 +968,9 @@ public class Game implements DSMachine {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             gameTicks += deltaTime * Game.TPS;
+            if (gameTicks >= Double.MAX_VALUE) {
+                gameTicks = 0.0;
+            }
 
             accumulator += deltaTime;
             lastTime = currTime;
@@ -1285,7 +1287,7 @@ public class Game implements DSMachine {
         cfg.setMouseSensitivity(mouseSensitivity);
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
-        cfg.setPreferredServer(gameObject.game.serverHostName);
+        cfg.setServerIP(gameObject.game.serverHostName);
 
         return cfg;
     }

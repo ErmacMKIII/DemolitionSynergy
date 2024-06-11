@@ -327,7 +327,7 @@ public class Editor {
                     updateRenderLCLock.unlock();
                 }
                 lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_ADD, selectedNew.getPos());
-                selectedNew = new Block(lc.gameObject.GameAssets.TEX_WORLD[texValue]);
+                selectedNew = new Block(Assets.TEX_WORLD[texValue]);
             }
         }
         deselect();

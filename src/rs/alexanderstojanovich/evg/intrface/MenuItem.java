@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.intrface;
 
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**

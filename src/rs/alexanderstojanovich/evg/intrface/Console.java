@@ -56,6 +56,8 @@ public class Console {
 
     public final Intrface intrface;
 
+    protected boolean ctrlPressed = false;
+
     public Console(Intrface intrface) {
         this.intrface = intrface;
         int conwidth = cfg.getWidth();
@@ -89,6 +91,14 @@ public class Console {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (key == GLFW.GLFW_KEY_LEFT_CONTROL) {
+                    if (action == GLFW.GLFW_PRESS) {
+                        ctrlPressed = true;
+                    } else if (action == GLFW.GLFW_RELEASE) {
+                        ctrlPressed = false;
+                    }
+                }
+
                 if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
                     GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
                     GLFW.glfwSetCharCallback(window, null);
@@ -169,6 +179,14 @@ public class Console {
                         input.append(candidates.get(0));
                         inText.setContent("]" + input + "_");
                     }
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
+                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    if (clipboard != null) {
+                        input.append(clipboard);
+                        Console.this.inText.setContent("]" + input.toString() + "_");
+                    }
                 }
             }
         };
@@ -187,7 +205,8 @@ public class Console {
 //                float xposGL = (float) (xoffset /onsole.this.intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
 //                float yOffsetGl = (float) (0.5f - yoffset / Console.this.intrface.gameObject.WINDOW.getHeight()) * 2.0f;
 //                DSLogger.reportInfo(""+yoffset, null);
-                if (yoffset != 0.0f) {
+                if (yoffset > 0.0f && history.getLast().cmdText.pos.y < 1.0f
+                        || yoffset < 0.0f && history.getFirst().cmdText.pos.y > -1.0f) {
                     // shift them
                     history.forEach(hi -> {
                         hi.cmdText.pos.y += (float) yoffset * 0.25f;
@@ -403,6 +422,14 @@ public class Console {
 
     public List<HistoryItem> getHistory() {
         return history;
+    }
+
+    public Intrface getIntrface() {
+        return intrface;
+    }
+
+    public boolean isCtrlPressed() {
+        return ctrlPressed;
     }
 
 }

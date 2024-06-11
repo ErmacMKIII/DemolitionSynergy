@@ -22,6 +22,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -337,29 +338,38 @@ public class GameServerProcessor {
             case DOWNLOAD:
                 // Server-side code to handle sending the file
                 Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
-                gameServer.gameObject.levelContainer.saveLevelToFileAsync(gameServer.worldName + ".dat").thenAccept((Void v) -> {
-                    final int totalBytes = gameServer.gameObject.levelContainer.pos;
-                    final int bytesPerFragment = BUFF_SIZE;
-                    int fullFragments = totalBytes / bytesPerFragment;
-                    int remainingBytes = totalBytes % bytesPerFragment;
+                CompletableFuture.supplyAsync(() -> gameServer.gameObject.levelContainer.saveLevelToFile(gameServer.worldName + ".ndat"))
+                        .thenApply(result -> {
+                            if (result) {
+                                final int totalBytes = gameServer.gameObject.levelContainer.pos;
+                                final int bytesPerFragment = BUFF_SIZE;
+                                int fullFragments = totalBytes / bytesPerFragment;
+                                int remainingBytes = totalBytes % bytesPerFragment;
 
-                    int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
-                    final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
-                    try {
-                        downloadResponse.send(gameServer, clientAddress, clientPort);
-                    } catch (Exception ex1) {
-                        DSLogger.reportError(ex1.getMessage(), ex1);
-                    }
-                }).exceptionally((Throwable ex) -> {
-                    final Response errorResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.INT, -1);
-                    try {
-                        errorResponse.send(gameServer, clientAddress, clientPort);
-                    } catch (IOException ex1) {
-                        DSLogger.reportError(ex1.getMessage(), ex1);
-                    }
+                                int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
+                                final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
+                                try {
+                                    downloadResponse.send(gameServer, clientAddress, clientPort);
+                                } catch (Exception ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
+                                    throw new RuntimeException("Failed to send download response!", ex);
+                                }
+                                return totalFragments;
+                            } else {
+                                throw new RuntimeException("Server encountered an error; Cannot save level to file!");
+                            }
+                        })
+                        .exceptionally(ex -> {
+                            final Response errorResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.INT, -1);
+                            try {
+                                errorResponse.send(gameServer, clientAddress, clientPort);
+                            } catch (IOException ex1) {
+                                DSLogger.reportError(ex1.getMessage(), ex1);
+                            }
+                            DSLogger.reportError(ex.getMessage(), ex);
+                            return null;
+                        });
 
-                    return null;
-                });
                 break;
             case GET_FRAGMENT:
                 int n = (int) request.getData(); // Assuming the N-th fragment number is sent in the request data

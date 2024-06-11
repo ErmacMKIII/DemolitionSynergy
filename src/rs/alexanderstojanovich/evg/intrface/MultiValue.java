@@ -42,9 +42,7 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
         this.type = type;
         this.selected = selected;
         this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(valueArray[selected]));
-        for (Object object : valueArray) {
-            values.add(object);
-        }
+        values.addAll(Arrays.asList(valueArray));
     }
 
     public MultiValue(Intrface intrface, Object[] valueArray, Type type, Object currentValue) throws Exception {

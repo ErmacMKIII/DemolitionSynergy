@@ -53,7 +53,9 @@ public class Configuration {
     private int blocksPerRun = 1000;
     private int ticksPerUpdate = Game.TPS_TWO;
 
-    private String preferredServer = "";
+    private String serverIP = "";
+    private int serverPort = 13667;
+    private int clientPort = 13667;
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -203,8 +205,22 @@ public class Configuration {
                                     ticksPerUpdate = number;
                                 }
                                 break;
-                            case "preferredserver":
-                                preferredServer = words[1];
+                            case "serverip":
+                                serverIP = words[1];
+                                break;
+                            case "serverport":
+                                number = Integer.parseInt(words[1]);
+                                // block per cache loading run
+                                if (number >= 13660 && number <= 13669) {
+                                    serverPort = number;
+                                }
+                                break;
+                            case "clientport":
+                                number = Integer.parseInt(words[1]);
+                                // block per cache loading run
+                                if (number >= 13660 && number <= 13669) {
+                                    clientPort = number;
+                                }
                                 break;
                         }
                     }
@@ -270,8 +286,12 @@ public class Configuration {
             pw.println("BlocksPerRun = " + blocksPerRun);
             pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
-            pw.println("# Preferred game server to connect");
-            pw.println("PreferredServer = " + preferredServer);
+            pw.println("# Preferred game server for client to connect");
+            pw.println("ServerIP = " + serverIP);
+            pw.println("# Preferred game server port (to run the server). Must be in range 13660-13669");
+            pw.println("ServerPort = " + serverPort);
+            pw.println("# Client port set to connect to game server. Must be in range 13660-13669");
+            pw.println("ClientPort = " + clientPort);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -417,12 +437,20 @@ public class Configuration {
         return ticksPerUpdate;
     }
 
-    public String getPreferredServer() {
-        return preferredServer;
+    public String getServerIP() {
+        return serverIP;
     }
 
-    public void setPreferredServer(String preferredServer) {
-        this.preferredServer = preferredServer;
+    public void setServerIP(String serverIP) {
+        this.serverIP = serverIP;
+    }
+
+    public int getServerPort() {
+        return serverPort;
+    }
+
+    public int getClientPort() {
+        return clientPort;
     }
 
 }

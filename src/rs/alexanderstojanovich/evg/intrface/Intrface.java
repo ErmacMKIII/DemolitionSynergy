@@ -17,8 +17,12 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -192,9 +196,9 @@ public class Intrface {
                     }
                 }
             };
-            Quad logo = new Quad(120, 90, gameObject.GameAssets.LOGO);
+            Quad logo = new Quad(180, 135, gameObject.GameAssets.LOGO);
             logo.setColor(new Vector4f(2.0f, 1.37f, 0.1f, 1.0f));
-            logo.setScale(1.5f);
+            logo.setScale(1.0f);
             mainMenu.setLogo(logo);
             mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
             // -----------------------------------------------------------------
@@ -271,7 +275,8 @@ public class Intrface {
             loadDialog.dialog.alignToNextChar(this);
 
             File currFile = new File("./");
-            String[] datFileList = currFile.list((File dir, String name) -> name.toLowerCase().endsWith(".dat"));
+            final Pattern pattern = Pattern.compile("\\.(dat|ndat)$");
+            String[] datFileList = currFile.list((File dir, String name) -> pattern.matcher(name.toLowerCase()).find());
 
             IList<MenuItem> loadLvlMenuPairs = new GapList<>();
             for (String datFile : datFileList) {
@@ -393,11 +398,6 @@ public class Intrface {
                             progText.setEnabled(true);
                             gameObject.gameServer.startServer();
                             try {
-                                // wait for endpoint thread to wake up
-                                synchronized (gameObject.gameServer.SYNC_OBJ) {
-                                    gameObject.gameServer.SYNC_OBJ.wait(30 * 1000L);
-                                }
-
                                 // if game endpoint is running and not shut down
                                 if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
                                     ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
@@ -729,7 +729,7 @@ public class Intrface {
             multiPlayerHostMenuItems.add(new MenuItem(this, "WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             multiPlayerHostMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
-            multiPlayerHostMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getHost(), MenuValue.Type.STRING)));
+//            multiPlayerHostMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getHost(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem(this, "PORT", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getPort(), MenuValue.Type.INT)));
             multiPlayerHostMenuItems.add(new MenuItem(this, "START", Menu.EditType.EditNoValue, null));
             multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
@@ -772,12 +772,12 @@ public class Intrface {
                             seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
                             gameObject.randomLevelGenerator.setSeed(seedValue);
                             break;
-                        case "HOSTNAME":
-                            final String host = this.items.get(3).menuValue.getCurrentValue().toString();
-                            gameObject.gameServer.setHost(host);
-                            break;
+//                        case "HOSTNAME":
+//                            final String host = this.items.get(3).menuValue.getCurrentValue().toString();
+//                            gameObject.gameServer.setHost(host);
+//                            break;
                         case "PORT":
-                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(4).menuValue.getCurrentValue().toString()));
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
                             break;
                         case "START":
                             levelSize = this.items.get(1).menuValue.getCurrentValue().toString().toUpperCase();
@@ -799,14 +799,14 @@ public class Intrface {
                             }
                             seedValue = Long.parseLong(this.items.get(2).menuValue.getCurrentValue().toString());
                             gameObject.randomLevelGenerator.setSeed(seedValue);
-                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(4).menuValue.getCurrentValue().toString()));
+                            gameObject.gameServer.setPort(Integer.parseInt(this.items.get(3).menuValue.getCurrentValue().toString()));
                             multiPlayerDialog.open(Intrface.this);
                             break;
                     }
                 }
             };
             multiPlayerHostMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
-            multiPlayerHostMenu.items.get(5).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerHostMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             //------------------------------------------------------------------
             IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
             multiPlayerJoinMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.game.getServerHostName(), MenuValue.Type.STRING)));
@@ -844,7 +844,7 @@ public class Intrface {
                                             Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                             gameMenu.getTitle().setContent("MUTLIPLAYER");
                                         }
-                                    } catch (InterruptedException | ExecutionException ex) {
+                                    } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                         DSLogger.reportError(ex.getMessage(), ex);
                                     }
                                 } else {
@@ -1064,6 +1064,10 @@ public class Intrface {
         console.release();
 
         DSLogger.reportDebug("Interface buffers deleted.", null);
+    }
+
+    public void setNumBlocks(int numBlocks) {
+        this.numBlocks = numBlocks;
     }
 
     public Quad getCrosshair() {

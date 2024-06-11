@@ -47,7 +47,7 @@ public class Weapons {
         16 - M82 Sniper               - "W16M8.obj"
      */
 
-    public static final WeaponIfc NONE = new Weapon(WeaponIfc.Clazz.None, Model.NONE);
+    public static final WeaponIfc NONE = new Weapon(WeaponIfc.Clazz.None, Model.MODEL_NONE);
 
     public final WeaponIfc M9_PISTOL;
     public final WeaponIfc M1911_PISTOL;

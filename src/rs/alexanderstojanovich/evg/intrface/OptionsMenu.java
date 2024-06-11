@@ -61,6 +61,14 @@ public abstract class OptionsMenu extends Menu {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (key == GLFW.GLFW_KEY_LEFT_CONTROL) {
+                    if (action == GLFW.GLFW_PRESS) {
+                        ctrlPressed = true;
+                    } else if (action == GLFW.GLFW_RELEASE) {
+                        ctrlPressed = false;
+                    }
+                }
+
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
                     enabled = false;
                     input.setLength(0);
@@ -132,6 +140,14 @@ public abstract class OptionsMenu extends Menu {
                         input.deleteCharAt(input.length() - 1);
                     }
                     selectedMenuItem.menuValue.getValueText().setContent(input.toString() + "_");
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
+                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), OptionsMenu.this.items.get(selected).menuValue.getCurrentValue().toString());
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
+                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    if (clipboard != null) {
+                        OptionsMenu.this.items.get(selected).menuValue.setCurrentValue(clipboard);
+                        execute();
+                    }
                 }
             }
         };

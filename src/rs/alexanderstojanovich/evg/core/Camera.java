@@ -485,7 +485,7 @@ public class Camera implements Observer { // is 3D looking camera
     }
 
     @Override
-    public void sinkY(float amount) {
+    public void dropY(float amount) {
         Vector3f temp1 = new Vector3f();
         Vector3f temp2 = new Vector3f();
         Vector3f upAmount = Camera.Y_AXIS.mul(amount, temp1);
