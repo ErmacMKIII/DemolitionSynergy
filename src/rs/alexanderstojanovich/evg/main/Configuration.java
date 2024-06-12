@@ -53,9 +53,10 @@ public class Configuration {
     private int blocksPerRun = 1000;
     private int ticksPerUpdate = Game.TPS_TWO;
 
-    private String serverIP = "";
-    private int serverPort = 13667;
-    private int clientPort = 13667;
+    private String localIP = "127.0.0.1"; // local IP address used to host the server on (local) machine
+    private String serverIP = ""; // server ip used to connect client to server
+    private int serverPort = 13667; // used in conjunction with local IP
+    private int clientPort = 13667; // used in conjunction with server IP
 
     private static final String CONFIG_PATH = "dsynergy.ini";
 
@@ -205,20 +206,23 @@ public class Configuration {
                                     ticksPerUpdate = number;
                                 }
                                 break;
+                            case "localip":
+                                localIP = words[1];
+                                break;
                             case "serverip":
                                 serverIP = words[1];
                                 break;
                             case "serverport":
                                 number = Integer.parseInt(words[1]);
-                                // block per cache loading run
+                                // server port is constrained on local machine
                                 if (number >= 13660 && number <= 13669) {
                                     serverPort = number;
                                 }
                                 break;
                             case "clientport":
                                 number = Integer.parseInt(words[1]);
-                                // block per cache loading run
-                                if (number >= 13660 && number <= 13669) {
+                                // clent port is free
+                                if (number > 0) {
                                     clientPort = number;
                                 }
                                 break;
@@ -286,11 +290,13 @@ public class Configuration {
             pw.println("BlocksPerRun = " + blocksPerRun);
             pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
-            pw.println("# Preferred game server for client to connect");
+            pw.println("# Local IP address used to host the server on (local) machine. Used with server port");
+            pw.println("LocalIP = " + localIP);
+            pw.println("# Preferred game server (local or public IP address) for client to connect. Used in conjuction with client port");
             pw.println("ServerIP = " + serverIP);
             pw.println("# Preferred game server port (to run the server). Must be in range 13660-13669");
             pw.println("ServerPort = " + serverPort);
-            pw.println("# Client port set to connect to game server. Must be in range 13660-13669");
+            pw.println("# Client port set to connect to game server. Varying");
             pw.println("ClientPort = " + clientPort);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
@@ -451,6 +457,10 @@ public class Configuration {
 
     public int getClientPort() {
         return clientPort;
+    }
+
+    public String getLocalIP() {
+        return localIP;
     }
 
 }
