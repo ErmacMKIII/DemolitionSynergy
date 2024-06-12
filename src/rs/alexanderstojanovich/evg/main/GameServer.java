@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,6 +46,7 @@ public class GameServer implements DSMachine, Runnable {
     public final Configuration config = Configuration.getInstance();
     protected String worldName = "My World";
     public static int DEFAULT_PORT = 13667;
+    protected String localIP = config.getLocalIP();
     protected int port = config.getServerPort();
 
     protected static final int MAX_CLIENTS = 16;
@@ -204,8 +206,8 @@ public class GameServer implements DSMachine, Runnable {
 
             // Too much failed attempts, endpoint is vulnerable .. try to shut down
             if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameObject.intrface.getConsole().write(String.format("Game Server (%d) status critical! Trying to shut down!", this.port));
-                DSLogger.reportWarning(String.format("Game Server (%d) status critical! Trying to shut down!", this.port), null);
+                gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port));
+                DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port), null);
                 shutDownSignal = true;
             }
 
@@ -221,10 +223,10 @@ public class GameServer implements DSMachine, Runnable {
         running = true;
         try {
             // Bind the endpoint socket to a 'wildcard' IP address amd given port
-            endpoint = new DatagramSocket(port);//, InetAddress.getByName(host));
+            endpoint = new DatagramSocket(port, InetAddress.getByName(localIP));
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
-            DSLogger.reportInfo(String.format("Game Server (%d) started!", this.port), null);
-            gameObject.intrface.getConsole().write(String.format("Game Server (%d) started!", this.port));
+            DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
+            gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
         } catch (IOException ex) {
             DSLogger.reportError("Cannot create Game Server!", ex);
             gameObject.intrface.getConsole().write("Cannot create Game Server!", true);
@@ -368,6 +370,14 @@ public class GameServer implements DSMachine, Runnable {
 
     public Timer getTimerClientChk() {
         return timerClientChk;
+    }
+
+    public void setLocalIP(String localIP) {
+        this.localIP = localIP;
+    }
+
+    public String getLocalIP() {
+        return localIP;
     }
 
 }

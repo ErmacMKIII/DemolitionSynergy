@@ -17,12 +17,9 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -170,6 +167,7 @@ public class GameServerProcessor {
         final ResponseIfc response;
         String msg;
         LevelActors levelActors;
+        final int totalBytes;
 
         double gameTime;
         switch (request.getRequestType()) {
@@ -336,44 +334,24 @@ public class GameServerProcessor {
                 }
                 break;
             case DOWNLOAD:
-                // Server-side code to handle sending the file
-                Arrays.fill(gameServer.gameObject.levelContainer.buffer, (byte) 0x00);
-                CompletableFuture.supplyAsync(() -> gameServer.gameObject.levelContainer.saveLevelToFile(gameServer.worldName + ".ndat"))
-                        .thenApply(result -> {
-                            if (result) {
-                                final int totalBytes = gameServer.gameObject.levelContainer.pos;
-                                final int bytesPerFragment = BUFF_SIZE;
-                                int fullFragments = totalBytes / bytesPerFragment;
-                                int remainingBytes = totalBytes % bytesPerFragment;
+                // Server alraedy saved the level
+                totalBytes = gameServer.gameObject.levelContainer.pos;
+                final int bytesPerFragment = BUFF_SIZE;
+                int fullFragments = totalBytes / bytesPerFragment;
+                int remainingBytes = totalBytes % bytesPerFragment;
 
-                                int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
-                                final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
-                                try {
-                                    downloadResponse.send(gameServer, clientAddress, clientPort);
-                                } catch (Exception ex) {
-                                    DSLogger.reportError(ex.getMessage(), ex);
-                                    throw new RuntimeException("Failed to send download response!", ex);
-                                }
-                                return totalFragments;
-                            } else {
-                                throw new RuntimeException("Server encountered an error; Cannot save level to file!");
-                            }
-                        })
-                        .exceptionally(ex -> {
-                            final Response errorResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.INT, -1);
-                            try {
-                                errorResponse.send(gameServer, clientAddress, clientPort);
-                            } catch (IOException ex1) {
-                                DSLogger.reportError(ex1.getMessage(), ex1);
-                            }
-                            DSLogger.reportError(ex.getMessage(), ex);
-                            return null;
-                        });
-
+                int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
+                final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
+                try {
+                    downloadResponse.send(gameServer, clientAddress, clientPort);
+                } catch (Exception ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                    throw new RuntimeException("Failed to send download response!", ex);
+                }
                 break;
             case GET_FRAGMENT:
                 int n = (int) request.getData(); // Assuming the N-th fragment number is sent in the request data
-                final int totalBytes = gameServer.gameObject.levelContainer.pos;
+                totalBytes = gameServer.gameObject.levelContainer.pos;
                 final byte[] buffer = gameServer.gameObject.levelContainer.buffer;
 
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
