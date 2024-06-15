@@ -1288,6 +1288,9 @@ public class Game implements DSMachine {
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
         cfg.setServerIP(gameObject.game.serverHostName);
+        cfg.setClientPort(gameObject.game.port);
+        cfg.setLocalIP(gameObject.gameServer.localIP);
+        cfg.setServerPort(gameObject.gameServer.port);
 
         return cfg;
     }
