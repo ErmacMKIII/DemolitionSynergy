@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
+import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -155,7 +156,7 @@ public class GameServer implements DSMachine, Runnable {
 
         serverExecutor.execute(this);
 
-        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on :%d", port), null);
+        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", localIP, port), null);
     }
 
     /**
@@ -291,6 +292,18 @@ public class GameServer implements DSMachine, Runnable {
         levelActors.otherPlayers.removeIf(ply -> ply.uniqueId.equals(uniqueId));
         DSLogger.reportInfo(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), null);
         gameObject.intrface.getConsole().write(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), isError);
+    }
+
+    public ClientInfo[] getClientInfo() {
+        ClientInfo[] result = new ClientInfo[clients.size()];
+
+        int index = 0;
+        for (String cli : clients) {
+            ClientInfo ci = new ClientInfo(cli, whoIsMap.getOrDefault(cli, "N/A"), timeToLiveMap.getOrDefault(cli, -1));
+            result[index++] = ci;
+        }
+
+        return result;
     }
 
     public String getWorldName() {
