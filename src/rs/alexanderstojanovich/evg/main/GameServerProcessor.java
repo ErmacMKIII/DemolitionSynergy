@@ -68,16 +68,14 @@ public class GameServerProcessor {
      */
     public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
-    /**
-     * Internal Mutex object
-     */
-    public static final Object InternMutex = new Object();
-
-    /**
-     * Is waiting confirm
-     */
-    public static volatile boolean waitOnDownload = false;
-
+//    /**
+//     * Internal Mutex object
+//     */
+//    public static final Object InternMutex = new Object();
+//    /**
+//     * Is waiting confirm
+//     */
+//    public static volatile boolean waitOnDownload = false;
     /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
@@ -123,15 +121,15 @@ public class GameServerProcessor {
     public static GameServerProcessor.Result process(GameServer gameServer, DatagramSocket endpoint) throws Exception {
         // Handle endpoint request and response
         final RequestIfc request;
-        if (waitOnDownload) { // no requests will be taken into consideration 
-            // when processing download request
-            synchronized (GameServerProcessor.InternMutex) {
-                GameServerProcessor.InternMutex.wait();
-                request = null;
-            }
-        } else {
-            request = RequestIfc.receive(gameServer);
-        }
+        //        if (waitOnDownload) { // no requests will be taken into consideration 
+//            // when processing download request
+//            synchronized (GameServerProcessor.InternMutex) {
+//                GameServerProcessor.InternMutex.wait();
+//                request = null;
+//            }
+//        } else {
+        request = RequestIfc.receive(gameServer);
+//        }
 
         if (request == null) {
             // avoid processing invalid requests requests
@@ -460,12 +458,11 @@ public class GameServerProcessor {
         return TotalFailedAttempts;
     }
 
-    public static Object getInternMutex() {
-        return InternMutex;
-    }
-
-    public static boolean isWaitOnDownload() {
-        return waitOnDownload;
-    }
-
+//    public static Object getInternMutex() {
+//        return InternMutex;
+//    }
+//
+//    public static boolean isWaitOnDownload() {
+//        return waitOnDownload;
+//    }
 }
