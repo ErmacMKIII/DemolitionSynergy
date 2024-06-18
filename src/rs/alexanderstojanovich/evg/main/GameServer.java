@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
+import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
@@ -68,13 +69,12 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Server worker
      */
-    public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
+    public final ExecutorService serverExecutor = Executors.newFixedThreadPool(1);
 
-    /**
-     * Server Task worker (handles heavy tasks)
-     */
-    public final ExecutorService serverTaskExecutor = Executors.newFixedThreadPool(GameServer.MAX_CLIENTS);
-
+//    /**
+//     * Server Task worker (handles heavy tasks)
+//     */
+//    public final ExecutorService serverTaskExecutor = Executors.newFixedThreadPool(GameServer.MAX_CLIENTS);
     /**
      * Who is Client hostname <==> Player UniqueId
      */
@@ -139,6 +139,7 @@ public class GameServer implements DSMachine, Runnable {
                             GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
                             if (uniqueId != null) {
                                 GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                                whoIsMap.remove(key);
                             }
                             return null; // Remove the key from timeToLiveMap
                         } else {
@@ -155,7 +156,7 @@ public class GameServer implements DSMachine, Runnable {
 
         serverExecutor.execute(this);
 
-        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on :%d", port), null);
+        DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", localIP, port), null);
     }
 
     /**
@@ -168,6 +169,7 @@ public class GameServer implements DSMachine, Runnable {
 
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
+            whoIsMap.clear();
             timeToLiveMap.clear();
             clients.clear();
         }
@@ -178,7 +180,7 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void shutDown() {
         this.serverExecutor.shutdown();
-        this.serverTaskExecutor.shutdown();
+//        this.serverTaskExecutor.shutdown();
         this.timerClientChk.cancel();
     }
 
@@ -291,6 +293,17 @@ public class GameServer implements DSMachine, Runnable {
         levelActors.otherPlayers.removeIf(ply -> ply.uniqueId.equals(uniqueId));
         DSLogger.reportInfo(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), null);
         gameObject.intrface.getConsole().write(String.format(isError ? "Player %s timed out." : "Player %s disconnected.", uniqueId), isError);
+    }
+
+    public ClientInfo[] getClientInfo() {
+        ClientInfo[] result = new ClientInfo[clients.size()];
+
+        int index = 0;
+        for (String cli : clients) {
+            ClientInfo ci = new ClientInfo(cli, whoIsMap.getOrDefault(cli, "N/A"), timeToLiveMap.getOrDefault(cli, -1));
+            result[index++] = ci;
+        }
+        return result;
     }
 
     public String getWorldName() {

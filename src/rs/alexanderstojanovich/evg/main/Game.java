@@ -125,7 +125,7 @@ public class Game implements DSMachine {
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
     };
-    private static Mode currentMode = Mode.SINGLE_PLAYER;
+    private static Mode currentMode = Mode.FREE;
 
     protected static boolean actionPerformed = false; // movement for all actors (critters)
     protected static boolean jumpPerformed = false; // jump for player
@@ -185,6 +185,10 @@ public class Game implements DSMachine {
     public final GameObject gameObject;
 
     public int weaponIndex = 0;
+
+    public static enum DownloadStatus {
+        ERR, WARNING, OK
+    }
 
     /**
      * Construct new game (client) view. Demolition Synergy client.
@@ -752,10 +756,10 @@ public class Game implements DSMachine {
                     Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectPrevTexture(gameObject.GameAssets);
+                    Editor.selectPrevTexture();
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectNextTexture(gameObject.GameAssets);
+                    Editor.selectNextTexture();
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;
@@ -1115,9 +1119,9 @@ public class Game implements DSMachine {
      *
      * @return true if the download was successful, false otherwise
      */
-    public boolean downloadLevel() {
+    public DownloadStatus downloadLevel() {
         if (!isConnected()) {
-            return false;
+            return DownloadStatus.ERR;
         }
 
         Arrays.fill(gameObject.levelContainer.buffer, (byte) 0x00);
@@ -1137,6 +1141,10 @@ public class Game implements DSMachine {
                 byte[] buffer = new byte[Game.BUFF_SIZE];
                 int totalBytesRead = 0;
                 final int totalIndices = (int) response0.getData();
+
+                if (totalIndices == 0) {
+                    return DownloadStatus.WARNING;
+                }
 
                 for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
                     // Request the next fragment
@@ -1170,7 +1178,7 @@ public class Game implements DSMachine {
             DSLogger.reportError("Error occurred!", ex);
         }
 
-        return success;
+        return DownloadStatus.OK;
     }
 
     /**
@@ -1220,9 +1228,6 @@ public class Game implements DSMachine {
                 ResponseIfc.receiveAsync(this).thenApply((ResponseIfc response) -> {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                     gameObject.intrface.getConsole().write(response.getData().toString());
-
-                    return response;
-                }).thenApply((ResponseIfc response) -> {
                     serverEndpoint.close();
                     DSLogger.reportInfo("Disconnected from server!", null);
 
@@ -1288,6 +1293,9 @@ public class Game implements DSMachine {
         cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
         cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
         cfg.setServerIP(gameObject.game.serverHostName);
+        cfg.setClientPort(gameObject.game.port);
+        cfg.setLocalIP(gameObject.gameServer.localIP);
+        cfg.setServerPort(gameObject.gameServer.port);
 
         return cfg;
     }

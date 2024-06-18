@@ -68,16 +68,14 @@ public class GameServerProcessor {
      */
     public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
-    /**
-     * Internal Mutex object
-     */
-    public static final Object InternMutex = new Object();
-
-    /**
-     * Is waiting confirm
-     */
-    public static volatile boolean waitOnDownload = false;
-
+//    /**
+//     * Internal Mutex object
+//     */
+//    public static final Object InternMutex = new Object();
+//    /**
+//     * Is waiting confirm
+//     */
+//    public static volatile boolean waitOnDownload = false;
     /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
@@ -123,15 +121,15 @@ public class GameServerProcessor {
     public static GameServerProcessor.Result process(GameServer gameServer, DatagramSocket endpoint) throws Exception {
         // Handle endpoint request and response
         final RequestIfc request;
-        if (waitOnDownload) { // no requests will be taken into consideration 
-            // when processing download request
-            synchronized (GameServerProcessor.InternMutex) {
-                GameServerProcessor.InternMutex.wait();
-                request = null;
-            }
-        } else {
-            request = RequestIfc.receive(gameServer);
-        }
+        //        if (waitOnDownload) { // no requests will be taken into consideration 
+//            // when processing download request
+//            synchronized (GameServerProcessor.InternMutex) {
+//                GameServerProcessor.InternMutex.wait();
+//                request = null;
+//            }
+//        } else {
+        request = RequestIfc.receive(gameServer);
+//        }
 
         if (request == null) {
             // avoid processing invalid requests requests
@@ -241,12 +239,14 @@ public class GameServerProcessor {
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, clientAddress, clientPort);
+                gameServer.whoIsMap.remove(clientHostName);
                 gameServer.timeToLiveMap.remove(clientHostName);
                 gameServer.clients.remove(clientHostName);
                 gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (1 + gameServer.clients.size()));
                 String uniqueId = gameServer.whoIsMap.get(clientHostName);
                 if (uniqueId != null) {
                     GameServer.performCleanUp(gameServer.gameObject, uniqueId, false);
+                    gameServer.whoIsMap.remove(clientHostName);
                 }
                 break;
             case GET_TIME:
@@ -335,7 +335,10 @@ public class GameServerProcessor {
                 break;
             case DOWNLOAD:
                 // Server alraedy saved the level
-                totalBytes = gameServer.gameObject.levelContainer.pos;
+                gameServer.gameObject.levelContainer.storeLevelToBufferNewFormat();
+                System.arraycopy(gameServer.gameObject.levelContainer.buffer, 0,gameServer.gameObject.levelContainer.bak_buffer, 0, gameServer.gameObject.levelContainer.pos);
+                gameServer.gameObject.levelContainer.bak_pos = gameServer.gameObject.levelContainer.pos;
+                totalBytes = gameServer.gameObject.levelContainer.bak_pos;
                 final int bytesPerFragment = BUFF_SIZE;
                 int fullFragments = totalBytes / bytesPerFragment;
                 int remainingBytes = totalBytes % bytesPerFragment;
@@ -351,8 +354,8 @@ public class GameServerProcessor {
                 break;
             case GET_FRAGMENT:
                 int n = (int) request.getData(); // Assuming the N-th fragment number is sent in the request data
-                totalBytes = gameServer.gameObject.levelContainer.pos;
-                final byte[] buffer = gameServer.gameObject.levelContainer.buffer;
+                totalBytes = gameServer.gameObject.levelContainer.bak_pos;
+                final byte[] buffer = gameServer.gameObject.levelContainer.bak_buffer;
 
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
@@ -460,12 +463,11 @@ public class GameServerProcessor {
         return TotalFailedAttempts;
     }
 
-    public static Object getInternMutex() {
-        return InternMutex;
-    }
-
-    public static boolean isWaitOnDownload() {
-        return waitOnDownload;
-    }
-
+//    public static Object getInternMutex() {
+//        return InternMutex;
+//    }
+//
+//    public static boolean isWaitOnDownload() {
+//        return waitOnDownload;
+//    }
 }

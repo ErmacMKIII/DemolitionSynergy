@@ -463,4 +463,16 @@ public class Configuration {
         return localIP;
     }
 
+    public void setLocalIP(String localIP) {
+        this.localIP = localIP;
+    }
+
+    public void setServerPort(int serverPort) {
+        this.serverPort = serverPort;
+    }
+
+    public void setClientPort(int clientPort) {
+        this.clientPort = clientPort;
+    }
+
 }
