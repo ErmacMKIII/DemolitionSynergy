@@ -139,6 +139,7 @@ public class GameServer implements DSMachine, Runnable {
                             GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
                             if (uniqueId != null) {
                                 GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                                whoIsMap.remove(key);
                             }
                             return null; // Remove the key from timeToLiveMap
                         } else {
@@ -168,6 +169,7 @@ public class GameServer implements DSMachine, Runnable {
 
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
+            whoIsMap.clear();
             timeToLiveMap.clear();
             clients.clear();
         }

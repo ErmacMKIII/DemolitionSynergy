@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
@@ -518,6 +519,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         LevelContainer.AllBlockMap.init();
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
+        
+        Arrays.fill(levelContainer.buffer, (byte)0x00);
+        Arrays.fill(levelContainer.bak_buffer, (byte)0x00);
+        levelContainer.pos = 0;
+        levelContainer.bak_pos = 0;
+        
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
@@ -669,13 +676,21 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         // Register player with Unique ID (UUID)
         if (game.registerPlayer()) {
             int numberOfAttempts = 0;
-            boolean downOkey = false;
+            Game.DownloadStatus status = Game.DownloadStatus.ERR;
             // If successful, download level
             do {
-                downOkey |= game.downloadLevel();
-            } while (!downOkey && ++numberOfAttempts <= MAX_ATTEMPTS);
+                status = game.downloadLevel();
+            } while (status == Game.DownloadStatus.ERR && ++numberOfAttempts <= MAX_ATTEMPTS);
 
-            if (downOkey) {
+            if (status == Game.DownloadStatus.WARNING) {
+                DSLogger.reportWarning("Connected to empty world - disconnect!", null);
+                intrface.getConsole().write("Connected to empty world - disconnect!");
+                game.disconnectFromServer();
+                
+                return false;
+            }
+
+            if (status == Game.DownloadStatus.OK) {
                 // Load level to buffer asynchronously
                 CompletableFuture<Boolean> loadLevelFuture = CompletableFuture.supplyAsync(() -> {
                     boolean ldOkey = false;
