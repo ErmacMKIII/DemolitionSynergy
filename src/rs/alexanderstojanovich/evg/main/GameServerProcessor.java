@@ -239,6 +239,7 @@ public class GameServerProcessor {
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, clientAddress, clientPort);
+                gameServer.whoIsMap.remove(clientHostName);
                 gameServer.timeToLiveMap.remove(clientHostName);
                 gameServer.clients.remove(clientHostName);
                 gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (1 + gameServer.clients.size()));

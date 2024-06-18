@@ -125,7 +125,7 @@ public class Game implements DSMachine {
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
     };
-    private static Mode currentMode = Mode.SINGLE_PLAYER;
+    private static Mode currentMode = Mode.FREE;
 
     protected static boolean actionPerformed = false; // movement for all actors (critters)
     protected static boolean jumpPerformed = false; // jump for player
@@ -752,10 +752,10 @@ public class Game implements DSMachine {
                     Arrays.fill(keys, false);
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectPrevTexture(gameObject.GameAssets);
+                    Editor.selectPrevTexture();
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
-                    Editor.selectNextTexture(gameObject.GameAssets);
+                    Editor.selectNextTexture();
                 } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;

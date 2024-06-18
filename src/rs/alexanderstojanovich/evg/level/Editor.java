@@ -24,7 +24,6 @@ import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
 import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
-import static rs.alexanderstojanovich.evg.main.GameObject.UPDATE_RENDER_IFC_MUTEX;
 import static rs.alexanderstojanovich.evg.main.GameObject.updateRenderLCLock;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
@@ -51,7 +50,7 @@ public class Editor {
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }
-        selectTexture(lc.gameObject.GameAssets);
+        selectTexture();
         // fetching..
         Camera camera = lc.levelActors.mainCamera();
         Vector3f pos = camera.getPos();
@@ -207,7 +206,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture(lc.gameObject.GameAssets);
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -251,7 +250,7 @@ public class Editor {
             if (selectedNew == null) {
                 selectedNew = new Block("crate");
             }
-            selectTexture(lc.gameObject.GameAssets);
+            selectTexture();
             selectedNew.getPos().x = selectedCurr.getPos().x;
             selectedNew.getPos().y = selectedCurr.getPos().y;
             selectedNew.getPos().z = selectedCurr.getPos().z;
@@ -335,40 +334,38 @@ public class Editor {
 
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
-            synchronized (UPDATE_RENDER_IFC_MUTEX) {
-                updateRenderLCLock.lock();
-                try {
-                    lc.chunks.removeBlock(selectedCurr);
-                } finally {
-                    updateRenderLCLock.unlock();
-                }
+            updateRenderLCLock.lock();
+            try {
+                lc.chunks.removeBlock(selectedCurr);
+            } finally {
+                updateRenderLCLock.unlock();
             }
             lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_REMOVE, selectedCurr.getPos());
         }
         deselect();
     }
 
-    private static void selectTexture(Assets assets) {
+    private static void selectTexture() {
         if (selectedNew != null) {
-            String texName = assets.TEX_WORLD[texValue];
+            String texName = Assets.TEX_WORLD[texValue];
             selectedNew.setTexNameWithDeepCopy(texName);
         }
     }
 
-    public static void selectPrevTexture(Assets assets) {
+    public static void selectPrevTexture() {
         if (selectedNew != null) {
             if (texValue > 0) {
                 texValue--;
-                selectTexture(assets);
+                selectTexture();
             }
         }
     }
 
-    public static void selectNextTexture(Assets assets) {
+    public static void selectNextTexture() {
         if (selectedNew != null) {
-            if (texValue < assets.TEX_WORLD.length - 1) {
+            if (texValue < Assets.TEX_WORLD.length - 1) {
                 texValue++;
-                selectTexture(assets);
+                selectTexture();
             }
         }
     }
