@@ -30,6 +30,8 @@ import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
@@ -47,6 +49,7 @@ import rs.alexanderstojanovich.evg.net.RequestIfc;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.Pair;
 
 /**
  * DSynergy Game client. With multiplayer capabilities.
@@ -136,8 +139,8 @@ public class Game implements DSMachine {
     protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
     protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds
 
-//    protected int faultNum = 0;
-//    protected static final int MAX_FAULTS = 3;
+    protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
+
     /**
      * Magic bytes of End-of-Stream
      */
@@ -505,26 +508,11 @@ public class Game implements DSMachine {
 
         // Multiplayer-Join mode
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered()) {
-            final double beginTime = GLFW.glfwGetTime();
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this);
-            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc playerPosResp) -> {
-                if (playerPosResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                    if (playerPosResp.getChecksum() == playerPosReq.getChecksum()) {
-                        PosInfo posInfo = PosInfo.fromJson(playerPosResp.getData().toString());
-                        playerServerPos.set(posInfo.pos);
-                    }
-                } else {
-                    DSLogger.reportInfo(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), null);
-                    gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", playerPosResp.getResponseStatus().toString(), String.valueOf(playerPosResp.getData())), true);
-                }
-                double endTime = GLFW.glfwGetTime();
-                double ping = endTime - beginTime;
-
-                // calculate interpolation factor
-                interpolationFactor = (double) deltaTime / ((double) ping + deltaTime);
-            });
-
+            double time = GLFW.glfwGetTime();
+            requests.add(new Pair<>(playerPosReq, time));
+            
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
@@ -806,6 +794,52 @@ public class Game implements DSMachine {
     }
 
     /**
+     * Recive Async (Multiplayer)
+     *
+     * @param deltaTime time interval between updates
+     */
+    public void receiveAsync(double deltaTime) {
+        ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc resp) -> {
+            RequestIfc reqTarg = null;
+            double beginTime = 0.0;
+            for (Pair<RequestIfc, Double> req : requests) {
+                if (req.getKey().getChecksum() == resp.getChecksum()) {
+                    reqTarg = req.getKey();
+                    beginTime = req.getValue();
+                    break;
+                }
+            }
+            double endTime = GLFW.glfwGetTime();
+            if (reqTarg != null) {
+                final RequestIfc reqTargCopy = reqTarg;
+                requests.removeIf(req -> req.getKey() == reqTargCopy || req.getValue() >= CRITICAL_TIME);
+                switch (reqTarg.getRequestType()) {
+                    case GET_TIME:
+                        Game.gameTicks = (double) resp.getData();
+                        break;
+                    case GET_POS:
+                        String uniqueId = reqTarg.getData().toString();
+                        PosInfo posInfo = PosInfo.fromJson(resp.getData().toString());
+                        if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
+                            playerServerPos.set(posInfo.pos);
+                        } else {
+                            Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
+                            other.setPos(posInfo.pos);
+                            other.getFront().set(posInfo.front);
+                            other.setRotationXYZ(posInfo.front);
+                        }
+                        double ping = endTime - beginTime;
+                        // calculate interpolation factor
+                        interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+                        break;
+                }
+                long tripTime = Math.round(endTime - beginTime) * 1000L;
+                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+            }
+        });
+    }
+
+    /**
      * Updates game (client).
      *
      * @param deltaTime time interval between updates
@@ -814,19 +848,10 @@ public class Game implements DSMachine {
         // Time Synchronization
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (Game.TPS_QUARTER - 1)) == 0 && isConnected()) {
             try {
-                final double beginTime = GLFW.glfwGetTime();
-                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
-                playerPosReq.send(this);
-
-                ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc timeResp) -> {
-                    if (timeResp.getChecksum() == playerPosReq.getChecksum() && timeResp.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                        double endTime = GLFW.glfwGetTime();
-                        long tripTime = Math.round(endTime - beginTime) * 1000L;
-
-                        Game.gameTicks = (double) timeResp.getData();
-                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                    }
-                });
+                RequestIfc timeSyncReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
+                timeSyncReq.send(this);
+                double time = GLFW.glfwGetTime();
+                requests.add(new Pair<>(timeSyncReq, time));
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
             }
@@ -842,26 +867,18 @@ public class Game implements DSMachine {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this);
-
-                        ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc otherPlayerResponse) -> {
-                            if (otherPlayerResponse.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                                PosInfo posInfo = PosInfo.fromJson(otherPlayerResponse.getData().toString());
-                                // Verify Match!
-                                if (otherPlayerResponse.getChecksum() == otherPlayerRequest.getChecksum() && posInfo.uniqueId.equals(other.uniqueId)) {
-                                    other.setPos(posInfo.pos);
-                                    other.getFront().set(posInfo.front);
-                                    other.setRotationXYZ(posInfo.front);
-                                }
-                            } else {
-                                DSLogger.reportInfo(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), null);
-                                gameObject.intrface.getConsole().write(String.format("Server response: %s : %s", otherPlayerResponse.getResponseStatus().toString(), String.valueOf(otherPlayerResponse.getData())), true);
-                            }
-                        });
+                        double time = GLFW.glfwGetTime();
+                        requests.add(new Pair<>(otherPlayerRequest, time));
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);
                     }
                 });
             }
+        }
+
+        // recieve connection async
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
+            receiveAsync(deltaTime);
         }
 
         // Heavy operations to run afterwards
@@ -1125,12 +1142,11 @@ public class Game implements DSMachine {
         }
 
         Arrays.fill(gameObject.levelContainer.buffer, (byte) 0x00);
-        boolean success = false;
         try {
             // Send a request to begin downloading the level
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this);
-
+            
             ResponseIfc response0 = ResponseIfc.receive(this);
             if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
@@ -1166,7 +1182,6 @@ public class Game implements DSMachine {
                 // Logging download information
                 DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
                 gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
-                success = true;
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
@@ -1469,6 +1484,10 @@ public class Game implements DSMachine {
 
     public Vector3f getPlayerServerPos() {
         return playerServerPos;
+    }
+
+    public IList<Pair<RequestIfc, Double>> getRequests() {
+        return requests;
     }
 
 }
