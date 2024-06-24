@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,6 +27,8 @@ import java.util.concurrent.ExecutionException;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -99,7 +100,7 @@ public class Command implements Callable<Object> {
     protected Status status = Status.INIT;
 
     // commands differ in arugment length and type, therefore list is used
-    protected final List<Object> args = new ArrayList<>();
+    protected final IList<Object> args = new GapList<>();
 
     protected static final Trie trie = new Trie();
 
@@ -285,9 +286,8 @@ public class Command implements Callable<Object> {
                     break;
                 case "say":
                     command.target = Target.SAY;
-                    if (things.length == 3) {
+                    if (things.length == 2) {
                         command.args.add((String) things[1]);
-                        command.args.add((String) things[2]);
                     }
                     break;
                 case "ping":
@@ -691,11 +691,16 @@ public class Command implements Callable<Object> {
             case SAY:
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
-//                        command.status = Status.SUCCEEDED;
+                        try {
+                            RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
+                            sendChatMsgReq.send(gameObject.game);
+                            command.status = Status.SUCCEEDED;
+                        } catch (Exception ex) {
+                            DSLogger.reportError("Unable to send chat message!", ex);
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        }
                     }
                 }
-                // TODO Multiplayer
-                // All clients receive chat
                 break;
             case CONNECT:
                 if (command.mode == Command.Mode.SET) {

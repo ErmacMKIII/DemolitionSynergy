@@ -70,7 +70,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 43;
+    public static final int VERSION = 44;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
     // makes default window -> Renderer sets resolution from config
 
@@ -519,12 +519,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         LevelContainer.AllBlockMap.init();
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
-        
-        Arrays.fill(levelContainer.buffer, (byte)0x00);
-        Arrays.fill(levelContainer.bak_buffer, (byte)0x00);
+
+        Arrays.fill(levelContainer.buffer, (byte) 0x00);
+        Arrays.fill(levelContainer.bak_buffer, (byte) 0x00);
         levelContainer.pos = 0;
         levelContainer.bak_pos = 0;
-        
+
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
@@ -623,6 +623,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to spawn player after the fall!", ex);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -646,6 +648,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to spawn player after the fall!", ex);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -686,7 +690,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 DSLogger.reportWarning("Connected to empty world - disconnect!", null);
                 intrface.getConsole().write("Connected to empty world - disconnect!");
                 game.disconnectFromServer();
-                
+
                 return false;
             }
 
@@ -710,15 +714,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 boolean ldOkey = loadLevelFuture.get();
 
                 if (ldOkey) {
-                    PlayerInfo[] playerInfo = game.getPlayerInfo();
-                    // Configure other players
-                    levelContainer.levelActors.configOtherPlayers(playerInfo);
-                    // Configure-set main actor
-                    // Spawn player (set position)
-                    levelContainer.spawnPlayer();
-                    // Player set pos
-                    game.requestSetPlayerPosition();
-                    okey = true;
+                    try {
+                        PlayerInfo[] playerInfo = game.getPlayerInfo();
+                        // Configure other players
+                        levelContainer.levelActors.configOtherPlayers(playerInfo);
+                        // Configure-set main actor
+                        // Spawn player (set position)
+                        levelContainer.spawnPlayer();
+                        // Player set pos
+                        game.requestSetPlayerPosition();
+                        okey = true;
+                    } catch (Exception ex) {
+                        // If player cannot be registered, disconnect
+                        game.disconnectFromServer();
+                        // Revert back
+                        this.clearEverything();
+                    }
                 } else {
                     // If player cannot be registered, disconnect
                     game.disconnectFromServer();

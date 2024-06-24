@@ -512,7 +512,7 @@ public class Game implements DSMachine {
             playerPosReq.send(this);
             double time = GLFW.glfwGetTime();
             requests.add(new Pair<>(playerPosReq, time));
-            
+
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
@@ -832,6 +832,10 @@ public class Game implements DSMachine {
                         // calculate interpolation factor
                         interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
                         break;
+                    case SAY:
+                        // write chat messages
+                        gameObject.intrface.getConsole().write(resp.getData().toString());
+                        break;
                 }
                 long tripTime = Math.round(endTime - beginTime) * 1000L;
                 gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
@@ -1146,7 +1150,7 @@ public class Game implements DSMachine {
             // Send a request to begin downloading the level
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this);
-            
+
             ResponseIfc response0 = ResponseIfc.receive(this);
             if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
@@ -1159,6 +1163,7 @@ public class Game implements DSMachine {
                 final int totalIndices = (int) response0.getData();
 
                 if (totalIndices == 0) {
+                    disconnectFromServer();
                     return DownloadStatus.WARNING;
                 }
 

@@ -336,7 +336,7 @@ public class GameServerProcessor {
             case DOWNLOAD:
                 // Server alraedy saved the level
                 gameServer.gameObject.levelContainer.storeLevelToBufferNewFormat();
-                System.arraycopy(gameServer.gameObject.levelContainer.buffer, 0,gameServer.gameObject.levelContainer.bak_buffer, 0, gameServer.gameObject.levelContainer.pos);
+                System.arraycopy(gameServer.gameObject.levelContainer.buffer, 0, gameServer.gameObject.levelContainer.bak_buffer, 0, gameServer.gameObject.levelContainer.pos);
                 gameServer.gameObject.levelContainer.bak_pos = gameServer.gameObject.levelContainer.pos;
                 totalBytes = gameServer.gameObject.levelContainer.bak_pos;
                 final int bytesPerFragment = BUFF_SIZE;
@@ -385,6 +385,23 @@ public class GameServerProcessor {
                 String obj = gson.toJson(playerInfos, IList.class);
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
                 response.send(gameServer, clientAddress, clientPort);
+                break;
+            case SAY:
+                levelActors = gameServer.gameObject.levelContainer.levelActors;
+                String senderGuid = gameServer.whoIsMap.get(clientHostName);
+                String senderName = "?";
+                if (senderGuid.equals(levelActors.player.uniqueId)) {
+                    senderName = levelActors.player.getName();
+                } else {
+                    Critter otherPlayerOrNull = levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(senderGuid));
+                    if (otherPlayerOrNull != null) {
+                        senderName = otherPlayerOrNull.getName();
+                    }
+                }
+                response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
+                for (String client : gameServer.clients) {
+                    response.send(gameServer, InetAddress.getByName(client), clientPort);
+                }
                 break;
         }
 
