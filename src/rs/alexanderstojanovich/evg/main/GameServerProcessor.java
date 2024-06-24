@@ -131,7 +131,7 @@ public class GameServerProcessor {
         request = RequestIfc.receive(gameServer);
 //        }
 
-        if (request == null) {
+        if (request == null || request.getClientAddress() == null) {
             // avoid processing invalid requests requests
             return new Result(Status.INTERNAL_ERROR, null);
         }

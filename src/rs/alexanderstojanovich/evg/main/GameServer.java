@@ -19,16 +19,24 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Request;
+import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -304,6 +312,18 @@ public class GameServer implements DSMachine, Runnable {
             result[index++] = ci;
         }
         return result;
+    }
+
+    public void kickPlayer(String client) {
+        try {
+            ResponseIfc resp = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, 1);
+            resp.send(this, InetAddress.getByName(client), port);
+        } catch (UnknownHostException ex) {
+            DSLogger.reportError("Kick player -> unknown IP address", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        }
     }
 
     public String getWorldName() {
