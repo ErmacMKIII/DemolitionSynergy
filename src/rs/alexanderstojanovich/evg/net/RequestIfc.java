@@ -94,7 +94,11 @@ public interface RequestIfc extends DSObject {
          * Get player info from all players on the server as Json array (or
          * list)
          */
-        PLAYER_INFO
+        PLAYER_INFO,
+        /**
+         * Force disconnect to player
+         */
+        KICK_PLAYER
     }
 
     /**

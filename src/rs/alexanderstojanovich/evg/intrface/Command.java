@@ -20,23 +20,29 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
+import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.cache.CachedInfo;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
+import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
+import rs.alexanderstojanovich.evg.main.GameServer;
+import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
@@ -81,6 +87,7 @@ public class Command implements Callable<Object> {
         DISCONNECT,
         START_SERVER,
         STOP_SERVER,
+        KICK_PLAYER,
         ERROR
     };
 
@@ -99,7 +106,7 @@ public class Command implements Callable<Object> {
     protected Status status = Status.INIT;
 
     // commands differ in arugment length and type, therefore list is used
-    protected final List<Object> args = new ArrayList<>();
+    protected final IList<Object> args = new GapList<>();
 
     protected static final Trie trie = new Trie();
 
@@ -285,9 +292,8 @@ public class Command implements Callable<Object> {
                     break;
                 case "say":
                     command.target = Target.SAY;
-                    if (things.length == 3) {
+                    if (things.length == 2) {
                         command.args.add((String) things[1]);
-                        command.args.add((String) things[2]);
                     }
                     break;
                 case "ping":
@@ -314,6 +320,12 @@ public class Command implements Callable<Object> {
                 case "stopserver":
                     command.target = Target.STOP_SERVER;
                     break;
+                case "kick":
+                case "kickplayer":
+                case "kick_player":
+                    command.target = Target.KICK_PLAYER;
+                    command.args.addAll(Arrays.asList(things).subList(1, things.length));
+                    break;
                 default:
                     command.target = Target.ERROR;
                     break;
@@ -323,7 +335,7 @@ public class Command implements Callable<Object> {
         boolean argsEmpty = command.args.isEmpty();
         boolean isGetOnly = command.target == Target.SIZEOF;
         boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY
-                || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER;
+                || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER;
 
         if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
@@ -691,11 +703,16 @@ public class Command implements Callable<Object> {
             case SAY:
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
-//                        command.status = Status.SUCCEEDED;
+                        try {
+                            RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
+                            sendChatMsgReq.send(gameObject.game);
+                            command.status = Status.SUCCEEDED;
+                        } catch (Exception ex) {
+                            DSLogger.reportError("Unable to send chat message!", ex);
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        }
                     }
                 }
-                // TODO Multiplayer
-                // All clients receive chat
                 break;
             case CONNECT:
                 if (command.mode == Command.Mode.SET) {
@@ -738,6 +755,8 @@ public class Command implements Callable<Object> {
             case DISCONNECT:
                 if (command.mode == Command.Mode.SET) {
                     gameObject.game.disconnectFromServer();
+                    gameObject.clearEverything();
+
                     command.status = Status.SUCCEEDED;
                 }
                 break;
@@ -817,6 +836,18 @@ public class Command implements Callable<Object> {
                     command.status = Status.SUCCEEDED;
                 }
                 break;
+            case KICK_PLAYER:
+                if (command.mode == Command.Mode.SET) {
+                    final List<ClientInfo> clientInfo = Arrays.asList(gameObject.gameServer.getClientInfo());
+                    final List<String> guids = gameObject.levelContainer.levelActors.otherPlayers.stream().map(
+                            (Critter t) -> t.uniqueId).filter(x -> command.args.contains(x)).collect((Collectors.toList()));
+                    clientInfo.forEach(ci -> {
+                        if (guids.contains(ci.uniqueId)) {
+                            GameServer.kickPlayer(gameObject.gameServer, ci.hostName);
+                        }
+                    });
+                    command.status = Status.SUCCEEDED;
+                }
             case NOP:
             default:
                 break;
@@ -863,7 +894,7 @@ public class Command implements Callable<Object> {
                 || this.target == Target.MOUSE_SENSITIVITY || this.target == Target.MUSIC_VOLUME || this.target == Target.SOUND_VOLUME || this.target == Target.EXIT || this.target == Target.POSITION || this.target == Target.SIZEOF || this.target == Target.CACHE || this.target == Target.CLEAR
                 || this.target == Target.PRINT || this.target == Target.SAY || this.target == Target.PING
                 || this.target == Target.CONNECT || this.target == Target.DISCONNECT
-                || this.target == Target.START_SERVER || this.target == Target.STOP_SERVER;
+                || this.target == Target.START_SERVER || this.target == Target.STOP_SERVER || this.target == Target.KICK_PLAYER;
     }
 
     // game commands
@@ -872,7 +903,7 @@ public class Command implements Callable<Object> {
                 || command.target == Target.MOUSE_SENSITIVITY || command.target == Target.MUSIC_VOLUME || command.target == Target.SOUND_VOLUME || command.target == Target.EXIT || command.target == Target.POSITION || command.target == Target.SIZEOF || command.target == Target.SIZEOF || command.target == Target.CACHE || command.target == Target.CLEAR
                 || command.target == Target.PRINT || command.target == Target.SAY || command.target == Target.PING
                 || command.target == Target.CONNECT || command.target == Target.DISCONNECT
-                || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER;
+                || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER;
     }
 
     // renderer commands need OpenGL whilst other doesn't

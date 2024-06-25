@@ -96,6 +96,11 @@ public class GameServer implements DSMachine, Runnable {
     public final IList<String> blacklist = new GapList<>();
 
     /**
+     * Kick list hosts with number of attempts
+     */
+    public final IList<String> kicklist = new GapList<>();
+
+    /**
      * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
@@ -133,14 +138,17 @@ public class GameServer implements DSMachine, Runnable {
                 GapList<String> clientKeys = new GapList<>(timeToLiveMap.keySet());
                 clientKeys.forEach((String key) -> {
                     timeToLiveMap.compute(key, (String t, Integer u) -> {
-                        if (u == null || u <= 1) {
+                        if (u == null || u <= 1 || kicklist.contains(key)) {
                             GameServer.this.clients.remove(key);
                             String uniqueId = GameServer.this.whoIsMap.remove(key);
                             GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
                             if (uniqueId != null) {
-                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, u <= 1);
                                 whoIsMap.remove(key);
                             }
+
+                            kicklist.remove(key);
+
                             return null; // Remove the key from timeToLiveMap
                         } else {
                             return u - 1; // Decrement TTL
@@ -304,6 +312,12 @@ public class GameServer implements DSMachine, Runnable {
             result[index++] = ci;
         }
         return result;
+    }
+
+    public static void kickPlayer(GameServer gameServer, String clientHostName) {
+        if (gameServer.clients.contains(clientHostName) && !gameServer.kicklist.contains(clientHostName)) {
+            gameServer.kicklist.add(clientHostName);
+        }
     }
 
     public String getWorldName() {

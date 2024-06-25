@@ -27,6 +27,8 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.joml.Random;
 import org.joml.Vector3f;
@@ -125,7 +127,7 @@ public class LevelContainer implements GravityEnviroment {
 
     public final byte[] bak_buffer = new byte[0x1000000]; // 16 MB BAK Buffer
     public int bak_pos = 0;
-    
+
     public static final float BASE = 22.5f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
@@ -358,7 +360,7 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public boolean generateSinglePlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+    public boolean generateSinglePlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) throws Exception {
         if (working) {
             return false;
         }
@@ -402,7 +404,7 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public boolean generateMultiPlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+    public boolean generateMultiPlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) throws Exception {
         if (working) {
             return false;
         }
@@ -448,8 +450,10 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Set player position. Spawn him/her.
+     *
+     * @throws java.lang.Exception if spawn fails
      */
-    public void spawnPlayer() {
+    public void spawnPlayer() throws Exception {
         // Manually turn off gravity so it doesn't affect player during spawn
         fallVelocity = 0.0f;
         jumpVelocity = 0.0f;
@@ -506,7 +510,7 @@ public class LevelContainer implements GravityEnviroment {
             player.dropY(0.0f); // some work-around
         } else {
             // Handle case where no valid spawn location was found (optional)
-            throw new IllegalStateException("Failed to spawn player in a valid location.");
+            throw new Exception("Failed to spawn player in a valid location.");
         }
     }
 
@@ -1558,7 +1562,11 @@ public class LevelContainer implements GravityEnviroment {
             levelActors.player.dropY(deltaHeight);
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             if (fallVelocity == TERMINAL_VELOCITY) {
-                spawnPlayer(); // Respawn player if terminal velocity is reached
+                try {
+                    spawnPlayer(); // Respawn player if terminal velocity is reached
+                } catch (Exception ex) {
+                    DSLogger.reportError("Unable to spawn player after the fall!", ex);
+                }
             }
         }
 

@@ -77,7 +77,7 @@ public class Request implements RequestIfc {
     }
 
     /**
-     * Server side. Receiving request(s).
+     * Client side. Receiving request(s).
      *
      * @param requestType request type (enum)
      * @param dataType data type associated with this request
