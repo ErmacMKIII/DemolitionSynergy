@@ -64,7 +64,7 @@ public class HardwareUtils {
      *
      * @return hardware-based UUID
      */
-    public static UUID generateHardwareUUID() {
+    public static String generateHardwareUUID() {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             md.update(getHardwareInfo().getBytes());
@@ -77,7 +77,7 @@ public class HardwareUtils {
             for (int i = 8; i < 16; i++) {
                 leastSignificantBits = (leastSignificantBits << 8) | (hash[i] & 0xff);
             }
-            return new UUID(mostSignificantBits, leastSignificantBits);
+            return new UUID(mostSignificantBits, leastSignificantBits).toString().substring(20, 36);
         } catch (NoSuchAlgorithmException | SocketException ex) {
             DSLogger.reportFatalError("Could not generate hardware Unique ID!", ex);
             DSLogger.reportFatalError(ex.getMessage(), ex);

@@ -139,6 +139,13 @@ public class GameServerProcessor {
         final InetAddress clientAddress = request.getClientAddress();
         final int clientPort = request.getClientPort();
         String clientHostName = clientAddress.getHostName();
+        if (gameServer.kicklist.contains(clientHostName)) {
+            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, INT, 1);
+            response.send(gameServer, clientAddress, clientPort);
+
+            return new Result(Status.OK, clientHostName);
+        }
+
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
             return new Result(Status.INTERNAL_ERROR, request.getClientAddress().getHostName());

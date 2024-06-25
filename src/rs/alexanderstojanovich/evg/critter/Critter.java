@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
@@ -63,7 +64,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
-        this.uniqueId = UUID.randomUUID().toString();
+        this.uniqueId = HardwareUtils.generateHardwareUUID();
     }
 
     /**
@@ -76,7 +77,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public Critter(Vector3f pos, Model body) {
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
-        this.uniqueId = UUID.randomUUID().toString();
+        this.uniqueId = HardwareUtils.generateHardwareUUID();
     }
 
     /**

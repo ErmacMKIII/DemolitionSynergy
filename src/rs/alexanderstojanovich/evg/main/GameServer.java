@@ -19,24 +19,16 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
-import rs.alexanderstojanovich.evg.net.DSObject;
-import rs.alexanderstojanovich.evg.net.Request;
-import rs.alexanderstojanovich.evg.net.RequestIfc;
-import rs.alexanderstojanovich.evg.net.Response;
-import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -104,6 +96,11 @@ public class GameServer implements DSMachine, Runnable {
     public final IList<String> blacklist = new GapList<>();
 
     /**
+     * Kick list hosts with number of attempts
+     */
+    public final IList<String> kicklist = new GapList<>();
+
+    /**
      * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
@@ -141,14 +138,17 @@ public class GameServer implements DSMachine, Runnable {
                 GapList<String> clientKeys = new GapList<>(timeToLiveMap.keySet());
                 clientKeys.forEach((String key) -> {
                     timeToLiveMap.compute(key, (String t, Integer u) -> {
-                        if (u == null || u <= 1) {
+                        if (u == null || u <= 1 || kicklist.contains(key)) {
                             GameServer.this.clients.remove(key);
                             String uniqueId = GameServer.this.whoIsMap.remove(key);
                             GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
                             if (uniqueId != null) {
-                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, true);
+                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, u <= 1);
                                 whoIsMap.remove(key);
                             }
+
+                            kicklist.remove(key);
+
                             return null; // Remove the key from timeToLiveMap
                         } else {
                             return u - 1; // Decrement TTL
@@ -314,15 +314,9 @@ public class GameServer implements DSMachine, Runnable {
         return result;
     }
 
-    public void kickPlayer(String client) {
-        try {
-            ResponseIfc resp = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, 1);
-            resp.send(this, InetAddress.getByName(client), port);
-        } catch (UnknownHostException ex) {
-            DSLogger.reportError("Kick player -> unknown IP address", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
-        } catch (Exception ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
+    public static void kickPlayer(GameServer gameServer, String clientHostName) {
+        if (gameServer.clients.contains(clientHostName) && !gameServer.kicklist.contains(clientHostName)) {
+            gameServer.kicklist.add(clientHostName);
         }
     }
 

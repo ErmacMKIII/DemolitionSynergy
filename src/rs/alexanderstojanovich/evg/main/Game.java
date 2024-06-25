@@ -23,7 +23,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -844,6 +843,7 @@ public class Game implements DSMachine {
                     DSLogger.reportInfo("You got kicked from the server!", null);
                     this.gameObject.intrface.getConsole().write("You got kicked from the server!");
                     disconnectFromServer();
+                    gameObject.clearEverything();
                 }
             }
             long tripTime = Math.round(endTime - beginTime) * 1000L;
@@ -1172,6 +1172,8 @@ public class Game implements DSMachine {
 
                 if (totalIndices == 0) {
                     disconnectFromServer();
+                    gameObject.clearEverything();
+
                     return DownloadStatus.WARNING;
                 }
 
@@ -1261,6 +1263,8 @@ public class Game implements DSMachine {
 
                     gameObject.levelContainer.levelActors.player.setRegistered(false);
 
+                    connected = false;
+
                     return response; // need "return this again"
                 });
             } catch (IOException ex) {
@@ -1269,8 +1273,6 @@ public class Game implements DSMachine {
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
-            } finally {
-                connected = false;
             }
         }
     }
