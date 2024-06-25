@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -997,6 +1000,8 @@ public class Game implements DSMachine {
 
         GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
 
+        gameObject.intrface.getMainMenu().open();
+
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
@@ -1043,13 +1048,12 @@ public class Game implements DSMachine {
      * Connect to server (host). Multiplayer. Requires acceptance test to be
      * passed. According to protocol.
      *
-     * @return endpoint if connection succeeds and acceptance test is passed
+     * @throws java.lang.Exception if already connected to game server
      */
-    public boolean connectToServer() {
+    public void connectToServer() throws Exception {
         if (isConnected()) {
-            return false;
+            throw new Exception("Error - you are already connect to Game Server!");
         }
-        boolean okey = false;
         try {
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
             this.serverInetAddr = InetAddress.getByName(serverHostName);
@@ -1062,15 +1066,22 @@ public class Game implements DSMachine {
             helloRequest.send(this);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc response = ResponseIfc.receive(this);
-            if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authenticated
-                this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
-                this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
-                DSLogger.reportInfo("Connected to server!", null);
-                okey = connected = true;
-            }
-            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-            gameObject.intrface.getConsole().write(response.getData().toString());
+            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc response) -> {
+                if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                    try {
+                        // Authenticated
+                        this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
+                        this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
+                        DSLogger.reportInfo("Connected to server!", null);
+                        connected = true;
+                    } catch (SocketException ex) {
+                        DSLogger.reportError("Unable to connect to server!", ex);
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                }
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                gameObject.intrface.getConsole().write(response.getData().toString());
+            });
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -1078,8 +1089,6 @@ public class Game implements DSMachine {
             DSLogger.reportError("Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
-
-        return okey;
     }
 
     /**
