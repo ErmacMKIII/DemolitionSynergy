@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
@@ -728,30 +729,30 @@ public class Command implements Callable<Object> {
                             gameObject.game.setPort(port);
                         }
 
-                        GameObject.TASK_EXECUTOR.execute(() -> {
-                            gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
-                            double beginTime = GLFW.glfwGetTime();
-                            boolean okey = gameObject.game.connectToServer();
-                            double endTime = GLFW.glfwGetTime();
-                            if (okey) {
-                                try {
-                                    gameObject.intrface.getConsole().write("Connected to server!");
-                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                        Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
-                                        gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
-                                        command.status = Status.SUCCEEDED;
-                                    }
-                                } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
-                                    DSLogger.reportError(ex.getMessage(), ex);
+                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
+                        CompletableFuture.supplyAsync(() -> {
+                            try {
+                                double beginTime = GLFW.glfwGetTime();
+                                gameObject.game.connectToServer();
+                                double endTime = GLFW.glfwGetTime();
+                                gameObject.intrface.getConsole().write("Connected to server!");
+                                long tripTime = Math.round(endTime - beginTime) * 1000L;
+                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                    Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
+                                    gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
                                 }
-                            } else {
-                                gameObject.intrface.getConsole().write("Unable to connect to server!", true);
+                            } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
+                                DSLogger.reportError(ex.getMessage(), ex);
+                            } catch (Exception ex) {
+                                DSLogger.reportError(ex.getMessage(), ex);
                             }
+
+                            return null;
                         });
                     }
                 }
+                break;
             case DISCONNECT:
                 if (command.mode == Command.Mode.SET) {
                     gameObject.game.disconnectFromServer();

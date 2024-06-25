@@ -202,18 +202,13 @@ public class Console {
         glfwScrollCallback = new GLFWScrollCallback() {
             @Override
             public void invoke(long window, double xoffset, double yoffset) {
-//                float xposGL = (float) (xoffset /onsole.this.intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
-//                float yOffsetGl = (float) (0.5f - yoffset / Console.this.intrface.gameObject.WINDOW.getHeight()) * 2.0f;
-//                DSLogger.reportInfo(""+yoffset, null);
-                if (yoffset > 0.0f && history.getLast().cmdText.pos.y < 1.0f
-                        || yoffset < 0.0f && history.getFirst().cmdText.pos.y > -1.0f) {
-                    // shift them
-                    history.forEach(hi -> {
-                        hi.cmdText.pos.y += (float) yoffset * 0.25f;
-                        hi.cmdText.enabled = (hi.cmdText.pos.y >= hi.cmdText.getRelativeCharHeight(intrface));
-                        hi.quad.pos.y = hi.cmdText.pos.y;
-                        hi.quad.enabled = hi.cmdText.enabled;
-                    });
+                float scrollAmount = (float) yoffset * 0.1f; // Adjust scroll speed here
+
+                for (HistoryItem hi : history) {
+                    hi.cmdText.pos.y += scrollAmount;
+                    hi.cmdText.enabled = (hi.cmdText.pos.y >= -1.0f && hi.cmdText.pos.y <= 1.0f);
+                    hi.quad.pos.y = hi.cmdText.pos.y;
+                    hi.quad.enabled = hi.cmdText.enabled;
                 }
             }
         };

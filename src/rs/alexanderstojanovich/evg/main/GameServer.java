@@ -53,6 +53,9 @@ public class GameServer implements DSMachine, Runnable {
     protected static final int MAX_CLIENTS = 16;
 
     protected DatagramSocket endpoint;
+    /**
+     * Client list with IPs (or hostnames)
+     */
     public final IList<String> clients = new GapList<>();
     protected final GameObject gameObject;
 
@@ -250,13 +253,13 @@ public class GameServer implements DSMachine, Runnable {
                 final String msg;
                 switch (procResult.status) {
                     case INTERNAL_ERROR:
-                        msg = String.format("Server %s error!", procResult.client);
+                        msg = String.format("Server %s %s error!", procResult.client, procResult.message);
                         DSLogger.reportError(msg, null);
                         gameObject.intrface.getConsole().write(msg, true);
                         break;
                     case CLIENT_ERROR:
                         assertTstFailure(procResult.client);
-                        msg = String.format("Client %s error!", procResult.client);
+                        msg = String.format("Client %s %s error!", procResult.client, procResult.message);
                         DSLogger.reportError(msg, null);
                         gameObject.intrface.getConsole().write(msg, true);
                         if (blacklist.contains(procResult.client)) {
@@ -267,9 +270,9 @@ public class GameServer implements DSMachine, Runnable {
                     default:
                     case OK:
                         timeToLiveMap.replace(procResult.client, GameServer.TIME_TO_LIVE);
-//                        msg = String.format("OK (%s)", procResult.client);
-//                        DSLogger.reportInfo(msg, null);
-//                        gameObject.intrface.getConsole().write(msg, false);
+                        msg = String.format("OK %s %s", procResult.client, procResult.message);
+                        DSLogger.reportInfo(msg, null);
+                        gameObject.intrface.getConsole().write(msg, false);
                         break;
                 }
             } catch (Exception ex) {

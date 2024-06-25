@@ -68,14 +68,16 @@ public class GameServerProcessor {
      */
     public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
 
-//    /**
-//     * Internal Mutex object
-//     */
-//    public static final Object InternMutex = new Object();
-//    /**
-//     * Is waiting confirm
-//     */
-//    public static volatile boolean waitOnDownload = false;
+    /**
+     * Last checksum to avoid (duping)
+     */
+    protected static long lastChecksum = 0L;
+
+    /**
+     * Last time request was sent
+     */
+    protected static long lastTime = System.nanoTime();
+
     /**
      * Assert that failure has happen and client timed out or is about to be
      * rejected. In other words client will fail the test.
@@ -121,34 +123,39 @@ public class GameServerProcessor {
     public static GameServerProcessor.Result process(GameServer gameServer, DatagramSocket endpoint) throws Exception {
         // Handle endpoint request and response
         final RequestIfc request;
-        //        if (waitOnDownload) { // no requests will be taken into consideration 
-//            // when processing download request
-//            synchronized (GameServerProcessor.InternMutex) {
-//                GameServerProcessor.InternMutex.wait();
-//                request = null;
-//            }
-//        } else {
+
         request = RequestIfc.receive(gameServer);
-//        }
 
         if (request == null || request.getClientAddress() == null) {
             // avoid processing invalid requests requests
-            return new Result(Status.INTERNAL_ERROR, null);
+            return new Result(Status.INTERNAL_ERROR, "Invalid request - Is null or client address is null", null);
         }
 
         final InetAddress clientAddress = request.getClientAddress();
         final int clientPort = request.getClientPort();
         String clientHostName = clientAddress.getHostName();
+
+        // defence against duping packets (possibility bridged connections)
+        long currTime = System.nanoTime();
+        double deltaTime = (lastTime - currTime) / 1E9D;
+        if (request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 2.0) {
+            // avoid processing duplicate packages
+            return new Result(Status.CLIENT_ERROR, clientHostName, "Sent duplicate packet - rejecting");
+        }
+        lastChecksum = request.getChecksum();
+        lastTime = currTime;
+
+        // pending kick
         if (gameServer.kicklist.contains(clientHostName)) {
             ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, INT, 1);
             response.send(gameServer, clientAddress, clientPort);
 
-            return new Result(Status.OK, clientHostName);
+            return new Result(Status.OK, clientHostName, "OK => kick issued to the client!");
         }
 
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
-            return new Result(Status.INTERNAL_ERROR, request.getClientAddress().getHostName());
+            return new Result(Status.INTERNAL_ERROR, clientHostName, "Invalid request - Reason Unknown!");
         }
 
         // Handle null data type (Possible & always erroneous)
@@ -156,17 +163,19 @@ public class GameServerProcessor {
             Response response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
             response.send(gameServer, clientAddress, clientPort);
 
-            return new Result(Status.INTERNAL_ERROR, clientHostName);
+            return new Result(Status.INTERNAL_ERROR, clientHostName, "Bad Request - Bad data type!");
         }
 
-        if (!gameServer.clients.contains(clientHostName) && request.getRequestType() != RequestIfc.RequestType.HELLO) {
+        if (!gameServer.clients.contains(clientHostName) && request.getRequestType() != RequestIfc.RequestType.HELLO && request.getRequestType() != RequestIfc.RequestType.GOODBYE) {
             GameServerProcessor.assertTstFailure(gameServer, clientHostName);
-            return new Result(Status.CLIENT_ERROR, clientHostName);
+
+            return new Result(Status.CLIENT_ERROR, clientHostName, "Client issued invalid request type (HELLO, GOODBYE)");
         }
 
         if (gameServer.blacklist.contains(clientHostName) || gameServer.clients.size() >= MAX_CLIENTS) {
             GameServerProcessor.assertTstFailure(gameServer, clientHostName);
-            return new Result(Status.CLIENT_ERROR, clientHostName);
+
+            return new Result(Status.CLIENT_ERROR, clientHostName, "Client is banned");
         }
 
         final ResponseIfc response;
@@ -367,7 +376,7 @@ public class GameServerProcessor {
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
                     response.send(gameServer, clientAddress, clientPort);
-                    return new Result(Status.CLIENT_ERROR, clientHostName);
+                    return new Result(Status.CLIENT_ERROR, clientHostName, "Invalid fragment number!");
                 }
 
                 int fragmentStart = n * BUFF_SIZE;
@@ -412,7 +421,7 @@ public class GameServerProcessor {
                 break;
         }
 
-        return new Result(Status.OK, clientHostName);
+        return new Result(Status.OK, clientHostName, String.format("%s data= %s", request.getRequestType().name(), String.valueOf(request.getData())));
     }
 
     /**
@@ -430,14 +439,21 @@ public class GameServerProcessor {
         public final String client;
 
         /**
+         * Explanation of what happened
+         */
+        public final String message;
+
+        /**
          * Result of the processing
          *
          * @param status Status of the processing result
          * @param client Client who was processed
+         * @param message message explanation
          */
-        public Result(Status status, String client) {
+        public Result(Status status, String client, String message) {
             this.status = status;
             this.client = client;
+            this.message = message;
         }
 
         /**
@@ -457,6 +473,15 @@ public class GameServerProcessor {
          */
         public String getClient() {
             return client;
+        }
+
+        /**
+         * Get Message of this result of processing
+         *
+         * @return string message
+         */
+        public String getMessage() {
+            return message;
         }
 
     }
