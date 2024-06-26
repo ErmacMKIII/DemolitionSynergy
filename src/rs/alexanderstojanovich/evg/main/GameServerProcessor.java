@@ -106,7 +106,7 @@ public class GameServerProcessor {
         // defence against duping packets (possibility bridged connections)
         long currTime = System.nanoTime();
         double deltaTime = (currTime - lastTime) / 1E9D;
-        if (request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 16.0) {
+        if (request.getRequestType() != GET_POS && request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 16.0) {
             // avoid processing duplicate packages
             return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Sent duplicate packet - rejecting");
         }
@@ -114,10 +114,13 @@ public class GameServerProcessor {
         lastTime = currTime;
 
         // pending kick
-        if (gameServer.kicklist.contains(clientHostName)) {
-            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, INT, 1);
+        if (gameServer.kicklist.contains(clientGuid)) {
+            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, clientGuid);
             response.send(gameServer, clientAddress, clientPort);
 
+            gameServer.kicklist.remove(clientGuid);
+            gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
+            
             return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
         }
 
@@ -220,6 +223,7 @@ public class GameServerProcessor {
                 gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
                 gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 if (clientGuid != null) {
+                    gameServer.kicklist.remove(clientGuid);
                     GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }
                 break;

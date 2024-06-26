@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,9 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
+import rs.alexanderstojanovich.evg.net.DSObject;
+import rs.alexanderstojanovich.evg.net.Response;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -127,18 +131,9 @@ public class GameServer implements DSMachine, Runnable {
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                // hosts to remove (init empty)
-                final GapList<String> host2Rem = new GapList<>();
-
                 // iterate through clients and check banlis & kicklist and time-to-live
-                clients.forEach(((ClientInfo client) -> {
-                    if (blacklist.contains(client.hostName) || kicklist.contains(client.uniqueId) || --client.timeToLive <= 0) {
-                        host2Rem.add(client.hostName);
-                        GameServer.performCleanUp(GameServer.this.gameObject, client.uniqueId, client.timeToLive <= 0);
-                    }
-                }));
-
-                clients.removeIf(cli -> host2Rem.contains(cli.hostName));
+                clients.forEach((ClientInfo client) -> client.timeToLive--);                  
+                clients.removeIf(cli -> cli.timeToLive <= 0);
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
             }
@@ -186,7 +181,7 @@ public class GameServer implements DSMachine, Runnable {
         ClientInfo filtered = clients.getIf(client -> client.hostName.equals(failedHostName) && client.uniqueId.equals(failedGuid));
 
         // Blacklisting (equals ban)
-        if (++filtered.failedAttempts >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
+        if (filtered != null && ++filtered.failedAttempts >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
             blacklist.add(failedHostName);
             gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
             DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);

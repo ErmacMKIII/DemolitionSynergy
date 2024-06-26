@@ -92,6 +92,8 @@ public class Intrface {
     private final Console console;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
 
+    private DynamicText guideText;
+
     /**
      * Init interface with all GL components: text, dialogs & menus.
      *
@@ -147,6 +149,10 @@ public class Intrface {
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
             gameTimeText.alignToNextChar(this);
 
+            guideText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.5f, 0.0f));
+            guideText.setAlignment(Text.ALIGNMENT_CENTER);
+            guideText.alignToNextChar(this);
+
             crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
             crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
             IList<MenuItem> mainMenuItems = new GapList<>();
@@ -162,6 +168,12 @@ public class Intrface {
                     viewText.setEnabled(true);
                     posText.setEnabled(true);
                     chunkText.setEnabled(true);
+                    if (Game.getCurrentMode() == Mode.FREE) {
+                        guideText.setContent("Press 'ESC' to open Main Menu\nor press '~' to open Console");
+                        guideText.setEnabled(true);
+                    } else {
+                        guideText.setEnabled(false);
+                    }
                 }
 
                 @Override
@@ -829,18 +841,19 @@ public class Intrface {
                             gameObject.game.setPort(Integer.parseInt(this.items.get(1).menuValue.getCurrentValue().toString()));
                             break;
                         case "PLAY":
-                            console.write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
+//                            console.write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
                             CompletableFuture.supplyAsync(() -> {
                                 try {
                                     double beginTime = GLFW.glfwGetTime();
-                                    gameObject.game.connectToServer();
-                                    double endTime = GLFW.glfwGetTime();
-                                    console.write("Connected to server!");
-                                    long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                        Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
-                                        gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                    if (gameObject.game.connectToServer()) {
+                                        console.write("Connected to server!");
+                                        double endTime = GLFW.glfwGetTime();
+                                        long tripTime = Math.round((endTime - beginTime) * 1000.0);
+                                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                        if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                            Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
+                                            gameMenu.getTitle().setContent("MUTLIPLAYER");
+                                        }
                                     }
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
@@ -907,6 +920,11 @@ public class Intrface {
         singlePlayerDialog.render(this, ifcShaderProgram);
         multiPlayerDialog.render(this, ifcShaderProgram);
 
+        if (!guideText.isBuffered()) {
+            guideText.bufferSmart(this);
+        }
+        guideText.render(this, ifcContShaderProgram);
+
         if (!updText.isBuffered()) {
             updText.bufferSmart(this);
         }
@@ -969,10 +987,12 @@ public class Intrface {
         if (!mainMenu.isEnabled() && !gameMenu.isEnabled() && !loadLvlMenu.isEnabled() && !optionsMenu.isEnabled() && !editorMenu.isEnabled()
                 && !creditsMenu.isEnabled() && !randLvlMenu.isEnabled() && !showHelp && !creditsMenu.isEnabled() && !singlPlayerMenu.isEnabled()
                 && !multiPlayerMenu.isEnabled() && !multiPlayerHostMenu.isEnabled() && !multiPlayerJoinMenu.isEnabled()) {
-            if (!crosshair.isBuffered()) {
-                crosshair.bufferAll(this);
+            if (Game.getCurrentMode() != Game.Mode.FREE) {
+                if (!crosshair.isBuffered()) {
+                    crosshair.bufferAll(this);
+                }
+                crosshair.render(this, ifcShaderProgram);
             }
-            crosshair.render(this, ifcShaderProgram);
         }
         console.render(this, ifcShaderProgram, ifcContShaderProgram);
     }
@@ -1190,6 +1210,14 @@ public class Intrface {
 
     public OptionsMenu getMultiPlayerMenu() {
         return multiPlayerMenu;
+    }
+
+    public GameObject getGameObject() {
+        return gameObject;
+    }
+
+    public DynamicText getGuideText() {
+        return guideText;
     }
 
 }
