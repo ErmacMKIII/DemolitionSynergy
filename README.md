@@ -26,6 +26,7 @@ Unique features:
 - Tweaked and unique renderer. Instanced rendering.
 - Highly modular and support visual & GLSL modifications.
 - Editor, Single player & Multiplayer as different modes.
+- Player Guid oriented protocol where Guid is based on hardware properties.
 
 ![Alt text](/misc/DSynergy1.png?raw=true "Light trough air")
 ![Alt text](/misc/DSynergy2.png?raw=true "Random Level Medium underwater")

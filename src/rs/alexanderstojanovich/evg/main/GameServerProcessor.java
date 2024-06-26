@@ -106,7 +106,7 @@ public class GameServerProcessor {
         // defence against duping packets (possibility bridged connections)
         long currTime = System.nanoTime();
         double deltaTime = (currTime - lastTime) / 1E9D;
-        if (request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 2.0) {
+        if (request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 16.0) {
             // avoid processing duplicate packages
             return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Sent duplicate packet - rejecting");
         }
