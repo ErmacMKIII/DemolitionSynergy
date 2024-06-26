@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import static rs.alexanderstojanovich.evg.main.GameServer.MAX_CLIENTS;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
@@ -51,7 +52,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServerProcessor {
 
-    public static final int BUFF_SIZE = 8192; // write bytes (chunk) buffer size
+    public static final int BUFF_SIZE = 8192; // append bytes (chunk) buffer size
 
     public static final int FAIL_ATTEMPT_MAX = 10;
     public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
@@ -79,40 +80,6 @@ public class GameServerProcessor {
     protected static long lastTime = System.nanoTime();
 
     /**
-     * Assert that failure has happen and client timed out or is about to be
-     * rejected. In other words client will fail the test.
-     *
-     * @param gameServer game server
-     * @param failedHostName client who is submit to test
-     */
-    public static void assertTstFailure(GameServer gameServer, String failedHostName) {
-        TotalFailedAttempts++;
-        boolean contains = gameServer.failedAttempts.containsKey(failedHostName);
-        if (!contains) {
-            gameServer.failedAttempts.put(failedHostName, 1);
-        } else {
-            Integer failAttemptNum = gameServer.failedAttempts.get(failedHostName);
-            failAttemptNum++;
-
-            // Blacklisting (equals ban)
-            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !gameServer.blacklist.contains(failedHostName)) {
-                gameServer.blacklist.add(failedHostName);
-                gameServer.gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
-                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
-            }
-
-            // Too much failed attempts, endpoint is vulnerable .. try to shut down
-            if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameServer.gameObject.intrface.getConsole().write(String.format("Game Server (%s) status critical! Trying to shut down!", failedHostName));
-                DSLogger.reportWarning(String.format("Game Server (%s) status critical! Trying to shut down!", failedHostName), null);
-                gameServer.stopServer();
-            }
-
-            gameServer.failedAttempts.replace(failedHostName, failAttemptNum);
-        }
-    }
-
-    /**
      * Process request from clients and send response.
      *
      * @param endpoint The endpoint socket to handle.
@@ -128,19 +95,20 @@ public class GameServerProcessor {
 
         if (request == null || request.getClientAddress() == null) {
             // avoid processing invalid requests requests
-            return new Result(Status.INTERNAL_ERROR, "Invalid request - Is null or client address is null", null);
+            return new Result(Status.INTERNAL_ERROR, null, null, "Invalid request - Is null or client address is null");
         }
 
+        String clientGuid = request.getGuid();
         final InetAddress clientAddress = request.getClientAddress();
         final int clientPort = request.getClientPort();
         String clientHostName = clientAddress.getHostName();
 
         // defence against duping packets (possibility bridged connections)
         long currTime = System.nanoTime();
-        double deltaTime = (lastTime - currTime) / 1E9D;
+        double deltaTime = (currTime - lastTime) / 1E9D;
         if (request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 2.0) {
             // avoid processing duplicate packages
-            return new Result(Status.CLIENT_ERROR, clientHostName, "Sent duplicate packet - rejecting");
+            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Sent duplicate packet - rejecting");
         }
         lastChecksum = request.getChecksum();
         lastTime = currTime;
@@ -150,12 +118,12 @@ public class GameServerProcessor {
             ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, INT, 1);
             response.send(gameServer, clientAddress, clientPort);
 
-            return new Result(Status.OK, clientHostName, "OK => kick issued to the client!");
+            return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
         }
 
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
-            return new Result(Status.INTERNAL_ERROR, clientHostName, "Invalid request - Reason Unknown!");
+            return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Invalid request - Reason Unknown!");
         }
 
         // Handle null data type (Possible & always erroneous)
@@ -163,19 +131,19 @@ public class GameServerProcessor {
             Response response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
             response.send(gameServer, clientAddress, clientPort);
 
-            return new Result(Status.INTERNAL_ERROR, clientHostName, "Bad Request - Bad data type!");
+            return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Bad Request - Bad data type!");
         }
 
-        if (!gameServer.clients.contains(clientHostName) && request.getRequestType() != RequestIfc.RequestType.HELLO && request.getRequestType() != RequestIfc.RequestType.GOODBYE) {
-            GameServerProcessor.assertTstFailure(gameServer, clientHostName);
+        if (!gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid)) && request.getRequestType() != RequestIfc.RequestType.HELLO && request.getRequestType() != RequestIfc.RequestType.GOODBYE) {
+            gameServer.assertTstFailure(clientHostName, clientGuid);
 
-            return new Result(Status.CLIENT_ERROR, clientHostName, "Client issued invalid request type (HELLO, GOODBYE)");
+            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client issued invalid request type (HELLO, GOODBYE)");
         }
 
         if (gameServer.blacklist.contains(clientHostName) || gameServer.clients.size() >= MAX_CLIENTS) {
-            GameServerProcessor.assertTstFailure(gameServer, clientHostName);
+            gameServer.assertTstFailure(clientHostName, clientGuid);
 
-            return new Result(Status.CLIENT_ERROR, clientHostName, "Client is banned");
+            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client is banned");
         }
 
         final ResponseIfc response;
@@ -186,16 +154,15 @@ public class GameServerProcessor {
         double gameTime;
         switch (request.getRequestType()) {
             case HELLO:
-                if (gameServer.clients.contains(clientHostName)) {
+                if (gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid))) {
                     msg = String.format("Bad Request - You are alerady connected to %s, v%s!", gameServer.worldName, gameServer.version);
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                 } else {
                     // Send a simple message with magic bytes prepended
-                    msg = String.format("Hello, you are connected to %s, v%s, for help write \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
+                    msg = String.format("Hello, you are connected to %s, v%s, for help append \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                    gameServer.clients.add(clientHostName);
-                    gameServer.timeToLiveMap.putIfAbsent(clientHostName, GameServer.TIME_TO_LIVE);
-                    gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (1 + gameServer.clients.size()));
+                    gameServer.clients.add(new ClientInfo(clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
+                    gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 }
                 response.send(gameServer, clientAddress, clientPort);
                 break;
@@ -204,8 +171,7 @@ public class GameServerProcessor {
                     case STRING: {
                         String newPlayerUniqueId = request.getData().toString();
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
-                        if (!levelActors.player.uniqueId.equals(newPlayerUniqueId)
-                                && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
+                        if ((levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
                             levelActors.otherPlayers.add(new Critter(newPlayerUniqueId, new Model(gameServer.gameObject.GameAssets.PLAYER_BODY_DEFAULT)));
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
@@ -213,7 +179,6 @@ public class GameServerProcessor {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s has connected.", newPlayerUniqueId));
                             DSLogger.reportInfo(String.format("Player %s has connected.", newPlayerUniqueId), null);
 
-                            gameServer.whoIsMap.put(clientHostName, newPlayerUniqueId);
                         } else {
                             msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
                             response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
@@ -224,8 +189,7 @@ public class GameServerProcessor {
                         String jsonStr = request.getData().toString();
                         PlayerInfo info = PlayerInfo.fromJson(jsonStr);
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
-                        if (!levelActors.player.uniqueId.equals(info.uniqueId)
-                                && (levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId)) == null)) {
+                        if ((levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId)) == null)) {
                             Critter critter = new Critter(info.uniqueId, new Model(gameServer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
                             critter.setName(info.name);
                             critter.body.setPrimaryRGBAColor(info.color);
@@ -234,8 +198,6 @@ public class GameServerProcessor {
 
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s (%s) has connected.", info.name, info.uniqueId));
                             DSLogger.reportInfo(String.format("Player %s (%s) has connected.", info.name, info.uniqueId), null);
-
-                            gameServer.whoIsMap.put(clientHostName, info.uniqueId);
 
                             msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
                             response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
@@ -255,14 +217,10 @@ public class GameServerProcessor {
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(gameServer, clientAddress, clientPort);
-                gameServer.whoIsMap.remove(clientHostName);
-                gameServer.timeToLiveMap.remove(clientHostName);
-                gameServer.clients.remove(clientHostName);
-                gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (1 + gameServer.clients.size()));
-                String uniqueId = gameServer.whoIsMap.get(clientHostName);
-                if (uniqueId != null) {
-                    GameServer.performCleanUp(gameServer.gameObject, uniqueId, false);
-                    gameServer.whoIsMap.remove(clientHostName);
+                gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
+                gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
+                if (clientGuid != null) {
+                    GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }
                 break;
             case GET_TIME:
@@ -376,7 +334,7 @@ public class GameServerProcessor {
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
                     response.send(gameServer, clientAddress, clientPort);
-                    return new Result(Status.CLIENT_ERROR, clientHostName, "Invalid fragment number!");
+                    return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Invalid fragment number!");
                 }
 
                 int fragmentStart = n * BUFF_SIZE;
@@ -404,24 +362,23 @@ public class GameServerProcessor {
                 break;
             case SAY:
                 levelActors = gameServer.gameObject.levelContainer.levelActors;
-                String senderGuid = gameServer.whoIsMap.get(clientHostName);
                 String senderName = "?";
-                if (senderGuid.equals(levelActors.player.uniqueId)) {
+                if (clientGuid.equals(levelActors.player.uniqueId)) {
                     senderName = levelActors.player.getName();
                 } else {
-                    Critter otherPlayerOrNull = levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(senderGuid));
+                    Critter otherPlayerOrNull = levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(clientGuid));
                     if (otherPlayerOrNull != null) {
                         senderName = otherPlayerOrNull.getName();
                     }
                 }
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
-                for (String client : gameServer.clients) {
-                    response.send(gameServer, InetAddress.getByName(client), clientPort);
+                for (ClientInfo recipients : gameServer.clients) {
+                    response.send(gameServer, InetAddress.getByName(recipients.hostName), clientPort);
                 }
                 break;
         }
 
-        return new Result(Status.OK, clientHostName, String.format("%s data= %s", request.getRequestType().name(), String.valueOf(request.getData())));
+        return new Result(Status.OK, clientHostName, clientGuid, String.format("%s data= %s", request.getRequestType().name(), String.valueOf(request.getData())));
     }
 
     /**
@@ -434,9 +391,14 @@ public class GameServerProcessor {
          */
         public final Status status;
         /**
-         * Client who was processed
+         * Client (hostname) who was processed
          */
-        public final String client;
+        public final String hostname;
+
+        /**
+         * Guid who was processed
+         */
+        public final String guid;
 
         /**
          * Explanation of what happened
@@ -447,12 +409,14 @@ public class GameServerProcessor {
          * Result of the processing
          *
          * @param status Status of the processing result
-         * @param client Client who was processed
+         * @param hostname Client who was processed
+         * @param guid Client guid
          * @param message message explanation
          */
-        public Result(Status status, String client, String message) {
+        public Result(Status status, String hostname, String guid, String message) {
             this.status = status;
-            this.client = client;
+            this.hostname = hostname;
+            this.guid = guid;
             this.message = message;
         }
 
@@ -467,12 +431,21 @@ public class GameServerProcessor {
         }
 
         /**
-         * Get Client who was processed
+         * Client hostname
          *
-         * @return client hostname
+         * @return hostname of client
          */
-        public String getClient() {
-            return client;
+        public String getHostname() {
+            return hostname;
+        }
+
+        /**
+         * Client guid
+         *
+         * @return guid of client
+         */
+        public String getGuid() {
+            return guid;
         }
 
         /**

@@ -55,4 +55,11 @@ public interface DSMachine {
      * @return is machine (game client or game server) running
      */
     public boolean isRunning();
+
+    /**
+     * Get guid of this machine (player unique id)
+     *
+     * @return player guid
+     */
+    public String getGuid();
 }
