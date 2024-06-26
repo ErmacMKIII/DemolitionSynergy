@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.regex.Pattern;
 import org.joml.Vector2f;
@@ -842,7 +843,7 @@ public class Intrface {
                             break;
                         case "PLAY":
 //                            console.write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
-                            CompletableFuture.supplyAsync(() -> {
+                            CompletableFuture.runAsync(() -> {
                                 try {
                                     double beginTime = GLFW.glfwGetTime();
                                     if (gameObject.game.connectToServer()) {
@@ -861,7 +862,6 @@ public class Intrface {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
 
-                                return null;
                             });
                             break;
                     }

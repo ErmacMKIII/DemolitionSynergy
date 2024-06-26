@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -29,9 +28,6 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSMachine;
-import rs.alexanderstojanovich.evg.net.DSObject;
-import rs.alexanderstojanovich.evg.net.Response;
-import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -132,7 +128,7 @@ public class GameServer implements DSMachine, Runnable {
             @Override
             public void run() {
                 // iterate through clients and check banlis & kicklist and time-to-live
-                clients.forEach((ClientInfo client) -> client.timeToLive--);                  
+                clients.forEach((ClientInfo client) -> client.timeToLive--);
                 clients.removeIf(cli -> cli.timeToLive <= 0);
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));

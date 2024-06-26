@@ -852,7 +852,7 @@ public class Game implements DSMachine {
                                 gameObject.intrface.getConsole().write(resp.getData().toString());
                                 break;
                         }
-                        
+
                     }
                     long tripTime = Math.round((endTime - beginTime) * 1000.0);
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
@@ -1289,7 +1289,7 @@ public class Game implements DSMachine {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
                     gameObject.intrface.getConsole().write(response.getData().toString());
                     serverEndpoint.close();
-                    DSLogger.reportInfo("Disconnected from server!", null);                    
+                    DSLogger.reportInfo("Disconnected from server!", null);
 
                     return response; // need "return this again"
                 });

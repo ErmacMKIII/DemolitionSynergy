@@ -18,6 +18,9 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -41,6 +44,8 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Console {
+
+    public final ExecutorService commandExecutor = Executors.newFixedThreadPool(4);
 
     private static final Configuration cfg = Configuration.getInstance();
     private final Quad panel;
@@ -159,7 +164,7 @@ public class Console {
                                 } else if (cmd.isGameCommand()) {
                                     CompletableFuture.runAsync(() -> {
                                         Command.execute(intrface.gameObject, cmd);
-                                    });
+                                    }, commandExecutor);
                                     cmd.status = Command.Status.PENDING;
                                 }
                             }
@@ -370,6 +375,8 @@ public class Console {
         this.glfwCharCallback.free();
         this.glfwKeyCallback.free();
         this.glfwScrollCallback.free();
+
+        this.commandExecutor.shutdown();
     }
 
     /*
