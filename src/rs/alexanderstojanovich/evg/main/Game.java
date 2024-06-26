@@ -24,8 +24,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.xml.datatype.DatatypeConstants;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -1512,6 +1511,11 @@ public class Game implements DSMachine {
 
     public IList<Pair<RequestIfc, Double>> getRequests() {
         return requests;
+    }
+
+    @Override
+    public String getGuid() {
+        return gameObject.levelContainer.levelActors.player.uniqueId;
     }
 
 }

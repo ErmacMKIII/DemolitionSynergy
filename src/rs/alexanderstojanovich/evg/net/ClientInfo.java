@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.net;
 
 import com.google.gson.Gson;
+import java.util.Date;
 
 /**
  *
@@ -37,7 +38,17 @@ public class ClientInfo {
     /**
      * Time to live
      */
-    public final int timeToLive;
+    public int timeToLive;
+
+    /**
+     * Date assigned
+     */
+    public final Date dateAssigned = new Date(System.currentTimeMillis());
+
+    /**
+     * Failed hosts with number of attempts
+     */
+    public int failedAttempts = 0;
 
     public ClientInfo(String hostName, String uniqueId, int timeToLive) {
         this.hostName = hostName;
@@ -65,16 +76,41 @@ public class ClientInfo {
         return new Gson().fromJson(json, ClientInfo.class);
     }
 
+    /**
+     * Client hostname (IP or name used to connect)
+     *
+     * @return
+     */
     public String getHostName() {
         return hostName;
     }
 
+    /**
+     * Player unique id (upon registration). Determined by client.
+     *
+     * @return player unique id
+     */
     public String getUniqueId() {
         return uniqueId;
     }
 
+    /**
+     * Time to live in seconds. When reach zero client will removed and/or
+     * kicked.
+     *
+     * @return time to live (seconds).
+     */
     public int getTimeToLive() {
         return timeToLive;
+    }
+
+    /**
+     * Date Assigned
+     *
+     * @return date assigned
+     */
+    public Date getDateAssigned() {
+        return dateAssigned;
     }
 
 }

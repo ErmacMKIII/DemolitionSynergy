@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evg.main;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.LinkedHashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
@@ -38,7 +37,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServer implements DSMachine, Runnable {
 
-    public static final int TIME_TO_LIVE = 60;
+    public static final int TIME_TO_LIVE = 90;
     public static final int FAIL_ATTEMPT_MAX = 10;
     public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
 
@@ -53,13 +52,22 @@ public class GameServer implements DSMachine, Runnable {
     protected static final int MAX_CLIENTS = 16;
 
     protected DatagramSocket endpoint;
+
     /**
      * Client list with IPs (or hostnames)
      */
-    public final IList<String> clients = new GapList<>();
+    public final IList<ClientInfo> clients = new GapList<>();
+
     protected final GameObject gameObject;
 
+    /**
+     * Is (game) server running..
+     */
     protected volatile boolean running = false;
+
+    /**
+     * Shutdown signal. To stop the (game) server.
+     */
     protected boolean shutDownSignal = false;
     protected final int version = GameObject.VERSION;
     protected final int timeout = 120 * 1000; // 2 minutes
@@ -72,26 +80,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Server worker
      */
-    public final ExecutorService serverExecutor = Executors.newFixedThreadPool(1);
-
-//    /**
-//     * Server Task worker (handles heavy tasks)
-//     */
-//    public final ExecutorService serverTaskExecutor = Executors.newFixedThreadPool(GameServer.MAX_CLIENTS);
-    /**
-     * Who is Client hostname <==> Player UniqueId
-     */
-    public final LinkedHashMap<String, String> whoIsMap = new LinkedHashMap<>();
-
-    /**
-     * Who is Client hostname <==> Time to live (int)
-     */
-    public final LinkedHashMap<String, Integer> timeToLiveMap = new LinkedHashMap<>();
-
-    /**
-     * Failed hosts with number of attempts
-     */
-    public final LinkedHashMap<String, Integer> failedAttempts = new LinkedHashMap<>();
+    public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Blacklisted hosts with number of attempts
@@ -138,29 +127,20 @@ public class GameServer implements DSMachine, Runnable {
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                GapList<String> clientKeys = new GapList<>(timeToLiveMap.keySet());
-                clientKeys.forEach((String key) -> {
-                    timeToLiveMap.compute(key, (String t, Integer u) -> {
-                        if (u == null || u <= 1 || kicklist.contains(key)) {
-                            GameServer.this.clients.remove(key);
-                            String uniqueId = GameServer.this.whoIsMap.remove(key);
-                            GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
-                            if (uniqueId != null) {
-                                GameServer.performCleanUp(GameServer.this.gameObject, uniqueId, u <= 1);
-                                whoIsMap.remove(key);
-                            }
+                // hosts to remove (init empty)
+                final GapList<String> host2Rem = new GapList<>();
 
-                            kicklist.remove(key);
+                // iterate through clients and check banlis & kicklist and time-to-live
+                clients.forEach(((ClientInfo client) -> {
+                    if (blacklist.contains(client.hostName) || kicklist.contains(client.uniqueId) || --client.timeToLive <= 0) {
+                        host2Rem.add(client.hostName);
+                        GameServer.performCleanUp(GameServer.this.gameObject, client.uniqueId, client.timeToLive <= 0);
+                    }
+                }));
 
-                            return null; // Remove the key from timeToLiveMap
-                        } else {
-                            return u - 1; // Decrement TTL
-                        }
-                    });
-                    // Log the new TTL value
-//                    Integer newTimeToLive = timeToLiveMap.get(key);
-//                    DSLogger.reportInfo("TimeToLive=" + newTimeToLive, null);
-                });
+                clients.removeIf(cli -> host2Rem.contains(cli.hostName));
+
+                GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
             }
         };
         timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
@@ -180,8 +160,7 @@ public class GameServer implements DSMachine, Runnable {
 
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
-            whoIsMap.clear();
-            timeToLiveMap.clear();
+
             clients.clear();
         }
     }
@@ -200,31 +179,24 @@ public class GameServer implements DSMachine, Runnable {
      * rejected. In other words client will fail the test.
      *
      * @param failedHostName client who is submit to test
+     * @param failedGuid player guid who submit (with hostname)
      */
-    public void assertTstFailure(String failedHostName) {
-        TotalFailedAttempts++;
-        boolean contains = this.failedAttempts.containsKey(failedHostName);
-        if (!contains) {
-            this.failedAttempts.put(failedHostName, 1);
-        } else {
-            Integer failAttemptNum = this.failedAttempts.get(failedHostName);
-            failAttemptNum++;
+    public void assertTstFailure(String failedHostName, String failedGuid) {
+        // Filter those who failed
+        ClientInfo filtered = clients.getIf(client -> client.hostName.equals(failedHostName) && client.uniqueId.equals(failedGuid));
 
-            // Blacklisting (equals ban)
-            if (failAttemptNum >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
-                blacklist.add(failedHostName);
-                gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
-                DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
-            }
+        // Blacklisting (equals ban)
+        if (++filtered.failedAttempts >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
+            blacklist.add(failedHostName);
+            gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
+            DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
+        }
 
-            // Too much failed attempts, endpoint is vulnerable .. try to shut down
-            if (TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
-                gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port));
-                DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port), null);
-                shutDownSignal = true;
-            }
-
-            this.failedAttempts.replace(failedHostName, failAttemptNum);
+        // Too much failed attempts, endpoint is vulnerable .. try to shut down
+        if (++TotalFailedAttempts >= TOTAL_FAIL_ATTEMPT_MAX) {
+            gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port));
+            DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port), null);
+            shutDownSignal = true;
         }
     }
 
@@ -237,7 +209,7 @@ public class GameServer implements DSMachine, Runnable {
         try {
             // Bind the endpoint socket to a 'wildcard' IP address amd given port
             endpoint = new DatagramSocket(port, InetAddress.getByName(localIP));
-            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
+            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (clients.size()));
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
         } catch (IOException ex) {
@@ -247,30 +219,31 @@ public class GameServer implements DSMachine, Runnable {
             shutDownSignal = true;
         }
         // Accept incoming connections and handle them
-        while (!gameObject.WINDOW.shouldClose() && !shutDownSignal) {
+        while (!shutDownSignal) {
             try {
                 GameServerProcessor.Result procResult = GameServerProcessor.process(this, endpoint);
                 final String msg;
                 switch (procResult.status) {
                     case INTERNAL_ERROR:
-                        msg = String.format("Server %s %s error!", procResult.client, procResult.message);
+                        msg = String.format("Server %s %s %s error!", procResult.hostname, procResult.guid, procResult.message);
                         DSLogger.reportError(msg, null);
                         gameObject.intrface.getConsole().write(msg, true);
                         break;
                     case CLIENT_ERROR:
-                        assertTstFailure(procResult.client);
-                        msg = String.format("Client %s %s error!", procResult.client, procResult.message);
+                        assertTstFailure(procResult.hostname, procResult.guid);
+                        msg = String.format("Client %s %s %s error!", procResult.hostname, procResult.guid, procResult.message);
                         DSLogger.reportError(msg, null);
                         gameObject.intrface.getConsole().write(msg, true);
-                        if (blacklist.contains(procResult.client)) {
+                        if (blacklist.contains(procResult.hostname)) {
                             DSLogger.reportWarning(msg, null);
                             gameObject.intrface.getConsole().write(msg, false);
                         }
                         break;
                     default:
                     case OK:
-                        timeToLiveMap.replace(procResult.client, GameServer.TIME_TO_LIVE);
-                        msg = String.format("OK %s %s", procResult.client, procResult.message);
+                        clients.filter(client -> client.hostName.equals(procResult.hostname) && client.getUniqueId().equals(procResult.guid))
+                                .forEach(client2 -> client2.timeToLive = GameServer.TIME_TO_LIVE);
+                        msg = String.format("Client %s %s %s OK", procResult.hostname, procResult.guid, procResult.message);
                         DSLogger.reportInfo(msg, null);
                         gameObject.intrface.getConsole().write(msg, false);
                         break;
@@ -308,18 +281,14 @@ public class GameServer implements DSMachine, Runnable {
 
     public ClientInfo[] getClientInfo() {
         ClientInfo[] result = new ClientInfo[clients.size()];
+        clients.toArray(result);
 
-        int index = 0;
-        for (String cli : clients) {
-            ClientInfo ci = new ClientInfo(cli, whoIsMap.getOrDefault(cli, "N/A"), timeToLiveMap.getOrDefault(cli, -1));
-            result[index++] = ci;
-        }
         return result;
     }
 
-    public static void kickPlayer(GameServer gameServer, String clientHostName) {
-        if (gameServer.clients.contains(clientHostName) && !gameServer.kicklist.contains(clientHostName)) {
-            gameServer.kicklist.add(clientHostName);
+    public static void kickPlayer(GameServer gameServer, String playerGuid) {
+        if (gameServer.clients.containsIf(client -> client.uniqueId.equals(playerGuid)) && !gameServer.kicklist.contains(playerGuid)) {
+            gameServer.kicklist.add(playerGuid);
         }
     }
 
@@ -335,7 +304,7 @@ public class GameServer implements DSMachine, Runnable {
         return endpoint;
     }
 
-    public IList<String> getClients() {
+    public IList<ClientInfo> getClients() {
         return clients;
     }
 
@@ -386,14 +355,6 @@ public class GameServer implements DSMachine, Runnable {
         return serverExecutor;
     }
 
-    public LinkedHashMap<String, String> getWhoIsMap() {
-        return whoIsMap;
-    }
-
-    public LinkedHashMap<String, Integer> getFailedAttempts() {
-        return failedAttempts;
-    }
-
     public IList<String> getBlacklist() {
         return blacklist;
     }
@@ -408,6 +369,15 @@ public class GameServer implements DSMachine, Runnable {
 
     public String getLocalIP() {
         return localIP;
+    }
+
+    public IList<String> getKicklist() {
+        return kicklist;
+    }
+
+    @Override
+    public String getGuid() {
+        return "*";
     }
 
 }

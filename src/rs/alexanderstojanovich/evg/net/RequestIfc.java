@@ -30,6 +30,11 @@ import rs.alexanderstojanovich.evg.main.GameServer;
 public interface RequestIfc extends DSObject {
 
     /**
+     * Guid length of DSynergy request
+     */
+    public static final int GUID_LENGTH = 16;
+
+    /**
      * Magic bytes of DSynergy request
      */
     public static final byte[] MAGIC_BYTES = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0D, (byte) 0x13}; // 4 Bytes
@@ -151,5 +156,12 @@ public interface RequestIfc extends DSObject {
 
         return result;
     }
+
+    /**
+     * Get sender guid
+     *
+     * @return sender guid (of this request)
+     */
+    public String getGuid();
 
 }
