@@ -236,7 +236,7 @@ public class GameServer implements DSMachine, Runnable {
                                 .forEach(client2 -> client2.timeToLive = GameServer.TIME_TO_LIVE);
                         msg = String.format("Client %s %s %s OK", procResult.hostname, procResult.guid, procResult.message);
                         DSLogger.reportInfo(msg, null);
-                        gameObject.intrface.getConsole().write(msg, false);
+//                        gameObject.intrface.getConsole().write(msg, false);
                         break;
                 }
             } catch (Exception ex) {
