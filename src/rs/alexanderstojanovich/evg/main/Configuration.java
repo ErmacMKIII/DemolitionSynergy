@@ -59,7 +59,7 @@ public class Configuration {
     private int clientPort = 13667; // used in conjunction with server IP
 
     private boolean useBakGuid = false;
-    
+
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     private static Configuration instance;
@@ -485,5 +485,5 @@ public class Configuration {
     public boolean isUseBakGuid() {
         return useBakGuid;
     }
-    
+
 }
