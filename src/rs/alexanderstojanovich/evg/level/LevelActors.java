@@ -180,11 +180,14 @@ public class LevelActors {
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
         Arrays.asList(playerInfo).forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
-                Critter op = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
-                op.setName(pi.name);
-                op.body.setPrimaryRGBAColor(pi.color);
-                op.body.setTexName(pi.texModel);
-                otherPlayers.add(op);
+                Critter opOrNull = otherPlayers.getIf(oplyr -> oplyr.uniqueId.equals(pi.uniqueId));
+                if (opOrNull == null) {
+                    opOrNull = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
+                    otherPlayers.add(opOrNull);
+                }
+                opOrNull.setName(pi.name);
+                opOrNull.body.setPrimaryRGBAColor(pi.color);
+                opOrNull.body.setTexName(pi.texModel);
             }
         });
     }

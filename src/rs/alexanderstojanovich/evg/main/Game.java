@@ -847,6 +847,11 @@ public class Game implements DSMachine {
                                 // calculate interpolation factor
                                 interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
                                 break;
+                            case PLAYER_INFO:
+                                Gson gson = new Gson();
+                                PlayerInfo[] infos = gson.fromJson((String) resp.getData().toString(), PlayerInfo[].class);
+                                gameObject.levelContainer.levelActors.configOtherPlayers(infos);
+                                break;
                             case SAY:
                                 // write chat messages
                                 gameObject.intrface.getConsole().write(resp.getData().toString());
@@ -892,8 +897,21 @@ public class Game implements DSMachine {
         if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
             gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
 
-            // Multiplayer update
-            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected()) {
+            // Multiplayer update - get player info ~ 250 ms
+            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0) {
+                try {
+                    // Send a simple player info message with magic bytes prepended
+                    final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
+                    piReq.send(this);
+                    double time = GLFW.glfwGetTime();
+                    requests.add(new Pair<>(piReq, time));
+                } catch (Exception ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+
+            // Multiplayer update - get position ~ 125 ms
+            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_EIGHTH - 1)) == 0) {
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
@@ -907,7 +925,7 @@ public class Game implements DSMachine {
             }
         }
 
-        // recieve connection async
+        // receive (connection) responses async
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
             receiveAsync(deltaTime);
         }
