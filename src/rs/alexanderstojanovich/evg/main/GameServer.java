@@ -127,18 +127,9 @@ public class GameServer implements DSMachine, Runnable {
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                // hosts to remove (init empty)
-                final GapList<String> host2Rem = new GapList<>();
-
                 // iterate through clients and check banlis & kicklist and time-to-live
-                clients.forEach(((ClientInfo client) -> {
-                    if (blacklist.contains(client.hostName) || kicklist.contains(client.uniqueId) || --client.timeToLive <= 0) {
-                        host2Rem.add(client.hostName);
-                        GameServer.performCleanUp(GameServer.this.gameObject, client.uniqueId, client.timeToLive <= 0);
-                    }
-                }));
-
-                clients.removeIf(cli -> host2Rem.contains(cli.hostName));
+                clients.forEach((ClientInfo client) -> client.timeToLive--);
+                clients.removeIf(cli -> cli.timeToLive <= 0);
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
             }
@@ -186,7 +177,7 @@ public class GameServer implements DSMachine, Runnable {
         ClientInfo filtered = clients.getIf(client -> client.hostName.equals(failedHostName) && client.uniqueId.equals(failedGuid));
 
         // Blacklisting (equals ban)
-        if (++filtered.failedAttempts >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
+        if (filtered != null && ++filtered.failedAttempts >= FAIL_ATTEMPT_MAX && !blacklist.contains(failedHostName)) {
             blacklist.add(failedHostName);
             gameObject.intrface.getConsole().write(String.format("Client (%s) is now blacklisted!", failedHostName));
             DSLogger.reportWarning(String.format("Game Server (%s) is now blacklisted!", failedHostName), null);
@@ -245,7 +236,7 @@ public class GameServer implements DSMachine, Runnable {
                                 .forEach(client2 -> client2.timeToLive = GameServer.TIME_TO_LIVE);
                         msg = String.format("Client %s %s %s OK", procResult.hostname, procResult.guid, procResult.message);
                         DSLogger.reportInfo(msg, null);
-                        gameObject.intrface.getConsole().write(msg, false);
+//                        gameObject.intrface.getConsole().write(msg, false);
                         break;
                 }
             } catch (Exception ex) {

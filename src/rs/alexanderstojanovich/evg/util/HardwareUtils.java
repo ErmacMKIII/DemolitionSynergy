@@ -20,8 +20,10 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.UUID;
+import rs.alexanderstojanovich.evg.main.Configuration;
 
 /**
  *
@@ -67,7 +69,9 @@ public class HardwareUtils {
     public static String generateHardwareUUID() {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            md.update(getHardwareInfo().getBytes());
+            Configuration cfg = Configuration.getInstance();
+            byte[] hwBytes = getHardwareInfo().getBytes();            
+            md.update(hwBytes);
             byte[] hash = md.digest();
             long mostSignificantBits = 0;
             for (int i = 0; i < 8; i++) {
@@ -77,7 +81,7 @@ public class HardwareUtils {
             for (int i = 8; i < 16; i++) {
                 leastSignificantBits = (leastSignificantBits << 8) | (hash[i] & 0xff);
             }
-            return new UUID(mostSignificantBits, leastSignificantBits).toString().substring(20, 36);
+            return new UUID(cfg.isUseBakGuid()? Long.reverseBytes(mostSignificantBits) : mostSignificantBits, cfg.isUseBakGuid() ? Long.reverseBytes(leastSignificantBits) : leastSignificantBits).toString().substring(20, 36);
         } catch (NoSuchAlgorithmException | SocketException ex) {
             DSLogger.reportFatalError("Could not generate hardware Unique ID!", ex);
             DSLogger.reportFatalError(ex.getMessage(), ex);

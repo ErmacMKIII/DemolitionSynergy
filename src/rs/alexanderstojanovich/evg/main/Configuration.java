@@ -58,6 +58,8 @@ public class Configuration {
     private int serverPort = 13667; // used in conjunction with local IP
     private int clientPort = 13667; // used in conjunction with server IP
 
+    private boolean useBakGuid = false;
+    
     private static final String CONFIG_PATH = "dsynergy.ini";
 
     private static Configuration instance;
@@ -226,6 +228,9 @@ public class Configuration {
                                     clientPort = number;
                                 }
                                 break;
+                            case "usebakguid":
+                                useBakGuid = Boolean.parseBoolean(words[1].toLowerCase());
+                                break;
                         }
                     }
                 }
@@ -298,6 +303,8 @@ public class Configuration {
             pw.println("ServerPort = " + serverPort);
             pw.println("# Client port set to connect to game server. Varying");
             pw.println("ClientPort = " + clientPort);
+            pw.println("# Use backup guid. Testing purposes.");
+            pw.println("UseBakGuid = " + useBakGuid);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -475,4 +482,8 @@ public class Configuration {
         this.clientPort = clientPort;
     }
 
+    public boolean isUseBakGuid() {
+        return useBakGuid;
+    }
+    
 }

@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
@@ -729,26 +731,29 @@ public class Command implements Callable<Object> {
                             gameObject.game.setPort(port);
                         }
 
-                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
-                        CompletableFuture.supplyAsync(() -> {
+//                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);                        
+                        CompletableFuture.runAsync(() -> {
                             try {
+                                command.status = Status.PENDING;
                                 double beginTime = GLFW.glfwGetTime();
-                                gameObject.game.connectToServer();
-                                double endTime = GLFW.glfwGetTime();
-                                gameObject.intrface.getConsole().write("Connected to server!");
-                                long tripTime = Math.round(endTime - beginTime) * 1000L;
-                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                                if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                    Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
-                                    gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
+                                if (gameObject.game.connectToServer()) {
+                                    gameObject.intrface.getConsole().write("Connected to server!");
+                                    double endTime = GLFW.glfwGetTime();
+                                    long tripTime = Math.round((endTime - beginTime) * 1000.0);
+                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                        Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
+                                        gameObject.intrface.getGameMenu().getTitle().setContent("MUTLIPLAYER");
+                                    }
+                                    command.status = Status.SUCCEEDED;
+                                } else {
+                                    command.status = Status.FAILED;
                                 }
                             } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             } catch (Exception ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
-
-                            return null;
                         });
                     }
                 }
@@ -844,7 +849,7 @@ public class Command implements Callable<Object> {
                             (Critter t) -> t.uniqueId).filter(x -> command.args.contains(x)).collect((Collectors.toList()));
                     clientInfo.forEach(ci -> {
                         if (guids.contains(ci.uniqueId)) {
-                            GameServer.kickPlayer(gameObject.gameServer, ci.hostName);
+                            GameServer.kickPlayer(gameObject.gameServer, ci.uniqueId);
                         }
                     });
                     command.status = Status.SUCCEEDED;

@@ -17,6 +17,10 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -40,6 +44,8 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Console {
+
+    public final ExecutorService commandExecutor = Executors.newFixedThreadPool(4);
 
     private static final Configuration cfg = Configuration.getInstance();
     private final Quad panel;
@@ -109,6 +115,14 @@ public class Console {
                     completes.setContent("");
                     input.setLength(0);
                     enabled = false;
+
+                    if (Game.getCurrentMode() == Game.Mode.FREE) {
+                        intrface.getGuideText().setContent("Press 'ESC' to open Main Menu\nor press '~' to open Console");
+                        intrface.getGuideText().setEnabled(true);
+                    } else {
+                        intrface.getGuideText().setEnabled(false);
+                    }
+
                 } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     if (input.length() > 0) {
                         input.deleteCharAt(input.length() - 1);
@@ -120,16 +134,6 @@ public class Console {
 //                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }                        
                         Command cmd = Command.getCommand(input.toString());
-// if cmd is invalid it's null
-                        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
-                            if (cmd.isRendererCommand()) {
-                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
-                                cmd.status = Command.Status.PENDING;
-                                GameRenderer.TASK_QUEUE.add(consoleTask);
-                            } else if (cmd.isGameCommand()) {
-                                Command.execute(intrface.gameObject, cmd);
-                            }
-                        }
 
                         if (cmd.target != Command.Target.CLEAR) {
                             // add to queue
@@ -151,6 +155,19 @@ public class Console {
                                 hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
                                 hi.quad.pos.y = hi.cmdText.pos.y;
                             });
+
+                            synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                                if (cmd.isRendererCommand()) {
+                                    FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                                    cmd.status = Command.Status.PENDING;
+                                    GameRenderer.TASK_QUEUE.add(consoleTask);
+                                } else if (cmd.isGameCommand()) {
+                                    CompletableFuture.runAsync(() -> {
+                                        Command.execute(intrface.gameObject, cmd);
+                                    }, commandExecutor);
+                                    cmd.status = Command.Status.PENDING;
+                                }
+                            }
 
                             // if over capacity deuque last
                             if (history.size() > HISTORY_CAPACITY) {
@@ -358,6 +375,8 @@ public class Console {
         this.glfwCharCallback.free();
         this.glfwKeyCallback.free();
         this.glfwScrollCallback.free();
+
+        this.commandExecutor.shutdown();
     }
 
     /*

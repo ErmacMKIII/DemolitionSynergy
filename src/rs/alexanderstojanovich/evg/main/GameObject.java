@@ -103,7 +103,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Async Task Executor
      */
-    public static final ExecutorService TASK_EXECUTOR = Executors.newCachedThreadPool();
+    public static final ExecutorService TASK_EXECUTOR = Executors.newSingleThreadExecutor();
 
     /**
      * Update/Generate for Level Container Mutex. Responsible for read/write to
@@ -517,8 +517,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         Editor.deselect();
         CacheModule.deleteCache();
         LevelContainer.AllBlockMap.init();
-        levelContainer.chunks.clear();
-        levelContainer.blockEnvironment.clear();
+        updateRenderLCLock.lock();
+        try {
+            levelContainer.chunks.clear();
+            levelContainer.blockEnvironment.clear();
+        } finally {
+            updateRenderLCLock.unlock();
+        }
 
         Arrays.fill(levelContainer.buffer, (byte) 0x00);
         Arrays.fill(levelContainer.bak_buffer, (byte) 0x00);

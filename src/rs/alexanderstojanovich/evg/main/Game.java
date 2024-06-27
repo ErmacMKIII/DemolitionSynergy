@@ -24,7 +24,6 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import javax.xml.datatype.DatatypeConstants;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -88,7 +87,7 @@ public class Game implements DSMachine {
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 10.0;
-    public static final int AWAIT_TIME = 10; // 10 Seconds
+    public static final int WAIT_RECEIVE_TIME = 45; // 45 Seconds
 
     private final boolean[] keys = new boolean[512];
 
@@ -142,6 +141,8 @@ public class Game implements DSMachine {
     protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds
 
     protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
+
+    protected double waitReceiveTime = 0.0; // seconds
 
     /**
      * Magic bytes of End-of-Stream
@@ -708,8 +709,10 @@ public class Game implements DSMachine {
                     } else {
                         gameObject.intrface.getMainMenu().open();
                     }
+                    gameObject.intrface.getGuideText().setEnabled(false);
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
+                    gameObject.intrface.getGuideText().setEnabled(false);
                     gameObject.intrface.getConsole().open();
                 } else if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
@@ -796,61 +799,75 @@ public class Game implements DSMachine {
     }
 
     /**
-     * Recive Async (Multiplayer)
+     * Receive Async (Multiplayer)
      *
      * @param deltaTime time interval between updates
      */
     public void receiveAsync(double deltaTime) {
-        ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc resp) -> {
-            RequestIfc reqTarg = null;
-            double beginTime = 0.0;
-            for (Pair<RequestIfc, Double> req : requests) {
-                if (req.getKey().getChecksum() == resp.getChecksum()) {
-                    reqTarg = req.getKey();
-                    beginTime = req.getValue();
-                    break;
-                }
-            }
-            double endTime = GLFW.glfwGetTime();
-            if (reqTarg != null) {
-                final RequestIfc reqTargCopy = reqTarg;
-                requests.removeIf(req -> req.getKey() == reqTargCopy || req.getValue() >= CRITICAL_TIME);
-                switch (reqTarg.getRequestType()) {
-                    case GET_TIME:
-                        Game.gameTicks = (double) resp.getData();
-                        break;
-                    case GET_POS:
-                        String uniqueId = reqTarg.getData().toString();
-                        PosInfo posInfo = PosInfo.fromJson(resp.getData().toString());
-                        if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
-                            playerServerPos.set(posInfo.pos);
-                        } else {
-                            Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
-                            other.setPos(posInfo.pos);
-                            other.getFront().set(posInfo.front);
-                            other.setRotationXYZ(posInfo.front);
-                        }
-                        double ping = endTime - beginTime;
-                        // calculate interpolation factor
-                        interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
-                        break;
-                    case SAY:
-                        // write chat messages
-                        gameObject.intrface.getConsole().write(resp.getData().toString());
-                        break;
-                }
-            } else {
-                // this is issued kick from the server
-                if ((int) resp.getData() == 1) {
+//        DSLogger.reportInfo("wait="+waitReceiveTime, null);
+        // if waiting time is less or equal than 45 sec
+        if (waitReceiveTime <= WAIT_RECEIVE_TIME) {
+            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc resp) -> {
+                // this is issued kick from the server to the Guid of this machine
+                if (resp.getData().equals(getGuid())) {
                     DSLogger.reportInfo("You got kicked from the server!", null);
                     this.gameObject.intrface.getConsole().write("You got kicked from the server!");
                     disconnectFromServer();
                     gameObject.clearEverything();
+                } else {
+                    RequestIfc reqTarg = null;
+                    double beginTime = 0.0;
+                    for (Pair<RequestIfc, Double> req : requests) {
+                        if (req.getKey().getChecksum() == resp.getChecksum()) {
+                            reqTarg = req.getKey();
+                            beginTime = req.getValue();
+                            break;
+                        }
+                    }
+                    double endTime = GLFW.glfwGetTime();
+                    if (reqTarg != null) {
+                        final RequestIfc reqTargCopy = reqTarg;
+                        requests.removeIf(req -> req.getKey() == reqTargCopy || req.getValue() >= WAIT_RECEIVE_TIME);
+                        switch (reqTarg.getRequestType()) {
+                            case GET_TIME:
+                                Game.gameTicks = (double) resp.getData();
+                                break;
+                            case GET_POS:
+                                String uniqueId = reqTarg.getData().toString();
+                                PosInfo posInfo = PosInfo.fromJson(resp.getData().toString());
+                                if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
+                                    playerServerPos.set(posInfo.pos);
+                                } else {
+                                    Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
+                                    other.setPos(posInfo.pos);
+                                    other.getFront().set(posInfo.front);
+                                    other.setRotationXYZ(posInfo.front);
+                                }
+                                double ping = endTime - beginTime;
+                                // calculate interpolation factor
+                                interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+                                break;
+                            case SAY:
+                                // write chat messages
+                                gameObject.intrface.getConsole().write(resp.getData().toString());
+                                break;
+                        }
+
+                    }
+                    long tripTime = Math.round((endTime - beginTime) * 1000.0);
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+
+                    // Reset waiting time (as response arrived to the request)
+                    waitReceiveTime = 0L;
                 }
-            }
-            long tripTime = Math.round(endTime - beginTime) * 1000L;
-            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-        });
+            });
+        } else {
+            this.disconnectFromServer();
+            this.gameObject.clearEverything();
+            this.gameObject.intrface.getConsole().write("Connection with the sever lost!", true);
+            DSLogger.reportError("Connection with the sever lost!", null);
+        }
+        waitReceiveTime += deltaTime;
     }
 
     /**
@@ -1047,9 +1064,10 @@ public class Game implements DSMachine {
      * Connect to server (host). Multiplayer. Requires acceptance test to be
      * passed. According to protocol.
      *
+     * @return
      * @throws java.lang.Exception if already connected to game server
      */
-    public void connectToServer() throws Exception {
+    public boolean connectToServer() throws Exception {
         if (isConnected()) {
             throw new Exception("Error - you are already connect to Game Server!");
         }
@@ -1065,29 +1083,33 @@ public class Game implements DSMachine {
             helloRequest.send(this);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc.receiveAsync(this).thenAccept((ResponseIfc response) -> {
-                if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                    try {
-                        // Authenticated
-                        this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
-                        this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
-                        DSLogger.reportInfo("Connected to server!", null);
-                        connected = true;
-                    } catch (SocketException ex) {
-                        DSLogger.reportError("Unable to connect to server!", ex);
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
+            ResponseIfc response = ResponseIfc.receive(this);
+            if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                try {
+                    // Authenticated
+                    this.timeout = Game.DEFAULT_EXTENDED_TIMEOUT; // 2 minutes
+                    this.serverEndpoint.setSoTimeout(Game.DEFAULT_EXTENDED_TIMEOUT);
+                    DSLogger.reportInfo("Connected to server!", null);
+                    connected = true;
+                } catch (SocketException ex) {
+                    DSLogger.reportError("Unable to connect to server!", ex);
+                    DSLogger.reportError(ex.getMessage(), ex);
                 }
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                gameObject.intrface.getConsole().write(response.getData().toString());
-            });
+            }
+            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+            gameObject.intrface.getConsole().write(response.getData().toString());
+
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
+            gameObject.intrface.getConsole().write("Unable to connect to server!", true);
             DSLogger.reportError(ex.getMessage(), ex);
         } catch (Exception ex) {
             DSLogger.reportError("Error occurred!", ex);
+            gameObject.intrface.getConsole().write("Error occurred!", true);
             DSLogger.reportError(ex.getMessage(), ex);
         }
+
+        return connected;
     }
 
     /**
@@ -1269,10 +1291,6 @@ public class Game implements DSMachine {
                     serverEndpoint.close();
                     DSLogger.reportInfo("Disconnected from server!", null);
 
-                    gameObject.levelContainer.levelActors.player.setRegistered(false);
-
-                    connected = false;
-
                     return response; // need "return this again"
                 });
             } catch (IOException ex) {
@@ -1281,6 +1299,9 @@ public class Game implements DSMachine {
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
+            } finally {
+                gameObject.levelContainer.levelActors.player.setRegistered(false);
+                connected = false;
             }
         }
     }
