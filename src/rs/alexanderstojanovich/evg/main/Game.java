@@ -204,6 +204,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected IoSession session = null;
 
     /**
+     * UDP connector for (Game) client
+     */
+    protected NioDatagramConnector connector;
+
+    /**
      * Construct new game (client) view. Demolition Synergy client.
      *
      * @param gameObject game object
@@ -1097,7 +1102,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             throw new Exception("Error - you are already connect to Game Server!");
         }
         try {
-            NioDatagramConnector connector = new NioDatagramConnector();
+            // create (instance) new UDP connector
+            connector = new NioDatagramConnector();
             connector.setHandler(new IoHandlerAdapter());
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
             // Try to connect to server
@@ -1330,6 +1336,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 DSLogger.reportError(ex.getMessage(), ex);
             } finally {
                 gameObject.levelContainer.levelActors.player.setRegistered(false);
+                connector.getManagedSessions().values().forEach((IoSession ss) -> {
+                    try {
+                        ss.closeNow().await();
+                    } catch (InterruptedException ex) {
+                        DSLogger.reportError("Unable to close session!", ex);
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                });
+                connector.dispose();
                 connected = false;
             }
         }

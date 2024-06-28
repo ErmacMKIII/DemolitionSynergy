@@ -24,6 +24,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.DatagramAcceptor;
 import org.apache.mina.transport.socket.DatagramSessionConfig;
 import org.apache.mina.transport.socket.nio.NioDatagramAcceptor;
@@ -111,6 +112,11 @@ public class GameServer implements DSMachine, Runnable {
     public final Timer timerClientChk = new Timer("Server Utils");
 
     /**
+     * UDP acceptor and session settings
+     */
+    protected DatagramAcceptor acceptor;
+
+    /**
      * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
@@ -150,13 +156,32 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void stopServer() {
         if (running) {
-            // kick all players
+            // Kick all players
             clients.forEach(cli -> GameServer.kickPlayer(gameObject.gameServer, cli.uniqueId));
 
+            // Reset server window title
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
 
+            // close session(s) & acceptor
+            acceptor.setCloseOnDeactivation(true);
+            for (IoSession ss : acceptor.getManagedSessions().values()) {
+                try {
+                    ss.closeNow().await();
+                } catch (InterruptedException ex) {
+                    DSLogger.reportError("Unable to close session!", ex);
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+            acceptor.unbind();
+            acceptor.dispose();
+
+            // Clear the client list
             clients.clear();
+            running = false;
+
+            DSLogger.reportInfo("Game Server finished!", null);
+            gameObject.intrface.getConsole().write("Game Server finished!");
         }
     }
 
@@ -206,7 +231,7 @@ public class GameServer implements DSMachine, Runnable {
             endpoint = new InetSocketAddress(InetAddress.getByName(localIP), port);
 
             // Configure the UDP acceptor and session settings
-            DatagramAcceptor acceptor = new NioDatagramAcceptor();
+            acceptor = new NioDatagramAcceptor();
             DatagramSessionConfig sessionConfig = acceptor.getSessionConfig();
             sessionConfig.setReuseAddress(true);
 
@@ -226,12 +251,6 @@ public class GameServer implements DSMachine, Runnable {
             DSLogger.reportError(ex.getMessage(), ex);
             shutDownSignal = true;
         }
-
-        clients.clear();
-        running = false;
-
-        DSLogger.reportInfo("Game Server finished!", null);
-        gameObject.intrface.getConsole().write("Game Server finished!");
     }
 
     /**

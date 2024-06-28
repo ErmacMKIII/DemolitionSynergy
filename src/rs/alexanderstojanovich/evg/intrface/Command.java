@@ -578,6 +578,7 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case EXIT:
+                gameObject.game.disconnectFromServer();
                 gameObject.WINDOW.close();
                 command.status = Status.SUCCEEDED;
                 break;
