@@ -16,10 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
-import java.math.BigInteger;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.session.IoSession;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -118,9 +119,10 @@ public interface RequestIfc extends DSObject {
      * Send request to server endpoint.
      *
      * @param client game client
+     * @param session connection session
      * @throws java.lang.Exception
      */
-    public void send(Game client) throws Exception;
+    public void send(Game client, IoSession session) throws Exception;
 
     /**
      * Get client address from this request
@@ -140,21 +142,43 @@ public interface RequestIfc extends DSObject {
      * Receive request from client endpoint.
      *
      * @param server game server
+     * @param session connection session
+     * @param message message received
      * @return null if deserialization failed otherwise valid request
+     *
      * @throws java.io.IOException if network error
      */
-    public static RequestIfc receive(GameServer server) throws Exception {
-        final byte[] buff = new byte[BUFF_SIZE];
-        DatagramPacket p = new DatagramPacket(buff, buff.length);
-        server.getEndpoint().receive(p);
+    public static RequestIfc receive(GameServer server, IoSession session, Object message) throws Exception {
+        // Get message as Byte Buffer
+        if (message instanceof IoBuffer) {
+            IoBuffer buffer = (IoBuffer) message;
 
-        byte[] dataContent = Arrays.copyOfRange(p.getData(), 0, p.getLength() - Long.BYTES);
-        byte[] dataChksum = Arrays.copyOfRange(p.getData(), p.getLength() - Long.BYTES, p.getLength());
-        long checksum = Long.reverseBytes(new BigInteger(dataChksum).longValue());
+            // Get client's socket address
+            SocketAddress cliSockAddr = session.getRemoteAddress();
+            if (cliSockAddr instanceof InetSocketAddress) {
+                InetSocketAddress inetCliSocketAddress = (InetSocketAddress) cliSockAddr;
 
-        RequestIfc result = (RequestIfc) new Request(p.getAddress(), p.getPort(), checksum).deserialize(dataContent); // new request                
+                InetAddress clientAddress = inetCliSocketAddress.getAddress();
+                int clientPort = inetCliSocketAddress.getPort();
 
-        return result;
+                // read data
+                int dataContentLength = buffer.remaining() - Long.BYTES;
+                byte[] dataContent = new byte[dataContentLength];
+                buffer.get(dataContent);
+
+                // read checksum
+                long checksum = buffer.getLong();
+
+                // Construct request (involves deserialization)
+                RequestIfc result = (RequestIfc) new Request(clientAddress, clientPort, checksum).deserialize(dataContent); // new request                
+
+                return result;
+            }
+
+            return Request.INVALID;
+        }
+
+        return Request.INVALID;
     }
 
     /**

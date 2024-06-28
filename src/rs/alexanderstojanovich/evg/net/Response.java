@@ -21,11 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.session.IoSession;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.GameServer;
@@ -228,21 +227,20 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws IOException {
+    public void send(GameServer server, IoSession session) throws IOException {
         serialize(server);
         // storing content with checksum
         final int capacity = content.length + Long.BYTES;
-        ByteBuffer byteBuff = org.lwjgl.BufferUtils.createByteBuffer(capacity);
-        byteBuff.put(content);
+        IoBuffer buffer = IoBuffer.allocate(capacity, true);
+        buffer.put(content);
         // checksum
-        byteBuff.putLong(checksum);
-        byteBuff.flip();
+        buffer.putLong(checksum);
+        buffer.flip();
 
-        byte[] packetData = new byte[byteBuff.remaining()];
-        byteBuff.get(packetData);
+        byte[] packetData = new byte[buffer.remaining()];
+        buffer.get(packetData);
 
-        DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientAddress, clientPort);
-        server.getEndpoint().send(packet);
+        session.write(buffer);
     }
 
     @Override

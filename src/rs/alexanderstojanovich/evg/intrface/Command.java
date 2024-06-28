@@ -26,8 +26,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
 import org.joml.Vector3f;
@@ -686,8 +684,8 @@ public class Command implements Callable<Object> {
                     try {
                         double beginTime = GLFW.glfwGetTime();
                         RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
-                        req.send(gameObject.game);
-                        ResponseIfc.receive(gameObject.game);
+                        req.send(gameObject.game, gameObject.game.getSession());
+                        ResponseIfc.receive(gameObject.game, gameObject.game.getSession());
                         double endTime = GLFW.glfwGetTime();
                         result = Math.round((endTime - beginTime)) * 1000L;
                         command.status = Status.SUCCEEDED;
@@ -708,7 +706,7 @@ public class Command implements Callable<Object> {
                     if (!command.args.isEmpty()) {
                         try {
                             RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
-                            sendChatMsgReq.send(gameObject.game);
+                            sendChatMsgReq.send(gameObject.game, gameObject.game.getSession());
                             command.status = Status.SUCCEEDED;
                         } catch (Exception ex) {
                             DSLogger.reportError("Unable to send chat message!", ex);
