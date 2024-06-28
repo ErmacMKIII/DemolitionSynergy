@@ -17,8 +17,6 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -366,7 +364,10 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 byte[] fragment = new byte[fragmentSize];
                 System.arraycopy(buffer, fragmentStart, fragment, 0, fragmentSize);
 
-                IoBuffer buffer1 = IoBuffer.wrap(buffer);
+                IoBuffer buffer1 = IoBuffer.allocate(fragmentSize, true);
+                buffer1.put(fragment);
+                buffer1.flip();
+
                 session.write(buffer1);
 
                 DSLogger.reportInfo(String.format("Sent %d fragment, %d total bytes written", n, fragmentSize), null);

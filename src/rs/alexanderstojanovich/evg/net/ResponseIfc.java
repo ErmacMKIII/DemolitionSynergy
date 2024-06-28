@@ -66,7 +66,7 @@ public interface ResponseIfc extends DSObject {
      * @throws java.lang.Exception if network error
      */
     public static ResponseIfc receive(Game client, IoSession session) throws Exception {
-        Object message = session.read().getMessage();
+        Object message = session.read().await().getMessage();
 
         // Get message as Byte Buffer
         if (message instanceof IoBuffer) {
@@ -81,7 +81,7 @@ public interface ResponseIfc extends DSObject {
             long checksum = buffer.getLong();
 
             // Construct response (involves deserialization)
-            ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent).deserialize(dataContent); // new request                
+            ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent); // new request                
 
             return result;
         }

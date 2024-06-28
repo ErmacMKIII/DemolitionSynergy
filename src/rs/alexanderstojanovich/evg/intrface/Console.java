@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
@@ -261,30 +260,31 @@ public class Console {
         cmd.args.add(m);
 
         Command.execute(intrface.gameObject, cmd);
+        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
+            // add to queue
+            HistoryItem item;
+            try {
+                item = new HistoryItem(this, cmd);
+                history.addFirst(item);
+            } catch (Exception ex) {
+                DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+            }
 
-        // add to queue
-        HistoryItem item;
-        try {
-            item = new HistoryItem(this, cmd);
-            history.addFirst(item);
-        } catch (Exception ex) {
-            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
-        }
+            // if over capacity deuque last
+            if (history.size() > HISTORY_CAPACITY) {
+                history.removeLast();
+            }
 
-        // shift them
-        history.forEach(hi -> {
-            hi.buildCmdText();
-            hi.cmdText.pos.x = -1.0f;
-            hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
-            hi.cmdText.alignToNextChar(intrface);
+            // shift them
+            history.forEach(hi -> {
+                hi.buildCmdText();
+                hi.cmdText.pos.x = -1.0f;
+                hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+                hi.cmdText.alignToNextChar(intrface);
 
-            hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
-            hi.quad.pos.y = hi.cmdText.pos.y;
-        });
-
-        // if over capacity deuque last
-        if (history.size() > HISTORY_CAPACITY) {
-            history.removeLast();
+                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+                hi.quad.pos.y = hi.cmdText.pos.y;
+            });
         }
     }
 
@@ -306,13 +306,20 @@ public class Console {
             cmd.status = Command.Status.FAILED;
         }
 
-        // add to queue
-        HistoryItem item;
-        try {
-            item = new HistoryItem(this, cmd);
-            history.addFirst(item);
-        } catch (Exception ex) {
-            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
+            // add to queue
+            HistoryItem item;
+            try {
+                item = new HistoryItem(this, cmd);
+                history.addFirst(item);
+            } catch (Exception ex) {
+                DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+            }
+
+            // if over capacity deuque last
+            if (history.size() > HISTORY_CAPACITY) {
+                history.removeLast();
+            }
         }
 
         // shift them
@@ -325,11 +332,6 @@ public class Console {
             hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
             hi.quad.pos.y = hi.cmdText.pos.y;
         });
-
-        // if over capacity deuque last
-        if (history.size() > HISTORY_CAPACITY) {
-            history.removeLast();
-        }
     }
 
     /**
@@ -357,7 +359,7 @@ public class Console {
             }
             inText.renderContour(intrface, contourShaderProgram);
 
-            for (HistoryItem item : history) {
+            for (HistoryItem item : history.unmodifiableList()) {
                 item.render(intrface, shaderProgram);
             }
 

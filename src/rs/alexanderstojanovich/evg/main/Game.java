@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -1100,15 +1098,17 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
         try {
             NioDatagramConnector connector = new NioDatagramConnector();
-            connector.setHandler(this);
+            connector.setHandler(new IoHandlerAdapter());
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
             // Try to connect to server
             ConnectFuture connFuture = connector.connect(new InetSocketAddress(serverHostName, port));
             connFuture.await(timeout);
-            
+
             // if managed to connect
             if (connFuture.isConnected()) {
                 this.session = connFuture.getSession();
+                this.session.getConfig().setUseReadOperation(true);
+                this.session.getConfig().setReadBufferSize(BUFF_SIZE);
 
                 // Send a simple hello message with magic bytes prepended
                 final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
@@ -1121,8 +1121,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSLogger.reportInfo("Connected to server!", null);
                     connected = true;
                 }
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                gameObject.intrface.getConsole().write(response.getData().toString());
+
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
             }
         } catch (IOException ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
@@ -1187,17 +1188,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param bytesRead The number of bytes read into the buffer.
      * @return True if the end-of-stream marker is found, otherwise false.
      */
-    private static boolean isEndOfStream(byte[] buffer, int bytesRead) {
-        if (bytesRead >= Game.EOS.length) {
-            for (int i = 0; i <= bytesRead - Game.EOS.length; i++) {
-                if (Arrays.equals(Arrays.copyOfRange(buffer, i, i + Game.EOS.length), Game.EOS)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
+//    private static boolean isEndOfStream(byte[] buffer, int bytesRead) {
+//        if (bytesRead >= Game.EOS.length) {
+//            for (int i = 0; i <= bytesRead - Game.EOS.length; i++) {
+//                if (Arrays.equals(Arrays.copyOfRange(buffer, i, i + Game.EOS.length), Game.EOS)) {
+//                    return true;
+//                }
+//            }
+//        }
+//        return false;
+//    }
     /**
      * Download level (map) from the server
      *
@@ -1218,7 +1218,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
-                gameObject.intrface.getConsole().write(response0.getData().toString());
+                gameObject.intrface.getConsole().write(String.format("Download %s fragments", response0.getData()));
 
                 // Define a buffer to hold the received data
                 byte[] buffer = new byte[Game.BUFF_SIZE];
@@ -1238,10 +1238,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     fragmentRequest.send(this, session);
 
                     // Receive the fragment
-                    Object message = session.read().getMessage();
+                    Object message = session.read().await().getMessage();
                     if (message instanceof IoBuffer) {
                         IoBuffer buffer1 = (IoBuffer) message;
-                        buffer1.get(buffer);
+                        buffer1.get(buffer, 0, buffer1.remaining());
                         int bytesRead = buffer1.position();
 
                         // Write the received data to the buffer
@@ -1249,6 +1249,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         totalBytesRead += bytesRead;
 
                         DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
+                        gameObject.intrface.getConsole().write(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead));
                     }
                 }
 

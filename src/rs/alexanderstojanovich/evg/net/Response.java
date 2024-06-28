@@ -237,9 +237,6 @@ public class Response implements ResponseIfc {
         buffer.putLong(checksum);
         buffer.flip();
 
-        byte[] packetData = new byte[buffer.remaining()];
-        buffer.get(packetData);
-
         session.write(buffer);
     }
 
