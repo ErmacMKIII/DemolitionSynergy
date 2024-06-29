@@ -872,7 +872,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                     }
                     long tripTime = Math.round((endTime - beginTime) * 1000.0);
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                    if (tripTime <= WAIT_RECEIVE_TIME * 1000.0) {
+                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                    }
 
                     // Reset waiting time (as response arrived to the request)
                     waitReceiveTime = 0L;
