@@ -16,11 +16,9 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
-import java.math.BigInteger;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.session.IoSession;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
 
@@ -53,32 +51,42 @@ public interface ResponseIfc extends DSObject {
      * Send response to client endpoint.
      *
      * @param server game server
-     * @param clientAddress (game) client address
-     * @param clientPort client port
+     * @param session connection session
      * @throws java.lang.Exception if serialization fails
      */
-    public void send(GameServer server, InetAddress clientAddress, int clientPort) throws Exception;
+    public void send(GameServer server, IoSession session) throws Exception;
 
     /**
      * Receive response from server endpoint.
      *
      * @param client game client
+     * @param session connection session
      * @return Response.INVALID if deserialization failed otherwise valid
      * response
      * @throws java.lang.Exception if network error
      */
-    public static ResponseIfc receive(Game client) throws Exception {
-        final byte[] buff = new byte[BUFF_SIZE];
-        DatagramPacket p = new DatagramPacket(buff, buff.length);
-        client.getServerEndpoint().receive(p);
+    public static ResponseIfc receive(Game client, IoSession session) throws Exception {
+        Object message = session.read().await().getMessage();
 
-        byte[] dataContent = Arrays.copyOfRange(p.getData(), 0, p.getLength() - Long.BYTES);
-        byte[] dataChksum = Arrays.copyOfRange(p.getData(), p.getLength() - Long.BYTES, p.getLength());
-        long checksum = Long.reverseBytes(new BigInteger(dataChksum).longValue());
+        // Get message as Byte Buffer
+        if (message instanceof IoBuffer) {
+            IoBuffer buffer = (IoBuffer) message;
 
-        ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent); // new response
+            // read data
+            int dataContentLength = buffer.remaining() - Long.BYTES;
+            byte[] dataContent = new byte[dataContentLength];
+            buffer.get(dataContent);
 
-        return result;
+            // read checksum
+            long checksum = buffer.getLong();
+
+            // Construct response (involves deserialization)
+            ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent); // new request                
+
+            return result;
+        }
+
+        return Response.INVALID;
     }
 
     /**
@@ -86,13 +94,14 @@ public interface ResponseIfc extends DSObject {
      * no-blocking.
      *
      * @param client game client
+     * @param session connection session
      * @return Response.INVALID if deserialization failed otherwise valid
      * response
      */
-    public static CompletableFuture<ResponseIfc> receiveAsync(Game client) {
+    public static CompletableFuture<ResponseIfc> receiveAsync(Game client, IoSession session) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return receive(client);
+                return receive(client, session);
             } catch (Exception e) {
                 return Response.INVALID;
             }

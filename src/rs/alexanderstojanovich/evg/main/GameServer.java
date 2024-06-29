@@ -17,12 +17,17 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.IOException;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.transport.socket.DatagramAcceptor;
+import org.apache.mina.transport.socket.DatagramSessionConfig;
+import org.apache.mina.transport.socket.nio.NioDatagramAcceptor;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.level.LevelActors;
@@ -51,7 +56,7 @@ public class GameServer implements DSMachine, Runnable {
 
     protected static final int MAX_CLIENTS = 16;
 
-    protected DatagramSocket endpoint;
+    protected SocketAddress endpoint;
 
     /**
      * Client list with IPs (or hostnames)
@@ -107,6 +112,11 @@ public class GameServer implements DSMachine, Runnable {
     public final Timer timerClientChk = new Timer("Server Utils");
 
     /**
+     * UDP acceptor and session settings
+     */
+    protected DatagramAcceptor acceptor;
+
+    /**
      * Create new game server (UDP protocol based)
      *
      * @param gameObject game object
@@ -146,13 +156,32 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void stopServer() {
         if (running) {
-            // kick all players
+            // Kick all players
             clients.forEach(cli -> GameServer.kickPlayer(gameObject.gameServer, cli.uniqueId));
 
+            // Reset server window title
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
             this.shutDownSignal = true;
 
+            // close session(s) & acceptor
+            acceptor.setCloseOnDeactivation(true);
+            for (IoSession ss : acceptor.getManagedSessions().values()) {
+                try {
+                    ss.closeNow().await();
+                } catch (InterruptedException ex) {
+                    DSLogger.reportError("Unable to close session!", ex);
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+            acceptor.unbind();
+            acceptor.dispose();
+
+            // Clear the client list
             clients.clear();
+            running = false;
+
+            DSLogger.reportInfo("Game Server finished!", null);
+            gameObject.intrface.getConsole().write("Game Server finished!");
         }
     }
 
@@ -198,65 +227,30 @@ public class GameServer implements DSMachine, Runnable {
     public void run() {
         running = true;
         try {
-            // Bind the endpoint socket to a 'wildcard' IP address amd given port
-            endpoint = new DatagramSocket(port, InetAddress.getByName(localIP));
+            // Bind the endpoint socket to a specific IP address and port
+            endpoint = new InetSocketAddress(InetAddress.getByName(localIP), port);
+
+            // Configure the UDP acceptor and session settings
+            acceptor = new NioDatagramAcceptor();
+            DatagramSessionConfig sessionConfig = acceptor.getSessionConfig();
+            sessionConfig.setReuseAddress(true);
+
+            // Set the handler for incoming messages
+            GameServerProcessor processor = new GameServerProcessor(GameServer.this);
+            acceptor.setHandler(processor);
+            acceptor.bind(endpoint);
+
+            // Update server window title with current player count
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (clients.size()));
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
         } catch (IOException ex) {
+            // Handle server creation failure
             DSLogger.reportError("Cannot create Game Server!", ex);
             gameObject.intrface.getConsole().write("Cannot create Game Server!", true);
             DSLogger.reportError(ex.getMessage(), ex);
             shutDownSignal = true;
         }
-        // Accept incoming connections and handle them
-        while (!shutDownSignal) {
-            try {
-                GameServerProcessor.Result procResult = GameServerProcessor.process(this, endpoint);
-                final String msg;
-                switch (procResult.status) {
-                    case INTERNAL_ERROR:
-                        msg = String.format("Server %s %s %s error!", procResult.hostname, procResult.guid, procResult.message);
-                        DSLogger.reportError(msg, null);
-                        gameObject.intrface.getConsole().write(msg, true);
-                        break;
-                    case CLIENT_ERROR:
-                        assertTstFailure(procResult.hostname, procResult.guid);
-                        msg = String.format("Client %s %s %s error!", procResult.hostname, procResult.guid, procResult.message);
-                        DSLogger.reportError(msg, null);
-                        gameObject.intrface.getConsole().write(msg, true);
-                        if (blacklist.contains(procResult.hostname)) {
-                            DSLogger.reportWarning(msg, null);
-                            gameObject.intrface.getConsole().write(msg, false);
-                        }
-                        break;
-                    default:
-                    case OK:
-                        clients.filter(client -> client.hostName.equals(procResult.hostname) && client.getUniqueId().equals(procResult.guid))
-                                .forEach(client2 -> client2.timeToLive = GameServer.TIME_TO_LIVE);
-                        msg = String.format("Client %s %s %s OK", procResult.hostname, procResult.guid, procResult.message);
-                        DSLogger.reportInfo(msg, null);
-//                        gameObject.intrface.getConsole().write(msg, false);
-                        break;
-                }
-            } catch (Exception ex) {
-                DSLogger.reportError("Server error: " + ex.getMessage(), ex);
-            }
-        }
-
-        if (endpoint != null && !endpoint.isClosed()) {
-            endpoint.close(); // Handle exceptions
-        }
-        shutDownSignal = true;
-
-        clients.clear();
-        running = false;
-
-        // Close end endpoint
-        this.endpoint.close();
-
-        DSLogger.reportInfo("Game Server finished!", null);
-        gameObject.intrface.getConsole().write("Game Server finished!");
     }
 
     /**
@@ -295,7 +289,7 @@ public class GameServer implements DSMachine, Runnable {
         return port;
     }
 
-    public DatagramSocket getEndpoint() {
+    public SocketAddress getEndpoint() {
         return endpoint;
     }
 
@@ -333,7 +327,7 @@ public class GameServer implements DSMachine, Runnable {
         this.port = port;
     }
 
-    public void setEndpoint(DatagramSocket endpoint) {
+    public void setEndpoint(SocketAddress endpoint) {
         this.endpoint = endpoint;
     }
 

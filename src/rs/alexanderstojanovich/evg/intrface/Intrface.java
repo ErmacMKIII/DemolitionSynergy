@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.regex.Pattern;
 import org.joml.Vector2f;
@@ -203,6 +202,7 @@ public class Intrface {
                             chunkText.setEnabled(false);
                             break;
                         case "EXIT":
+                            gameObject.game.disconnectFromServer();
                             gameObject.WINDOW.close();
                             break;
                     }
