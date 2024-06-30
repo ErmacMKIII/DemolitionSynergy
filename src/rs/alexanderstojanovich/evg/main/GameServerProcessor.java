@@ -116,7 +116,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
         String clientGuid = request.getGuid();
         final InetAddress clientAddress = request.getClientAddress();
-        final int clientPort = request.getClientPort();
         String clientHostName = clientAddress.getHostName();
 
         // defence against duping packets (possibility bridged connections)

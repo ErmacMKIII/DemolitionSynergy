@@ -138,7 +138,13 @@ public class GameServer implements DSMachine, Runnable {
             @Override
             public void run() {
                 // iterate through clients and check banlis & kicklist and time-to-live
-                clients.forEach((ClientInfo client) -> client.timeToLive--);
+                clients.forEach((ClientInfo client) -> {
+                    client.timeToLive--;
+                    if (client.timeToLive <= 0) {
+                        kicklist.remove(client.uniqueId);
+                        performCleanUp(gameObject, client.uniqueId, client.timeToLive <= 0);
+                    }
+                });
                 clients.removeIf(cli -> cli.timeToLive <= 0);
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
