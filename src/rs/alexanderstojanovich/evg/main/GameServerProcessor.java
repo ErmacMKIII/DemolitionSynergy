@@ -116,7 +116,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
         String clientGuid = request.getGuid();
         final InetAddress clientAddress = request.getClientAddress();
-        final int clientPort = request.getClientPort();
         String clientHostName = clientAddress.getHostName();
 
         // defence against duping packets (possibility bridged connections)
@@ -136,6 +135,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
             gameServer.kicklist.remove(clientGuid);
             gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
+            GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
 
             return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
         }
