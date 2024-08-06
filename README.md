@@ -1,8 +1,8 @@
 # Demolition Synergy
 
 This repository is renewed.
-Old one is taken down. 
-Please see *** Very Important Notice *** located at the bottom.
+Old one is taken down. Because of severe malware infection.
+Please see ***Very Important Notice*** located at the bottom.
 
 Voxel Engine using latest LWJGL (The Lightweight Java Game Library).
 Audio material was provided from freesound.org by Erokia.
@@ -126,7 +126,7 @@ Author: Ermac(MKIII);
 Testers: 13;
 Credits: Erokia
 
-#Very Important Notice
+# Very Important Notice
 Old repository of Demolition Synergy suffered severe malware Trojan infection and was unsalvagable.
 Author is certain that malware was not prior date July 12, 2024.
 This renewed repository stands since August 6, 2024.
