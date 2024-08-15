@@ -1160,6 +1160,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 } else {
                     // Got bad response or invalid checksum (either is bad)
                     // disconnect from server to avoid "unexisting connection"
+                    connected = ConnectionStatus.CONNECTED;
                     disconnectFromServer();
                 }
 

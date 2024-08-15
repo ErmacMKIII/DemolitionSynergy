@@ -188,7 +188,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
         switch (request.getRequestType()) {
             case HELLO:
                 if (gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid))) {
-                    msg = String.format("Bad Request - You are alerady connected to %s, v%s!", gameServer.worldName, gameServer.version);
+                    msg = String.format("Bad Request - You are already connected to %s, v%s!", gameServer.worldName, gameServer.version);
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                 } else {
                     // Send a simple message with magic bytes prepended
