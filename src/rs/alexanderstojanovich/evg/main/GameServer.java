@@ -79,6 +79,12 @@ public class GameServer implements DSMachine, Runnable {
     protected final int timeout = 120 * 1000; // 2 minutes
 
     /**
+     * Timeout to close session (await) after client said "GOODBYE" to
+     * disconnect
+     */
+    public static final long GOODBYE_TIMEOUT = 15000L;
+
+    /**
      * Magic bytes of End-of-Stream
      */
     public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
@@ -138,15 +144,17 @@ public class GameServer implements DSMachine, Runnable {
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                // iterate through clients and check banlis & kicklist and time-to-live
+                // Decrease time-to-live for each client and remove expired clients
                 clients.forEach((ClientInfo client) -> {
                     client.timeToLive--;
-                    if (client.timeToLive <= 0) {
-                        kicklist.remove(client.uniqueId);
+                    if (client.timeToLive <= 0 || kicklist.contains(client.uniqueId)) {
                         performCleanUp(gameObject, client.uniqueId, client.timeToLive <= 0);
                     }
                 });
-                clients.removeIf(cli -> cli.timeToLive <= 0);
+                // Remove kicked and timed out players
+                clients.removeIf(cli -> cli.timeToLive <= 0 || kicklist.contains(cli.uniqueId));
+                // Kicklist is processed, clear it
+                kicklist.clear();
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
             }
@@ -174,7 +182,7 @@ public class GameServer implements DSMachine, Runnable {
             acceptor.setCloseOnDeactivation(true);
             for (IoSession ss : acceptor.getManagedSessions().values()) {
                 try {
-                    ss.closeNow().await();
+                    ss.closeNow().await(GameServer.GOODBYE_TIMEOUT);
                 } catch (InterruptedException ex) {
                     DSLogger.reportError("Unable to close session!", ex);
                     DSLogger.reportError(ex.getMessage(), ex);

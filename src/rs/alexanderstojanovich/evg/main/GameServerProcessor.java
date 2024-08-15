@@ -256,7 +256,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                     gameServer.kicklist.remove(clientGuid);
                     GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }
-                session.closeNow();
+                session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
                 break;
             case GET_TIME:
                 gameTime = Game.gameTicks;
