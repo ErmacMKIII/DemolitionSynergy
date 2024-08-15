@@ -79,6 +79,12 @@ public class GameServer implements DSMachine, Runnable {
     protected final int timeout = 120 * 1000; // 2 minutes
 
     /**
+     * Timeout to close session (await) after client said "GOODBYE" to
+     * disconnect
+     */
+    public static final long GOODBYE_TIMEOUT = 15000L;
+
+    /**
      * Magic bytes of End-of-Stream
      */
     public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
@@ -174,7 +180,7 @@ public class GameServer implements DSMachine, Runnable {
             acceptor.setCloseOnDeactivation(true);
             for (IoSession ss : acceptor.getManagedSessions().values()) {
                 try {
-                    ss.closeNow().await();
+                    ss.closeNow().await(GameServer.GOODBYE_TIMEOUT);
                 } catch (InterruptedException ex) {
                     DSLogger.reportError("Unable to close session!", ex);
                     DSLogger.reportError(ex.getMessage(), ex);

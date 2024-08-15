@@ -54,6 +54,7 @@ import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -147,7 +148,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     protected static final int DEFAULT_TIMEOUT = 30000; // 30 sec
     protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
-    protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds 'TIMEOUT FOR FRAGMENTS'
+    protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds 'TIMEOUT FOR FRAGMENTS' or 'GOODBYE'
 
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
 
@@ -901,15 +902,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         } else {
             // attempt to reconnected
             if (!reconnect()) {
+                this.gameObject.intrface.getConsole().write("Connection with the sever lost!", Command.Status.FAILED);
+                DSLogger.reportError("Connection with the sever lost!", null);
                 this.disconnectFromServer();
                 this.gameObject.clearEverything();
             } else {
                 // success reset wait receive time
                 waitReceiveTime = 0L;
             }
-
-            this.gameObject.intrface.getConsole().write("Connection with the sever lost!", Command.Status.FAILED);
-            DSLogger.reportError("Connection with the sever lost!", null);
         }
         waitReceiveTime += deltaTime;
     }
@@ -1157,6 +1157,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // Authenticated                    
                     DSLogger.reportInfo("Connected to server!", null);
                     connected = ConnectionStatus.CONNECTED;
+                } else {
+                    // Got bad response or invalid checksum (either is bad)
+                    // disconnect from server to avoid "unexisting connection"
+                    disconnectFromServer();
                 }
 
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
@@ -1191,8 +1195,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         try {
             // attempt to send 'GOODBYE' request to the server
             disconnectFromServer();
-            // close it
-            session.closeNow();
+
             connected = ConnectionStatus.NOT_CONNECTED;
 
             // open new one
@@ -1428,12 +1431,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 //                serverEndpoint.setSoTimeout(timeout);
                 // Wait for response (assuming simple echo for demonstration)  
                 ResponseIfc.receiveAsync(this, session).thenApply((ResponseIfc response) -> {
-                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                    gameObject.intrface.getConsole().write(response.getData().toString());
-                    session.closeNow();
-                    DSLogger.reportInfo("Disconnected from server!", null);
+                    try {
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                        gameObject.intrface.getConsole().write(response.getData().toString());
+                        session.closeNow().await(timeout);
+                        DSLogger.reportInfo("Disconnected from server!", null);
 
-                    return response; // need "return this again"
+                        return response; // need "return this again"
+                    } catch (InterruptedException ex) {
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+
+                    return Response.INVALID;
                 });
             } catch (IOException | TimeoutException ex) {
                 DSLogger.reportError("Network error(s) occurred!", ex);
@@ -1445,7 +1454,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.levelContainer.levelActors.player.setRegistered(false);
                 connector.getManagedSessions().values().forEach((IoSession ss) -> {
                     try {
-                        ss.closeNow().await();
+                        ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
                     } catch (InterruptedException ex) {
                         DSLogger.reportError("Unable to close session!", ex);
                         DSLogger.reportError(ex.getMessage(), ex);
