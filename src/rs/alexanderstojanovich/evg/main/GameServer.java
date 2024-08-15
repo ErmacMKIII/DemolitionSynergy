@@ -144,15 +144,17 @@ public class GameServer implements DSMachine, Runnable {
         TimerTask task1 = new TimerTask() {
             @Override
             public void run() {
-                // iterate through clients and check banlis & kicklist and time-to-live
+                // Decrease time-to-live for each client and remove expired clients
                 clients.forEach((ClientInfo client) -> {
                     client.timeToLive--;
                     if (client.timeToLive <= 0 || kicklist.contains(client.uniqueId)) {
-                        kicklist.remove(client.uniqueId);
                         performCleanUp(gameObject, client.uniqueId, client.timeToLive <= 0);
                     }
                 });
+                // Remove kicked and timed out players
                 clients.removeIf(cli -> cli.timeToLive <= 0 || kicklist.contains(cli.uniqueId));
+                // Kicklist is processed, clear it
+                kicklist.clear();
 
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (GameServer.this.clients.size()));
             }
