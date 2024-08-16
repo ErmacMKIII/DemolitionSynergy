@@ -151,8 +151,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds 'TIMEOUT FOR FRAGMENTS' or 'GOODBYE'
 
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
+    public static final int REQUEST_LEN = 8; // Used in calculaton for AVG ping
+    public static final int MAX_CAPACITY = 128; // Max Total Request List Capacity
 
+    protected int requestNum = 0;
     protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
+    protected double pingSum = 0.0;
 
     protected double waitReceiveTime = 0.0; // seconds
 
@@ -542,7 +546,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, session);
             double time = GLFW.glfwGetTime();
-            requests.add(new Pair<>(playerPosReq, time));
+            if (requests.capacity() < MAX_CAPACITY) {
+                requests.add(new Pair<>(playerPosReq, time));
+            }
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
@@ -830,9 +836,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Receive Async (Multiplayer)
      *
      * @param deltaTime time interval between updates
+     * @throws java.lang.Exception
      */
-    public void receiveAsync(double deltaTime) {
-//        DSLogger.reportInfo("wait="+waitReceiveTime, null);
+    public void receiveAsync(double deltaTime) throws Exception {
+        // if too much requests sent close connection with server
+        if (requests.capacity() >= MAX_CAPACITY) {
+            throw new Exception("Too much request sent. Connection will abort!");
+        }
+
         // if waiting time is less or equal than 45 sec
         if (waitReceiveTime <= WAIT_RECEIVE_TIME) {
             ResponseIfc.receiveAsync(this, session).thenAccept((ResponseIfc resp) -> {
@@ -871,7 +882,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                     other.getFront().set(posInfo.front);
                                     other.setRotationXYZ(posInfo.front);
                                 }
-                                double ping = endTime - beginTime;
+                                double ping = (endTime - beginTime) * 8.0;
                                 // calculate interpolation factor
                                 interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
                                 break;
@@ -887,9 +898,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                     }
-                    long tripTime = Math.round((endTime - beginTime) * 1000.0);
+                    // trip time millis, multiplied by 'magical 8' cuz it is called in a loop!
+                    double tripTime = (endTime - beginTime) * 8.0 * 1000.0;
+                    // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
                     if (tripTime <= WAIT_RECEIVE_TIME * 1000.0) {
-                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                        pingSum += tripTime;
+                        requestNum++;
                     }
 
                     // Reset waiting time (as response arrived to the request)
@@ -907,6 +921,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 this.disconnectFromServer();
                 this.gameObject.clearEverything();
             } else {
+                if (connected == ConnectionStatus.RECONNECTED) {
+                    // Reset reconnected to connected
+                    connected = ConnectionStatus.CONNECTED;
+                }
+
                 // success reset wait receive time
                 waitReceiveTime = 0L;
             }
@@ -926,7 +945,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 RequestIfc timeSyncReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 timeSyncReq.send(this, session);
                 double time = GLFW.glfwGetTime();
-                requests.add(new Pair<>(timeSyncReq, time));
+                if (requests.capacity() < MAX_CAPACITY) {
+                    requests.add(new Pair<>(timeSyncReq, time));
+                }
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
             }
@@ -943,7 +964,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
                     piReq.send(this, session);
                     double time = GLFW.glfwGetTime();
-                    requests.add(new Pair<>(piReq, time));
+                    if (requests.capacity() < MAX_CAPACITY) {
+                        requests.add(new Pair<>(piReq, time));
+                    }
                 } catch (Exception ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
@@ -956,7 +979,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this, session);
                         double time = GLFW.glfwGetTime();
-                        requests.add(new Pair<>(otherPlayerRequest, time));
+                        if (requests.capacity() < MAX_CAPACITY) {
+                            requests.add(new Pair<>(otherPlayerRequest, time));
+                        }
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);
                     }
@@ -968,7 +993,22 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // receive (connection) responses async
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
-            receiveAsync(deltaTime);
+            try {
+                receiveAsync(deltaTime);
+                if (requestNum >= Game.REQUEST_LEN) {
+                    // calculate average ping for 8 requests
+                    double avgPing = pingSum / (double) Game.REQUEST_LEN;
+                    // display ping in game window title
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", avgPing));
+                    // reset measurements
+                    pingSum = 0.0;
+                    requestNum = 0;
+                }
+            } catch (Exception ex) {
+                disconnectFromServer();
+                gameObject.clearEverything();
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
         }
 
         // Heavy operations to run afterwards

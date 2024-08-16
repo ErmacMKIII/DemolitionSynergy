@@ -737,7 +737,7 @@ public class Command implements Callable<Object> {
                         req.send(gameObject.game, gameObject.game.getSession());
                         ResponseIfc.receive(gameObject.game, gameObject.game.getSession());
                         double endTime = GLFW.glfwGetTime();
-                        result = Math.round((endTime - beginTime)) * 1000L;
+                        result = Math.round((endTime - beginTime) * 1000L);
                         command.status = Status.SUCCEEDED;
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);
