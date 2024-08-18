@@ -90,11 +90,6 @@ public class GameServer implements DSMachine, Runnable {
     public final ExecutorService serverHelperExecutor = Executors.newSingleThreadExecutor();
 
     /**
-     * Server workers executor
-     */
-    public final ExecutorService serverWorkerExecutor = Executors.newCachedThreadPool();
-
-    /**
      * Blacklisted hosts with number of attempts
      */
     public final IList<String> blacklist = new GapList<>();
@@ -205,7 +200,6 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void shutDown() {
         this.serverHelperExecutor.shutdown();
-        this.serverWorkerExecutor.shutdown();
         this.timerClientChk.cancel();
     }
 
@@ -357,10 +351,6 @@ public class GameServer implements DSMachine, Runnable {
 
     public ExecutorService getServerHelperExecutor() {
         return serverHelperExecutor;
-    }
-
-    public ExecutorService getServerWorkerExecutor() {
-        return serverWorkerExecutor;
     }
 
     public IList<String> getBlacklist() {
