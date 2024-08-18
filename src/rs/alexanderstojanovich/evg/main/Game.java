@@ -155,6 +155,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final int MAX_CAPACITY = 128; // Max Total Request List Capacity
 
     protected int requestNum = 0;
+    public final Object internRequestMutex = new Object();
     protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
     protected double pingSum = 0.0;
 
@@ -196,16 +197,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Interpolation factor
      */
     public double interpolationFactor = 0.5;
-
-    /**
-     * Maximum number of level attempts (retransmission)
-     */
-    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
-
-    /**
-     * Number of successive packets to receive before confirmation (Client)
-     */
-    public static final int PACKETS_MAX = 8;
 
     /**
      * Access to Game Engine.
@@ -546,8 +537,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, session);
             double time = GLFW.glfwGetTime();
-            if (requests.capacity() < MAX_CAPACITY) {
-                requests.add(new Pair<>(playerPosReq, time));
+            synchronized (internRequestMutex) {
+                if (requests.capacity() < MAX_CAPACITY) {
+                    requests.add(new Pair<>(playerPosReq, time));
+                }
             }
 
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
@@ -840,13 +833,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void receiveAsync(double deltaTime) throws Exception {
         // if too much requests sent close connection with server
-        if (requests.capacity() >= MAX_CAPACITY) {
-            throw new Exception("Too much request sent. Connection will abort!");
+        synchronized (internRequestMutex) {
+            if (requests.capacity() >= MAX_CAPACITY) {
+                throw new Exception("Too much request sent. Connection will abort!");
+            }
         }
-
         // if waiting time is less or equal than 45 sec
         if (waitReceiveTime <= WAIT_RECEIVE_TIME) {
             ResponseIfc.receiveAsync(this, session).thenAccept((ResponseIfc resp) -> {
+                double endTime = GLFW.glfwGetTime();
                 // this is issued kick from the server to the Guid of this machine
                 if (resp.getData().equals(getGuid())) {
                     DSLogger.reportInfo("You got kicked from the server!", null);
@@ -854,19 +849,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     disconnectFromServer();
                     gameObject.clearEverything();
                 } else {
-                    RequestIfc reqTarg = null;
                     double beginTime = 0.0;
-                    for (Pair<RequestIfc, Double> req : requests) {
-                        if (req.getKey().getChecksum() == resp.getChecksum()) {
-                            reqTarg = req.getKey();
-                            beginTime = req.getValue();
-                            break;
-                        }
+                    // choose the one which fits by unique checksum
+                    Pair<RequestIfc, Double> reqXtime = null;
+                    synchronized (internRequestMutex) {
+                        reqXtime = requests.getIf(req -> req.getKey().getChecksum() == resp.getChecksum());
                     }
-                    double endTime = GLFW.glfwGetTime();
-                    if (reqTarg != null) {
-                        final RequestIfc reqTargCopy = reqTarg;
-                        requests.removeIf(req -> req.getKey() == reqTargCopy || req.getValue() >= WAIT_RECEIVE_TIME);
+                    if (reqXtime != null) {
+                        // Affiliate response with request
+                        RequestIfc reqTarg = reqXtime.getKey();
+                        // Affilate response time recevied with request time sent
+                        beginTime = reqXtime.getValue();
+
                         switch (reqTarg.getRequestType()) {
                             case GET_TIME:
                                 Game.gameTicks = (double) resp.getData();
@@ -882,7 +876,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                     other.getFront().set(posInfo.front);
                                     other.setRotationXYZ(posInfo.front);
                                 }
-                                double ping = (endTime - beginTime) * 8.0;
+                                double ping = endTime - beginTime;
                                 // calculate interpolation factor
                                 interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
                                 break;
@@ -897,15 +891,22 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                 break;
                         }
 
+                        synchronized (internRequestMutex) {
+                            requests.remove(reqXtime);
+                        }
                     }
-                    // trip time millis, multiplied by 'magical 8' cuz it is called in a loop!
-                    double tripTime = (endTime - beginTime) * 8.0 * 1000.0;
+                    // trip time millis, multiplied by cuz it is called in a loop!
+                    double tripTime = (endTime - beginTime) * 1000.0;
                     // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
                     if (tripTime <= WAIT_RECEIVE_TIME * 1000.0) {
                         pingSum += tripTime;
                         requestNum++;
                     }
 
+                    // remove all X-requests which exceed max wait time of 45 sec
+                    synchronized (internRequestMutex) {
+                        requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
+                    }
                     // Reset waiting time (as response arrived to the request)
                     waitReceiveTime = 0L;
 
@@ -945,8 +946,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 RequestIfc timeSyncReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 timeSyncReq.send(this, session);
                 double time = GLFW.glfwGetTime();
-                if (requests.capacity() < MAX_CAPACITY) {
-                    requests.add(new Pair<>(timeSyncReq, time));
+                synchronized (internRequestMutex) {
+                    if (requests.capacity() < MAX_CAPACITY) {
+                        requests.add(new Pair<>(timeSyncReq, time));
+                    }
                 }
             } catch (Exception ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -964,8 +967,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
                     piReq.send(this, session);
                     double time = GLFW.glfwGetTime();
-                    if (requests.capacity() < MAX_CAPACITY) {
-                        requests.add(new Pair<>(piReq, time));
+                    synchronized (internRequestMutex) {
+                        if (requests.capacity() < MAX_CAPACITY) {
+                            requests.add(new Pair<>(piReq, time));
+                        }
                     }
                 } catch (Exception ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
@@ -979,8 +984,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this, session);
                         double time = GLFW.glfwGetTime();
-                        if (requests.capacity() < MAX_CAPACITY) {
-                            requests.add(new Pair<>(otherPlayerRequest, time));
+                        synchronized (internRequestMutex) {
+                            if (requests.capacity() < MAX_CAPACITY) {
+                                requests.add(new Pair<>(otherPlayerRequest, time));
+                            }
                         }
                     } catch (Exception ex) {
                         DSLogger.reportError(ex.getMessage(), ex);

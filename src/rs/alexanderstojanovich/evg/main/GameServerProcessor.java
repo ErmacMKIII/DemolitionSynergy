@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32C;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -79,16 +80,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
     public static int TotalFailedAttempts = 0;
 
     /**
-     * Number of successive packets to receive before confirmation (Server)
-     */
-    public static final int PACKETS_MAX = 8;
-
-    /**
-     * Maximum number of level attempts (retransmission)
-     */
-    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
-
-    /**
      * Last checksum to avoid (duping)
      */
     protected static long lastChecksum = 0L;
@@ -106,6 +97,34 @@ public class GameServerProcessor extends IoHandlerAdapter {
      */
     public GameServerProcessor(GameServer gameServer) {
         this.gameServer = gameServer;
+    }
+
+    /**
+     * Event on message received.
+     *
+     * @param session session with (client) endpoint
+     * @param message object message received
+     *
+     * @throws Exception
+     */
+    @Override
+    public void messageReceived(IoSession session, Object message) throws Exception {
+        // Process recived (as request)
+        GameServerProcessor.Result procResult = process(session, message);
+        // Post process that request was processed (and move on . . )
+        postProcess(procResult);
+    }
+
+    /**
+     * Event on message sent
+     *
+     * @param session session with (client) endpoint
+     * @param message object message sent
+     * @throws Exception
+     */
+    @Override
+    public void messageSent(IoSession session, Object message) throws Exception {
+
     }
 
     /**

@@ -49,13 +49,13 @@ public class GameServer implements DSMachine, Runnable {
 
     public static int TotalFailedAttempts = 0;
 
-    public final Configuration config = Configuration.getInstance();
+    public static final Configuration config = Configuration.getInstance();
     protected String worldName = "My World";
     public static int DEFAULT_PORT = 13667;
     protected String localIP = config.getLocalIP();
     protected int port = config.getServerPort();
 
-    protected static final int MAX_CLIENTS = 16;
+    protected static final int MAX_CLIENTS = config.getMaxClients();
 
     protected SocketAddress endpoint;
 
@@ -85,14 +85,14 @@ public class GameServer implements DSMachine, Runnable {
     public static final long GOODBYE_TIMEOUT = 15000L;
 
     /**
-     * Magic bytes of End-of-Stream
+     * Server util helper (time to live etc.)
      */
-    public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
+    public final ExecutorService serverHelperExecutor = Executors.newSingleThreadExecutor();
 
     /**
-     * Server worker
+     * Server workers executor
      */
-    public final ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
+    public final ExecutorService serverWorkerExecutor = Executors.newCachedThreadPool();
 
     /**
      * Blacklisted hosts with number of attempts
@@ -161,7 +161,7 @@ public class GameServer implements DSMachine, Runnable {
         };
         timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
 
-        serverExecutor.execute(this);
+        serverHelperExecutor.execute(this);
 
         DSLogger.reportInfo(String.format("Commencing start of Game Server. Game Server will start on %s:%d", localIP, port), null);
     }
@@ -204,8 +204,8 @@ public class GameServer implements DSMachine, Runnable {
      * Shut down execution service(s). Server is not available anymore.
      */
     public void shutDown() {
-        this.serverExecutor.shutdown();
-//        this.serverTaskExecutor.shutdown();
+        this.serverHelperExecutor.shutdown();
+        this.serverWorkerExecutor.shutdown();
         this.timerClientChk.cancel();
     }
 
@@ -355,8 +355,12 @@ public class GameServer implements DSMachine, Runnable {
         return timeout;
     }
 
-    public ExecutorService getServerExecutor() {
-        return serverExecutor;
+    public ExecutorService getServerHelperExecutor() {
+        return serverHelperExecutor;
+    }
+
+    public ExecutorService getServerWorkerExecutor() {
+        return serverWorkerExecutor;
     }
 
     public IList<String> getBlacklist() {
