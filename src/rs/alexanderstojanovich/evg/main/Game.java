@@ -152,7 +152,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
     public static final int REQUEST_LEN = 8; // Used in calculaton for AVG ping
-    public static final int MAX_CAPACITY = 128; // Max Total Request List Capacity
+    public static final int MAX_SIZE = 128; // Max Total Request List SIZE
 
     protected int requestNum = 0;
     public final Object internRequestMutex = new Object();
@@ -538,7 +538,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             playerPosReq.send(this, session);
             double time = GLFW.glfwGetTime();
             synchronized (internRequestMutex) {
-                if (requests.capacity() < MAX_CAPACITY) {
+                if (requests.size() < MAX_SIZE) {
                     requests.add(new Pair<>(playerPosReq, time));
                 }
             }
@@ -834,7 +834,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public void receiveAsync(double deltaTime) throws Exception {
         // if too much requests sent close connection with server
         synchronized (internRequestMutex) {
-            if (requests.capacity() >= MAX_CAPACITY) {
+            if (requests.size() >= MAX_SIZE) {
                 throw new Exception("Too much request sent. Connection will abort!");
             }
         }
@@ -896,10 +896,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
                     }
                     // trip time millis, multiplied by cuz it is called in a loop!
-                    double tripTime = (endTime - beginTime) * 1000.0;
+                    double tripTime = endTime - beginTime;
                     // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
-                    if (tripTime <= WAIT_RECEIVE_TIME * 1000.0) {
-                        pingSum += tripTime;
+                    if (tripTime <= WAIT_RECEIVE_TIME) {
+                        pingSum += tripTime * 1000.0;
                         requestNum++;
                     }
 
@@ -947,7 +947,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 timeSyncReq.send(this, session);
                 double time = GLFW.glfwGetTime();
                 synchronized (internRequestMutex) {
-                    if (requests.capacity() < MAX_CAPACITY) {
+                    if (requests.size() < MAX_SIZE) {
                         requests.add(new Pair<>(timeSyncReq, time));
                     }
                 }
@@ -968,7 +968,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     piReq.send(this, session);
                     double time = GLFW.glfwGetTime();
                     synchronized (internRequestMutex) {
-                        if (requests.capacity() < MAX_CAPACITY) {
+                        if (requests.size() < MAX_SIZE) {
                             requests.add(new Pair<>(piReq, time));
                         }
                     }
@@ -985,7 +985,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         otherPlayerRequest.send(this, session);
                         double time = GLFW.glfwGetTime();
                         synchronized (internRequestMutex) {
-                            if (requests.capacity() < MAX_CAPACITY) {
+                            if (requests.size() < MAX_SIZE) {
                                 requests.add(new Pair<>(otherPlayerRequest, time));
                             }
                         }

@@ -201,7 +201,7 @@ public class Console {
                     GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
                     final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
-                    if (clipboard != null) {
+                    if (clipboard != null && !clipboard.isEmpty()) {
                         input.insert(cursorPosition, clipboard);
                         cursorPosition += clipboard.length();
                         updateInputText();
