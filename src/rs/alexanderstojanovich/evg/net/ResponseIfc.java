@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.net;
 
 import java.util.concurrent.CompletableFuture;
 import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.session.IoSession;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameServer;
@@ -66,7 +67,13 @@ public interface ResponseIfc extends DSObject {
      * @throws java.lang.Exception if network error
      */
     public static ResponseIfc receive(Game client, IoSession session) throws Exception {
-        Object message = session.read().await().getMessage();
+        ReadFuture read = session.read();
+        Object message = null;
+
+        // read message within specified timeout
+        if (read.await(client.getTimeout())) {
+            message = read.getMessage();
+        }
 
         // Get message as Byte Buffer
         if (message instanceof IoBuffer) {

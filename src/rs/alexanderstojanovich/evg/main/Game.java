@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -54,7 +53,6 @@ import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
-import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -217,7 +215,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * UDP connector for (Game) client
      */
-    protected NioDatagramConnector connector;
+    protected NioDatagramConnector connector = new NioDatagramConnector();
 
     /**
      * Construct new game (client) view. Demolition Synergy client.
@@ -226,8 +224,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public Game(GameObject gameObject) {
         this.gameObject = gameObject;
+        // keys press and hold (init all released - false)
         Arrays.fill(keys, false);
+        // init default callbacks (keyboard & mouse inputs)
         initCallbacks();
+        // create (instance) new UDP connector            
+        connector.setHandler(Game.this);
     }
 
     /**
@@ -832,6 +834,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @throws java.lang.Exception
      */
     public void receiveAsync(double deltaTime) throws Exception {
+//        if (true) {
+//            return;
+//        }
         // if too much requests sent close connection with server
         synchronized (internRequestMutex) {
             if (requests.size() >= MAX_SIZE) {
@@ -1178,9 +1183,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             return false;
         }
         try {
-            // create (instance) new UDP connector
-            connector = new NioDatagramConnector();
-            connector.setHandler(Game.this);
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
             // Try to connect to server
             ConnectFuture connFuture = connector.connect(new InetSocketAddress(serverHostName, port));
@@ -1197,7 +1199,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 helloRequest.send(this, connFuture.getSession());
 
                 // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc response = ResponseIfc.receiveAsync(this, session).get(timeout, TimeUnit.MILLISECONDS);
+                ResponseIfc response = ResponseIfc.receive(this, session);
                 if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                     // Authenticated                    
                     DSLogger.reportInfo("Connected to server!", null);
@@ -1280,15 +1282,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             register.send(this, session);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc response = ResponseIfc.receiveAsync(this, session).get(timeout, TimeUnit.MILLISECONDS);
+            ResponseIfc response = ResponseIfc.receive(this, session);
             if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                gameObject.intrface.getConsole().write(response.getData().toString());
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                 okey |= true;
             } else {
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                gameObject.intrface.getConsole().write(response.getData().toString(), Command.Status.FAILED);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()), Command.Status.FAILED);
             }
         } catch (IOException | TimeoutException ex) {
             DSLogger.reportError("Network error(s) occurred!", ex);
@@ -1334,7 +1336,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this, session);
 
-            ResponseIfc response0 = ResponseIfc.receiveAsync(this, session).get(timeout, TimeUnit.MILLISECONDS);
+            ResponseIfc response0 = ResponseIfc.receive(this, session);
             if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
                 // Display server response in client console
@@ -1446,7 +1448,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 piReq.send(this, session);
 
                 // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc objResp = ResponseIfc.receiveAsync(this, session).get(timeout, TimeUnit.MILLISECONDS);
+                ResponseIfc objResp = ResponseIfc.receive(this, session);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), objResp.getData().toString()), null);
                 gameObject.intrface.getConsole().write(objResp.getData().toString());
 
@@ -1473,41 +1475,31 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Send a simple 'goodbye' message with magic bytes prepended
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
-//                timeout = DEFAULT_SHORTENED_TIMEOUT;
-//                serverEndpoint.setSoTimeout(timeout);
-                // Wait for response (assuming simple echo for demonstration)  
-                ResponseIfc.receiveAsync(this, session).thenApply((ResponseIfc response) -> {
-                    try {
-                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
-                        gameObject.intrface.getConsole().write(response.getData().toString());
-                        session.closeNow().await(timeout);
-                        DSLogger.reportInfo("Disconnected from server!", null);
-
-                        return response; // need "return this again"
-                    } catch (InterruptedException ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
-
-                    return Response.INVALID;
-                });
-            } catch (IOException | TimeoutException ex) {
-                DSLogger.reportError("Network error(s) occurred!", ex);
-                DSLogger.reportError(ex.getMessage(), ex);
+                // Wait for response (assuming simple echo for demonstration)
+                ResponseIfc response = ResponseIfc.receive(this, session);
+                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                DSLogger.reportInfo("Disconnected from server!", null);
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
             } finally {
-                gameObject.levelContainer.levelActors.player.setRegistered(false);
-                connector.getManagedSessions().values().forEach((IoSession ss) -> {
-                    try {
-                        ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
-                    } catch (InterruptedException ex) {
-                        DSLogger.reportError("Unable to close session!", ex);
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
-                });
-                connector.dispose();
-                connected = ConnectionStatus.NOT_CONNECTED;
+                try {
+                    gameObject.levelContainer.levelActors.player.setRegistered(false);
+                    session.closeNow().await(timeout);
+                    connector.getManagedSessions().values().forEach((IoSession ss) -> {
+                        try {
+                            ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
+                        } catch (InterruptedException ex) {
+                            DSLogger.reportError("Unable to close session!", ex);
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        }
+                    });
+                } catch (InterruptedException ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                } finally {
+                    connected = ConnectionStatus.NOT_CONNECTED;
+                }
             }
         }
     }
@@ -1532,6 +1524,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     * Frees all the callbacks. Called after the main loop.
      */
     public void cleanUp() {
+        connector.dispose();
         defaultCursorCallback.free();
         defaultKeyCallback.free();
         defaultMouseButtonCallback.free();
@@ -1552,7 +1545,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             wrldReq.send(this, session);
 
             // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc objResp = ResponseIfc.receiveAsync(this, session).get(timeout, TimeUnit.MILLISECONDS);
+            ResponseIfc objResp = ResponseIfc.receive(this, session);
             DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), String.valueOf(objResp.getData())), null);
             gameObject.intrface.getConsole().write(String.valueOf(objResp.getData()));
             LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(objResp.getData()));

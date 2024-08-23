@@ -800,7 +800,7 @@ public class Command implements Callable<Object> {
                             } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                 DSLogger.reportError(ex.getMessage(), ex);
                             }
-                        });
+                        }, gameObject.intrface.getConsole().commandExecutor);
                     }
                 }
                 break;

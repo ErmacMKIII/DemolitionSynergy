@@ -867,11 +867,9 @@ public class Intrface {
                                     }
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
-                                } catch (Exception ex) {
-                                    DSLogger.reportError(ex.getMessage(), ex);
                                 }
 
-                            });
+                            }, Intrface.this.getConsole().commandExecutor);
                             break;
                     }
                 }

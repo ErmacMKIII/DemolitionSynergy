@@ -45,7 +45,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public class Console {
 
-    public final ExecutorService commandExecutor = Executors.newFixedThreadPool(4);
+    public final ExecutorService commandExecutor = Executors.newCachedThreadPool();
 
     private static final Configuration cfg = Configuration.getInstance();
     private final Quad panel;
@@ -428,11 +428,23 @@ public class Console {
     }
 
     /*
-     * Method to update the displayed input text with the cursor at the correct position
+        * Method to update the displayed input text with the cursor at the correct position
      */
     private void updateInputText() {
+        // Ensure cursorPosition is within the valid range
+        if (cursorPosition < 0) {
+            cursorPosition = 0;
+        } else if (cursorPosition > input.length()) {
+            cursorPosition = input.length();
+        }
+
+        // Create a copy of the input text to modify
         StringBuilder displayText = new StringBuilder(input);
+
+        // Insert the cursor (underscore) at the current position
         displayText.insert(cursorPosition, '_');
+
+        // Update the displayed text with a prefix and the modified input
         inText.setContent("]" + displayText.toString());
     }
 

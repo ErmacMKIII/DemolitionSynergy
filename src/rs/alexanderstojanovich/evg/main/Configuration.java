@@ -333,7 +333,7 @@ public class Configuration {
             pw.println("MaxClients = " + maxClients);
             pw.println("# Use backup guid. Testing purposes.");
             pw.println("UseBakGuid = " + useBakGuid);
-            pw.println("# Player name - multiplayer");
+            pw.println("# Player name - Multiplayer");
             pw.println("Name = " + name);
             pw.println("# Player color");
             pw.println("Color = " + String.format("(%.2f, %.2f, %.2f)", color.x, color.y, color.z));
