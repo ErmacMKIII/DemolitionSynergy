@@ -853,7 +853,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // choose the one which fits by unique checksum
                     Pair<RequestIfc, Double> reqXtime = null;
                     synchronized (internRequestMutex) {
-                        reqXtime = requests.getIf(req -> req.getKey().getChecksum() == resp.getChecksum());
+                        reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == resp.getChecksum());
+                        requests.remove(reqXtime);
                     }
                     if (reqXtime != null) {
                         // Affiliate response with request
@@ -891,9 +892,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                 break;
                         }
 
-                        synchronized (internRequestMutex) {
-                            requests.remove(reqXtime);
-                        }
                     }
                     // trip time millis, multiplied by cuz it is called in a loop!
                     double tripTime = endTime - beginTime;
@@ -904,9 +902,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
 
                     // remove all X-requests which exceed max wait time of 45 sec
-                    synchronized (internRequestMutex) {
-                        requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
-                    }
+//                    synchronized (internRequestMutex) {
+//                        requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
+//                    }
                     // Reset waiting time (as response arrived to the request)
                     waitReceiveTime = 0L;
 
@@ -1182,7 +1180,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         try {
             // create (instance) new UDP connector
             connector = new NioDatagramConnector();
-            connector.setHandler(new IoHandlerAdapter());
+            connector.setHandler(Game.this);
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
             // Try to connect to server
             ConnectFuture connFuture = connector.connect(new InetSocketAddress(serverHostName, port));
