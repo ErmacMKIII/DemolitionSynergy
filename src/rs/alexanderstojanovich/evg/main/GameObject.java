@@ -36,6 +36,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32C;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
@@ -51,6 +52,7 @@ import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.intrface.Command;
+import rs.alexanderstojanovich.evg.intrface.DynamicText;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.BlockEnvironment;
@@ -63,6 +65,7 @@ import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  * Game Engine composed of Game (Loop), Game Renderer and core components.
@@ -129,7 +132,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public static final Object UPDATE_RENDER_IFC_MUTEX = new Object();
 
-    protected Quad splashScreen;
+    protected Quad splashScreen; // on loading
+    protected DynamicText initText; // displayed with splash screen
     protected static GameObject instance = null;
     protected boolean chunkOperationPerformed = false;
 
@@ -165,6 +169,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------        
         this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
+
+        this.initText = new DynamicText(GameAssets.FONT, "Initializing...", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
         initializedWindow = true;
@@ -188,12 +194,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         game = new Game(this); // init game with given configuration and game object
         gameServer = new GameServer(this); // create new server from game object
         DSLogger.reportDebug("Game initialized.", null);
+        this.initText.setContent("Game initialized.");
         // game interacts with the whole game container
         renderer = new GameRenderer(this); // init renderer with given game object
         DSLogger.reportDebug("Game Renderer initialized.", null);
+        this.initText.setContent("Game Renderer initialized.");
         // Intrface holding stuff initialized
         intrface = new Intrface(this);
         DSLogger.reportDebug("Game Interface initialized.", null);
+        this.initText.setContent("Game Interface initialized.");
+        this.initText.alignToNextChar(intrface);
         instance = this;
     }
 
@@ -220,7 +230,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         //----------------------------------------------------------------------
         renderer.start();
         DSLogger.reportDebug("Renderer started.", null);
+        this.initText.setContent("Game Renderer started.");
         DSLogger.reportDebug("Game will start soon.", null);
+        this.initText.setContent("Game will start soon.");
         game.go(); // after the loop end
         gameServer.stopServer(); // stop the server
         gameServer.shutDown();
@@ -375,6 +387,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 splashScreen.bufferSmart(intrface);
             }
             splashScreen.render(null, ShaderProgram.getIntrfaceContourShader());
+            if (!initText.isBuffered()) {
+                initText.bufferSmart(intrface);
+            }
+            initText.render(null, ShaderProgram.getIntrfaceShader());
         } else {
             int renderFlag = 0;
             renderFlag |= BlockEnvironment.LIGHT_MASK;

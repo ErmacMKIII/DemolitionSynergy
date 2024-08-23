@@ -151,10 +151,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds 'TIMEOUT FOR FRAGMENTS' or 'GOODBYE'
 
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
-    public static final int REQUEST_LEN = 8; // Used in calculaton for AVG ping
+    public static final int REQUEST_FULFILLMENT_LENGTH = 8; // Used in calculaton for AVG ping
     public static final int MAX_SIZE = 128; // Max Total Request List SIZE
 
-    protected int requestNum = 0;
+    protected int fulfillNum = 0;
     public final Object internRequestMutex = new Object();
     protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
     protected double pingSum = 0.0;
@@ -898,7 +898,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
                     if (tripTime <= WAIT_RECEIVE_TIME) {
                         pingSum += tripTime * 1000.0;
-                        requestNum++;
+                        fulfillNum++;
                     }
 
                     // remove all X-requests which exceed max wait time of 45 sec
@@ -1000,14 +1000,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
             try {
                 receiveAsync(deltaTime);
-                if (requestNum >= Game.REQUEST_LEN) {
+                if (fulfillNum >= Game.REQUEST_FULFILLMENT_LENGTH) {
                     // calculate average ping for 8 requests
-                    double avgPing = pingSum / (double) Game.REQUEST_LEN;
+                    double avgPing = pingSum / (double) fulfillNum;
                     // display ping in game window title
                     gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", avgPing));
                     // reset measurements
                     pingSum = 0.0;
-                    requestNum = 0;
+                    fulfillNum = 0;
                 }
             } catch (Exception ex) {
                 disconnectFromServer();
