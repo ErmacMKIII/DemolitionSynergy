@@ -18,9 +18,12 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector2f;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
@@ -59,7 +62,11 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             done = true;
         };
 
-        GameObject.TASK_EXECUTOR.execute(task);
+        try {
+            GameObject.getInstance().TaskExecutor.execute(task);
+        } catch (Exception ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        }
     }
 
     /**
@@ -74,7 +81,13 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             return execute(arg);
         };
 
-        return GameObject.TASK_EXECUTOR.submit(task);
+        try {
+            return GameObject.getInstance().TaskExecutor.submit(task);
+        } catch (Exception ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        }
+
+        return null;
     }
 
 }

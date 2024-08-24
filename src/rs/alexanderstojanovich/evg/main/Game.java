@@ -159,11 +159,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected double waitReceiveTime = 0.0; // seconds
 
     /**
-     * Magic bytes of End-of-Stream
-     */
-    public static final byte[] EOS = {(byte) 0xAB, (byte) 0xCD, (byte) 0x0F, (byte) 0x15}; // 4 Bytes
-
-    /**
      * Connect to server stuff & endpoint
      */
     protected String serverHostName = config.getServerIP();
@@ -833,9 +828,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @throws java.lang.Exception
      */
     public void receiveAsync(double deltaTime) throws Exception {
-//        if (true) {
-//            return;
-//        }
         // if too much requests sent close connection with server
         synchronized (internRequestMutex) {
             if (requests.size() >= MAX_SIZE) {
@@ -844,7 +836,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
         // if waiting time is less or equal than 45 sec
         if (waitReceiveTime <= WAIT_RECEIVE_TIME) {
-            ResponseIfc.receiveAsync(this, session).thenAccept((ResponseIfc resp) -> {
+            ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc resp) -> {
                 double endTime = GLFW.glfwGetTime();
                 // this is issued kick from the server to the Guid of this machine
                 if (resp.getData().equals(getGuid())) {
@@ -919,8 +911,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         } else {
             // attempt to reconnected
             if (!reconnect()) {
-                this.gameObject.intrface.getConsole().write("Connection with the sever lost!", Command.Status.FAILED);
-                DSLogger.reportError("Connection with the sever lost!", null);
+                this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
+                DSLogger.reportError("Connection with the server lost!", null);
                 this.disconnectFromServer();
                 this.gameObject.clearEverything();
             } else {
@@ -1290,7 +1282,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 throw new Exception("Server not responding!");
             }
 
-            if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
+            if (response.getChecksum() == register.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                 gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -1486,9 +1478,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (response == Response.INVALID) {
                     connected = ConnectionStatus.NOT_CONNECTED;
                     throw new Exception("Server not responding!");
+                } else if (response.getChecksum() == goodByeRequest.getChecksum()) {
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                 }
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                 DSLogger.reportInfo("Disconnected from server!", null);
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
@@ -1508,6 +1501,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 } catch (InterruptedException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 } finally {
+                    requests.clear();
                     connected = ConnectionStatus.NOT_CONNECTED;
                 }
             }
@@ -1783,6 +1777,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public IoSession getSession() {
         return session;
+    }
+
+    public double getWaitReceiveTime() {
+        return waitReceiveTime;
     }
 
 }

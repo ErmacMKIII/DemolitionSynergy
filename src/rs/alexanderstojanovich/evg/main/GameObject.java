@@ -119,7 +119,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Async Task Executor
      */
-    public static final ExecutorService TASK_EXECUTOR = Executors.newSingleThreadExecutor();
+    public final ExecutorService TaskExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Update/Generate for Level Container Mutex. Responsible for read/write to
@@ -695,7 +695,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         // Save level to file asynchronously
         CompletableFuture.supplyAsync(() -> {
             return levelContainer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
-        }).thenApply((Boolean rez) -> {
+        }, this.TaskExecutor).thenApply((Boolean rez) -> {
             levelContainer.levelActors.player.setRegistered(rez);
             return null;
         });
@@ -844,7 +844,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     * Load the window context and destroyes the window.
      */
     public void destroy() {
-        TASK_EXECUTOR.shutdown();
+        TaskExecutor.shutdown();
         WINDOW.destroy();
     }
 
