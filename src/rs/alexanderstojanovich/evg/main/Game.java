@@ -17,12 +17,10 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeoutException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.ReadFuture;
@@ -53,6 +51,7 @@ import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -1200,6 +1199,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                 // Wait for response (assuming simple echo for demonstration)            
                 ResponseIfc response = ResponseIfc.receive(this, session);
+                // If there is no response but only timeout
+                if (response == Response.INVALID) {
+                    connected = ConnectionStatus.NOT_CONNECTED;
+                    throw new Exception("Server not responding!");
+                }
+
                 if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                     // Authenticated                    
                     DSLogger.reportInfo("Connected to server!", null);
@@ -1218,13 +1223,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     return true;
                 }
             }
-        } catch (IOException | TimeoutException ex) {
+        } catch (Exception ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
             gameObject.intrface.getConsole().write("Unable to connect to server!", Command.Status.FAILED);
-            DSLogger.reportError(ex.getMessage(), ex);
-        } catch (Exception ex) {
-            DSLogger.reportError("Error occurred!", ex);
-            gameObject.intrface.getConsole().write("Error occurred!", Command.Status.FAILED);
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
@@ -1283,6 +1284,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc response = ResponseIfc.receive(this, session);
+            // If there is no response but only timeout
+            if (response == Response.INVALID) {
+                connected = ConnectionStatus.NOT_CONNECTED;
+                throw new Exception("Server not responding!");
+            }
+
             if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
@@ -1292,11 +1299,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                 gameObject.intrface.getConsole().write(String.valueOf(response.getData()), Command.Status.FAILED);
             }
-        } catch (IOException | TimeoutException ex) {
-            DSLogger.reportError("Network error(s) occurred!", ex);
-            DSLogger.reportError(ex.getMessage(), ex);
         } catch (Exception ex) {
-            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError("Network error(s) occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
@@ -1425,10 +1429,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(response0.getResponseStatus()), String.valueOf(response0.getData())), null);
                 gameObject.intrface.getConsole().write(response0.getData().toString(), Command.Status.FAILED);
             }
-        } catch (IOException | TimeoutException ex) {
-            DSLogger.reportError("Unable to connect to server!", ex);
         } catch (Exception ex) {
-            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError("Unable to connect to server!", ex);
         }
 
         return DownloadStatus.OK;
@@ -1449,16 +1451,19 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                 // Wait for response (assuming simple echo for demonstration)            
                 ResponseIfc objResp = ResponseIfc.receive(this, session);
-                DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), objResp.getData().toString()), null);
+                // If there is no response but only timeout
+                if (objResp == Response.INVALID) {
+                    connected = ConnectionStatus.NOT_CONNECTED;
+                    throw new Exception("Server not responding!");
+                }
+
+                DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(objResp.getResponseStatus()), String.valueOf(objResp.getData())), null);
                 gameObject.intrface.getConsole().write(objResp.getData().toString());
 
                 Gson gson = new Gson();
                 result = gson.fromJson((String) objResp.getData(), PlayerInfo[].class);
-            } catch (IOException | TimeoutException ex) {
-                DSLogger.reportError("Network error(s) occurred!", ex);
-                DSLogger.reportError(ex.getMessage(), ex);
             } catch (Exception ex) {
-                DSLogger.reportError("Error occurred!", ex);
+                DSLogger.reportError("Network error(s) occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
             }
         }
@@ -1477,6 +1482,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 goodByeRequest.send(this, session);
                 // Wait for response (assuming simple echo for demonstration)
                 ResponseIfc response = ResponseIfc.receive(this, session);
+                // If there is no response but only timeout
+                if (response == Response.INVALID) {
+                    connected = ConnectionStatus.NOT_CONNECTED;
+                    throw new Exception("Server not responding!");
+                }
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                 gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                 DSLogger.reportInfo("Disconnected from server!", null);
@@ -1546,6 +1556,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Wait for response (assuming simple echo for demonstration)            
             ResponseIfc objResp = ResponseIfc.receive(this, session);
+            // If there is no response but only timeout
+            if (objResp == Response.INVALID) {
+                connected = ConnectionStatus.NOT_CONNECTED;
+                throw new Exception("Server not responding!");
+            }
+
             DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), String.valueOf(objResp.getData())), null);
             gameObject.intrface.getConsole().write(String.valueOf(objResp.getData()));
             LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(objResp.getData()));
@@ -1553,7 +1569,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             return jsonWorldInfo;
 
         } catch (Exception ex) {
-            DSLogger.reportError("Error occurred!", ex);
+            DSLogger.reportError("Network Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
