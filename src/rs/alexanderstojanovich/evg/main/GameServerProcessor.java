@@ -79,16 +79,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
     public static int TotalFailedAttempts = 0;
 
     /**
-     * Number of successive packets to receive before confirmation (Server)
-     */
-    public static final int PACKETS_MAX = 8;
-
-    /**
-     * Maximum number of level attempts (retransmission)
-     */
-    public static final int RETRANSMISSION_MAX_ATTEMPTS = 3;
-
-    /**
      * Last checksum to avoid (duping)
      */
     protected static long lastChecksum = 0L;
@@ -106,6 +96,34 @@ public class GameServerProcessor extends IoHandlerAdapter {
      */
     public GameServerProcessor(GameServer gameServer) {
         this.gameServer = gameServer;
+    }
+
+    /**
+     * Event on message received.
+     *
+     * @param session session with (client) endpoint
+     * @param message object message received
+     *
+     * @throws Exception
+     */
+    @Override
+    public void messageReceived(IoSession session, Object message) throws Exception {
+        // Process recived (as request)
+        GameServerProcessor.Result procResult = process(session, message);
+        // Post process that request was processed (and move on . . )
+        postProcess(procResult);
+    }
+
+    /**
+     * Event on message sent
+     *
+     * @param session session with (client) endpoint
+     * @param message object message sent
+     * @throws Exception
+     */
+    @Override
+    public void messageSent(IoSession session, Object message) throws Exception {
+
     }
 
     /**
@@ -142,17 +160,17 @@ public class GameServerProcessor extends IoHandlerAdapter {
         lastTime = currTime;
 
         // pending kick
-        if (gameServer.kicklist.contains(clientGuid)) {
-            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, clientGuid);
-            response.send(gameServer, session);
-
-            gameServer.kicklist.remove(clientGuid);
-            gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
-            GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
-
-            return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
-        }
-
+//        if (gameServer.kicklist.contains(clientGuid)) {
+//            // issuing kick to the client (guid as data)
+//            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, clientGuid);
+//            response.send(gameServer, session);
+//
+//            gameServer.kicklist.remove(clientGuid);
+//            gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
+//            GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
+//
+//            return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
+//        }
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
             return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Invalid request - Reason Unknown!");
@@ -194,7 +212,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                     // Send a simple message with magic bytes prepended
                     msg = String.format("Hello, you are connected to %s, v%s, for help append \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                    gameServer.clients.add(new ClientInfo(clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
+                    gameServer.clients.add(new ClientInfo(session, clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
                     gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 }
                 response.send(gameServer, session);
@@ -253,7 +271,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
                 gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 if (clientGuid != null) {
-                    gameServer.kicklist.remove(clientGuid);
                     GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }
                 session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
@@ -495,9 +512,12 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 }
                 break;
             default:
-            case OK:
+            case OK: // if client send valid request reset TTL to 120 and increase request per second (RPS)
                 gameServer.clients.filter(client -> client.hostName.equals(procResult.hostname) && client.getUniqueId().equals(procResult.guid))
-                        .forEach(client2 -> client2.timeToLive = GameServer.TIME_TO_LIVE);
+                        .forEach(client2 -> {
+                            client2.timeToLive = GameServer.TIME_TO_LIVE;
+                            client2.requestPerSecond++;
+                        });
                 msg = String.format("Client %s %s %s OK", procResult.hostname, procResult.guid, procResult.message);
                 DSLogger.reportInfo(msg, null);
                 // avoid spam client console

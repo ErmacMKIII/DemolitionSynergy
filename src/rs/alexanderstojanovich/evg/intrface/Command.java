@@ -780,27 +780,25 @@ public class Command implements Callable<Object> {
                         }
 
 //                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);                        
-                        CompletableFuture.runAsync(() -> {
-                            try {
-                                command.status = Status.PENDING;
-                                double beginTime = GLFW.glfwGetTime();
-                                if (gameObject.game.connectToServer()) {
-                                    gameObject.intrface.getConsole().write("Connected to server!");
-                                    double endTime = GLFW.glfwGetTime();
-                                    long tripTime = Math.round((endTime - beginTime) * 1000.0);
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
-                                    if (gameObject.generateMultiPlayerLevelAsJoin()) {
-                                        Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
-                                        gameObject.intrface.getGameMenu().getTitle().setContent("MULTIPLAYER");
-                                    }
-                                    command.status = Status.SUCCEEDED;
-                                } else {
-                                    command.status = Status.FAILED;
+                        try {
+                            command.status = Status.PENDING;
+                            double beginTime = GLFW.glfwGetTime();
+                            if (gameObject.game.connectToServer()) {
+                                gameObject.intrface.getConsole().write("Connected to server!");
+                                double endTime = GLFW.glfwGetTime();
+                                long tripTime = Math.round((endTime - beginTime) * 1000.0);
+                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                if (gameObject.generateMultiPlayerLevelAsJoin()) {
+                                    Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
+                                    gameObject.intrface.getGameMenu().getTitle().setContent("MULTIPLAYER");
                                 }
-                            } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
-                                DSLogger.reportError(ex.getMessage(), ex);
+                                command.status = Status.SUCCEEDED;
+                            } else {
+                                command.status = Status.FAILED;
                             }
-                        });
+                        } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        }
                     }
                 }
                 break;
@@ -848,7 +846,7 @@ public class Command implements Callable<Object> {
                             gameObject.gameServer.startServer();
 
                             // if game endpoint is running and not shut down
-                            GameObject.TASK_EXECUTOR.execute(() -> {
+                            gameObject.TaskExecutor.execute(() -> {
                                 try {
                                     boolean ok = false;
                                     if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {

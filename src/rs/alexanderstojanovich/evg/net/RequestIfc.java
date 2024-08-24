@@ -192,4 +192,10 @@ public interface RequestIfc extends DSObject {
      */
     public String getGuid();
 
+    /**
+     * Get the timestamp associated with the request.
+     *
+     * @return the timestamp as a long
+     */
+    public long getTimestamp();
 }
