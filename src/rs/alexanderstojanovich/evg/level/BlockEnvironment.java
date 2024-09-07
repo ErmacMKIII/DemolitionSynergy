@@ -62,7 +62,6 @@ public class BlockEnvironment {
      */
 //    public final IList<Tuple> modifiedTuples = new GapList<>();
     protected volatile boolean optimizing = false;
-    protected volatile boolean fullyOptimized = false;
     protected final Chunks chunks;
     protected int texProcIndex = 0;
 
@@ -176,7 +175,7 @@ public class BlockEnvironment {
     }
 
     /**
-     * Reorder group of vertices of fullyOptimized tuples if underwater
+     * Reorder group of vertices of optimized tuples if underwater
      *
      * @param cameraInFluid is camera in fluid (checked by level container
      * externally)
@@ -192,7 +191,7 @@ public class BlockEnvironment {
     }
 
     /**
-     * Reorder group of vertices of fullyOptimized tuples if underwater
+     * Reorder group of vertices of optimized tuples if underwater
      *
      * Still very heavy operation.
      *
@@ -218,7 +217,7 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() > 0)) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0)) {
             tuple.animate();
         }
     }
@@ -294,8 +293,6 @@ public class BlockEnvironment {
         IList<Tuple> temp = optimizedTuples;
         optimizedTuples = workingTuples;
         workingTuples = temp;
-
-        fullyOptimized = false;
     }
 
     /**
@@ -402,10 +399,6 @@ public class BlockEnvironment {
 
     public IList<Tuple> getWorkingTuples() {
         return workingTuples;
-    }
-
-    public boolean isFullyOptimized() {
-        return fullyOptimized;
     }
 
     public IList<String> getModifiedWorkingTupleNames() {

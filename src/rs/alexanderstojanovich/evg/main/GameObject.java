@@ -456,7 +456,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (isWorking() || levelContainer.blockEnvironment.isOptimizing() || !levelContainer.blockEnvironment.isFullyOptimized()) {
+        if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
             return;
         }
         levelContainer.blockEnvironment.swap();

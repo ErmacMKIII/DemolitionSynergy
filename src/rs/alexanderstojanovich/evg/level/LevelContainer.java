@@ -129,7 +129,7 @@ public class LevelContainer implements GravityEnviroment {
     public final byte[] bak_buffer = new byte[0x1000000]; // 16 MB BAK Buffer
     public int bak_pos = 0;
 
-    public static final float BASE = 22.5f;
+    public static final float BASE = 24f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
 

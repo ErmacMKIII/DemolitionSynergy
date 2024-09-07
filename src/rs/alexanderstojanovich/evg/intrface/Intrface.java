@@ -284,6 +284,7 @@ public class Intrface {
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
                         status = ExecStatus.SUCCESS;
+                        guideText.setEnabled(false);
                     } else {
                         status = ExecStatus.FAILURE;
                     }
@@ -313,6 +314,7 @@ public class Intrface {
                 protected void execute() {
                     String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
                     gameObject.loadLevelFromFile(chosen);
+                    guideText.setEnabled(false);
                     Game.setCurrentMode(Mode.EDITOR);
                 }
             };
