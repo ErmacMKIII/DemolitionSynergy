@@ -150,6 +150,7 @@ public class Model implements Renderable, Comparable<Model> {
 
                 // Update uniforms
                 transform(shaderProgram);
+                shaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures

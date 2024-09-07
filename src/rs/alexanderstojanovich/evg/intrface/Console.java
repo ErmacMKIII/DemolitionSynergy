@@ -71,7 +71,7 @@ public class Console {
         int conheight = cfg.getHeight() / 2;
 
         this.panel = new Quad(conwidth, conheight, intrface.gameObject.GameAssets.CONSOLE);
-        this.panel.setColor(new Vector4f(LevelContainer.SKYBOX_COLOR_RGB, 0.75f));
+        this.panel.setColor(new Vector4f(LevelContainer.NIGHT_SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 

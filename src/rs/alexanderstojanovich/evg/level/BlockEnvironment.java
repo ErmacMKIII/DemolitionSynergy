@@ -86,7 +86,6 @@ public class BlockEnvironment {
      *
      * @param queue visible chunkId queue
      */
-    @Deprecated
     public void optimize(IList<Integer> queue) {
         optimizedTuples.clear();
         int faceBits = 1; // starting from one, cuz zero is not rendered               
@@ -117,171 +116,60 @@ public class BlockEnvironment {
     }
 
     /**
-     * Improved version of optimization for tuples from all the chunks. World is
-     * being built incrementally. Consist of two passes.
+     * Basic version of optimization for tuples from all the chunks.
      *
-     * @param vqueue visible chunkId queue
-     * @param camera ingame camera
-     */
-    public void optimizeFast(IList<Integer> vqueue, Camera camera) {
-        // determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
-        optimizedTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);// some removals are made
-
-        // determine texture type to process - split
-        if (texProcIndex++ == Assets.TEX_WORLD.length - 1) {
-            texProcIndex = 0;
-        }
-
-        final String tex = Assets.TEX_WORLD[texProcIndex];
-
-        // PASS 1 : CREATE TUPLES
-        int lastFaceBitsCopy = lastFaceBits;
-        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-            // assign last value & increment to next value with limit to 63
-            final int faceBits = (++lastFaceBitsCopy) & 63;
-            if ((faceBits & (mask0 & 63)) != 0) {
-                final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                if (optmTuple == null) {
-                    optimizedTuples.add(new Tuple(tex, faceBits));
-                    // sort so it remains ordered
-                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-                }
-            }
-        }
-
-        // PASS 2 : FILL TUPLES
-        lastFaceBitsCopy = lastFaceBits;
-        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-            // assign last value & increment to next value with limit to 63
-            final int faceBits = (++lastFaceBitsCopy) & 63;
-            if ((faceBits & (mask0 & 63)) != 0) {
-                chunks.chunkList.forEach(chnk -> { // for all chunks
-                    if (vqueue.contains(chnk.id)) { // visible ones && not cached!
-                        // select correlated tuples
-                        final IList<Tuple> selectedTuples = chnk.tupleList.filter(t -> t.texName().equals(tex) && t.faceBits() == faceBits);
-                        // for each selected tuple
-                        selectedTuples.forEach(st -> {
-                            final Tuple optmTuple = optimizedTuples.getIf(ot -> ot.texName().equals(tex) && ot.faceBits() == faceBits);
-                            boolean modified = false;
-                            // if fullyOptimized doesn't exist
-                            for (Block blk : st.blockList) {
-                                // take into consideration if could be seen by camera (impr. method)
-                                if (camera.doesSeeEff(blk)) {
-                                    // add absent blocks
-                                    modified |= optmTuple.blockList.addIfAbsent(blk);
-                                }
-                            }
-                            if (modified) {
-                                // sort so it does remains ordered
-                                optmTuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                                // sets TBO to unbuffer if modified
-                                optmTuple.setBuffered(false);
-                            }
-                        });
-                    }
-                });
-            }
-        }
-
-        // move forward (with increment)
-        lastFaceBits += NUM_OF_PASSES_MAX;
-
-        // Remove empty optimization tuples
-        optimizedTuples.removeIf(ot -> ot.blockList.isEmpty());
-
-        // if last bits is processed start from beginning next time
-        if (lastFaceBits == 64) {
-            lastFaceBits = 0;
-        }
-
-        // if full circle with all textures & facebits has been completed
-        if (texProcIndex == 0 && lastFaceBits == 0) {
-            fullyOptimized = true;
-        }
-
-    }
-
-    /**
-     * Improved version of optimization for tuples from all the chunks. The
-     * world is built incrementally and consists of two passes. Also includes
-     * modifications to work with Tuple Buffer Object (TBO). Modified tuples are
-     * pushed to the optimized stream. (Chat GPT)
-     *
-     * @param vqueue visible chunkId queue
+     * @param queue visible chunkId queue
      * @param camera in-game camera
      */
-    public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+    public void optimizeByControl(IList<Integer> queue, Camera camera) {
         optimizing = true;
 
-        // Determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 2.5f : 45f);
-        workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
+        if (lastFaceBits == 0) {
+            workingTuples.clear();
+        }
 
-        final String tex = Assets.TEX_WORLD[texProcIndex];
-        int lastFaceBitsCopy = lastFaceBits;
+        // "filter mask" 
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
 
-        for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-            final int faceBits = (++lastFaceBitsCopy) & 63;
-            if ((faceBits & (mask0 & 63)) != 0) {
-                // PASS 1: Create Tuples
-                Tuple optmTuple = workingTuples
-                        .filter(ot -> ot != null && ot.texName().equals(tex) && ot.faceBits() == faceBits)
-                        .getFirstOrNull();
-                if (optmTuple == null) {
-                    optmTuple = new Tuple(tex, faceBits);
-                    workingTuples.add(optmTuple);
-                }
-                optmTuple.blockList.clear(); // cleaning!
-
-                // PASS 2: Fill Tuples
-                synchronized (chunks) {
-                    chunks.chunkList
-                            .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
-                            .forEach(chnk -> {
-                                final Tuple workTuple = workingTuples
-                                        .filter(ot -> ot != null && ot.texName().equals(tex) && ot.faceBits() == faceBits)
-                                        .getFirstOrNull();
-                                final IList<Tuple> selectedTuples = chnk.tupleList
-                                        .filter(t -> t != null && t.texName().equals(tex) && t.faceBits() == faceBits);
-
-                                if (workTuple != null) {
-                                    selectedTuples.forEach(st -> {
-                                        boolean modified = workTuple.blockList.addAll(
-                                                st.blockList.filter(blk -> blk != null && camera.doesSeeEff(blk, 30f) && !workTuple.blockList.contains(blk))
-                                        );
-                                        if (modified) {
-                                            modifiedWorkingTupleNames.addIfAbsent(workTuple.getName());
-                                        }
-                                    });
+        int passes = 0;
+        // iterate through face bits from 0 to 63
+        for (int faceBits = lastFaceBits; passes < NUM_OF_PASSES_MAX; faceBits++, passes++) {
+            // apply mask
+            if ((mask0 & faceBits) != 0) {
+                for (String tex : Assets.TEX_WORLD) {
+                    Tuple workTuple = null;
+                    // iterate through visible queue
+                    for (int chunkId : queue) {
+                        Chunk chunk = chunks.getChunk(chunkId);
+                        if (chunk != null) {
+                            Tuple selectedTuple = chunk.getTuple(tex, faceBits);
+                            if (selectedTuple != null) {
+                                if (workTuple == null) {
+                                    workTuple = new Tuple(tex, faceBits);
                                 }
-                            });
+                                // choose only visible on camera blocks
+                                for (Block blk : selectedTuple.blockList) {
+                                    if (camera.doesSeeEff(blk, 30f)) {
+                                        workTuple.blockList.add(blk);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (workTuple != null) {
+                        workingTuples.add(workTuple);
+                        workingTuples.sort(Tuple.TUPLE_COMP);
+                    }
                 }
             }
         }
 
         lastFaceBits += NUM_OF_PASSES_MAX;
+        lastFaceBits &= 63; // Ensure faceBits remain within a valid range (mod 64)
 
-        if (texProcIndex++ == Assets.TEX_WORLD.length - 1) {
-            texProcIndex = 0;
-        }
-
-        if (lastFaceBits == 64) {
-            lastFaceBits = 0;
-        }
-
-        if (texProcIndex == 0 && lastFaceBits == 0) {
-            workingTuples.sort(Tuple.TUPLE_COMP);
-            workingTuples
-                    .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
-                    .forEach(wt -> {
-                        wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                        wt.setBuffered(false);
-                    });
-            workingTuples.removeIf(wt -> wt.blockList.isEmpty());
-            modifiedWorkingTupleNames.clear();
-
-            fullyOptimized = true;
+        if (lastFaceBits == 0) {
+            swap();
         }
 
         optimizing = false;

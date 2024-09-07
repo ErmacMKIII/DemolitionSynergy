@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.light;
 
 import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
@@ -64,7 +65,7 @@ public class LightOverlay extends Quad {
 
             if (LevelContainer.isActorInFluidChk(lc)) {
                 texture.bind(shaderProgram, "ifcTexture");
-                color = LevelContainer.SKYBOX_COLOR;
+                color = new Vector4f(GlobalColors.BLUE, 0.05f);
             } else {
                 Texture.EMPTY.bind(shaderProgram, "ifcTexture");
                 color = GlobalColors.TRANSPARENT;

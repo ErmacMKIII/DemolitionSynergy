@@ -166,6 +166,38 @@ public class RandomLevelGenerator {
         return fluidBlock;
     }
 
+    private Block generateRandomCloudBlock(int posMin, int posMax, int hMin, int hMax) {
+        float posx;
+        float posy;
+        float posz;
+        Vector3f randPos;
+        int randomAttempts = 0;
+        do {
+            posx = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
+            posy = (random.nextInt(hMax - hMin + 1) + hMin) & 0xFFFFFFFE;
+            posz = (random.nextInt(posMax - posMin + 1) + posMin) & 0xFFFFFFFE;
+
+            randPos = new Vector3f(posx, posy, posz);
+            randomAttempts++;
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(randPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
+
+        Vector3f pos = randPos;
+        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+        if (random.nextFloat() >= 0.99f) {
+            Vector3f temp = new Vector3f();
+            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), temp);
+        }
+        Block fluidBlock = new Block("cloud", pos, new Vector4f(color, 0.3f), false);
+
+        levelContainer.chunks.addBlock(fluidBlock);
+        return fluidBlock;
+    }
+
     private Block generateRandomSolidBlockAdjacent(Block block) {
         List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
         if (random.nextInt(3) != 0) {
@@ -283,6 +315,68 @@ public class RandomLevelGenerator {
 
         levelContainer.chunks.addBlock(fluidAdjBlock);
         return fluidAdjBlock;
+    }
+
+    private Block generateRandomCloudBlockAdjacent(Block block) {
+        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers();
+        if (random.nextInt(3) != 0) {
+            possibleFaces.remove((Integer) Block.BOTTOM);
+            possibleFaces.remove((Integer) Block.TOP);
+        }
+        if (possibleFaces.isEmpty()) {
+            return null;
+        }
+        int randFace;
+        Vector3f adjPos;
+        int randomAttempts = 0;
+        do {
+            randFace = possibleFaces.get(random.nextInt(possibleFaces.size()));
+            adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
+            switch (randFace) {
+                case Block.LEFT:
+                    adjPos.x -= block.getWidth() / 2.0f + block.getWidth() / 2.0f;
+                    break;
+                case Block.RIGHT:
+                    adjPos.x += block.getWidth() / 2.0f + block.getWidth() / 2.0f;
+                    break;
+                case Block.BOTTOM:
+                    adjPos.y -= block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                    break;
+                case Block.TOP:
+                    adjPos.y += block.getHeight() / 2.0f + block.getHeight() / 2.0f;
+                    break;
+                case Block.BACK:
+                    adjPos.z -= block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    break;
+                case Block.FRONT:
+                    adjPos.z += block.getDepth() / 2.0f + block.getDepth() / 2.0f;
+                    break;
+                default:
+                    break;
+            }
+            randomAttempts++;
+//            DSLogger.reportDebug("randomAttemps = " + randomAttempts, null);
+        } while (repeatCondition(adjPos) && randomAttempts < RAND_MAX_ATTEMPTS && !levelContainer.getMyWindow().shouldClose());
+
+        if (randomAttempts == RAND_MAX_ATTEMPTS) {
+            return null;
+        }
+
+        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+        if (random.nextFloat() >= 0.99f) {
+            Vector3f temp = new Vector3f();
+            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), temp);
+        }
+
+        final String adjTex = "cloud";
+//        if (random.nextFloat() >= 0.95f) {
+//            adjTex = randomSolidTexture(random.nextFloat() <= 0.5f);
+//        }
+
+        Block cloudAdjBlock = new Block(adjTex, adjPos, new Vector4f(color, 0.3f), false);
+
+        levelContainer.chunks.addBlock(cloudAdjBlock);
+        return cloudAdjBlock;
     }
 
     //---------------------------------------------------------------------------------------------------------------------------
@@ -461,7 +555,7 @@ public class RandomLevelGenerator {
     }
 
     private void generateFluidSeries(int solidBlocks) {
-//        DSLogger.reportDebug("By Noise: solidBlks = " + solidBlocks, null);
+        // Clouds arent generated only fluid
         levelContainer.setProgress(0.0f);
         IList<Vector3f> allFluidPos = LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
         for (Vector3f fldPos : allFluidPos) {
@@ -488,6 +582,50 @@ public class RandomLevelGenerator {
             }
             levelContainer.incProgress(100.0f / (float) allFluidPos.size());
         }
+    }
+
+    private int generateRandomCloud(int cloudBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
+        int genBlks = 0; // holds result
+
+        int maxSolidBatchSize = 50;
+
+        while ((cloudBlocks > 0)
+                && !levelContainer.getMyWindow().shouldClose()) {
+            int cloudBatch = 1 + random.nextInt(Math.min(maxSolidBatchSize, cloudBlocks));
+            Block cloudBlk = null;
+            Block cloudAdjBlock = null;
+            while (cloudBatch > 0
+                    && !levelContainer.getMyWindow().shouldClose()) {
+                if (cloudBlk == null) {
+                    cloudBlk = generateRandomCloudBlock(posMin, posMax, hMin, hMax);
+                    cloudAdjBlock = cloudBlk;
+                    cloudBatch--;
+                    cloudBlocks--;
+                    genBlks++;
+                    // this provides external monitoring of level generation progress                        
+                    levelContainer.incProgress(50.0f / (float) totalAmount);
+                } else if (cloudAdjBlock != null) {
+                    cloudAdjBlock = generateRandomCloudBlockAdjacent(cloudBlk);
+                    if (cloudAdjBlock != null) {
+                        cloudBatch--;
+                        cloudBlocks--;
+                        genBlks++;
+                        // this provides external monitoring of level generation progress                        
+                        levelContainer.incProgress(50.0f / (float) totalAmount);
+                    } else {
+                        break;
+                    }
+                    //--------------------------------------------------
+                    if (random.nextInt(cloudBatch) != 0) {
+                        cloudBlk = cloudAdjBlock;
+                    } else {
+                        cloudBlk = null;
+                    }
+                }
+            }
+        }
+
+        return genBlks;
     }
 
     //---------------------------------------------------------------------------------------------------------------------------
@@ -542,11 +680,16 @@ public class RandomLevelGenerator {
                 int blocksRandom = generateByRandom(solidRandom, fluidRandom, totalRandom, posR_Min, posR_Max, hRMin, hRMax);
                 DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
-
                 DSLogger.reportDebug("Generating Part III - Fluid Series", null);
                 // 3. Fluid Series
                 generateFluidSeries(numberOfBlocks - blocksNoise - blocksRandom);
                 DSLogger.reportDebug("Done.", null);
+                // --------------------------------------------------------------
+                DSLogger.reportDebug("Generating Part IV - Generate Clouds", null);
+                // 4. Cloud Series
+//                generateRandomCloud(numberOfBlocks - LevelContainer.AllBlockMap.getPopulation(), numberOfBlocks, posR_Min, posR_Max,
+//                        1200, 1500);
+//                DSLogger.reportDebug("Done.", null);
             }
         }
 

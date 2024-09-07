@@ -114,10 +114,6 @@ public class GameRenderer extends Thread implements Executor {
                 numOfPasses++;
                 fpsTicks--;
             }
-            // swap happens only if not optimizing
-            if (!couldRender()) {
-                gameObject.swap();
-            }
 
             // animates water every quarter of the second
             animationTimer += deltaTime;
