@@ -88,11 +88,11 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
 
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
+    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 0.15f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 32.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 27); // 134.2M
+    public static final float SUN_INTENSITY = (float) (1 << 28); // 268.4M
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
@@ -129,12 +129,9 @@ public class LevelContainer implements GravityEnviroment {
     public final byte[] bak_buffer = new byte[0x1000000]; // 16 MB BAK Buffer
     public int bak_pos = 0;
 
-    public static final float BASE = 24f;
+    public static final float BASE = 22.5f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
-
-    public static final Vector3f DAY_SKYBOX_COLOR_RGB = new Vector3f(0.215f, 0.56f, 1.00f); // cool bluish color for SKYBOX
-    public static final Vector4f DAY_SKYBOX_COLOR = new Vector4f(0.215f, 0.56f, 1.00f, 0.15f); // cool bluish color for SKYBOX
 
     public static final Vector3f NIGHT_SKYBOX_COLOR_RGB = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
     public static final Vector4f NIGHT_SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 0.15f); // cool bluish color for SKYBOX
@@ -1738,73 +1735,47 @@ public class LevelContainer implements GravityEnviroment {
      * Perform update to the day/night cycle. Sun position & sunlight is
      * updated. Skybox rotates counter-clockwise (from -right to right)
      */
-    public void update() {
-        if (!working) {
+    public void update() { // call it externally from the main thread 
+        if (!working) { // don't subBufferVertices if working, it may screw up!   
             final float now = (float) GameTime.Now().getTime();
             float dtime = now - lastCycledDayTime;
             lastCycledDayTime = now;
 
-            // Calculate the angle the sun should move this frame
             final float dangle = org.joml.Math.toRadians(dtime * 360.0f / 24.0f);
 
-            // Update the skybox rotation
             SKYBOX.setrY(SKYBOX.getrY() + dangle);
-
-            // Update the sun's position
             SUN.pos.rotateZ(dangle);
 
-            // Calculate the sun's angle and corresponding intensity
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
             float inten = org.joml.Math.sin(sunAngle);
 
-            // Smoothly transition between day and night
-            final float smoothFactor = 0.05f; // Adjust for smoother or faster transition
-            Vector3f targetSkyColor;
-            String targetTexName;
-
-            if (inten < 0.0f) { // Night
-                targetSkyColor = new Vector3f(NIGHT_SKYBOX_COLOR_RGB).mul(Math.max(inten, 0.15f));
-                targetTexName = "night";
-            } else { // Day
-                targetSkyColor = new Vector3f(DAY_SKYBOX_COLOR_RGB).mul(Math.max(inten, 0.15f));
-                targetTexName = "day";
+            if (inten < 0.0f) { // night
+                SKYBOX.setTexName("night");
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
+            } else if (inten >= 0.0f) { // day
+                SKYBOX.setTexName("day");
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             }
 
-            // Interpolate towards the target sky color and texture
-            SKYBOX.setTexName(targetTexName);
-            Vector4f currentSkyColor = SKYBOX.getPrimaryRGBAColor();
-            Vector4f newSkyColor = new Vector4f(
-                    org.joml.Math.lerp(currentSkyColor.x, targetSkyColor.x, smoothFactor),
-                    org.joml.Math.lerp(currentSkyColor.y, targetSkyColor.y, smoothFactor),
-                    org.joml.Math.lerp(currentSkyColor.z, targetSkyColor.z, smoothFactor),
-                    org.joml.Math.lerp(currentSkyColor.w, (targetTexName.equals("day") ? 0.85f : 0.15f), smoothFactor)
-            );
-            SKYBOX.setPrimaryRGBAColor(newSkyColor);
-
-            // Update the sun's intensity and color smoothly
             final float sunInten = Math.max(inten, 0.0f);
-            Vector4f currentSunColor = SUN.getPrimaryRGBAColor();
-            Vector4f targetSunColor = new Vector4f(new Vector3f(SUN_COLOR_RGB).mul(sunInten), 1.0f);
-            Vector4f newSunColor = new Vector4f(
-                    org.joml.Math.lerp(currentSunColor.x, targetSunColor.x, smoothFactor),
-                    org.joml.Math.lerp(currentSunColor.y, targetSunColor.y, smoothFactor),
-                    org.joml.Math.lerp(currentSunColor.z, targetSunColor.z, smoothFactor),
-                    1.0f
-            );
-            SUN.setPrimaryRGBAColor(newSunColor);
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(sunInten), 1.0f));
             SUNLIGHT.setIntensity(sunInten * SUN_INTENSITY);
-            lightSources.setModified(1, true);
+            SUNLIGHT.pos.set(SUN.pos);
 
-            // Handle player light based on game mode
+            // always handleInput sunlight (sun/pos)
+            lightSources.updateLight(1, SUNLIGHT);
+            lightSources.setModified(1, true); // SUNLIGHT index is always 1
+
+            // handleInput - player light - only in correct mode
             if (Game.getCurrentMode() == Game.Mode.FREE || Game.getCurrentMode() == Game.Mode.EDITOR) {
                 levelActors.player.light.setIntensity(0.0f);
             } else {
                 levelActors.player.light.setIntensity(LightSource.PLAYER_LIGHT_INTENSITY);
                 lightSources.updateLight(0, levelActors.player.light);
             }
-            lightSources.setModified(0, true);
+            lightSources.setModified(0, true); // Player index is always 0
 
-            // Mark modified lights that are visible
+            // handleInput - set light modified for visible lights
             lightSources.sourceList.forEach(ls -> {
                 int chnkId = Chunk.chunkFunc(ls.pos);
                 if (vChnkIdList.contains(chnkId)) {
