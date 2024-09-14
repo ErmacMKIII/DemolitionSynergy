@@ -531,25 +531,31 @@ public class RandomLevelGenerator {
                 final int hRMin = posR_Min >> 2;
                 final int hRMax = posR_Max >> 2;
 
+                levelContainer.gameObject.intrface.getInfoMsgText().setEnabled(true);
                 DSLogger.reportDebug(String.format("Generating Part I - Noise (%d blocks)", totalNoise), null);
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part I - Noise (%d blocks)", totalNoise));
                 // 1. Noise Part                                   
                 int blocksNoise = generateByNoise(soildNoise, fluidNoise, totalNoise, posN_Min, posN_Max, hNMin, hNMax);
                 DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
                 //--------------------------------------------------------------------------------------------------------------------------- 
                 DSLogger.reportDebug(String.format("Generating Part II - Random (%d blocks)", totalRandom), null);
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part II - Random (%d blocks)", totalNoise));
                 // 2. Random Part                 
                 int blocksRandom = generateByRandom(solidRandom, fluidRandom, totalRandom, posR_Min, posR_Max, hRMin, hRMax);
                 DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportDebug("Generating Part III - Fluid Series", null);
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part III - Fluid Series", totalNoise));
                 // 3. Fluid Series
                 generateFluidSeries(numberOfBlocks - blocksNoise - blocksRandom);
                 DSLogger.reportDebug("Done.", null);
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent("Done.");
                 // --------------------------------------------------------------
             }
         }
 
+        levelContainer.gameObject.intrface.getInfoMsgText().setEnabled(false);
         DSLogger.reportDebug("All finished!", null);
     }
 

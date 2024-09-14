@@ -77,7 +77,7 @@ public class GameRenderer extends Thread implements Executor {
         }
         do {
             gameObject.render(); // render splash screen
-        } while ((Game.accumulator * Game.TPS) < 2.0);
+        } while ((Game.accumulator * Game.TPS) < 1.0);
         gameObject.splashScreen.setEnabled(false);
 
         // resolution config
@@ -170,7 +170,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator * Game.TPS) < 2.0;
+        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX;// && (Game.accumulator * Game.TPS) < 2.0;
     }
 
 //    /**

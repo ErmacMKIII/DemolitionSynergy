@@ -55,6 +55,7 @@ public class Intrface {
     private DynamicText posText; // display position
     private DynamicText viewText; // display view
 
+    private DynamicText infoMsgText; // display current message
     private DynamicText chunkText; // display current chunk (player)
     private DynamicText gameTimeText;
 
@@ -131,6 +132,10 @@ public class Intrface {
             viewText.setAlignment(Text.ALIGNMENT_RIGHT);
             viewText.alignToNextChar(this);
 
+            infoMsgText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(-1.0f, -0.75f));
+            infoMsgText.setAlignment(Text.ALIGNMENT_LEFT);
+            infoMsgText.alignToNextChar(this);
+
             chunkText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
             chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
             chunkText.alignToNextChar(this);
@@ -157,7 +162,7 @@ public class Intrface {
             guideText.alignToNextChar(this);
 
             progressBar = new ProgressBar(5, 10, Texture.getOrDefault("suntx"));
-            progressBar.quad.setPos(new Vector2f(-1.0f, -0.75f));
+            progressBar.quad.setPos(new Vector2f(-1.0f, -0.77f));
             progressBar.quad.color = new Vector4f(2.0f, 1.67f, 0.1f, 1.0f);
 
             crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -856,8 +861,11 @@ public class Intrface {
 //                            console.write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
                             CompletableFuture.runAsync(() -> {
                                 try {
+                                    gameObject.intrface.getInfoMsgText().setContent("Trying to connect to server...");
+                                    gameObject.intrface.getInfoMsgText().setEnabled(true);
                                     double beginTime = GLFW.glfwGetTime();
                                     if (gameObject.game.connectToServer()) {
+                                        gameObject.intrface.getInfoMsgText().setContent("Connected to server!");
                                         console.write("Connected to server!");
                                         double endTime = GLFW.glfwGetTime();
                                         long tripTime = Math.round((endTime - beginTime) * 1000.0);
@@ -867,6 +875,7 @@ public class Intrface {
                                             gameMenu.getTitle().setContent("MULTIPLAYER");
                                         }
                                     }
+                                    gameObject.intrface.getInfoMsgText().setEnabled(false);
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
@@ -946,6 +955,10 @@ public class Intrface {
             posText.bufferSmart(this);
         }
         posText.render(this, ifcShaderProgram);
+        if (!infoMsgText.isBuffered()) {
+            infoMsgText.bufferSmart(this);
+        }
+        infoMsgText.render(this, ifcShaderProgram);
         if (!chunkText.isBuffered()) {
             chunkText.bufferSmart(this);
         }
@@ -1233,6 +1246,10 @@ public class Intrface {
 
     public ProgressBar getProgressBar() {
         return progressBar;
+    }
+
+    public DynamicText getInfoMsgText() {
+        return infoMsgText;
     }
 
 }

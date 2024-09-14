@@ -1194,6 +1194,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // If there is no response but only timeout
                 if (response == Response.INVALID) {
                     connected = ConnectionStatus.NOT_CONNECTED;
+                    gameObject.intrface.getInfoMsgText().setContent("Server not responding!");
                     throw new Exception("Server not responding!");
                 }
 
@@ -1217,6 +1218,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         } catch (Exception ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
+            gameObject.intrface.getInfoMsgText().setContent("Unable to connect to server!");
             gameObject.intrface.getConsole().write("Unable to connect to server!", Command.Status.FAILED);
             DSLogger.reportError(ex.getMessage(), ex);
         }

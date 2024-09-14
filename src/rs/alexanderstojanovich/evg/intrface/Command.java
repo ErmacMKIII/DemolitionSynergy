@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
@@ -782,8 +781,13 @@ public class Command implements Callable<Object> {
 //                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);                        
                         try {
                             command.status = Status.PENDING;
+
+                            gameObject.intrface.getInfoMsgText().setContent("Trying to connect to server...");
+                            gameObject.intrface.getInfoMsgText().setEnabled(true);
+
                             double beginTime = GLFW.glfwGetTime();
                             if (gameObject.game.connectToServer()) {
+                                gameObject.intrface.getInfoMsgText().setContent("Connected to server!");
                                 gameObject.intrface.getConsole().write("Connected to server!");
                                 double endTime = GLFW.glfwGetTime();
                                 long tripTime = Math.round((endTime - beginTime) * 1000.0);
@@ -796,6 +800,7 @@ public class Command implements Callable<Object> {
                             } else {
                                 command.status = Status.FAILED;
                             }
+                            gameObject.intrface.getInfoMsgText().setEnabled(false);
                         } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
