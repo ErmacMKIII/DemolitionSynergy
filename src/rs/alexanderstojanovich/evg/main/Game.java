@@ -1012,15 +1012,19 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        // Heavy operations to run afterwards
-        // determine visible chunks (can be altered with player position)
-        if ((ups & (TPS_QUARTER - 1)) == 0) {
+    }
+
+    /**
+     * Heavy util operation. Takes lot of CPU time.
+     */
+    public void util() {
+        if ((ups & (TPS_HALF - 1)) == 0) {
             // call utility functions (chunk loading etc.)
             gameObject.utilChunkOperations();
         }
 
-        // call utility functions (optimizing etc. - heavy operation)            
         if ((ups & (TPS_EIGHTH - 1)) == 0) {
+            // block optimizaiton (separate visible from not visible)
             gameObject.utilOptimization();
         }
     }
@@ -1141,14 +1145,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-            // Poll GLFW Events
-            GLFW.glfwPollEvents();
             while (accumulator >= TICK_TIME) {
+                // Poll GLFW Events
+                GLFW.glfwPollEvents();
+
                 // Handle input (interrupt) events (keyboard & mouse)
                 handleInput(TICK_TIME);
 
                 // Update with fixed timestep (environment)
                 update(TICK_TIME);
+
+                // util operations (heavy CPU time)
+                util();
 
                 ups++;
                 accumulator -= TICK_TIME;

@@ -16,6 +16,10 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -126,63 +130,78 @@ public class BlockEnvironment {
         optimizing = true;
 
         // Determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 2.5f : 45f);
+        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
 
         int lastFaceBitsCopy = lastFaceBits;
+
+        // Create a lookup table for faster tuple access (avoiding multiple filters)
+        Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
+        for (Tuple t : workingTuples) {
+            tupleLookup
+                    .computeIfAbsent(t.texName(), k -> new HashMap<>())
+                    .put(t.faceBits(), t);
+        }
+
+        // Pre-filter visible chunks from vqueue
+        Set<Chunk> visibleChunks = chunks.chunkList
+                .stream()
+                .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
+                .collect(Collectors.toSet());
 
         for (String tex : Assets.TEX_WORLD) {
             for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
                 final int faceBits = (++lastFaceBitsCopy) & 63;
                 if ((faceBits & (mask0 & 63)) != 0) {
-                    // PASS 1: Create Tuples
-                    Tuple optmTuple = workingTuples
-                            .filter(ot -> ot != null && ot.texName().equals(tex) && ot.faceBits() == faceBits)
-                            .getFirstOrNull();
-                    if (optmTuple == null) {
-                        optmTuple = new Tuple(tex, faceBits);
-                        workingTuples.add(optmTuple);
-                    }
+                    // PASS 1: Fetch or Create Tuple
+                    Tuple optmTuple = tupleLookup
+                            .computeIfAbsent(tex, k -> new HashMap<>())
+                            .computeIfAbsent(faceBits, fb -> {
+                                Tuple newTuple = new Tuple(tex, fb);
+                                workingTuples.add(newTuple);
+                                return newTuple;
+                            });
+
                     optmTuple.blockList.clear(); // cleaning!
 
-                    // PASS 2: Fill Tuples
-                    chunks.chunkList
-                            .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
-                            .forEach(chnk -> {
-                                final Tuple workTuple = workingTuples
-                                        .filter(ot -> ot != null && ot.texName().equals(tex) && ot.faceBits() == faceBits)
-                                        .getFirstOrNull();
-                                final IList<Tuple> selectedTuples = chnk.tupleList
-                                        .filter(t -> t != null && t.texName().equals(tex) && t.faceBits() == faceBits);
+                    // PASS 2: Process Chunks and Fill Tuples
+                    for (Chunk chnk : visibleChunks) {
+                        final IList<Tuple> selectedTuples = chnk.tupleList
+                                .filter(t -> t != null && t.texName().equals(tex) && t.faceBits() == faceBits);
 
-                                if (workTuple != null) {
-                                    selectedTuples.forEach(st -> {
-                                        boolean modified = workTuple.blockList.addAll(
-                                                st.blockList.filter(blk -> blk != null && camera.doesSeeEff(blk, 30f) && !workTuple.blockList.contains(blk))
-                                        );
-                                        if (modified) {
-                                            modifiedWorkingTupleNames.addIfAbsent(workTuple.getName());
-                                        }
-                                    });
-                                }
-                            });
+                        for (Tuple selectedTuple : selectedTuples) {
+                            boolean modified = optmTuple.blockList.addAll(
+                                    selectedTuple.blockList
+                                            .filter(blk -> blk != null && camera.doesSeeEff(blk, 30f) && !optmTuple.blockList.contains(blk))
+                            );
+
+                            if (modified) {
+                                modifiedWorkingTupleNames.addIfAbsent(optmTuple.getName());
+                            }
+                        }
+                    }
                 }
             }
         }
+
         lastFaceBits += NUM_OF_PASSES_MAX;
         lastFaceBits &= 63;
 
         if (lastFaceBits == 0) {
             workingTuples.sort(Tuple.TUPLE_COMP);
-            workingTuples
+
+            // Only process modified tuples
+            workingTuples.stream()
                     .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
                     .forEach(wt -> {
                         wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);
                         wt.setBuffered(false);
                     });
-            workingTuples.removeIf(wt -> wt.blockList.isEmpty());
-            modifiedWorkingTupleNames.clear();
 
+            // Remove empty tuples
+            workingTuples.removeIf(wt -> wt.blockList.isEmpty());
+
+            modifiedWorkingTupleNames.clear();
             swap();
         }
 
