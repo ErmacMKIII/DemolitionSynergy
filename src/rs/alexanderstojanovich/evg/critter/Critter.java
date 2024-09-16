@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evg.critter;
 
-import java.util.UUID;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -268,8 +267,8 @@ public class Critter implements Predictable, Moveable, Renderable {
      * @param weapon weapon to switch to
      */
     public void switchWeapon(WeaponIfc weapon) {
-//        this.weapon = weapon;
-//        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+        this.weapon = weapon;
+        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     @Override

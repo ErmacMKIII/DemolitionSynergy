@@ -74,7 +74,7 @@ public abstract class Menu {
         this.title = new DynamicText(intrface.gameObject.GameAssets.FONT, title);
         this.title.setColor(new Vector4f(GlobalColors.YELLOW, 1.0f));
         this.items = items;
-        Texture mngTexture = intrface.gameObject.GameAssets.MINIGUN;
+        Texture mngTexture = intrface.gameObject.GameAssets.POINTER;
         iterator = new Quad(24, 24, mngTexture);
         iterator.scale = itemScale;
         makeItems(intrface);
@@ -91,7 +91,7 @@ public abstract class Menu {
         this.enabled = false;
         this.pos = pos;
         this.itemScale = scale;
-        Texture mngTexture = intrface.gameObject.GameAssets.MINIGUN;
+        Texture mngTexture = intrface.gameObject.GameAssets.POINTER;
         iterator = new Quad(24, 24, mngTexture);
         iterator.scale = scale;
         makeItems(intrface);

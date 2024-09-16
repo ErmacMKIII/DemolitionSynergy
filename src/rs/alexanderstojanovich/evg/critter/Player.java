@@ -26,6 +26,8 @@ import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Player class.
@@ -48,10 +50,6 @@ public class Player extends Critter implements Observer {
     public final LightSource light;
 
     public final Configuration cfg = Configuration.getInstance();
-//    /**
-//     * Weapon model on character first-person-shooter 'in hands'.
-//     */
-//    protected Model inHandsWeaponModel = Model.MODEL_NONE;
 
     /**
      * Create new player for Single Player
@@ -222,6 +220,29 @@ public class Player extends Critter implements Observer {
         if (cameraView == CameraView.THIRD_PERSON) {
             super.render(lightSrc, shaderProgram);
         }
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapons all weapons instance (wraps array)
+     * @param index index of (weapon) enumeration
+     */
+    @Override
+    public void switchWeapon(Weapons weapons, int index) {
+        this.weapon = weapons.AllWeapons[index];
+        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapon weapon to switch to
+     */
+    @Override
+    public void switchWeapon(WeaponIfc weapon) {
+        this.weapon = weapon;
+        this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
     }
 
     @Override

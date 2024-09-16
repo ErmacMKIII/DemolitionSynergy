@@ -45,7 +45,7 @@ public class Assets {
 
     public final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "dsynergy-title.png", Texture.Format.RGBA8);
     public final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png", Texture.Format.RGBA8);
-    public final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png", Texture.Format.RGBA8);
+    public final Texture POINTER = new Texture(Game.INTRFACE_ENTRY, "deagle.png", Texture.Format.RGBA8);
     public final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png", Texture.Format.RGBA8);
     public final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png", Texture.Format.RGBA8);
     public final Texture SPLASH = new Texture(Game.INTRFACE_ENTRY, "splash.png", Texture.Format.RGBA8);
@@ -154,7 +154,7 @@ public class Assets {
         SPLASH.bufferAll();
         LOGO.bufferAll();
         CROSSHAIR.bufferAll();
-        MINIGUN.bufferAll();
+        POINTER.bufferAll();
         FONT.bufferAll();
         CONSOLE.bufferAll();
         LIGHT_BULB.bufferAll();
