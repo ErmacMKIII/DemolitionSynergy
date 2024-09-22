@@ -114,7 +114,7 @@ Blender project could be downloaded from Author's mediafire account:
 https://www.mediafire.com/file/rilu34pbbzr48zc/DS42Weapons.zip/file
 
 Author recently created player models which could obtained from:
-https://www.mediafire.com/file/tx3bk2roz0irgcp/DS42PlayerModels.zip/file
+https://www.mediafire.com/file/bmqvia3qvwpee0s/DS51PlayerModels.zip/file
 
 Sounds were made by Erokia and modified by Author.
 Font is 'Jet Brains Mono', free & open typeface.

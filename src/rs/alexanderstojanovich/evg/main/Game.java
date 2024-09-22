@@ -56,6 +56,7 @@ import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.Pair;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * DSynergy Game client. With multiplayer capabilities.
@@ -496,6 +497,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             changed = true;
         }
 
+        if (keys[GLFW.GLFW_KEY_0]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
+            changed = true;
+        }
+        
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
@@ -679,7 +686,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
             changed = true;
         }
-
+        
+        if (keys[GLFW.GLFW_KEY_0]) {
+            weaponIndex = (++weaponIndex) & 15;
+            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
+            changed = true;
+        }
+        
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);

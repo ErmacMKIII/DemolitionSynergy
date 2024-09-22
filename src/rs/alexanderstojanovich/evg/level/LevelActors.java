@@ -81,8 +81,9 @@ public class LevelActors {
      */
     public LevelActors(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
-        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
+        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_2H_BG);
         this.player = new Player(
+                this.levelContainer.gameObject.GameAssets,
                 new RPGCamera(bodyCopy),
                 new LightSource(bodyCopy.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY),
                 bodyCopy
@@ -182,7 +183,10 @@ public class LevelActors {
             if (!pi.uniqueId.equals(player.uniqueId)) {
                 Critter opOrNull = otherPlayers.getIf(oplyr -> oplyr.uniqueId.equals(pi.uniqueId));
                 if (opOrNull == null) {
-                    opOrNull = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
+                    opOrNull = new Critter(levelContainer.gameObject.GameAssets,
+                            pi.uniqueId,
+                            new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT)
+                    );
                     otherPlayers.add(opOrNull);
                 }
                 opOrNull.setName(pi.name);

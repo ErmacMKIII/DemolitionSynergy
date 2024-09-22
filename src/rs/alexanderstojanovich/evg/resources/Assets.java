@@ -176,6 +176,9 @@ public class Assets {
     }
 
     public void bufferAllModels() {
-
+        PLAYER_BODY_DEFAULT.bufferAll();
+        PLAYER_BODY_1H_SG.bufferAll();
+        PLAYER_BODY_2H_SG.bufferAll();
+        PLAYER_BODY_2H_BG.bufferAll();
     }
 }

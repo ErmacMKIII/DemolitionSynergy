@@ -21,9 +21,14 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Renderable;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import static rs.alexanderstojanovich.evg.weapons.WeaponIfc.Clazz.None;
+import static rs.alexanderstojanovich.evg.weapons.WeaponIfc.Clazz.OneHandedSmallGun;
+import static rs.alexanderstojanovich.evg.weapons.WeaponIfc.Clazz.TwoHandedBigGuns;
+import static rs.alexanderstojanovich.evg.weapons.WeaponIfc.Clazz.TwoHandedSmallGun;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -36,7 +41,7 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     protected String name;
     public final String uniqueId;
-    public final Model body;
+    public Model body;
     protected Vector3f predictor;
     protected Vector3f front = Camera.Z_AXIS;
     protected Vector3f up = Camera.Y_AXIS;
@@ -55,12 +60,19 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected WeaponIfc weapon = Weapons.NONE;
 
     /**
+     * Game assets resources
+     */
+    protected final Assets assets;
+
+    /**
      * Create new instance of the critter. If instanced in anonymous class
      * specify the camera
      *
+     * @param assets game assets
      * @param body body model
      */
-    public Critter(Model body) {
+    public Critter(Assets assets, Model body) {
+        this.assets = assets;
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
         this.uniqueId = HardwareUtils.generateHardwareUUID();
@@ -70,10 +82,12 @@ public class Critter implements Predictable, Moveable, Renderable {
      * Create new instance of the critter. If instanced in anonymous class
      * specify the camera
      *
+     * @param assets game assets
      * @param pos initial position of the critter
      * @param body body model
      */
-    public Critter(Vector3f pos, Model body) {
+    public Critter(Assets assets, Vector3f pos, Model body) {
+        this.assets = assets;
         this.body = body;
         this.predictor = new Vector3f(body.pos); // separate predictor from the body
         this.uniqueId = HardwareUtils.generateHardwareUUID();
@@ -83,10 +97,12 @@ public class Critter implements Predictable, Moveable, Renderable {
      * Create new instance of the critter. If instanced in anonymous class
      * specify the camera
      *
+     * @param assets game assets
      * @param uniqueId to be assigned to the critter
      * @param body model body for the critter
      */
-    public Critter(String uniqueId, Model body) {
+    public Critter(Assets assets, String uniqueId, Model body) {
+        this.assets = assets;
         this.uniqueId = uniqueId;
         this.body = body;
     }
@@ -251,6 +267,35 @@ public class Critter implements Predictable, Moveable, Renderable {
     }
 
     /**
+     * Switch body model rendered in 3rd person
+     */
+    protected void switchBodyModel() {
+        Vector3f posCopy = this.body.pos;
+        float rYCopy = this.body.getrY();
+        
+        // switch to body model having that weapon class
+        switch (this.weapon.getClazz()) {
+            case OneHandedSmallGun:
+                this.body = assets.PLAYER_BODY_1H_SG;
+                break;
+            case TwoHandedSmallGun:
+                this.body = assets.PLAYER_BODY_2H_SG;
+                break;
+            case TwoHandedBigGuns:
+                this.body = assets.PLAYER_BODY_1H_SG;
+                break;
+            default:
+            case None:
+                this.body = assets.PLAYER_BODY_DEFAULT;
+                break;
+        }
+        // set the copied position VEC3
+        this.body.pos.set(posCopy);
+        // rotation Y-axis angle copy
+        this.body.setrY(rYCopy);        
+    }
+    
+    /**
      * Switch to weapon in hands
      *
      * @param weapons all weapons instance (wraps array)
@@ -259,6 +304,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public void switchWeapon(Weapons weapons, int index) {
         this.weapon = weapons.AllWeapons[index];
         this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+        this.switchBodyModel();
     }
 
     /**
@@ -269,6 +315,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     public void switchWeapon(WeaponIfc weapon) {
         this.weapon = weapon;
         this.charBodyWeaponModel = this.weapon.deriveBodyModel(this);
+        this.switchBodyModel();
     }
 
     @Override
