@@ -502,7 +502,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
             changed = true;
         }
-        
+
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
@@ -686,13 +686,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
             changed = true;
         }
-        
+
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
             changed = true;
         }
-        
+
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);

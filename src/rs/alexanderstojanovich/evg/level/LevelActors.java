@@ -81,7 +81,7 @@ public class LevelActors {
      */
     public LevelActors(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
-        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_2H_BG);
+        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
         this.player = new Player(
                 this.levelContainer.gameObject.GameAssets,
                 new RPGCamera(bodyCopy),

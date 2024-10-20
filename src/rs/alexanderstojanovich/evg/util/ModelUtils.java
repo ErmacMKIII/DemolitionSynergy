@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Collections;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.joml.Vector2f;
@@ -125,10 +126,6 @@ public class ModelUtils {
                         Vertex vertex = mesh.vertices.get(index);
                         if (data.length >= 2 && !data[1].isEmpty()) {
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-//                            if (texIndex != -1) {
-//                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-//                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
-//                            }
                         }
                         if (data.length >= 3 && !data[2].isEmpty()) {
                             mesh.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
@@ -226,6 +223,10 @@ public class ModelUtils {
                     mesh.vertices.addLast(vertex);
                 } else if (things[0].equals("vt")) {
                     Vector2f uv = new Vector2f(Float.parseFloat(things[1]), 1.0f - Float.parseFloat(things[2]));
+                    if (texIndex != -1) {
+                        uv.x = (uv.x + row) * oneOver;
+                        uv.y = (uv.y + col) * oneOver;
+                    }
                     uvs.add(uv);
                 } else if (things[0].equals("vn")) {
                     Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
@@ -239,10 +240,6 @@ public class ModelUtils {
                         Vertex vertex = mesh.vertices.get(index);
                         if (data.length >= 2 && !data[1].isEmpty()) {
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                            if (texIndex != -1) {
-                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
-                            }
                         }
                         if (data.length >= 3 && !data[2].isEmpty()) {
                             mesh.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
@@ -274,6 +271,174 @@ public class ModelUtils {
         }
 
         Material material = new Material(Texture.getOrDefault(texName));
+        material.setColor(new Vector4f(GlobalColors.WHITE_RGBA));
+        result.materials.add(material);
+
+        result.meshes.add(mesh);
+        result.calcDimsPub();
+
+        return result;
+    }
+
+    /**
+     * Read the complex obj and constructs the model. Texture is assigned from
+     * the atlas by tex name. Detects "g" lines to determine if the model is a
+     * gun or player and adjusts texture coordinates accordingly. Extension is
+     * OBJX.
+     *
+     * @param dirEntry directory entry for the model & texture
+     * @param fileName obj filename
+     * @param texNames texNames (atlas) matching player & gun for example
+     * @param gridSize grid size of texture atlas (non-zero, positive number).
+     * @param reverseFaces reverse face (for face culling)
+     *
+     * @return new Model
+     */
+    public static Model readFromObjFile(String dirEntry, String fileName, String[] texNames, int gridSize, boolean reverseFaces) {
+        // For Mesh (Geometry) 
+        final Pattern pattern = Pattern.compile("\\b[a-zA-Z0-9\\-_]+_Mesh\\b");
+
+        File extern = new File(dirEntry + fileName);
+        File archive = new File(Game.DATA_ZIP);
+        ZipFile zipFile = null;
+        InputStream objInput = null;
+        if (extern.exists()) {
+            try {
+                objInput = new FileInputStream(extern);
+            } catch (FileNotFoundException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else if (archive.exists()) {
+            try {
+                zipFile = new ZipFile(archive);
+                for (ZipEntry zipEntry : Collections.list(zipFile.entries())) {
+                    if (zipEntry.getName().equals(dirEntry + fileName)) {
+                        objInput = zipFile.getInputStream(zipEntry);
+                        break;
+                    }
+                }
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        } else {
+            DSLogger.reportError("Cannot find zip archive " + Game.DATA_ZIP + " or relevant ingame files!", null);
+        }
+        //--------------------------------------------------------------------------
+        if (objInput == null) {
+            DSLogger.reportError("Cannot find resource " + dirEntry + fileName + "!", null);
+            return null;
+        }
+
+        int globlIndex = -1;
+        int texIndex = -1;
+        final float oneOver = 1.0f / (float) gridSize;
+
+        Model result = new Model(fileName, texNames[0]);
+        Mesh mesh = new Mesh();
+        BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
+        IList<Vector2f> uvs = new GapList<>();
+        IList<Vector3f> normals = new GapList<>();
+        String line;
+        try {
+            while ((line = br.readLine()) != null) {
+                String[] things = line.trim().split("\\s+");
+                if (things.length == 0) {
+                    continue; // Skip empty lines
+                }
+                if (things[0].equals("v")) {
+                    if (things.length < 4) {
+                        continue; // Ensure there are enough coordinates
+                    }
+                    Vector3f pos = new Vector3f(
+                            Float.parseFloat(things[1]),
+                            Float.parseFloat(things[2]),
+                            Float.parseFloat(things[3])
+                    );
+                    Vertex vertex = new Vertex(pos);
+                    mesh.vertices.addLast(vertex);
+                } else if (things[0].equals("vt")) {
+                    if (things.length < 3) {
+                        continue; // Ensure there are enough UV coordinates
+                    }
+                    Vector2f uv = new Vector2f(
+                            Float.parseFloat(things[1]),
+                            1.0f - Float.parseFloat(things[2]) // Flip Y-axis if necessary
+                    );
+
+                    texIndex = Texture.getOrDefaultIndex(texNames[globlIndex]);
+                    int row = texIndex / gridSize;
+                    int col = texIndex % gridSize;
+
+                    if (texIndex != -1) {
+                        uv.x = (uv.x + row) * oneOver;
+                        uv.y = (uv.y + col) * oneOver;
+                    }
+                    uvs.add(uv);
+                } else if (things[0].equals("vn")) {
+                    if (things.length < 4) {
+                        continue; // Ensure there are enough normal coordinates
+                    }
+                    Vector3f normal = new Vector3f(
+                            Float.parseFloat(things[1]),
+                            Float.parseFloat(things[2]),
+                            Float.parseFloat(things[3])
+                    );
+                    normals.add(normal);
+                } else if (things[0].equals("g")) {
+                    // Detect group name
+                    if (things.length >= 2 && pattern.asPredicate().test(things[1])) {
+                        globlIndex++;
+                    }
+                } else if (things[0].equals("f")) {
+                    if (things.length < 4) {
+                        continue; // Ensure it's a triangular face
+                    }
+                    String[] subThings = {things[1], things[2], things[3]};
+                    for (String subThing : subThings) {
+                        String[] data = subThing.split("/");
+                        int vertexIndex = Integer.parseInt(data[0]) - 1;
+                        mesh.indices.add(vertexIndex);
+                        Vertex vertex = mesh.vertices.get(vertexIndex);
+                        if (data.length >= 2 && !data[1].isEmpty()) {
+                            vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
+                        }
+                        if (data.length >= 3 && !data[2].isEmpty()) {
+                            Vector3f normal = normals.get(Integer.parseInt(data[2]) - 1);
+                            mesh.vertices.get(vertexIndex).setNormal(normal);
+                        }
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        } finally {
+            try {
+                objInput.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+            if (zipFile != null) {
+                try {
+                    zipFile.close();
+                } catch (IOException ex) {
+                    DSLogger.reportFatalError(ex.getMessage(), ex);
+                }
+            }
+        }
+
+        if (reverseFaces) {
+            for (int index = 0; index < mesh.indices.size() - 2; index += 3) {
+                // Ensure we have at least three indices to form a triangle
+                if (index + 2 < mesh.indices.size()) {
+                    // Swap the second and third indices to reverse the face
+                    int temp = mesh.indices.get(index + 1);
+                    mesh.indices.set(index + 1, mesh.indices.get(index + 2));
+                    mesh.indices.set(index + 2, temp);
+                }
+            }
+        }
+
+        Material material = new Material(Texture.getOrDefault(texNames[0]));
         material.setColor(new Vector4f(GlobalColors.WHITE_RGBA));
         result.materials.add(material);
 

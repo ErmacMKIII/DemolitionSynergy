@@ -324,7 +324,7 @@ public class Texture {
 //        try {
 //            ImageIO.write(result.image, "PNG", new File(atlasName+ ".png"));
 //        } catch (IOException ex) {
-//            Logger.getLogger(Texture.class.getName()).log(Level.SEVERE, null, ex);
+//            DSLogger.reportInfo(ex.getMessage(), null);
 //        }
         return result;
     }

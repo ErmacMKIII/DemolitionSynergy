@@ -133,7 +133,7 @@ public class Player extends Critter implements Observer {
     public void render(ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
     }
-    
+
     /**
      * Switch to weapon in hands
      *

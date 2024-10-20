@@ -169,5 +169,5 @@ public class RPGCamera extends Camera {
     public void setTarget(Model target) {
         this.target = target;
     }
-    
+
 }
