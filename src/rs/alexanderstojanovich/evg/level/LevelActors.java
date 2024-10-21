@@ -32,8 +32,11 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Define all the level observers & critters. Present in the level container.
@@ -187,6 +190,12 @@ public class LevelActors {
                             pi.uniqueId,
                             new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT)
                     );
+                    IList<WeaponIfc> weaponsAsList = GapList.create(Arrays.asList(levelContainer.weapons.AllWeapons));
+                    WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(pi.weapon));
+                    if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
+                        weapon = Weapons.NONE;
+                    }
+                    opOrNull.switchWeapon(weapon);
                     otherPlayers.add(opOrNull);
                 }
                 opOrNull.setName(pi.name);
@@ -196,4 +205,37 @@ public class LevelActors {
         });
     }
 
+    /**
+     * Get pos info from all the level map players
+     *
+     * @return
+     */
+    public PosInfo[] getPosInfo() {
+        PosInfo[] result = new PosInfo[otherPlayers.size()];
+
+        int index = 0;
+        for (Critter crit : otherPlayers) {
+            PosInfo pi = new PosInfo(crit.uniqueId, crit.getPos(), crit.getFront());
+            result[index++] = pi;
+        }
+
+        return result;
+    }
+
+    /**
+     * Get player info from all the level map players
+     *
+     * @return
+     */
+    public PlayerInfo[] getPlayerInfo() {
+        PlayerInfo[] result = new PlayerInfo[otherPlayers.size()];
+
+        int index = 0;
+        for (Critter crit : otherPlayers) {
+            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.getWeapon().getTexName());
+            result[index++] = pi;
+        }
+
+        return result;
+    }
 }

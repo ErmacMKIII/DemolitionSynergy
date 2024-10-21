@@ -1,27 +1,12 @@
-/*
- * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package rs.alexanderstojanovich.evg.net;
 
 import com.google.gson.Gson;
 import org.joml.Vector4f;
 
 /**
+ * Player information class.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * Author: Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class PlayerInfo {
 
@@ -29,18 +14,26 @@ public class PlayerInfo {
      * Player name
      */
     public final String name;
+
     /**
      * Player texture (body) model
      */
     public final String texModel;
+
     /**
      * Unique player id
      */
     public final String uniqueId;
+
     /**
      * Player color (of body)
      */
     public final Vector4f color;
+
+    /**
+     * Player weapon
+     */
+    public final String weapon;
 
     /**
      * Create new Player Info (Json)
@@ -49,12 +42,14 @@ public class PlayerInfo {
      * @param texModel player (character) texture model
      * @param uniqueId player unique id
      * @param color player color (of body)
+     * @param weapon player weapon
      */
-    public PlayerInfo(String name, String texModel, String uniqueId, Vector4f color) {
+    public PlayerInfo(String name, String texModel, String uniqueId, Vector4f color, String weapon) {
         this.name = name;
         this.texModel = texModel;
         this.uniqueId = uniqueId;
         this.color = color;
+        this.weapon = weapon;
     }
 
     /**
@@ -111,6 +106,15 @@ public class PlayerInfo {
      */
     public Vector4f getColor() {
         return color;
+    }
+
+    /**
+     * Get Player weapon
+     *
+     * @return player weapon
+     */
+    public String getWeapon() {
+        return weapon;
     }
 
 }
