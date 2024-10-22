@@ -71,89 +71,177 @@ public class Assets {
     /**
      * Model of player unarmed (Default)
      */
-    public final Model PLAYER_BODY_DEFAULT = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_DEFAULT = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "alex", GRID_SIZE_PLAYER, true);
 
     // -------------------------------------------------------------------------
     /**
      * Model of player with one-handed small guns (W01M9)
      */
-    public final Model PLAYER_BODY_1H_SG_W01M9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W01M9.obj", new String[]{"alex", "W01M9"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_1H_SG_W01M9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W01M9.obj", new String[]{"alex", "W01M9"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with one-handed small guns (W02M1)
      */
-    public final Model PLAYER_BODY_1H_SG_W02M1 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W02M1.obj", new String[]{"alex", "W02M1"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_1H_SG_W02M1 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W02M1.obj", new String[]{"alex", "W02M1"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with one-handed small guns (W03DE)
      */
-    public final Model PLAYER_BODY_1H_SG_W03DE = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W03DE.obj", new String[]{"alex", "W03DE"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_1H_SG_W03DE = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W03DE.obj", new String[]{"alex", "W03DE"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with one-handed small guns (W04UZ)
      */
-    public final Model PLAYER_BODY_1H_SG_W04UZ = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W04UZ.obj", new String[]{"alex", "W04UZ"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_1H_SG_W04UZ = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W04UZ.obj", new String[]{"alex", "W04UZ"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed big guns (W10M6)
      */
-    public final Model PLAYER_BODY_2H_BG_W10M6 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W10M6.obj", new String[]{"alex", "W10M6"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_BG_W10M6 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W10M6.obj", new String[]{"alex", "W10M6"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed big guns (W11MS)
      */
-    public final Model PLAYER_BODY_2H_BG_W11MS = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W11MS.obj", new String[]{"alex", "W11MS"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_BG_W11MS = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W11MS.obj", new String[]{"alex", "W11MS"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed big guns (W16M8)
      */
-    public final Model PLAYER_BODY_2H_BG_W16M8 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W16M8.obj", new String[]{"alex", "W16M8"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_BG_W16M8 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W16M8.obj", new String[]{"alex", "W16M8"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W05M5)
      */
-    public final Model PLAYER_BODY_2H_SG_W05M5 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W05M5.obj", new String[]{"alex", "W05M5"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W05M5 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W05M5.obj", new String[]{"alex", "W05M5"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W06P9)
      */
-    public final Model PLAYER_BODY_2H_SG_W06P9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W06P9.obj", new String[]{"alex", "W06P9"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W06P9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W06P9.obj", new String[]{"alex", "W06P9"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W07AK)
      */
-    public final Model PLAYER_BODY_2H_SG_W07AK = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W07AK.obj", new String[]{"alex", "W07AK"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W07AK = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W07AK.obj", new String[]{"alex", "W07AK"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W08M4)
      */
-    public final Model PLAYER_BODY_2H_SG_W08M4 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W08M4.obj", new String[]{"alex", "W08M4"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W08M4 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W08M4.obj", new String[]{"alex", "W08M4"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W09G3)
      */
-    public final Model PLAYER_BODY_2H_SG_W09G3 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W09G3.obj", new String[]{"alex", "W09G3"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W09G3 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W09G3.obj", new String[]{"alex", "W09G3"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W12W2)
      */
-    public final Model PLAYER_BODY_2H_SG_W12W2 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W12W2.obj", new String[]{"alex", "W12W2"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W12W2 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W12W2.obj", new String[]{"alex", "W12W2"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W13B9)
      */
-    public final Model PLAYER_BODY_2H_SG_W13B9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W13B9.obj", new String[]{"alex", "W13B9"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W13B9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W13B9.obj", new String[]{"alex", "W13B9"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W14R7)
      */
-    public final Model PLAYER_BODY_2H_SG_W14R7 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W14R7.obj", new String[]{"alex", "W14R7"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W14R7 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W14R7.obj", new String[]{"alex", "W14R7"}, GRID_SIZE_PLAYER, true);
 
     /**
      * Model of player with two-handed small guns (W15DR)
      */
-    public final Model PLAYER_BODY_2H_SG_W15DR = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W15DR.obj", new String[]{"alex", "W15DR"}, GRID_SIZE_PLAYER, true);
+    public final Model ALEX_BODY_2H_SG_W15DR = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W15DR.obj", new String[]{"alex", "W15DR"}, GRID_SIZE_PLAYER, true);
 
+    //--------------------------------------------------------------------------
+    /**
+     * Model of player unarmed (Default)
+     */
+    public final Model STEVE_BODY_DEFAULT = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player.obj", "steve", GRID_SIZE_PLAYER, true);
+
+    // -------------------------------------------------------------------------
+    /**
+     * Model of player with one-handed small guns (W01M9)
+     */
+    public final Model STEVE_BODY_1H_SG_W01M9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W01M9.obj", new String[]{"steve", "W01M9"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with one-handed small guns (W02M1)
+     */
+    public final Model STEVE_BODY_1H_SG_W02M1 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W02M1.obj", new String[]{"steve", "W02M1"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with one-handed small guns (W03DE)
+     */
+    public final Model STEVE_BODY_1H_SG_W03DE = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W03DE.obj", new String[]{"steve", "W03DE"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with one-handed small guns (W04UZ)
+     */
+    public final Model STEVE_BODY_1H_SG_W04UZ = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-1H-SG-W04UZ.obj", new String[]{"steve", "W04UZ"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed big guns (W10M6)
+     */
+    public final Model STEVE_BODY_2H_BG_W10M6 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W10M6.obj", new String[]{"steve", "W10M6"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed big guns (W11MS)
+     */
+    public final Model STEVE_BODY_2H_BG_W11MS = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W11MS.obj", new String[]{"steve", "W11MS"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed big guns (W16M8)
+     */
+    public final Model STEVE_BODY_2H_BG_W16M8 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-BG-W16M8.obj", new String[]{"steve", "W16M8"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W05M5)
+     */
+    public final Model STEVE_BODY_2H_SG_W05M5 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W05M5.obj", new String[]{"steve", "W05M5"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W06P9)
+     */
+    public final Model STEVE_BODY_2H_SG_W06P9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W06P9.obj", new String[]{"steve", "W06P9"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W07AK)
+     */
+    public final Model STEVE_BODY_2H_SG_W07AK = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W07AK.obj", new String[]{"steve", "W07AK"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W08M4)
+     */
+    public final Model STEVE_BODY_2H_SG_W08M4 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W08M4.obj", new String[]{"steve", "W08M4"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W09G3)
+     */
+    public final Model STEVE_BODY_2H_SG_W09G3 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W09G3.obj", new String[]{"steve", "W09G3"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W12W2)
+     */
+    public final Model STEVE_BODY_2H_SG_W12W2 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W12W2.obj", new String[]{"steve", "W12W2"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W13B9)
+     */
+    public final Model STEVE_BODY_2H_SG_W13B9 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W13B9.obj", new String[]{"steve", "W13B9"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W14R7)
+     */
+    public final Model STEVE_BODY_2H_SG_W14R7 = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W14R7.obj", new String[]{"steve", "W14R7"}, GRID_SIZE_PLAYER, true);
+
+    /**
+     * Model of player with two-handed small guns (W15DR)
+     */
+    public final Model STEVE_BODY_2H_SG_W15DR = ModelUtils.readFromObjFile(Game.CHARACTER_ENTRY, "player-2H-SG-W15DR.obj", new String[]{"steve", "W15DR"}, GRID_SIZE_PLAYER, true);
+
+    //--------------------------------------------------------------------------
     /**
      * Position of the weapon in the game world
      */
@@ -269,25 +357,46 @@ public class Assets {
     }
 
     public void bufferAllModels() {
-        PLAYER_BODY_DEFAULT.bufferAll();
+        ALEX_BODY_DEFAULT.bufferAll();
 
-        PLAYER_BODY_1H_SG_W01M9.bufferAll();
-        PLAYER_BODY_1H_SG_W02M1.bufferAll();
-        PLAYER_BODY_1H_SG_W03DE.bufferAll();
-        PLAYER_BODY_1H_SG_W04UZ.bufferAll();
+        ALEX_BODY_1H_SG_W01M9.bufferAll();
+        ALEX_BODY_1H_SG_W02M1.bufferAll();
+        ALEX_BODY_1H_SG_W03DE.bufferAll();
+        ALEX_BODY_1H_SG_W04UZ.bufferAll();
 
-        PLAYER_BODY_2H_SG_W05M5.bufferAll();
-        PLAYER_BODY_2H_SG_W06P9.bufferAll();
-        PLAYER_BODY_2H_SG_W07AK.bufferAll();
-        PLAYER_BODY_2H_SG_W08M4.bufferAll();
-        PLAYER_BODY_2H_SG_W09G3.bufferAll();
-        PLAYER_BODY_2H_SG_W12W2.bufferAll();
-        PLAYER_BODY_2H_SG_W13B9.bufferAll();
-        PLAYER_BODY_2H_SG_W14R7.bufferAll();
-        PLAYER_BODY_2H_SG_W15DR.bufferAll();
+        ALEX_BODY_2H_SG_W05M5.bufferAll();
+        ALEX_BODY_2H_SG_W06P9.bufferAll();
+        ALEX_BODY_2H_SG_W07AK.bufferAll();
+        ALEX_BODY_2H_SG_W08M4.bufferAll();
+        ALEX_BODY_2H_SG_W09G3.bufferAll();
+        ALEX_BODY_2H_SG_W12W2.bufferAll();
+        ALEX_BODY_2H_SG_W13B9.bufferAll();
+        ALEX_BODY_2H_SG_W14R7.bufferAll();
+        ALEX_BODY_2H_SG_W15DR.bufferAll();
 
-        PLAYER_BODY_2H_BG_W10M6.bufferAll();
-        PLAYER_BODY_2H_BG_W11MS.bufferAll();
-        PLAYER_BODY_2H_BG_W16M8.bufferAll();
+        ALEX_BODY_2H_BG_W10M6.bufferAll();
+        ALEX_BODY_2H_BG_W11MS.bufferAll();
+        ALEX_BODY_2H_BG_W16M8.bufferAll();
+
+        STEVE_BODY_DEFAULT.bufferAll();
+
+        STEVE_BODY_1H_SG_W01M9.bufferAll();
+        STEVE_BODY_1H_SG_W02M1.bufferAll();
+        STEVE_BODY_1H_SG_W03DE.bufferAll();
+        STEVE_BODY_1H_SG_W04UZ.bufferAll();
+
+        STEVE_BODY_2H_SG_W05M5.bufferAll();
+        STEVE_BODY_2H_SG_W06P9.bufferAll();
+        STEVE_BODY_2H_SG_W07AK.bufferAll();
+        STEVE_BODY_2H_SG_W08M4.bufferAll();
+        STEVE_BODY_2H_SG_W09G3.bufferAll();
+        STEVE_BODY_2H_SG_W12W2.bufferAll();
+        STEVE_BODY_2H_SG_W13B9.bufferAll();
+        STEVE_BODY_2H_SG_W14R7.bufferAll();
+        STEVE_BODY_2H_SG_W15DR.bufferAll();
+
+        STEVE_BODY_2H_BG_W10M6.bufferAll();
+        STEVE_BODY_2H_BG_W11MS.bufferAll();
+        STEVE_BODY_2H_BG_W16M8.bufferAll();
     }
 }

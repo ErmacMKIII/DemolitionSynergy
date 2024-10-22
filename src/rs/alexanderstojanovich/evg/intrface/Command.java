@@ -918,7 +918,8 @@ public class Command implements Callable<Object> {
                     result = gameObject.levelContainer.levelActors.player.body.getTexName();
                     command.status = Status.SUCCEEDED;
                 } else if (command.mode == Command.Mode.SET) {
-                    gameObject.levelContainer.levelActors.player.body.setTexName(command.args.getFirst().toString());
+                    gameObject.levelContainer.levelActors.player.setModelClazz(command.args.getFirst().toString());
+                    gameObject.levelContainer.levelActors.player.switchBodyModel();
                     singleplayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
                     multiplayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
                     command.status = Status.SUCCEEDED;

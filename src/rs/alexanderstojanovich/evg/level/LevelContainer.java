@@ -507,8 +507,6 @@ public class LevelContainer implements GravityEnviroment {
         // Adjust player position if successfully spawned
         if (playerSpawned) {
             gravityOn = true; // Re-enable gravity
-            player.jumpY(0.0f); // some work-around
-            player.dropY(0.0f); // some work-around
         } else {
             // Handle case where no valid spawn location was found (optional)
             throw new Exception("Failed to spawn player in a valid location.");

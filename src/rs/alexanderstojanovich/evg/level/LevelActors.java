@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
@@ -44,6 +45,8 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LevelActors {
+
+    public final Configuration cfg = Configuration.getInstance();
 
     /**
      * Access to level container containing actors
@@ -84,7 +87,8 @@ public class LevelActors {
      */
     public LevelActors(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
-        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
+        final Model bodyCopy = new Model(cfg.getModel().equalsIgnoreCase("steve")
+                ? levelContainer.gameObject.GameAssets.STEVE_BODY_DEFAULT : levelContainer.gameObject.GameAssets.ALEX_BODY_DEFAULT);
         this.player = new Player(
                 this.levelContainer.gameObject.GameAssets,
                 new RPGCamera(bodyCopy),
@@ -188,7 +192,7 @@ public class LevelActors {
                 if (opOrNull == null) {
                     opOrNull = new Critter(levelContainer.gameObject.GameAssets,
                             pi.uniqueId,
-                            new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT)
+                            new Model(levelContainer.gameObject.GameAssets.ALEX_BODY_DEFAULT)
                     );
                     IList<WeaponIfc> weaponsAsList = GapList.create(Arrays.asList(levelContainer.weapons.AllWeapons));
                     WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(pi.weapon));
@@ -238,4 +242,5 @@ public class LevelActors {
 
         return result;
     }
+
 }

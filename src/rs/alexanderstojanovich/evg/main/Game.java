@@ -150,7 +150,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
     public static final int REQUEST_FULFILLMENT_LENGTH = 8; // Used in calculaton for AVG ping
-    public static final int MAX_SIZE = 128; // Max Total Request List SIZE
+    public static final int MAX_SIZE = 300; // Max Total Request List SIZE
 
     protected int fulfillNum = 0;
     public final Object internRequestMutex = new Object();

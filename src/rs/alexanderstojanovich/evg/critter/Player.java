@@ -336,4 +336,11 @@ public class Player extends Critter implements Observer {
         return registered;
     }
 
+    @Override
+    public void setModelClazz(String modelClazz) {
+        super.setModelClazz(modelClazz); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+        // set the camera target model assuming it was changed
+        this.camera.setTarget(body);
+    }
+
 }
