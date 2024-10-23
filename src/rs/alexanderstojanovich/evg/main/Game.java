@@ -695,24 +695,27 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
                 this.requestUpdatePlayer();
+            }
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
                 this.requestUpdatePlayer();
+            }
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_2]) {
             weaponIndex = (--weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
                 this.requestUpdatePlayer();
+            }
             changed = true;
         }
 
@@ -846,13 +849,118 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         GLFW.glfwSetMouseButtonCallback(gameObject.WINDOW.getWindowID(), defaultMouseButtonCallback);
     }
 
+    @Override
+    public void messageSent(IoSession session, Object message) throws Exception {
+
+    }
+
     /**
-     * Receive Async (Multiplayer)
+     * Event on message received. Replacement for async receive
+     *
+     * @param session session with (server) endpoint
+     * @param message object message received
+     *
+     * @throws Exception
+     */
+    @Override
+    public void messageReceived(IoSession session, Object message) throws Exception {
+        if (isAsyncReceivedEnabled()) {
+            ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc response) -> {
+                process(response);
+            });
+        }
+    }
+
+    /**
+     * Process received response (client-side)
+     *
+     * @param response client received response
+     */
+    public void process(ResponseIfc response) {
+        double endTime = GLFW.glfwGetTime();
+        // this is issued kick from the server to the Guid of this machine
+        if (response.getData().equals(this.getGuid())) {
+            DSLogger.reportInfo("You got kicked from the server!", null);
+            this.gameObject.intrface.getConsole().write("You got kicked from the server!");
+            disconnectFromServer();
+            gameObject.clearEverything();
+        } else {
+//                    DSLogger.reportInfo("Resp=" + resp.getData().toString(), null);
+            double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
+            // choose the one which fits by unique checksum
+            Pair<RequestIfc, Double> reqXtime = null;
+            synchronized (internRequestMutex) {
+                reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
+                requests.remove(reqXtime);
+            }
+            if (reqXtime != null) {
+                // Affiliate response with request
+                RequestIfc reqTarg = reqXtime.getKey();
+                // Affilate response time recevied with request time sent
+                beginTime = reqXtime.getValue();
+
+                switch (reqTarg.getRequestType()) {
+                    case GET_TIME:
+                        Game.gameTicks = (double) response.getData();
+                        break;
+                    case GET_POS:
+                        String uniqueId = reqTarg.getData().toString();
+                        PosInfo posInfo = PosInfo.fromJson(response.getData().toString());
+                        if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
+                            playerServerPos.set(posInfo.pos);
+                        } else {
+                            Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
+                            other.setPos(posInfo.pos);
+                            other.getFront().set(posInfo.front);
+                            other.setRotationXYZ(posInfo.front);
+                        }
+                        break;
+                    // get player info
+                    case PLAYER_INFO:
+                        Gson gson = new Gson();
+                        PlayerInfo[] infos = gson.fromJson((String) response.getData().toString(), PlayerInfo[].class);
+                        gameObject.levelContainer.levelActors.configOtherPlayers(infos);
+                        break;
+                    case SAY:
+                        // write chat messages
+                        gameObject.intrface.getConsole().write(response.getData().toString());
+                        break;
+                    // set player info update
+                    case PLAYER_INFO_UPDATE:
+                        break;
+                    case GOODBYE:
+                        // print GOODBYE message (disconnecting)
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                        DSLogger.reportInfo("Disconnected from server!", null);
+                        break;
+                }
+
+                // trip time millis, multiplied by cuz it is called in a loop!
+                double tripTime = endTime - beginTime;
+                // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
+                if (tripTime <= WAIT_RECEIVE_TIME) {
+                    pingSum += tripTime;
+                    fulfillNum++;
+                }
+                // remove all X-requests which exceed max wait time of 45 sec    
+                // Reset waiting time (as response arrived to the request)
+                waitReceiveTime = 0L;
+
+                // Reset reconnected to connected
+                connected = ConnectionStatus.CONNECTED;
+            }
+        }
+    }
+
+    /**
+     * Wait Async (Multiplayer) until last response received.
+     *
      *
      * @param deltaTime time interval between updates
      * @throws java.lang.Exception
      */
-    public void receiveAsync(double deltaTime) throws Exception {
+    public void waitAsync(double deltaTime) throws Exception {
         if (!asyncReceivedEnabled || requests.isEmpty()) {
             return;
         }
@@ -861,95 +969,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         synchronized (internRequestMutex) {
             requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
         }
-        
+
         // if too much requests sent close connection with server
         synchronized (internRequestMutex) {
             if (requests.size() >= MAX_SIZE) {
                 throw new Exception("Too much request sent. Connection will abort!");
             }
         }
+
         // if waiting time is less or equal than 45 sec
-        if (waitReceiveTime <= WAIT_RECEIVE_TIME) {
-            ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc resp) -> {
-                double endTime = GLFW.glfwGetTime();
-                // this is issued kick from the server to the Guid of this machine
-                if (resp.getData().equals(getGuid())) {
-                    DSLogger.reportInfo("You got kicked from the server!", null);
-                    this.gameObject.intrface.getConsole().write("You got kicked from the server!");
-                    disconnectFromServer();
-                    gameObject.clearEverything();
-                } else {
-//                    DSLogger.reportInfo("Resp=" + resp.getData().toString(), null);
-                    double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
-                    // choose the one which fits by unique checksum
-                    Pair<RequestIfc, Double> reqXtime = null;
-                    synchronized (internRequestMutex) {
-                        reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == resp.getChecksum());
-                        requests.remove(reqXtime);
-                    }
-                    if (reqXtime != null) {
-                        // Affiliate response with request
-                        RequestIfc reqTarg = reqXtime.getKey();
-                        // Affilate response time recevied with request time sent
-                        beginTime = reqXtime.getValue();
-
-                        switch (reqTarg.getRequestType()) {
-                            case GET_TIME:
-                                Game.gameTicks = (double) resp.getData();
-                                break;
-                            case GET_POS:
-                                String uniqueId = reqTarg.getData().toString();
-                                PosInfo posInfo = PosInfo.fromJson(resp.getData().toString());
-                                if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
-                                    playerServerPos.set(posInfo.pos);
-                                } else {
-                                    Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
-                                    other.setPos(posInfo.pos);
-                                    other.getFront().set(posInfo.front);
-                                    other.setRotationXYZ(posInfo.front);
-                                }
-                                double ping = endTime - beginTime;
-                                // calculate interpolation factor
-                                interpolationFactor = (double) deltaTime / ((double) ping + deltaTime);
-                                break;
-                            // get player info
-                            case PLAYER_INFO: 
-                                Gson gson = new Gson();
-                                PlayerInfo[] infos = gson.fromJson((String) resp.getData().toString(), PlayerInfo[].class);
-                                gameObject.levelContainer.levelActors.configOtherPlayers(infos);
-                                break;
-                            case SAY:
-                                // write chat messages
-                                gameObject.intrface.getConsole().write(resp.getData().toString());
-                                break; 
-                            // set player info update
-                            case PLAYER_INFO_UPDATE:
-                                break;
-                            case GOODBYE:
-                                // print GOODBYE message (disconnecting)
-                                DSLogger.reportInfo(String.format("Server response: %s : %s", resp.getResponseStatus().toString(), String.valueOf(resp.getData())), null);
-                                gameObject.intrface.getConsole().write(String.valueOf(resp.getData()));
-                                DSLogger.reportInfo("Disconnected from server!", null);
-                                break;
-                        }
-
-                        // trip time millis, multiplied by cuz it is called in a loop!
-                        double tripTime = endTime - beginTime;
-                        // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
-                        if (tripTime <= WAIT_RECEIVE_TIME) {
-                            pingSum += tripTime * 1000.0;
-                            fulfillNum++;
-                        }
-                        // remove all X-requests which exceed max wait time of 45 sec    
-                        // Reset waiting time (as response arrived to the request)
-                        waitReceiveTime = 0L;
-
-                        // Reset reconnected to connected
-                        connected = ConnectionStatus.CONNECTED;
-                    }                   
-                }
-            });
-        } else {
+        if (waitReceiveTime > WAIT_RECEIVE_TIME) {
             // attempt to reconnected
             if (!reconnect()) {
                 this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
@@ -966,6 +995,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 waitReceiveTime = 0L;
             }
         }
+
         waitReceiveTime += deltaTime;
     }
 
@@ -1036,17 +1066,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // receive (connection) responses async
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
             try {
-                if (asyncReceivedEnabled) {
-                    receiveAsync(deltaTime);
-                }
                 if (fulfillNum >= Game.REQUEST_FULFILLMENT_LENGTH) {
                     // calculate average ping for 8 requests
                     double avgPing = pingSum / (double) fulfillNum;
                     // display ping in game window title
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", avgPing));
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", avgPing * 1000.0));
                     // reset measurements
                     pingSum = 0.0;
                     fulfillNum = 0;
+                    // calculate interpolation factor
+                    interpolationFactor = (double) deltaTime / ((double) avgPing + deltaTime);
                 }
             } catch (Exception ex) {
                 disconnectFromServer();
@@ -1341,7 +1370,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
 
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));                
+
                 okey |= true;
             } else {
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);

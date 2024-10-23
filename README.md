@@ -39,6 +39,8 @@ Unique features:
 ![Alt text](/misc/DSynergy4.png?raw=true "RPG Camera #1")
 ![Alt text](/misc/DSynergy5.png?raw=true "RPG Camera #2")
 ![Alt text](/misc/DSynergy6.png?raw=true "Various effects")
+![Alt text](/misc/DSynergy9.png?raw=true "Multiplayer #1")
+![Alt text](/misc/DSynergy10.png?raw=true "Multiplayer #2")
 
 # How To Build
 Build was coded in Apache NetBeans IDE 21. Requires Java JDK 11 (or later).
