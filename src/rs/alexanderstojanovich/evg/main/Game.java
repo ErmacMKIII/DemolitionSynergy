@@ -695,21 +695,24 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-            this.requestUpdatePlayer();
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+                this.requestUpdatePlayer();
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            this.requestUpdatePlayer();
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+                this.requestUpdatePlayer();
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_2]) {
             weaponIndex = (--weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            this.requestUpdatePlayer();
+            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled())
+                this.requestUpdatePlayer();
             changed = true;
         }
 
@@ -854,6 +857,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             return;
         }
 
+        // clean long time unhandled requests
+        synchronized (internRequestMutex) {
+            requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
+        }
+        
         // if too much requests sent close connection with server
         synchronized (internRequestMutex) {
             if (requests.size() >= MAX_SIZE) {
@@ -872,7 +880,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     gameObject.clearEverything();
                 } else {
 //                    DSLogger.reportInfo("Resp=" + resp.getData().toString(), null);
-                    double beginTime = 0.0;
+                    double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
                     // choose the one which fits by unique checksum
                     Pair<RequestIfc, Double> reqXtime = null;
                     synchronized (internRequestMutex) {
@@ -902,9 +910,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                 }
                                 double ping = endTime - beginTime;
                                 // calculate interpolation factor
-                                interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+                                interpolationFactor = (double) deltaTime / ((double) ping + deltaTime);
                                 break;
-                            case PLAYER_INFO:
+                            // get player info
+                            case PLAYER_INFO: 
                                 Gson gson = new Gson();
                                 PlayerInfo[] infos = gson.fromJson((String) resp.getData().toString(), PlayerInfo[].class);
                                 gameObject.levelContainer.levelActors.configOtherPlayers(infos);
@@ -912,6 +921,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                             case SAY:
                                 // write chat messages
                                 gameObject.intrface.getConsole().write(resp.getData().toString());
+                                break; 
+                            // set player info update
+                            case PLAYER_INFO_UPDATE:
                                 break;
                             case GOODBYE:
                                 // print GOODBYE message (disconnecting)
@@ -921,24 +933,20 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                 break;
                         }
 
-                    }
-                    // trip time millis, multiplied by cuz it is called in a loop!
-                    double tripTime = endTime - beginTime;
-                    // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
-                    if (tripTime <= WAIT_RECEIVE_TIME) {
-                        pingSum += tripTime * 1000.0;
-                        fulfillNum++;
-                    }
+                        // trip time millis, multiplied by cuz it is called in a loop!
+                        double tripTime = endTime - beginTime;
+                        // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
+                        if (tripTime <= WAIT_RECEIVE_TIME) {
+                            pingSum += tripTime * 1000.0;
+                            fulfillNum++;
+                        }
+                        // remove all X-requests which exceed max wait time of 45 sec    
+                        // Reset waiting time (as response arrived to the request)
+                        waitReceiveTime = 0L;
 
-                    // remove all X-requests which exceed max wait time of 45 sec
-//                    synchronized (internRequestMutex) {
-//                        requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
-//                    }
-                    // Reset waiting time (as response arrived to the request)
-                    waitReceiveTime = 0L;
-
-                    // Reset reconnected to connected
-                    connected = ConnectionStatus.CONNECTED;
+                        // Reset reconnected to connected
+                        connected = ConnectionStatus.CONNECTED;
+                    }                   
                 }
             });
         } else {
@@ -1576,6 +1584,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             String posStr = posInfo.toString();
             RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
             posReq.send(this, session);
+            double time = GLFW.glfwGetTime();
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(new Pair<>(posReq, time));
+                }
+            }
         } catch (Exception ex) {
             DSLogger.reportError("Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -1637,10 +1651,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         try {
             // Send a simple 'goodbye' message with magic bytes prepended
             final Player player = gameObject.levelContainer.levelActors.player;
-            final RequestIfc register = new Request(RequestIfc.RequestType.PLAYER_INFO_UPDATE,
+            final RequestIfc request = new Request(RequestIfc.RequestType.PLAYER_INFO_UPDATE,
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
             );
-            register.send(this, session);
+            request.send(this, session);
+            double time = GLFW.glfwGetTime();
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(new Pair<>(request, time));
+                }
+            }
         } catch (Exception ex) {
             DSLogger.reportError("Network error(s) occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
