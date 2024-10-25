@@ -715,7 +715,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //            // !IMPORTANT -- ENABLE ASYNC READPOINT 
 //            game.asyncReceivedEnabled = true;
 //        }
-
         return ok;
     }
 

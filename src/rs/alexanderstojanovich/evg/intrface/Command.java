@@ -730,17 +730,9 @@ public class Command implements Callable<Object> {
                 break;
             case PING:
                 if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
-                    try {
-                        double beginTime = GLFW.glfwGetTime();
-                        RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
-                        req.send(gameObject.game, gameObject.game.getSession());
-                        ResponseIfc.receive(gameObject.game, gameObject.game.getSession());
-                        double endTime = GLFW.glfwGetTime();
-                        result = Math.round((endTime - beginTime) * 1000L);
-                        command.status = Status.SUCCEEDED;
-                    } catch (Exception ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
+                    // ingame ping calculation
+                    result = Math.round(gameObject.game.getPing() * 1000.0); // ping express in milliseconds
+                    command.status = Status.SUCCEEDED;
                 }
                 break;
             case PRINT:

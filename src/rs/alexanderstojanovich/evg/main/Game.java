@@ -94,7 +94,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 30.0;
-    public static final int WAIT_RECEIVE_TIME = 45; // 45 Seconds
+    public static final int MAX_WAIT_RECEIVE_TIME = 45; // 45 Seconds
 
     private final boolean[] keys = new boolean[512];
 
@@ -156,7 +156,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public final Object internRequestMutex = new Object();
     protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
     protected double pingSum = 0.0;
-
+    protected double ping = 0.0;
     protected double waitReceiveTime = 0.0; // seconds
 
     /**
@@ -880,6 +880,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
             // choose the one which fits by unique checksum
             Pair<RequestIfc, Double> reqXtime = null;
+            DSLogger.reportInfo("Size=" + requests.size(), null);
             synchronized (internRequestMutex) {
                 reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
                 requests.remove(reqXtime);
@@ -930,12 +931,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                 // trip time millis, multiplied by cuz it is called in a loop!
                 double tripTime = endTime - beginTime;
-                // if received within 45 seconds add to ping sum (as avg ping is displayed in window title)
-                if (tripTime <= WAIT_RECEIVE_TIME) {
-                    pingSum += tripTime;
-                    fulfillNum++;
-                }
-                // remove all X-requests which exceed max wait time of 45 sec    
+                // add to ping sum (as avg ping is displayed in window title)
+                pingSum += tripTime;
+                fulfillNum++;
+
                 // Reset waiting time (as response arrived to the request)
                 waitReceiveTime = 0L;
 
@@ -958,8 +957,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // clean long time unhandled requests
+        // remove all X-requests which exceed max wait time of 45 sec
         synchronized (internRequestMutex) {
-            requests.removeIf(x -> x.getValue() > WAIT_RECEIVE_TIME);
+            requests.removeIf(x -> GLFW.glfwGetTime() - x.getValue() > MAX_WAIT_RECEIVE_TIME);
         }
 
         // if too much requests sent close connection with server
@@ -970,7 +970,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // if waiting time is less or equal than 45 sec
-        if (waitReceiveTime > WAIT_RECEIVE_TIME) {
+        if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
             // attempt to reconnected
             if (!reconnect()) {
                 this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
@@ -981,6 +981,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (connected == ConnectionStatus.RECONNECTED) {
                     // Reset reconnected to connected
                     connected = ConnectionStatus.CONNECTED;
+
+                    // enable async received (player connected)
+                    asyncReceivedEnabled = true;
                 }
 
                 // success reset wait receive time
@@ -1056,19 +1059,19 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // receive (connection) responses async
-        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {            
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
             try {
                 waitAsync(deltaTime);
                 if (fulfillNum >= Game.REQUEST_FULFILLMENT_LENGTH) {
                     // calculate average ping for 8 requests
-                    double avgPing = pingSum / (double) fulfillNum;
+                    ping = pingSum / (double) fulfillNum;
                     // display ping in game window title
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", avgPing * 1000.0));
+                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping * 1000.0));
                     // reset measurements
                     pingSum = 0.0;
                     fulfillNum = 0;
                     // calculate interpolation factor
-                    interpolationFactor = 0.5 * (double) deltaTime / ((double) avgPing + deltaTime);
+                    interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
                 }
             } catch (Exception ex) {
                 disconnectFromServer();
@@ -1247,6 +1250,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             return false;
         }
         try {
+            // disable async receive
+            asyncReceivedEnabled = false;
             // set default timeout (30 sec)
             timeout = Game.DEFAULT_TIMEOUT;
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
@@ -1363,7 +1368,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.levelContainer.levelActors.player.setRegistered(true);
 
                 DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));                
+                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
 
                 okey |= true;
             } else {
@@ -1907,4 +1912,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         return asyncReceivedEnabled;
     }
 
+    public void setAsyncReceivedEnabled(boolean asyncReceivedEnabled) {
+        this.asyncReceivedEnabled = asyncReceivedEnabled;
+    }
+
+    public double getPing() {
+        return ping;
+    }
+    
+    
 }

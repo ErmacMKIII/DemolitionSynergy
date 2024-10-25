@@ -201,7 +201,7 @@ public class LevelActors {
                 opOrNull.setName(pi.name);
                 opOrNull.body.setPrimaryRGBAColor(pi.color);
                 opOrNull.setModelClazz(pi.texModel);
-                
+
                 IList<WeaponIfc> weaponsAsList = GapList.create(Arrays.asList(levelContainer.weapons.AllWeapons));
                 WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(pi.weapon));
                 if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
@@ -210,7 +210,7 @@ public class LevelActors {
                 opOrNull.switchWeapon(weapon);
             }
         });
-        
+
         // Map player info to Guids
         List<String> playerInfoGuids = playerInfoList.stream().map(x -> x.uniqueId).collect(Collectors.toList());
         // Remove level actor other player if not in the list
