@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -186,7 +187,8 @@ public class LevelActors {
     }
 
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
-        Arrays.asList(playerInfo).forEach(pi -> {
+        List<PlayerInfo> playerInfoList = Arrays.asList(playerInfo);
+        playerInfoList.forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
                 Critter opOrNull = otherPlayers.getIf(oplyr -> oplyr.uniqueId.equals(pi.uniqueId));
                 if (opOrNull == null) {
@@ -198,17 +200,21 @@ public class LevelActors {
                 }
                 opOrNull.setName(pi.name);
                 opOrNull.body.setPrimaryRGBAColor(pi.color);
-//                opOrNull.body.setTexName(pi.texModel);
-
+                opOrNull.setModelClazz(pi.texModel);
+                
                 IList<WeaponIfc> weaponsAsList = GapList.create(Arrays.asList(levelContainer.weapons.AllWeapons));
                 WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(pi.weapon));
                 if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
                     weapon = Weapons.NONE;
                 }
                 opOrNull.switchWeapon(weapon);
-                opOrNull.setModelClazz(pi.texModel);
             }
         });
+        
+        // Map player info to Guids
+        List<String> playerInfoGuids = playerInfoList.stream().map(x -> x.uniqueId).collect(Collectors.toList());
+        // Remove level actor other player if not in the list
+        levelContainer.levelActors.otherPlayers.removeIf(x -> !playerInfoGuids.contains(x.uniqueId));
     }
 
     /**

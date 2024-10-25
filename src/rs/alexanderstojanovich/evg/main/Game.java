@@ -695,38 +695,29 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
-                this.requestUpdatePlayer();
-            }
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
-                this.requestUpdatePlayer();
-            }
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_2]) {
             weaponIndex = (--weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
-                this.requestUpdatePlayer();
-            }
             changed = true;
         }
 
         if (keys[GLFW.GLFW_KEY_R]) {
-            this.requestUpdatePlayer();
             changed = true;
         }
 
         // in case of multiplayer join send to the server
         if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
             this.requestSetPlayerPosition();
+            this.requestUpdatePlayer();
         }
 
         return changed;
@@ -927,6 +918,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         break;
                     // set player info update
                     case PLAYER_INFO_UPDATE:
+//                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                         break;
                     case GOODBYE:
                         // print GOODBYE message (disconnecting)
@@ -1064,8 +1056,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // receive (connection) responses async
-        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
+        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {            
             try {
+                waitAsync(deltaTime);
                 if (fulfillNum >= Game.REQUEST_FULFILLMENT_LENGTH) {
                     // calculate average ping for 8 requests
                     double avgPing = pingSum / (double) fulfillNum;
@@ -1075,7 +1068,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     pingSum = 0.0;
                     fulfillNum = 0;
                     // calculate interpolation factor
-                    interpolationFactor = (double) deltaTime / ((double) avgPing + deltaTime);
+                    interpolationFactor = 0.5 * (double) deltaTime / ((double) avgPing + deltaTime);
                 }
             } catch (Exception ex) {
                 disconnectFromServer();
