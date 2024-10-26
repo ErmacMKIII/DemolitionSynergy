@@ -869,6 +869,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void process(ResponseIfc response) {
         double endTime = GLFW.glfwGetTime();
+        if (response.getChecksum() == 0L && String.valueOf(response.getData()).contains(":")) {
+            // write chat messages
+            gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+            DSLogger.reportInfo(String.valueOf(response.getData()), null);
+        }
+
         // this is issued kick from the server to the Guid of this machine
         if (response.getData().equals(this.getGuid())) {
             DSLogger.reportInfo("You got kicked from the server!", null);
@@ -880,7 +886,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
             // choose the one which fits by unique checksum
             Pair<RequestIfc, Double> reqXtime = null;
-            DSLogger.reportInfo("Size=" + requests.size(), null);
             synchronized (internRequestMutex) {
                 reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
                 requests.remove(reqXtime);
@@ -912,10 +917,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         Gson gson = new Gson();
                         PlayerInfo[] infos = gson.fromJson((String) response.getData().toString(), PlayerInfo[].class);
                         gameObject.levelContainer.levelActors.configOtherPlayers(infos);
-                        break;
-                    case SAY:
-                        // write chat messages
-                        gameObject.intrface.getConsole().write(response.getData().toString());
                         break;
                     // set player info update
                     case PLAYER_INFO_UPDATE:
@@ -1919,6 +1920,5 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public double getPing() {
         return ping;
     }
-    
-    
+
 }

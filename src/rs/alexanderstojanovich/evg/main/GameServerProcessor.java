@@ -27,6 +27,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32C;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -431,10 +433,14 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         senderName = otherPlayerOrNull.getName();
                     }
                 }
-                response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
-                for (IoSession session1 : gameServer.acceptor.getManagedSessions().values()) {
-                    response.send(gameServer, session1);
-                }
+                response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
+                gameServer.clients.forEach(ci -> {
+                    try {
+                        response.send(gameServer, ci.session);
+                    } catch (Exception ex) {
+                        DSLogger.reportError("Unable to deliver chat message, ex:", ex);
+                    }
+                });
                 break;
             case WORLD_INFO:
                 // Locate all level map files with dat or ndat extension

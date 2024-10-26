@@ -48,6 +48,7 @@ import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -166,7 +167,10 @@ public class Command implements Callable<Object> {
     public static Command getCommand(String input) {
         Command command = new Command(input);
         command.args.clear();
-        String[] things = input.split("\\s+|\".*\"");
+        String[] things = input.split("\\s+(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        for (int i = 0; i < things.length; i++) {
+            things[i] = things[i].replaceAll("^\"|\"$", "");
+        }
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "monitor_get":
@@ -729,7 +733,7 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case PING:
-                if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isConnected()) {
                     // ingame ping calculation
                     result = Math.round(gameObject.game.getPing() * 1000.0); // ping express in milliseconds
                     command.status = Status.SUCCEEDED;
@@ -745,13 +749,26 @@ public class Command implements Callable<Object> {
             case SAY:
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
-                        try {
-                            RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
-                            sendChatMsgReq.send(gameObject.game, gameObject.game.getSession());
+                        if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST) {
+                            String msg = gameObject.levelContainer.levelActors.player.getName() + ":" + command.args.getFirst();
+                            Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                            gameObject.gameServer.clients.forEach(ci -> {
+                                try {
+                                    response.send(gameObject.gameServer, ci.session);
+                                } catch (IOException ex) {
+                                    DSLogger.reportError("Unable to deliver chat message, ex:", ex);
+                                }
+                            });
                             command.status = Status.SUCCEEDED;
-                        } catch (Exception ex) {
-                            DSLogger.reportError("Unable to send chat message!", ex);
-                            DSLogger.reportError(ex.getMessage(), ex);
+                        } else if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isConnected()) {
+                            try {
+                                RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
+                                sendChatMsgReq.send(gameObject.game, gameObject.game.getSession());
+                                command.status = Status.SUCCEEDED;
+                            } catch (Exception ex) {
+                                DSLogger.reportError("Unable to send chat message!", ex);
+                                DSLogger.reportError(ex.getMessage(), ex);
+                            }
                         }
                     }
                 }
