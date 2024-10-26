@@ -74,8 +74,7 @@ public class Weapons {
     public Weapons(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
 
-        this.M9_PISTOL = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.M9_PISTOL) {
-        };
+        this.M9_PISTOL = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.M9_PISTOL);
         this.M1911_PISTOL = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.M1911_PISTOL);
         this.DESERT_EAGLE = new Weapon(WeaponIfc.Clazz.OneHandedSmallGun, levelContainer.gameObject.GameAssets.DESERT_EAGLE);
         this.MINI_UZI_SMG = new Weapon(WeaponIfc.Clazz.TwoHandedSmallGun, levelContainer.gameObject.GameAssets.MINI_UZI_SMG);

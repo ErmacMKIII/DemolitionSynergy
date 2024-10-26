@@ -130,7 +130,7 @@ public class Block extends Model {
 
     public Block(String texName) {
         super("cubex.txt", texName);
-        this.solid = !texName.equals("water");
+        this.solid = !texName.equals("water") && !texName.equals("cloud");
         Arrays.fill(enabledFaces, true);
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);

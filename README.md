@@ -39,6 +39,8 @@ Unique features:
 ![Alt text](/misc/DSynergy4.png?raw=true "RPG Camera #1")
 ![Alt text](/misc/DSynergy5.png?raw=true "RPG Camera #2")
 ![Alt text](/misc/DSynergy6.png?raw=true "Various effects")
+![Alt text](/misc/DSynergy9.png?raw=true "Multiplayer #1")
+![Alt text](/misc/DSynergy10.png?raw=true "Multiplayer #2")
 
 # How To Build
 Build was coded in Apache NetBeans IDE 21. Requires Java JDK 11 (or later).
@@ -114,7 +116,7 @@ Blender project could be downloaded from Author's mediafire account:
 https://www.mediafire.com/file/rilu34pbbzr48zc/DS42Weapons.zip/file
 
 Author recently created player models which could obtained from:
-https://www.mediafire.com/file/tx3bk2roz0irgcp/DS42PlayerModels.zip/file
+https://www.mediafire.com/file/bmqvia3qvwpee0s/DS51PlayerModels.zip/file
 
 Sounds were made by Erokia and modified by Author.
 Font is 'Jet Brains Mono', free & open typeface.

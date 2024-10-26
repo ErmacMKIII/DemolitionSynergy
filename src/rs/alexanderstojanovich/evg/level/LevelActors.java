@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -29,11 +30,15 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
+import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Define all the level observers & critters. Present in the level container.
@@ -41,6 +46,8 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class LevelActors {
+
+    public final Configuration cfg = Configuration.getInstance();
 
     /**
      * Access to level container containing actors
@@ -81,8 +88,10 @@ public class LevelActors {
      */
     public LevelActors(LevelContainer levelContainer) {
         this.levelContainer = levelContainer;
-        final Model bodyCopy = new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT);
+        final Model bodyCopy = new Model(cfg.getModel().equalsIgnoreCase("steve")
+                ? levelContainer.gameObject.GameAssets.STEVE_BODY_DEFAULT : levelContainer.gameObject.GameAssets.ALEX_BODY_DEFAULT);
         this.player = new Player(
+                this.levelContainer.gameObject.GameAssets,
                 new RPGCamera(bodyCopy),
                 new LightSource(bodyCopy.pos, GlobalColors.WHITE, LightSource.PLAYER_LIGHT_INTENSITY),
                 bodyCopy
@@ -178,18 +187,68 @@ public class LevelActors {
     }
 
     public void configOtherPlayers(PlayerInfo[] playerInfo) {
-        Arrays.asList(playerInfo).forEach(pi -> {
+        List<PlayerInfo> playerInfoList = Arrays.asList(playerInfo);
+        playerInfoList.forEach(pi -> {
             if (!pi.uniqueId.equals(player.uniqueId)) {
                 Critter opOrNull = otherPlayers.getIf(oplyr -> oplyr.uniqueId.equals(pi.uniqueId));
                 if (opOrNull == null) {
-                    opOrNull = new Critter(pi.uniqueId, new Model(levelContainer.gameObject.GameAssets.PLAYER_BODY_DEFAULT));
+                    opOrNull = new Critter(levelContainer.gameObject.GameAssets,
+                            pi.uniqueId,
+                            new Model(levelContainer.gameObject.GameAssets.ALEX_BODY_DEFAULT)
+                    );
                     otherPlayers.add(opOrNull);
                 }
                 opOrNull.setName(pi.name);
                 opOrNull.body.setPrimaryRGBAColor(pi.color);
-                opOrNull.body.setTexName(pi.texModel);
+                opOrNull.setModelClazz(pi.texModel);
+
+                IList<WeaponIfc> weaponsAsList = GapList.create(Arrays.asList(levelContainer.weapons.AllWeapons));
+                WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(pi.weapon));
+                if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
+                    weapon = Weapons.NONE;
+                }
+                opOrNull.switchWeapon(weapon);
             }
         });
+
+        // Map player info to Guids
+        List<String> playerInfoGuids = playerInfoList.stream().map(x -> x.uniqueId).collect(Collectors.toList());
+        // Remove level actor other player if not in the list
+        levelContainer.levelActors.otherPlayers.removeIf(x -> !playerInfoGuids.contains(x.uniqueId));
+    }
+
+    /**
+     * Get pos info from all the level map players
+     *
+     * @return
+     */
+    public PosInfo[] getPosInfo() {
+        PosInfo[] result = new PosInfo[otherPlayers.size()];
+
+        int index = 0;
+        for (Critter crit : otherPlayers) {
+            PosInfo pi = new PosInfo(crit.uniqueId, crit.getPos(), crit.getFront());
+            result[index++] = pi;
+        }
+
+        return result;
+    }
+
+    /**
+     * Get player info from all the level map players
+     *
+     * @return
+     */
+    public PlayerInfo[] getPlayerInfo() {
+        PlayerInfo[] result = new PlayerInfo[otherPlayers.size()];
+
+        int index = 0;
+        for (Critter crit : otherPlayers) {
+            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.getWeapon().getTexName());
+            result[index++] = pi;
+        }
+
+        return result;
     }
 
 }

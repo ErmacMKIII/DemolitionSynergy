@@ -24,8 +24,11 @@ import rs.alexanderstojanovich.evg.light.LightSource;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Model;
+import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Player class.
@@ -48,18 +51,15 @@ public class Player extends Critter implements Observer {
     public final LightSource light;
 
     public final Configuration cfg = Configuration.getInstance();
-//    /**
-//     * Weapon model on character first-person-shooter 'in hands'.
-//     */
-//    protected Model inHandsWeaponModel = Model.MODEL_NONE;
 
     /**
      * Create new player for Single Player
      *
+     * @param assets game assets
      * @param body player body
      */
-    public Player(Model body) {
-        super(body);
+    public Player(Assets assets, Model body) {
+        super(assets, body);
         this.camera = new RPGCamera(this.body, new Vector3f(this.body.pos));
         this.light = new LightSource(this.body.pos, new Vector3f(GlobalColors.WHITE), LightSource.PLAYER_LIGHT_INTENSITY);
         this.name = cfg.getName();
@@ -70,12 +70,13 @@ public class Player extends Critter implements Observer {
     /**
      * Create new player for Single Player
      *
+     * @param assets game assets
      * @param camera camera to view
      * @param light light from player
      * @param body player body
      */
-    public Player(RPGCamera camera, LightSource light, Model body) {
-        super(body);
+    public Player(Assets assets, RPGCamera camera, LightSource light, Model body) {
+        super(assets, body);
         this.camera = camera;
         this.light = light;
         this.name = cfg.getName();
@@ -87,13 +88,14 @@ public class Player extends Critter implements Observer {
      * Create new player for Multiplayer. Using client registration to server.
      * Client has submit registration to this server.
      *
+     * @param assets game assets
      * @param camera camera to view
      * @param light light from player
      * @param uniqueId unique id to be assigned to player
      * @param body player body
      */
-    public Player(RPGCamera camera, LightSource light, String uniqueId, Model body) {
-        super(uniqueId, body);
+    public Player(Assets assets, RPGCamera camera, LightSource light, String uniqueId, Model body) {
+        super(assets, uniqueId, body);
         this.camera = camera;
         this.light = light;
     }
@@ -130,6 +132,31 @@ public class Player extends Critter implements Observer {
     @Override
     public void render(ShaderProgram shaderProgram) {
         camera.render(shaderProgram);
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapons all weapons instance (wraps array)
+     * @param index index of (weapon) enumeration
+     */
+    @Override
+    public void switchWeapon(Weapons weapons, int index) {
+        super.switchWeapon(weapons, index);
+        // set the camera target model assuming it was changed
+        this.camera.setTarget(body);
+    }
+
+    /**
+     * Switch to weapon in hands
+     *
+     * @param weapon weapon to switch to
+     */
+    @Override
+    public void switchWeapon(WeaponIfc weapon) {
+        super.switchWeapon(weapon);
+        // set the camera target model assuming it was changed
+        this.camera.setTarget(body);
     }
 
     @Override
@@ -307,6 +334,13 @@ public class Player extends Critter implements Observer {
 
     public boolean isRegistered() {
         return registered;
+    }
+
+    @Override
+    public void setModelClazz(String modelClazz) {
+        super.setModelClazz(modelClazz); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+        // set the camera target model assuming it was changed
+        this.camera.setTarget(body);
     }
 
 }

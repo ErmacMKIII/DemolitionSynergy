@@ -88,11 +88,11 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
 
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
+    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 0.15f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 32.0f;
-    public static final float SUN_INTENSITY = (float) (1 << 28); // 268M
+    public static final float SUN_INTENSITY = (float) (1 << 28); // 268.4M
 
     public static final LightSource SUNLIGHT
             = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
@@ -133,8 +133,8 @@ public class LevelContainer implements GravityEnviroment {
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
 
-    public static final Vector3f SKYBOX_COLOR_RGB = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 0.15f); // cool bluish color for SKYBOX
+    public static final Vector3f NIGHT_SKYBOX_COLOR_RGB = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
+    public static final Vector4f NIGHT_SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 0.15f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_BLOCKS = 131070;
 
@@ -217,14 +217,14 @@ public class LevelContainer implements GravityEnviroment {
 
     static {
         // setting SKYBOX             
-        SKYBOX.setPrimaryRGBColor(SKYBOX_COLOR_RGB);
+        SKYBOX.setPrimaryRGBColor(NIGHT_SKYBOX_COLOR_RGB);
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
         SUN.setPrimaryRGBColor(new Vector3f(SUN_COLOR_RGB));
-        SUN.pos = new Vector3f(0.0f, -12288.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
         SUN.setPrimaryColorAlpha(1.00f);
@@ -507,8 +507,6 @@ public class LevelContainer implements GravityEnviroment {
         // Adjust player position if successfully spawned
         if (playerSpawned) {
             gravityOn = true; // Re-enable gravity
-            player.jumpY(0.0f); // some work-around
-            player.dropY(0.0f); // some work-around
         } else {
             // Handle case where no valid spawn location was found (optional)
             throw new Exception("Failed to spawn player in a valid location.");
@@ -1053,7 +1051,7 @@ public class LevelContainer implements GravityEnviroment {
                         byte[] byteArrayBlock = new byte[29];
                         System.arraycopy(texName.getBytes("US-ASCII"), 0, byteArrayBlock, 0, 5);
                         System.arraycopy(buffer, pos, byteArrayBlock, 5, 24);
-                        Block block = Block.fromByteArray(byteArrayBlock, !texName.equals("water"));
+                        Block block = Block.fromByteArray(byteArrayBlock, !texName.equals("water") && !texName.equals("cloud"));
                         chunks.addBlock(block);
                         pos += 29;
                         progress += 100.0f / (float) totalBlocks;
@@ -1751,10 +1749,10 @@ public class LevelContainer implements GravityEnviroment {
 
             if (inten < 0.0f) { // night
                 SKYBOX.setTexName("night");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
             } else if (inten >= 0.0f) { // day
                 SKYBOX.setTexName("day");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
             }
 
             final float sunInten = Math.max(inten, 0.0f);
@@ -1798,6 +1796,7 @@ public class LevelContainer implements GravityEnviroment {
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
             blockEnvironment.optimizeByControl(vChnkIdList, mainCamera);
+//            blockEnvironment.optimize(vChnkIdList);
         }
     }
 

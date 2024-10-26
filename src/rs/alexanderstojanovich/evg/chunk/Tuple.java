@@ -799,7 +799,7 @@ public class Tuple extends Series {
     }
 
     public boolean isSolid() {
-        return !texName().equals("water");
+        return !texName().equals("water") && !texName().equals("cloud");
     }
 
     public int getVec4Vbo() {

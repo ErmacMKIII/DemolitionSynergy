@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.core.ShadowRenderer;
 import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.Game.Mode;
 import rs.alexanderstojanovich.evg.main.GameObject;
@@ -48,6 +49,7 @@ import rs.alexanderstojanovich.evg.util.PlainTextReader;
  */
 public class Intrface {
 
+    public final Configuration config = Configuration.getInstance();
     public final GameObject gameObject;
     private Quad crosshair;
     private DynamicText updText; // displays updates
@@ -55,6 +57,7 @@ public class Intrface {
     private DynamicText posText; // display position
     private DynamicText viewText; // display view
 
+    private DynamicText infoMsgText; // display current message
     private DynamicText chunkText; // display current chunk (player)
     private DynamicText gameTimeText;
 
@@ -131,6 +134,10 @@ public class Intrface {
             viewText.setAlignment(Text.ALIGNMENT_RIGHT);
             viewText.alignToNextChar(this);
 
+            infoMsgText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(-1.0f, -0.75f));
+            infoMsgText.setAlignment(Text.ALIGNMENT_LEFT);
+            infoMsgText.alignToNextChar(this);
+
             chunkText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
             chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
             chunkText.alignToNextChar(this);
@@ -157,7 +164,7 @@ public class Intrface {
             guideText.alignToNextChar(this);
 
             progressBar = new ProgressBar(5, 10, Texture.getOrDefault("suntx"));
-            progressBar.quad.setPos(new Vector2f(-1.0f, -0.75f));
+            progressBar.quad.setPos(new Vector2f(-1.0f, -0.77f));
             progressBar.quad.color = new Vector4f(2.0f, 1.67f, 0.1f, 1.0f);
 
             crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -284,6 +291,7 @@ public class Intrface {
                     if (ok) {
                         Game.setCurrentMode(Mode.EDITOR);
                         status = ExecStatus.SUCCESS;
+                        guideText.setEnabled(false);
                     } else {
                         status = ExecStatus.FAILURE;
                     }
@@ -313,6 +321,7 @@ public class Intrface {
                 protected void execute() {
                     String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
                     gameObject.loadLevelFromFile(chosen);
+                    guideText.setEnabled(false);
                     Game.setCurrentMode(Mode.EDITOR);
                 }
             };
@@ -648,7 +657,7 @@ public class Intrface {
             creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
-            singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
             singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
             singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
@@ -669,7 +678,8 @@ public class Intrface {
                     if (singlPlayerMenu.selected == 4) {
                         isHugeLevel = false;
                         final Player player = gameObject.levelContainer.levelActors.player;
-                        player.body.texName = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                        String modelClazz = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                        player.setModelClazz(modelClazz);
                         player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
                         // set level size & seed
                         String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
@@ -704,7 +714,7 @@ public class Intrface {
             // MAIN MULTIPLAYER MENU
             IList<MenuItem> multiPlayerMenuItems = new GapList<>();
             multiPlayerMenuItems.add(new MenuItem(this, "PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
-            multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, "ALEX")));
+            multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
             multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
             multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
@@ -725,7 +735,8 @@ public class Intrface {
                             break;
                         case "CHARACTER MODEL":
                             player = gameObject.levelContainer.levelActors.player;
-                            player.body.texName = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
+                            String modelClazz = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
+                            player.setModelClazz(modelClazz);
                             break;
                         case "COLOR":
                             player = gameObject.levelContainer.levelActors.player;
@@ -854,8 +865,11 @@ public class Intrface {
 //                            console.write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);
                             CompletableFuture.runAsync(() -> {
                                 try {
+                                    gameObject.intrface.getInfoMsgText().setContent("Trying to connect to server...");
+                                    gameObject.intrface.getInfoMsgText().setEnabled(true);
                                     double beginTime = GLFW.glfwGetTime();
                                     if (gameObject.game.connectToServer()) {
+                                        gameObject.intrface.getInfoMsgText().setContent("Connected to server!");
                                         console.write("Connected to server!");
                                         double endTime = GLFW.glfwGetTime();
                                         long tripTime = Math.round((endTime - beginTime) * 1000.0);
@@ -865,6 +879,7 @@ public class Intrface {
                                             gameMenu.getTitle().setContent("MULTIPLAYER");
                                         }
                                     }
+                                    gameObject.intrface.getInfoMsgText().setEnabled(false);
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
@@ -944,6 +959,10 @@ public class Intrface {
             posText.bufferSmart(this);
         }
         posText.render(this, ifcShaderProgram);
+        if (!infoMsgText.isBuffered()) {
+            infoMsgText.bufferSmart(this);
+        }
+        infoMsgText.render(this, ifcShaderProgram);
         if (!chunkText.isBuffered()) {
             chunkText.bufferSmart(this);
         }
@@ -1231,6 +1250,10 @@ public class Intrface {
 
     public ProgressBar getProgressBar() {
         return progressBar;
+    }
+
+    public DynamicText getInfoMsgText() {
+        return infoMsgText;
     }
 
 }

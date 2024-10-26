@@ -68,6 +68,7 @@ public class GameRenderer extends Thread implements Executor {
         gameObject.perspectiveRenderer.init();
         Texture.bufferAllTextures();
         gameObject.GameAssets.bufferAllTextures();
+        gameObject.GameAssets.bufferAllModels();
 //        DSLogger.reportDebug("Textures loaded!", null);
         try {
             gameObject.waterRenderer.getFrameBuffer().initBuffer(); // it is tuned in the correct OpenGL context (color & depth buffer)
@@ -77,7 +78,7 @@ public class GameRenderer extends Thread implements Executor {
         }
         do {
             gameObject.render(); // render splash screen
-        } while ((Game.accumulator * Game.TPS) < 2.0);
+        } while ((Game.accumulator * Game.TPS) < 1.0);
         gameObject.splashScreen.setEnabled(false);
 
         // resolution config
@@ -113,10 +114,6 @@ public class GameRenderer extends Thread implements Executor {
                 fps++;
                 numOfPasses++;
                 fpsTicks--;
-            }
-            // swap happens only if not optimizing
-            if (!couldRender()) {
-                gameObject.swap();
             }
 
             // animates water every quarter of the second
@@ -174,7 +171,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator * Game.TPS) < 2.0;
+        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX;// && (Game.accumulator * Game.TPS) < 2.0;
     }
 
 //    /**

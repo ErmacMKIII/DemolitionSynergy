@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.imageio.ImageIO;
@@ -49,6 +48,7 @@ import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
+import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -167,7 +167,10 @@ public class Command implements Callable<Object> {
     public static Command getCommand(String input) {
         Command command = new Command(input);
         command.args.clear();
-        String[] things = input.split("\\s+|\".*\"");
+        String[] things = input.split("\\s+(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        for (int i = 0; i < things.length; i++) {
+            things[i] = things[i].replaceAll("^\"|\"$", "");
+        }
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
                 case "monitor_get":
@@ -730,18 +733,10 @@ public class Command implements Callable<Object> {
                 command.status = Status.SUCCEEDED;
                 break;
             case PING:
-                if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
-                    try {
-                        double beginTime = GLFW.glfwGetTime();
-                        RequestIfc req = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
-                        req.send(gameObject.game, gameObject.game.getSession());
-                        ResponseIfc.receive(gameObject.game, gameObject.game.getSession());
-                        double endTime = GLFW.glfwGetTime();
-                        result = Math.round((endTime - beginTime) * 1000L);
-                        command.status = Status.SUCCEEDED;
-                    } catch (Exception ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
+                if (command.mode == Mode.GET && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isConnected()) {
+                    // ingame ping calculation
+                    result = Math.round(gameObject.game.getPing() * 1000.0); // ping express in milliseconds
+                    command.status = Status.SUCCEEDED;
                 }
                 break;
             case PRINT:
@@ -754,13 +749,26 @@ public class Command implements Callable<Object> {
             case SAY:
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
-                        try {
-                            RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
-                            sendChatMsgReq.send(gameObject.game, gameObject.game.getSession());
+                        if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST) {
+                            String msg = gameObject.levelContainer.levelActors.player.getName() + ":" + command.args.getFirst();
+                            Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                            gameObject.gameServer.clients.forEach(ci -> {
+                                try {
+                                    response.send(gameObject.gameServer, ci.session);
+                                } catch (IOException ex) {
+                                    DSLogger.reportError("Unable to deliver chat message, ex:", ex);
+                                }
+                            });
                             command.status = Status.SUCCEEDED;
-                        } catch (Exception ex) {
-                            DSLogger.reportError("Unable to send chat message!", ex);
-                            DSLogger.reportError(ex.getMessage(), ex);
+                        } else if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isConnected()) {
+                            try {
+                                RequestIfc sendChatMsgReq = new Request(RequestIfc.RequestType.SAY, DSObject.DataType.STRING, command.args.getFirst());
+                                sendChatMsgReq.send(gameObject.game, gameObject.game.getSession());
+                                command.status = Status.SUCCEEDED;
+                            } catch (Exception ex) {
+                                DSLogger.reportError("Unable to send chat message!", ex);
+                                DSLogger.reportError(ex.getMessage(), ex);
+                            }
                         }
                     }
                 }
@@ -782,8 +790,13 @@ public class Command implements Callable<Object> {
 //                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);                        
                         try {
                             command.status = Status.PENDING;
+
+                            gameObject.intrface.getInfoMsgText().setContent("Trying to connect to server...");
+                            gameObject.intrface.getInfoMsgText().setEnabled(true);
+
                             double beginTime = GLFW.glfwGetTime();
                             if (gameObject.game.connectToServer()) {
+                                gameObject.intrface.getInfoMsgText().setContent("Connected to server!");
                                 gameObject.intrface.getConsole().write("Connected to server!");
                                 double endTime = GLFW.glfwGetTime();
                                 long tripTime = Math.round((endTime - beginTime) * 1000.0);
@@ -796,6 +809,7 @@ public class Command implements Callable<Object> {
                             } else {
                                 command.status = Status.FAILED;
                             }
+                            gameObject.intrface.getInfoMsgText().setEnabled(false);
                         } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
@@ -913,7 +927,8 @@ public class Command implements Callable<Object> {
                     result = gameObject.levelContainer.levelActors.player.body.getTexName();
                     command.status = Status.SUCCEEDED;
                 } else if (command.mode == Command.Mode.SET) {
-                    gameObject.levelContainer.levelActors.player.body.setTexName(command.args.getFirst().toString());
+                    gameObject.levelContainer.levelActors.player.setModelClazz(command.args.getFirst().toString());
+                    gameObject.levelContainer.levelActors.player.switchBodyModel();
                     singleplayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
                     multiplayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
                     command.status = Status.SUCCEEDED;

@@ -86,8 +86,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final int VERSION = 50;
-    public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s", VERSION);
+    public static final boolean IS_DEVELOPMENT = false;
+    public static final int VERSION = 51;
+    public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
 
     /**
@@ -117,7 +118,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public static final int MAX_ATTEMPTS = 3;
 
     /**
-     * Async Task Executor
+     * Async Task Executor (async receive responses)
      */
     public final ExecutorService TaskExecutor = Executors.newSingleThreadExecutor();
 
@@ -276,7 +277,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void utilOptimization() {
         if (!isWorking()) {
-            levelContainer.optimize();
+            updateRenderLCLock.lock();
+            try {
+                levelContainer.optimize();
+            } finally {
+                updateRenderLCLock.unlock();
+            }
         }
     }
 
@@ -420,7 +426,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
 
                 // Render Original Scene
-                levelContainer.render(renderFlag);
+                updateRenderLCLock.lock();
+                try {
+                    levelContainer.render(renderFlag);
+                } finally {
+                    updateRenderLCLock.unlock();
+                }
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -432,7 +443,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Pull fullyOptimized tuples to working tuples in Block Environment.
+     * Pull optimized tuples to working tuples in Block Environment.
      */
     public void pull() {
         if (isWorking()) {
@@ -456,7 +467,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * operation. Doesn't require synchronized block.
      */
     public void swap() {
-        if (isWorking() || levelContainer.blockEnvironment.isOptimizing() || !levelContainer.blockEnvironment.isFullyOptimized()) {
+        if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
             return;
         }
         levelContainer.blockEnvironment.swap();
@@ -700,6 +711,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return null;
         });
 
+//        if (ok) {
+//            // !IMPORTANT -- ENABLE ASYNC READPOINT 
+//            game.asyncReceivedEnabled = true;
+//        }
         return ok;
     }
 
@@ -807,6 +822,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     levelContainer.spawnPlayer();
                     // Player set position
                     game.requestSetPlayerPosition();
+
+                    // !IMPORTANT -- ENABLE ASYNC READPOINT 
+                    game.asyncReceivedEnabled = true;
+
                     success = true;
                 } catch (Exception ex) {
                     DSLogger.reportWarning("Not able to spawn player. Disconnecting.", null);
