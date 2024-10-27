@@ -856,6 +856,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
         if (isAsyncReceivedEnabled()) {
+            // receive & process 
             ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc response) -> {
                 process(response);
             });
@@ -881,67 +882,69 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             this.gameObject.intrface.getConsole().write("You got kicked from the server!");
             disconnectFromServer();
             gameObject.clearEverything();
-        } else {
-//                    DSLogger.reportInfo("Resp=" + resp.getData().toString(), null);
-            double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
-            // choose the one which fits by unique checksum
-            Pair<RequestIfc, Double> reqXtime = null;
-            synchronized (internRequestMutex) {
-                reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
-                requests.remove(reqXtime);
+        }
+
+        double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
+        // choose the one which fits by unique checksum
+        Pair<RequestIfc, Double> reqXtime = null;
+        synchronized (internRequestMutex) {
+            reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
+            requests.remove(reqXtime);
+        }
+        if (reqXtime != null) {
+            // Affiliate response with request
+            RequestIfc reqTarg = reqXtime.getKey();
+            // Affilate response time recevied with request time sent
+            beginTime = reqXtime.getValue();
+
+            // detailed processing
+            switch (reqTarg.getRequestType()) {
+                case GET_TIME:
+                    Game.gameTicks = (double) response.getData();
+                    break;
+                case GET_POS:
+                    String uniqueId = reqTarg.getData().toString();
+                    PosInfo posInfo = PosInfo.fromJson(response.getData().toString());
+                    if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
+                        playerServerPos.set(posInfo.pos);
+                    } else {
+                        Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
+                        other.setPos(posInfo.pos);
+                        other.getFront().set(posInfo.front);
+                        other.setRotationXYZ(posInfo.front);
+                    }
+                    break;
+                // get player info
+                case PLAYER_INFO:
+                    Gson gson = new Gson();
+                    PlayerInfo[] infos = gson.fromJson((String) response.getData().toString(), PlayerInfo[].class);
+                    gameObject.levelContainer.levelActors.configOtherPlayers(infos);
+                    break;
+                case GOODBYE:
+                    // disable async 'read point' in 'message received'
+                    asyncReceivedEnabled = false;
+                    // print GOODBYE message (disconnecting)
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    DSLogger.reportInfo("Disconnected from server!", null);
+                    // notify wait on disconnect
+                    synchronized (internRequestMutex) {
+                        internRequestMutex.notify();
+                    }
+                    break;
             }
-            if (reqXtime != null) {
-                // Affiliate response with request
-                RequestIfc reqTarg = reqXtime.getKey();
-                // Affilate response time recevied with request time sent
-                beginTime = reqXtime.getValue();
 
-                switch (reqTarg.getRequestType()) {
-                    case GET_TIME:
-                        Game.gameTicks = (double) response.getData();
-                        break;
-                    case GET_POS:
-                        String uniqueId = reqTarg.getData().toString();
-                        PosInfo posInfo = PosInfo.fromJson(response.getData().toString());
-                        if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
-                            playerServerPos.set(posInfo.pos);
-                        } else {
-                            Critter other = gameObject.levelContainer.levelActors.otherPlayers.getIf(player -> player.uniqueId.equals(uniqueId));
-                            other.setPos(posInfo.pos);
-                            other.getFront().set(posInfo.front);
-                            other.setRotationXYZ(posInfo.front);
-                        }
-                        break;
-                    // get player info
-                    case PLAYER_INFO:
-                        Gson gson = new Gson();
-                        PlayerInfo[] infos = gson.fromJson((String) response.getData().toString(), PlayerInfo[].class);
-                        gameObject.levelContainer.levelActors.configOtherPlayers(infos);
-                        break;
-                    // set player info update
-                    case PLAYER_INFO_UPDATE:
-//                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                        break;
-                    case GOODBYE:
-                        // print GOODBYE message (disconnecting)
-                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
-                        DSLogger.reportInfo("Disconnected from server!", null);
-                        break;
-                }
+            // trip time millis, multiplied by cuz it is called in a loop!
+            double tripTime = endTime - beginTime;
+            // add to ping sum (as avg ping is displayed in window title)
+            pingSum += tripTime;
+            fulfillNum++;
 
-                // trip time millis, multiplied by cuz it is called in a loop!
-                double tripTime = endTime - beginTime;
-                // add to ping sum (as avg ping is displayed in window title)
-                pingSum += tripTime;
-                fulfillNum++;
+            // Reset waiting time (as response arrived to the request)
+            waitReceiveTime = 0L;
 
-                // Reset waiting time (as response arrived to the request)
-                waitReceiveTime = 0L;
-
-                // Reset reconnected to connected
-                connected = ConnectionStatus.CONNECTED;
-            }
+            // Reset reconnected to connected
+            connected = ConnectionStatus.CONNECTED;
         }
     }
 
@@ -1554,12 +1557,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public void disconnectFromServer() {
         if (isConnected()) {
             try {
-                // discard all requests
-                requests.clear();
-
-                // disable async 'read point'
-                asyncReceivedEnabled = false;
-
                 // short timeout
                 timeout = Game.DEFAULT_SHORTENED_TIMEOUT;
 
@@ -1567,38 +1564,46 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                // Wait for response (assuming simple echo for demonstration)
-                ResponseIfc response = ResponseIfc.receive(this, session);
-                // If there is no response but only timeout
-                if (response == Response.INVALID) {
-                    connected = ConnectionStatus.NOT_CONNECTED;
-                    throw new Exception("Server not responding!");
-                } else if (response.getChecksum() == goodByeRequest.getChecksum()) {
-                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                double time = GLFW.glfwGetTime();
+                synchronized (internRequestMutex) {
+                    if (requests.size() < MAX_SIZE) {
+                        requests.add(new Pair<>(goodByeRequest, time));
+                    }
+
+                    // we have async receive enabled, wait to receive the last message
+                    if (asyncReceivedEnabled) {
+                        internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
+                    } else {
+                        // we don't have async receive enabled write the 'goodbye' response message
+                        ResponseIfc response = ResponseIfc.receive(this, session);
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    }
                 }
+
+                // player is not registered anymore
+                gameObject.levelContainer.levelActors.player.setRegistered(false);
+                session.closeOnFlush().await(timeout);
+                connector.getManagedSessions().values().forEach((IoSession ss) -> {
+                    try {
+                        ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
+                    } catch (InterruptedException ex) {
+                        DSLogger.reportError("Unable to close session!", ex);
+                        DSLogger.reportError(ex.getMessage(), ex);
+                    }
+                });
+
+                fulfillNum = 0;
+                pingSum = 0.0;
+                ping = 0.0;
+
+                requests.clear();
+
+                connected = ConnectionStatus.NOT_CONNECTED;
                 DSLogger.reportInfo("Disconnected from server!", null);
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
-            } finally {
-                try {
-                    gameObject.levelContainer.levelActors.player.setRegistered(false);
-                    session.closeNow().await(timeout);
-                    connector.getManagedSessions().values().forEach((IoSession ss) -> {
-                        try {
-                            ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
-                        } catch (InterruptedException ex) {
-                            DSLogger.reportError("Unable to close session!", ex);
-                            DSLogger.reportError(ex.getMessage(), ex);
-                        }
-                    });
-                } catch (InterruptedException ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                } finally {
-                    requests.clear();
-                    connected = ConnectionStatus.NOT_CONNECTED;
-                }
             }
         }
     }
