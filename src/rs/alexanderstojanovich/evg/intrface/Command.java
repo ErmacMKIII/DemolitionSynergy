@@ -531,7 +531,7 @@ public class Command implements Callable<Object> {
                             optionsMenu.items.getIf(x -> x.keyText.getContent().equals("WATER EFFECTS")).getMenuValue().setCurrentValue(WaterRenderer.WaterEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())].toString());
                         } else {
                             gameObject.waterRenderer.setEffectsQuality(WaterRenderer.WaterEffectsQuality.valueOf(command.args.get(0).toString()));
-                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("WATER EFFECTS")).getMenuValue().setCurrentValue(WaterRenderer.WaterEffectsQuality.valueOf(command.args.get(0).toString()));
+                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("WATER EFFECTS")).getMenuValue().setCurrentValue(WaterRenderer.WaterEffectsQuality.valueOf(command.args.get(0).toString()).toString());
                         }
                         command.status = Status.SUCCEEDED;
                         break;
@@ -546,10 +546,10 @@ public class Command implements Callable<Object> {
                     case SET:
                         if (command.args.get(0).toString().matches("[0-9]+")) {
                             gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())]);
-                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("WATER EFFECTS")).getMenuValue().setCurrentValue(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())].toString());
+                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("SHADOW EFFECTS")).getMenuValue().setCurrentValue(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())].toString());
                         } else {
                             gameObject.shadowRenderer.setEffectsQuality(ShadowRenderer.ShadowEffectsQuality.valueOf(command.args.get(0).toString()));
-                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("WATER EFFECTS")).getMenuValue().setCurrentValue(ShadowRenderer.ShadowEffectsQuality.values()[Integer.parseInt(command.args.get(0).toString())].toString());
+                            optionsMenu.items.getIf(x -> x.keyText.getContent().equals("SHADOW EFFECTS")).getMenuValue().setCurrentValue(ShadowRenderer.ShadowEffectsQuality.valueOf(command.args.get(0).toString()).toString());
                         }
                         command.status = Status.SUCCEEDED;
                         break;
@@ -596,6 +596,7 @@ public class Command implements Callable<Object> {
                     case SET:
                         float sound = (float) command.args.get(0);
                         if (sound >= 0.0f && sound <= 1.0f) {
+                            gameObject.getSoundFXPlayer().setGain(sound);
                             optionsMenu.items.getIf(x -> x.keyText.getContent().equals("SOUND VOLUME")).getMenuValue().setCurrentValue(sound);
                             command.status = Status.SUCCEEDED;
                         }

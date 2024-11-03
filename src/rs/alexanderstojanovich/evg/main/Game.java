@@ -817,12 +817,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
 
-                if (xoffset != 0.0f || yoffset != 0.0f) {
-                    moveMouse = true;
+                lastX = (float) xposGL;
+                lastY = (float) yposGL;
 
-                    lastX = (float) xposGL;
-                    lastY = (float) yposGL;
-                }
+                moveMouse = true;
             }
         };
         GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
