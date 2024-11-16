@@ -88,7 +88,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
 
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 0.15f); // orange-yellow color
+    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 32.0f;
@@ -1519,6 +1519,13 @@ public class LevelContainer implements GravityEnviroment {
             }
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.dropY(deltaHeight);
+            
+            // in case of multiplayer join send to the server
+            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+                gameObject.game.requestSetPlayerPosition();
+                gameObject.game.requestUpdatePlayer();
+            }
+            
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             if (fallVelocity == TERMINAL_VELOCITY) {
                 try {

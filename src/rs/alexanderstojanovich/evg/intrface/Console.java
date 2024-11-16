@@ -195,7 +195,9 @@ public class Console {
                         input.setLength(0);
                         input.append(candidates.get(0));
                         inText.setContent("]" + input + "_");
-                        cursorPosition = 0;
+                        
+                        // position cursor in the end when only one candidate
+                        cursorPosition = input.length();
                     }
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
                     GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);

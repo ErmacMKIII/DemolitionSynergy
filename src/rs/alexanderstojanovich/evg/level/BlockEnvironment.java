@@ -59,7 +59,11 @@ public class BlockEnvironment {
      * Optimizes tuples (from render)
      */
     protected volatile IList<Tuple> optimizedTuples = new GapList<>();
-
+    /**
+     * Lookup table for faster tuple access (avoiding multiple filters)
+     */
+    protected final Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
+    
     /**
      * Modified tuples (from update/render). Meaning from update they are
      * modified and need to be pushed to render.
@@ -136,7 +140,7 @@ public class BlockEnvironment {
         int lastFaceBitsCopy = lastFaceBits;
 
         // Create a lookup table for faster tuple access (avoiding multiple filters)
-        Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
+        tupleLookup.clear();
         for (Tuple t : workingTuples) {
             tupleLookup
                     .computeIfAbsent(t.texName(), k -> new HashMap<>())
