@@ -22,26 +22,28 @@ import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSource;
-import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
+ * Chunk is virtual.
+ *
+ * It does not actually exists (anymore). It is part of the world blocks based
+ * on location VEC3 pos.
+ *
+ * Contains various util functions.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
-public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
+public class Chunk { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 256;
@@ -52,55 +54,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
     public static final float LENGTH = BOUND * STEP * 2.0f;
 
-    // id of the chunk (signed)
-    public final int id;
-
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    public final IList<Tuple> tupleList = new GapList<>();
-
-    private boolean buffered = false;
-
-    private float timeToLive = LevelContainer.STD_TTL;
-
-    public Chunk(int id) {
-        this.id = id;
-    }
-
-    @Override
-    public int compareTo(Chunk o) {
-        return Chunks.COMPARATOR.compare(this, o);
-    }
-
-    /**
-     * Binary search of the tuple. Tuples are sorted by name ascending.
-     * Complexity is logarithmic.
-     *
-     * @param keyTexture texture name part
-     * @param keyFaceBits face bits part
-     * @return Tuple if found (null if not found)
-     */
-    public Tuple getTuple(String keyTexture, Integer keyFaceBits) {
-        String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
-        int left = 0;
-        int right = tupleList.size() - 1;
-        while (left <= right) {
-            int mid = left + (right - left) / 2;
-            Tuple candidate = tupleList.get(mid);
-            int res = candidate.getName().compareTo(keyName);
-            if (res < 0) {
-                left = mid + 1;
-            } else if (res == 0) {
-                return candidate;
-            } else {
-                right = mid - 1;
-            }
-        }
-        return null;
-    }
-
     /**
      * Binary search of the tuple. Tuples are sorted by name ascending.
      * Complexity is logarithmic.
@@ -252,14 +209,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * Transfer block between two tuples. Block will be transfered from tuple
      * with formFaceBits to tuple with current facebits.
      *
+     * @param tupleList provided tuple list
      * @param block block to transfer
      * @param formFaceBits face bits before
      * @param currFaceBits face bits current (after the change)
      */
-    public void transfer(Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
+    public static void transfer(IList<Tuple> tupleList, Block block, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
         String texture = block.getTexName();
 
-        Tuple srcTuple = getTuple(texture, formFaceBits);
+        Tuple srcTuple = getTuple(tupleList, texture, formFaceBits);
         if (srcTuple != null) { // lazy aaah!
             srcTuple.blockList.remove(block);
             if (srcTuple.getBlockList().isEmpty()) {
@@ -267,7 +225,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
         }
 
-        Tuple dstTuple = getTuple(texture, currFaceBits);
+        Tuple dstTuple = getTuple(tupleList, texture, currFaceBits);
         if (dstTuple == null) {
             dstTuple = new Tuple(texture, currFaceBits);
             tupleList.add(dstTuple);
@@ -276,22 +234,21 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         List<Block> blockList = dstTuple.blockList;
         blockList.add(block);
         blockList.sort(Block.UNIQUE_BLOCK_CMP);
-
-        buffered = false;
     }
 
     /**
      * Transfer block between two tuples. Block will be transfered from tuple
      * with formFaceBits to tuple with current facebits.
      *
+     * @param tupleList provided tuple list
      * @param blkUnits blockUnits to transfer
      */
-    public void transfer(IList<TransferUnit> blkUnits) { // update fluids use this to transfer fluid blocks between tuples
+    public static void transfer(IList<Tuple> tupleList, IList<TransferUnit> blkUnits) { // update fluids use this to transfer fluid blocks between tuples
         for (TransferUnit unit : blkUnits) {
             Block block = unit.block;
             String texture = block.getTexName();
 
-            Tuple srcTuple = getTuple(texture, unit.bitsBefore);
+            Tuple srcTuple = getTuple(tupleList, texture, unit.bitsBefore);
             if (srcTuple != null) { // lazy aaah!
                 srcTuple.blockList.remove(block);
                 if (srcTuple.getBlockList().isEmpty()) {
@@ -299,7 +256,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 }
             }
 
-            Tuple dstTuple = getTuple(texture, unit.bitsAfter);
+            Tuple dstTuple = getTuple(tupleList, texture, unit.bitsAfter);
             if (dstTuple == null) {
                 dstTuple = new Tuple(texture, unit.bitsAfter);
                 tupleList.add(dstTuple);
@@ -309,37 +266,34 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             blockList.add(block);
             blockList.sort(Block.UNIQUE_BLOCK_CMP);
         }
-
-        buffered = false;
     }
 
     /**
-     * Updates blocks faces of both original block and adjacent blocks.
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
      *
      * Used after add operation.
      *
+     * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected void updateForAdd(Block block) {
+    protected static void updateForAdd(IList<Tuple> tupleList, Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
-        int nbits = block.isSolid()
+        int neighborBits = block.isSolid()
                 ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
                 : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
-        // if has neighbors (otherwise pointless)
-        if (nbits != 0) {
+        if (neighborBits != 0) {
             // retieve current neightbor bits      
             int faceBitsBefore = block.getFaceBits();
             // -------------------------------------------------------------------
             // this logic updates facebits of this block
-            // & transfers it to correct tuple
-            // -------------------------------------------------------------------
-            block.setFaceBits(~nbits & 63);
+            // & transfers it to correct tuple 
+            // -------------------------------------------------------------------                    
+            block.setFaceBits(~neighborBits & 63);
             int faceBitsAfter = block.getFaceBits();
             if (faceBitsBefore != faceBitsAfter) {
-                transfer(block, faceBitsBefore, faceBitsAfter);
+                Chunk.transfer(tupleList, block, faceBitsBefore, faceBitsAfter);
             }
-
-            IList<TransferUnit> units = new GapList<>();
             // query all neighbors and update this block and adjacent blocks accordingly
             for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                 // -------------------------------------------------------------------
@@ -357,92 +311,89 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                             : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
                     int k = ((j & 1) == 0 ? j + 1 : j - 1);
                     int mask = 1 << k;
-                    int tupleBits = adjNBits & (~mask & 63);
-                    Tuple tuple = getTuple(tupleTexName, tupleBits);
-                    Block adjBlock = null;
+                    // revert the bit that was set in LevelContainer
+                    //(looking for old bits i.e. current tuple)
+                    int tupleBits = adjNBits ^ (~mask & 63);
+
+                    Tuple tuple = Chunk.getTuple(tupleList, tupleTexName, tupleBits);
                     if (tuple != null) {
-                        adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
-                    }
-                    if (adjBlock != null) {
-                        int adjFaceBitsBefore = adjBlock.getFaceBits();
-                        adjBlock.setFaceBits(~adjNBits & 63);
-                        int adjFaceBitsAfter = adjBlock.getFaceBits();
-                        if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                            // if bits changed, i.e. some face(s) got disabled
-                            // tranfer to correct tuple
-                            units.add(new TransferUnit(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter));
+                        Block adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
+
+                        if (adjBlock != null) {
+                            int adjFaceBitsBefore = adjBlock.getFaceBits();
+                            adjBlock.setFaceBits(~adjNBits & 63);
+                            int adjFaceBitsAfter = adjBlock.getFaceBits();
+                            if (adjFaceBitsBefore != adjFaceBitsAfter) {
+                                // if bits changed, i.e. some face(s) got disabled
+                                // tranfer to correct tuple
+                                Chunk.transfer(tupleList, adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                            }
                         }
                     }
                 }
-
-            }
-
-            // batch transfer
-            if (!units.isEmpty()) {
-                transfer(units);
             }
         }
     }
 
     /**
-     * Updates blocks faces of both original block and adjacent blocks.
+     * Updates blocks faces of both original block and adjacent blocks. Block
+     * must be solid.
      *
-     * Used after removal operation.
+     * Used after rem operation.
      *
+     * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected void updateForRem(Block block) {
-        IList<TransferUnit> units = new GapList<>();
+    protected static void updateForRem(IList<Tuple> tupleList, Block block) {
         // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
             int nBits = block.isSolid()
                     ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
                     : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
+            TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
             // location exists and has neighbors (otherwise pointless)
             if (location != null && nBits != 0) {
                 int blkId = location.blkId;
                 String tupleTexName = location.texName;
+                byte adjNBits = location.getByteValue();
                 int k = ((j & 1) == 0 ? j + 1 : j - 1);
                 int mask = 1 << k;
                 // revert the bit that was set in LevelContainer
                 //(looking for old bits i.e. current tuple)
-                int tupleBits = nBits & (~mask & 63);
+                int tupleBits = adjNBits ^ (~mask & 63);
 
-                Tuple tuple = getTuple(tupleTexName, tupleBits);
+                Tuple tuple = Chunk.getTuple(tupleList, tupleTexName, tupleBits);
                 Block adjBlock = null;
+
                 if (tuple != null) {
                     adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
                 }
+
                 if (adjBlock != null) {
                     int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~nBits & 63);
+                    adjBlock.setFaceBits(~adjNBits & 63);
                     int adjFaceBitsAfter = adjBlock.getFaceBits();
                     if (adjFaceBitsBefore != adjFaceBitsAfter) {
                         // if bits changed, i.e. some face(s) got disabled
                         // tranfer to correct tuple
-                        units.add(new TransferUnit(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter));
+                        Chunk.transfer(tupleList, adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
                     }
                 }
             }
-
-        }
-
-        if (!units.isEmpty()) {
-            transfer(units);
         }
     }
 
     /**
-     * Add block to the chunk.
+     * Add block to the chunks.
      *
+     * @param tupleList chunks tuple list
      * @param block block to add
      */
-    public void addBlock(Block block) {
+    public static void addBlock(IList<Tuple> tupleList, Block block) {
         String blockTexture = block.getTexName();
         int blockFaceBits = block.getFaceBits();
-        Tuple tuple = getTuple(blockTexture, blockFaceBits);
+        Tuple tuple = getTuple(tupleList, blockTexture, blockFaceBits);
 
         if (tuple == null) {
             tuple = new Tuple(blockTexture, blockFaceBits);
@@ -451,7 +402,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
         List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
-        buffered = false;
         blockList.sort(Block.UNIQUE_BLOCK_CMP);
 
         // level container also set neighbor bits
@@ -469,21 +419,21 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 DSLogger.reportError("Could not add the block!", null);
             }
         }
-        updateForAdd(block);
+        updateForAdd(tupleList, block);
     }
 
     /**
      * Remove block from the chunk.
      *
+     * @param tupleList chunks tuple list
      * @param block block to remove
      */
-    public void removeBlock(Block block) {
+    public static void removeBlock(IList<Tuple> tupleList, Block block) {
         String blockTexture = block.getTexName();
         int blockFaceBits = block.getFaceBits();
-        Tuple target = getTuple(blockTexture, blockFaceBits);
+        Tuple target = getTuple(tupleList, blockTexture, blockFaceBits);
         if (target != null) {
             target.getBlockList().remove(block);
-            buffered = false;
             // if tuple has no blocks -> remove it
             if (target.getBlockList().isEmpty()) {
                 tupleList.remove(target);
@@ -499,58 +449,40 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                     gameObject = GameObject.getInstance();
                     gameObject.levelContainer.lightSources.removeLight(block.pos);
                 } catch (Exception ex) {
-                    DSLogger.reportError("Could not add the block!", null);
+                    DSLogger.reportError("Could not remove the block!", null);
                 }
 
             }
-            updateForRem(block);
+            updateForRem(tupleList, block);
         }
     }
 
-    // hint that stuff should be buffered again
-    public void unbuffer() {
-        if (!CacheModule.isCached(id)) {
-            buffered = false;
-        }
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * @param tupleList chunks tuple list
+     * @param chunkId provided chunk id.
+     * @return chunk (if exists non-empty) block list
+     */
+    public static IList<Block> getBlockList(int chunkId, IList<Tuple> tupleList) {
+        IList<Block> blocks = new GapList<>();
+        tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> Chunk.chunkFunc(blk.pos) == chunkId)));
+
+        return blocks;
     }
 
-    // renderer does this stuff prior to any rendering
-    public void bufferAll() {
-        if (!CacheModule.isCached(id)) {
-            for (Tuple tuple : tupleList) {
-                tuple.bufferAll();
-            }
-            buffered = true;
-        }
-    }
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * @param tupleList chunks tuple list
+     * @param chunkIdList provided chunk id list
+     * @return chunk (if exists non-empty) block list
+     */
+    public static IList<Block> getBlockList(IList<Integer> chunkIdList, IList<Tuple> tupleList) {
+        IList<Block> blocks = new GapList<>();
+        tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> chunkIdList.contains(Chunk.chunkFunc(blk.pos)))));
 
-    public void animate() { // call only for fluid blocks
-        for (Tuple tuple : tupleList) {
-            tuple.animate();
-        }
-    }
-
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
-        for (Tuple tuple : tupleList) {
-            if (!tuple.isSolid()) {
-                tuple.prepare(cameraInFluid);
-            }
-        }
-    }
-
-    // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
-            GameObject gameObj;
-            try {
-                gameObj = GameObject.getInstance();
-                for (Tuple tuple : tupleList) {
-                    tuple.renderInstanced(shaderProgram, lightSources, gameObj.waterRenderer.texture(), gameObj.shadowRenderer.texture());
-                }
-            } catch (Exception ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
-            }
-        }
+        return blocks;
     }
 
     /**
@@ -711,54 +643,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         boolean changed = !Objects.equals(before, after);
 
         return changed;
-    }
-
-    public IList<Block> getBlockList() {
-        IList<Block> result = new BigList<>();
-        for (Tuple tuple : tupleList) {
-            result.addAll(tuple.getBlockList());
-        }
-        return result;
-    }
-
-    public void clear() {
-        this.tupleList.forEach(t -> t.blockList.clear());
-        this.tupleList.clear();
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public IList<Tuple> getTupleList() {
-        return tupleList;
-    }
-
-    public boolean isBuffered() {
-        return buffered;
-    }
-
-    public void setBuffered(boolean buffered) {
-        this.buffered = buffered;
-    }
-
-    public float getTimeToLive() {
-        return timeToLive;
-    }
-
-    public void setTimeToLive(float timeToLive) {
-        this.timeToLive = timeToLive;
-    }
-
-    public void decTimeToLive(float timeDec) {
-        this.timeToLive -= timeDec;
-        if (this.timeToLive < 0.0f) {
-            this.timeToLive = 0.0f;
-        }
-    }
-
-    public boolean isAlive() {
-        return timeToLive > 0.0f;
     }
 
 }

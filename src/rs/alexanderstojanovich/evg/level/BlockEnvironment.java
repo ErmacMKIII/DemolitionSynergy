@@ -18,12 +18,9 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.chunk.TupleBufferObject;
@@ -63,7 +60,7 @@ public class BlockEnvironment {
      * Lookup table for faster tuple access (avoiding multiple filters)
      */
     protected final Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
-    
+
     /**
      * Modified tuples (from update/render). Meaning from update they are
      * modified and need to be pushed to render.
@@ -87,45 +84,10 @@ public class BlockEnvironment {
     }
 
     /**
-     * Basic version of optimization for tuples from all the chunks. (Deprecated
-     * as clear/new operations are used constantly)
-     *
-     * @param queue visible chunkId queue
-     */
-    public void optimize(IList<Integer> queue) {
-        optimizedTuples.clear();
-        int faceBits = 1; // starting from one, cuz zero is not rendered               
-        while (faceBits <= 63) {
-            for (String tex : Assets.TEX_WORLD) {
-                Tuple optmTuple = null;
-                for (int chunkId : queue) {
-                    Chunk chunk = chunks.getChunk(chunkId);
-                    if (chunk != null) {
-                        Tuple tuple = chunk.getTuple(tex, faceBits);
-                        if (tuple != null) {
-                            if (optmTuple == null) {
-                                optmTuple = new Tuple(tex, faceBits);
-                            }
-                            optmTuple.blockList.addAll(tuple.blockList);
-                        }
-                    }
-                }
-
-                if (optmTuple != null) {
-                    optimizedTuples.add(optmTuple);
-                    optimizedTuples.sort(Tuple.TUPLE_COMP);
-                }
-            }
-            faceBits++;
-        }
-
-    }
-
-    /**
-     * Improved version of optimization for tuples from all the chunks. The
-     * world is built incrementally and consists of two passes. Also includes
-     * modifications to work with Tuple Buffer Object (TBO). Modified tuples are
-     * pushed to the optimized stream. (Chat GPT)
+     * Optimization for tuples from all the chunks. The world is built
+     * incrementally and consists of two passes. Also includes modifications to
+     * work with Tuple Buffer Object (TBO). Modified tuples are pushed to the
+     * optimized stream. (Chat GPT)
      *
      * @param vqueue visible chunkId queue
      * @param camera in-game camera
@@ -147,12 +109,6 @@ public class BlockEnvironment {
                     .put(t.faceBits(), t);
         }
 
-        // Pre-filter visible chunks from vqueue
-        Set<Chunk> visibleChunks = chunks.chunkList
-                .stream()
-                .filter(chnk -> vqueue.contains(chnk.id) && Chunk.doesSeeChunk(chnk.id, camera, 5f))
-                .collect(Collectors.toSet());
-
         for (String tex : Assets.TEX_WORLD) {
             for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
                 final int faceBits = (++lastFaceBitsCopy) & 63;
@@ -166,22 +122,16 @@ public class BlockEnvironment {
                                 return newTuple;
                             });
 
-                    optmTuple.blockList.clear(); // cleaning!
-
                     // PASS 2: Process Chunks and Fill Tuples
-                    for (Chunk chnk : visibleChunks) {
-                        final IList<Tuple> selectedTuples = chnk.tupleList
-                                .filter(t -> t != null && t.texName().equals(tex) && t.faceBits() == faceBits);
+                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue);
+                    if (selectedBlockList != null) {
+                        boolean modified = optmTuple.blockList.addAll(
+                                selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits
+                                && camera.doesSeeEff(blk, 30f) && !optmTuple.blockList.contains(blk))
+                        );
 
-                        for (Tuple selectedTuple : selectedTuples) {
-                            boolean modified = optmTuple.blockList.addAll(
-                                    selectedTuple.blockList
-                                            .filter(blk -> blk != null && camera.doesSeeEff(blk, 30f) && !optmTuple.blockList.contains(blk))
-                            );
-
-                            if (modified) {
-                                modifiedWorkingTupleNames.addIfAbsent(optmTuple.getName());
-                            }
+                        if (modified) {
+                            modifiedWorkingTupleNames.addIfAbsent(optmTuple.getName());
                         }
                     }
                 }
@@ -195,7 +145,7 @@ public class BlockEnvironment {
             workingTuples.sort(Tuple.TUPLE_COMP);
 
             // Only process modified tuples
-            workingTuples.stream()
+            workingTuples
                     .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
                     .forEach(wt -> {
                         wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);

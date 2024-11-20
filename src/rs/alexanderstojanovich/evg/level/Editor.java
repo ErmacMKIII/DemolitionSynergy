@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.level;
 
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.chunk.Tuple;
@@ -45,6 +46,11 @@ public class Editor {
     protected static final Block Decal = new Block("decal", new Vector3f(), GlobalColors.GREEN_RGBA, true);
     protected static boolean DecalActive = false;
 
+    /**
+     * Free place selection of new block
+     *
+     * @param lc level container
+     */
     public static void selectNew(LevelContainer lc) {
         deselect();
         if (selectedNew == null) {
@@ -73,6 +79,11 @@ public class Editor {
         lc.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, selectedNew.getPos());
     }
 
+    /**
+     * Selection of new solid block
+     *
+     * @param lc level container
+     */
     public static void selectCurrSolid(LevelContainer lc) {
         deselect();
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
@@ -98,31 +109,11 @@ public class Editor {
             // detect ray intersection
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
-                Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
-                if (chunk != null) {
-                    Tuple tuple = chunk.getTuple(locVal.texName, (int) ((~locVal.byteValue & 63) | mask));
-                    if (tuple != null) {
-                        Block blk = tuple.getBlock(adjPosAlign);
-                        if (blk != null) {
-                            selectedCurr = blk;
-                        } else {
-                            // heavy search on chunk boundaries
-                            blk = tuple.blockList.getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                            selectedCurr = blk;
-                        }
-                        break SCAN;
-                    } else {
-                        // heavy search on chunk boundaries
-                        Block blk = chunk.getBlockList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                        selectedCurr = blk;
-                        break SCAN;
-                    }
-                } else {
-                    // heavy search on chunk boundaries
-                    Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                    selectedCurr = blk;
-                    break SCAN;
-                }
+                int primaryKey = locVal.blkId;
+                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
+                selectedCurr = blk;
+
+                break SCAN;
             }
         }
         if (selectedCurr != null) {
@@ -133,6 +124,11 @@ public class Editor {
         }
     }
 
+    /**
+     * Selection of new solid block
+     *
+     * @param lc level container
+     */
     public static void selectCurrFluid(LevelContainer lc) {
         deselect();
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
@@ -158,31 +154,11 @@ public class Editor {
             // detect ray intersection
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
-                Chunk chunk = lc.chunks.getChunk(Chunk.chunkFunc(adjPosAlign));
-                if (chunk != null) {
-                    Tuple tuple = chunk.getTuple(locVal.texName, (int) ((~locVal.byteValue & 63) | mask));
-                    if (tuple != null) {
-                        Block blk = tuple.getBlock(adjPosAlign);
-                        if (blk != null) {
-                            selectedCurr = blk;
-                        } else {
-                            // heavy search on chunk boundaries
-                            blk = tuple.blockList.getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                            selectedCurr = blk;
-                        }
-                        break SCAN;
-                    } else {
-                        // heavy search on chunk boundaries
-                        Block blk = chunk.getBlockList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                        selectedCurr = blk;
-                        break SCAN;
-                    }
-                } else {
-                    // heavy search on chunk boundaries
-                    Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign));
-                    selectedCurr = blk;
-                    break SCAN;
-                }
+                int primaryKey = locVal.blkId;
+                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
+                selectedCurr = blk;
+
+                break SCAN;
             }
         }
 
@@ -199,6 +175,12 @@ public class Editor {
         DecalActive = false;
     }
 
+    /**
+     * Select adjacent solid block (based on adjacency with some existing block)
+     *
+     * @param lc level container
+     * @param position orientation (one of the six)
+     */
     public static void selectAdjacentSolid(LevelContainer lc, int position) {
         deselect();
         selectCurrSolid(lc);
@@ -243,6 +225,12 @@ public class Editor {
         }
     }
 
+    /**
+     * Select adjacent fluid block (based on adjacency with some existing block)
+     *
+     * @param lc level container
+     * @param position orientation (one of the six)
+     */
     public static void selectAdjacentFluid(LevelContainer lc, int position) {
         deselect();
         selectCurrFluid(lc);
@@ -293,13 +281,11 @@ public class Editor {
         //----------------------------------------------------------------------
         boolean intersects = false;
         int currChunkId = Chunk.chunkFunc(selectedNew.getPos());
-        Chunk currSolidChunk = lc.chunks.getChunk(currChunkId);
-        if (currSolidChunk != null) {
-            for (Block solidBlock : currSolidChunk.getBlockList()) {
-                intersects = selectedNew.intersectsExactly(solidBlock);
-                if (intersects) {
-                    break;
-                }
+        IList<Block> currBlockList = lc.chunks.getBlockList(currChunkId);
+        for (Block solidBlock : currBlockList) {
+            intersects = selectedNew.intersectsExactly(solidBlock);
+            if (intersects) {
+                break;
             }
         }
         //----------------------------------------------------------------------

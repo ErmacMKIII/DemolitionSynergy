@@ -23,14 +23,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.List;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
-import rs.alexanderstojanovich.evg.chunk.Chunks;
-import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
@@ -73,29 +70,8 @@ public class CacheModule {
     public int loadedSize(int id) { // for debugging purposes
         int size = 0;
         if (!CacheModule.isCached(id)) {
-            Chunk chunk = this.levelContainer.chunks.getChunk(id);
-            if (chunk != null) {
-                for (Tuple tuple : chunk.getTupleList()) {
-                    size += tuple.getBlockList().size();
-                }
-            }
-        }
-        return size;
-    }
-
-    /**
-     * Size of the chunk (in blocks) when is loaded.
-     *
-     * @param chunk chunk itself
-     *
-     * @return loaded size of that chunk
-     */
-    public static int loadedSize(Chunk chunk) {
-        int size = 0;
-        if (!CacheModule.isCached(chunk.getId())) {
-            for (Tuple tuple : chunk.getTupleList()) {
-                size += tuple.getBlockList().size();
-            }
+            IList<Block> blkList = levelContainer.chunks.getBlockList(id);
+            size += blkList.size();
         }
         return size;
     }
@@ -119,34 +95,19 @@ public class CacheModule {
     }
 
     // total loaded + cached size
+    /**
+     * Return total loaded + cached size
+     *
+     * @return total (loaded + cached) size
+     */
     public int totalSize() {
         int result = 0;
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            Chunk chunk;
             if (CacheModule.isCached(id)) {
                 result += CacheModule.cachedSize(id);
             } else {
-                chunk = levelContainer.chunks.getChunk(id);
-                if (chunk != null) {
-                    result += loadedSize(id);
-                }
-            }
-        }
-        return result;
-    }
-
-    // total loaded + cached size
-    public static int totalSize(Chunks chunks) {
-        int result = 0;
-        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            Chunk chunk;
-            if (CacheModule.isCached(id)) {
-                result += CacheModule.cachedSize(id);
-            } else {
-                chunk = chunks.getChunk(id);
-                if (chunk != null) {
-                    result += loadedSize(chunk);
-                }
+                IList<Block> blkList = levelContainer.chunks.getBlockList(id);
+                result += blkList.size();
             }
         }
         return result;
@@ -223,44 +184,28 @@ public class CacheModule {
     public boolean saveToDisk(int id) {
         boolean op = false;
         if (!CacheModule.isCached(id)) {
-            List<Block> blocks = null;
             // DETERMINING WHICH CHUNK
-            Chunk chunk = this.levelContainer.chunks.getChunk(id);
+            IList<Block> blocks = this.levelContainer.chunks.getBlockList(id);
             // REMOVE OPREATIONS
-            if (chunk != null) {
-                chunk.unbuffer();
-
-                blocks = chunk.getBlockList();
-
+            if (!blocks.isEmpty()) {
                 // better than tuples clear (otherwise much slower to load)
-                // this indicates that add with no transfer on fluid blocks will be used!
-                for (Tuple tuple : chunk.tupleList) {
-                    tuple.blockList.clear();
-                }
-                chunk.tupleList.clear();
-                this.levelContainer.chunks.getChunkList().remove(chunk);
-            }
-            // SAVE OPERATIONS
-            if (blocks != null) {
+                // this indicates that add with no transfer on fluid blocks will be used!                
+                this.levelContainer.chunks.tupleList.forEach(t -> t.blockList.removeAll(blocks));
+                // SAVE OPERATIONS
                 pos = 0;
                 MEMORY[pos++] = (byte) id;
                 MEMORY[pos++] = (byte) blocks.size();
                 MEMORY[pos++] = (byte) (blocks.size() >> 8);
-                for (Block block : blocks) {
-//                    TexByte location = LevelContainer.AllBlockMap.getLocation(block.pos);
-//                    if (location != null) {
-//                        LevelContainer.AllBlockMap.removeLocation(block.pos);
-//                    }
-
-                    byte[] texName = block.getTexName().getBytes();
+                for (Block blk : blocks) {
+                    byte[] texName = blk.texName.getBytes();
                     System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
                     pos += TEX_LEN;
-                    VectorFloatUtils.vec3fToByteArray(block.pos, MEMORY, pos);
+                    VectorFloatUtils.vec3fToByteArray(blk.pos, MEMORY, pos);
                     pos += VEC3_LEN;
-                    Vector4f primCol = block.getPrimaryRGBAColor();
+                    Vector4f primCol = blk.getPrimaryRGBAColor();
                     VectorFloatUtils.vec4fToByteArray(primCol, MEMORY, pos);
                     pos += VEC4_LEN;
-                    if (block.isSolid()) {
+                    if (blk.isSolid()) {
                         MEMORY[pos] = (byte) 0xFF;
                     } else {
                         MEMORY[pos] = (byte) 0x00;

@@ -181,13 +181,12 @@ public class BlockLocation {
     }
 
     /**
-     * List of populated locations for given y-coordinate. Warning: this is
-     * performance costly - So don't call it in a loop!
+     * List of populated locations for given blkId.
      *
      * @param blkId blk primary (key) id
      * @return List of Vector3f of populated locationMap(s)
      */
-    public IList<TexByte> getPopulatedLocations(int blkId) {
+    public IList<TexByte> getPopulatedLocationProperties(int blkId) {
         return locationProperties.getAllByKey1(blkId);
     }
 
@@ -304,6 +303,58 @@ public class BlockLocation {
     }
 
     /**
+     * List of populated locations within the given chunk. Warning: this is
+     * performance costly - So don't call it in a loop!
+     *
+     * @param chunkId chunkId to check (block) population.
+     * @return List of Vector3f of populated locationMap(s)
+     */
+    public IList<Vector3f> getPopulatedLocations(int chunkId) {
+        IList<Vector3f> result = new GapList<>();
+
+        // Half the chunk length for spatial calculations
+        final float halfLength = Chunk.LENGTH / 2.0f;
+
+        // Calculate the centroid position of the chunk
+        Vector3f chunkCenter = Chunk.invChunkFunc(chunkId);
+
+        // Determine bounds in grid indices
+        int iMin = (int) ((chunkCenter.x - halfLength + Chunk.BOUND) / 2.0f);
+        int iMax = (int) ((chunkCenter.x + halfLength + Chunk.BOUND) / 2.0f);
+
+        int jMin = (int) ((chunkCenter.z - halfLength + Chunk.BOUND) / 2.0f);
+        int jMax = (int) ((chunkCenter.z + halfLength + Chunk.BOUND) / 2.0f);
+
+        int kMin = (int) ((-Chunk.BOUND + 2.0f + Chunk.BOUND) / 2.0f); // Map lowerYBound
+        int kMax = (int) ((Chunk.BOUND - 2.0f + Chunk.BOUND) / 2.0f); // Map upperYBound
+
+        // Iterate over grid indices
+        for (int k = kMin; k <= kMax; k++) {
+            for (int i = iMin; i < iMax; i++) {
+                for (int j = jMin; j < jMax; j++) {
+                    // Skip invalid or unsafe positions
+                    if (!safeCheck(i, j, k)) {
+                        continue;
+                    }
+
+                    // Check if the position is populated
+                    TexByte value = locationMap[i][j][k];
+                    if (value != null) {
+                        // Convert grid indices back to world coordinates
+                        float x = i * 2.0f - Chunk.BOUND;
+                        float z = j * 2.0f - Chunk.BOUND;
+                        float y = k * 2.0f - Chunk.BOUND;
+
+                        result.add(new Vector3f(x, y, z));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * List of populated locations with given predicated. Warning: this is
      * performance costly - So don't call it in a loop!
      *
@@ -315,27 +366,40 @@ public class BlockLocation {
     public IList<Vector3f> getPopulatedLocations(int chunkId, Predicate<TexByte> predicate) {
         IList<Vector3f> result = new GapList<>();
 
-        float lYBound = -Chunk.BOUND + 2.0f;
-        float rYBound = Chunk.BOUND - 2.0f;
+        // Half the chunk length for spatial calculations
+        final float halfLength = Chunk.LENGTH / 2.0f;
 
-        final float halfLen = Chunk.LENGTH / 2.0f;
-        Vector3f chunkPos = Chunk.invChunkFunc(chunkId);
+        // Calculate the centroid position of the chunk
+        Vector3f chunkCenter = Chunk.invChunkFunc(chunkId);
 
-        for (float y = lYBound; y <= rYBound; y += 2.0f) {
-            for (float x = chunkPos.x - halfLen; x < chunkPos.x + halfLen; x += 2.0f) {
-                for (float z = chunkPos.z - halfLen; z < chunkPos.z + halfLen; z += 2.0f) {
-                    int i = (int) ((x + Chunk.BOUND) / 2.0f);
-                    int j = (int) ((z + Chunk.BOUND) / 2.0f);
-                    int k = (int) ((y + Chunk.BOUND) / 2.0f);
+        // Determine bounds in grid indices
+        int iMin = (int) ((chunkCenter.x - halfLength + Chunk.BOUND) / 2.0f);
+        int iMax = (int) ((chunkCenter.x + halfLength + Chunk.BOUND) / 2.0f);
 
+        int jMin = (int) ((chunkCenter.z - halfLength + Chunk.BOUND) / 2.0f);
+        int jMax = (int) ((chunkCenter.z + halfLength + Chunk.BOUND) / 2.0f);
+
+        int kMin = (int) ((-Chunk.BOUND + 2.0f + Chunk.BOUND) / 2.0f); // Map lowerYBound
+        int kMax = (int) ((Chunk.BOUND - 2.0f + Chunk.BOUND) / 2.0f); // Map upperYBound
+
+        // Iterate over grid indices
+        for (int k = kMin; k <= kMax; k++) {
+            for (int i = iMin; i < iMax; i++) {
+                for (int j = jMin; j < jMax; j++) {
+                    // Skip invalid or unsafe positions
                     if (!safeCheck(i, j, k)) {
                         continue;
                     }
 
+                    // Check if the position is populated
                     TexByte value = locationMap[i][j][k];
                     if (value != null && predicate.test(value)) {
-                        Vector3f pos = new Vector3f(x, y, z);
-                        result.add(pos);
+                        // Convert grid indices back to world coordinates
+                        float x = i * 2.0f - Chunk.BOUND;
+                        float z = j * 2.0f - Chunk.BOUND;
+                        float y = k * 2.0f - Chunk.BOUND;
+
+                        result.add(new Vector3f(x, y, z));
                     }
                 }
             }

@@ -16,20 +16,15 @@
  */
 package rs.alexanderstojanovich.evg.chunk;
 
-import java.util.Comparator;
-import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.cache.CacheModule;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.models.Block;
-import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * World (container) of all the blocks.
+ *
+ * Contains all the various tuples (of textures x facebits combinations).
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -39,141 +34,10 @@ public class Chunks {
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
-    public final IList<Chunk> chunkList = new GapList<>(Chunk.CHUNK_NUM);
-
-    public static final Comparator<Chunk> COMPARATOR = (Chunk o1, Chunk o2) -> {
-        if (o1.getId() > o2.getId()) {
-            return 1;
-        } else if (o1.getId() == o2.getId()) {
-            return 0;
-        } else {
-            return -1;
-        }
-    };
-
     /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
-     *
-     * Used after add operation.
-     *
-     * @param block block to update
+     * Tuple list (unique properties) for instanced rendering
      */
-    protected void updateForAdd(Block block) {
-        // only same solidity - solid to solid or fluid to fluid is updated        
-        int neighborBits = block.isSolid()
-                ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
-                : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
-        if (neighborBits != 0) {
-            // retieve current neightbor bits      
-            int faceBitsBefore = block.getFaceBits();
-            // -------------------------------------------------------------------
-            // this logic updates facebits of this block
-            // & transfers it to correct tuple 
-            // -------------------------------------------------------------------                    
-            block.setFaceBits(~neighborBits & 63);
-            int faceBitsAfter = block.getFaceBits();
-            if (faceBitsBefore != faceBitsAfter) {
-                int chunkId = Chunk.chunkFunc(block.pos);
-                Chunk chunk = getChunk(chunkId);
-                if (chunk != null) {
-                    chunk.transfer(block, faceBitsBefore, faceBitsAfter);
-                }
-            }
-            // query all neighbors and update this block and adjacent blocks accordingly
-            for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-                // -------------------------------------------------------------------
-                // following logic updates adjacent block 
-                // if it is same solidity as this block
-                // need to find tuple where it is located
-                // -------------------------------------------------------------------
-                Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-                TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
-                if (location != null) {
-                    int blkId = location.blkId;
-                    String tupleTexName = location.texName;
-                    int adjNBits = block.isSolid()
-                            ? LevelContainer.AllBlockMap.getNeighborSolidBits(adjPos)
-                            : LevelContainer.AllBlockMap.getNeighborFluidBits(adjPos);
-                    int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                    int mask = 1 << k;
-                    // revert the bit that was set in LevelContainer
-                    //(looking for old bits i.e. current tuple)
-                    int tupleBits = adjNBits ^ (~mask & 63);
-
-                    int adjChunkId = Chunk.chunkFunc(adjPos);
-                    Chunk adjChunk = getChunk(adjChunkId);
-                    if (adjChunk != null) {
-                        Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
-                        if (tuple != null) {
-                            Block adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
-
-                            if (adjBlock != null) {
-                                int adjFaceBitsBefore = adjBlock.getFaceBits();
-                                adjBlock.setFaceBits(~adjNBits & 63);
-                                int adjFaceBitsAfter = adjBlock.getFaceBits();
-                                if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                                    // if bits changed, i.e. some face(s) got disabled
-                                    // tranfer to correct tuple
-                                    adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Updates blocks faces of both original block and adjacent blocks. Block
-     * must be solid.
-     *
-     * Used after rem operation.
-     *
-     * @param block block to update
-     */
-    private void updateForRem(Block block) {
-        // setSafeCheck adjacent blocks
-        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
-            Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
-            int nBits = block.isSolid()
-                    ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
-                    : LevelContainer.AllBlockMap.getNeighborFluidBits(block.pos);
-            TexByte location = LevelContainer.AllBlockMap.getLocation(adjPos);
-            // location exists and has neighbors (otherwise pointless)
-            if (location != null && nBits != 0) {
-                int blkId = location.blkId;
-                String tupleTexName = location.texName;
-                byte adjNBits = location.getByteValue();
-                int k = ((j & 1) == 0 ? j + 1 : j - 1);
-                int mask = 1 << k;
-                // revert the bit that was set in LevelContainer
-                //(looking for old bits i.e. current tuple)
-                int tupleBits = adjNBits ^ (~mask & 63);
-
-                int adjChunkId = Chunk.chunkFunc(adjPos);
-                Chunk adjChunk = getChunk(adjChunkId);
-
-                Tuple tuple = adjChunk.getTuple(tupleTexName, tupleBits);
-                Block adjBlock = null;
-
-                if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
-                }
-                if (adjBlock != null) {
-                    int adjFaceBitsBefore = adjBlock.getFaceBits();
-                    adjBlock.setFaceBits(~adjNBits & 63);
-                    int adjFaceBitsAfter = adjBlock.getFaceBits();
-                    if (adjFaceBitsBefore != adjFaceBitsAfter) {
-                        // if bits changed, i.e. some face(s) got disabled
-                        // tranfer to correct tuple
-                        adjChunk.transfer(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
-                    }
-                }
-            }
-        }
-    }
+    public final IList<Tuple> tupleList = new GapList<>(Chunk.CHUNK_NUM);
 
     /**
      * Adds block to the chunks. Block will be added to the corresponding solid
@@ -182,18 +46,7 @@ public class Chunks {
      * @param block block to add
      */
     public synchronized void addBlock(Block block) {
-        //----------------------------------------------------------------------
-        int chunkId = Chunk.chunkFunc(block.pos);
-        Chunk chunk = getChunk(chunkId);
-
-        if (chunk == null) {
-            chunk = new Chunk(chunkId);
-            chunkList.add(chunk);
-            chunkList.sort(COMPARATOR);
-        }
-
-        chunk.addBlock(block);
-        updateForAdd(block);
+        Chunk.addBlock(tupleList, block);
     }
 
     /**
@@ -203,111 +56,116 @@ public class Chunks {
      * @param block block to remove
      */
     public synchronized void removeBlock(Block block) {
-        int chunkId = Chunk.chunkFunc(block.pos);
-        Chunk chunk = getChunk(chunkId);
-
-        if (chunk != null) { // if chunk exists already                            
-            chunk.removeBlock(block);
-            updateForRem(block);
-            // if chunk is empty (with no tuples) -> remove it
-            if (chunk.getTupleList().isEmpty()) {
-                chunkList.remove(chunk);
-            }
-        }
-
+        Chunk.removeBlock(tupleList, block);
     }
 
     /**
-     * Gets the chunk using chunk id. Uses binary search. Complexity is
-     * algorithmic.
+     * Gets the chunk block list using chunk id.
      *
      * @param chunkId provided chunk id.
-     * @return chunk (if exists)
+     * @return chunk (if exists non-empty) block list
      */
-    public Chunk getChunk(int chunkId) {
-        int left = 0;
-        int right = chunkList.size() - 1;
-        while (left <= right) {
-            int mid = left + (right - left) / 2;
-            Chunk candidate = chunkList.get(mid);
-            if (candidate.getId() == chunkId) {
-                return candidate;
-            } else if (candidate.getId() < chunkId) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
+    public IList<Block> getBlockList(int chunkId) {
+        IList<Block> blocks = new GapList<>();
+        tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> Chunk.chunkFunc(blk.pos) == chunkId)));
+
+        return blocks;
+    }
+
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkId provided chunk id.
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public IList<Block> getFilteredBlockList(String texName, int faceBits, int chunkId) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            return tuple.blockList.filter(blk -> Chunk.chunkFunc(blk.pos) == chunkId);
         }
+
         return null;
     }
 
     /**
-     * Reorder group of vertices if underwater
+     * Gets the chunk block list using chunk id.
      *
-     * @param cameraInFluid is camera in fluid (checked by level container
-     * externally)
+     * @param chunkIdList provided chunk id list
+     * @return chunk (if exists non-empty) block list
      */
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering                
-        for (Chunk chunk : chunkList) {
-            chunk.prepare(cameraInFluid);
-        }
+    public IList<Block> getBlockList(IList<Integer> chunkIdList) {
+        IList<Block> blocks = new GapList<>();
+        tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> chunkIdList.contains(Chunk.chunkFunc(blk.pos)))));
+
+        return blocks;
     }
 
-    // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, LightSources lightSources) {
-        for (Chunk chunk : chunkList) {
-            if (!chunk.isBuffered()) {
-                chunk.bufferAll();
-            }
-            chunk.render(shaderProgram, lightSources);
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkIdList provided chunk id list
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public IList<Block> getFilteredBlockList(String texName, int faceBits, IList<Integer> chunkIdList) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            return tuple.blockList.filter(blk -> chunkIdList.contains(Chunk.chunkFunc(blk.pos)));
         }
+
+        return null;
     }
 
     // all blocks from all the chunks in one big list
+    /**
+     * Get all block from all the chunks. Whole world of blocks.
+     *
+     * @return total list of blocks
+     *
+     */
     public IList<Block> getTotalList() {
-        IList<Block> result = new BigList<>();
-        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            if (!CacheModule.isCached(id)) {
-                Chunk chunk = getChunk(id);
-                if (chunk != null) {
-                    result.addAll(chunk.getBlockList());
-                }
-            }
-        }
-        return result;
+        IList<Block> blocks = new BigList<>();
+        tupleList.forEach(tuple -> blocks.addAll(tuple.blockList));
+
+        return blocks;
     }
 
     public String printInfo() { // for debugging purposes
         StringBuilder sb = new StringBuilder();
-        sb.append("CHUNKS\n");
-        sb.append("CHUNKS TOTAL SIZE = ").append(CacheModule.totalSize(this)).append("\n");
-        sb.append("DETAILED INFO\n");
-        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            boolean cached = CacheModule.isCached(id);
-            Chunk chunk = null;
-            if (!cached) {
-                chunk = getChunk(id);
-            }
-
-            sb.append("id = ").append(id)
-                    .append(" | size = ").append((!cached && chunk != null) ? CacheModule.loadedSize(chunk) : CacheModule.cachedSize(id))
-                    .append(" | timeToLive = ").append((chunk != null) ? String.format("%.1f", chunk.getTimeToLive()) : 0.0f)
-                    .append(" | buffered = ").append((chunk != null) ? chunk.isBuffered() : false)
-                    .append(" | cached = ").append(cached)
-                    .append("\n");
-        }
-        sb.append("------------------------------------------------------------");
-        DSLogger.reportDebug(sb.toString(), null);
+//        sb.append("CHUNKS\n");
+//        sb.append("CHUNKS TOTAL SIZE = ").append(CacheModule.totalSize(this)).append("\n");
+//        sb.append("DETAILED INFO\n");
+//        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
+//            boolean cached = CacheModule.isCached(id);
+//            chunk = CacheModule.isCached(id);
+//
+//            sb.append("id = ").append(id)
+//                    .append(" | size = ").append((!cached && chunk != null) ? CacheModule.loadedSize(chunk) : CacheModule.cachedSize(id))
+//                    .append(" | cached = ").append(cached)
+//                    .append("\n");
+//        }
+//        sb.append("------------------------------------------------------------");
+//        DSLogger.reportDebug(sb.toString(), null);
 
         return sb.toString();
     }
 
     public void clear() {
-        this.chunkList.forEach(c -> c.clear());
+        this.tupleList.forEach(t -> t.blockList.clear());
+        this.tupleList.clear();
     }
 
-    public IList<Chunk> getChunkList() {
-        return chunkList;
+    public IList<Tuple> getTupleList() {
+        return tupleList;
     }
 
 }

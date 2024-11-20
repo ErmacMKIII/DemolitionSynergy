@@ -195,7 +195,7 @@ public class Console {
                         input.setLength(0);
                         input.append(candidates.get(0));
                         inText.setContent("]" + input + "_");
-                        
+
                         // position cursor in the end when only one candidate
                         cursorPosition = input.length();
                     }

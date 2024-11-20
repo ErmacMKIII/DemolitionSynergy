@@ -375,7 +375,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return is first optimization
      */
     public boolean isFirstOptimization() {
-        return !this.levelContainer.chunks.getChunkList().isEmpty();
+        return !this.levelContainer.chunks.tupleList.isEmpty();
     }
 
     /**

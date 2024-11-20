@@ -150,7 +150,7 @@ public class LevelContainer implements GravityEnviroment {
     // std time to live
     public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
 
-    protected final CacheModule cacheModule;
+    public final CacheModule cacheModule;
 
     protected static boolean actorInFluid = false;
 
@@ -162,6 +162,8 @@ public class LevelContainer implements GravityEnviroment {
     public final Weapons weapons;
 
     public boolean gravityOn = false;
+
+    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -1519,13 +1521,13 @@ public class LevelContainer implements GravityEnviroment {
             }
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.dropY(deltaHeight);
-            
+
             // in case of multiplayer join send to the server
             if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
                 gameObject.game.requestSetPlayerPosition();
                 gameObject.game.requestUpdatePlayer();
             }
-            
+
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             if (fallVelocity == TERMINAL_VELOCITY) {
                 try {
@@ -1717,19 +1719,27 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Method for saving invisible chunks / loading visible chunks. From Cache
-     * module. Cache module is being addressed.
+     * Method for saving invisible chunks / loading visible chunks. Operates
+     * using the Cache module.
      *
-     * @return
+     * @return true if any chunks were loaded or saved; false otherwise
      */
     public boolean chunkOperations() {
         boolean changed = false;
+
         if (!working) {
-            for (int v : vChnkIdList) {
-                changed |= cacheModule.loadFromDisk(v);
+            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
+                Integer chunkId = vChnkIdList.poll();
+                if (chunkId != null) { // Avoid NullPointerException
+                    changed |= cacheModule.loadFromDisk(chunkId);
+                }
             }
-            for (int i : iChnkIdList) {
-                changed |= cacheModule.saveToDisk(i);
+
+            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
+                Integer chunkId = iChnkIdList.poll();
+                if (chunkId != null) { // Avoid NullPointerException
+                    changed |= cacheModule.saveToDisk(chunkId);
+                }
             }
         }
 

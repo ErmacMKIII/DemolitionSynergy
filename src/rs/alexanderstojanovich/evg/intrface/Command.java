@@ -40,6 +40,7 @@ import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -372,9 +373,11 @@ public class Command implements Callable<Object> {
 
         if (argsEmpty || isGetOnly) {
             command.mode = Mode.GET;
+        } else {
+            command.mode = Mode.SET;
         }
 
-        if (isSetOnly || !argsEmpty) {
+        if (isSetOnly) {
             command.mode = Mode.SET;
         }
 
@@ -680,7 +683,7 @@ public class Command implements Callable<Object> {
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int totalSize = CacheModule.totalSize(gameObject.getLevelContainer().getChunks());
+                        int totalSize = gameObject.levelContainer.cacheModule.totalSize();
                         int cachedSize = 0;
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
                             cachedSize += ci.cachedSize;
@@ -695,10 +698,7 @@ public class Command implements Callable<Object> {
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
-                            Chunk chunk = gameObject.getLevelContainer().getChunks().getChunk(chunkId);
-                            if (chunk != null) {
-                                size = chunk.getBlockList().size();
-                            }
+                            size = gameObject.levelContainer.chunks.getBlockList(chunkId).size();
                         }
 
                         if (size != -1) {
