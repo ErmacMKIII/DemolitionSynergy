@@ -40,7 +40,7 @@ public class Configuration {
     private boolean vsync = false;
     private int waterEffects = 0;
     private int shadowEffects = 0;
-    private float mouseSensitivity = 5.0f;
+    private float mouseSensitivity = 10.0f;
     private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
     private boolean logToFile = false;
     private float musicVolume = 0.2f;
@@ -320,13 +320,13 @@ public class Configuration {
             pw.println("BlocksPerRun = " + blocksPerRun);
             pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
-            pw.println("# Local IP address used to host the server on (local) machine. Used with server port");
+            pw.println("# Local IP address used to host the server on (local) machine. Used with server port.");
             pw.println("LocalIP = " + localIP);
-            pw.println("# Preferred game server (local or public IP address) for client to connect. Used in conjuction with client port");
+            pw.println("# Preferred game server (local or public IP address) for client to connect. Used in conjuction with client port.");
             pw.println("ServerIP = " + serverIP);
             pw.println("# Preferred game server port (to run the server). Must be in range 13660-13669");
             pw.println("ServerPort = " + serverPort);
-            pw.println("# Client port set to connect to game server. Varying");
+            pw.println("# Client port set to connect to game server. Varying.");
             pw.println("ClientPort = " + clientPort);
             pw.println("# Max server clients");
             pw.println("MaxClients = " + maxClients);

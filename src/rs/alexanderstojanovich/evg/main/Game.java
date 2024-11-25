@@ -1093,7 +1093,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             gameObject.utilChunkOperations();
         }
 
-        if ((ups & (TPS_EIGHTH - 1)) == 0) {
+        if ((ups & (TPS_QUARTER - 1)) == 0) {
             // block optimizaiton (separate visible from not visible)
             gameObject.utilOptimization();
         }
@@ -1215,22 +1215,23 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-            while (accumulator >= TICK_TIME) {
-                // Poll GLFW Events
-                GLFW.glfwPollEvents();
+            // Poll GLFW Events
+            GLFW.glfwPollEvents();
 
+            // Fixed time-step
+            while (accumulator >= TICK_TIME) {
                 // Handle input (interrupt) events (keyboard & mouse)
                 handleInput(TICK_TIME);
 
                 // Update with fixed timestep (environment)
                 update(TICK_TIME);
 
-                // util operations (heavy CPU time)
-                util();
-
                 ups++;
                 accumulator -= TICK_TIME;
             }
+
+            // util operations (heavy CPU time)
+            util();
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
