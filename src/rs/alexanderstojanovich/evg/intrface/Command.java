@@ -40,7 +40,6 @@ import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -371,13 +370,17 @@ public class Command implements Callable<Object> {
         boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY
                 || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER;
 
-        if (argsEmpty || isGetOnly) {
+        command.mode = Mode.GET;
+
+        if (isGetOnly) {
             command.mode = Mode.GET;
-        } else {
-            command.mode = Mode.SET;
         }
 
         if (isSetOnly) {
+            command.mode = Mode.SET;
+        }
+
+        if (!isGetOnly && !isSetOnly && !argsEmpty) {
             command.mode = Mode.SET;
         }
 
