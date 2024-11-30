@@ -328,7 +328,7 @@ public class Configuration {
             pw.println("ServerPort = " + serverPort);
             pw.println("# Client port set to connect to game server. Varying.");
             pw.println("ClientPort = " + clientPort);
-            pw.println("# Max server clients");
+            pw.println("# Max server clients.");
             pw.println("MaxClients = " + maxClients);
             pw.println("# Use backup guid. Testing purposes.");
             pw.println("UseBakGuid = " + useBakGuid);
