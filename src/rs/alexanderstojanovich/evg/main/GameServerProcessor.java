@@ -81,16 +81,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
     public static int TotalFailedAttempts = 0;
 
     /**
-     * Last checksum to avoid (duping)
-     */
-    protected static long lastChecksum = 0L;
-
-    /**
-     * Last time request was sent
-     */
-    protected static long lastTime = System.nanoTime();
-
-    /**
      * Create new Game Server processor which process receives request(s) and
      * sends (optional) response(s).
      *
@@ -151,28 +141,6 @@ public class GameServerProcessor extends IoHandlerAdapter {
         final InetAddress clientAddress = request.getClientAddress();
         String clientHostName = clientAddress.getHostName();
 
-        // defence against duping packets (possibility bridged connections)
-        long currTime = System.nanoTime();
-        double deltaTime = (currTime - lastTime) / 1E9D;
-        if (request.getRequestType() != GET_POS && request.getChecksum() == lastChecksum && deltaTime < Game.TICK_TIME / 16.0) {
-            // avoid processing duplicate packages
-            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Sent duplicate packet - rejecting");
-        }
-        lastChecksum = request.getChecksum();
-        lastTime = currTime;
-
-        // pending kick
-//        if (gameServer.kicklist.contains(clientGuid)) {
-//            // issuing kick to the client (guid as data)
-//            ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, clientGuid);
-//            response.send(gameServer, session);
-//
-//            gameServer.kicklist.remove(clientGuid);
-//            gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
-//            GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
-//
-//            return new Result(Status.OK, clientHostName, clientGuid, "OK => kick issued to the client!");
-//        }
         if (request == Request.INVALID) {
             // avoid processing invalid requests requests
             return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Invalid request - Reason Unknown!");
@@ -186,10 +154,10 @@ public class GameServerProcessor extends IoHandlerAdapter {
             return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Bad Request - Bad data type!");
         }
 
-        if (!gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid)) && request.getRequestType() != RequestIfc.RequestType.HELLO && request.getRequestType() != RequestIfc.RequestType.GOODBYE) {
+        if (!gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid)) && request.getRequestType() != RequestIfc.RequestType.HELLO) {
             gameServer.assertTstFailure(clientHostName, clientGuid);
 
-            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client issued invalid request type (HELLO, GOODBYE)");
+            return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client issued invalid request type (other than HELLO)");
         }
 
         if (gameServer.blacklist.contains(clientHostName) || gameServer.clients.size() >= MAX_CLIENTS) {
