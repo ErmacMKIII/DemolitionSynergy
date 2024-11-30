@@ -1639,6 +1639,12 @@ public class LevelContainer implements GravityEnviroment {
             float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
             critter.movePredictorYUp(deltaHeight);
             critter.jumpY(deltaHeight);
+            
+            // in case of multiplayer join send to the server
+            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+                gameObject.game.requestSetPlayerPosition();
+            }
+            
             jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
         }
 
@@ -1697,6 +1703,11 @@ public class LevelContainer implements GravityEnviroment {
             float deltaHeight = crouchStrength * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
             critter.movePredictorYDown(deltaHeight);
             critter.dropY(deltaHeight);
+            
+            // in case of multiplayer join send to the server
+            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+                gameObject.game.requestSetPlayerPosition();
+            }
         }
 
         return !collision;
