@@ -370,11 +370,17 @@ public class Command implements Callable<Object> {
         boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY
                 || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER;
 
-        if (argsEmpty || isGetOnly) {
+        command.mode = Mode.GET;
+
+        if (isGetOnly) {
             command.mode = Mode.GET;
         }
 
-        if (isSetOnly || !argsEmpty) {
+        if (isSetOnly) {
+            command.mode = Mode.SET;
+        }
+
+        if (!isGetOnly && !isSetOnly && !argsEmpty) {
             command.mode = Mode.SET;
         }
 
@@ -680,7 +686,7 @@ public class Command implements Callable<Object> {
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int totalSize = CacheModule.totalSize(gameObject.getLevelContainer().getChunks());
+                        int totalSize = gameObject.levelContainer.cacheModule.totalSize();
                         int cachedSize = 0;
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
                             cachedSize += ci.cachedSize;
@@ -695,10 +701,7 @@ public class Command implements Callable<Object> {
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
-                            Chunk chunk = gameObject.getLevelContainer().getChunks().getChunk(chunkId);
-                            if (chunk != null) {
-                                size = chunk.getBlockList().size();
-                            }
+                            size = gameObject.levelContainer.chunks.getBlockList(chunkId).size();
                         }
 
                         if (size != -1) {

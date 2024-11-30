@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -88,7 +89,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Block SKYBOX = new Block("night");
 
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 0.15f); // orange-yellow color
+    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 32.0f;
@@ -150,7 +151,7 @@ public class LevelContainer implements GravityEnviroment {
     // std time to live
     public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
 
-    protected final CacheModule cacheModule;
+    public final CacheModule cacheModule;
 
     protected static boolean actorInFluid = false;
 
@@ -162,6 +163,8 @@ public class LevelContainer implements GravityEnviroment {
     public final Weapons weapons;
 
     public boolean gravityOn = false;
+
+    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -451,26 +454,37 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Set player position. Spawn him/her.
-     *
-     * @throws java.lang.Exception if spawn fails
      */
-    public void spawnPlayer() throws Exception {
+    public void spawnPlayer() {
         // Manually turn off gravity so it doesn't affect player during spawn
-        fallVelocity = 0.0f;
-        jumpVelocity = 0.0f;
         gravityOn = false;
 
         // Place player on his/her position
         LevelContainer levelContainer = gameObject.getLevelContainer();
         Player player = (Player) levelContainer.levelActors.player;
-
         player.setPos(new Vector3f(0.0f, 256.0f, 0.0f));
+
         Random random = gameObject.getRandomLevelGenerator().random;
 
-        // Find non-empty solid location(s)
-        IList<Vector3f> solidPopLoc = LevelContainer.AllBlockMap.getPopulatedLocations(
-                loc -> loc.solid && (~loc.byteValue & Block.Y_MASK) != 0
-        );
+        // Find suitable chunk in centre to spawn       
+        final int halfGrid = Chunk.GRID_SIZE >> 1;
+        IList<Integer> midChunks = new GapList<>(Arrays.asList(
+                Chunk.GRID_SIZE * (halfGrid - 1) + (halfGrid - 1),
+                Chunk.GRID_SIZE * (halfGrid - 1) + halfGrid,
+                Chunk.GRID_SIZE * halfGrid + (halfGrid - 1),
+                Chunk.GRID_SIZE * halfGrid + halfGrid
+        ));
+
+        IList<Vector3f> solidPopLoc;
+        do {
+            int chunkId = midChunks.get(random.nextInt(midChunks.size()));
+//            DSLogger.reportInfo("chunkid=" + chunkId, null);
+            // Find non-empty solid location(s)              
+            solidPopLoc = LevelContainer.AllBlockMap.getPopulatedLocations(
+                    chunkId, loc -> loc.solid && (~loc.byteValue & Block.Y_MASK) == 0
+            );
+            midChunks.remove((Integer) chunkId);
+        } while (solidPopLoc.isEmpty() && !midChunks.isEmpty());
 
         // Remove populated locations around the chosen location to avoid crowding
         if (solidPopLoc.size() > 200) {
@@ -493,11 +507,10 @@ public class LevelContainer implements GravityEnviroment {
         while (!playerSpawned && !solidPopLoc.isEmpty()) {
             int randomIndex = random.nextInt(solidPopLoc.size());
             Vector3f solidLoc = solidPopLoc.get(randomIndex);
-            Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.0f, solidLoc.z); // Adjust y position
+            Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z); // Adjust y position
 
-            player.getPredictor().set(playerLoc);
-            if (!hasCollisionWithEnvironment((Predictable) player)) {
-                player.setPos(playerLoc);
+            player.setPos(playerLoc);
+            if (!hasCollisionWithEnvironment((Critter) player)) {
                 playerSpawned = true;
             } else {
                 solidPopLoc.remove(randomIndex);  // Remove invalid location
@@ -506,10 +519,12 @@ public class LevelContainer implements GravityEnviroment {
 
         // Adjust player position if successfully spawned
         if (playerSpawned) {
+            player.ascend(0.0f);
+            player.descend(0.0f);
             gravityOn = true; // Re-enable gravity
         } else {
             // Handle case where no valid spawn location was found (optional)
-            throw new Exception("Failed to spawn player in a valid location.");
+            throw new IllegalStateException("Failed to spawn player in a valid location.");
         }
     }
 
@@ -1519,6 +1534,12 @@ public class LevelContainer implements GravityEnviroment {
             }
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.dropY(deltaHeight);
+
+            // in case of multiplayer join send to the server
+            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+                gameObject.game.requestSetPlayerPosition();
+            }
+
             fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             if (fallVelocity == TERMINAL_VELOCITY) {
                 try {
@@ -1710,19 +1731,27 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Method for saving invisible chunks / loading visible chunks. From Cache
-     * module. Cache module is being addressed.
+     * Method for saving invisible chunks / loading visible chunks. Operates
+     * using the Cache module.
      *
-     * @return
+     * @return true if any chunks were loaded or saved; false otherwise
      */
     public boolean chunkOperations() {
         boolean changed = false;
+
         if (!working) {
-            for (int v : vChnkIdList) {
-                changed |= cacheModule.loadFromDisk(v);
+            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
+                Integer chunkId = vChnkIdList.poll();
+                if (chunkId != null) { // Avoid NullPointerException
+                    changed |= cacheModule.loadFromDisk(chunkId);
+                }
             }
-            for (int i : iChnkIdList) {
-                changed |= cacheModule.saveToDisk(i);
+
+            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
+                Integer chunkId = iChnkIdList.poll();
+                if (chunkId != null) { // Avoid NullPointerException
+                    changed |= cacheModule.saveToDisk(chunkId);
+                }
             }
         }
 

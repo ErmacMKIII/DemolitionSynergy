@@ -52,7 +52,7 @@ In order to build the project you are gonna need NetBeans IDE 16 (or later) and 
 5. Google Gson (installed),
 6. Apache MINA, for networking (installed).
 
-Download latest library LWJGL (3.3.3 at this time) from:
+Download latest library LWJGL (3.3.4 at this time) from:
 https://www.lwjgl.org/customize (this project is using Minimal OpenGL)
 
 Put [MoveAllFiles.bat](/utils/MoveAllFiles.bat) inside the directory with downloaded & extracted zip content.

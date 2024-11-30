@@ -258,6 +258,9 @@ public class GameServer implements DSMachine, Runnable {
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port));
             DSLogger.reportWarning(String.format("Game Server (%s:%d) status critical! Trying to shut down!", this.localIP, this.port), null);
             shutDownSignal = true;
+
+            stopServer();
+            shutDown();
         }
     }
 

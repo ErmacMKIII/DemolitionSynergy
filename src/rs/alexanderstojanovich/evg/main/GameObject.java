@@ -87,7 +87,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     private final Configuration cfg = Configuration.getInstance();
 
     public static final boolean IS_DEVELOPMENT = false;
-    public static final int VERSION = 51;
+    public static final int VERSION = 52;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
 
@@ -375,7 +375,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return is first optimization
      */
     public boolean isFirstOptimization() {
-        return !this.levelContainer.chunks.getChunkList().isEmpty();
+        return !this.levelContainer.chunks.tupleList.isEmpty();
     }
 
     /**

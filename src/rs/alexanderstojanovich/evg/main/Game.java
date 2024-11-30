@@ -55,7 +55,6 @@ import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -154,7 +153,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     protected int fulfillNum = 0;
     public final Object internRequestMutex = new Object();
-    protected final IList<Pair<RequestIfc, Double>> requests = new GapList<>();
+    protected final IList<RequestIfc> requests = new GapList<>();
     protected double pingSum = 0.0;
     protected double ping = 0.0;
     protected double waitReceiveTime = 0.0; // seconds
@@ -544,10 +543,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered() && isAsyncReceivedEnabled()) {
             RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
             playerPosReq.send(this, session);
-            double time = GLFW.glfwGetTime();
             synchronized (internRequestMutex) {
                 if (requests.size() < MAX_SIZE) {
-                    requests.add(new Pair<>(playerPosReq, time));
+                    requests.add(playerPosReq);
                 }
             }
 
@@ -867,7 +865,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param response client received response
      */
     public void process(ResponseIfc response) {
-        double endTime = GLFW.glfwGetTime();
         if (response.getChecksum() == 0L && String.valueOf(response.getData()).contains(":")) {
             // write chat messages
             gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -876,25 +873,23 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // this is issued kick from the server to the Guid of this machine
         if (response.getData().equals(this.getGuid())) {
+            // disable async 'read point' in 'message received'
+            asyncReceivedEnabled = false;
+
             DSLogger.reportInfo("You got kicked from the server!", null);
             this.gameObject.intrface.getConsole().write("You got kicked from the server!");
             disconnectFromServer();
             gameObject.clearEverything();
+            return;
         }
 
-        double beginTime = 0.0; // initial value -- gonna be replaced with request begin time
         // choose the one which fits by unique checksum
-        Pair<RequestIfc, Double> reqXtime = null;
+        RequestIfc reqTarg = null;
         synchronized (internRequestMutex) {
-            reqXtime = requests.filter(req -> req.getKey().getTimestamp() <= System.currentTimeMillis()).getIf(req -> req.getKey().getChecksum() == response.getChecksum());
-            requests.remove(reqXtime);
+            reqTarg = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
+            requests.remove(reqTarg);
         }
-        if (reqXtime != null) {
-            // Affiliate response with request
-            RequestIfc reqTarg = reqXtime.getKey();
-            // Affilate response time recevied with request time sent
-            beginTime = reqXtime.getValue();
-
+        if (reqTarg != null) {
             // detailed processing
             switch (reqTarg.getRequestType()) {
                 case GET_TIME:
@@ -932,15 +927,29 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     break;
             }
 
-            // trip time millis, multiplied by cuz it is called in a loop!
-            double tripTime = endTime - beginTime;
-            // add to ping sum (as avg ping is displayed in window title)
-            pingSum += tripTime;
-            fulfillNum++;
+            if (fulfillNum < Game.REQUEST_FULFILLMENT_LENGTH) {
+                // end time is current timestamp (millis)
+                double endTime = System.currentTimeMillis();
+                // Affilate response time recevied with request time sent
+                // initial value -- gonna be replaced with request begin time
+                double beginTime = reqTarg.getTimestamp();
+
+                // trip time millis, multiplied by cuz it is called in a loop!
+                double tripTime = endTime - beginTime;
+                // add to ping sum (as avg ping is displayed in window title)
+                pingSum += tripTime;
+                fulfillNum++;
+            } else {
+                // calculate average ping for 8 requests
+                ping = pingSum / (double) fulfillNum;
+
+                // reset measurements
+                pingSum = 0.0;
+                fulfillNum = 0;
+            }
 
             // Reset waiting time (as response arrived to the request)
             waitReceiveTime = 0L;
-
             // Reset reconnected to connected
             connected = ConnectionStatus.CONNECTED;
         }
@@ -961,7 +970,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // clean long time unhandled requests
         // remove all X-requests which exceed max wait time of 45 sec
         synchronized (internRequestMutex) {
-            requests.removeIf(x -> GLFW.glfwGetTime() - x.getValue() > MAX_WAIT_RECEIVE_TIME);
+            requests.removeIf(x -> (System.currentTimeMillis() - x.getTimestamp()) / 1000.0 > MAX_WAIT_RECEIVE_TIME);
         }
 
         // if too much requests sent close connection with server
@@ -993,6 +1002,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
+        // display ping in game window title
+        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
+
+        // calculate interpolation factor
+        interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+
         waitReceiveTime += deltaTime;
     }
 
@@ -1007,10 +1022,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             try {
                 RequestIfc timeSyncReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 timeSyncReq.send(this, session);
-                double time = GLFW.glfwGetTime();
                 synchronized (internRequestMutex) {
                     if (requests.size() < MAX_SIZE) {
-                        requests.add(new Pair<>(timeSyncReq, time));
+                        requests.add(timeSyncReq);
                     }
                 }
             } catch (Exception ex) {
@@ -1028,10 +1042,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // Send a simple player info message with magic bytes prepended
                     final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
                     piReq.send(this, session);
-                    double time = GLFW.glfwGetTime();
                     synchronized (internRequestMutex) {
                         if (requests.size() < MAX_SIZE) {
-                            requests.add(new Pair<>(piReq, time));
+                            requests.add(piReq);
                         }
                     }
                 } catch (Exception ex) {
@@ -1045,10 +1058,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                         otherPlayerRequest.send(this, session);
-                        double time = GLFW.glfwGetTime();
                         synchronized (internRequestMutex) {
                             if (requests.size() < MAX_SIZE) {
-                                requests.add(new Pair<>(otherPlayerRequest, time));
+                                requests.add(otherPlayerRequest);
                             }
                         }
                     } catch (Exception ex) {
@@ -1064,17 +1076,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected()) {
             try {
                 waitAsync(deltaTime);
-                if (fulfillNum >= Game.REQUEST_FULFILLMENT_LENGTH) {
-                    // calculate average ping for 8 requests
-                    ping = pingSum / (double) fulfillNum;
-                    // display ping in game window title
-                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping * 1000.0));
-                    // reset measurements
-                    pingSum = 0.0;
-                    fulfillNum = 0;
-                    // calculate interpolation factor
-                    interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
-                }
             } catch (Exception ex) {
                 disconnectFromServer();
                 gameObject.clearEverything();
@@ -1093,7 +1094,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             gameObject.utilChunkOperations();
         }
 
-        if ((ups & (TPS_EIGHTH - 1)) == 0) {
+        if ((ups & (TPS_QUARTER - 1)) == 0) {
             // block optimizaiton (separate visible from not visible)
             gameObject.utilOptimization();
         }
@@ -1215,6 +1216,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
+            // Fixed time-step
             while (accumulator >= TICK_TIME) {
                 // Poll GLFW Events
                 GLFW.glfwPollEvents();
@@ -1225,12 +1227,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Update with fixed timestep (environment)
                 update(TICK_TIME);
 
-                // util operations (heavy CPU time)
-                util();
-
                 ups++;
                 accumulator -= TICK_TIME;
             }
+
+            // util operations (heavy CPU time)
+            util();
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
@@ -1562,10 +1564,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                double time = GLFW.glfwGetTime();
                 synchronized (internRequestMutex) {
                     if (requests.size() < MAX_SIZE) {
-                        requests.add(new Pair<>(goodByeRequest, time));
+                        requests.add(goodByeRequest);
                     }
 
                     // we have async receive enabled, wait to receive the last message
@@ -1616,10 +1617,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             String posStr = posInfo.toString();
             RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
             posReq.send(this, session);
-            double time = GLFW.glfwGetTime();
             synchronized (internRequestMutex) {
                 if (requests.size() < MAX_SIZE) {
-                    requests.add(new Pair<>(posReq, time));
+                    requests.add(posReq);
                 }
             }
         } catch (Exception ex) {
@@ -1687,10 +1687,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
             );
             request.send(this, session);
-            double time = GLFW.glfwGetTime();
             synchronized (internRequestMutex) {
                 if (requests.size() < MAX_SIZE) {
-                    requests.add(new Pair<>(request, time));
+                    requests.add(request);
                 }
             }
         } catch (Exception ex) {
@@ -1891,7 +1890,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         return playerServerPos;
     }
 
-    public IList<Pair<RequestIfc, Double>> getRequests() {
+    public IList<RequestIfc> getRequests() {
         return requests;
     }
 
