@@ -86,7 +86,7 @@ public class Intrface {
     private OptionsMenu randLvlMenu;
     private Menu loadLvlMenu;
 
-    private int numBlocks = 0;
+    private int numBlocks = 25000; // default is small level
 
     public static final String FONT_IMG = "font.png"; // modified JetBrains font
 
@@ -116,7 +116,8 @@ public class Intrface {
      */
     private void initSelf() {
         try {
-            final float menuScale = 2.0f;
+            final float primaryMenuScale = 2.0f;
+            final float secondaryMenuScale = 1.75f;
 
             AudioPlayer musicPlayer = gameObject.getMusicPlayer();
             AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
@@ -176,7 +177,7 @@ public class Intrface {
             mainMenuItems.add(new MenuItem(this, "OPTIONS", Menu.EditType.EditNoValue, null));
             mainMenuItems.add(new MenuItem(this, "CREDITS", Menu.EditType.EditNoValue, null));
             mainMenuItems.add(new MenuItem(this, "EXIT", Menu.EditType.EditNoValue, null));
-            mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
+            mainMenu = new Menu(this, "", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), primaryMenuScale) {
                 @Override
                 protected void leave() {
                     viewText.setEnabled(true);
@@ -232,7 +233,7 @@ public class Intrface {
             gameMenuItems.add(new MenuItem(this, "RESUME", Menu.EditType.EditNoValue, null));
             gameMenuItems.add(new MenuItem(this, "OPTIONS", Menu.EditType.EditNoValue, null));
             gameMenuItems.add(new MenuItem(this, "EXIT", Menu.EditType.EditNoValue, null));
-            gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), menuScale) {
+            gameMenu = new Menu(this, "", gameMenuItems, FONT_IMG, new Vector2f(0.0f, 0.35f), primaryMenuScale) {
                 @Override
                 protected void leave() {
 
@@ -311,7 +312,7 @@ public class Intrface {
                 loadLvlMenuPairs.add(new MenuItem(this, datFile, Menu.EditType.EditNoValue, null));
             }
 
-            loadLvlMenu = new Menu(this, "LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            loadLvlMenu = new Menu(this, "LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     editorMenu.open();
@@ -355,7 +356,7 @@ public class Intrface {
             randLvlMenuItems.add(new MenuItem(this, "HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
             randLvlMenuItems.add(new MenuItem(this, "SEED  ", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
 
-            randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            randLvlMenu = new OptionsMenu(this, "GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
@@ -393,7 +394,7 @@ public class Intrface {
                 }
 
             };
-            randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(menuScale);
+            randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(secondaryMenuScale);
 
             singlePlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
                 @Override
@@ -477,7 +478,7 @@ public class Intrface {
             optionsMenuPairs.add(new MenuItem(this, "MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
             optionsMenuPairs.add(new MenuItem(this, "SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(this, volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
 
-            optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            optionsMenu = new OptionsMenu(this, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     if (Game.getCurrentMode() == Mode.SINGLE_PLAYER || Game.getCurrentMode() == Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Mode.MULTIPLAYER_JOIN) {
@@ -587,7 +588,7 @@ public class Intrface {
             editorMenuPairs.add(new MenuItem(this, "SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
             editorMenuPairs.add(new MenuItem(this, "LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
 
-            editorMenu = new Menu(this, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            editorMenu = new Menu(this, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
@@ -631,7 +632,7 @@ public class Intrface {
             creditsMenuPairs.add(new MenuItem(this, "Music/FX", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
 
-            creditsMenu = new Menu(this, "CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            creditsMenu = new Menu(this, "CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
@@ -663,7 +664,7 @@ public class Intrface {
             singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
 
-            singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            singlPlayerMenu = new OptionsMenu(this, "SINGLE PLAYER", singlPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
@@ -671,39 +672,46 @@ public class Intrface {
 
                 @Override
                 protected void execute() {
-                    // set player character model & color
-                    if (singlPlayerMenu.selected == 1) {
-                        singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                    String s = this.items.get(this.getSelected()).keyText.content;
+                    switch (s) {
+                        case "CHARACTER MODEL":
+                            final Player player = gameObject.levelContainer.levelActors.player;
+                            String modelClazz = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
+                            player.setModelClazz(modelClazz);
+                            break;
+                        case "COLOR":
+                            singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
+                            gameObject.levelContainer.levelActors.player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
+                            break;
+                        case "LEVEL SIZE":
+                            isHugeLevel = false;
+                            String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
+                            switch (levelSize) {
+                                default:
+                                case "SMALL":
+                                    numBlocks = 25000;
+                                    break;
+                                case "MEDIUM":
+                                    numBlocks = 50000;
+                                    break;
+                                case "LARGE":
+                                    numBlocks = 100000;
+                                    break;
+                                case "HUGE":
+                                    numBlocks = 131070;
+                                    isHugeLevel = true;
+                                    break;
+                            }
+                            break;
+                        case "SEED":
+                            long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
+                            gameObject.randomLevelGenerator.setSeed(seedValue);
+                            break;
+                        case "PLAY":
+                            gameObject.randomLevelGenerator.setNumberOfBlocks(numBlocks);
+                            singlePlayerDialog.open(Intrface.this);
+                            break;
                     }
-                    if (singlPlayerMenu.selected == 4) {
-                        isHugeLevel = false;
-                        final Player player = gameObject.levelContainer.levelActors.player;
-                        String modelClazz = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
-                        player.setModelClazz(modelClazz);
-                        player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
-                        // set level size & seed
-                        String levelSize = singlPlayerMenu.items.get(2).menuValue.getCurrentValue().toString().toUpperCase();
-                        switch (levelSize) {
-                            default:
-                            case "SMALL":
-                                numBlocks = 25000;
-                                break;
-                            case "MEDIUM":
-                                numBlocks = 50000;
-                                break;
-                            case "LARGE":
-                                numBlocks = 100000;
-                                break;
-                            case "HUGE":
-                                numBlocks = 131070;
-                                isHugeLevel = true;
-                                break;
-                        }
-                        long seedValue = Long.parseLong(singlPlayerMenu.items.get(3).menuValue.getCurrentValue().toString());
-                        gameObject.randomLevelGenerator.setSeed(seedValue);
-                        singlePlayerDialog.open(Intrface.this);
-                    }
-
                 }
 
             };
@@ -718,7 +726,7 @@ public class Intrface {
             multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
             multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
-            multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     mainMenu.open();
@@ -764,7 +772,7 @@ public class Intrface {
             multiPlayerHostMenuItems.add(new MenuItem(this, "LOCAL IP", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getLocalIP(), MenuValue.Type.STRING)));
             multiPlayerHostMenuItems.add(new MenuItem(this, "PORT", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getPort(), MenuValue.Type.INT)));
             multiPlayerHostMenuItems.add(new MenuItem(this, "START", Menu.EditType.EditNoValue, null));
-            multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            multiPlayerHostMenu = new OptionsMenu(this, "HOST GAME", multiPlayerHostMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     multiPlayerMenu.open();
@@ -839,12 +847,17 @@ public class Intrface {
             };
             multiPlayerHostMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerHostMenu.items.get(5).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerHostMenu.items.forEach(item -> {
+                if (item.getMenuValue() != null) {
+                    item.getMenuValue().getValueText().setScale(0.75f);
+                }
+            });
             //------------------------------------------------------------------
             IList<MenuItem> multiPlayerJoinMenuItems = new GapList<>();
             multiPlayerJoinMenuItems.add(new MenuItem(this, "HOSTNAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.game.getServerHostName(), MenuValue.Type.STRING)));
             multiPlayerJoinMenuItems.add(new MenuItem(this, "PORT", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.game.getPort(), MenuValue.Type.INT)));
             multiPlayerJoinMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
-            multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
+            multiPlayerJoinMenu = new OptionsMenu(this, "JOIN GAME", multiPlayerJoinMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
                 @Override
                 protected void leave() {
                     multiPlayerMenu.open();
@@ -884,13 +897,18 @@ public class Intrface {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
 
-                            }, Intrface.this.getConsole().commandExecutor);
+                            }, gameObject.TaskExecutor);
                             break;
                     }
                 }
             };
             multiPlayerJoinMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerJoinMenu.items.get(2).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerJoinMenu.items.forEach(item -> {
+                if (item.getMenuValue() != null) {
+                    item.getMenuValue().getValueText().setScale(0.75f);
+                }
+            });
             //------------------------------------------------------------------
             DSLogger.reportDebug("Interface initialized.", null);
         } catch (Exception ex) {
@@ -1112,6 +1130,13 @@ public class Intrface {
         DSLogger.reportDebug("Interface buffers deleted.", null);
     }
 
+//    /**
+//     * Do stuff after initialization
+//     */
+//    public void postInit() {
+//        multiPlayerHostMenu.items.forEach(item -> item.getMenuValue().getValueText().setScale(0.75f));
+//        multiPlayerJoinMenu.items.forEach(item -> item.getMenuValue().getValueText().setScale(0.75f));
+//    }
     public void setNumBlocks(int numBlocks) {
         this.numBlocks = numBlocks;
     }

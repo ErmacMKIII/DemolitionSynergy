@@ -1285,7 +1285,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
 
                 if (response.getGuid().equals(getGuid())
-                        && response.getChecksum() == helloRequest.getChecksum() 
+                        && response.getChecksum() == helloRequest.getChecksum()
                         && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                     // Authenticated                    
                     DSLogger.reportInfo("Connected to server!", null);
