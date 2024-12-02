@@ -734,8 +734,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Init input (keyboard & mouse)
      */
     private void initCallbacks() {
-        GLFWErrorCallback.createPrint(System.err).set();
-
         defaultKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -854,7 +852,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isAsyncReceivedEnabled()) {
             // receive & process 
             ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc response) -> {
-                process(response);
+                // '*' - indicates everyone
+                // 'basically if this response is for me' - my (player) guid 
+                if (response.getGuid().equals("*") || response.getGuid().equals(getGuid())) {
+                    process(response);
+                }
             });
         }
     }
@@ -872,7 +874,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // this is issued kick from the server to the Guid of this machine
-        if (response.getData().equals(this.getGuid())) {
+        if (response.getData().equals("KICK")) {
             // disable async 'read point' in 'message received'
             asyncReceivedEnabled = false;
 
@@ -908,7 +910,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
                     break;
                 // get player info
-                case PLAYER_INFO:
+                case GET_PLAYER_INFO:
                     Gson gson = new Gson();
                     PlayerInfo[] infos = gson.fromJson((String) response.getData().toString(), PlayerInfo[].class);
                     gameObject.levelContainer.levelActors.configOtherPlayers(infos);
@@ -1040,7 +1042,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled()) {
                 try {
                     // Send a simple player info message with magic bytes prepended
-                    final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
+                    final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
                     piReq.send(this, session);
                     synchronized (internRequestMutex) {
                         if (requests.size() < MAX_SIZE) {
@@ -1282,7 +1284,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     throw new Exception("Server not responding!");
                 }
 
-                if (response.getChecksum() == helloRequest.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                if (response.getGuid().equals(getGuid())
+                        && response.getChecksum() == helloRequest.getChecksum() 
+                        && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                     // Authenticated                    
                     DSLogger.reportInfo("Connected to server!", null);
                     connected = ConnectionStatus.CONNECTED;
@@ -1526,7 +1530,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isConnected()) {
             try {
                 // Send a simple player info message with magic bytes prepended
-                final RequestIfc piReq = new Request(RequestIfc.RequestType.PLAYER_INFO, DSObject.DataType.VOID, null);
+                final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
                 piReq.send(this, session);
 
                 // Wait for response (assuming simple echo for demonstration)            
@@ -1683,7 +1687,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         try {
             // Send a simple 'goodbye' message with magic bytes prepended
             final Player player = gameObject.levelContainer.levelActors.player;
-            final RequestIfc request = new Request(RequestIfc.RequestType.PLAYER_INFO_UPDATE,
+            final RequestIfc request = new Request(RequestIfc.RequestType.SET_PLAYER_INFO,
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
             );
             request.send(this, session);

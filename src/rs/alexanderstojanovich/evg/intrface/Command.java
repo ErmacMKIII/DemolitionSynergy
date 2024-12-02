@@ -758,7 +758,7 @@ public class Command implements Callable<Object> {
                             Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                             gameObject.gameServer.clients.forEach(ci -> {
                                 try {
-                                    response.send(gameObject.gameServer, ci.session);
+                                    response.send("*", gameObject.gameServer, ci.session);
                                 } catch (IOException ex) {
                                     DSLogger.reportError("Unable to deliver chat message, ex:", ex);
                                 }

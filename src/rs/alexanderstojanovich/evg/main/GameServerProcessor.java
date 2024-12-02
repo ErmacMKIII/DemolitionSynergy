@@ -149,7 +149,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
         // Handle null data type (Possible & always erroneous)
         if (request.getDataType() == null) {
             Response response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
-            response.send(gameServer, session);
+            response.send(clientGuid, gameServer, session);
 
             return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Bad Request - Bad data type!");
         }
@@ -185,7 +185,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                     gameServer.clients.add(new ClientInfo(session, clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
                     gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 }
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case REGISTER:
                 switch (request.getDataType()) {
@@ -232,12 +232,12 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
                         break;
                 }
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case GOODBYE:
                 msg = "Goodbye, hope we will see you again!";
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
                 gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 if (clientGuid != null) {
@@ -248,12 +248,12 @@ public class GameServerProcessor extends IoHandlerAdapter {
             case GET_TIME:
                 gameTime = Game.gameTicks;
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.DOUBLE, gameTime);
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case PING:
                 msg = String.format("You pinged %s", gameServer);
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case GET_POS:
                 switch (request.getDataType()) {
@@ -312,7 +312,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
                         break;
                 }
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case SET_POS:
                 String jsonStr = request.getData().toString();
@@ -345,7 +345,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 int totalFragments = fullFragments + (remainingBytes > 0 ? 1 : 0);
                 final ResponseIfc downloadResponse = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.INT, totalFragments);
                 try {
-                    downloadResponse.send(gameServer, session);
+                    downloadResponse.send(clientGuid, gameServer, session);
                 } catch (Exception ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                     throw new RuntimeException("Failed to send download response!", ex);
@@ -358,7 +358,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
-                    response.send(gameServer, session);
+                    response.send(clientGuid, gameServer, session);
                     return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Invalid fragment number!");
                 }
 
@@ -376,7 +376,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
                 DSLogger.reportInfo(String.format("Sent %d fragment, %d total bytes written", n, fragmentSize), null);
                 break;
-            case PLAYER_INFO:
+            case GET_PLAYER_INFO:
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                 Gson gson = new Gson();
                 IList<PlayerInfo> playerInfos = new GapList<>();
@@ -386,7 +386,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 });
                 String obj = gson.toJson(playerInfos, IList.class);
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
             case SAY:
                 levelActors = gameServer.gameObject.levelContainer.levelActors;
@@ -402,7 +402,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
                 gameServer.clients.forEach(ci -> {
                     try {
-                        response.send(gameServer, ci.session);
+                        response.send("*", gameServer, ci.session);
                     } catch (Exception ex) {
                         DSLogger.reportError("Unable to deliver chat message, ex:", ex);
                     }
@@ -448,13 +448,13 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
                     LevelMapInfo mapInfo = new LevelMapInfo(gameServer.worldName, checksum.getValue(), sizeBytes);
                     response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, mapInfo.toString());
-                    response.send(gameServer, session);
+                    response.send(clientGuid, gameServer, session);
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                     return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Unable to read the level file!");
                 }
                 break;
-            case PLAYER_INFO_UPDATE:
+            case SET_PLAYER_INFO:
                 switch (request.getDataType()) {
                     case OBJECT: {
                         String jsonStro = request.getData().toString();
@@ -483,7 +483,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Bad Request - Bad data type!");
                         break;
                 }
-                response.send(gameServer, session);
+                response.send(clientGuid, gameServer, session);
                 break;
         }
 

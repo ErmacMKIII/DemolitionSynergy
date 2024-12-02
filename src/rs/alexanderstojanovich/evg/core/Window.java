@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
@@ -99,10 +100,52 @@ public class Window {
         init(width, height, title);
     }
 
+    /**
+     * Return GLFW Error
+     *
+     * @return glfw error
+     */
+    private String getLastGlfwError() {
+        // Allocate a PointerBuffer to hold the error description pointer
+        PointerBuffer description = MemoryUtil.memAllocPointer(1); // Single pointer is enough
+        // Get the error code and the description pointer
+        int errorCode = GLFW.glfwGetError(description);
+
+        String errorMessage;
+        if (errorCode != GLFW.GLFW_NO_ERROR) {
+            // Check if the description is available
+            if (description.get(0) != 0) {
+                errorMessage = MemoryUtil.memUTF8(description.get(0)); // Retrieve UTF-8 encoded error message
+            } else {
+                errorMessage = "No description available for error code: " + errorCode;
+            }
+        } else {
+            errorMessage = "No GLFW error reported.";
+        }
+
+        // Free the PointerBuffer memory
+        MemoryUtil.memFree(description);
+
+        return errorMessage;
+    }
+
+    /**
+     * Internal initialization of the window.
+     *
+     * @param width window width
+     * @param height window height
+     * @param title window title
+     */
     private void init(int width, int height, String title) {
+        // Set up an error callback to capture GLFW error messages
+        GLFWErrorCallback.createPrint(System.err).set();
+
         // initializing GLFW
         if (!GLFW.glfwInit()) {
-            DSLogger.reportFatalError("Unable to initialize GLFW!", null);
+            // Retrieve the last GLFW error message
+            String errorMsg = getLastGlfwError();
+
+            DSLogger.reportFatalError(String.format("Unable to initialize GLFW! - %s", errorMsg), null);
             throw new IllegalStateException("Unable to initialize GLFW!");
         }
         // setting windowID hints
@@ -115,7 +158,10 @@ public class Window {
         // passing NULL instead of monitor to avoid full screen!
         windowID = GLFW.glfwCreateWindow(width, height, title, 0, 0);
         if (windowID == 0) {
-            DSLogger.reportFatalError("Failed to create the GLFW window!", null);
+            // Retrieve the last GLFW error message
+            String errorMsg = getLastGlfwError();
+
+            DSLogger.reportFatalError(String.format("Failed to create the GLFW window! - %s", errorMsg), null);
             throw new RuntimeException("Failed to create the GLFW window!");
         }
         // setting the icon        

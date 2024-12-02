@@ -30,7 +30,7 @@ public class GlobalColors { // some of the defined colors
 
     public static enum ColorName {
         WHITE, RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW, GRAY,
-        DARK_RED, DARK_GREEN, DARK_BLUE, DARK_CYAN, DARK_MAGENTA, DARK_YELLOW;
+        DARK_RED, DARK_GREEN, DARK_BLUE, DARK_CYAN, DARK_MAGENTA, DARK_YELLOW, CUSTOM;
 
         public static String[] names() {
             return Arrays.toString(ColorName.values()).replaceAll("^.|.$", "").split(", ");
@@ -141,5 +141,15 @@ public class GlobalColors { // some of the defined colors
 
     public static final Vector4f getRGBAColorOrDefault(ColorName colorName) {
         return NAME_TO_COLOR_RGBA.getOrDefault(colorName, WHITE_RGBA);
+    }
+
+    public static final ColorName getColorName(Vector3f color) {
+        for (Map.Entry<ColorName, Vector3f> entry : NAME_TO_COLOR_RGB.entrySet()) {
+            if (entry.getValue().equals(color)) {
+                return entry.getKey();
+            }
+        }
+
+        return ColorName.CUSTOM;
     }
 }

@@ -35,6 +35,7 @@ import static rs.alexanderstojanovich.evg.net.DSObject.DataType.VOID;
 
 public class Response implements ResponseIfc {
 
+    protected String guid = "*";
     protected byte[] content;
     protected ResponseStatus responseStatus;
     protected DataType dataType;
@@ -96,12 +97,16 @@ public class Response implements ResponseIfc {
         try (DataOutputStream out = new DataOutputStream(byteStream)) {
             // Write magic bytes
             out.write(ResponseIfc.MAGIC_BYTES);
+
+            // Write sender
+            out.write(guid.getBytes(StandardCharsets.UTF_8));
+
             // Write machine type, object type, status type, and data type
-            out.writeInt(machine.getMachineType().ordinal());
-            out.writeInt(getObjectType().ordinal());
-            out.writeInt(responseStatus.ordinal());
-            out.writeInt(dataType.ordinal());
-            out.writeInt(machine.getVersion());
+            out.writeByte(machine.getMachineType().ordinal());
+            out.writeByte(getObjectType().ordinal());
+            out.writeByte(responseStatus.ordinal());
+            out.writeByte(dataType.ordinal());
+            out.writeByte(machine.getVersion());
 
             if (dataType != DataType.VOID) {
                 switch (dataType) {
@@ -165,11 +170,16 @@ public class Response implements ResponseIfc {
                 return Response.INVALID; // Magic bytes mismatch
             }
 
+            // Read guid of recipient
+            byte[] senderBytes = new byte[RequestIfc.GUID_LENGTH];
+            in.readFully(senderBytes);
+            guid = new String(senderBytes);
+
             // Read machine type, object type, status type, and data type
-            int machineTypeOrdinal = in.readInt();
-            int objTypeOrdinal = in.readInt();
-            int statusTypeOrdinal = in.readInt();
-            int dataTypeOrdinal = in.readInt();
+            int machineTypeOrdinal = in.readByte();
+            int objTypeOrdinal = in.readByte();
+            int statusTypeOrdinal = in.readByte();
+            int dataTypeOrdinal = in.readByte();
 
             // Verify machine type, object type, status type, and data type
             machineType = DSMachine.MachineType.values()[machineTypeOrdinal];
@@ -177,7 +187,7 @@ public class Response implements ResponseIfc {
             responseStatus = ResponseStatus.values()[statusTypeOrdinal];
             dataType = DataType.values()[dataTypeOrdinal];
 
-            version = in.readInt();
+            version = in.readByte();
 
             // Read data based on data type
             switch (dataType) {
@@ -227,7 +237,8 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public void send(GameServer server, IoSession session) throws IOException {
+    public void send(String guid, GameServer server, IoSession session) throws IOException {
+        this.guid = guid;
         serialize(server);
         // storing content with checksum
         final int capacity = content.length + Long.BYTES;
@@ -253,6 +264,11 @@ public class Response implements ResponseIfc {
     @Override
     public long getChecksum() {
         return checksum;
+    }
+
+    @Override
+    public String getGuid() {
+        return guid;
     }
 
 }

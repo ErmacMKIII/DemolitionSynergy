@@ -658,7 +658,7 @@ public class Intrface {
 
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
             singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
             singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
@@ -715,7 +715,7 @@ public class Intrface {
             IList<MenuItem> multiPlayerMenuItems = new GapList<>();
             multiPlayerMenuItems.add(new MenuItem(this, "PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
             multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.ColorName.WHITE.name())));
+            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
             multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), menuScale) {
