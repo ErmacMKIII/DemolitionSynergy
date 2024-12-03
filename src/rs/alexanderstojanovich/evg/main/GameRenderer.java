@@ -106,7 +106,6 @@ public class GameRenderer extends Thread implements Executor {
                 break;
             }
 
-            // also avoid rendering when game is updating
             numOfPasses = 0; // Start with PASS0
             while (couldRender()) {
                 // render the scene

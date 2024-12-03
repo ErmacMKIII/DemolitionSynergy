@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.FutureTask;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -984,24 +985,27 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // if waiting time is less or equal than 45 sec
         if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
-            // attempt to reconnected
-            if (!reconnect()) {
-                this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
-                DSLogger.reportError("Connection with the server lost!", null);
-                this.disconnectFromServer();
-                this.gameObject.clearEverything();
-            } else {
-                if (connected == ConnectionStatus.RECONNECTED) {
-                    // Reset reconnected to connected
-                    connected = ConnectionStatus.CONNECTED;
+            // don't block main thread if game is unresponsive
+            CompletableFuture.runAsync(() -> {
+                // attempt to reconnected
+                if (!reconnect()) {
+                    this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
+                    DSLogger.reportError("Connection with the server lost!", null);
+                    this.disconnectFromServer();
+                    this.gameObject.clearEverything();
+                } else {
+                    if (connected == ConnectionStatus.RECONNECTED) {
+                        // Reset reconnected to connected
+                        connected = ConnectionStatus.CONNECTED;
 
-                    // enable async received (player connected)
-                    asyncReceivedEnabled = true;
+                        // enable async received (player connected)
+                        asyncReceivedEnabled = true;
+                    }
+
+                    // success reset wait receive time
+                    waitReceiveTime = 0L;
                 }
-
-                // success reset wait receive time
-                waitReceiveTime = 0L;
-            }
+            }, gameObject.TaskExecutor);
         }
 
         // display ping in game window title

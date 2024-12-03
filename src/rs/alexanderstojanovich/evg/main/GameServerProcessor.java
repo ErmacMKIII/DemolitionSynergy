@@ -506,6 +506,8 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 gameServer.gameObject.intrface.getConsole().write(msg, Command.Status.FAILED);
                 break;
             case CLIENT_ERROR:
+                // kick violators
+                GameServer.kickPlayer(gameServer, procResult.guid);
                 gameServer.assertTstFailure(procResult.hostname, procResult.guid);
                 msg = String.format("Client %s %s %s error!", procResult.hostname, procResult.guid, procResult.message);
                 DSLogger.reportError(msg, null);
