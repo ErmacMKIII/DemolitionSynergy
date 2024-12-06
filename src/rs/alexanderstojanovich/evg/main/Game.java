@@ -895,6 +895,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (reqTarg != null) {
             // detailed processing
             switch (reqTarg.getRequestType()) {
+                case PING:
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    break;
                 case GET_TIME:
                     Game.gameTicks = (double) response.getData();
                     break;
@@ -1583,8 +1587,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     } else {
                         // we don't have async receive enabled write the 'goodbye' response message
                         ResponseIfc response = ResponseIfc.receive(this, session);
-                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                        if (response.getGuid().equals(getGuid())) {
+                            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                            gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
+                        }
                     }
                 }
 
@@ -1699,6 +1705,42 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (requests.size() < MAX_SIZE) {
                     requests.add(request);
                 }
+            }
+        } catch (Exception ex) {
+            DSLogger.reportError("Network error(s) occurred!", ex);
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Send request to ping the (remote) server
+     */
+    public void sendPingRequest() {
+        try {
+            // Send a simple 'goodbye' message with magic bytes prepended
+            final RequestIfc request = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
+            request.send(this, session);
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(request);
+                }
+
+                // we have async receive enabled, wait to receive the last message
+                if (!asyncReceivedEnabled) {
+                    // we don't have async receive enabled write the 'goodbye' response message
+                    ResponseIfc response = ResponseIfc.receive(this, session);
+
+                    if (response == Response.INVALID) {
+                        connected = ConnectionStatus.NOT_CONNECTED;
+                        throw new Exception("Server not responding (ping resulted in timeout)!");
+                    }
+
+                    if (response.getGuid().equals(getGuid())) {
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
+                    }
+                }
+
             }
         } catch (Exception ex) {
             DSLogger.reportError("Network error(s) occurred!", ex);

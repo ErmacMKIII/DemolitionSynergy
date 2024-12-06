@@ -251,7 +251,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 response.send(clientGuid, gameServer, session);
                 break;
             case PING:
-                msg = String.format("You pinged %s", gameServer);
+                msg = String.format("You pinged %s", gameServer.worldName);
                 response = new Response(request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(clientGuid, gameServer, session);
                 break;

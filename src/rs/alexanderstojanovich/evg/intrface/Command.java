@@ -98,15 +98,43 @@ public class Command implements Callable<Object> {
         ERROR
     };
 
+    /**
+     * No operation command.
+     */
     protected Target target = Target.NOP;
 
+    /**
+     * Command mode 'GET' gets the value, command mode 'SET' set the value
+     */
     public static enum Mode {
         GET, SET
     };
     protected Mode mode = Mode.GET;
 
+    /**
+     * Command status (console light bulb color)
+     */
     public static enum Status {
-        INIT, PENDING, SUCCEEDED, WARNING, FAILED
+        /**
+         * Command initial status
+         */
+        INIT,
+        /**
+         * Command pending execution finished
+         */
+        PENDING,
+        /**
+         * Command finished execution successfully
+         */
+        SUCCEEDED,
+        /**
+         * Command execution resulted in warning
+         */
+        WARNING,
+        /**
+         * Command execution resulted in failure
+         */
+        FAILED
     }
 
     protected Object result = null;
