@@ -21,7 +21,6 @@ import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
-import rs.alexanderstojanovich.evg.chunk.Tuple;
 import rs.alexanderstojanovich.evg.core.Camera;
 import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
@@ -89,9 +88,6 @@ public class Editor {
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
 
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
-        final int mask = 1 << face;
-
         final float stepAmount = 0.125f;
         Vector3f temp = new Vector3f();
         // iterater through faces
@@ -133,9 +129,6 @@ public class Editor {
         deselect();
         Vector3f cameraPos = lc.levelActors.mainCamera().getPos();
         Vector3f cameraFront = lc.levelActors.mainCamera().getFront();
-
-        final int face = Block.getRayTraceSingleFaceFast(cameraFront, 45f);
-        final int mask = 1 << face;
 
         final float stepAmount = 0.125f;
         Vector3f temp = new Vector3f();

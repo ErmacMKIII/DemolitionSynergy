@@ -66,8 +66,10 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    public static float MIN_AMOUNT = 0.0f;
-    public static float MAX_AMOUNT = 16.0f;
+    public static float MIN_AMOUNT = 0f;
+    public static float MAX_AMOUNT = 8f;
+
+    public static float PRECISION = 128f;
 
     public static enum LevelMapFormat {
         /**
@@ -134,6 +136,7 @@ public class LevelContainer implements GravityEnviroment {
 
     protected float fallVelocity = 0.0f;
     protected float jumpVelocity = 0.0f;
+    protected float thrustVelocity = 0.0f;
 
     public final Weapons weapons;
 
@@ -494,8 +497,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Adjust player position if successfully spawned
         if (playerSpawned) {
-            player.ascend(0.0f);
-            player.descend(0.0f);
+            player.jumpY(0.0f); // Some bad workaround
             gravityOn = true; // Re-enable gravity
         } else {
             // Handle case where no valid spawn location was found (optional)
@@ -1067,8 +1069,7 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = predictable.getPredictor();
 
         // Round the predictor's coordinates to align with the grid.
@@ -1110,8 +1111,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f observerPos = observer.getPos();
 
         // Round the observer's coordinates to align with the grid.
@@ -1156,8 +1156,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1207,8 +1206,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1249,25 +1247,24 @@ public class LevelContainer implements GravityEnviroment {
      * Applies gravity to the player, making them fall downwards if not
      * supported below.
      *
+     * @param critter critter affected by gravity
      * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player is falling, {@code false} otherwise.
      */
     @Override
-    public boolean gravityDo(float deltaTime) {
+    public boolean gravityDo(Critter critter, float deltaTime) {
         if (working) {
             return false;
         }
 
         boolean collision = false;
-        final int precision = 128; // Increased precision for finer collision checks
-        final float stepAmount = deltaTime / (float) precision; // Smaller step amount for higher precision
-
         // Initial predictor position
         final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             levelActors.player.movePredictorDown(tstHeight);
 
@@ -1278,7 +1275,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, levelActors.player);
+                    collision = checkCollisionInternal(adjPosAlign, levelActors.player);
                     if (collision) {
                         fallVelocity = 0.0f;
                         break SCAN;
@@ -1293,9 +1290,11 @@ public class LevelContainer implements GravityEnviroment {
         // If no collision, apply gravity and move the player
         if (!collision) {
             float deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            // Adjust height for actor in fluid (water)
             if (actorInFluid) {
-                deltaHeight -= calculateFluidThrust(deltaTime);
+                deltaHeight *= 0.25f;
             }
+
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.dropY(deltaHeight);
 
@@ -1317,26 +1316,26 @@ public class LevelContainer implements GravityEnviroment {
         return !collision;
     }
 
-    /**
-     * Calculates the thrust experienced by the player in a fluid.
-     *
-     * @param deltaTime The time elapsed since the last handleInput.
-     * @return The calculated thrust.
-     */
-    private float calculateFluidThrust(float deltaTime) {
-        final float thrustArea = 4.2f;
-        final float thrustVelocity = deltaTime * 2.1f;
-
-        // FORCE = DENS * AREA * VELOCITY * VELOCITY
-        final float thrustForce = WATER_DENSITY * thrustArea * thrustVelocity * thrustVelocity;
-        final float mass = 75f;
-        final float accel = thrustForce / mass;
-
-        // Calculate the thrust height
-        final float resh = accel * deltaTime * deltaTime / 2.0f;
-
-        return resh;
-    }
+//    /**
+//     * Calculates the thrust experienced by the player in a fluid.
+//     *
+//     * @param deltaTime The time elapsed since the last handleInput.
+//     * @return The calculated thrust.
+//     */
+//    private float calculateFluidThrust(float deltaTime) {
+//        final float thrustArea = 4.41f;
+//        thrustVelocity = GRAVITY_CONSTANT * deltaTime;
+//
+//        // FORCE = DENS * AREA * VELOCITY * VELOCITY
+//        final float thrustForce = WATER_DENSITY * thrustArea * thrustVelocity * thrustVelocity;
+//        final float mass = 75f;
+//        final float accel = thrustForce / mass;
+//
+//        // Calculate the thrust height
+//        final float resh = accel * deltaTime * deltaTime / 2.0f;
+//
+//        return resh;
+//    }
 
     /**
      * Makes the player jump upwards.
@@ -1358,22 +1357,14 @@ public class LevelContainer implements GravityEnviroment {
             jumpVelocity = jumpStrength;
         }
 
-        // Adjust jump velocity if the player is in fluid
-        if (actorInFluid) {
-            jumpVelocity += calculateFluidThrust(deltaTime);
-        }
-
-        // Increased precision for finer collision checks
-        final int precision = 128;
-        final float stepAmount = deltaTime / (float) precision;
-
         // Initial predictor position
-        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
         boolean collision = false;
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorUp(tstHeight);
 
@@ -1384,7 +1375,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, critter);
+                    collision = checkCollisionInternal(adjPosAlign, critter);
                     if (collision) {
                         jumpVelocity = 0.0f;
                         break SCAN;
@@ -1401,6 +1392,11 @@ public class LevelContainer implements GravityEnviroment {
         // If no collision, apply jump and move the player
         if (!collision) {
             float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            // Adjust height for actor in fluid (water)
+            if (actorInFluid) {
+                deltaHeight *= 0.25f;
+            }
+
             critter.movePredictorYUp(deltaHeight);
             critter.jumpY(deltaHeight);
 
@@ -1428,17 +1424,15 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return false;
         }
-        // Increased precision for finer collision checks
-        final int precision = 128;
-        final float stepAmount = deltaTime / (float) precision;
 
         // Initial predictor position
-        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
         boolean collision = false;
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = crouchStrength * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorDown(tstHeight);
 
@@ -1449,7 +1443,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, critter);
+                    collision = checkCollisionInternal(adjPosAlign, critter);
                     if (collision) {
                         break SCAN;
                     }
@@ -1478,20 +1472,21 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Internal check collision for critter.
+     * /**
+     * Internal check for collision with environment or other objects.
      *
-     * @param blkPos blk position
-     * @param critter critter submit for test
-     * @return collision condition
+     * @param blkPos The block position to check.
+     * @param critter The critter to test against.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    private static boolean checkCollision(Vector3f blkPos, Critter critter) {
+    private static boolean checkCollisionInternal(Vector3f blkPos, Critter critter) {
         return Block.containsInsideEqually(blkPos, 2.1f, 2.1f, 2.1f, critter.getPredictor())
                 || Model.intersectsEqually(blkPos, 2.1f, 2.1f, 2.1f,
                         critter.getPredictor(), 1.05f * critter.body.getWidth(),
                         1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth())
                 || !SKYBOX.containsInsideExactly(critter.getPredictor())
-                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
-                        critter.body.getHeight(), critter.body.getDepth());
+                || !SKYBOX.intersectsExactly(critter.getPredictor(),
+                        critter.body.getWidth(), critter.body.getHeight(), critter.body.getDepth());
     }
 
     /**
@@ -1813,6 +1808,10 @@ public class LevelContainer implements GravityEnviroment {
 
     public Weapons getWeapons() {
         return weapons;
+    }
+
+    public float getThrustVelocity() {
+        return thrustVelocity;
     }
 
 }

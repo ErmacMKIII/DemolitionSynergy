@@ -308,7 +308,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             // if single player gravity is affected or if multiplayer and player is registered
             if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
                     || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
-                boolean underGravity = levelContainer.gravityDo(deltaTime);
+                boolean underGravity = levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
 
@@ -416,6 +416,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             if (!isWorking()) {
                 this.prepare();
+
                 // Render Effects
                 if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
                     waterRenderer.render();
@@ -445,6 +446,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Pull optimized tuples to working tuples in Block Environment.
      */
+    @Deprecated
     public void pull() {
         if (isWorking()) {
             return;
@@ -455,6 +457,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Push working to fullyOptimized tuples tuples in Block Environment.
      */
+    @Deprecated
     public void push() {
         if (isWorking()) {
             return;
@@ -466,6 +469,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Swap working tuples & optimizing tuples in Block Environment. Zero cost
      * operation. Doesn't require synchronized block.
      */
+    @Deprecated
     public void swap() {
         if (isWorking() || levelContainer.blockEnvironment.isOptimizing()) {
             return;
@@ -509,7 +513,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void prepare() {
-        if (!isWorking() && GameRenderer.isFirstFrame()) {
+        if (!isWorking() && !GameRenderer.isLastFrame()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.prepare();
@@ -524,7 +528,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        if (!isWorking() && GameRenderer.isLastFrame()) {
+        if (!isWorking() && !GameRenderer.isFirstFrame()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.animate();

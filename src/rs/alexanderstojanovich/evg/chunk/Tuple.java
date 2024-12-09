@@ -31,6 +31,7 @@ import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -352,7 +353,7 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList.filter(blk -> !blk.isSolid())) {
+        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0)) {
             block.getMeshes().getFirst().triangSwap();
         }
 

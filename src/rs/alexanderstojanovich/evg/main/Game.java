@@ -56,6 +56,7 @@ import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -67,6 +68,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     private static final Configuration config = Configuration.getInstance();
 
+    /**
+     * Ticks per second. Game Constant.
+     */
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
     public static final int TPS_HALF = 40; // HALF OF TPS
     public static final int TPS_QUARTER = 20; // QUARTER OF TPS ~ 250 ms
@@ -77,6 +81,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final int TPS_TWO = 2; // Two ticks ~ 25 ms (Used for Chunk Optimization) ~ default
     public static final int TICKS_PER_UPDATE = config.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
 
+    /**
+     * Time of the single ticks (constant). In seconds.
+     */
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
     public static final float AMOUNT = 4.5f;
@@ -1142,12 +1149,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         }
 
-                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
-                        if (keys[GLFW.GLFW_KEY_SPACE]) {
-                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
-                            jumpPerformed &= !LevelContainer.isActorInFluid();
-                        }
+                        // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
+                        jumpPerformed &= !((LevelContainer.isActorInFluid() && keys[GLFW.GLFW_KEY_SPACE]) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
                         crouchPerformed &= (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]);
                         break;
                     case MULTIPLAYER_HOST:
@@ -1160,11 +1163,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
-                        if (keys[GLFW.GLFW_KEY_SPACE]) {
-                            jumpPerformed &= LevelContainer.isActorInFluid() ^ gameObject.levelContainer.levelActors.player.isUnderGravity();
-                        } else if (!gameObject.levelContainer.levelActors.player.isUnderGravity()) {
-                            jumpPerformed &= !LevelContainer.isActorInFluid();
-                        }
+                        jumpPerformed &= !((LevelContainer.isActorInFluid() && keys[GLFW.GLFW_KEY_SPACE]) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
                         crouchPerformed &= (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]);
                         break;
                 }
@@ -1971,6 +1970,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public double getPing() {
         return ping;
+    }
+
+    /**
+     * Get varying game ticks time based on the current accumulator.
+     *
+     * @return varying game ticks
+     */
+    public static double getCurrentTicks() {
+        // Calculate varying ticks directly proportional to the accumulator
+        return Math.floor(Game.TPS * Game.accumulator + 1.5); // Bias correction 
     }
 
 }
