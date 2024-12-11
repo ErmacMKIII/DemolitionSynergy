@@ -33,7 +33,6 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
-import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -221,7 +220,7 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() 
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid()
                 && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()))) {
             tuple.prepare(camFront, cameraInFluid);
         }
@@ -415,6 +414,14 @@ public class BlockEnvironment {
 
     public IList<String> getModifiedWorkingTupleNames() {
         return modifiedWorkingTupleNames;
+    }
+
+    public Map<String, Map<Integer, Tuple>> getTupleLookup() {
+        return tupleLookup;
+    }
+
+    public IList<IList<Integer>> getSometIList() {
+        return sometIList;
     }
 
 }

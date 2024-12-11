@@ -31,8 +31,8 @@ import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.models.Block;
+import static rs.alexanderstojanovich.evg.models.Block.getRayTraceMultiFaceFast;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -353,11 +353,14 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0)) {
-            block.getMeshes().getFirst().triangSwap();
+        IList<Block> filterBlks = blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0);
+        for (Block blks : filterBlks) {
+            blks.getMeshes().getFirst().triangSwap();
         }
 
-        subBufferVertices();
+        if (!filterBlks.isEmpty()) {
+            subBufferVertices();
+        }
     }
 
     @Override
@@ -373,18 +376,36 @@ public class Tuple extends Series {
         subBufferVertices();
     }
 
+    /**
+     * Heavy operation to make underwater ambient if camera in fluid
+     *
+     * @param camFront camera front vec3
+     * @param cameraInFluid boolean condition if camera is in fluid (water)
+     */
     public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering                      
         if (!buffered || blockList.isEmpty() || isSolid()) {
             return;
         }
 
-        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
-            final float degrees = (cameraInFluid ^ block.isVerticesReversed()) ? 0f : 45f;
-            // Improved one
-            block.reverseFaceVertexOrder(camFront, degrees);
+        // check if globally vertices are reversed
+        boolean verticesReversedGlobl = !blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && blk.isVerticesReversed()).isEmpty();
+        // if not in water is always 45f and 0f in water
+        final float degrees = (cameraInFluid || verticesReversedGlobl) ? 0f : 45f;
+        // put here (out from loop) to reduce overhead, gives visible faces of blocks
+        IList<Integer> faces = getRayTraceMultiFaceFast(camFront, degrees);
+
+        if (!faces.isEmpty()) {
+            IList<Block> filterBlks = blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed());
+            for (Block blk : filterBlks) {
+                // Improved one                
+                blk.reverseFaceVertexOrder(camFront, degrees, faces);
+            }
+
+            if (!filterBlks.isEmpty()) {
+                subBufferVertices();
+            }
         }
 
-        subBufferVertices();
     }
 
     /**

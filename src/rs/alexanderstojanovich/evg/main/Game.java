@@ -56,7 +56,6 @@ import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -818,13 +817,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 float xposGL = (float) (xpos / gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
                 float yposGL = (float) (0.5f - ypos / gameObject.WINDOW.getHeight()) * 2.0f;
 
-                xoffset = xposGL - lastX;
-                yoffset = yposGL - lastY;
+                if (accumulator >= TICK_TIME) {
+                    xoffset = xposGL - lastX;
+                    yoffset = yposGL - lastY;
+
+                    moveMouse = true;
+                }
 
                 lastX = (float) xposGL;
                 lastY = (float) yposGL;
-
-                moveMouse = true;
             }
         };
         GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
@@ -1979,7 +1980,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static double getCurrentTicks() {
         // Calculate varying ticks directly proportional to the accumulator
-        return Math.floor(Game.TPS * Game.accumulator + 1.5); // Bias correction 
+        return Math.floor(Game.TPS * Game.accumulator + 2.0); // Bias correction 
     }
 
 }

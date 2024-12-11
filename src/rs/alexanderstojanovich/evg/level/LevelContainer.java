@@ -1336,7 +1336,6 @@ public class LevelContainer implements GravityEnviroment {
 //
 //        return resh;
 //    }
-
     /**
      * Makes the player jump upwards.
      *
