@@ -17,9 +17,15 @@
 package rs.alexanderstojanovich.evg.level;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -29,6 +35,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
+ * Class responsible for Random Level generation.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -52,6 +59,7 @@ public class RandomLevelGenerator {
 
     private final LevelContainer levelContainer;
 
+    public final int numberOfCores = Runtime.getRuntime().availableProcessors();
     private int numberOfBlocks = 0;
 
     // MAX NUMER OF LIGHTS MUST NOT REACH 255 (+1 Reserved for player)
@@ -288,8 +296,111 @@ public class RandomLevelGenerator {
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
     //---------------------------------------------------------------------------------------------------------------------------
+    /**
+     * Noise Task result
+     */
+    protected class BlockResult {
+
+        public final int solidBlocks;
+        public final int fluidBlocks;
+        public final int genBlocks;
+
+        public BlockResult(int solidBlocks, int fluidBlocks, int genBlocks) {
+            this.solidBlocks = solidBlocks;
+            this.fluidBlocks = fluidBlocks;
+            this.genBlocks = genBlocks;
+        }
+    }
+
+    /**
+     * NoiseTask: Responsible for generating one partition.
+     */
+    protected class NoiseTask implements Callable<BlockResult> {
+
+        private final int x, z;
+        private final int yBottom, yMid, yTop;
+        private final int solidBlocks, fluidBlocks, totalAmount;
+        private final boolean boundary;
+
+        public NoiseTask(int x, int z, int yBottom, int yMid, int yTop, int solidBlocks, int fluidBlocks, int totalAmount, boolean boundary) {
+            this.x = x;
+            this.z = z;
+            this.yBottom = yBottom;
+            this.yMid = yMid;
+            this.yTop = yTop;
+            this.solidBlocks = solidBlocks;
+            this.fluidBlocks = fluidBlocks;
+            this.totalAmount = totalAmount;
+            this.boundary = boundary;
+        }
+
+        @Override
+        public BlockResult call() throws Exception {
+            int remSolidBlks = this.solidBlocks;
+            int remFluidBlks = this.fluidBlocks;
+
+            int genBlks = 0;
+            int genSolids = 0;
+            int genFluids = 0;
+
+            // solid & fluid generating
+            noiseInner:
+            for (int y = yBottom; y <= yTop; y += 2) {
+                Vector3f pos = new Vector3f(x, y, z);
+                if (repeatCondition(pos)) {
+                    continue;
+                }
+
+                if (remSolidBlks > 0 && y >= yMid && boundary) {
+                    // color chance
+                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                    if (random.nextFloat() >= 0.95f) {
+                        Vector3f tempc = new Vector3f();
+                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                    }
+
+                    String tex = "stone"; // make "stone" terrain
+
+                    if (random.nextFloat() >= 0.95f) {
+                        tex = randomSolidTexture(random.nextFloat() <= 0.5f);
+                    }
+
+                    Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
+                    levelContainer.chunks.addBlock(solidBlock);
+                    levelContainer.incProgress(100.0f / (float) totalAmount);
+                    remSolidBlks--;
+                    genBlks++;
+                } else if (remFluidBlks > 0 && y < yMid && !boundary) {
+                    // color chance
+                    Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+                    if (random.nextFloat() >= 0.95f) {
+                        Vector3f tempc = new Vector3f();
+                        color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
+                    }
+
+                    String tex = "water"; // make water terrain
+
+                    Block fluidBlock = new Block(tex, pos, new Vector4f(color, 0.5f), false);
+                    levelContainer.chunks.addBlock(fluidBlock);
+                    levelContainer.incProgress(100.0f / (float) totalAmount);
+                    remFluidBlks--;
+                    genBlks++;
+                }
+
+                if (remSolidBlks == 0 && remFluidBlks == 0) {
+                    break; // noiseInner;
+                }
+            }
+
+            return new BlockResult(genSolids, genFluids, genBlks);
+        }
+    }
+
+    /**
+     * Generates blocks by noise concurrently in partitions.
+     */
     private int generateByNoise(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
-        int genBlks = 0; // holds result
+        int genBlks = 0; // Total generated blocks
 
         final int numOctaves = 16;
         final float scale = 0.007f;
@@ -308,74 +419,59 @@ public class RandomLevelGenerator {
             amplitude *= persistence;
         }
 
-        noiseMain:
-        for (int x = posMin; x <= posMax; x += 2) {
-            for (int z = posMin; z <= posMax; z += 2) {
-                if (solidBlocks == 0 && fluidBlocks == 0) {
-                    break noiseMain;
-                }
+        ExecutorService exec = Executors.newFixedThreadPool(numberOfCores);
+        IList<Future<BlockResult>> tasks = new GapList<>();
 
-                boolean boundary = (x == posMin || x == posMax || z == posMin || z == posMax);
-
-                int yMid = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, hMin, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
-                int yTop = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, yMid, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
-                int yBottom = Math.round(MathUtils.noise2(numOctaves, x, z, 0.5f, hMin, yMid, frequencies, amplitudes)) & 0xFFFFFFFE;
-                int yHalf = (yTop - yBottom) >> 1;
-
-                // solid & fluid generating
-                noiseInner:
-                for (int y = yBottom; y <= yTop; y += 2) {
-                    Vector3f pos = new Vector3f(x, y, z);
-                    if (repeatCondition(pos)) {
-                        continue;
-                    }
-
-                    if (solidBlocks > 0 && y >= yHalf && boundary) {
-                        // color chance
-                        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                        if (random.nextFloat() >= 0.95f) {
-                            Vector3f tempc = new Vector3f();
-                            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
-                        }
-
-                        String tex = "stone"; // make "stone" terrain
-
-                        if (random.nextFloat() >= 0.95f) {
-                            tex = randomSolidTexture(random.nextFloat() <= 0.5f);
-                        }
-
-                        Block solidBlock = new Block(tex, pos, new Vector4f(color, 1.0f), true);
-                        levelContainer.chunks.addBlock(solidBlock);
-                        levelContainer.incProgress(100.0f / (float) totalAmount);
-                        solidBlocks--;
-                        genBlks++;
-                    } else if (fluidBlocks > 0 && y < yHalf && !boundary) {
-                        // color chance
-                        Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
-                        if (random.nextFloat() >= 0.95f) {
-                            Vector3f tempc = new Vector3f();
-                            color = color.mul(random.nextFloat(), random.nextFloat(), random.nextFloat(), tempc);
-                        }
-
-                        String tex = "water"; // make water terrain
-
-                        Block fluidBlock = new Block(tex, pos, new Vector4f(color, 0.5f), false);
-                        levelContainer.chunks.addBlock(fluidBlock);
-                        levelContainer.incProgress(100.0f / (float) totalAmount);
-                        fluidBlocks--;
-                        genBlks++;
-                    }
-
+        try {
+            // Loop through grid and assign tasks
+            noiseMain:
+            for (int x = posMin; x <= posMax; x += 2) {
+                for (int z = posMin; z <= posMax; z += 2) {
                     if (solidBlocks == 0 && fluidBlocks == 0) {
-                        break;// noiseInner;
+                        break noiseMain;
                     }
+
+                    boolean boundary = (x == posMin || x == posMax || z == posMin || z == posMax);
+
+                    // Calculate y ranges using noise
+                    int yMid = Math.round(MathUtils.noise2(numOctaves, x, z, persistence, hMin, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
+                    int yTop = Math.round(MathUtils.noise2(numOctaves, x, z, persistence, yMid, hMax, frequencies, amplitudes)) & 0xFFFFFFFE;
+                    int yBottom = Math.round(MathUtils.noise2(numOctaves, x, z, persistence, hMin, yMid, frequencies, amplitudes)) & 0xFFFFFFFE;
+
+                    // Create and submit NoiseTask
+                    NoiseTask task = new NoiseTask(x, z, yBottom, yMid, yTop, solidBlocks, fluidBlocks, totalAmount, boundary);
+                    tasks.add(exec.submit(task));
                 }
             }
+
+            // Process task results
+            for (Future<BlockResult> future : tasks) {
+                BlockResult result = future.get(); // Get the result from each task
+                genBlks += result.genBlocks; // Update total generated blocks
+                solidBlocks -= result.solidBlocks; // Update remaining solid blocks
+                fluidBlocks -= result.fluidBlocks; // Update remaining fluid blocks
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt(); // Restore interrupt status
+            DSLogger.reportError("Interrupted during noise generation", ex);
+        } catch (ExecutionException ex) {
+            DSLogger.reportError("Error during noise generation", ex);
+        } finally {
+            exec.shutdown(); // Ensure executor is shut down
         }
 
         return genBlks;
     }
 
+    /**
+     * Part II - Generate by Random.
+     *
+     * Blocks are generated in random patterns. This operation is very fast.
+     *
+     * (To prevent water leaking).
+     *
+     * @param solidBlocks
+     */
     private int generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
         int genBlks = 0; // holds result
 
@@ -460,6 +556,15 @@ public class RandomLevelGenerator {
         return genBlks;
     }
 
+    /**
+     * *
+     * Part III - Generate fluid series.
+     *
+     * All water blocks, apart from top one (rarely) are sides are surrounded by
+     * solid blocks. (To prevent water leaking).
+     *
+     * @param solidBlocks
+     */
     private void generateFluidSeries(int solidBlocks) {
         // Clouds arent generated only fluid
         levelContainer.setProgress(0.0f);
@@ -491,6 +596,9 @@ public class RandomLevelGenerator {
     }
 
     //---------------------------------------------------------------------------------------------------------------------------
+    /**
+     * Generate random level. 'Main' method
+     */
     public void generate() {
         if (levelContainer.getProgress() == 0.0f) {
             DSLogger.reportDebug("Generating random level (" + numberOfBlocks + " blocks).. with seed = " + seed, null);
@@ -534,19 +642,19 @@ public class RandomLevelGenerator {
                 levelContainer.gameObject.intrface.getInfoMsgText().setEnabled(true);
                 DSLogger.reportDebug(String.format("Generating Part I - Noise (%d blocks)", totalNoise), null);
                 levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part I - Noise (%d blocks)", totalNoise));
-                // 1. Noise Part                                   
+                // 1. Noise Part
                 int blocksNoise = generateByNoise(soildNoise, fluidNoise, totalNoise, posN_Min, posN_Max, hNMin, hNMax);
                 DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
-                //--------------------------------------------------------------------------------------------------------------------------- 
+                //---------------------------------------------------------------------------------------------------------------------------
                 DSLogger.reportDebug(String.format("Generating Part II - Random (%d blocks)", totalRandom), null);
-                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part II - Random (%d blocks)", totalNoise));
-                // 2. Random Part                 
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part II - Random (%d blocks)", totalRandom));
+                // 2. Random Part
                 int blocksRandom = generateByRandom(solidRandom, fluidRandom, totalRandom, posR_Min, posR_Max, hRMin, hRMax);
                 DSLogger.reportDebug("Done.", null);
                 // --------------------------------------------------------------
                 DSLogger.reportDebug("Generating Part III - Fluid Series", null);
-                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part III - Fluid Series", totalNoise));
+                levelContainer.gameObject.intrface.getInfoMsgText().setContent(String.format("Generating Part III - Fluid Series", totalNoise + totalRandom));
                 // 3. Fluid Series
                 generateFluidSeries(numberOfBlocks - blocksNoise - blocksRandom);
                 DSLogger.reportDebug("Done.", null);
