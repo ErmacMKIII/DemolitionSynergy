@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import org.joml.Random;
 import org.joml.Vector3f;
@@ -59,7 +57,6 @@ import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
-import rs.alexanderstojanovich.evg.util.Pair;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
@@ -69,8 +66,10 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    public static float MIN_AMOUNT = -16.0f;
-    public static float MAX_AMOUNT = 16.0f;
+    public static float MIN_AMOUNT = 0f;
+    public static float MAX_AMOUNT = 8f;
+
+    public static float PRECISION = 128f;
 
     public static enum LevelMapFormat {
         /**
@@ -102,27 +101,8 @@ public class LevelContainer implements GravityEnviroment {
     public final BlockEnvironment blockEnvironment;
     public final LightSources lightSources;
 
-    public static final int LIST_CAPACITY = 8;
-    public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
-        @Override
-        public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
-            if (o1 == null || o2 == null) {
-                return 0;
-            } else {
-                if (o1.getValue() > o2.getValue()) {
-                    return 1;
-                } else if (Objects.equals(o1.getValue(), o2.getValue())) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            }
-
-        }
-    };
-
-    private final IList<Integer> vChnkIdList = new GapList<>(LIST_CAPACITY);
-    private final IList<Integer> iChnkIdList = new GapList<>(LIST_CAPACITY);
+    private final IList<Integer> vChnkIdList = new GapList<>();
+    private final IList<Integer> iChnkIdList = new GapList<>();
 
     public final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     public int pos = 0;
@@ -148,9 +128,6 @@ public class LevelContainer implements GravityEnviroment {
     // position of all the solid blocks to texture name & neighbors
     public static final BlockLocation AllBlockMap = new BlockLocation();
 
-    // std time to live
-    public static final float STD_TTL = 30.0f * (float) Game.TICK_TIME;
-
     public final CacheModule cacheModule;
 
     protected static boolean actorInFluid = false;
@@ -159,6 +136,7 @@ public class LevelContainer implements GravityEnviroment {
 
     protected float fallVelocity = 0.0f;
     protected float jumpVelocity = 0.0f;
+    protected float thrustVelocity = 0.0f;
 
     public final Weapons weapons;
 
@@ -519,8 +497,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Adjust player position if successfully spawned
         if (playerSpawned) {
-            player.ascend(0.0f);
-            player.descend(0.0f);
+            player.jumpY(0.0f); // Some bad workaround
             gravityOn = true; // Re-enable gravity
         } else {
             // Handle case where no valid spawn location was found (optional)
@@ -689,6 +666,8 @@ public class LevelContainer implements GravityEnviroment {
             }
             buffer[pos++] = (byte) (count);
             buffer[pos++] = (byte) (count >> 8);
+            buffer[pos++] = (byte) (count >> 16);
+            buffer[pos++] = (byte) (count >> 24);
             for (Vector3f p : blkPos) {
                 if (gameObject.WINDOW.shouldClose()) {
                     break;
@@ -715,90 +694,6 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-//    private boolean storeLevelToBufferOldFormatAsync() {
-//        progress = 0.0f;
-//        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-//        pos = 0;
-//        buffer[0] = 'D';
-//        buffer[1] = 'S';
-//        pos += 2;
-//
-//        Camera camera = levelActors.mainCamera();
-//        if (camera == null) {
-//            return false;
-//        }
-//
-//        byte[] campos = VectorFloatUtils.vec3fToByteArray(camera.getPos());
-//        System.arraycopy(campos, 0, buffer, pos, campos.length);
-//        pos += campos.length;
-//
-//        byte[] camfront = VectorFloatUtils.vec3fToByteArray(camera.getFront());
-//        System.arraycopy(camfront, 0, buffer, pos, camfront.length);
-//        pos += camfront.length;
-//
-//        byte[] camup = VectorFloatUtils.vec3fToByteArray(camera.getUp());
-//        System.arraycopy(camup, 0, buffer, pos, camup.length);
-//        pos += camup.length;
-//
-//        byte[] camright = VectorFloatUtils.vec3fToByteArray(camera.getRight());
-//        System.arraycopy(camup, 0, buffer, pos, camright.length);
-//        pos += camright.length;
-//
-//        IList<Vector3f> solidPos = AllBlockMap.getPopulatedLocations(tb -> tb.solid);
-//        IList<Vector3f> fluidPos = AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
-//
-//        buffer[pos++] = 'S';
-//        buffer[pos++] = 'O';
-//        buffer[pos++] = 'L';
-//        buffer[pos++] = 'I';
-//        buffer[pos++] = 'D';
-//
-//        int solidNum = solidPos.size();
-//        buffer[pos++] = (byte) (solidNum);
-//        buffer[pos++] = (byte) (solidNum >> 8);
-//
-//        //----------------------------------------------------------------------
-//        for (Vector3f sp : solidPos) {
-//            if (gameObject.WINDOW.shouldClose()) {
-//                break;
-//            }
-//            byte[] byteArraySolid = Block.toByteArray(sp, AllBlockMap.getLocation(sp));
-//            System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
-//            pos += 29;
-//            progress += 50.0f / (float) solidPos.size();
-//        }
-//
-//        buffer[pos++] = 'F';
-//        buffer[pos++] = 'L';
-//        buffer[pos++] = 'U';
-//        buffer[pos++] = 'I';
-//        buffer[pos++] = 'D';
-//
-//        int fluidNum = fluidPos.size();
-//        buffer[pos++] = (byte) (fluidNum);
-//        buffer[pos++] = (byte) (fluidNum >> 8);
-//
-//        for (Vector3f fp : fluidPos) {
-//            if (gameObject.WINDOW.shouldClose()) {
-//                break;
-//            }
-//            byte[] byteArrayFluid = Block.toByteArray(fp, AllBlockMap.getLocation(fp));
-//            System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
-//            pos += 29;
-//            progress += 50.0f / (float) fluidPos.size();
-//        }
-//
-//        buffer[pos++] = 'E';
-//        buffer[pos++] = 'N';
-//        buffer[pos++] = 'D';
-//
-//        levelActors.unfreeze();
-//        progress = 100.0f;
-//
-//        gameObject.getMusicPlayer().stop();
-//
-//        return true;
-//    }
     public boolean loadLevelFromBufferOldFormat() {
         working = true;
         boolean success = false;
@@ -902,113 +797,6 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-//    public Future<Boolean> loadLevelFromBufferAsync() {
-//        progress = 0.0f;
-//
-//        Callable<Boolean> task = () -> {
-//            if (progress > 0.0f) {
-//                return false;
-//            }
-//            boolean okey = false;
-//            progress = 0.0f;
-//            levelActors.freeze();
-//            gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-//            pos = 0;
-//            if (buffer[0] == 'D' && buffer[1] == 'S') {
-//                chunks.clear();
-//
-//                AllBlockMap.init();
-//
-//                lightSources.retainLights(2);
-//
-//                CacheModule.deleteCache();
-//
-//                pos += 2;
-//                byte[] posArr = new byte[12];
-//                System.arraycopy(buffer, pos, posArr, 0, posArr.length);
-//                Vector3f campos = VectorFloatUtils.vec3fFromByteArray(posArr);
-//                pos += posArr.length;
-//
-//                byte[] frontArr = new byte[12];
-//                System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
-//                Vector3f camfront = VectorFloatUtils.vec3fFromByteArray(frontArr);
-//                pos += frontArr.length;
-//
-//                byte[] upArr = new byte[12];
-//                System.arraycopy(buffer, pos, frontArr, 0, upArr.length);
-//                Vector3f camup = VectorFloatUtils.vec3fFromByteArray(upArr);
-//                pos += upArr.length;
-//
-//                byte[] rightArr = new byte[12];
-//                System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
-//                Vector3f camright = VectorFloatUtils.vec3fFromByteArray(rightArr);
-//                pos += rightArr.length;
-//
-//                levelActors.configureMainObserver(campos, camfront, camup, camright);
-//
-//                char[] solid = new char[5];
-//                for (int i = 0; i < solid.length; i++) {
-//                    solid[i] = (char) buffer[pos++];
-//                }
-//                String strSolid = String.valueOf(solid);
-//
-//                if (strSolid.equals("SOLID")) {
-//                    int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-//                    pos += 2;
-//                    for (int i = 0; i < solidNum && !gameObject.WINDOW.shouldClose(); i++) {
-//                        byte[] byteArraySolid = new byte[29];
-//                        System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
-//                        Block solidBlock = Block.fromByteArray(byteArraySolid, true);
-//                        chunks.addBlock(solidBlock);
-//                        pos += 29;
-//                        progress += 50.0f / solidNum;
-//                    }
-//
-//                    //                solidChunks.updateSolids();
-//                    char[] fluid = new char[5];
-//                    for (int i = 0; i < fluid.length; i++) {
-//                        fluid[i] = (char) buffer[pos++];
-//                    }
-//                    String strFluid = String.valueOf(fluid);
-//
-//                    if (strFluid.equals("FLUID")) {
-//                        int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-//                        pos += 2;
-//                        for (int i = 0; i < fluidNum && !gameObject.WINDOW.shouldClose(); i++) {
-//                            byte[] byteArrayFluid = new byte[29];
-//                            System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
-//                            Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
-//                            chunks.addBlock(fluidBlock);
-//                            pos += 29;
-//                            progress += 50.0f / fluidNum;
-//                        }
-//
-//                        //                    fluidChunks.updateFluids();
-//                        char[] end = new char[3];
-//                        for (int i = 0; i < end.length; i++) {
-//                            end[i] = (char) buffer[pos++];
-//                        }
-//                        String strEnd = String.valueOf(end);
-//                        if (strEnd.equals("END")) {
-//                            okey = true;
-//                        }
-//                    }
-//
-//                }
-//
-//            }
-//            levelActors.unfreeze();
-//            blockEnvironment.clear();
-//
-//            progress = 100.0f;
-//            working = false;
-//            gameObject.getMusicPlayer().stop();
-//
-//            return okey;
-//        };
-//
-//        return GameObject.TaskExecutor.submit(task);
-//    }
     public boolean loadLevelFromBufferNewFormat() throws UnsupportedEncodingException {
         working = true;
         boolean success = false;
@@ -1053,6 +841,10 @@ public class LevelContainer implements GravityEnviroment {
                 int totalBlocks = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8)
                         | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
 
+                if (totalBlocks <= 0) {
+                    throw new IllegalStateException("No blocks to process!");
+                }
+
                 while (true) {
                     char[] texNameChars = new char[5];
                     for (int i = 0; i < texNameChars.length; i++) {
@@ -1060,13 +852,18 @@ public class LevelContainer implements GravityEnviroment {
                     }
                     String texName = new String(texNameChars);
 
-                    int count = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8);
+                    int count = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8)
+                            | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
 
                     for (int i = 0; i < count && !gameObject.WINDOW.shouldClose(); i++) {
+                        if (gameObject.game.isConnected() && ((i & 4095) == 0)) { // each 4x 1024-th block
+                            gameObject.game.sendPingRequest();
+                        }
+
                         byte[] byteArrayBlock = new byte[29];
                         System.arraycopy(texName.getBytes("US-ASCII"), 0, byteArrayBlock, 0, 5);
                         System.arraycopy(buffer, pos, byteArrayBlock, 5, 24);
-                        Block block = Block.fromByteArray(byteArrayBlock, !texName.equals("water") && !texName.equals("cloud"));
+                        Block block = Block.fromByteArray(byteArrayBlock, !texName.equals("water"));
                         chunks.addBlock(block);
                         pos += 29;
                         progress += 100.0f / (float) totalBlocks;
@@ -1128,37 +925,6 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-//    public CompletableFuture<Void> saveLevelToFileAsync(String filename) {
-//        return CompletableFuture.runAsync(() -> {
-//            BufferedOutputStream bos = null;
-//            File file = new File(filename);
-//            if (file.exists()) {
-//                file.delete();
-//            }
-//
-//            if (filename.endsWith(".dat")) {
-//                storeLevelToBufferOldFormat(); // saves level to buffer first
-//            } else if (filename.endsWith(".ndat")) {
-//                storeLevelToBufferNewFormat(); // saves level to buffer first
-//            }
-//
-//            try {
-//                bos = new BufferedOutputStream(new FileOutputStream(file));
-//                bos.write(buffer, 0, pos); // save buffer to file at pos mark
-//            } catch (FileNotFoundException ex) {
-//                DSLogger.reportFatalError(ex.getMessage(), ex);
-//            } catch (IOException ex) {
-//                DSLogger.reportFatalError(ex.getMessage(), ex);
-//            }
-//            if (bos != null) {
-//                try {
-//                    bos.close();
-//                } catch (IOException ex) {
-//                    DSLogger.reportFatalError(ex.getMessage(), ex);
-//                }
-//            }
-//        });
-//    }
     public boolean loadLevelFromFile(String filename) {
         if (working) {
             return false;
@@ -1303,8 +1069,7 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = predictable.getPredictor();
 
         // Round the predictor's coordinates to align with the grid.
@@ -1346,8 +1111,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f observerPos = observer.getPos();
 
         // Round the observer's coordinates to align with the grid.
@@ -1392,8 +1156,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1443,8 +1206,7 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float precision = 64.0f;
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / precision;
+        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1485,25 +1247,24 @@ public class LevelContainer implements GravityEnviroment {
      * Applies gravity to the player, making them fall downwards if not
      * supported below.
      *
+     * @param critter critter affected by gravity
      * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player is falling, {@code false} otherwise.
      */
     @Override
-    public boolean gravityDo(float deltaTime) {
+    public boolean gravityDo(Critter critter, float deltaTime) {
         if (working) {
             return false;
         }
 
         boolean collision = false;
-        final int precision = 128; // Increased precision for finer collision checks
-        final float stepAmount = deltaTime / (float) precision; // Smaller step amount for higher precision
-
         // Initial predictor position
         final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             levelActors.player.movePredictorDown(tstHeight);
 
@@ -1514,7 +1275,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, levelActors.player);
+                    collision = checkCollisionInternal(adjPosAlign, levelActors.player);
                     if (collision) {
                         fallVelocity = 0.0f;
                         break SCAN;
@@ -1529,9 +1290,11 @@ public class LevelContainer implements GravityEnviroment {
         // If no collision, apply gravity and move the player
         if (!collision) {
             float deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            // Adjust height for actor in fluid (water)
             if (actorInFluid) {
-                deltaHeight -= calculateFluidThrust(deltaTime);
+                deltaHeight *= 0.25f;
             }
+
             levelActors.player.movePredictorYDown(deltaHeight);
             levelActors.player.dropY(deltaHeight);
 
@@ -1553,27 +1316,26 @@ public class LevelContainer implements GravityEnviroment {
         return !collision;
     }
 
-    /**
-     * Calculates the thrust experienced by the player in a fluid.
-     *
-     * @param deltaTime The time elapsed since the last handleInput.
-     * @return The calculated thrust.
-     */
-    private float calculateFluidThrust(float deltaTime) {
-        final float thrustArea = 4.2f;
-        final float thrustVelocity = deltaTime * 2.1f;
-
-        // FORCE = DENS * AREA * VELOCITY * VELOCITY
-        final float thrustForce = WATER_DENSITY * thrustArea * thrustVelocity * thrustVelocity;
-        final float mass = 75f;
-        final float accel = thrustForce / mass;
-
-        // Calculate the thrust height
-        final float resh = accel * deltaTime * deltaTime / 2.0f;
-
-        return resh;
-    }
-
+//    /**
+//     * Calculates the thrust experienced by the player in a fluid.
+//     *
+//     * @param deltaTime The time elapsed since the last handleInput.
+//     * @return The calculated thrust.
+//     */
+//    private float calculateFluidThrust(float deltaTime) {
+//        final float thrustArea = 4.41f;
+//        thrustVelocity = GRAVITY_CONSTANT * deltaTime;
+//
+//        // FORCE = DENS * AREA * VELOCITY * VELOCITY
+//        final float thrustForce = WATER_DENSITY * thrustArea * thrustVelocity * thrustVelocity;
+//        final float mass = 75f;
+//        final float accel = thrustForce / mass;
+//
+//        // Calculate the thrust height
+//        final float resh = accel * deltaTime * deltaTime / 2.0f;
+//
+//        return resh;
+//    }
     /**
      * Makes the player jump upwards.
      *
@@ -1594,22 +1356,14 @@ public class LevelContainer implements GravityEnviroment {
             jumpVelocity = jumpStrength;
         }
 
-        // Adjust jump velocity if the player is in fluid
-        if (actorInFluid) {
-            jumpVelocity += calculateFluidThrust(deltaTime);
-        }
-
-        // Increased precision for finer collision checks
-        final int precision = 128;
-        final float stepAmount = deltaTime / (float) precision;
-
         // Initial predictor position
-        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
         boolean collision = false;
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = jumpVelocity / GRAVITY_CONSTANT; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorUp(tstHeight);
 
@@ -1620,7 +1374,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, critter);
+                    collision = checkCollisionInternal(adjPosAlign, critter);
                     if (collision) {
                         jumpVelocity = 0.0f;
                         break SCAN;
@@ -1637,14 +1391,19 @@ public class LevelContainer implements GravityEnviroment {
         // If no collision, apply jump and move the player
         if (!collision) {
             float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            // Adjust height for actor in fluid (water)
+            if (actorInFluid) {
+                deltaHeight *= 0.25f;
+            }
+
             critter.movePredictorYUp(deltaHeight);
             critter.jumpY(deltaHeight);
-            
+
             // in case of multiplayer join send to the server
             if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
                 gameObject.game.requestSetPlayerPosition();
             }
-            
+
             jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
         }
 
@@ -1664,17 +1423,15 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return false;
         }
-        // Increased precision for finer collision checks
-        final int precision = 128;
-        final float stepAmount = deltaTime / (float) precision;
 
         // Initial predictor position
-        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
         boolean collision = false;
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += stepAmount) {
+        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = crouchStrength * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorDown(tstHeight);
 
@@ -1685,7 +1442,7 @@ public class LevelContainer implements GravityEnviroment {
 
                 boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                 if (solidOnLoc) {
-                    collision = checkCollision(adjPosAlign, critter);
+                    collision = checkCollisionInternal(adjPosAlign, critter);
                     if (collision) {
                         break SCAN;
                     }
@@ -1703,7 +1460,7 @@ public class LevelContainer implements GravityEnviroment {
             float deltaHeight = crouchStrength * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
             critter.movePredictorYDown(deltaHeight);
             critter.dropY(deltaHeight);
-            
+
             // in case of multiplayer join send to the server
             if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
                 gameObject.game.requestSetPlayerPosition();
@@ -1714,20 +1471,21 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Internal check collision for critter.
+     * /**
+     * Internal check for collision with environment or other objects.
      *
-     * @param blkPos blk position
-     * @param critter critter submit for test
-     * @return collision condition
+     * @param blkPos The block position to check.
+     * @param critter The critter to test against.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    private static boolean checkCollision(Vector3f blkPos, Critter critter) {
+    private static boolean checkCollisionInternal(Vector3f blkPos, Critter critter) {
         return Block.containsInsideEqually(blkPos, 2.1f, 2.1f, 2.1f, critter.getPredictor())
                 || Model.intersectsEqually(blkPos, 2.1f, 2.1f, 2.1f,
                         critter.getPredictor(), 1.05f * critter.body.getWidth(),
                         1.05f * critter.body.getHeight(), 1.05f * critter.body.getDepth())
                 || !SKYBOX.containsInsideExactly(critter.getPredictor())
-                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
-                        critter.body.getHeight(), critter.body.getDepth());
+                || !SKYBOX.intersectsExactly(critter.getPredictor(),
+                        critter.body.getWidth(), critter.body.getHeight(), critter.body.getDepth());
     }
 
     /**
@@ -2049,6 +1807,10 @@ public class LevelContainer implements GravityEnviroment {
 
     public Weapons getWeapons() {
         return weapons;
+    }
+
+    public float getThrustVelocity() {
+        return thrustVelocity;
     }
 
 }

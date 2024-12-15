@@ -42,6 +42,8 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  */
 public class BlockEnvironment {
 
+    public static final Configuration cfg = Configuration.getInstance();
+
     public static final int LIGHT_MASK = 0x01;
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
@@ -60,6 +62,12 @@ public class BlockEnvironment {
      * Lookup table for faster tuple access (avoiding multiple filters)
      */
     protected final Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
+
+    /**
+     * Some tlist based on split facebits(0-63) into Max Iterations of Game
+     * Renderer
+     */
+    protected final IList<IList<Integer>> sometIList = splitFaceBits(64, GameRenderer.NUM_OF_PASSES_MAX);
 
     /**
      * Modified tuples (from update/render). Meaning from update they are
@@ -178,6 +186,26 @@ public class BlockEnvironment {
         }
     }
 
+    public static IList<IList<Integer>> splitFaceBits(int totalBits, int numPasses) {
+        IList<IList<Integer>> passes = new GapList<>();
+
+        // Calculate base size and remainder
+        int baseSize = totalBits / numPasses; // 6
+        int remainder = totalBits % numPasses; // 4
+
+        // Split the face bits into passes
+        int currentBit = 0;
+        for (int i = 0; i < numPasses; i++) {
+            int passSize = baseSize + (i < remainder ? 1 : 0); // Add 1 if this pass gets an extra bit
+            IList<Integer> pass = new GapList<>();
+            for (int j = 0; j < passSize; j++) {
+                pass.add(currentBit++);
+            }
+            passes.add(pass);
+        }
+        return passes;
+    }
+
     /**
      * Reorder group of vertices of optimized tuples if underwater
      *
@@ -192,7 +220,8 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ((ot.faceBits() & GameRenderer.getFps()) == 0))) {
+        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid()
+                && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()))) {
             tuple.prepare(camFront, cameraInFluid);
         }
     }
@@ -256,9 +285,9 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).immutableList().forEach(ot -> ot.bufferAll());
+        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
         Tuple.renderInstanced(
-                optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0).immutableList(),
+                optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
                 shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
         );
     }
@@ -385,6 +414,14 @@ public class BlockEnvironment {
 
     public IList<String> getModifiedWorkingTupleNames() {
         return modifiedWorkingTupleNames;
+    }
+
+    public Map<String, Map<Integer, Tuple>> getTupleLookup() {
+        return tupleLookup;
+    }
+
+    public IList<IList<Integer>> getSometIList() {
+        return sometIList;
     }
 
 }

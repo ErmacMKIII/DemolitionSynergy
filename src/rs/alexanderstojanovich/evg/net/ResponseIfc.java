@@ -52,11 +52,12 @@ public interface ResponseIfc extends DSObject {
     /**
      * Send response to client endpoint.
      *
+     * @param guid (recipient) guid
      * @param server game server
      * @param session connection session
      * @throws java.lang.Exception if serialization fails
      */
-    public void send(GameServer server, IoSession session) throws Exception;
+    public void send(String guid, GameServer server, IoSession session) throws Exception;
 
     /**
      * Receive response from server endpoint.
@@ -116,4 +117,11 @@ public interface ResponseIfc extends DSObject {
             }
         }, executor);
     }
+
+    /**
+     * Return (recipient) guid.
+     *
+     * @return recipient guid
+     */
+    public String getGuid();
 }

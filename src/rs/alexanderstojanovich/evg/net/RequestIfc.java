@@ -100,7 +100,7 @@ public interface RequestIfc extends DSObject {
          * Get player info from all players on the server as Json array (or
          * list)
          */
-        PLAYER_INFO,
+        GET_PLAYER_INFO,
         /**
          * Force disconnect to player
          */
@@ -112,7 +112,7 @@ public interface RequestIfc extends DSObject {
         /**
          * Update player info from client (Key: Guid). Similar to register.
          */
-        PLAYER_INFO_UPDATE
+        SET_PLAYER_INFO
     }
 
     /**

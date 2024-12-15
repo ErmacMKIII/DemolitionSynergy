@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evg.critter.Critter;
  */
 public interface GravityEnviroment {
 
-    public static final float WATER_DENSITY = 4600f;
+    public static final float WATER_DENSITY = 5600f;
     public static final float GRAVITY_CONSTANT = 9.8f; // apply only if Game.upsTicks >= 1.0
     public static final float TERMINAL_VELOCITY = 100f; // apply only if Game.upsTicks >= 1.0
 
@@ -32,10 +32,11 @@ public interface GravityEnviroment {
      * Affect Environment with gravity. Object not supported from bottom will
      * fall. Critter not supported from bottom will fall.
      *
+     * @param critter critter affected by gravity
      * @param deltaTime delta time
      * @return did gravity affect
      */
-    public boolean gravityDo(float deltaTime);
+    public boolean gravityDo(Critter critter, float deltaTime);
 
     /**
      * Affect Environment with jump against gravity. Assuming that critter will
@@ -55,6 +56,7 @@ public interface GravityEnviroment {
      * @param critter The player.
      * @param amountYNeg The amount of upward movement.
      * @param deltaTime The time elapsed since the last handleInput.
+     * @return did critter crouch
      */
     public boolean crouch(Critter critter, float amountYNeg, float deltaTime);
 

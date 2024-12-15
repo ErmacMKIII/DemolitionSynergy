@@ -127,13 +127,13 @@ public class Request implements RequestIfc {
             out.write(machine.getGuid().getBytes(StandardCharsets.UTF_8));
 
             // Write machine type, object type, request type, data type
-            out.writeInt(machine.getMachineType().ordinal());
-            out.writeInt(getObjectType().ordinal());
-            out.writeInt(requestType.ordinal());
-            out.writeInt(dataType.ordinal());
+            out.writeByte(machine.getMachineType().ordinal());
+            out.writeByte(getObjectType().ordinal());
+            out.writeShort(requestType.ordinal());
+            out.writeByte(dataType.ordinal());
 
             // Write version
-            out.writeInt(machine.getVersion());
+            out.writeByte(machine.getVersion());
 
             // Write data
             if (dataType != DataType.VOID) {
@@ -205,10 +205,10 @@ public class Request implements RequestIfc {
             in.readFully(senderBytes);
             guid = new String(senderBytes);
 
-            int machineTypeOrdinal = in.readInt();
-            int objTypeOrdinal = in.readInt();
-            reqTypeOrdinal = in.readInt();
-            dataTypeOrdinal = in.readInt();
+            int machineTypeOrdinal = in.readByte();
+            int objTypeOrdinal = in.readByte();
+            reqTypeOrdinal = in.readShort();
+            dataTypeOrdinal = in.readByte();
             // Verify machine type, object type, and request type
             if (machineTypeOrdinal < 0 || machineTypeOrdinal >= DSMachine.MachineType.values().length
                     || objTypeOrdinal < 0 || objTypeOrdinal >= DSObject.ObjType.values().length
@@ -216,7 +216,7 @@ public class Request implements RequestIfc {
                     || dataTypeOrdinal < 0 || dataTypeOrdinal >= DataType.values().length) {
                 return Request.INVALID; // Invalid machine type, object type, request type, or data type
             }   // Read version
-            version = in.readInt();
+            version = in.readByte();
             // Read data
             // Read data based on data type
             switch (DataType.values()[dataTypeOrdinal]) {

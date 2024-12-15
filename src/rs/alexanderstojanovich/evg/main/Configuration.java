@@ -49,7 +49,7 @@ public class Configuration {
     private int textDynamicSize = 10;
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
-    private int rendererPasses = 10;
+    private int rendererPasses = 16;
     private int optimizationPasses = 2;
     private double gameTicks = 0.0;
     private int blocksPerRun = 1000;

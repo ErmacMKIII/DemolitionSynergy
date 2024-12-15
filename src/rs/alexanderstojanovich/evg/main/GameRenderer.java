@@ -36,6 +36,9 @@ public class GameRenderer extends Thread implements Executor {
     protected static final Configuration cfg = Configuration.getInstance();
     protected final GameObject gameObject;
 
+    /**
+     * Define max number of renderer passes
+     */
     public static final int NUM_OF_PASSES_MAX = cfg.getRendererPasses(); // DEFAULT is 10.
     private static double fpsTicks = 0.0;
     private static int fps = 0;
@@ -106,7 +109,6 @@ public class GameRenderer extends Thread implements Executor {
                 break;
             }
 
-            // also avoid rendering when game is updating
             numOfPasses = 0; // Start with PASS0
             while (couldRender()) {
                 // render the scene
@@ -171,7 +173,7 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX;// && (Game.accumulator * Game.TPS) < 2.0;
+        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator * Game.TPS) < 1.0;
     }
 
 //    /**

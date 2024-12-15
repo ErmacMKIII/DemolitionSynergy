@@ -48,7 +48,7 @@ public class Chunk { // some operations are mutually exclusive
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 256;
     public static final float VISION = 256.0f; // determines visibility
-    public static final int GRID_SIZE = 4;
+    public static final int GRID_SIZE = 8;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -295,6 +295,8 @@ public class Chunk { // some operations are mutually exclusive
                 Chunk.transfer(tupleList, block, faceBitsBefore, faceBitsAfter);
             }
             // query all neighbors and update this block and adjacent blocks accordingly
+            // tranfer units
+            IList<TransferUnit> blkUnits = new GapList<>();
             for (int j = Block.LEFT; j <= Block.FRONT; j++) {
                 // -------------------------------------------------------------------
                 // following logic updates adjacent block 
@@ -326,11 +328,15 @@ public class Chunk { // some operations are mutually exclusive
                             if (adjFaceBitsBefore != adjFaceBitsAfter) {
                                 // if bits changed, i.e. some face(s) got disabled
                                 // tranfer to correct tuple
-                                Chunk.transfer(tupleList, adjBlock, adjFaceBitsBefore, adjFaceBitsAfter);
+                                blkUnits.add(new TransferUnit(adjBlock, adjFaceBitsBefore, adjFaceBitsAfter));
                             }
                         }
                     }
                 }
+            }
+
+            if (!blkUnits.isEmpty()) {
+                Chunk.transfer(tupleList, blkUnits);
             }
         }
     }

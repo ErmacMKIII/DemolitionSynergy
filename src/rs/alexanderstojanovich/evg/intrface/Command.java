@@ -40,6 +40,7 @@ import rs.alexanderstojanovich.evg.core.WaterRenderer;
 import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
+import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
@@ -98,15 +99,43 @@ public class Command implements Callable<Object> {
         ERROR
     };
 
+    /**
+     * No operation command.
+     */
     protected Target target = Target.NOP;
 
+    /**
+     * Command mode 'GET' gets the value, command mode 'SET' set the value
+     */
     public static enum Mode {
         GET, SET
     };
     protected Mode mode = Mode.GET;
 
+    /**
+     * Command status (console light bulb color)
+     */
     public static enum Status {
-        INIT, PENDING, SUCCEEDED, WARNING, FAILED
+        /**
+         * Command initial status
+         */
+        INIT,
+        /**
+         * Command pending execution finished
+         */
+        PENDING,
+        /**
+         * Command finished execution successfully
+         */
+        SUCCEEDED,
+        /**
+         * Command execution resulted in warning
+         */
+        WARNING,
+        /**
+         * Command execution resulted in failure
+         */
+        FAILED
     }
 
     protected Object result = null;
@@ -686,7 +715,7 @@ public class Command implements Callable<Object> {
             case SIZEOF:
                 if (command.mode == Mode.GET) {
                     if (command.args.isEmpty()) {
-                        int totalSize = gameObject.levelContainer.cacheModule.totalSize();
+                        int totalSize = LevelContainer.AllBlockMap.getPopulation();
                         int cachedSize = 0;
                         for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
                             cachedSize += ci.cachedSize;
@@ -701,7 +730,7 @@ public class Command implements Callable<Object> {
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
-                            size = gameObject.levelContainer.chunks.getBlockList(chunkId).size();
+                            size = LevelContainer.AllBlockMap.getPopulatedLocations(chunkId).size();
                         }
 
                         if (size != -1) {
@@ -758,7 +787,7 @@ public class Command implements Callable<Object> {
                             Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                             gameObject.gameServer.clients.forEach(ci -> {
                                 try {
-                                    response.send(gameObject.gameServer, ci.session);
+                                    response.send("*", gameObject.gameServer, ci.session);
                                 } catch (IOException ex) {
                                     DSLogger.reportError("Unable to deliver chat message, ex:", ex);
                                 }

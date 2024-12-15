@@ -27,6 +27,7 @@ import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.GameObject;
+import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -102,7 +103,7 @@ public class WaterRenderer implements CoreRenderer {
         if (dotYAxis > 0.0f) {
             final LinkedHashMap<Float, Float> deltaMap = new LinkedHashMap<>();
             OUTER:
-            for (Vector3f xyzLoc : LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid && (~tb.byteValue != 0), actCam.pos, distance)) {
+            for (Vector3f xyzLoc : LevelContainer.AllBlockMap.getPopulatedLocations(tb -> !tb.solid && ((~tb.byteValue & Block.Y_MASK) != 0), actCam.pos, distance)) {
                 if (chPosY >= xyzLoc.y) {
                     float delta = 2.0f * xyzLoc.y - chPosY;
                     float angleCos = actCam.pos.angleCos(xyzLoc);

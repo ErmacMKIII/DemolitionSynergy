@@ -640,6 +640,33 @@ public class Block extends Model {
         verticesReversed = !verticesReversed;
     }
 
+    /**
+     * Reverse face vertex order. All Faces. (Water)
+     *
+     * Faces are provided before hand. Therefore potential for reducing overhead
+     * (and improve performance).
+     *
+     * @param camFront camera front (ray trace cap)
+     * @param degrees angle degrees
+     * @param faces get enabled faces
+     */
+    public void reverseFaceVertexOrder(Vector3f camFront, float degrees, IList<Integer> faces) {
+        final IList<Vertex> vertices = meshes.getFirst().vertices;
+
+        for (int faceNum : faces) {
+            int start = 4 * faceNum;
+            int end = start + 3;
+            while (start < end) {
+                Vertex temp = vertices.get(start);
+                vertices.set(start, vertices.get(end));
+                vertices.set(end, temp);
+                start++;
+                end--;
+            }
+        }
+        verticesReversed = !verticesReversed;
+    }
+
     public void setFaceVertexOrder(boolean faceVertexOrderReversed) {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
         vertices.clear();

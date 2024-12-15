@@ -32,6 +32,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.models.Block;
+import static rs.alexanderstojanovich.evg.models.Block.getRayTraceMultiFaceFast;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -62,6 +63,8 @@ public class Tuple extends Series {
     protected final String name;
 
     protected final int facesNum;
+    protected final int faceEnBits;
+    protected final String texName;
 
     /**
      * Tuple comparator sorting tuples by (String) name.
@@ -75,6 +78,8 @@ public class Tuple extends Series {
      * @param faceEnBits face enabled bits
      */
     public Tuple(String texName, int faceEnBits) {
+        this.texName = texName;
+        this.faceEnBits = faceEnBits;
         this.name = String.format("%s%02d", texName, faceEnBits);
 
         int numberOfOnes = 0;
@@ -97,6 +102,8 @@ public class Tuple extends Series {
      * @param original to copy properties from
      */
     public Tuple(Tuple original) {
+        this.texName = original.texName;
+        this.faceEnBits = original.faceEnBits;
         this.name = String.format("%s%02d", original.texName(), original.faceBits());
         this.facesNum = original.facesNum;
         this.verticesNum = original.verticesNum; // affects buffering of vertices
@@ -352,11 +359,14 @@ public class Tuple extends Series {
             return;
         }
 
-        for (Block block : blockList.filter(blk -> !blk.isSolid())) {
-            block.getMeshes().getFirst().triangSwap();
+        IList<Block> filterBlks = blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0);
+        for (Block blks : filterBlks) {
+            blks.getMeshes().getFirst().triangSwap();
         }
 
-        subBufferVertices();
+        if (!filterBlks.isEmpty()) {
+            subBufferVertices();
+        }
     }
 
     @Override
@@ -372,18 +382,36 @@ public class Tuple extends Series {
         subBufferVertices();
     }
 
+    /**
+     * Heavy operation to make underwater ambient if camera in fluid
+     *
+     * @param camFront camera front vec3
+     * @param cameraInFluid boolean condition if camera is in fluid (water)
+     */
     public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering                      
         if (!buffered || blockList.isEmpty() || isSolid()) {
             return;
         }
 
-        for (Block block : blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed())) {
-            final float degrees = (cameraInFluid ^ block.isVerticesReversed()) ? 0f : 45f;
-            // Improved one
-            block.reverseFaceVertexOrder(camFront, degrees);
+        // check if globally vertices are reversed
+        boolean verticesReversedGlobl = !blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && blk.isVerticesReversed()).isEmpty();
+        // if not in water is always 45f and 0f in water
+        final float degrees = (cameraInFluid || verticesReversedGlobl) ? 0f : 45f;
+        // put here (out from loop) to reduce overhead, gives visible faces of blocks
+        IList<Integer> faces = getRayTraceMultiFaceFast(camFront, degrees);
+
+        if (!faces.isEmpty()) {
+            IList<Block> filterBlks = blockList.filter(blk -> !blk.isSolid() && blk.getFaceBits() != 0 && cameraInFluid ^ blk.isVerticesReversed());
+            for (Block blk : filterBlks) {
+                // Improved one                
+                blk.reverseFaceVertexOrder(camFront, degrees, faces);
+            }
+
+            if (!filterBlks.isEmpty()) {
+                subBufferVertices();
+            }
         }
 
-        subBufferVertices();
     }
 
     /**
@@ -397,8 +425,6 @@ public class Tuple extends Series {
     public void renderInstanced(ShaderProgram shaderProgram, LightSources lightSources, Texture waterTexture, Texture shadowTexture) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
-        String texName = name.substring(0, 5);
-        int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
             GL20.glEnableVertexAttribArray(0);
             GL20.glEnableVertexAttribArray(1);
@@ -791,15 +817,15 @@ public class Tuple extends Series {
     }
 
     public String texName() {
-        return name.substring(0, 5);
+        return texName;
     }
 
     public int faceBits() {
-        return Integer.parseInt(name.substring(5));
+        return faceEnBits;
     }
 
     public boolean isSolid() {
-        return !texName().equals("water") && !texName().equals("cloud");
+        return !texName().equals("water");
     }
 
     public int getVec4Vbo() {
