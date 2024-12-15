@@ -856,7 +856,7 @@ public class LevelContainer implements GravityEnviroment {
                             | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
 
                     for (int i = 0; i < count && !gameObject.WINDOW.shouldClose(); i++) {
-                        if (gameObject.game.isConnected() && ((i & 1023) == 0)) { // each 1024-th block
+                        if (gameObject.game.isConnected() && ((i & 4095) == 0)) { // each 4x 1024-th block
                             gameObject.game.sendPingRequest();
                         }
 

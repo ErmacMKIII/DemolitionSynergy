@@ -49,7 +49,7 @@ public class CacheModule {
 
     public static final int BLOCK_SIZE = 34;
 
-    public static final int DEFAULT_BUFFER_SIZE = 16384; // 16 KB
+    public static final int DEFAULT_BUFFER_SIZE = 8192; // 8 KB
     private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
     private static int pos = 0;
     private final LevelContainer levelContainer;

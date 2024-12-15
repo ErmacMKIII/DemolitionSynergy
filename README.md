@@ -12,6 +12,11 @@ Please checkout Erokia & (his) work at: https://freesound.org/people/erokia
 Demolition Synergy showing multiplayer setup.
 ![Alt text](/misc/DSynergy8.png?raw=true "Demolition Synergy showing multiplayer setup")
 
+# Java Version
+Game (client) requires Java 11 LTS (11.0.1 or later).
+Java 11 Installer could be downloaded from:
+https://mega.nz/file/DYUwUS5J#ftHxZFKlsyaIlJJQ9E4cmpTrZG9byW9P_QeQNRNrIhQ
+
 # Verbose Description
 Robust (yet still uncomplete) Game Engine writen in Java. Free & Open-Source.
 Project started back in a day on October 15, 2017. And possible earlier.

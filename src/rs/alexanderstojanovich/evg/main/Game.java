@@ -1980,7 +1980,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static double getCurrentTicks() {
         // Calculate varying ticks directly proportional to the accumulator
-        return Math.floor(Game.TPS * Game.accumulator + 2.0); // Bias correction 
+        return Math.floor(Game.TPS * Game.accumulator + 0.5); // Bias correction 
     }
 
 }
