@@ -102,6 +102,7 @@ public class BlockEnvironment {
      */
     public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
+        pull();
 
         // Determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
