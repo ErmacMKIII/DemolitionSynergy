@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
@@ -28,10 +27,12 @@ public final class SingleValue implements MenuValue {
     protected final DynamicText valueText;
     private Object value = new Object();
     protected Type type;
+    private final Intrface intrface;
 
     public SingleValue(Intrface ifc, Object value, Type type) throws Exception {
+        this.intrface = ifc;
         this.type = type;
-        this.valueText = new DynamicText(ifc.gameObject.GameAssets.FONT, String.valueOf(value));
+        this.valueText = new DynamicText(ifc.gameObject.GameAssets.FONT, String.valueOf(value), ifc);
         this.setCurrentValue(value);
     }
 
@@ -67,4 +68,8 @@ public final class SingleValue implements MenuValue {
         return type;
     }
 
+    @Override
+    public Intrface getIntrface() {
+        return intrface;
+    }
 }

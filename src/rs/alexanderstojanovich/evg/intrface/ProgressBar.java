@@ -32,9 +32,9 @@ public class ProgressBar {
 
     protected final int increment;
 
-    public ProgressBar(int width, int height, Texture texture) {
+    public ProgressBar(int width, int height, Texture texture, Intrface intrface) {
         this.increment = width;
-        this.quad = new Quad(0, height, texture);
+        this.quad = new Quad(0, height, texture, intrface);
     }
 
     /**

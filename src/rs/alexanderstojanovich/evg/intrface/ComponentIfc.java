@@ -175,4 +175,11 @@ public interface ComponentIfc {
      * Release this components. All GL buffers are deleted.
      */
     public void release();
+
+    /**
+     * Get game interface.
+     *
+     * @return game interface
+     */
+    public Intrface getIntrface();
 }

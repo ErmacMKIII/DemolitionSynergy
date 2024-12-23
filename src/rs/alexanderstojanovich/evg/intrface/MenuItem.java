@@ -41,7 +41,7 @@ public class MenuItem {
      */
     public MenuItem(Intrface intrface, String string, Menu.EditType editType, MenuValue menuValue) {
         this.intrface = intrface;
-        this.keyText = new DynamicText(this.intrface.gameObject.GameAssets.FONT, string);
+        this.keyText = new DynamicText(this.intrface.gameObject.GameAssets.FONT, string, intrface);
         this.editType = editType;
         this.menuValue = menuValue;
     }

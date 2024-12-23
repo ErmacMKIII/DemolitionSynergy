@@ -66,4 +66,11 @@ public interface MenuValue {
      * @return type
      */
     public Type getType();
+
+    /**
+     * Get interface associated.
+     *
+     * @return intrface
+     */
+    public Intrface getIntrface();
 }

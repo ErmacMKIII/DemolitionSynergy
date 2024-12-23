@@ -122,53 +122,53 @@ public class Intrface {
             AudioPlayer musicPlayer = gameObject.getMusicPlayer();
             AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-            updText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f));
+            updText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 1.0f), this);
             updText.alignToNextChar(this);
-            fpsText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f));
+            fpsText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, 0.85f), this);
             fpsText.alignToNextChar(this);
 
-            posText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f));
+            posText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -1.0f), this);
             posText.setAlignment(Text.ALIGNMENT_RIGHT);
             posText.alignToNextChar(this);
 
-            viewText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f));
+            viewText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, -0.85f), this);
             viewText.setAlignment(Text.ALIGNMENT_RIGHT);
             viewText.alignToNextChar(this);
 
-            infoMsgText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(-1.0f, -0.75f));
+            infoMsgText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(-1.0f, -0.75f), this);
             infoMsgText.setAlignment(Text.ALIGNMENT_LEFT);
             infoMsgText.alignToNextChar(this);
 
-            chunkText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f));
+            chunkText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.CYAN_RGBA, new Vector2f(1.0f, -0.75f), this);
             chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
             chunkText.alignToNextChar(this);
 
-            collText = new DynamicText(gameObject.GameAssets.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
+            collText = new DynamicText(gameObject.GameAssets.FONT, "No Collision", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f), this);
             collText.alignToNextChar(this);
-            helpText = new DynamicText(gameObject.GameAssets.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14);
+            helpText = new DynamicText(gameObject.GameAssets.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector2f(-1.0f, 0.75f), 14, 14, this);
             helpText.alignToNextChar(this);
             helpText.setEnabled(false);
-            progText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f));
+            progText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(-1.0f, -0.9f), this);
             progText.alignToNextChar(this);
-            screenText = new DynamicText(gameObject.GameAssets.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18);
+            screenText = new DynamicText(gameObject.GameAssets.FONT, "", new Vector2f(-1.0f, -0.7f), 18, 18, this);
             screenText.alignToNextChar(this);
-            gameModeText = new DynamicText(gameObject.GameAssets.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f));
+            gameModeText = new DynamicText(gameObject.GameAssets.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f), this);
             gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
             gameModeText.alignToNextChar(this);
 
-            gameTimeText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f));
+            gameTimeText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f), this);
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
             gameTimeText.alignToNextChar(this);
 
-            guideText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.5f, 0.0f));
+            guideText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.5f, 0.0f), this);
             guideText.setAlignment(Text.ALIGNMENT_CENTER);
             guideText.alignToNextChar(this);
 
-            progressBar = new ProgressBar(5, 10, Texture.getOrDefault("suntx"));
+            progressBar = new ProgressBar(5, 10, Texture.getOrDefault("suntx"), this);
             progressBar.quad.setPos(new Vector2f(-1.0f, -0.77f));
             progressBar.quad.color = new Vector4f(2.0f, 1.67f, 0.1f, 1.0f);
 
-            crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+            crosshair = new Quad(27, 27, gameObject.GameAssets.CROSSHAIR, true, this); // it ignores resolution changes and doesn't scale
             crosshair.setColor(new Vector4f(GlobalColors.WHITE, 1.0f));
             IList<MenuItem> mainMenuItems = new GapList<>();
             mainMenuItems.add(new MenuItem(this, "SINGLE PLAYER", Menu.EditType.EditNoValue, null));
@@ -223,7 +223,7 @@ public class Intrface {
                     }
                 }
             };
-            Quad logo = new Quad(180, 135, gameObject.GameAssets.LOGO);
+            Quad logo = new Quad(180, 135, gameObject.GameAssets.LOGO, this);
             logo.setColor(new Vector4f(2.0f, 1.37f, 0.1f, 1.0f));
             logo.setScale(1.0f);
             mainMenu.setLogo(logo);
@@ -268,7 +268,7 @@ public class Intrface {
             gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
             // -----------------------------------------------------------------
             saveDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
+                    "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     Editor.deselect();
@@ -282,7 +282,7 @@ public class Intrface {
             };
 
             loadDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
+                    "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status;
@@ -329,7 +329,7 @@ public class Intrface {
             loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
             randLvlDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!") {
+                    "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;
@@ -396,7 +396,7 @@ public class Intrface {
             };
             randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(secondaryMenuScale);
 
-            singlePlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+            singlePlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;
@@ -418,7 +418,7 @@ public class Intrface {
             };
             singlePlayerDialog.dialog.alignToNextChar(this);
 
-            multiPlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!") {
+            multiPlayerDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f), "HOST SERVER ON THIS PC (Y/N)? ", "OK!", "ERROR!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;

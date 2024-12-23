@@ -45,16 +45,16 @@ public class DynamicText extends Text {
     protected int bigVbo = 0; // vbo containing all the quads (characters)
     protected static FloatBuffer bigFloatBuff = null;
 
-    public DynamicText(Texture texture, String content) {
-        super(texture, content);
+    public DynamicText(Texture texture, String content, Intrface ifc) {
+        super(texture, content, ifc);
     }
 
-    public DynamicText(Texture texture, String content, Vector4f color, Vector2f pos) {
-        super(texture, content, color, pos);
+    public DynamicText(Texture texture, String content, Vector4f color, Vector2f pos, Intrface ifc) {
+        super(texture, content, color, pos, ifc);
     }
 
-    public DynamicText(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
-        super(texture, content, pos, charWidth, charHeight);
+    public DynamicText(Texture texture, String content, Vector2f pos, int charWidth, int charHeight, Intrface ifc) {
+        super(texture, content, pos, charWidth, charHeight, ifc);
     }
 
     @Override

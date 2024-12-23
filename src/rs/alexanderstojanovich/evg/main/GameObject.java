@@ -168,10 +168,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         WINDOW.centerTheWindow();
         //----------------------------------------------------------------------        
-        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true);
+        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true, null);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
 
-        this.initText = new DynamicText(GameAssets.FONT, "Initializing...", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
+        this.initText = new DynamicText(GameAssets.FONT, "Initializing...", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f), null);
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
         initializedWindow = true;

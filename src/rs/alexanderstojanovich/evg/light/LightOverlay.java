@@ -36,12 +36,12 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public class LightOverlay extends Quad {
 
-    public LightOverlay(int width, int height, Texture texture) {
-        super(width, height, texture);
+    public LightOverlay(int width, int height, Texture texture, Intrface intrface) {
+        super(width, height, texture, intrface);
     }
 
-    public LightOverlay(int width, int height, Texture texture, boolean ignoreFactor) {
-        super(width, height, texture, ignoreFactor);
+    public LightOverlay(int width, int height, Texture texture, boolean ignoreFactor, Intrface intrface) {
+        super(width, height, texture, ignoreFactor, intrface);
     }
 
     public void render(Intrface intrface, Camera camera, LevelContainer lc, ShaderProgram shaderProgram) {
