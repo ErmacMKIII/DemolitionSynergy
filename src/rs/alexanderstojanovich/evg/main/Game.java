@@ -895,7 +895,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // choose the one which fits by unique checksum
-        RequestIfc reqTarg = null;
+        RequestIfc reqTarg;
         synchronized (internRequestMutex) {
             reqTarg = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
             requests.remove(reqTarg);
