@@ -26,8 +26,10 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
+ * Game Renderer responsible for rendering scene(s) & interface.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -51,7 +53,7 @@ public class GameRenderer extends Thread implements Executor {
     protected static double glCommandTimer = 0.0;
 
     protected static double ANIMATION_RATE = 0.25;
-    protected static double GL_COMMAND_POLL_RATE = Game.TICK_TIME;
+    protected static double GL_COMMAND_POLL_RATE = 1.0;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -64,8 +66,10 @@ public class GameRenderer extends Thread implements Executor {
         this.gameObject = gameObject;
     }
 
-    @Override
-    public void run() {
+    /**
+     * Initialize the renderer
+     */
+    private void init() {
         gameObject.masterRenderer.initGL(cfg); // loads myWindow context, creates OpenGL context..        
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         gameObject.perspectiveRenderer.init();
@@ -87,8 +91,17 @@ public class GameRenderer extends Thread implements Executor {
         // resolution config
         gameObject.masterRenderer.setResolution(cfg.getWidth(), cfg.getHeight());
         gameObject.perspectiveRenderer.updatePerspective();
-        animationTimer = 0;
-        glCommandTimer = 0;
+    }
+
+    /**
+     * Game Renderer run method (with loop)
+     */
+    @Override
+    public void run() {
+        init();
+
+        animationTimer = 0.0;
+        glCommandTimer = 0.0;
 
         fps = 0;
 
@@ -99,7 +112,7 @@ public class GameRenderer extends Thread implements Executor {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            fpsTicks += deltaTime * Game.getFpsMax();
+            fpsTicks += deltaTime * MathUtils.lerp(Game.getFpsMax(), fps, Game.TICK_TIME);
             lastTime = currTime;
 
             // Detecting critical status
@@ -118,24 +131,22 @@ public class GameRenderer extends Thread implements Executor {
                 fpsTicks--;
             }
 
-            // animates water every quarter of the second
+            // Update and animate water every quarter of a second
             animationTimer += deltaTime;
             if (animationTimer >= GameRenderer.ANIMATION_RATE) {
                 if (!gameObject.isWorking()) {
-                    gameObject.animate(); // avoid swap and animate in the same time - 'awful effect'
+                    gameObject.animate(); // Avoid swap and animate at the same time
                 }
-
-                animationTimer = 0.0;
+                animationTimer = 0.0; // Reset the timer
             }
 
+            // Execute console tasks periodically
             glCommandTimer += deltaTime;
-            // lastly it executes the console tasks
             if (glCommandTimer >= GameRenderer.GL_COMMAND_POLL_RATE) {
                 if ((task = TASK_QUEUE.poll()) != null) {
-                    execute(task); // requires GL-context
+                    execute(task); // Requires GL context
                 }
-
-                glCommandTimer = 0.0;
+                glCommandTimer = 0.0; // Reset the timer
             }
         }
 

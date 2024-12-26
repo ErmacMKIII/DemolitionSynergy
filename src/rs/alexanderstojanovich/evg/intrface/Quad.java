@@ -69,15 +69,18 @@ public class Quad implements ComponentIfc {
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
     protected boolean buffered = false;
+    private final Intrface intrface;
 
-    public Quad(int width, int height, Texture texture) {
+    public Quad(int width, int height, Texture texture, Intrface intrface) {
+        this.intrface = intrface;
         this.width = width;
         this.height = height;
         this.texture = texture;
         initUVs();
     }
 
-    public Quad(int width, int height, Texture texture, boolean ignoreFactor) {
+    public Quad(int width, int height, Texture texture, boolean ignoreFactor, Intrface intrface) {
+        this.intrface = intrface;
         this.width = width;
         this.height = height;
         this.texture = texture;
@@ -494,6 +497,11 @@ public class Quad implements ComponentIfc {
     @Override
     public int getIbo() {
         return ibo;
+    }
+
+    @Override
+    public Intrface getIntrface() {
+        return intrface;
     }
 
 }

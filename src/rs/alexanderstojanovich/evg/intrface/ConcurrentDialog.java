@@ -18,8 +18,6 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -32,8 +30,8 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
  */
 public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread                
 
-    public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail) throws Exception {
-        super(texture, pos, question, success, fail);
+    public ConcurrentDialog(Texture texture, Vector2f pos, String question, String success, String fail, Intrface ifc) throws Exception {
+        super(texture, pos, question, success, fail, ifc);
     }
 
     @Override

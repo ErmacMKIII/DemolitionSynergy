@@ -98,13 +98,17 @@ public class Text implements ComponentIfc {
     protected static IntBuffer intBuffer = null;
     protected int ibo = 0;
 
-    public Text(Texture texture, String content) {
+    public final Intrface intrface;
+
+    public Text(Texture texture, String content, Intrface ifc) {
+        this.intrface = ifc;
         this.texture = texture;
         this.content = content;
         this.enabled = true;
     }
 
-    public Text(Texture texture, String content, Vector4f color, Vector2f pos) {
+    public Text(Texture texture, String content, Vector4f color, Vector2f pos, Intrface ifc) {
+        this.intrface = ifc;
         this.texture = texture;
         this.content = content;
         this.color = color;
@@ -112,7 +116,8 @@ public class Text implements ComponentIfc {
         this.enabled = true;
     }
 
-    public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
+    public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight, Intrface ifc) {
+        this.intrface = ifc;
         this.texture = texture;
         this.content = content;
         this.pos = pos;
@@ -621,6 +626,11 @@ public class Text implements ComponentIfc {
     @Override
     public void setColor(Vector4f color) {
         this.color = color;
+    }
+
+    @Override
+    public Intrface getIntrface() {
+        return intrface;
     }
 
 }

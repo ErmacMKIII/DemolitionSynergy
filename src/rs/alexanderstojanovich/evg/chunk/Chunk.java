@@ -145,63 +145,92 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     /**
-     * Gets Block from the tuple block list (duplicates may exist but in very
-     * low quantity). Complexity is O(log(n)+k). Faster than method with
-     * supplied Vec3f position.
+     * Retrieves a block from the tuple's block list based on its unique ID and
+     * position. Optimized with binary search and filtering for duplicates.
+     * Complexity is O(log(n) + k), where k is the number of blocks with the
+     * same unique ID.
      *
-     * @param tuple (chunk) tuple where block might be located
-     * @param pos Vector3f position of the block
-     * @param blkId block unique id
-     * @return block if found (null if not found)
+     * @param tuple the tuple (chunk) containing the block list
+     * @param pos the position of the block as a Vector3f
+     * @param blkId the unique ID of the block
+     * @return the matching block if found, or null if not found
      */
     public static Block getBlock(Tuple tuple, Vector3f pos, int blkId) {
-        Integer key = blkId;
-
+        // Binary search for the first occurrence of blkId
         int left = 0;
         int right = tuple.blockList.size() - 1;
-        int startIndex = -1;
+        int firstIndex = -1;
+
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = candidate.getId();
-            int res = candInt.compareTo(key);
-            if (res < 0) {
+            int comparison = Integer.compare(candidate.getId(), blkId);
+
+            if (comparison < 0) {
                 left = mid + 1;
-            } else if (res == 0) {
-                startIndex = mid;
+            } else if (comparison > 0) {
                 right = mid - 1;
             } else {
-                right = mid - 1;
+                firstIndex = mid;
+                right = mid - 1; // Continue searching to the left
             }
         }
 
-        left = 0;
-        right = tuple.blockList.size() - 1;
-        int endIndex = -1;
+        // If no block with the given ID exists, return null
+        if (firstIndex == -1) {
+            return null;
+        }
+
+        // Collect all blocks with the matching blkId
+        IList<Block> matchingBlocks = new GapList<>();
+        for (int i = firstIndex; i < tuple.blockList.size(); i++) {
+            Block candidate = tuple.blockList.get(i);
+            if (candidate.getId() == blkId) {
+                matchingBlocks.add(candidate);
+            } else {
+                break; // Exit loop as IDs are sorted
+            }
+        }
+
+        // Check for a block with the matching position
+        for (Block blk : matchingBlocks) {
+            if (blk.pos.equals(pos)) {
+                return blk;
+            }
+        }
+
+        return null; // No matching block found
+    }
+
+    /**
+     * Retrieves a block from the tuple's block list based on its unique ID.
+     * Uses binary search to find the block efficiently. Complexity is
+     * O(log(n)).
+     *
+     * @param tuple the tuple (chunk) containing the block list
+     * @param blkId the unique ID of the block
+     * @return the first matching block if found, or null if not found
+     */
+    public static Block getBlock(Tuple tuple, int blkId) {
+        // Perform binary search to locate the block with the given ID
+        int left = 0;
+        int right = tuple.blockList.size() - 1;
+
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = tuple.blockList.get(mid);
-            Integer candInt = candidate.getId();
-            int res = candInt.compareTo(key);
-            if (res < 0) {
+            int comparison = Integer.compare(candidate.getId(), blkId);
+
+            if (comparison < 0) {
                 left = mid + 1;
-            } else if (res == 0) {
-                endIndex = mid;
-                left = mid + 1;
-            } else {
+            } else if (comparison > 0) {
                 right = mid - 1;
+            } else {
+                return candidate; // Found a match
             }
         }
 
-        if (startIndex != -1 && endIndex != -1) {
-            for (int i = startIndex; i <= endIndex; i++) {
-                Block blk = tuple.blockList.get(i);
-                if (blk.pos.equals(pos)) {
-                    return blk;
-                }
-            }
-        }
-
+        // No block with the given ID was found
         return null;
     }
 
@@ -319,7 +348,7 @@ public class Chunk { // some operations are mutually exclusive
 
                     Tuple tuple = Chunk.getTuple(tupleList, tupleTexName, tupleBits);
                     if (tuple != null) {
-                        Block adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
+                        Block adjBlock = Chunk.getBlock(tuple, blkId);
 
                         if (adjBlock != null) {
                             int adjFaceBitsBefore = adjBlock.getFaceBits();
@@ -373,7 +402,7 @@ public class Chunk { // some operations are mutually exclusive
                 Block adjBlock = null;
 
                 if (tuple != null) {
-                    adjBlock = Chunk.getBlock(tuple, adjPos, blkId);
+                    adjBlock = Chunk.getBlock(tuple, blkId);
                 }
 
                 if (adjBlock != null) {
@@ -406,7 +435,7 @@ public class Chunk { // some operations are mutually exclusive
             tupleList.add(tuple);
             tupleList.sort(Tuple.TUPLE_COMP);
         }
-        List<Block> blockList = tuple.getBlockList();
+        IList<Block> blockList = tuple.blockList;
         blockList.add(block);
         blockList.sort(Block.UNIQUE_BLOCK_CMP);
 

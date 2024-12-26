@@ -65,7 +65,7 @@ public class Chunks {
      * @param chunkId provided chunk id.
      * @return chunk (if exists non-empty) block list
      */
-    public IList<Block> getBlockList(int chunkId) {
+    public synchronized IList<Block> getBlockList(int chunkId) {
         IList<Block> blocks = new GapList<>();
         tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> Chunk.chunkFunc(blk.pos) == chunkId)));
 
@@ -80,7 +80,7 @@ public class Chunks {
      * @param chunkId provided chunk id.
      * @return null if tuple doest not exist otherwise block list from tuple
      */
-    public IList<Block> getFilteredBlockList(String texName, int faceBits, int chunkId) {
+    public synchronized IList<Block> getFilteredBlockList(String texName, int faceBits, int chunkId) {
         // binary search of the tuple
         Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
 
@@ -98,7 +98,7 @@ public class Chunks {
      * @param chunkIdList provided chunk id list
      * @return chunk (if exists non-empty) block list
      */
-    public IList<Block> getBlockList(IList<Integer> chunkIdList) {
+    public synchronized IList<Block> getBlockList(IList<Integer> chunkIdList) {
         IList<Block> blocks = new GapList<>();
         tupleList.forEach(tuple -> blocks.addAll(tuple.blockList.filter(blk -> chunkIdList.contains(Chunk.chunkFunc(blk.pos)))));
 

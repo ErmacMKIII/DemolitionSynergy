@@ -51,7 +51,7 @@ public class LightSources {
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
     public LightSources() {
-        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, Texture.getOrDefault("waterfx"));
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, Texture.getOrDefault("waterfx"), null);
     }
 
     /**

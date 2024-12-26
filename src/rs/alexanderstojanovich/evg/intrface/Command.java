@@ -815,7 +815,7 @@ public class Command implements Callable<Object> {
                             String serverHostName = parts[0];
                             gameObject.game.setServerHostName(serverHostName);
                         }
-                        if (parts.length <= 2) {
+                        if (parts.length == 2) {
                             int port = Integer.parseInt(parts[1]);
                             gameObject.game.setPort(port);
                         }

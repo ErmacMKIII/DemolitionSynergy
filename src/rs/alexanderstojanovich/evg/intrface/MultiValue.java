@@ -31,23 +31,27 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     protected final DynamicText valueText;
     private int selected = -1;
     protected Type type;
+    private final Intrface intrface;
 
     public MultiValue(Intrface intrface, Object[] valueArray, Type type) throws Exception {
+        this.intrface = intrface;
         this.type = type;
-        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, "");
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, "", intrface);
         values.addAll(Arrays.asList(valueArray));
     }
 
     public MultiValue(Intrface intrface, Object[] valueArray, Type type, int selected) throws Exception {
+        this.intrface = intrface;
         this.type = type;
         this.selected = selected;
-        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(valueArray[selected]));
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(valueArray[selected]), intrface);
         values.addAll(Arrays.asList(valueArray));
     }
 
     public MultiValue(Intrface intrface, Object[] valueArray, Type type, Object currentValue) throws Exception {
+        this.intrface = intrface;
         this.type = type;
-        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(currentValue));
+        this.valueText = new DynamicText(intrface.gameObject.GameAssets.FONT, String.valueOf(currentValue), intrface);
         values.addAll(Arrays.asList(valueArray));
         this.selected = values.indexOf(currentValue);
     }
@@ -138,6 +142,11 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
     @Override
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public Intrface getIntrface() {
+        return intrface;
     }
 
 }

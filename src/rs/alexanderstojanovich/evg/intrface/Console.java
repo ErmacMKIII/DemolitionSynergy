@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
@@ -29,6 +30,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWScrollCallback;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.intrface.Command.Status;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
@@ -70,12 +72,12 @@ public class Console {
         int conwidth = cfg.getWidth();
         int conheight = cfg.getHeight() / 2;
 
-        this.panel = new Quad(conwidth, conheight, intrface.gameObject.GameAssets.CONSOLE);
+        this.panel = new Quad(conwidth, conheight, intrface.gameObject.GameAssets.CONSOLE, intrface);
         this.panel.setColor(new Vector4f(LevelContainer.NIGHT_SKYBOX_COLOR_RGB, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
-        this.inText = new DynamicText(intrface.gameObject.GameAssets.FONT, "]_", new Vector2f(), 18, 18);
+        this.inText = new DynamicText(intrface.gameObject.GameAssets.FONT, "]_", new Vector2f(), 18, 18, this.intrface);
         this.inText.setColor(new Vector4f(GlobalColors.GREEN, 1.0f));
         this.inText.pos.x = -1.0f;
         this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
@@ -83,7 +85,7 @@ public class Console {
         this.inText.setAlignment(Text.ALIGNMENT_LEFT);
         this.inText.alignToNextChar(intrface);
 
-        this.completes = new DynamicText(intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18);
+        this.completes = new DynamicText(intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18, this.intrface);
         this.completes.color = new Vector4f(GlobalColors.YELLOW, 1.0f);
         this.completes.pos.x = -1.0f;
         this.completes.pos.y = -0.5f + panel.getPos().y - inText.getRelativeCharHeight(intrface);
@@ -98,39 +100,37 @@ public class Console {
         glfwKeyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
+                if (!enabled) {
+                    return; // Ignore input when console is disabled
+                }
+
                 if (key == GLFW.GLFW_KEY_LEFT_CONTROL) {
-                    if (action == GLFW.GLFW_PRESS) {
+                    if (action == GLFW.GLFW_RELEASE) {
                         ctrlPressed = true;
                     } else if (action == GLFW.GLFW_RELEASE) {
                         ctrlPressed = false;
                     }
                 }
 
-                if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
-                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
-                    GLFW.glfwSetCharCallback(window, null);
-                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
-                    GLFW.glfwSetScrollCallback(window, null);
-                    inText.setContent("");
-                    completes.setContent("");
-                    input.setLength(0);
-                    enabled = false;
+                if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT)) {
+                    if (action == GLFW.GLFW_PRESS) {
+                        // Toggle console state on key press
+                        enabled = !enabled;
 
-                    if (Game.getCurrentMode() == Game.Mode.FREE) {
-                        intrface.getGuideText().setContent("Press 'ESC' to open Main Menu\nor press '~' to open Console");
-                        intrface.getGuideText().setEnabled(true);
-                    } else {
-                        intrface.getGuideText().setEnabled(false);
+                        if (enabled) {
+                            open(); // Reinitialize console callbacks and rendering
+                        } else {
+                            // use 'this' to avoid accidentally close the resource
+                            Console.this.close(); // Reset callbacks and disable console rendering
+                        }
                     }
-
-                } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                } else if (key == GLFW.GLFW_KEY_BACKSPACE && (action == GLFW.GLFW_RELEASE || action == GLFW.GLFW_REPEAT)) {
                     if (cursorPosition > 0) {
                         input.deleteCharAt(cursorPosition - 1);
                         cursorPosition--;
                         updateInputText();
                     }
-                } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
+                } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_RELEASE) {
                     if (!input.toString().equals("")) {
                         Command cmd = Command.getCommand(input.toString());
 
@@ -139,6 +139,8 @@ public class Console {
                             HistoryItem item;
                             try {
                                 item = new HistoryItem(Console.this, cmd);
+                                item.buildCmdText();
+
                                 history.addFirst(item);
                             } catch (Exception ex) {
                                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
@@ -146,12 +148,11 @@ public class Console {
 
                             // shift them
                             history.forEach(hi -> {
-                                hi.buildCmdText();
-                                hi.cmdText.pos.x = -1.0f;
+                                hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
                                 hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
                                 hi.cmdText.alignToNextChar(intrface);
 
-                                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+                                hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
                                 hi.quad.pos.y = hi.cmdText.pos.y;
                             });
 
@@ -178,7 +179,7 @@ public class Console {
                         input.setLength(0);
                         inText.setContent("]_");
                     }
-                } else if (key == GLFW.GLFW_KEY_TAB && action == GLFW.GLFW_PRESS) {
+                } else if (key == GLFW.GLFW_KEY_TAB && action == GLFW.GLFW_RELEASE) {
                     List<String> candidates = Command.autoComplete(input.toString());
                     StringBuilder sb = new StringBuilder();
                     int index = 0;
@@ -199,21 +200,24 @@ public class Console {
                         // position cursor in the end when only one candidate
                         cursorPosition = input.length();
                     }
-                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_RELEASE) {
                     GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
-                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
-                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_RELEASE) {
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
+
                     if (clipboard != null && !clipboard.isEmpty()) {
                         input.insert(cursorPosition, clipboard);
                         cursorPosition += clipboard.length();
                         updateInputText();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, new Vector3f());
                     } // Handle arrow keys
-                } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_RELEASE || action == GLFW.GLFW_REPEAT)) {
                     if (cursorPosition > 0) {
                         cursorPosition--;
                         updateInputText();
                     }
-                } else if (key == GLFW.GLFW_KEY_RIGHT && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                } else if (key == GLFW.GLFW_KEY_RIGHT && (action == GLFW.GLFW_RELEASE || action == GLFW.GLFW_REPEAT)) {
                     if (cursorPosition < input.length()) {
                         cursorPosition++;
                         updateInputText();
@@ -225,9 +229,13 @@ public class Console {
         glfwCharCallback = new GLFWCharCallback() {
             @Override
             public void invoke(long window, int codepoint) {
+                if (!enabled || codepoint == GLFW.GLFW_KEY_GRAVE_ACCENT) {
+                    return; // Ignore input when console is disabled
+                }
                 if (cursorPosition != 0 && input.length() == 0) {
                     return; // safe string insertion
                 }
+
                 input.insert(cursorPosition, (char) codepoint);
                 cursorPosition++;
                 updateInputText();
@@ -237,6 +245,9 @@ public class Console {
         glfwScrollCallback = new GLFWScrollCallback() {
             @Override
             public void invoke(long window, double xoffset, double yoffset) {
+                if (!enabled) {
+                    return; // Ignore input when console is disabled
+                }
                 float scrollAmount = (float) yoffset * 0.1f; // Adjust scroll speed here
 
                 for (HistoryItem hi : history) {
@@ -250,21 +261,54 @@ public class Console {
     }
 
     /**
-     * When open callbacks are changed (take input from keyboard, mouse etc)
-     * Enabled is set to true for rendering.
+     * Opens the console, setting up callbacks and enabling rendering.
      */
     public void open() {
         if (input.length() == 0) {
-            enabled = true;
-
             inText.setContent("]_");
 
+            // Enable the cursor for text input
             GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+
+            // Disable the default cursor position callback while in console
             GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+
+            // Set the custom key and character callbacks for the console
             GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
-            GLFW.glfwWaitEvents();
             GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
+
+            // Optionally set scroll behavior for console
             GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), glfwScrollCallback);
+
+            // Avoid blocking the application with glfwWaitEvents
+            GLFW.glfwPostEmptyEvent(); // Notify GLFW to process events immediately
+
+            enabled = true;
+        }
+    }
+
+    /**
+     * Closes the console by resetting callbacks and disabling rendering.
+     */
+    public void close() {
+        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultKeyCallback());
+        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultCursorCallback());
+        GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+
+        inText.setContent("");
+        completes.setContent("");
+        input.setLength(0);
+        cursorPosition = 0;
+        enabled = false;
+
+        // Update guide text depending on the game mode
+        if (Game.getCurrentMode() == Game.Mode.FREE) {
+            intrface.getGuideText().setContent("Press 'ESC' to open Main Menu\nor press '~' to open Console");
+            intrface.getGuideText().setEnabled(true);
+        } else {
+            intrface.getGuideText().setEnabled(false);
         }
     }
 
@@ -297,11 +341,11 @@ public class Console {
             // shift them
             history.forEach(hi -> {
                 hi.buildCmdText();
-                hi.cmdText.pos.x = -1.0f;
+                hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
                 hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
                 hi.cmdText.alignToNextChar(intrface);
 
-                hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+                hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
                 hi.quad.pos.y = hi.cmdText.pos.y;
             });
         }
@@ -343,11 +387,11 @@ public class Console {
         // shift them
         history.forEach(hi -> {
             hi.buildCmdText();
-            hi.cmdText.pos.x = -1.0f;
+            hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
             hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
             hi.cmdText.alignToNextChar(intrface);
 
-            hi.quad.pos.x = hi.cmdText.pos.x + (hi.cmdText.getRelativeWidth(intrface) + hi.cmdText.getRelativeCharWidth(intrface)) * hi.cmdText.scale;
+            hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
             hi.quad.pos.y = hi.cmdText.pos.y;
         });
     }

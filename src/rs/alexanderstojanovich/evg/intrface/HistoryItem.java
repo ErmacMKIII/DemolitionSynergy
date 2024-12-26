@@ -34,8 +34,8 @@ public class HistoryItem {
     public HistoryItem(Console console, Command command) throws Exception {
         this.console = console;
         this.cmd = command;
-        this.cmdText = new DynamicText(console.intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18);
-        this.quad = new Quad(14, 14, console.intrface.gameObject.GameAssets.LIGHT_BULB);
+        this.cmdText = new DynamicText(console.intrface.gameObject.GameAssets.FONT, "", new Vector2f(), 18, 18, console.intrface);
+        this.quad = new Quad(14, 14, console.intrface.gameObject.GameAssets.LIGHT_BULB, console.intrface);
     }
 
     /**

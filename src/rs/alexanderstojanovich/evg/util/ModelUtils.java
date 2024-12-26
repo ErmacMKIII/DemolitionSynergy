@@ -639,28 +639,25 @@ public class ModelUtils {
      * @return unique int
      */
     public static int blockSpecsToUniqueInt(boolean solid, String texName, int facebits, Vector3f pos) {
-        // Convert boolean solid to integer based on ASCII values of 'S' and 'F'
-        int a = solid ? 'S' : 'F';
+        // Convert boolean solid to integer (0 for false, 1 for true)
+        int a = solid ? 1 : 0;
 
-        // Get texture index
+        // Texture index
         int b = Texture.getOrDefaultIndex(texName);
-        b++;
 
-        // Get chunk function
+        // Use Chunk function for the position
         int c = Chunk.chunkFunc(pos);
-        c++;
 
-        // Calculate indices for the position
-        float iFloat = (pos.x + Chunk.BOUND) / 2.0f;
-        float jFloat = (pos.z + Chunk.BOUND) / 2.0f;
-        float kFloat = (pos.y + Chunk.BOUND) / 2.0f;
+        // Scale and convert position components to integers
+        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
+        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
+        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
 
-        // Calculate unique integer using the position indices using FMA
-        int d = (int) Math.fma(Math.round(kFloat), Math.fma(Chunk.BOUND, Chunk.BOUND, Math.fma(Math.round(jFloat), Chunk.BOUND, Math.round(iFloat))), 0);
-        d++;
+        // Combine position components into a single value
+        int posHash = x * 73856093 ^ y * 19349663 ^ z * 83492791; // Use large prime numbers
 
-        // Combine all components to generate the final ID using FMA
-        int result = Math.round(Math.fma(b ^ c, d, a));
+        // Combine all components into a single unique integer
+        int result = Short.MAX_VALUE | ((a * 31) ^ (b * 17) ^ (c * 13) ^ (facebits * 7) ^ posHash);
 
         return result;
     }

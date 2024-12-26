@@ -157,6 +157,9 @@ public class GameServerProcessor extends IoHandlerAdapter {
         if (!gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid)) && request.getRequestType() != RequestIfc.RequestType.HELLO) {
             gameServer.assertTstFailure(clientHostName, clientGuid);
 
+            // issuing kick to the client (guid as data) ~ best effort if has not successful first time
+            GameServer.kickPlayer(gameServer, clientGuid);
+
             return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client issued invalid request type (other than HELLO)");
         }
 
@@ -399,10 +402,16 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         senderName = otherPlayerOrNull.getName();
                     }
                 }
+
+                gameServer.gameObject.intrface.getConsole().write(String.format("%s:%s", senderName, request.getData()));
+                DSLogger.reportInfo(String.format("%s:%s", senderName, request.getData()), null);
+
                 response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
                 gameServer.clients.forEach(ci -> {
                     try {
-                        response.send("*", gameServer, ci.session);
+                        if (!ci.uniqueId.equals(clientGuid)) {
+                            response.send(ci.uniqueId, gameServer, ci.session);
+                        }
                     } catch (Exception ex) {
                         DSLogger.reportError("Unable to deliver chat message, ex:", ex);
                     }

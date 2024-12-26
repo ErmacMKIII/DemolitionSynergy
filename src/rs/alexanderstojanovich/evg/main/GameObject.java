@@ -87,7 +87,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     private final Configuration cfg = Configuration.getInstance();
 
     public static final boolean IS_DEVELOPMENT = false;
-    public static final int VERSION = 53;
+    public static final int VERSION = 54;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
 
@@ -168,10 +168,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
         WINDOW.centerTheWindow();
         //----------------------------------------------------------------------        
-        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true);
+        this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true, null);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
 
-        this.initText = new DynamicText(GameAssets.FONT, "Initializing...", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f));
+        this.initText = new DynamicText(GameAssets.FONT, "Initializing...", GlobalColors.GREEN_RGBA, new Vector2f(-1.0f, -1.0f), null);
         //----------------------------------------------------------------------        
         //----------------------------------------------------------------------
         initializedWindow = true;
@@ -513,7 +513,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void prepare() {
-        if (!isWorking() && !GameRenderer.isLastFrame()) {
+        if (!isWorking()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.prepare();
@@ -528,7 +528,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      */
     public void animate() {
-        if (!isWorking() && !GameRenderer.isFirstFrame()) {
+        if (!isWorking()) {
             updateRenderLCLock.lock();
             try {
                 levelContainer.animate();
@@ -587,6 +587,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             WINDOW.setTitle(GameObject.WINDOW_TITLE);
         }
         Game.setCurrentMode(Game.Mode.FREE);
+        // fix menu being opened
+        intrface.getGameMenu().setEnabled(false);
+        // set this as help text (it is reset)
+        intrface.getGuideText().setEnabled(true);
     }
 
     /**
@@ -610,6 +614,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.loadLevelFromFile(fileName);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -629,6 +634,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.saveLevelToFile(fileName);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -653,6 +659,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -676,6 +683,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+            intrface.getGuideText().setEnabled(false);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to spawn player after the fall!", ex);
         } finally {
@@ -712,6 +720,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return levelContainer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
         }, this.TaskExecutor).thenApply((Boolean rez) -> {
             levelContainer.levelActors.player.setRegistered(rez);
+            intrface.getGuideText().setEnabled(false);
             return null;
         });
 
@@ -828,7 +837,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     game.requestSetPlayerPosition();
 
                     // !IMPORTANT -- ENABLE ASYNC READPOINT 
-                    game.asyncReceivedEnabled = true;
+                    game.setAsyncReceivedForceEnabled(true);
+                    intrface.getGuideText().setEnabled(false);
 
                     success = true;
                 } catch (Exception ex) {

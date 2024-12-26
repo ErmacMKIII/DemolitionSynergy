@@ -155,7 +155,7 @@ public class GameServer implements DSMachine, Runnable {
                     boolean maxRPSReached = client.requestPerSecond > MAX_RPS;
                     // max reqest per second reached -> kick client
                     if (maxRPSReached || kicklist.contains(client.uniqueId)) {
-                        // issuing kick to the client (guid as data)
+                        // issuing kick to the client (guid as data) ~ best effort if has not successful first time
                         GameServer.kickPlayer(GameServer.this, client.uniqueId);
                     }
 
@@ -167,6 +167,9 @@ public class GameServer implements DSMachine, Runnable {
 
                             // clean up server from client data
                             GameServer.performCleanUp(GameServer.this.gameObject, client.uniqueId, true);
+
+                            // remove from kicklist he/she timed out
+                            kicklist.remove(client.uniqueId);
                         } catch (InterruptedException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
@@ -178,9 +181,6 @@ public class GameServer implements DSMachine, Runnable {
 
                 // Remove kicked and timed out players
                 clients.removeIf(cli -> cli.timeToLive <= 0);
-
-                // Kicklist is processed, clear it
-                kicklist.clear();
 
                 // Update server window title with current player count
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
@@ -332,11 +332,11 @@ public class GameServer implements DSMachine, Runnable {
                 ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "KICK");
                 response.send(clientInfo.uniqueId, gameServer, clientInfo.session);
 
-//                // close session (with the client)
-//                clientInfo.session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
+                // close session (with the client)
+                clientInfo.session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
 //
-//                // clean up server from client data
-//                GameServer.performCleanUp(gameServer.gameObject, clientInfo.uniqueId, false);
+                // clean up server from client data
+                GameServer.performCleanUp(gameServer.gameObject, clientInfo.uniqueId, false);
                 // add to kick list for later removal from client list
                 gameServer.kicklist.addIfAbsent(playerGuid);
             } catch (Exception ex) {

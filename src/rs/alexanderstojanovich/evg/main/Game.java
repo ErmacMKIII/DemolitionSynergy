@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.ReadFuture;
@@ -185,7 +186,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * When about to disconnect disabled
      */
-    protected boolean asyncReceivedEnabled = false;
+    protected AtomicBoolean asyncReceivedEnabled = new AtomicBoolean(false);
 
     /**
      * Is (game) client connected to (game) server. Status
@@ -885,17 +886,19 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // this is issued kick from the server to the Guid of this machine
         if (response.getData().equals("KICK")) {
             // disable async 'read point' in 'message received'
-            asyncReceivedEnabled = false;
+            asyncReceivedEnabled.set(false);
 
             DSLogger.reportInfo("You got kicked from the server!", null);
             this.gameObject.intrface.getConsole().write("You got kicked from the server!");
             disconnectFromServer();
             gameObject.clearEverything();
+
+            waitReceiveTime = 0L;
             return;
         }
 
         // choose the one which fits by unique checksum
-        RequestIfc reqTarg = null;
+        RequestIfc reqTarg;
         synchronized (internRequestMutex) {
             reqTarg = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
             requests.remove(reqTarg);
@@ -930,7 +933,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     break;
                 case GOODBYE:
                     // disable async 'read point' in 'message received'
-                    asyncReceivedEnabled = false;
+                    asyncReceivedEnabled.set(false);
                     // print GOODBYE message (disconnecting)
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -978,7 +981,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @throws java.lang.Exception
      */
     public void waitAsync(double deltaTime) throws Exception {
-        if (!asyncReceivedEnabled || requests.isEmpty()) {
+        if (!isAsyncReceivedEnabled() || requests.isEmpty()) {
             return;
         }
 
@@ -996,28 +999,35 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // if waiting time is less or equal than 45 sec
-        if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
-            // don't block main thread if game is unresponsive
-            CompletableFuture.runAsync(() -> {
-                // attempt to reconnected
-                if (!reconnect()) {
-                    this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
-                    DSLogger.reportError("Connection with the server lost!", null);
-                    this.disconnectFromServer();
-                    this.gameObject.clearEverything();
-                } else {
-                    if (connected == ConnectionStatus.RECONNECTED) {
-                        // Reset reconnected to connected
-                        connected = ConnectionStatus.CONNECTED;
-
-                        // enable async received (player connected)
-                        asyncReceivedEnabled = true;
+        synchronized (internRequestMutex) {
+            if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
+                // don't block main thread if game is unresponsive
+                CompletableFuture.runAsync(() -> {
+                    // if not async received enabled ~ probably kick occurred so 'don't fall' down the code
+                    if (!isAsyncReceivedEnabled()) {
+                        return;
                     }
 
-                    // success reset wait receive time
-                    waitReceiveTime = 0L;
-                }
-            }, gameObject.TaskExecutor);
+                    // attempt to reconnected
+                    if (!reconnect()) {
+                        this.gameObject.intrface.getConsole().write("Connection with the server lost!", Command.Status.FAILED);
+                        DSLogger.reportError("Connection with the server lost!", null);
+                        this.disconnectFromServer();
+                        this.gameObject.clearEverything();
+                    } else {
+                        if (connected == ConnectionStatus.RECONNECTED) {
+                            // Reset reconnected to connected
+                            connected = ConnectionStatus.CONNECTED;
+
+                            // enable async received (player connected)
+                            asyncReceivedEnabled.set(true);
+                        }
+
+                        // success reset wait receive time
+                        waitReceiveTime = 0L;
+                    }
+                }, gameObject.TaskExecutor);
+            }
         }
 
         // display ping in game window title
@@ -1200,6 +1210,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         GLFW.glfwWaitEvents(); // prevent not responding in title from Windows
 
         gameObject.intrface.getMainMenu().open();
+        gameObject.intrface.getGuideText().setEnabled(false);
 
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
@@ -1258,14 +1269,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public boolean connectToServer() {
         if (isConnected()) {
-            DSLogger.reportWarning("Error - you are already connect to Game Server!", null);
-            gameObject.intrface.getConsole().write("Error - you are already connect to Game Server!", Command.Status.WARNING);
+            DSLogger.reportWarning("Error - you are already connected to Game Server!", null);
+            gameObject.intrface.getConsole().write("Error - you are already connected to Game Server!", Command.Status.WARNING);
 
             return false;
         }
         try {
             // disable async receive
-            asyncReceivedEnabled = false;
+            asyncReceivedEnabled.set(false);
             // set default timeout (30 sec)
             timeout = Game.DEFAULT_TIMEOUT;
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
@@ -1582,7 +1593,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
 
                     // we have async receive enabled, wait to receive the last message
-                    if (asyncReceivedEnabled) {
+                    if (isAsyncReceivedEnabled()) {
                         internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
                     } else {
                         // we don't have async receive enabled write the 'goodbye' response message
@@ -1726,7 +1737,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
 
                 // we have async receive enabled, wait to receive the last message
-                if (!asyncReceivedEnabled) {
+                if (!isAsyncReceivedEnabled()) {
                     // we don't have async receive enabled write the 'goodbye' response message
                     ResponseIfc response = ResponseIfc.receive(this, session);
 
@@ -1962,11 +1973,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     public boolean isAsyncReceivedEnabled() {
-        return asyncReceivedEnabled;
+        return asyncReceivedEnabled.get();
     }
 
-    public void setAsyncReceivedEnabled(boolean asyncReceivedEnabled) {
-        this.asyncReceivedEnabled = asyncReceivedEnabled;
+    public void setAsyncReceivedForceEnabled(boolean asyncReceivedEnabled) {
+        this.asyncReceivedEnabled.compareAndSet(false, asyncReceivedEnabled);
     }
 
     public double getPing() {

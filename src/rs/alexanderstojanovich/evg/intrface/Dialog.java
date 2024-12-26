@@ -51,9 +51,12 @@ public abstract class Dialog {
     protected final GLFWCharCallback charCallback;
     protected final GLFWKeyCallback keyCallback;
 
+    public final Intrface intrface;
+
     public Dialog(Texture texture, Vector2f pos,
-            String question, String success, String fail) throws Exception {
-        this.dialog = new DynamicText(texture, "");
+            String question, String success, String fail, Intrface ifc) throws Exception {
+        this.intrface = ifc;
+        this.dialog = new DynamicText(texture, "", ifc);
         this.dialog.setPos(pos);
         this.enabled = false;
         this.done = false;
