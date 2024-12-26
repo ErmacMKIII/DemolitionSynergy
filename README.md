@@ -50,7 +50,7 @@ Unique features:
 # How To Build
 Build was coded in Apache NetBeans IDE 21. Requires Java JDK 11 (or later).
 In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
-1. LWJGL 3.3.4 with JOML 1.10.7 (not installed, follow the steps below),
+1. LWJGL 3.3.5 with JOML 1.10.7 (not installed, follow the steps below),
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) with dependecies (installed),

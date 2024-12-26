@@ -402,10 +402,16 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         senderName = otherPlayerOrNull.getName();
                     }
                 }
+
+                gameServer.gameObject.intrface.getConsole().write(String.format("%s:%s", senderName, request.getData()));
+                DSLogger.reportInfo(String.format("%s:%s", senderName, request.getData()), null);
+
                 response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, senderName + ":" + request.getData());
                 gameServer.clients.forEach(ci -> {
                     try {
-                        response.send("*", gameServer, ci.session);
+                        if (!ci.uniqueId.equals(clientGuid)) {
+                            response.send(ci.uniqueId, gameServer, ci.session);
+                        }
                     } catch (Exception ex) {
                         DSLogger.reportError("Unable to deliver chat message, ex:", ex);
                     }

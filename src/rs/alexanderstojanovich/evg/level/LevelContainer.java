@@ -66,10 +66,12 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    public static float MIN_AMOUNT = 0f;
-    public static float MAX_AMOUNT = 8f;
+    public static final float MIN_AMOUNT = 0f;
+    public static final float MAX_AMOUNT = 8f;
 
-    public static float PRECISION = 128f;
+    public static final float PRECISION = 128f;
+
+    public static final float STEP_AMOUNT = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
 
     public static enum LevelMapFormat {
         /**
@@ -1069,7 +1071,6 @@ public class LevelContainer implements GravityEnviroment {
             return false; // No need to continue if outside the skybox.
         }
 
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = predictable.getPredictor();
 
         // Round the predictor's coordinates to align with the grid.
@@ -1082,7 +1083,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate through adjacent positions.
         for (int j = 0; j <= 13; j++) {
-            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += stepAmount) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
 
@@ -1111,7 +1112,6 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f observerPos = observer.getPos();
 
         // Round the observer's coordinates to align with the grid.
@@ -1125,7 +1125,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += stepAmount) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(observerPos, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
 
@@ -1156,7 +1156,6 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1170,7 +1169,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += stepAmount) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
 
@@ -1206,7 +1205,6 @@ public class LevelContainer implements GravityEnviroment {
             return true; // Collision detected outside the skybox or with its boundary.
         }
 
-        final float stepAmount = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
         Vector3f predictor = critter.getPredictor();
 
         // Round the critter's predictor coordinates to align with the grid.
@@ -1220,7 +1218,7 @@ public class LevelContainer implements GravityEnviroment {
         // Iterate through adjacent positions.
         OUTER:
         for (int j = 0; j <= 13; j++) {
-            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += stepAmount) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 // Interpolate the critter's position based on the current interpolation time.
                 Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
 
@@ -1263,22 +1261,24 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
             float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             levelActors.player.movePredictorDown(tstHeight);
 
             // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
-                Vector3f adjPos = Block.getAdjacentPos(levelActors.player.getPredictor(), side, 2.0f);
-                Vector3f adjPosAlign = alignVector(adjPos);
+                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                    Vector3f adjPos = Block.getAdjacentPos(levelActors.player.getPredictor(), side, amount);
+                    Vector3f adjPosAlign = alignVector(adjPos);
 
-                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
-                if (solidOnLoc) {
-                    collision = checkCollisionInternal(adjPosAlign, levelActors.player);
-                    if (collision) {
-                        fallVelocity = 0.0f;
-                        break SCAN;
+                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
+                    if (solidOnLoc) {
+                        collision = checkCollisionInternal(adjPosAlign, levelActors.player);
+                        if (collision) {
+                            fallVelocity = 0.0f;
+                            break SCAN;
+                        }
                     }
                 }
             }
@@ -1362,22 +1362,24 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
             float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorUp(tstHeight);
 
             // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
-                Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
-                Vector3f adjPosAlign = alignVector(adjPos);
+                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
+                    Vector3f adjPosAlign = alignVector(adjPos);
 
-                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
-                if (solidOnLoc) {
-                    collision = checkCollisionInternal(adjPosAlign, critter);
-                    if (collision) {
-                        jumpVelocity = 0.0f;
-                        break SCAN;
+                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
+                    if (solidOnLoc) {
+                        collision = checkCollisionInternal(adjPosAlign, critter);
+                        if (collision) {
+                            jumpVelocity = 0.0f;
+                            break SCAN;
+                        }
                     }
                 }
             }
@@ -1430,21 +1432,23 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions
         SCAN:
-        for (int ticks = 0; ticks < Game.getCurrentTicks(); ticks++) {
+        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
             float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
             float tstHeight = crouchStrength * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
             critter.movePredictorDown(tstHeight);
 
             // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
-                Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
-                Vector3f adjPosAlign = alignVector(adjPos);
+                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
+                    Vector3f adjPosAlign = alignVector(adjPos);
 
-                boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
-                if (solidOnLoc) {
-                    collision = checkCollisionInternal(adjPosAlign, critter);
-                    if (collision) {
-                        break SCAN;
+                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
+                    if (solidOnLoc) {
+                        collision = checkCollisionInternal(adjPosAlign, critter);
+                        if (collision) {
+                            break SCAN;
+                        }
                     }
                 }
             }
@@ -1470,6 +1474,14 @@ public class LevelContainer implements GravityEnviroment {
         return !collision;
     }
 
+    /**
+     * /**
+     * Internal check for collision with environment or other objects.
+     *
+     * @param blkPos The block position to check.
+     * @param critter The critter to test against.
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
     /**
      * /**
      * Internal check for collision with environment or other objects.

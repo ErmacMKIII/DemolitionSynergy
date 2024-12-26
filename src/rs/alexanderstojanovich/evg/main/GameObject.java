@@ -86,7 +86,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final boolean IS_DEVELOPMENT = true;
+    public static final boolean IS_DEVELOPMENT = false;
     public static final int VERSION = 54;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
@@ -614,6 +614,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.loadLevelFromFile(fileName);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -633,6 +634,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.saveLevelToFile(fileName);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -657,6 +659,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+            intrface.getGuideText().setEnabled(false);
         } finally {
             updateRenderLCLock.unlock();
         }
@@ -680,6 +683,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
+            intrface.getGuideText().setEnabled(false);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to spawn player after the fall!", ex);
         } finally {
@@ -716,6 +720,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return levelContainer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
         }, this.TaskExecutor).thenApply((Boolean rez) -> {
             levelContainer.levelActors.player.setRegistered(rez);
+            intrface.getGuideText().setEnabled(false);
             return null;
         });
 
@@ -833,6 +838,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
                     // !IMPORTANT -- ENABLE ASYNC READPOINT 
                     game.setAsyncReceivedForceEnabled(true);
+                    intrface.getGuideText().setEnabled(false);
 
                     success = true;
                 } catch (Exception ex) {
