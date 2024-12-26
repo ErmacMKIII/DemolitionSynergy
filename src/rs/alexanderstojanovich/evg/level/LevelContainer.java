@@ -1440,7 +1440,7 @@ public class LevelContainer implements GravityEnviroment {
             // Check collision on all sides
             for (int side = 0; side <= 13; side++) {
                 for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
-                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, 2.0f);
+                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
                     Vector3f adjPosAlign = alignVector(adjPos);
 
                     boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
