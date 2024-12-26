@@ -160,7 +160,7 @@ public class Intrface {
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
             gameTimeText.alignToNextChar(this);
 
-            guideText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.5f, 0.0f), this);
+            guideText = new DynamicText(gameObject.GameAssets.FONT, "Press 'ESC' to open Main Menu\nor press '~' to open Console", GlobalColors.YELLOW_RGBA, new Vector2f(0.5f, 0.0f), this);
             guideText.setAlignment(Text.ALIGNMENT_CENTER);
             guideText.alignToNextChar(this);
 

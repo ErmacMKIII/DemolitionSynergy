@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
@@ -29,6 +30,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWScrollCallback;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.intrface.Command.Status;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
@@ -201,11 +203,14 @@ public class Console {
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_RELEASE) {
                     GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_RELEASE) {
-                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
+
                     if (clipboard != null && !clipboard.isEmpty()) {
                         input.insert(cursorPosition, clipboard);
                         cursorPosition += clipboard.length();
                         updateInputText();
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, new Vector3f());
                     } // Handle arrow keys
                 } else if (key == GLFW.GLFW_KEY_LEFT && (action == GLFW.GLFW_RELEASE || action == GLFW.GLFW_REPEAT)) {
                     if (cursorPosition > 0) {

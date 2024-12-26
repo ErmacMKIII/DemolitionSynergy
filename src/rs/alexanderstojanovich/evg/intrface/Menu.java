@@ -177,9 +177,11 @@ public abstract class Menu {
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
                     GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Menu.this.items.get(selected).menuValue.getCurrentValue().toString());
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
-                    final String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
                     if (clipboard != null) {
                         Menu.this.items.get(selected).menuValue.setCurrentValue(clipboard);
+                        intrface.gameObject.getSoundFXPlayer().play(AudioFile.BLOCK_SELECT, new Vector3f());
                         execute();
                     }
                 }
@@ -196,6 +198,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_ACCEPT, new Vector3f());
                     execute();
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
                     enabled = false;

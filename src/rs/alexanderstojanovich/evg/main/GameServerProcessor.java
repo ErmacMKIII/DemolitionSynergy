@@ -157,6 +157,9 @@ public class GameServerProcessor extends IoHandlerAdapter {
         if (!gameServer.clients.containsIf(c -> c.getUniqueId().equals(clientGuid)) && request.getRequestType() != RequestIfc.RequestType.HELLO) {
             gameServer.assertTstFailure(clientHostName, clientGuid);
 
+            // issuing kick to the client (guid as data) ~ best effort if has not successful first time
+            GameServer.kickPlayer(gameServer, clientGuid);
+
             return new Result(Status.CLIENT_ERROR, clientHostName, clientGuid, "Client issued invalid request type (other than HELLO)");
         }
 

@@ -587,6 +587,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             WINDOW.setTitle(GameObject.WINDOW_TITLE);
         }
         Game.setCurrentMode(Game.Mode.FREE);
+        // fix menu being opened
+        intrface.getGameMenu().setEnabled(false);
+        // set this as help text (it is reset)
+        intrface.getGuideText().setEnabled(true);
     }
 
     /**
@@ -828,7 +832,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     game.requestSetPlayerPosition();
 
                     // !IMPORTANT -- ENABLE ASYNC READPOINT 
-                    game.asyncReceivedEnabled = true;
+                    game.setAsyncReceivedForceEnabled(true);
 
                     success = true;
                 } catch (Exception ex) {
