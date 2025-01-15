@@ -2,7 +2,8 @@ name: Periodic Antivirus Scan
 
 on:
   schedule:
-    - cron: '0 3 * * 1'  # Runs every Monday at 3:00 AM UTC
+    - cron: '0 3 * * 1'  # Monday at 3:00 AM UTC
+    - cron: '0 3 * * 5'  # Friday at 3:00 AM UTC
   workflow_dispatch:  # Allows manual trigger of the workflow
 
 jobs:
@@ -19,10 +20,10 @@ jobs:
     - name: Install ClamAV
       run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
 
-    - name: Update Virus Definitions (Redirect Logs)
+    - name: Update Virus Definitions (No Logs)
       run: |
-        sudo mkdir -p /tmp/clamav
-        sudo freshclam --quiet --log=/tmp/clamav/freshclam.log
+        sudo sed -i 's/^UpdateLogFile .*/#UpdateLogFile/' /etc/clamav/freshclam.conf
+        sudo freshclam --quiet
 
     - name: Run Antivirus Scan on master
       run: clamscan -r . --bell -i
@@ -40,10 +41,10 @@ jobs:
     - name: Install ClamAV
       run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
 
-    - name: Update Virus Definitions (Redirect Logs)
+    - name: Update Virus Definitions (No Logs)
       run: |
-        sudo mkdir -p /tmp/clamav
-        sudo freshclam --quiet --log=/tmp/clamav/freshclam.log
+        sudo sed -i 's/^UpdateLogFile .*/#UpdateLogFile/' /etc/clamav/freshclam.conf
+        sudo freshclam --quiet
 
     - name: Run Antivirus Scan on dev
       run: clamscan -r . --bell -i
