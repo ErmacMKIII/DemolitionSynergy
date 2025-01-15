@@ -26,7 +26,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
-import rs.alexanderstojanovich.evg.util.MathUtils;
 
 /**
  * Game Renderer responsible for rendering scene(s) & interface.
@@ -112,7 +111,7 @@ public class GameRenderer extends Thread implements Executor {
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
-            fpsTicks += deltaTime * MathUtils.lerp(Game.getFpsMax(), fps, Game.TICK_TIME);
+            fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
