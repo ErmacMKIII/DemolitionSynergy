@@ -1,0 +1,45 @@
+name: Periodic Antivirus Scan
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Runs every Monday at 3:00 AM UTC
+  workflow_dispatch:  # Allows manual trigger of the workflow
+
+jobs:
+  scan_master:
+    name: Scan master Branch
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout master Branch
+      uses: actions/checkout@v3
+      with:
+        ref: master
+
+    - name: Install ClamAV
+      run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
+
+    - name: Update Virus Definitions
+      run: sudo freshclam
+
+    - name: Run Antivirus Scan
+      run: clamscan -r . --bell -i
+
+  scan_dev:
+    name: Scan dev Branch
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout dev Branch
+      uses: actions/checkout@v3
+      with:
+        ref: dev
+
+    - name: Install ClamAV
+      run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
+
+    - name: Update Virus Definitions
+      run: sudo freshclam
+
+    - name: Run Antivirus Scan
+      run: clamscan -r . --bell -i
