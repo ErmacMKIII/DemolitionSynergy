@@ -19,10 +19,10 @@ jobs:
     - name: Install ClamAV
       run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
 
-    - name: Update Virus Definitions
-      run: sudo freshclam
+    - name: Update Virus Definitions (No Logging)
+      run: sudo freshclam --quiet --disable-log
 
-    - name: Run Antivirus Scan
+    - name: Run Antivirus Scan on master
       run: clamscan -r . --bell -i
 
   scan_dev:
@@ -38,8 +38,8 @@ jobs:
     - name: Install ClamAV
       run: sudo apt-get update && sudo apt-get install -y clamav clamav-daemon
 
-    - name: Update Virus Definitions
-      run: sudo freshclam
+    - name: Update Virus Definitions (No Logging)
+      run: sudo freshclam --quiet --disable-log
 
-    - name: Run Antivirus Scan
+    - name: Run Antivirus Scan on dev
       run: clamscan -r . --bell -i
