@@ -46,10 +46,24 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  */
 public class GameServer implements DSMachine, Runnable {
 
+    /**
+     * Time-to-live for clients in seconds
+     */
     public static final int TIME_TO_LIVE = 120;
+
+    /**
+     * Maximum failed attempts allowed per client
+     */
     public static final int FAIL_ATTEMPT_MAX = 10;
+
+    /**
+     * Total maximum failed attempts allowed for the server
+     */
     public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
 
+    /**
+     * Total failed attempts counter
+     */
     public static int TotalFailedAttempts = 0;
 
     public static final Configuration config = Configuration.getInstance();
@@ -95,7 +109,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Server util helper (time to live etc.)
      */
-    public final ExecutorService serverHelperExecutor = Executors.newSingleThreadExecutor();
+    public ExecutorService serverHelperExecutor;
 
     /**
      * Blacklisted hosts with number of attempts
@@ -119,7 +133,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Schedule timer task to check clients (Time-To-Live)
      */
-    public final Timer timerClientChk = new Timer("Server Utils");
+    public Timer timerClientChk;
 
     /**
      * UDP acceptor and session settings
@@ -143,6 +157,11 @@ public class GameServer implements DSMachine, Runnable {
     public void startServer() {
         this.shutDownSignal = false;
 
+        // Start server helper
+        serverHelperExecutor = Executors.newSingleThreadExecutor();
+
+        // Schedule timer task to decrease Time-to-live for clients
+        timerClientChk = new Timer("Server Utils");
         // Schedule timer task to decrease Time-to-live for clients
         TimerTask task1 = new TimerTask() {
             @Override
@@ -199,7 +218,7 @@ public class GameServer implements DSMachine, Runnable {
     public void stopServer() {
         if (running) {
             // Kick all players
-            clients.forEach(cli -> GameServer.kickPlayer(gameObject.gameServer, cli.uniqueId));
+            clients.immutableList().forEach(cli -> GameServer.kickPlayer(gameObject.gameServer, cli.uniqueId));
 
             // Reset server window title
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
@@ -222,6 +241,9 @@ public class GameServer implements DSMachine, Runnable {
             clients.clear();
             running = false;
 
+            // Stop server loop and helpers
+            shutDown();
+
             DSLogger.reportInfo("Game Server finished!", null);
             gameObject.intrface.getConsole().write("Game Server finished!");
         }
@@ -231,8 +253,12 @@ public class GameServer implements DSMachine, Runnable {
      * Shut down execution service(s). Server is not available anymore.
      */
     public void shutDown() {
-        this.serverHelperExecutor.shutdown();
-        this.timerClientChk.cancel();
+        if (this.timerClientChk != null) {
+            this.timerClientChk.cancel();
+        }
+        if (this.serverHelperExecutor != null) {
+            this.serverHelperExecutor.shutdown();
+        }
     }
 
     /**
@@ -284,6 +310,7 @@ public class GameServer implements DSMachine, Runnable {
 
             // Update server window title with current player count
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
+
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
         } catch (IOException ex) {
