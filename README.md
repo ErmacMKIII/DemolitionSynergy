@@ -14,8 +14,8 @@ Demolition Synergy showing multiplayer setup.
 
 # Java Version
 Game (client) requires Java 11 LTS (11.0.1 or later).
-Java 11 Installer could be downloaded from:
-https://mega.nz/file/DYUwUS5J#ftHxZFKlsyaIlJJQ9E4cmpTrZG9byW9P_QeQNRNrIhQ
+Java 11 Installer (11.0.26) could be downloaded from:
+https://mega.nz/file/FMNB2RTJ#-jNDrxX2RAxcf-jdJEKBfDHI9FpqxSX-m4kxN8sm9bE
 
 # Verbose Description
 Robust (yet still uncomplete) Game Engine writen in Java. Free & Open-Source.
@@ -50,7 +50,7 @@ Unique features:
 # How To Build
 Build was coded in Apache NetBeans IDE 21. Requires Java JDK 11 (or later).
 In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
-1. LWJGL 3.3.5 with JOML 1.10.7 (not installed, follow the steps below),
+1. LWJGL 3.3.6 with JOML 1.10.7 (not installed, follow the steps below),
 2. Jorbis OGG Decoder (for OGG audio files) (installed),
 3. GapList & BigList (for Block lists) (installed),
 4. Apache logger (Log4J) with dependecies (installed),
@@ -129,8 +129,7 @@ As font (image) atlas Author used, program 'F2IBuilder' which could be obtained 
 https://f2ibuilder.dukitan.com.br/
 
 # Mentions
-Author: Ermac(MKIII); 
-Testers: 13;
+Author: Ermac(MKIII)
 Credits: Erokia
 
 # Very Important Notice

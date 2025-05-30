@@ -100,7 +100,7 @@ public class BlockEnvironment {
      * @param vqueue visible chunkId queue
      * @param camera in-game camera
      */
-    public void optimizeByControl(IList<Integer> vqueue, Camera camera) {
+    public void optimize(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
         pull();
 
@@ -111,11 +111,13 @@ public class BlockEnvironment {
         int lastFaceBitsCopy = lastFaceBits;
 
         // Create a lookup table for faster tuple access (avoiding multiple filters)
-        tupleLookup.clear();
-        for (Tuple t : workingTuples) {
-            tupleLookup
-                    .computeIfAbsent(t.texName(), k -> new HashMap<>())
-                    .put(t.faceBits(), t);
+        if (lastFaceBits == 0) {
+            tupleLookup.clear();
+            for (Tuple t : workingTuples) {
+                tupleLookup
+                        .computeIfAbsent(t.texName(), k -> new HashMap<>())
+                        .put(t.faceBits(), t);
+            }
         }
 
         for (String tex : Assets.TEX_WORLD) {

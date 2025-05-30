@@ -87,7 +87,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     private final Configuration cfg = Configuration.getInstance();
 
     public static final boolean IS_DEVELOPMENT = false;
-    public static final int VERSION = 54;
+    public static final int VERSION = 55;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
 
@@ -415,20 +415,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 levelContainer.levelActors.player.renderWeaponInHand(levelContainer.lightSources, ShaderProgram.getWeaponShader());
             }
             if (!isWorking()) {
-                this.prepare();
-
-                // Render Effects
-                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                    waterRenderer.render();
-                }
-
-                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                    shadowRenderer.render();
-                }
-
                 // Render Original Scene
                 updateRenderLCLock.lock();
                 try {
+                    this.prepare();
+
+                    // Render Effects
+                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                        waterRenderer.render();
+                    }
+
+                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                        shadowRenderer.render();
+                    }
+
                     levelContainer.render(renderFlag);
                 } finally {
                     updateRenderLCLock.unlock();

@@ -624,8 +624,8 @@ public class Intrface {
             IList<MenuItem> creditsMenuPairs = new GapList<>();
             creditsMenuPairs.add(new MenuItem(this, "Programmer", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem(this, "Testers", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem(this, "Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "\n", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Art", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));

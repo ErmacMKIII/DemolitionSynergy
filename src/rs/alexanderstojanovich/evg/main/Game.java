@@ -1123,7 +1123,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if ((ups & (TPS_QUARTER - 1)) == 0) {
-            // block optimizaiton (separate visible from not visible)
+            // block optimization (separate visible from not visible)
             gameObject.utilOptimization();
         }
     }
@@ -1253,7 +1253,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
 
             // util operations (heavy CPU time)
-            util();
+            if (!GameRenderer.couldRender()) {
+                util();
+            }
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

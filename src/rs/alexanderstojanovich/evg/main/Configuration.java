@@ -50,7 +50,7 @@ public class Configuration {
     private int textureSize = 512;
     private float gameTimeMultiplier = 1.0f;
     private int rendererPasses = 16;
-    private int optimizationPasses = 2;
+    private int optimizationPasses = 8;
     private double gameTicks = 0.0;
     private int blocksPerRun = 1000;
     private int ticksPerUpdate = Game.TPS_TWO;
