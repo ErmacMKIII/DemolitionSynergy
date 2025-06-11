@@ -66,13 +66,24 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    public static final float MIN_AMOUNT = 0f;
-    public static final float MAX_AMOUNT = 8f;
+    // Constants for collision control & gravity handling
+    /**
+     * Min amount of iteration for collision control or gravity control (inner
+     * loop)
+     */
+    public static final float MIN_AMOUNT = -4.2f;
+    /**
+     * Max amount of iteration for collision control or gravity control (inner
+     * loop)
+     */
+    public static final float MAX_AMOUNT = 4.2f;
+    /**
+     * Step amount of iteration for collision control or gravity control (inner
+     * loop).
+     */
+    public static final float STEP_AMOUNT = 5E-2f;
 
-    public static final float PRECISION = 128f;
-
-    public static final float STEP_AMOUNT = (MAX_AMOUNT - MIN_AMOUNT) / PRECISION;
-
+    // -------------------------------------------------
     public static enum LevelMapFormat {
         /**
          * Old format. Exists for quite long time.
@@ -138,7 +149,6 @@ public class LevelContainer implements GravityEnviroment {
 
     protected float fallVelocity = 0.0f;
     protected float jumpVelocity = 0.0f;
-    protected float thrustVelocity = 0.0f;
 
     public final Weapons weapons;
 
@@ -1167,8 +1177,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Iterate through adjacent positions.
-        OUTER:
+        SIDES:
         for (int j = 0; j <= 13; j++) {
+            SCAN:
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
@@ -1215,9 +1226,10 @@ public class LevelContainer implements GravityEnviroment {
             return true;
         }
 
-        // Iterate through adjacent positions.
-        OUTER:
+        // Iterate through adjacent positions.        
+        SIDES:
         for (int j = 0; j <= 13; j++) {
+            SCAN:
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 // Interpolate the critter's position based on the current interpolation time.
                 Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
@@ -1251,65 +1263,88 @@ public class LevelContainer implements GravityEnviroment {
      */
     @Override
     public boolean gravityDo(Critter critter, float deltaTime) {
-        if (working) {
-            return false;
-        }
-
         boolean collision = false;
         // Initial predictor position
-        final Vector3f predInit = new Vector3f(levelActors.player.getPredictor());
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
 
-        // Iterate over time steps to check for collisions
-        SCAN:
-        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
-            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
-            float tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-            levelActors.player.movePredictorDown(tstHeight);
+        // Iterate over time steps to check for collisions        
+        TICKS:
+        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME) {
+            float tstHeight;
+            if (jumpVelocity == 0.0f) {
+                tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                critter.movePredictorDown(tstHeight);
+            } else {
+                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                critter.movePredictorUp(tstHeight);
+            }
 
             // Check collision on all sides
+            SIDES:
             for (int side = 0; side <= 13; side++) {
+                SCAN:
                 for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
-                    Vector3f adjPos = Block.getAdjacentPos(levelActors.player.getPredictor(), side, amount);
+                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
                     Vector3f adjPosAlign = alignVector(adjPos);
 
                     boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
                     if (solidOnLoc) {
-                        collision = checkCollisionInternal(adjPosAlign, levelActors.player);
+                        collision = checkCollisionInternal(adjPosAlign, critter);
                         if (collision) {
                             fallVelocity = 0.0f;
-                            break SCAN;
+                            jumpVelocity = 0.0f;
+                            break TICKS;
                         }
                     }
                 }
             }
 
-            levelActors.player.movePredictorUp(tstHeight);
+            if (jumpVelocity == 0.0f) {
+                critter.movePredictorUp(tstHeight);
+            } else {
+                critter.movePredictorDown(tstHeight);
+            }
         }
-        levelActors.player.getPredictor().set(predInit); // Ensure predictor is reset after loop
+        critter.getPredictor().set(predInit); // Ensure predictor is reset after loop
 
         // If no collision, apply gravity and move the player
         if (!collision) {
-            float deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            float deltaHeight;
+            if (jumpVelocity == 0.0f) {
+                deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            } else {
+                deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+            }
             // Adjust height for actor in fluid (water)
             if (actorInFluid) {
                 deltaHeight *= 0.25f;
             }
 
-            levelActors.player.movePredictorYDown(deltaHeight);
-            levelActors.player.dropY(deltaHeight);
-
-            // in case of multiplayer join send to the server
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-                gameObject.game.requestSetPlayerPosition();
+            if (jumpVelocity == 0.0f) {
+                critter.movePredictorYDown(deltaHeight);
+                critter.dropY(deltaHeight);
+            } else {
+                critter.movePredictorYUp(deltaHeight);
+                critter.jumpY(deltaHeight);
             }
 
-            fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+            if (jumpVelocity == 0.0f) {
+                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+            } else {
+                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
+            }
+
             if (fallVelocity == TERMINAL_VELOCITY) {
                 try {
                     spawnPlayer(); // Respawn player if terminal velocity is reached
                 } catch (Exception ex) {
                     DSLogger.reportError("Unable to spawn player after the fall!", ex);
                 }
+            }
+
+            // in case of multiplayer join send to the server
+            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+                gameObject.game.requestSetPlayerPosition();
             }
         }
 
@@ -1352,64 +1387,12 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Initialize jump velocity if player is starting the jump
-        if (fallVelocity == 0.0f) {
+        if (fallVelocity == 0.0f || (actorInFluid && jumpVelocity < jumpStrength)) {
             jumpVelocity = jumpStrength;
+            return true;
         }
 
-        // Initial predictor position
-        final Vector3f predInit = new Vector3f(critter.getPredictor());
-        boolean collision = false;
-
-        // Iterate over time steps to check for collisions
-        SCAN:
-        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
-            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
-            float tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-            critter.movePredictorUp(tstHeight);
-
-            // Check collision on all sides
-            for (int side = 0; side <= 13; side++) {
-                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
-                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
-                    Vector3f adjPosAlign = alignVector(adjPos);
-
-                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
-                    if (solidOnLoc) {
-                        collision = checkCollisionInternal(adjPosAlign, critter);
-                        if (collision) {
-                            jumpVelocity = 0.0f;
-                            break SCAN;
-                        }
-                    }
-                }
-            }
-
-            critter.movePredictorDown(tstHeight);
-        }
-
-        // Reset predictor position after collision check
-        levelActors.player.getPredictor().set(predInit);
-
-        // If no collision, apply jump and move the player
-        if (!collision) {
-            float deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-            // Adjust height for actor in fluid (water)
-            if (actorInFluid) {
-                deltaHeight *= 0.25f;
-            }
-
-            critter.movePredictorYUp(deltaHeight);
-            critter.jumpY(deltaHeight);
-
-            // in case of multiplayer join send to the server
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-                gameObject.game.requestSetPlayerPosition();
-            }
-
-            jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
-        }
-
-        return !collision;
+        return false;
     }
 
     /**
@@ -1426,52 +1409,11 @@ public class LevelContainer implements GravityEnviroment {
             return false;
         }
 
-        // Initial predictor position
-        final Vector3f predInit = new Vector3f(critter.getPredictor());
-        boolean collision = false;
-
-        // Iterate over time steps to check for collisions
-        SCAN:
-        for (int ticks = 0; ticks <= Game.getCurrentTicks(); ticks++) {
-            float tstTime = Math.max(ticks * (float) Game.TICK_TIME, deltaTime);
-            float tstHeight = crouchStrength * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-            critter.movePredictorDown(tstHeight);
-
-            // Check collision on all sides
-            for (int side = 0; side <= 13; side++) {
-                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
-                    Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
-                    Vector3f adjPosAlign = alignVector(adjPos);
-
-                    boolean solidOnLoc = AllBlockMap.isLocationPopulated(adjPosAlign, true);
-                    if (solidOnLoc) {
-                        collision = checkCollisionInternal(adjPosAlign, critter);
-                        if (collision) {
-                            break SCAN;
-                        }
-                    }
-                }
-            }
-
-            critter.movePredictorUp(tstHeight);
+        if (jumpVelocity > 0.0f) {
+            jumpVelocity -= crouchStrength;
         }
 
-        // Reset predictor position after collision check
-        levelActors.player.getPredictor().set(predInit);
-
-        // If no collision, apply crouch and move the player
-        if (!collision) {
-            float deltaHeight = crouchStrength * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-            critter.movePredictorYDown(deltaHeight);
-            critter.dropY(deltaHeight);
-
-            // in case of multiplayer join send to the server
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-                gameObject.game.requestSetPlayerPosition();
-            }
-        }
-
-        return !collision;
+        return true;
     }
 
     /**
@@ -1818,10 +1760,6 @@ public class LevelContainer implements GravityEnviroment {
 
     public Weapons getWeapons() {
         return weapons;
-    }
-
-    public float getThrustVelocity() {
-        return thrustVelocity;
     }
 
 }

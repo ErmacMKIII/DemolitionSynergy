@@ -86,10 +86,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 4.5f;
-    public static final float CROUCH_STR_AMOUNT = 45f;
-    public static final float JUMP_STR_AMOUNT = 115f;
-    public static final float ANGLE = (float) (Math.PI / 180);
+    public static final float AMOUNT = 12E-3f;
+    public static final float CROUCH_STR_AMOUNT = 4f;
+    public static final float JUMP_STR_AMOUNT = 7.5f;
+    public static final float ANGLE = (float) (5E-4d * Math.PI / 180);
 
     public static final int FORWARD = 0;
     public static final int BACKWARD = 1;
@@ -548,15 +548,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         final Player player = lc.levelActors.player;
 
         // Multiplayer-Join mode
-        if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && gameObject.levelContainer.levelActors.player.isRegistered() && isAsyncReceivedEnabled()) {
-            RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, player.uniqueId);
-            playerPosReq.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(playerPosReq);
-                }
-            }
-
+        if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && player.isRegistered() && isAsyncReceivedEnabled()) {
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
@@ -617,7 +609,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-        } else if (currentMode == Mode.MULTIPLAYER_HOST && gameObject.levelContainer.levelActors.player.isRegistered()) {
+        } else if (currentMode == Mode.MULTIPLAYER_HOST && player.isRegistered()) {
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
@@ -720,12 +712,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             changed = true;
         }
 
-        // in case of multiplayer join send to the server
-        if (changed && isConnected() && Game.currentMode == Mode.MULTIPLAYER_JOIN && isAsyncReceivedEnabled()) {
-            this.requestSetPlayerPosition();
-            this.requestUpdatePlayer();
-        }
-
         return changed;
     }
 
@@ -818,10 +804,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 float xposGL = (float) (xpos / gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
                 float yposGL = (float) (0.5f - ypos / gameObject.WINDOW.getHeight()) * 2.0f;
 
-                if (accumulator >= TICK_TIME) {
-                    xoffset = xposGL - lastX;
-                    yoffset = yposGL - lastY;
+                xoffset = xposGL - lastX;
+                yoffset = yposGL - lastY;
 
+                if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
                 }
 
@@ -1082,6 +1068,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Multiplayer update - get position ~ 125 ms
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_EIGHTH - 1)) == 0 && isAsyncReceivedEnabled()) {
+                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
+                try {
+                    playerPosReq.send(this, session);
+                    synchronized (internRequestMutex) {
+                        if (requests.size() < MAX_SIZE) {
+                            requests.add(playerPosReq);
+                        }
+                    }
+                } catch (Exception ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+
                 gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
                     try {
                         RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
@@ -1095,6 +1093,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         DSLogger.reportError(ex.getMessage(), ex);
                     }
                 });
+
+                // update player model guns etc.
+                this.requestUpdatePlayer();
             }
 
             gameObject.determineVisibleChunks();
@@ -1161,8 +1162,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                         // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
-                        jumpPerformed &= !((LevelContainer.isActorInFluid() && keys[GLFW.GLFW_KEY_SPACE]) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
-                        crouchPerformed &= (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]);
+                        jumpPerformed &= !((LevelContainer.isActorInFluid()) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        crouchPerformed = false;
                         break;
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
@@ -1174,8 +1175,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
-                        jumpPerformed &= !((LevelContainer.isActorInFluid() && keys[GLFW.GLFW_KEY_SPACE]) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
-                        crouchPerformed &= (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]);
+                        jumpPerformed &= !((LevelContainer.isActorInFluid()) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        crouchPerformed = false;
                         break;
                 }
                 // display collision text
@@ -1237,17 +1238,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
+            // Poll GLFW Events
+            GLFW.glfwPollEvents();
+            // Handle input (interrupt) events (keyboard & mouse)
+            handleInput(TICK_TIME);
+
             // Fixed time-step
             while (accumulator >= TICK_TIME) {
-                // Poll GLFW Events
-                GLFW.glfwPollEvents();
-
-                // Handle input (interrupt) events (keyboard & mouse)
-                handleInput(TICK_TIME);
-
                 // Update with fixed timestep (environment)
                 update(TICK_TIME);
-
                 ups++;
                 accumulator -= TICK_TIME;
             }
@@ -1639,6 +1638,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void requestSetPlayerPosition() {
         try {
+            // Send update about player position to the server
             final Player player = gameObject.levelContainer.levelActors.player;
             final PosInfo posInfo = new PosInfo(player.uniqueId, player.getPos(), player.getFront());
             String posStr = posInfo.toString();
@@ -1708,7 +1708,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void requestUpdatePlayer() {
         try {
-            // Send a simple 'goodbye' message with magic bytes prepended
+            // Send player (info) update to the server
             final Player player = gameObject.levelContainer.levelActors.player;
             final RequestIfc request = new Request(RequestIfc.RequestType.SET_PLAYER_INFO,
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
@@ -1984,16 +1984,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public double getPing() {
         return ping;
-    }
-
-    /**
-     * Get varying game ticks time based on the current accumulator.
-     *
-     * @return varying game ticks
-     */
-    public static double getCurrentTicks() {
-        // Calculate varying ticks directly proportional to the accumulator
-        return Math.floor(Game.TPS * Game.accumulator + 0.5); // Bias correction 
     }
 
 }

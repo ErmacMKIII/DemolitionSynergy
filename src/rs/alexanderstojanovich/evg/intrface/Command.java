@@ -940,7 +940,7 @@ public class Command implements Callable<Object> {
                             (Critter t) -> t.uniqueId).filter(x -> command.args.contains(x)).collect((Collectors.toList()));
                     clientInfo.forEach(ci -> {
                         if (guids.contains(ci.uniqueId)) {
-                            GameServer.kickPlayer(gameObject.gameServer, ci.uniqueId);
+                            gameObject.gameServer.kickPlayer(ci.uniqueId);
                         }
                     });
                     command.status = Status.SUCCEEDED;

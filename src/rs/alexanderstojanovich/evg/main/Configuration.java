@@ -286,7 +286,7 @@ public class Configuration {
             pw = new PrintWriter(cfg);
             pw.println("# Monitor (0 - Window; !=0 available monitors)");
             pw.println("Monitor = " + monitor);
-            pw.println("# Maximum framerate. Depedends on VSync.");
+            pw.println("# Maximum framerate. Dependents on VSync.");
             pw.println("FPSCap = " + fpsCap);
             pw.println("Width = " + width);
             pw.println("Height = " + height);
