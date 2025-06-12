@@ -17,12 +17,25 @@
 package rs.alexanderstojanovich.evg.main;
 
 import com.google.gson.Gson;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
+import java.util.zip.CRC32C;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.ReadFuture;
@@ -175,6 +188,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected int port = config.getClientPort();
     protected int timeout = DEFAULT_TIMEOUT;
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+
+    /**
+     * Async Client Executor (async receive responses)
+     */
+    public final ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Connection Status (Client)
@@ -847,7 +865,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public void messageReceived(IoSession session, Object message) throws Exception {
         if (isAsyncReceivedEnabled()) {
             // receive & process 
-            ResponseIfc.receiveAsync(this, session, gameObject.TaskExecutor).thenAccept((ResponseIfc response) -> {
+            ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
                 // '*' - indicates everyone
                 // 'basically if this response is for me' - my (player) guid 
                 if (response.getGuid().equals("*") || response.getGuid().equals(getGuid())) {
@@ -884,14 +902,50 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // choose the one which fits by unique checksum
-        RequestIfc reqTarg;
+        RequestIfc request;
         synchronized (internRequestMutex) {
-            reqTarg = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
-            requests.remove(reqTarg);
+            request = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
+            requests.remove(request);
         }
-        if (reqTarg != null) {
+        if (request != null) {
             // detailed processing
-            switch (reqTarg.getRequestType()) {
+            switch (request.getRequestType()) {
+                case HELLO:
+                    if (response.getGuid().equals(getGuid())
+                            && response.getChecksum() == request.getChecksum()
+                            && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                        // Authenticated                    
+                        DSLogger.reportInfo("Connected to server!", null);
+                        connected = ConnectionStatus.CONNECTED;
+                    } else {
+                        // Got bad response or invalid checksum (either is bad)
+                        // disconnect from server to avoid "unexisting connection"
+                        disconnectFromServer();
+                    }
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    // notify waiters on connect
+                    synchronized (internRequestMutex) {
+                        internRequestMutex.notify();
+                    }
+                    break;
+                case REGISTER:
+                    if (response.getChecksum() == request.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
+                        gameObject.levelContainer.levelActors.player.setRegistered(true);
+
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    } else {
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), Command.Status.FAILED);
+                    }
+                    break;
+                case WORLD_INFO:
+                    DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(response.getData()));
+                    loadWorld(jsonWorldInfo);
+                    break;
                 case PING:
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -900,7 +954,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     Game.gameTicks = (double) response.getData();
                     break;
                 case GET_POS:
-                    String uniqueId = reqTarg.getData().toString();
+                    String uniqueId = request.getData().toString();
                     PosInfo posInfo = PosInfo.fromJson(response.getData().toString());
                     if (uniqueId.equals(gameObject.levelContainer.levelActors.player.uniqueId)) {
                         playerServerPos.set(posInfo.pos);
@@ -919,7 +973,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     break;
                 case GOODBYE:
                     // disable async 'read point' in 'message received'
-                    asyncReceivedEnabled.set(false);
+                    asyncReceivedEnabled.set(false); // no more 'messages' to read/process
                     // print GOODBYE message (disconnecting)
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -936,7 +990,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 double endTime = System.currentTimeMillis();
                 // Affilate response time recevied with request time sent
                 // initial value -- gonna be replaced with request begin time
-                double beginTime = reqTarg.getTimestamp();
+                double beginTime = request.getTimestamp();
 
                 // trip time millis, multiplied by cuz it is called in a loop!
                 double tripTime = endTime - beginTime;
@@ -1068,34 +1122,20 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Multiplayer update - get position ~ 125 ms
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_EIGHTH - 1)) == 0 && isAsyncReceivedEnabled()) {
-                RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
-                try {
-                    playerPosReq.send(this, session);
-                    synchronized (internRequestMutex) {
-                        if (requests.size() < MAX_SIZE) {
-                            requests.add(playerPosReq);
-                        }
-                    }
-                } catch (Exception ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-
-                gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
-                    try {
-                        RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
-                        otherPlayerRequest.send(this, session);
-                        synchronized (internRequestMutex) {
-                            if (requests.size() < MAX_SIZE) {
-                                requests.add(otherPlayerRequest);
-                            }
-                        }
-                    } catch (Exception ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    }
-                });
+                // request get player position (interpolation)
+                this.requestGetPlayerPos();
 
                 // update player model guns etc.
                 this.requestUpdatePlayer();
+
+                // request update player view & pos
+                this.requestGetOtherPlayersPos();
+            }
+
+            // Multiplayer update - set player position
+            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (actionPerformed || moveMouse) && isAsyncReceivedEnabled()) {
+                // request to set player view/position. Send update to the server.
+                this.requestSetPlayerPos();
             }
 
             gameObject.determineVisibleChunks();
@@ -1276,8 +1316,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             return false;
         }
         try {
-            // disable async receive
-            asyncReceivedEnabled.set(false);
+
             // set default timeout (30 sec)
             timeout = Game.DEFAULT_TIMEOUT;
             DSLogger.reportInfo(String.format("Trying to connect to server %s:%d ...", serverHostName, port), null);
@@ -1291,35 +1330,22 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 this.session.getConfig().setUseReadOperation(true);
                 this.session.getConfig().setReadBufferSize(BUFF_SIZE);
 
+                // enable async receive
+                asyncReceivedEnabled.set(true);
+
                 // Send a simple hello message with magic bytes prepended
                 final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
                 helloRequest.send(this, connFuture.getSession());
-
-                // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc response = ResponseIfc.receive(this, session);
-                // If there is no response but only timeout
-                if (response == Response.INVALID) {
-                    connected = ConnectionStatus.NOT_CONNECTED;
-                    gameObject.intrface.getInfoMsgText().setContent("Server not responding!");
-                    throw new Exception("Server not responding!");
+                // add to requests to they can be 'processed' in 'messageReceived'
+                synchronized (internRequestMutex) {
+                    if (requests.size() < MAX_SIZE) {
+                        requests.add(helloRequest);
+                    }
+                    // Wait for response (assuming simple echo for demonstration)
+                    internRequestMutex.wait(timeout);
                 }
 
-                if (response.getGuid().equals(getGuid())
-                        && response.getChecksum() == helloRequest.getChecksum()
-                        && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
-                    // Authenticated                    
-                    DSLogger.reportInfo("Connected to server!", null);
-                    connected = ConnectionStatus.CONNECTED;
-                } else {
-                    // Got bad response or invalid checksum (either is bad)
-                    // disconnect from server to avoid "unexisting connection"
-                    connected = ConnectionStatus.CONNECTED;
-                    disconnectFromServer();
-                }
-
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
-
+                // if connected changed status to 'CONNECTED'
                 if (connected == ConnectionStatus.CONNECTED) {
                     return true;
                 }
@@ -1384,25 +1410,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             );
             register.send(this, session);
 
-            // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc response = ResponseIfc.receive(this, session);
-            // If there is no response but only timeout
-            if (response == Response.INVALID) {
-                connected = ConnectionStatus.NOT_CONNECTED;
-                throw new Exception("Server not responding!");
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(register);
+                }
+                // Wait for response (assuming simple echo for demonstration)
+                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
             }
 
-            if (response.getChecksum() == register.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
-                gameObject.levelContainer.levelActors.player.setRegistered(true);
+            okey = true;
 
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
-
-                okey |= true;
-            } else {
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response.getData()), Command.Status.FAILED);
-            }
         } catch (Exception ex) {
             DSLogger.reportError("Network error(s) occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
@@ -1552,20 +1569,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Send a simple player info message with magic bytes prepended
                 final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
                 piReq.send(this, session);
-
-                // Wait for response (assuming simple echo for demonstration)            
-                ResponseIfc objResp = ResponseIfc.receive(this, session);
-                // If there is no response but only timeout
-                if (objResp == Response.INVALID) {
-                    connected = ConnectionStatus.NOT_CONNECTED;
-                    throw new Exception("Server not responding!");
+                synchronized (internRequestMutex) {
+                    if (requests.size() < MAX_SIZE) {
+                        requests.add(piReq);
+                    }
                 }
-
-                DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(objResp.getResponseStatus()), String.valueOf(objResp.getData())), null);
-                gameObject.intrface.getConsole().write(objResp.getData().toString());
-
-                Gson gson = new Gson();
-                result = gson.fromJson((String) objResp.getData(), PlayerInfo[].class);
             } catch (Exception ex) {
                 DSLogger.reportError("Network error(s) occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -1594,16 +1602,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
 
                     // we have async receive enabled, wait to receive the last message
-                    if (isAsyncReceivedEnabled()) {
-                        internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
-                    } else {
-                        // we don't have async receive enabled write the 'goodbye' response message
-                        ResponseIfc response = ResponseIfc.receive(this, session);
-                        if (response.getGuid().equals(getGuid())) {
-                            DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                            gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
-                        }
-                    }
+                    internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
                 }
 
                 // player is not registered anymore
@@ -1625,6 +1624,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 requests.clear();
 
                 connected = ConnectionStatus.NOT_CONNECTED;
+                // !IMPORTANT -- DISABLE ASYNC READPOINT/WRITEPOINT (so it doesn't block in process)
+                asyncReceivedEnabled.set(false);
+
                 DSLogger.reportInfo("Disconnected from server!", null);
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
@@ -1636,7 +1638,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Request server to update player position.
      */
-    public void requestSetPlayerPosition() {
+    public void requestSetPlayerPos() {
         try {
             // Send update about player position to the server
             final Player player = gameObject.levelContainer.levelActors.player;
@@ -1659,7 +1661,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     * Frees all the callbacks. Called after the main loop.
      */
     public void cleanUp() {
+        clientExecutor.shutdown();
         connector.dispose();
+
         defaultCursorCallback.free();
         defaultKeyCallback.free();
         defaultMouseButtonCallback.free();
@@ -1671,40 +1675,70 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Get World info from the server (Multiplayer). Request is send and
      * response is awaited.
      *
-     * @return
+     * @return success (true) or failure (false) boolean result
      */
-    public LevelMapInfo getWorldInfo() {
+    public boolean getWorldInfo() {
         try {
-            // Send a simple player info message with magic bytes prepended
+            // Send a request to obtain world info
             final RequestIfc wrldReq = new Request(RequestIfc.RequestType.WORLD_INFO, DSObject.DataType.VOID, null);
             wrldReq.send(this, session);
-
-            // Wait for response (assuming simple echo for demonstration)            
-            ResponseIfc objResp = ResponseIfc.receive(this, session);
-            // If there is no response but only timeout
-            if (objResp == Response.INVALID) {
-                connected = ConnectionStatus.NOT_CONNECTED;
-                throw new Exception("Server not responding!");
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(wrldReq);
+                }
+                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
             }
 
-            DSLogger.reportInfo(String.format("Server response: %s : %s", objResp.getResponseStatus().toString(), String.valueOf(objResp.getData())), null);
-            gameObject.intrface.getConsole().write(String.valueOf(objResp.getData()));
-            LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(objResp.getData()));
-
-            return jsonWorldInfo;
-
+            return true;
         } catch (Exception ex) {
             DSLogger.reportError("Network Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
 
-        return null;
+        return false;
+    }
+
+    /**
+     * Request server to get the player pos on the server. It is used to
+     * interpolate the client once client is aware where the position of the
+     * player on server is.
+     */
+    public void requestGetPlayerPos() {
+        RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
+        try {
+            playerPosReq.send(this, session);
+            synchronized (internRequestMutex) {
+                if (requests.size() < MAX_SIZE) {
+                    requests.add(playerPosReq);
+                }
+            }
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Request (client) update of player info from the server for other players
+     */
+    public void requestGetOtherPlayersPos() {
+        gameObject.levelContainer.levelActors.otherPlayers.forEach(other -> {
+            try {
+                RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
+                otherPlayerRequest.send(this, session);
+                synchronized (internRequestMutex) {
+                    if (requests.size() < MAX_SIZE) {
+                        requests.add(otherPlayerRequest);
+                    }
+                }
+            } catch (Exception ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        });
     }
 
     /**
      * Request update of player info to the server. Reason examples: Model
      * change {alex, steve}, color change, weapon change.
-     *
      */
     public void requestUpdatePlayer() {
         try {
@@ -1759,6 +1793,103 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             DSLogger.reportError("Network error(s) occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Once World Info response is received load the world.
+     *
+     * @param worldInfo world info as Json.
+     * @return success indicator (true - success, false - failure)
+     */
+    public boolean loadWorld(LevelMapInfo worldInfo) {
+        boolean success = false;
+        int numberOfAttempts = 0;
+        Game.DownloadStatus status = Game.DownloadStatus.ERR;
+
+        // Locate all level map files with dat or ndat extension
+        File clientDir = new File("./");
+        String worldNameEscaped = Pattern.quote(worldInfo.worldname);
+        final Pattern pattern = Pattern.compile(worldNameEscaped + "\\.(n)?dat$", Pattern.CASE_INSENSITIVE);
+        List<String> datFileList = Arrays.asList(clientDir.list((dir, name) -> pattern.matcher(name.toLowerCase()).find()));
+        GapList<String> datFileListCopy = GapList.create(datFileList);
+        String mapFileOrNull = datFileListCopy.getFirstOrNull();
+        boolean lvlMapIsCorrect = false;
+        CRC32C checksum = new CRC32C();
+
+        if (mapFileOrNull != null) {
+            File mapFileLevel = new File(mapFileOrNull);
+
+            if (mapFileLevel.exists()) {
+                try (FileChannel fileChannel = new FileInputStream(mapFileLevel).getChannel()) {
+                    int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
+                    ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
+                    while (fileChannel.read(buffer) > 0) {
+                        // Do nothing, just read the file into the buffer
+                    }
+                    buffer.flip();
+                    checksum.update(buffer);
+
+                    lvlMapIsCorrect = worldInfo.sizebytes == sizeBytes && worldInfo.chksum == checksum.getValue();
+                } catch (IOException ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                } catch (Exception ex) {
+                    DSLogger.reportError(String.format("Error - level map info is null! %s", ex.getMessage()), ex);
+                }
+            }
+        }
+
+        // If level does not exist or is not correct (checksum value is different)
+        if (lvlMapIsCorrect) {
+            DSLogger.reportInfo("Level Map OK!", null);
+            gameObject.intrface.getConsole().write("Level Map OK!");
+
+            gameObject.levelContainer.loadLevelFromFile(mapFileOrNull);
+        } else {
+            do {
+                status = this.downloadLevel();
+            } while (status == Game.DownloadStatus.ERR && ++numberOfAttempts <= MAX_ATTEMPTS);
+
+            if (status == Game.DownloadStatus.WARNING) {
+                DSLogger.reportWarning("Connected to empty world - disconnect!", null);
+                gameObject.intrface.getConsole().write("Connected to empty world - disconnect!");
+                this.disconnectFromServer();
+                return false;
+            }
+
+            try {
+                // Load downloaded level (from fragments)
+                gameObject.levelContainer.loadLevelFromBufferNewFormat();
+            } catch (UnsupportedEncodingException ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+            // Save world to world name + ndat. For example MyWorld.ndat
+            gameObject.levelContainer.saveLevelToFile(worldInfo.worldname + ".ndat");
+        }
+
+        if (lvlMapIsCorrect || status == Game.DownloadStatus.OK) {
+            try {
+
+                DSLogger.reportInfo(String.format("World '%s.ndat' saved!", worldInfo.worldname), null);
+                gameObject.intrface.getConsole().write(String.format("World '%s.ndat' saved!", worldInfo.worldname));
+                // Avoid reconnection errors
+                // On reconnecting, the player needs to be registered again
+                if (!gameObject.levelContainer.levelActors.player.isRegistered()) {
+                    registerPlayer();
+                }
+
+                success = true;
+            } catch (Exception ex) {
+                DSLogger.reportWarning("Not able to spawn player. Disconnecting.", null);
+                gameObject.intrface.getConsole().write("Not able to spawn player. Disconnecting.", Command.Status.WARNING);
+                this.disconnectFromServer();
+            }
+        } else {
+            DSLogger.reportWarning("Not able to load level. Disconnecting.", null);
+            gameObject.intrface.getConsole().write("Not able to load level. Disconnecting.", Command.Status.FAILED);
+            this.disconnectFromServer();
+        }
+
+        return success;
     }
 
     /**

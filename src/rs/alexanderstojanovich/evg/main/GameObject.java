@@ -16,16 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
@@ -34,12 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
-import java.util.zip.CRC32C;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -59,8 +48,6 @@ import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.net.LevelMapInfo;
-import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -747,112 +734,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         // Register player with Unique ID (UUID)
         if (game.registerPlayer()) {
             // Get world info from server
-            LevelMapInfo worldInfo = game.getWorldInfo();
-
-            int numberOfAttempts = 0;
-            Game.DownloadStatus status = Game.DownloadStatus.ERR;
-
-            // Locate all level map files with dat or ndat extension
-            File clientDir = new File("./");
-            String worldNameEscaped = Pattern.quote(gameServer.worldName);
-            final Pattern pattern = Pattern.compile(worldNameEscaped + "\\.(n)?dat$", Pattern.CASE_INSENSITIVE);
-            List<String> datFileList = Arrays.asList(clientDir.list((dir, name) -> pattern.matcher(name.toLowerCase()).find()));
-            GapList<String> datFileListCopy = GapList.create(datFileList);
-            String mapFileOrNull = datFileListCopy.getFirstOrNull();
-            boolean lvlMapIsCorrect = false;
-            CRC32C checksum = new CRC32C();
-
-            if (mapFileOrNull != null) {
-                File mapFileLevel = new File(mapFileOrNull);
-
-                if (mapFileLevel.exists()) {
-                    try (FileChannel fileChannel = new FileInputStream(mapFileLevel).getChannel()) {
-                        int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
-                        ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
-                        while (fileChannel.read(buffer) > 0) {
-                            // Do nothing, just read the file into the buffer
-                        }
-                        buffer.flip();
-                        checksum.update(buffer);
-
-                        lvlMapIsCorrect = worldInfo.sizebytes == sizeBytes && worldInfo.chksum == checksum.getValue();
-                    } catch (IOException ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    } catch (Exception ex) {
-                        DSLogger.reportError(String.format("Error - level map info is null! %s", ex.getMessage()), ex);
-                    }
-                }
-            }
-
-            // If level does not exist or is not correct (checksum value is different)
-            if (lvlMapIsCorrect) {
-                DSLogger.reportInfo("Level Map OK!", null);
-                intrface.getConsole().write("Level Map OK!");
-
-                levelContainer.loadLevelFromFile(mapFileOrNull);
-            } else {
-                do {
-                    status = game.downloadLevel();
-                } while (status == Game.DownloadStatus.ERR && ++numberOfAttempts <= MAX_ATTEMPTS);
-
-                if (status == Game.DownloadStatus.WARNING) {
-                    DSLogger.reportWarning("Connected to empty world - disconnect!", null);
-                    intrface.getConsole().write("Connected to empty world - disconnect!");
-                    game.disconnectFromServer();
-                    return false;
-                }
-
-                // Load downloaded level (from fragments)
-                levelContainer.loadLevelFromBufferNewFormat();
-                // Save world to world name + ndat. For example MyWorld.ndat
-                levelContainer.saveLevelToFile(gameServer.worldName + ".ndat");
-            }
-
-            if (lvlMapIsCorrect || status == Game.DownloadStatus.OK) {
-                try {
-
-                    DSLogger.reportInfo(String.format("World '%s.ndat' saved!", gameServer.worldName), null);
-                    intrface.getConsole().write(String.format("World '%s.ndat' saved!", gameServer.worldName));
-                    // Avoid reconnection errors
-                    // On reconnecting, the player needs to be registered again
-                    if (!levelContainer.levelActors.player.isRegistered()) {
-                        game.registerPlayer();
-                    }
-
-                    // Request player info self+others
-                    // It is done because of other players
-                    PlayerInfo[] playerInfo = game.getPlayerInfo();
-                    if (playerInfo == null) {
-                        DSLogger.reportError("Unable to get player info!", null);
-                        intrface.getConsole().write("Unable to get player info!", Command.Status.FAILED);
-                        return false;
-                    }
-
-                    // Configure other players
-                    levelContainer.levelActors.configOtherPlayers(playerInfo);
-                    // Configure-set main actor
-                    // Spawn player (set position)
-                    levelContainer.spawnPlayer();
-                    // Player set position
-                    game.requestSetPlayerPosition();
-
-                    // !IMPORTANT -- ENABLE ASYNC READPOINT 
-                    game.setAsyncReceivedForceEnabled(true);
-                    intrface.getGuideText().setEnabled(false);
-
-                    success = true;
-                } catch (Exception ex) {
-                    DSLogger.reportWarning("Not able to spawn player. Disconnecting.", null);
-                    intrface.getConsole().write("Not able to spawn player. Disconnecting.", Command.Status.WARNING);
-                    game.disconnectFromServer();
-                    this.clearEverything();
-                }
-            } else {
-                DSLogger.reportWarning("Not able to load level. Disconnecting.", null);
-                intrface.getConsole().write("Not able to load level. Disconnecting.", Command.Status.FAILED);
-                game.disconnectFromServer();
-                this.clearEverything();
-            }
+            game.getWorldInfo();
+            // Configure-set main actor
+            // Spawn player (set position)
+            levelContainer.spawnPlayer();
+            // Player set position
+            game.requestSetPlayerPos();
+            // Disable guide text (.. player is gonna spawn)
+            intrface.getGuideText().setEnabled(false);
+            // !IMPORTANT -- ENABLE ASYNC WRITEPOINT 
+            game.setAsyncReceivedForceEnabled(true);
+            // It is successful
+            success = true;
         } else {
             DSLogger.reportWarning("Not able to register player. Disconnecting.", null);
             intrface.getConsole().write("Not able to register player. Disconnecting.", Command.Status.FAILED);

@@ -59,7 +59,7 @@ public class GameServer implements DSMachine, Runnable {
     /**
      * Total maximum failed attempts allowed for the server
      */
-    public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
+    public static final int TOTAL_FAIL_ATTEMPT_MAX = 100;
 
     /**
      * Total failed attempts counter
@@ -182,7 +182,7 @@ public class GameServer implements DSMachine, Runnable {
                     if (timedOut) {
                         try {
                             // close session (with the client)
-                            client.session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
+                            client.session.closeOnFlush().await(GameServer.GOODBYE_TIMEOUT);
 
                             // clean up server from client data
                             GameServer.performCleanUp(GameServer.this.gameObject, client.uniqueId, true);
@@ -199,7 +199,7 @@ public class GameServer implements DSMachine, Runnable {
                 });
 
                 // Remove kicked and timed out players
-                clients.removeIf(cli -> cli.timeToLive <= 0);
+                clients.removeIf(cli -> cli.timeToLive <= 0 || kicklist.contains(cli.uniqueId));
 
                 // Update server window title with current player count
                 GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
@@ -217,32 +217,26 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void stopServer() {
         if (running) {
-            // Kick all players
-            clients.immutableList().forEach(cli -> kickPlayer(cli.uniqueId));
-
+            // Send 'notification' that server ic shutting down..
+            this.shutDownSignal = true;
             // Reset server window title
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
-            this.shutDownSignal = true;
+            // Kick all players
+            // (Close session(s))
+            clients.immutableList().forEach(cli -> kickPlayer(cli.uniqueId));
 
-            // close session(s) & acceptor
+            // Set a shutdown timeout on the acceptor itself
             acceptor.setCloseOnDeactivation(true);
-            for (IoSession ss : acceptor.getManagedSessions().values()) {
-                try {
-                    ss.closeNow().await(GameServer.GOODBYE_TIMEOUT);
-                } catch (InterruptedException ex) {
-                    DSLogger.reportError("Unable to close session!", ex);
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-            }
-            acceptor.unbind();
+            // Close acceptor
+            acceptor.unbind(endpoint);
             acceptor.dispose();
 
-            // Clear the client list
+            // Clear client list and finalize server shutdown
             clients.clear();
-            running = false;
 
             // Stop server loop and helpers
             shutDown();
+            running = false;
 
             DSLogger.reportInfo("Game Server finished!", null);
             gameObject.intrface.getConsole().write("Game Server finished!");
@@ -359,7 +353,7 @@ public class GameServer implements DSMachine, Runnable {
                 response.send(clientInfo.uniqueId, GameServer.this, clientInfo.session);
 
                 // close session (with the client)
-                clientInfo.session.closeNow().await(GameServer.GOODBYE_TIMEOUT);
+                clientInfo.session.closeOnFlush().await(GameServer.GOODBYE_TIMEOUT);
                 // clean up server from client data
                 GameServer.performCleanUp(gameObject, clientInfo.uniqueId, false);
 

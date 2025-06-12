@@ -1344,7 +1344,7 @@ public class LevelContainer implements GravityEnviroment {
 
             // in case of multiplayer join send to the server
             if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-                gameObject.game.requestSetPlayerPosition();
+                gameObject.game.requestSetPlayerPos();
             }
         }
 
