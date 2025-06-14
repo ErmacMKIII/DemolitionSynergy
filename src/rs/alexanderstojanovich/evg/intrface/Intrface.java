@@ -96,6 +96,7 @@ public class Intrface {
     private OptionsMenu multiPlayerJoinMenu;
 
     private final Console console;
+    private final Chat chat;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
 
     private DynamicText guideText;
@@ -108,6 +109,7 @@ public class Intrface {
     public Intrface(GameObject gameObject) {
         this.gameObject = gameObject;
         this.console = new Console(this);
+        this.chat = new Chat(this);
         initSelf();
     }
 
@@ -1041,6 +1043,7 @@ public class Intrface {
             }
         }
         console.render(this, ifcShaderProgram, ifcContShaderProgram);
+        chat.render(this, ifcShaderProgram, ifcContShaderProgram);
     }
 
     /**
@@ -1085,6 +1088,7 @@ public class Intrface {
         multiPlayerJoinMenu.cleanUp();
 
         console.cleanUp();
+        chat.cleanUp();
 
         DSLogger.reportDebug("Interface cleaned up.", null);
     }
@@ -1279,6 +1283,10 @@ public class Intrface {
 
     public DynamicText getInfoMsgText() {
         return infoMsgText;
+    }
+
+    public Chat getChat() {
+        return chat;
     }
 
 }

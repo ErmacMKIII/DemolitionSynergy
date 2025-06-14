@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.net;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -82,15 +83,18 @@ public interface ResponseIfc extends DSObject {
             IoBuffer buffer = (IoBuffer) message;
 
             // read data
-            int dataContentLength = buffer.remaining() - Long.BYTES;
+            int dataContentLength = buffer.remaining() - Long.BYTES - ID_LENGTH;
             byte[] dataContent = new byte[dataContentLength];
             buffer.get(dataContent);
 
             // read checksum
             long checksum = buffer.getLong();
 
+            // Get unique id
+            String id = buffer.getString(ID_LENGTH, StandardCharsets.US_ASCII.newDecoder());
+
             // Construct response (involves deserialization)
-            ResponseIfc result = (ResponseIfc) new Response(checksum).deserialize(dataContent); // new request                
+            ResponseIfc result = (ResponseIfc) new Response(id, checksum).deserialize(dataContent); // new request                
 
             return result;
         }
@@ -123,5 +127,13 @@ public interface ResponseIfc extends DSObject {
      *
      * @return recipient guid
      */
-    public String getGuid();
+    public String getReceiverGuid();
+
+    /**
+     * Get globally unique id of the request to which this response belongs to
+     *
+     * @return (globally) unique id
+     */
+    @Override
+    public String getId();
 }

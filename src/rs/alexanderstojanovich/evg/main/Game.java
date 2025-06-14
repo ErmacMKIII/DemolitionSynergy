@@ -786,6 +786,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     Arrays.fill(keys, false);
                     FutureTask<Object> task = new FutureTask<>(Command.getCommand(Command.Target.SCREENSHOT));
                     GameRenderer.TASK_QUEUE.add(task);
+                } else if (key == GLFW.GLFW_KEY_Y && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                    gameObject.intrface.getChat().open();
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     cycleCrosshairColor();
@@ -868,7 +870,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
                 // '*' - indicates everyone
                 // 'basically if this response is for me' - my (player) guid 
-                if (response.getGuid().equals("*") || response.getGuid().equals(getGuid())) {
+                if (response.getReceiverGuid().equals("*") || response.getReceiverGuid().equals(getGuid())) {
                     process(response);
                 }
             });
@@ -884,6 +886,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (response.getChecksum() == 0L && String.valueOf(response.getData()).contains(":")) {
             // write chat messages
             gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+            gameObject.intrface.getChat().write(String.valueOf(response.getData()));
             DSLogger.reportInfo(String.valueOf(response.getData()), null);
         }
 
@@ -904,14 +907,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // choose the one which fits by unique checksum
         RequestIfc request;
         synchronized (internRequestMutex) {
-            request = requests.filter(req -> req.getChecksum() == response.getChecksum()).getFirstOrNull();
+            request = requests.filter(req -> req.getId().equals(response.getId())).getFirstOrNull();
             requests.remove(request);
         }
         if (request != null) {
             // detailed processing
             switch (request.getRequestType()) {
                 case HELLO:
-                    if (response.getGuid().equals(getGuid())
+                    if (response.getReceiverGuid().equals(getGuid())
                             && response.getChecksum() == request.getChecksum()
                             && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
                         // Authenticated                    
@@ -1782,7 +1785,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         throw new Exception("Server not responding (ping resulted in timeout)!");
                     }
 
-                    if (response.getGuid().equals(getGuid())) {
+                    if (response.getReceiverGuid().equals(getGuid())) {
                         DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                         gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
                     }

@@ -146,15 +146,8 @@ public class Console {
                                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
                             }
 
-                            // shift them
-                            history.forEach(hi -> {
-                                hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
-                                hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
-                                hi.cmdText.alignToNextChar(intrface);
-
-                                hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
-                                hi.quad.pos.y = hi.cmdText.pos.y;
-                            });
+                            // Position all messages
+                            positionMessages();
 
                             synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
                                 if (cmd.isRendererCommand()) {
@@ -169,9 +162,10 @@ public class Console {
                                 }
                             }
 
-                            // if over capacity deuque last
+                            // Maintain history capacity
                             if (history.size() > HISTORY_CAPACITY) {
                                 history.removeLast();
+                                positionMessages(); // Reposition after removal
                             }
                         }
 
@@ -320,80 +314,86 @@ public class Console {
     public void write(String m) {
         Command cmd = Command.getCommand(Command.Target.PRINT);
         cmd.mode = Command.Mode.SET;
-        cmd.args.add(m);
+        cmd.args.add(m); // default status
 
         Command.execute(intrface.gameObject, cmd);
+
         synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
-            // add to queue
-            HistoryItem item;
             try {
-                item = new HistoryItem(this, cmd);
+                // Add new message to history
+                HistoryItem item = new HistoryItem(this, cmd);
                 history.addFirst(item);
+
+                // Position all messages
+                positionMessages();
+
+                // Maintain history capacity
+                if (history.size() > HISTORY_CAPACITY) {
+                    history.removeLast();
+                    positionMessages(); // Reposition after removal
+                }
             } catch (Exception ex) {
                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
             }
-
-            // if over capacity deuque last
-            if (history.size() > HISTORY_CAPACITY) {
-                history.removeLast();
-            }
-
-            // shift them
-            history.forEach(hi -> {
-                hi.buildCmdText();
-                hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
-                hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
-                hi.cmdText.alignToNextChar(intrface);
-
-                hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
-                hi.quad.pos.y = hi.cmdText.pos.y;
-            });
         }
     }
 
     /**
-     * Write output to the Console. If isError is true it will be logged as
-     * error. In other case, if isError is false it will be logged as plain
-     * message.
+     * Write output to the Console with status. If isError is true it will be
+     * logged as error. In other case, if isError is false it will be logged as
+     * plain message.
      *
      * @param m message output
-     * @param status is message logged flag, light bulb color
+     * @param status message status (determines display color)
      */
     public void write(String m, Status status) {
         Command cmd = Command.getCommand(Command.Target.PRINT);
         cmd.mode = Command.Mode.SET;
         cmd.args.add(m);
-
-        Command.execute(intrface.gameObject, cmd);
-        // Assign status to display color
         cmd.status = status;
 
+        Command.execute(intrface.gameObject, cmd);
+
         synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
-            // add to queue
-            HistoryItem item;
             try {
-                item = new HistoryItem(this, cmd);
+                // Add new message to history
+                HistoryItem item = new HistoryItem(this, cmd);
                 history.addFirst(item);
+
+                // Position all messages
+                positionMessages();
+
+                // Maintain history capacity
+                if (history.size() > HISTORY_CAPACITY) {
+                    history.removeLast();
+                    positionMessages(); // Reposition after removal
+                }
             } catch (Exception ex) {
                 DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
             }
-
-            // if over capacity deuque last
-            if (history.size() > HISTORY_CAPACITY) {
-                history.removeLast();
-            }
         }
+    }
 
-        // shift them
-        history.forEach(hi -> {
+    /**
+     * Positions all messages in the console with proper vertical stacking
+     */
+    private void positionMessages() {
+        float startY = inText.pos.y + inText.getRelativeHeight(intrface) * Text.LINE_SPACING; // Start below input line
+        float spacing = inText.getRelativeHeight(intrface) * 2.0f * Text.LINE_SPACING; // Consistent spacing
+
+        for (int i = 0; i < history.size(); i++) {
+            HistoryItem hi = history.get(i);
             hi.buildCmdText();
+
+            // Position text
             hi.cmdText.pos.x = -1.0f + hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
-            hi.cmdText.pos.y += ((inText.getRelativeHeight(intrface) + inText.getRelativeCharHeight(intrface)) * inText.scale + (hi.cmdText.getRelativeCharHeight(intrface) + hi.cmdText.getRelativeHeight(intrface)) * hi.cmdText.scale) * Text.LINE_SPACING;
+            hi.cmdText.pos.y = startY + (i * spacing) + hi.cmdText.getRelativeHeight(intrface);
             hi.cmdText.alignToNextChar(intrface);
 
+            // Position quad (background)
             hi.quad.pos.x = hi.cmdText.pos.x - hi.cmdText.getRelativeCharWidth(intrface) * hi.cmdText.scale;
             hi.quad.pos.y = hi.cmdText.pos.y;
-        });
+        }
     }
 
     /**
@@ -406,25 +406,24 @@ public class Console {
      */
     public void render(Intrface intrface, ShaderProgram shaderProgram, ShaderProgram contourShaderProgram) {
         if (enabled) {
-            panel.setWidth(intrface.gameObject.WINDOW.getWidth());
-            panel.setHeight(intrface.gameObject.WINDOW.getHeight() / 2);
+            // Update and render panel
             if (!panel.isBuffered()) {
                 panel.bufferSmart(intrface);
             }
             panel.render(intrface, shaderProgram);
-            inText.pos.x = -1.0f;
-            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight(intrface);
-            inText.alignToNextChar(intrface); // this changes both pos.x and pos.y for inText
 
+            // Render input text
             if (!inText.isBuffered()) {
                 inText.bufferSmart(intrface);
             }
             inText.renderContour(intrface, contourShaderProgram);
 
-            for (HistoryItem item : history.unmodifiableList()) {
+            // Render history messages
+            for (HistoryItem item : history) {
                 item.render(intrface, shaderProgram);
             }
 
+            // Render completions if needed
             if (!completes.isBuffered()) {
                 completes.bufferSmart(intrface);
             }
@@ -474,7 +473,7 @@ public class Console {
     }
 
     /*
-        * Method to update the displayed input text with the cursor at the correct position
+    * Method to update the displayed input text with the cursor at the correct position
      */
     private void updateInputText() {
         // Ensure cursorPosition is within the valid range

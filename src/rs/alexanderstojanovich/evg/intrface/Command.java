@@ -44,7 +44,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
-import rs.alexanderstojanovich.evg.main.GameServer;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
@@ -56,6 +55,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.Trie;
 
 /**
+ * Console commands.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -784,7 +784,7 @@ public class Command implements Callable<Object> {
                     if (!command.args.isEmpty()) {
                         if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST) {
                             String msg = gameObject.levelContainer.levelActors.player.getName() + ":" + command.args.getFirst();
-                            Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                            Response response = new Response(DSObject.NIL_ID, 0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                             gameObject.gameServer.clients.forEach(ci -> {
                                 try {
                                     response.send("*", gameObject.gameServer, ci.session);

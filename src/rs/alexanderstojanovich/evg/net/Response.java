@@ -46,34 +46,39 @@ public class Response implements ResponseIfc {
     protected int version = 0;
 
     public final long checksum;
+    public final String id;
 
     /**
      * Invalid response. If receiving fails!
      */
-    public static final Response INVALID = new Response(0L, ResponseStatus.INVALID, VOID, null);
+    public static final Response INVALID = new Response(RequestIfc.NIL_ID, 0L, ResponseStatus.INVALID, VOID, null);
 
     /**
      * Create empty response with given checksum
      *
+     * @param id unique id of this response from it's request
      * @param checksum checksum to assign
      */
-    public Response(long checksum) {
+    public Response(String id, long checksum) {
         this.checksum = checksum;
+        this.id = id;
     }
 
     /**
      * Create given response with response status
      *
+     * @param id unique id of this request
      * @param checksum checksum to assign
      * @param responseStatus reponse status {INVALID, ERR, OK}
      * @param dataType data type (most often 'STRING')
      * @param data data (argument)
      */
-    public Response(long checksum, ResponseStatus responseStatus, DataType dataType, Object data) {
+    public Response(String id, long checksum, ResponseStatus responseStatus, DataType dataType, Object data) {
         this.checksum = checksum;
         this.responseStatus = responseStatus;
         this.dataType = dataType;
         this.data = data;
+        this.id = id;
     }
 
     @Override
@@ -241,11 +246,13 @@ public class Response implements ResponseIfc {
         this.guid = guid;
         serialize(server);
         // storing content with checksum
-        final int capacity = content.length + Long.BYTES;
+        final int capacity = content.length + Long.BYTES + DSObject.ID_LENGTH;
         IoBuffer buffer = IoBuffer.allocate(capacity, true);
         buffer.put(content);
         // checksum
         buffer.putLong(checksum);
+        // Id 
+        buffer.put(id.getBytes(StandardCharsets.US_ASCII));
         buffer.flip();
 
         session.write(buffer);
@@ -267,8 +274,18 @@ public class Response implements ResponseIfc {
     }
 
     @Override
-    public String getGuid() {
+    public String getReceiverGuid() {
         return guid;
+    }
+
+    /**
+     * Get globally unique id of the request to which this response belongs to
+     *
+     * @return (globally) unique id
+     */
+    @Override
+    public String getId() {
+        return this.id;
     }
 
 }

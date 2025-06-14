@@ -310,6 +310,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
             GameTime now = GameTime.Now();
             intrface.getGameTimeText().setContent(String.format("Day %d %02d:%02d:%02d", now.days, now.hours, now.minutes, now.seconds));
+            intrface.getChat().getHistory().forEach(item -> {
+                item.getColor().w -= deltaTime;
+                if (item.getColor().w <= 0.0) {
+                    item.setEnabled(false);
+                }
+            });
+            intrface.getChat().getHistory().removeIf(item -> !item.isEnabled());
         }
 
         if (intrface.getSaveDialog().isDone()) {

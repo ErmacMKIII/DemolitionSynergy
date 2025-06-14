@@ -349,7 +349,7 @@ public class GameServer implements DSMachine, Runnable {
         if ((clientInfo = clients.getIf(cli -> cli.uniqueId.equals(playerGuid))) != null) {
             try {
                 // issuing kick to the client (guid as data)
-                ResponseIfc response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "KICK");
+                ResponseIfc response = new Response(DSObject.NIL_ID, 0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "KICK");
                 response.send(clientInfo.uniqueId, GameServer.this, clientInfo.session);
 
                 // close session (with the client)
