@@ -58,6 +58,7 @@ import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
+import static rs.alexanderstojanovich.evg.main.GameServerProcessor.config;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
@@ -872,8 +873,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // 'basically if this response is for me' - my (player) guid 
                 if (response.getReceiverGuid().equals("*") || response.getReceiverGuid().equals(getGuid())) {
                     process(response);
+                    if (config.getLogLevel() == DSLogger.DSLogLevel.DEBUG || config.getLogLevel() == DSLogger.DSLogLevel.ALL) {
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
+                        DSLogger.reportInfo(String.valueOf(response.getData()), null);
+                    }
                 }
             });
+            
         }
     }
 
