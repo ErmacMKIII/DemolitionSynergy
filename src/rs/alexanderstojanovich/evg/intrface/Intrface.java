@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -454,6 +455,7 @@ public class Intrface {
             };
             multiPlayerDialog.dialog.alignToNextChar(this);
 
+            Object[] ticksPerUpdate = {1, 2, 3};
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
             Object[] swtch = {"OFF", "ON"};
@@ -466,6 +468,7 @@ public class Intrface {
             }
 
             IList<MenuItem> optionsMenuPairs = new GapList<>();
+            optionsMenuPairs.add(new MenuItem(this, "TICKS PER UPDATE", Menu.EditType.EditMultiValue, new MultiValue(this, ticksPerUpdate, MenuValue.Type.INT, Arrays.asList(ticksPerUpdate).indexOf(Game.getTicksPerUpdate()))));
             optionsMenuPairs.add(new MenuItem(this, "FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(this, fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
             optionsMenuPairs.add(new MenuItem(this, "RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
                     this,
@@ -497,14 +500,21 @@ public class Intrface {
                 protected void execute() {
                     Command command;
                     FutureTask<Object> task;
-                    switch (selected) {
-                        case 0:
+                    String s = optionsMenu.items.get(optionsMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "TICKS PER UPDATE":
+                            command = Command.getCommand(Command.Target.TICKS_PER_UPDATE);
+                            command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case "FPS CAP":
                             command = Command.getCommand(Command.Target.FPS_MAX);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 1:
+                        case "RESOLUTION":
                             command = Command.getCommand(Command.Target.RESOLUTION);
                             String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
                             String things[] = giveCurrent.split("x");
@@ -514,7 +524,7 @@ public class Intrface {
                             task = new FutureTask<>(command);
                             GameRenderer.TASK_QUEUE.add(task);
                             break;
-                        case 2:
+                        case "FULLSCREEN":
                             String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.FULLSCREEN);
                             switch (fullscreen) {
@@ -528,7 +538,7 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 3:
+                        case "VSYNC":
                             String vsync = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.VSYNC);
                             switch (vsync) {
@@ -543,7 +553,7 @@ public class Intrface {
                             task = new FutureTask<>(command);
                             GameRenderer.TASK_QUEUE.add(task);
                             break;
-                        case 4:
+                        case "WATER EFFECTS":
                             String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.WATER_EFFECTS);
                             String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
@@ -551,7 +561,7 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 5:
+                        case "SHADOW EFFECTS":
                             String shadowEffects = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.SHADOW_EFFECTS);
                             String shadoFX = ShadowRenderer.ShadowEffectsQuality.valueOf(shadowEffects).toString();
@@ -559,20 +569,20 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 6:
+                        case "MOUSE SENSITIVITY":
                             float msens = (float) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
                             command.getArgs().add(msens);
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 7:
+                        case "MUSIC VOLUME":
                             command = Command.getCommand(Command.Target.MUSIC_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 8:
+                        case "SOUND VOLUME":
                             command = Command.getCommand(Command.Target.SOUND_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);

@@ -58,7 +58,6 @@ import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
-import static rs.alexanderstojanovich.evg.main.GameServerProcessor.config;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.net.DSMachine;
 import rs.alexanderstojanovich.evg.net.DSObject;
@@ -93,7 +92,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public static final int TPS_ONE = 1; // One tick ~ 12.5 ms
     public static final int TPS_TWO = 2; // Two ticks ~ 25 ms (Used for Chunk Optimization) ~ default
-    public static final int TICKS_PER_UPDATE = config.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT)
+    private static int ticksPerUpdate = config.getTicksPerUpdate(); // (1 - FLUID, 2 - EFFICIENT, 3 - SAVING)
 
     /**
      * Time of the single ticks (constant). In seconds.
@@ -879,7 +878,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
                 }
             });
-            
+
         }
     }
 
@@ -1110,8 +1109,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // update with delta time like gravity or sun
-        if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
-            gameObject.update((float) deltaTime * TICKS_PER_UPDATE);
+        if ((ups & (ticksPerUpdate - 1)) == 0) {
+            gameObject.update((float) deltaTime * ticksPerUpdate);
 
             // Multiplayer update - get player info ~ 250 ms
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled()) {
@@ -1185,8 +1184,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void handleInput(double deltaTime) {
         try {
-            if ((ups & (TICKS_PER_UPDATE - 1)) == 0) {
-                final float time = (float) deltaTime * Game.TICKS_PER_UPDATE;
+            if ((ups & (ticksPerUpdate - 1)) == 0) {
+                final float time = (float) deltaTime * ticksPerUpdate;
                 final float amount = Game.AMOUNT * time;
                 actionPerformed = false;
                 switch (currentMode) {
@@ -2124,6 +2123,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public double getPing() {
         return ping;
+    }
+
+    public static int getTicksPerUpdate() {
+        return ticksPerUpdate;
+    }
+
+    public static void setTicksPerUpdate(int ticksPerUpdate) {
+        Game.ticksPerUpdate = ticksPerUpdate;
     }
 
 }

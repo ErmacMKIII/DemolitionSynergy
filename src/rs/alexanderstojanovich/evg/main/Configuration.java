@@ -209,7 +209,7 @@ public class Configuration {
                             case "ticksperupdate":
                                 number = Integer.parseInt(words[1]);
                                 // block per cache loading run
-                                if (number > 0 && number <= 2) {
+                                if (number > 0 && number <= 3) {
                                     ticksPerUpdate = number;
                                 }
                                 break;
@@ -281,9 +281,7 @@ public class Configuration {
         if (cfg.exists()) {
             cfg.delete();
         }
-        PrintWriter pw = null;
-        try {
-            pw = new PrintWriter(cfg);
+        try (PrintWriter pw = new PrintWriter(cfg)) {
             pw.println("# Monitor (0 - Window; !=0 available monitors)");
             pw.println("Monitor = " + monitor);
             pw.println("# Maximum framerate. Dependents on VSync.");
@@ -318,7 +316,7 @@ public class Configuration {
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
             pw.println("# Block number load per cache run. Must be between (0, 25000]");
             pw.println("BlocksPerRun = " + blocksPerRun);
-            pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT)");
+            pw.println("# Ticks per update (1 - FLUID, 2 - EFFICIENT, 3 - SAVING)");
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
             pw.println("# Local IP address used to host the server on (local) machine. Used with server port.");
             pw.println("LocalIP = " + localIP);
@@ -340,10 +338,6 @@ public class Configuration {
             pw.println("Model = " + model);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
-        } finally {
-            if (pw != null) {
-                pw.close();
-            }
         }
     }
 
