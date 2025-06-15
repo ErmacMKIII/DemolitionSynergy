@@ -67,6 +67,7 @@ public class MultiValue implements MenuValue { // customizable list of items (ob
 
     @Override
     public void setCurrentValue(Object object) {
+        selected = values.indexOf(object);
         if (selected != -1) {
             switch (this.type) {
                 case STRING:

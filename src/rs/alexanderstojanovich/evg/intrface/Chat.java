@@ -108,12 +108,12 @@ public class Chat {
                     }
                 } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_RELEASE) {
                     if (!input.toString().equals("")) {
-                        String content = intrface.gameObject.levelContainer.levelActors.player.getName() + ":" + input.toString();
+                        String content = input.toString();
 
                         // add to queue
                         DynamicText item;
                         try {
-                            item = new DynamicText(intrface.gameObject.GameAssets.FONT, content, new Vector2f(inText.pos), 18, 18, intrface);
+                            item = new DynamicText(intrface.gameObject.GameAssets.FONT, intrface.gameObject.levelContainer.levelActors.player.getName() + ":" + content, new Vector2f(inText.pos), 18, 18, intrface);
                             history.addFirst(item);
                         } catch (Exception ex) {
                             DSLogger.reportError("Unable to create chat line! =>" + ex.getMessage(), ex);

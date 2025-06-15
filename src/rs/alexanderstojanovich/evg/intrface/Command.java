@@ -726,7 +726,7 @@ public class Command implements Callable<Object> {
                     } else {
                         chunkId = (int) command.args.get(0);
                         boolean cached = CacheModule.isCached(chunkId);
-                        int size = -1;
+                        int size;
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
@@ -975,21 +975,23 @@ public class Command implements Callable<Object> {
                     final Player player = gameObject.levelContainer.levelActors.player;
                     Vector4f colorRGBA = GlobalColors.WHITE_RGBA;
                     if (command.args.size() == 1) {
-                        colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(command.args.getFirst().toString().toUpperCase()), 1.0f);
+                        String colorName = command.args.getFirst().toString().toUpperCase();
+                        colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(colorName), 1.0f);
                         singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
+                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
+                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         command.status = Status.SUCCEEDED;
                     } else if (command.args.size() == 3) {
                         float r = Float.parseFloat(command.args.get(0).toString());
                         float g = Float.parseFloat(command.args.get(1).toString());
                         float b = Float.parseFloat(command.args.get(2).toString());
                         colorRGBA = new Vector4f(r, g, b, 1.0f);
+                        GlobalColors.ColorName colorName = GlobalColors.getColorName(new Vector3f(colorRGBA.x, colorRGBA.y, colorRGBA.z));
                         singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue("Custom");
+                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue("Custom");
+                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         command.status = Status.SUCCEEDED;
                     }
                     player.body.setPrimaryRGBAColor(colorRGBA);

@@ -659,9 +659,11 @@ public class Intrface {
             creditsMenu.iterator.setEnabled(false);
             creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
+            GlobalColors.ColorName colorName = GlobalColors.getColorName(config.getColor());
+            Vector4f colorRGBA = GlobalColors.getRGBAColorOrDefault(colorName);
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
             singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
+            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, colorName)));
             singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
@@ -680,10 +682,13 @@ public class Intrface {
                             final Player player = gameObject.levelContainer.levelActors.player;
                             String modelClazz = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                             player.setModelClazz(modelClazz);
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
                             break;
                         case "COLOR":
                             singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                             gameObject.levelContainer.levelActors.player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
                             break;
                         case "LEVEL SIZE":
                             isHugeLevel = false;
@@ -719,13 +724,15 @@ public class Intrface {
             };
             singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
-
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
             //------------------------------------------------------------------
             // MAIN MULTIPLAYER MENU
             IList<MenuItem> multiPlayerMenuItems = new GapList<>();
             multiPlayerMenuItems.add(new MenuItem(this, "PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
             multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
+            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, colorName)));
             multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
@@ -747,12 +754,15 @@ public class Intrface {
                             player = gameObject.levelContainer.levelActors.player;
                             String modelClazz = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
                             player.setModelClazz(modelClazz);
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
                             break;
                         case "COLOR":
                             player = gameObject.levelContainer.levelActors.player;
                             Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(this.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                             player.body.setPrimaryRGBAColor(colorRGBA);
                             this.items.get(2).menuValue.getValueText().color = colorRGBA;
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
                             break;
                         case "HOST GAME":
                             multiPlayerHostMenu.open();
@@ -766,6 +776,9 @@ public class Intrface {
             multiPlayerMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerMenu.items.get(3).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
 
             IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
             multiPlayerHostMenuItems.add(new MenuItem(this, "WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
