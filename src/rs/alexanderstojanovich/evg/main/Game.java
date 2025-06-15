@@ -865,7 +865,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception {
-        if (isAsyncReceivedEnabled()) {
+        if (isAsyncReceivedEnabled() && !gameObject.WINDOW.shouldClose()) {
             // receive & process 
             ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
                 // '*' - indicates everyone
@@ -1604,13 +1604,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                synchronized (internRequestMutex) {
-                    if (requests.size() < MAX_SIZE) {
-                        requests.add(goodByeRequest);
-                    }
+                if (!gameObject.WINDOW.shouldClose()) {
+                    synchronized (internRequestMutex) {
+                        if (requests.size() < MAX_SIZE) {
+                            requests.add(goodByeRequest);
+                        }
 
-                    // we have async receive enabled, wait to receive the last message
-                    internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
+                        // we have async receive enabled, wait to receive the last message
+                        internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
+                    }
                 }
 
                 // player is not registered anymore

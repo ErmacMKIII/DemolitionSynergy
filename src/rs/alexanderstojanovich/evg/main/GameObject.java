@@ -24,8 +24,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -222,6 +225,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Game will start soon.", null);
         this.initText.setContent("Game will start soon.");
         game.go(); // after the loop end
+
         gameServer.stopServer(); // stop the server
         gameServer.shutDown();
         timer0.cancel();
@@ -275,6 +279,33 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     /**
+     * Get Interpolated Color
+     *
+     * @param value value to interpolate
+     * @return interpolated color (green/yellow/red)
+     */
+    private static Vector4f getInterpolatedColor(float value) {
+        // Normalize the ping value between 0 and 1 for interpolation
+        float ratio;
+        if (value <= 50f) {
+            return GlobalColors.GREEN_RGBA; // Pure green
+        } else if (value <= 100f) {
+            Vector4f srcCol = new Vector4f(GlobalColors.GREEN_RGBA);
+            Vector4f dest = new Vector4f(GlobalColors.GREEN_RGBA);
+            ratio = (value - 50f) / 50f; // 50-100 → 0 to 1
+            return srcCol.lerp(GlobalColors.YELLOW_RGBA, ratio, dest);
+        } else if (value <= 200f) {
+            Vector4f srcCol = new Vector4f(GlobalColors.YELLOW_RGBA);
+            Vector4f dest = new Vector4f();
+            ratio = (value - 100f) / 100f; // 100-200 → 0 to 1
+            return srcCol.lerp(GlobalColors.RED_RGBA, ratio, dest);
+        } else {
+            return GlobalColors.RED_RGBA; // Pure red (or darker red if needed)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    /**
      * Update Game Object stuff, like Environment (call only from main)
      *
      * @param deltaTime deltaTime in ticks
@@ -317,6 +348,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
             });
             intrface.getChat().getHistory().removeIf(item -> !item.isEnabled());
+            if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                intrface.getPingText().setEnabled(true);
+                intrface.getPingText().setColor(getInterpolatedColor((float) game.getPing()));
+                intrface.getPingText().setContent(String.format("%.1f ms", game.getPing()));
+            } else {
+                intrface.getPingText().setEnabled(false);
+            }
         }
 
         if (intrface.getSaveDialog().isDone()) {

@@ -67,6 +67,7 @@ public class Intrface {
     private DynamicText progText; // progress text;
     private DynamicText screenText; // screenshot information
     private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MULTIPLAYER}
+    private DynamicText pingText; // displays ping in Multiplayer
     private boolean showHelp = false;
 
     private ProgressBar progressBar;
@@ -158,6 +159,10 @@ public class Intrface {
             gameModeText = new DynamicText(gameObject.GameAssets.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f), this);
             gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
             gameModeText.alignToNextChar(this);
+
+            pingText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 0.85f), this);
+            pingText.setAlignment(Text.ALIGNMENT_RIGHT);
+            pingText.alignToNextChar(this);
 
             gameTimeText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f), this);
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
@@ -1026,6 +1031,11 @@ public class Intrface {
             gameModeText.bufferSmart(this);
         }
         gameModeText.render(this, ifcShaderProgram);
+        if (!pingText.isBuffered()) {
+            pingText.bufferSmart(this);
+        }
+        pingText.render(this, ifcShaderProgram);
+        gameModeText.render(this, ifcShaderProgram);
         if (!progText.isBuffered()) {
             progText.bufferSmart(this);
         }
@@ -1310,6 +1320,10 @@ public class Intrface {
 
     public Chat getChat() {
         return chat;
+    }
+
+    public DynamicText getPingText() {
+        return pingText;
     }
 
 }

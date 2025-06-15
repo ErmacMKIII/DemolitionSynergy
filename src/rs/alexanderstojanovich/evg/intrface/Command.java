@@ -138,25 +138,25 @@ public class Command implements Callable<Object> {
          */
         FAILED
     }
-    
+
     protected Object result = null;
     protected Status status = Status.INIT;
 
     // commands differ in arugment length and type, therefore list is used
     protected final IList<Object> args = new GapList<>();
-    
+
     protected static final Trie trie = new Trie();
-    
+
     protected String input;
-    
+
     protected Command(String input) {
         this.input = input;
     }
-    
+
     protected Command(Target target) {
         this.target = target;
     }
-    
+
     static {
         for (Target target : Target.values()) {
             if (target != Target.ERROR && target != Target.NOP) {
@@ -174,7 +174,7 @@ public class Command implements Callable<Object> {
     public static List<String> autoComplete(String input) {
         List<String> words = trie.autoComplete(input);
         Collections.sort(words);
-        
+
         return words;
     }
 
@@ -401,26 +401,26 @@ public class Command implements Callable<Object> {
                     break;
             }
         }
-        
+
         boolean argsEmpty = command.args.isEmpty();
         boolean isGetOnly = command.target == Target.SIZEOF;
         boolean isSetOnly = command.target == Target.CLEAR || command.target == Target.PRINT || command.target == Target.SAY
                 || command.target == Target.CONNECT || command.target == Target.DISCONNECT || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER;
-        
+
         command.mode = Mode.GET;
-        
+
         if (isGetOnly) {
             command.mode = Mode.GET;
         }
-        
+
         if (isSetOnly) {
             command.mode = Mode.SET;
         }
-        
+
         if (!isGetOnly && !isSetOnly && !argsEmpty) {
             command.mode = Mode.SET;
         }
-        
+
         return command;
     }
 
@@ -443,7 +443,7 @@ public class Command implements Callable<Object> {
 
         // reflect multiplayer updates (SET) command
         final OptionsMenu multiplayerMenu = gameObject.intrface.getMultiPlayerMenu();
-        
+
         command.status = Status.PENDING;
         switch (command.target) {
             case MONITOR_ID:
@@ -500,9 +500,9 @@ public class Command implements Callable<Object> {
                             optionsMenu.items.getIf(x -> x.keyText.getContent().equals("FPS CAP")).getMenuValue().setCurrentValue(fpsMax);
                             command.status = Status.SUCCEEDED;
                         }
-                        
+
                         break;
-                    
+
                 }
                 break;
             case RESOLUTION:
@@ -527,7 +527,7 @@ public class Command implements Callable<Object> {
                         gameObject.WINDOW.centerTheWindow();
                         break;
                 }
-                
+
                 break;
             case FULLSCREEN:
                 switch (command.mode) {
@@ -706,7 +706,7 @@ public class Command implements Callable<Object> {
                             float newPosx = (float) command.args.get(0);
                             float newPosy = (float) command.args.get(1);
                             float newPosz = (float) command.args.get(2);
-                            
+
                             Vector3f newPos = new Vector3f(newPosx, newPosy, newPosz);
                             chunkId = Chunk.chunkFunc(newPos);
                             if (chunkId >= 0 && chunkId < Chunk.CHUNK_NUM) {
@@ -740,7 +740,7 @@ public class Command implements Callable<Object> {
                         } else {
                             size = LevelContainer.AllBlockMap.getPopulatedLocations(chunkId).size();
                         }
-                        
+
                         if (size != -1) {
                             result = String.format("Size= %d | Cached= %s", size, cached);
                             command.status = Status.SUCCEEDED;
@@ -818,7 +818,7 @@ public class Command implements Callable<Object> {
                 if (command.mode == Command.Mode.SET) {
                     if (!command.args.isEmpty()) {
                         String parts[] = command.args.get(0).toString().split(":");
-                        
+
                         if (parts.length >= 1) {
                             String serverHostName = parts[0];
                             gameObject.game.setServerHostName(serverHostName);
@@ -831,10 +831,10 @@ public class Command implements Callable<Object> {
 //                        gameObject.intrface.getConsole().write(String.format("Trying to connect to server %s:%d ...", gameObject.game.gameObject.game.getServerHostName(), gameObject.game.gameObject.game.getPort()), false);                        
                         try {
                             command.status = Status.PENDING;
-                            
+
                             gameObject.intrface.getInfoMsgText().setContent("Trying to connect to server...");
                             gameObject.intrface.getInfoMsgText().setEnabled(true);
-                            
+
                             double beginTime = GLFW.glfwGetTime();
                             if (gameObject.game.connectToServer()) {
                                 gameObject.intrface.getInfoMsgText().setContent("Connected to server!");
@@ -861,7 +861,7 @@ public class Command implements Callable<Object> {
                 if (command.mode == Command.Mode.SET) {
                     gameObject.game.disconnectFromServer();
                     gameObject.clearEverything();
-                    
+
                     command.status = Status.SUCCEEDED;
                 }
                 break;
@@ -887,14 +887,14 @@ public class Command implements Callable<Object> {
                                 numBlocks = 0;
                                 break;
                         }
-                        
+
                         gameObject.intrface.setNumBlocks(numBlocks);
                         gameObject.randomLevelGenerator.setNumberOfBlocks(numBlocks);
-                        
+
                         if (command.args.size() == 2) {
                             gameObject.randomLevelGenerator.setSeed(Long.parseLong(command.args.get(1).toString()));
                         }
-                        
+
                         gameObject.clearEverything();
                         if (!gameObject.gameServer.isRunning() && numBlocks != 0) {
                             gameObject.intrface.getProgText().setEnabled(true);
@@ -910,7 +910,7 @@ public class Command implements Callable<Object> {
                                         Game.setCurrentMode(Game.Mode.MULTIPLAYER_HOST);
                                         gameObject.intrface.getGameMenu().getTitle().setContent("MULTIPLAYER");
                                     }
-                                    
+
                                     if (!ok) {
                                         command.status = Status.FAILED;
                                         gameObject.clearEverything();
@@ -920,9 +920,9 @@ public class Command implements Callable<Object> {
                                 } catch (InterruptedException | ExecutionException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
-                                
+
                             });
-                            
+
                         }
                         command.status = Status.PENDING;
                     }
@@ -1024,29 +1024,29 @@ public class Command implements Callable<Object> {
         if (command.status != Status.SUCCEEDED) {
             command.status = Status.FAILED;
         }
-        
+
         command.result = result;
-        
+
         return result;
     }
-    
+
     public Mode getMode() {
         return mode;
     }
-    
+
     public void setMode(Mode mode) {
         this.mode = mode;
     }
-    
+
     public Status getStatus() {
         return status;
     }
-    
+
     @Override
     public Object call() throws Exception {
         return (this.result = Command.execute(GameObject.getInstance(), this));
     }
-    
+
     public List<Object> getArgs() {
         return args;
     }
@@ -1080,9 +1080,9 @@ public class Command implements Callable<Object> {
     public static boolean isRendererCommand(Command command) {
         return command.target == Target.VSYNC || command.target == Target.SCREENSHOT || command.target == Target.RESOLUTION;
     }
-    
+
     public Object getResult() {
         return result;
     }
-    
+
 }
