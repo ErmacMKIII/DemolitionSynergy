@@ -444,8 +444,10 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Set player position. Spawn him/her.
+     *
+     * @throws java.lang.Exception if spawn player fails
      */
-    public void spawnPlayer() {
+    public void spawnPlayer() throws Exception {
         // Manually turn off gravity so it doesn't affect player during spawn
         gravityOn = false;
 
@@ -477,12 +479,11 @@ public class LevelContainer implements GravityEnviroment {
         } while (solidPopLoc.isEmpty() && !midChunks.isEmpty());
 
         // Remove populated locations around the chosen location to avoid crowding
-        if (solidPopLoc.size() > 200) {
+        if (solidPopLoc.size() > 500) {
             final int[] testSides = {
-                Block.LEFT_TOP, Block.TOP_FRONT, Block.TOP_BACK,
-                Block.RIGHT_TOP, Block.TOP
+                Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT
             };
-            for (float radius = 2.0f; radius <= 16.0f; radius += 2.0f) {
+            for (float radius = 2.0f; radius <= 16.0f && solidPopLoc.size() > 500; radius += 2.0f) {
                 for (int side : testSides) {
                     final float amount = radius;
                     solidPopLoc.removeIf(loc -> AllBlockMap.isLocationPopulated(
@@ -513,7 +514,7 @@ public class LevelContainer implements GravityEnviroment {
             gravityOn = true; // Re-enable gravity
         } else {
             // Handle case where no valid spawn location was found (optional)
-            throw new IllegalStateException("Failed to spawn player in a valid location.");
+            throw new Exception("Failed to spawn player in a valid location.");
         }
     }
 
@@ -809,7 +810,7 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public boolean loadLevelFromBufferNewFormat() throws UnsupportedEncodingException {
+    public boolean loadLevelFromBufferNewFormat() throws UnsupportedEncodingException, Exception {
         working = true;
         boolean success = false;
 //        if (progress > 0.0f) {
@@ -853,8 +854,14 @@ public class LevelContainer implements GravityEnviroment {
                 int totalBlocks = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8)
                         | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
 
-                if (totalBlocks <= 0) {
-                    throw new IllegalStateException("No blocks to process!");
+                if (totalBlocks <= 0) { // 'Empty world'
+                    levelActors.unfreeze();
+                    blockEnvironment.clear();
+
+                    progress = 100.0f;
+                    working = false;
+                    gameObject.getMusicPlayer().stop();
+                    throw new Exception("No blocks to process!");
                 }
 
                 while (true) {
@@ -965,6 +972,8 @@ public class LevelContainer implements GravityEnviroment {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
+        } catch (Exception ex) {
+            DSLogger.reportError(ex.getMessage(), ex); // zero blocks
         }
         if (bis != null) {
             try {

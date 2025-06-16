@@ -24,11 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -623,6 +620,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface.getGameMenu().setEnabled(false);
         // set this as help text (it is reset)
         intrface.getGuideText().setEnabled(true);
+        // set this to false (don't show 'connected')
+        intrface.getInfoMsgText().setEnabled(false);
     }
 
     /**
@@ -772,7 +771,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @throws java.util.concurrent.ExecutionException
      * @throws java.io.UnsupportedEncodingException
      */
-    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException, UnsupportedEncodingException {
+    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException, UnsupportedEncodingException, Exception {
         boolean success = false;
         this.clearEverything();
 

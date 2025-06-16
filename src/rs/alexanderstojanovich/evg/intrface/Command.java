@@ -853,6 +853,8 @@ public class Command implements Callable<Object> {
                             gameObject.intrface.getInfoMsgText().setEnabled(false);
                         } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
+                        } catch (Exception ex) {
+                            DSLogger.reportError(ex.getMessage(), ex);
                         }
                     }
                 }

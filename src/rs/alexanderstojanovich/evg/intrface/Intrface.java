@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -925,8 +927,9 @@ public class Intrface {
                                     gameObject.intrface.getInfoMsgText().setEnabled(false);
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
+                                } catch (Exception ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
                                 }
-
                             }, gameObject.TaskExecutor);
                             break;
                     }

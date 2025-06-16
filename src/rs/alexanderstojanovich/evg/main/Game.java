@@ -198,7 +198,23 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Connection Status (Client)
      */
     public static enum ConnectionStatus {
-        CONNECTED, NOT_CONNECTED, RECONNECTED
+        /**
+         * Client is connected to Game Server
+         */
+        CONNECTED,
+        /**
+         * Client is not connected to Game Server
+         */
+        NOT_CONNECTED,
+        /**
+         * Client is reconnected to Game Server. Will transition to 'CONNECTED'.
+         */
+        RECONNECTED,
+        /**
+         * Client lost connection with the game server (presumably,
+         * unwillingly). Will attempt to reconnect.
+         */
+        LOST
     }
 
     /**
@@ -228,6 +244,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public int weaponIndex = 0;
 
+    /**
+     * Download status from the (world) level map
+     */
     public static enum DownloadStatus {
         ERR, WARNING, OK
     }
@@ -856,7 +875,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Event on message received. Replacement for async receive
+     * Event on message received. Replacement for async receive.
      *
      * @param session session with (server) endpoint
      * @param message object message received
@@ -864,7 +883,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @throws Exception
      */
     @Override
-    public void messageReceived(IoSession session, Object message) throws Exception {
+    public void messageReceived(IoSession session, Object message) throws Exception { // pool-3-thread-1
         if (isAsyncReceivedEnabled() && !gameObject.WINDOW.shouldClose()) {
             // receive & process 
             ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
@@ -988,7 +1007,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSLogger.reportInfo("Disconnected from server!", null);
                     // notify wait on disconnect
                     synchronized (internRequestMutex) {
-                        internRequestMutex.notify();
+                        internRequestMutex.notifyAll();
                     }
                     break;
             }
@@ -1016,8 +1035,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Reset waiting time (as response arrived to the request)
             waitReceiveTime = 0L;
-            // Reset reconnected to connected
-            connected = ConnectionStatus.CONNECTED;
         }
     }
 
@@ -1049,10 +1066,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // if waiting time is less or equal than 45 sec
         synchronized (internRequestMutex) {
             if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
+                connected = ConnectionStatus.LOST;
                 // don't block main thread if game is unresponsive
                 CompletableFuture.runAsync(() -> {
                     // if not async received enabled ~ probably kick occurred so 'don't fall' down the code
-                    if (!isAsyncReceivedEnabled()) {
+                    if (!isAsyncReceivedEnabled() || connected != ConnectionStatus.LOST) {
                         return;
                     }
 
@@ -1166,12 +1184,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Heavy util operation. Takes lot of CPU time.
      */
     public void util() {
-        if ((ups & (TPS_HALF - 1)) == 0) {
+        if ((ups & (TPS_QUARTER - 1)) == 0) {
             // call utility functions (chunk loading etc.)
             gameObject.utilChunkOperations();
         }
 
-        if ((ups & (TPS_QUARTER - 1)) == 0) {
+        if ((ups & (TPS_EIGHTH - 1)) == 0) {
             // block optimization (separate visible from not visible)
             gameObject.utilOptimization();
         }
@@ -1418,14 +1436,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             );
             register.send(this, session);
 
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(register);
-                }
-                // Wait for response (assuming simple echo for demonstration)
-                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
-            }
-
+//            synchronized (internRequestMutex) {
+//                if (requests.size() < MAX_SIZE) {
+//                    requests.add(register);
+//                }
+//                // Wait for response (assuming simple echo for demonstration)
+//                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
+//            }
             okey = true;
 
         } catch (Exception ex) {
@@ -1535,7 +1552,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                             gameObject.intrface.getConsole().write(String.format("Timeout while waiting for fragment %d, attempt %d", fragmentIndex, attempt + 1), Command.Status.WARNING);
 
                             // Try reconnect if session is lost - otherwise no action
-                            reconnect();
+                            if (connected == ConnectionStatus.LOST) {
+                                reconnect();
+                            }
                         }
                     }
 
@@ -1556,7 +1575,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             } else {
                 // Handle error response from server
                 DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(response0.getResponseStatus()), String.valueOf(response0.getData())), null);
-                gameObject.intrface.getConsole().write(response0.getData().toString(), Command.Status.FAILED);
+                gameObject.intrface.getConsole().write(String.valueOf(response0.getData()), Command.Status.FAILED);
             }
         } catch (Exception ex) {
             DSLogger.reportError("Unable to connect to server!", ex);
@@ -1593,6 +1612,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     /**
      * Disconnect (host) server. Multiplayer. If was no connected has no effect.
+     * Usually player has this variant of graceful disconnect. For response
+     * "Goodbye, hope we will see you again!" is awaited.
      */
     public void disconnectFromServer() {
         if (isConnected()) {
@@ -1604,7 +1625,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                if (!gameObject.WINDOW.shouldClose()) {
+                if (!gameObject.WINDOW.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
                     synchronized (internRequestMutex) {
                         if (requests.size() < MAX_SIZE) {
                             requests.add(goodByeRequest);
@@ -1636,8 +1657,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 connected = ConnectionStatus.NOT_CONNECTED;
                 // !IMPORTANT -- DISABLE ASYNC READPOINT/WRITEPOINT (so it doesn't block in process)
                 asyncReceivedEnabled.set(false);
-
-                DSLogger.reportInfo("Disconnected from server!", null);
             } catch (Exception ex) {
                 DSLogger.reportError("Error occurred!", ex);
                 DSLogger.reportError(ex.getMessage(), ex);
@@ -1871,6 +1890,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.levelContainer.loadLevelFromBufferNewFormat();
             } catch (UnsupportedEncodingException ex) {
                 DSLogger.reportError(ex.getMessage(), ex);
+            } catch (Exception ex) {
+                DSLogger.reportWarning("Connected to empty world - disconnect!", null);
+                gameObject.intrface.getConsole().write("Connected to empty world - disconnect!");
+                this.disconnectFromServer();
+                gameObject.clearEverything();
+                return false;
             }
             // Save world to world name + ndat. For example MyWorld.ndat
             gameObject.levelContainer.saveLevelToFile(worldInfo.worldname + ".ndat");
