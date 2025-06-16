@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.mina.transport.socket.DatagramAcceptor;
@@ -220,15 +221,21 @@ public class GameServer implements DSMachine, Runnable {
             this.shutDownSignal = true;
             // Reset server window title
             gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
-            // Kick all players
-            // (Close session(s))
+
+            // Kick all players (and close their sessions internally)            
             clients.immutableList().forEach(cli -> kickPlayer(cli.uniqueId));
+
+            // (Close session(s))
+            acceptor.getManagedSessions().values().forEach(session -> session.closeNow());
 
             // Set a shutdown timeout on the acceptor itself
             acceptor.setCloseOnDeactivation(true);
-            // Close acceptor
-            acceptor.unbind(endpoint);
-            acceptor.dispose();
+            // Close acceptor without blocking            
+            CompletableFuture.runAsync(() -> {
+                acceptor.unbind(endpoint);
+                acceptor.dispose();
+            }
+            );
 
             // Clear client list and finalize server shutdown
             clients.clear();
