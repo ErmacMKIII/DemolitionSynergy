@@ -1128,7 +1128,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // update with delta time like gravity or sun
         if ((ups & (ticksPerUpdate - 1)) == 0) {
+            // Update World (Sun, Earth motion, etc..)
             gameObject.update((float) deltaTime * ticksPerUpdate);
+
+            // determine visible chunk ids and put into the list (or queue)
+            gameObject.determineVisibleChunks();
 
             // Multiplayer update - get player info ~ 250 ms
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled()) {
@@ -1164,7 +1168,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 this.requestSetPlayerPos();
             }
 
-            gameObject.determineVisibleChunks();
         }
 
         // receive (connection) responses async
@@ -1192,6 +1195,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if ((ups & (TPS_EIGHTH - 1)) == 0) {
             // block optimization (separate visible from not visible)
             gameObject.utilOptimization();
+            // clear visible and invisible chunk lists
+            gameObject.clearChunkLists();
         }
     }
 
@@ -1304,6 +1309,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
+            // util operations (heavy CPU time), requires a single tick+
+            if (accumulator >= TICK_TIME && !GameRenderer.couldRender()) {
+                // interrupt rendering, is okey
+                gameObject.renderer.interrupt();
+                // util chunks (~chunk loader to Author understanding)
+                util();
+            }
+
             // Poll GLFW Events
             GLFW.glfwPollEvents();
             // Handle input (interrupt) events (keyboard & mouse)
@@ -1317,10 +1330,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 accumulator -= TICK_TIME;
             }
 
-            // util operations (heavy CPU time)
-            if (!GameRenderer.couldRender()) {
-                util();
-            }
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

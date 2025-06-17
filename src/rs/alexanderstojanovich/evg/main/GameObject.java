@@ -247,6 +247,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
+     * Clear chunk lists (visible chunks and invisible chunks)
+     */
+    public void clearChunkLists() {
+        levelContainer.getvChnkIdList().clear();
+        levelContainer.getiChnkIdList().clear();
+    }
+
+    /**
      * Auto init/save level container chunks.
      *
      * Perform chunking loading (or saving). From HDD/SSD disk.

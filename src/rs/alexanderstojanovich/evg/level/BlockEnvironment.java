@@ -136,7 +136,7 @@ public class BlockEnvironment {
                             });
 
                     // PASS 2: Process Chunks and Fill Tuples
-                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue);
+                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue.immutableList());
                     if (selectedBlockList != null) {
                         boolean modified = optmTuple.blockList.addAll(
                                 selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits
