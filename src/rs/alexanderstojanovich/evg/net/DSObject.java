@@ -24,6 +24,19 @@ package rs.alexanderstojanovich.evg.net;
 public interface DSObject {
 
     /**
+     * Id length of DSynergy hardware (sender) request
+     */
+    public static final int ID_LENGTH = 16;
+    /**
+     * Guid length of DSynergy hardware (sender) request
+     */
+    public static final int GUID_LENGTH = 16;
+    /**
+     * Initial ID of Request.
+     */
+    public static final String NIL_ID = "000-000000000000";
+
+    /**
      * Object type to be send over net.
      */
     public static enum ObjType {
@@ -89,4 +102,11 @@ public interface DSObject {
      * @return checksum
      */
     public long getChecksum();
+
+    /**
+     * Get globally unique id of the request to which this response belongs to
+     *
+     * @return (globally) unique id
+     */
+    public String getId();
 }

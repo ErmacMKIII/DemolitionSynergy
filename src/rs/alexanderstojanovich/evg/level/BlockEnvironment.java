@@ -102,7 +102,9 @@ public class BlockEnvironment {
      */
     public void optimize(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
-        pull();
+        if (lastFaceBits == 0) {
+            pull();
+        }
 
         // Determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
@@ -134,7 +136,7 @@ public class BlockEnvironment {
                             });
 
                     // PASS 2: Process Chunks and Fill Tuples
-                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue);
+                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue.immutableList());
                     if (selectedBlockList != null) {
                         boolean modified = optmTuple.blockList.addAll(
                                 selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits

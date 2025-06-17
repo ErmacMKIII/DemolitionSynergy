@@ -18,9 +18,12 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -66,6 +69,7 @@ public class Intrface {
     private DynamicText progText; // progress text;
     private DynamicText screenText; // screenshot information
     private DynamicText gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MULTIPLAYER}
+    private DynamicText pingText; // displays ping in Multiplayer
     private boolean showHelp = false;
 
     private ProgressBar progressBar;
@@ -96,6 +100,7 @@ public class Intrface {
     private OptionsMenu multiPlayerJoinMenu;
 
     private final Console console;
+    private final Chat chat;
     private boolean isHugeLevel = false; // if level is huge "PULSE" track is being played during random generation
 
     private DynamicText guideText;
@@ -108,6 +113,7 @@ public class Intrface {
     public Intrface(GameObject gameObject) {
         this.gameObject = gameObject;
         this.console = new Console(this);
+        this.chat = new Chat(this);
         initSelf();
     }
 
@@ -155,6 +161,10 @@ public class Intrface {
             gameModeText = new DynamicText(gameObject.GameAssets.FONT, Game.getCurrentMode().name(), GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 1.0f), this);
             gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
             gameModeText.alignToNextChar(this);
+
+            pingText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.GREEN_RGBA, new Vector2f(1.0f, 0.85f), this);
+            pingText.setAlignment(Text.ALIGNMENT_RIGHT);
+            pingText.alignToNextChar(this);
 
             gameTimeText = new DynamicText(gameObject.GameAssets.FONT, "", GlobalColors.YELLOW_RGBA, new Vector2f(0.0f, 1.0f), this);
             gameTimeText.setAlignment(Text.ALIGNMENT_CENTER);
@@ -452,6 +462,7 @@ public class Intrface {
             };
             multiPlayerDialog.dialog.alignToNextChar(this);
 
+            Object[] ticksPerUpdate = {1, 2, 3};
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
             Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
             Object[] swtch = {"OFF", "ON"};
@@ -464,6 +475,7 @@ public class Intrface {
             }
 
             IList<MenuItem> optionsMenuPairs = new GapList<>();
+            optionsMenuPairs.add(new MenuItem(this, "TICKS PER UPDATE", Menu.EditType.EditMultiValue, new MultiValue(this, ticksPerUpdate, MenuValue.Type.INT, Arrays.asList(ticksPerUpdate).indexOf(Game.getTicksPerUpdate()))));
             optionsMenuPairs.add(new MenuItem(this, "FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(this, fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
             optionsMenuPairs.add(new MenuItem(this, "RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
                     this,
@@ -495,14 +507,21 @@ public class Intrface {
                 protected void execute() {
                     Command command;
                     FutureTask<Object> task;
-                    switch (selected) {
-                        case 0:
+                    String s = optionsMenu.items.get(optionsMenu.getSelected()).keyText.content;
+                    switch (s) {
+                        case "TICKS PER UPDATE":
+                            command = Command.getCommand(Command.Target.TICKS_PER_UPDATE);
+                            command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
+                            command.setMode(Command.Mode.SET);
+                            Command.execute(gameObject, command);
+                            break;
+                        case "FPS CAP":
                             command = Command.getCommand(Command.Target.FPS_MAX);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 1:
+                        case "RESOLUTION":
                             command = Command.getCommand(Command.Target.RESOLUTION);
                             String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
                             String things[] = giveCurrent.split("x");
@@ -512,7 +531,7 @@ public class Intrface {
                             task = new FutureTask<>(command);
                             GameRenderer.TASK_QUEUE.add(task);
                             break;
-                        case 2:
+                        case "FULLSCREEN":
                             String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.FULLSCREEN);
                             switch (fullscreen) {
@@ -526,7 +545,7 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 3:
+                        case "VSYNC":
                             String vsync = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.VSYNC);
                             switch (vsync) {
@@ -541,7 +560,7 @@ public class Intrface {
                             task = new FutureTask<>(command);
                             GameRenderer.TASK_QUEUE.add(task);
                             break;
-                        case 4:
+                        case "WATER EFFECTS":
                             String waterEffects = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.WATER_EFFECTS);
                             String waterFX = WaterRenderer.WaterEffectsQuality.valueOf(waterEffects).toString();
@@ -549,7 +568,7 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 5:
+                        case "SHADOW EFFECTS":
                             String shadowEffects = (String) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.SHADOW_EFFECTS);
                             String shadoFX = ShadowRenderer.ShadowEffectsQuality.valueOf(shadowEffects).toString();
@@ -557,20 +576,20 @@ public class Intrface {
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 6:
+                        case "MOUSE SENSITIVITY":
                             float msens = (float) items.get(selected).menuValue.getCurrentValue();
                             command = Command.getCommand(Command.Target.MOUSE_SENSITIVITY);
                             command.getArgs().add(msens);
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 7:
+                        case "MUSIC VOLUME":
                             command = Command.getCommand(Command.Target.MUSIC_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
                             Command.execute(gameObject, command);
                             break;
-                        case 8:
+                        case "SOUND VOLUME":
                             command = Command.getCommand(Command.Target.SOUND_VOLUME);
                             command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                             command.setMode(Command.Mode.SET);
@@ -657,9 +676,11 @@ public class Intrface {
             creditsMenu.iterator.setEnabled(false);
             creditsMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
+            GlobalColors.ColorName colorName = GlobalColors.getColorName(config.getColor());
+            Vector4f colorRGBA = GlobalColors.getRGBAColorOrDefault(colorName);
             IList<MenuItem> singlPlayerMenuItems = new GapList<>();
             singlPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
+            singlPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, colorName)));
             singlPlayerMenuItems.add(new MenuItem(this, "LEVEL SIZE", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"SMALL", "MEDIUM", "LARGE", "HUGE"}, MenuValue.Type.STRING, "SMALL")));
             singlPlayerMenuItems.add(new MenuItem(this, "SEED", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.randomLevelGenerator.getSeed(), MenuValue.Type.LONG)));
             singlPlayerMenuItems.add(new MenuItem(this, "PLAY", Menu.EditType.EditNoValue, null));
@@ -678,10 +699,13 @@ public class Intrface {
                             final Player player = gameObject.levelContainer.levelActors.player;
                             String modelClazz = singlPlayerMenu.items.getFirst().menuValue.getCurrentValue().toString().toLowerCase();
                             player.setModelClazz(modelClazz);
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
                             break;
                         case "COLOR":
                             singlPlayerMenu.items.get(1).menuValue.getValueText().color = new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                             gameObject.levelContainer.levelActors.player.body.setPrimaryRGBAColor(new Vector4f(GlobalColors.getRGBColorOrDefault(singlPlayerMenu.items.get(1).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f));
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+                            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
                             break;
                         case "LEVEL SIZE":
                             isHugeLevel = false;
@@ -717,13 +741,15 @@ public class Intrface {
             };
             singlPlayerMenu.items.getLast().keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             singlPlayerMenu.alignmentAmount = Text.ALIGNMENT_RIGHT; // the best for options menu
-
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
             //------------------------------------------------------------------
             // MAIN MULTIPLAYER MENU
             IList<MenuItem> multiPlayerMenuItems = new GapList<>();
             multiPlayerMenuItems.add(new MenuItem(this, "PLAYER NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.levelContainer.levelActors.player.getName(), MenuValue.Type.STRING)));
             multiPlayerMenuItems.add(new MenuItem(this, "CHARACTER MODEL", Menu.EditType.EditMultiValue, new MultiValue(this, new String[]{"ALEX", "STEVE"}, MenuValue.Type.STRING, config.getModel().toUpperCase())));
-            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, GlobalColors.getColorName(config.getColor()))));
+            multiPlayerMenuItems.add(new MenuItem(this, "COLOR", Menu.EditType.EditMultiValue, new MultiValue(this, GlobalColors.ColorName.names(), MenuValue.Type.STRING, colorName)));
             multiPlayerMenuItems.add(new MenuItem(this, "HOST GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenuItems.add(new MenuItem(this, "JOIN GAME", Menu.EditType.EditNoValue, null));
             multiPlayerMenu = new OptionsMenu(this, "MULTIPLAYER", multiPlayerMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), secondaryMenuScale) {
@@ -745,12 +771,15 @@ public class Intrface {
                             player = gameObject.levelContainer.levelActors.player;
                             String modelClazz = this.items.get(1).menuValue.getCurrentValue().toString().toLowerCase();
                             player.setModelClazz(modelClazz);
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
                             break;
                         case "COLOR":
                             player = gameObject.levelContainer.levelActors.player;
                             Vector4f colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(this.items.get(2).menuValue.getCurrentValue().toString().toUpperCase()), 1.0f);
                             player.body.setPrimaryRGBAColor(colorRGBA);
                             this.items.get(2).menuValue.getValueText().color = colorRGBA;
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+                            singlPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
                             break;
                         case "HOST GAME":
                             multiPlayerHostMenu.open();
@@ -764,6 +793,9 @@ public class Intrface {
             multiPlayerMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
             multiPlayerMenu.items.get(3).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
             multiPlayerMenu.items.get(4).keyText.color = new Vector4f(GlobalColors.CYAN, 1.0f);
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("CHARACTER MODEL")).menuValue.setCurrentValue(config.getModel().toUpperCase());
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
+            multiPlayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName.toString());
 
             IList<MenuItem> multiPlayerHostMenuItems = new GapList<>();
             multiPlayerHostMenuItems.add(new MenuItem(this, "WORLD NAME", Menu.EditType.EditSingleValue, new SingleValue(this, gameObject.gameServer.getWorldName(), MenuValue.Type.STRING)));
@@ -895,8 +927,9 @@ public class Intrface {
                                     gameObject.intrface.getInfoMsgText().setEnabled(false);
                                 } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
+                                } catch (Exception ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
                                 }
-
                             }, gameObject.TaskExecutor);
                             break;
                     }
@@ -1001,6 +1034,11 @@ public class Intrface {
             gameModeText.bufferSmart(this);
         }
         gameModeText.render(this, ifcShaderProgram);
+        if (!pingText.isBuffered()) {
+            pingText.bufferSmart(this);
+        }
+        pingText.render(this, ifcShaderProgram);
+        gameModeText.render(this, ifcShaderProgram);
         if (!progText.isBuffered()) {
             progText.bufferSmart(this);
         }
@@ -1041,6 +1079,7 @@ public class Intrface {
             }
         }
         console.render(this, ifcShaderProgram, ifcContShaderProgram);
+        chat.render(this, ifcShaderProgram, ifcContShaderProgram);
     }
 
     /**
@@ -1085,6 +1124,7 @@ public class Intrface {
         multiPlayerJoinMenu.cleanUp();
 
         console.cleanUp();
+        chat.cleanUp();
 
         DSLogger.reportDebug("Interface cleaned up.", null);
     }
@@ -1279,6 +1319,14 @@ public class Intrface {
 
     public DynamicText getInfoMsgText() {
         return infoMsgText;
+    }
+
+    public Chat getChat() {
+        return chat;
+    }
+
+    public DynamicText getPingText() {
+        return pingText;
     }
 
 }

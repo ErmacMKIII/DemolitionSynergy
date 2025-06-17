@@ -16,16 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
@@ -34,12 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Pattern;
-import java.util.zip.CRC32C;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -59,8 +48,6 @@ import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
-import rs.alexanderstojanovich.evg.net.LevelMapInfo;
-import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -235,6 +222,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Game will start soon.", null);
         this.initText.setContent("Game will start soon.");
         game.go(); // after the loop end
+
         gameServer.stopServer(); // stop the server
         gameServer.shutDown();
         timer0.cancel();
@@ -256,6 +244,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         if (!GameRenderer.couldRender()) {
             levelContainer.blockEnvironment.clear();
         }
+    }
+
+    /**
+     * Clear chunk lists (visible chunks and invisible chunks)
+     */
+    public void clearChunkLists() {
+        levelContainer.getvChnkIdList().clear();
+        levelContainer.getiChnkIdList().clear();
     }
 
     /**
@@ -283,6 +279,33 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             } finally {
                 updateRenderLCLock.unlock();
             }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    /**
+     * Get Interpolated Color
+     *
+     * @param value value to interpolate
+     * @return interpolated color (green/yellow/red)
+     */
+    private static Vector4f getInterpolatedColor(float value) {
+        // Normalize the ping value between 0 and 1 for interpolation
+        float ratio;
+        if (value <= 50f) {
+            return GlobalColors.GREEN_RGBA; // Pure green
+        } else if (value <= 100f) {
+            Vector4f srcCol = new Vector4f(GlobalColors.GREEN_RGBA);
+            Vector4f dest = new Vector4f(GlobalColors.GREEN_RGBA);
+            ratio = (value - 50f) / 50f; // 50-100 → 0 to 1
+            return srcCol.lerp(GlobalColors.YELLOW_RGBA, ratio, dest);
+        } else if (value <= 200f) {
+            Vector4f srcCol = new Vector4f(GlobalColors.YELLOW_RGBA);
+            Vector4f dest = new Vector4f();
+            ratio = (value - 100f) / 100f; // 100-200 → 0 to 1
+            return srcCol.lerp(GlobalColors.RED_RGBA, ratio, dest);
+        } else {
+            return GlobalColors.RED_RGBA; // Pure red (or darker red if needed)
         }
     }
 
@@ -323,6 +346,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getGameModeText().setContent(Game.getCurrentMode().name());
             GameTime now = GameTime.Now();
             intrface.getGameTimeText().setContent(String.format("Day %d %02d:%02d:%02d", now.days, now.hours, now.minutes, now.seconds));
+            intrface.getChat().getHistory().forEach(item -> {
+                item.getColor().w -= deltaTime;
+                if (item.getColor().w <= 0.0) {
+                    item.setEnabled(false);
+                }
+            });
+            intrface.getChat().getHistory().removeIf(item -> !item.isEnabled());
+            if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) {
+                intrface.getPingText().setEnabled(true);
+                intrface.getPingText().setColor(getInterpolatedColor((float) game.getPing()));
+                intrface.getPingText().setContent(String.format("%.1f ms", game.getPing()));
+            } else {
+                intrface.getPingText().setEnabled(false);
+            }
         }
 
         if (intrface.getSaveDialog().isDone()) {
@@ -591,6 +628,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface.getGameMenu().setEnabled(false);
         // set this as help text (it is reset)
         intrface.getGuideText().setEnabled(true);
+        // set this to false (don't show 'connected')
+        intrface.getInfoMsgText().setEnabled(false);
     }
 
     /**
@@ -740,119 +779,25 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @throws java.util.concurrent.ExecutionException
      * @throws java.io.UnsupportedEncodingException
      */
-    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException, UnsupportedEncodingException {
+    public boolean generateMultiPlayerLevelAsJoin() throws InterruptedException, ExecutionException, UnsupportedEncodingException, Exception {
         boolean success = false;
         this.clearEverything();
 
         // Register player with Unique ID (UUID)
         if (game.registerPlayer()) {
             // Get world info from server
-            LevelMapInfo worldInfo = game.getWorldInfo();
-
-            int numberOfAttempts = 0;
-            Game.DownloadStatus status = Game.DownloadStatus.ERR;
-
-            // Locate all level map files with dat or ndat extension
-            File clientDir = new File("./");
-            String worldNameEscaped = Pattern.quote(gameServer.worldName);
-            final Pattern pattern = Pattern.compile(worldNameEscaped + "\\.(n)?dat$", Pattern.CASE_INSENSITIVE);
-            List<String> datFileList = Arrays.asList(clientDir.list((dir, name) -> pattern.matcher(name.toLowerCase()).find()));
-            GapList<String> datFileListCopy = GapList.create(datFileList);
-            String mapFileOrNull = datFileListCopy.getFirstOrNull();
-            boolean lvlMapIsCorrect = false;
-            CRC32C checksum = new CRC32C();
-
-            if (mapFileOrNull != null) {
-                File mapFileLevel = new File(mapFileOrNull);
-
-                if (mapFileLevel.exists()) {
-                    try (FileChannel fileChannel = new FileInputStream(mapFileLevel).getChannel()) {
-                        int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
-                        ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
-                        while (fileChannel.read(buffer) > 0) {
-                            // Do nothing, just read the file into the buffer
-                        }
-                        buffer.flip();
-                        checksum.update(buffer);
-
-                        lvlMapIsCorrect = worldInfo.sizebytes == sizeBytes && worldInfo.chksum == checksum.getValue();
-                    } catch (IOException ex) {
-                        DSLogger.reportError(ex.getMessage(), ex);
-                    } catch (Exception ex) {
-                        DSLogger.reportError(String.format("Error - level map info is null! %s", ex.getMessage()), ex);
-                    }
-                }
-            }
-
-            // If level does not exist or is not correct (checksum value is different)
-            if (lvlMapIsCorrect) {
-                DSLogger.reportInfo("Level Map OK!", null);
-                intrface.getConsole().write("Level Map OK!");
-
-                levelContainer.loadLevelFromFile(mapFileOrNull);
-            } else {
-                do {
-                    status = game.downloadLevel();
-                } while (status == Game.DownloadStatus.ERR && ++numberOfAttempts <= MAX_ATTEMPTS);
-
-                if (status == Game.DownloadStatus.WARNING) {
-                    DSLogger.reportWarning("Connected to empty world - disconnect!", null);
-                    intrface.getConsole().write("Connected to empty world - disconnect!");
-                    game.disconnectFromServer();
-                    return false;
-                }
-
-                // Load downloaded level (from fragments)
-                levelContainer.loadLevelFromBufferNewFormat();
-                // Save world to world name + ndat. For example MyWorld.ndat
-                levelContainer.saveLevelToFile(gameServer.worldName + ".ndat");
-            }
-
-            if (lvlMapIsCorrect || status == Game.DownloadStatus.OK) {
-                try {
-
-                    DSLogger.reportInfo(String.format("World '%s.ndat' saved!", gameServer.worldName), null);
-                    intrface.getConsole().write(String.format("World '%s.ndat' saved!", gameServer.worldName));
-                    // Avoid reconnection errors
-                    // On reconnecting, the player needs to be registered again
-                    if (!levelContainer.levelActors.player.isRegistered()) {
-                        game.registerPlayer();
-                    }
-
-                    // Request player info self+others
-                    // It is done because of other players
-                    PlayerInfo[] playerInfo = game.getPlayerInfo();
-                    if (playerInfo == null) {
-                        DSLogger.reportError("Unable to get player info!", null);
-                        intrface.getConsole().write("Unable to get player info!", Command.Status.FAILED);
-                        return false;
-                    }
-
-                    // Configure other players
-                    levelContainer.levelActors.configOtherPlayers(playerInfo);
-                    // Configure-set main actor
-                    // Spawn player (set position)
-                    levelContainer.spawnPlayer();
-                    // Player set position
-                    game.requestSetPlayerPosition();
-
-                    // !IMPORTANT -- ENABLE ASYNC READPOINT 
-                    game.setAsyncReceivedForceEnabled(true);
-                    intrface.getGuideText().setEnabled(false);
-
-                    success = true;
-                } catch (Exception ex) {
-                    DSLogger.reportWarning("Not able to spawn player. Disconnecting.", null);
-                    intrface.getConsole().write("Not able to spawn player. Disconnecting.", Command.Status.WARNING);
-                    game.disconnectFromServer();
-                    this.clearEverything();
-                }
-            } else {
-                DSLogger.reportWarning("Not able to load level. Disconnecting.", null);
-                intrface.getConsole().write("Not able to load level. Disconnecting.", Command.Status.FAILED);
-                game.disconnectFromServer();
-                this.clearEverything();
-            }
+            game.getWorldInfo();
+            // Configure-set main actor
+            // Spawn player (set position)
+            levelContainer.spawnPlayer();
+            // Player set position
+            game.requestSetPlayerPos();
+            // Disable guide text (.. player is gonna spawn)
+            intrface.getGuideText().setEnabled(false);
+            // !IMPORTANT -- ENABLE ASYNC WRITEPOINT 
+            game.setAsyncReceivedForceEnabled(true);
+            // It is successful
+            success = true;
         } else {
             DSLogger.reportWarning("Not able to register player. Disconnecting.", null);
             intrface.getConsole().write("Not able to register player. Disconnecting.", Command.Status.FAILED);

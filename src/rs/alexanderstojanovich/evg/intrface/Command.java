@@ -44,7 +44,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
-import rs.alexanderstojanovich.evg.main.GameServer;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.Request;
@@ -56,6 +55,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.Trie;
 
 /**
+ * Console commands.
  *
  * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
@@ -96,6 +96,7 @@ public class Command implements Callable<Object> {
         NAME,
         MODEL,
         COLOR,
+        TICKS_PER_UPDATE,
         ERROR
     };
 
@@ -202,6 +203,13 @@ public class Command implements Callable<Object> {
         }
         if (things.length > 0) {
             switch (things[0].toLowerCase()) {
+                case "ticksperupdate":
+                case "ticks_per_update":
+                    command.target = Target.TICKS_PER_UPDATE;
+                    if (things.length == 2) {
+                        command.args.add(Integer.valueOf(things[1]));
+                    }
+                    break;
                 case "monitor_get":
                 case "monitorget":
                     command.target = Target.MONITOR_GET;
@@ -726,7 +734,7 @@ public class Command implements Callable<Object> {
                     } else {
                         chunkId = (int) command.args.get(0);
                         boolean cached = CacheModule.isCached(chunkId);
-                        int size = -1;
+                        int size;
                         if (cached) {
                             size = CacheModule.cachedSize(chunkId);
                         } else {
@@ -784,7 +792,7 @@ public class Command implements Callable<Object> {
                     if (!command.args.isEmpty()) {
                         if (Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST) {
                             String msg = gameObject.levelContainer.levelActors.player.getName() + ":" + command.args.getFirst();
-                            Response response = new Response(0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
+                            Response response = new Response(DSObject.NIL_ID, 0L, ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                             gameObject.gameServer.clients.forEach(ci -> {
                                 try {
                                     response.send("*", gameObject.gameServer, ci.session);
@@ -844,6 +852,8 @@ public class Command implements Callable<Object> {
                             }
                             gameObject.intrface.getInfoMsgText().setEnabled(false);
                         } catch (InterruptedException | ExecutionException | UnsupportedEncodingException ex) {
+                            DSLogger.reportError(ex.getMessage(), ex);
+                        } catch (Exception ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
                     }
@@ -940,7 +950,7 @@ public class Command implements Callable<Object> {
                             (Critter t) -> t.uniqueId).filter(x -> command.args.contains(x)).collect((Collectors.toList()));
                     clientInfo.forEach(ci -> {
                         if (guids.contains(ci.uniqueId)) {
-                            GameServer.kickPlayer(gameObject.gameServer, ci.uniqueId);
+                            gameObject.gameServer.kickPlayer(ci.uniqueId);
                         }
                     });
                     command.status = Status.SUCCEEDED;
@@ -975,24 +985,37 @@ public class Command implements Callable<Object> {
                     final Player player = gameObject.levelContainer.levelActors.player;
                     Vector4f colorRGBA = GlobalColors.WHITE_RGBA;
                     if (command.args.size() == 1) {
-                        colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(command.args.getFirst().toString().toUpperCase()), 1.0f);
+                        String colorName = command.args.getFirst().toString().toUpperCase();
+                        colorRGBA = new Vector4f(GlobalColors.getRGBColorOrDefault(colorName), 1.0f);
                         singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
+                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(command.args.getFirst().toString().toUpperCase());
+                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         command.status = Status.SUCCEEDED;
                     } else if (command.args.size() == 3) {
                         float r = Float.parseFloat(command.args.get(0).toString());
                         float g = Float.parseFloat(command.args.get(1).toString());
                         float b = Float.parseFloat(command.args.get(2).toString());
                         colorRGBA = new Vector4f(r, g, b, 1.0f);
+                        GlobalColors.ColorName colorName = GlobalColors.getColorName(new Vector3f(colorRGBA.x, colorRGBA.y, colorRGBA.z));
                         singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue("Custom");
+                        singleplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.getValueText().setColor(colorRGBA);
-                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue("Custom");
+                        multiplayerMenu.items.getIf(y -> y.keyText.content.equals("COLOR")).menuValue.setCurrentValue(colorName);
                         command.status = Status.SUCCEEDED;
                     }
                     player.body.setPrimaryRGBAColor(colorRGBA);
+                }
+                break;
+            case TICKS_PER_UPDATE:
+                if (command.mode == Mode.GET) {
+                    result = Game.getTicksPerUpdate();
+                    command.status = Status.SUCCEEDED;
+                } else if (command.mode == Command.Mode.SET) {
+                    int tpsArg = (int) command.args.get(0);
+                    Game.setTicksPerUpdate(tpsArg);
+                    optionsMenu.items.getIf(y -> y.keyText.content.equals("TICKS PER UPDATE")).menuValue.setCurrentValue(tpsArg);
+                    command.status = Status.SUCCEEDED;
                 }
                 break;
             case NOP:
@@ -1042,7 +1065,7 @@ public class Command implements Callable<Object> {
                 || this.target == Target.PRINT || this.target == Target.SAY || this.target == Target.PING
                 || this.target == Target.CONNECT || this.target == Target.DISCONNECT
                 || this.target == Target.START_SERVER || this.target == Target.STOP_SERVER || this.target == Target.KICK_PLAYER
-                || this.target == Target.NAME || this.target == Target.MODEL || this.target == Target.COLOR;
+                || this.target == Target.NAME || this.target == Target.MODEL || this.target == Target.COLOR || this.target == Target.TICKS_PER_UPDATE;
     }
 
     // game commands
@@ -1052,7 +1075,7 @@ public class Command implements Callable<Object> {
                 || command.target == Target.PRINT || command.target == Target.SAY || command.target == Target.PING
                 || command.target == Target.CONNECT || command.target == Target.DISCONNECT
                 || command.target == Target.START_SERVER || command.target == Target.STOP_SERVER || command.target == Target.KICK_PLAYER
-                || command.target == Target.NAME || command.target == Target.MODEL || command.target == Target.COLOR;
+                || command.target == Target.NAME || command.target == Target.MODEL || command.target == Target.COLOR || command.target == Target.TICKS_PER_UPDATE;
     }
 
     // renderer commands need OpenGL whilst other doesn't

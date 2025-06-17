@@ -48,7 +48,7 @@ public class Chunk { // some operations are mutually exclusive
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 256;
     public static final float VISION = 256.0f; // determines visibility
-    public static final int GRID_SIZE = 8;
+    public static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
@@ -632,7 +632,7 @@ public class Chunk { // some operations are mutually exclusive
     }
 
     /**
-     * Determine which chunks are visible by this chunk.If visible put into the
+     * Determine which chunks are visible by this chunk. If visible put into the
      * V list, otherwise put into the I list.
      *
      * @param vChnkIdList visible chunk queue
@@ -642,10 +642,7 @@ public class Chunk { // some operations are mutually exclusive
      * @return list of changed chunks
      */
     public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Camera camera) {
-        final IList<Integer> before = vChnkIdList.copy();
-
-        vChnkIdList.clear();
-        iChnkIdList.clear();
+        boolean changed = false;
 
         // current chunk where player is        
         int currChunkId = chunkFunc(camera.pos);
@@ -666,16 +663,13 @@ public class Chunk { // some operations are mutually exclusive
                 int deltaRow = Math.abs(currRow - row);
 
                 if (deltaCol <= 1 && deltaRow <= 1) {
-                    vChnkIdList.add(chunkId);
+                    changed |= vChnkIdList.add(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
-                    iChnkIdList.add(chunkId);
+                    changed |= iChnkIdList.add(chunkId);
                 }
 
             }
         }
-
-        final IList<Integer> after = vChnkIdList;
-        boolean changed = !Objects.equals(before, after);
 
         return changed;
     }
