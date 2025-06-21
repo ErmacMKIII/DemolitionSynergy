@@ -104,16 +104,23 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final float JUMP_STR_AMOUNT = 7.5f;
     public static final float ANGLE = (float) (5E-4d * Math.PI / 180);
 
-    public static final int FORWARD = 0;
-    public static final int BACKWARD = 1;
-    public static final int LEFT = 2;
-    public static final int RIGHT = 3;
+    public static enum Direction {
+        LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
+    };
+    private Direction direction = null;
+
+    public static final int LEFT = 0;
+    public static final int RIGHT = 1;
+    public static final int BOTTOM = 2;
+    public static final int TOP = 3;
+    public static final int BACK = 4;
+    public static final int FRONT = 5;
 
     private static int ups; // current handleInput per second    
     private static int fpsMax = config.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
-    public static final double CRITICAL_TIME = 30.0;
+    public static final double CRITICAL_TIME = 15.0;
     public static final int MAX_WAIT_RECEIVE_TIME = 45; // 45 Seconds
 
     private final boolean[] keys = new boolean[512];
@@ -193,6 +200,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Async Client Executor (async receive responses)
      */
     public final ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+
+    /*
+     * Util chunk loader
+     */
+    public final ExecutorService chunkLoaderExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Connection Status (Client)
@@ -290,7 +302,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         Observer obs = lc.levelActors.spectator;
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.FORWARD)) {
                 obs.moveBackward(AMOUNT);
             } else {
                 obs.moveForward(amount);
@@ -299,7 +311,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.BACKWARD)) {
                 obs.moveForward(AMOUNT);
             } else {
                 obs.moveBackward(amount);
@@ -308,7 +320,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if (keys[GLFW.GLFW_KEY_A]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.LEFT)) {
                 obs.moveRight(AMOUNT);
             } else {
                 obs.moveLeft(amount);
@@ -317,7 +329,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if (keys[GLFW.GLFW_KEY_D]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.RIGHT)) {
                 obs.moveLeft(AMOUNT);
             } else {
                 obs.moveRight(amount);
@@ -326,7 +338,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.UP)) {
                 obs.descend(AMOUNT);
             } else {
                 obs.ascend(amount);
@@ -335,7 +347,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.DOWN)) {
                 obs.ascend(AMOUNT);
             } else {
                 obs.descend(amount);
@@ -469,7 +481,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
             player.movePredictorXZForward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.FORWARD)) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
@@ -479,7 +491,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
             player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.BACKWARD)) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
@@ -489,7 +501,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_A]) {
             player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
@@ -499,7 +511,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_D]) {
             player.movePredictorXZRight(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
@@ -509,7 +521,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
             player.movePredictorYUp(amountY);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                 player.movePredictorYDown(amountY);
             } else {
                 jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -519,7 +531,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
             player.movePredictorYDown(amountYNeg);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
                 crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
@@ -588,7 +600,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && player.isRegistered() && isAsyncReceivedEnabled()) {
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.FORWARD, (float) interpolationFactor)) {
                     player.movePredictorXZBackward(amountXZ);
                 } else {
                     player.moveXZForward(amountXZ);
@@ -598,7 +610,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
                 player.movePredictorXZBackward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.BACKWARD, (float) interpolationFactor)) {
                     player.movePredictorXZForward(amountXZ);
                 } else {
                     player.moveXZBackward(amountXZ);
@@ -608,7 +620,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_A]) {
                 player.movePredictorXZLeft(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.LEFT, (float) interpolationFactor)) {
                     player.movePredictorXZRight(amountXZ);
                 } else {
                     player.moveXZLeft(amountXZ);
@@ -618,7 +630,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_D]) {
                 player.movePredictorXZRight(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.RIGHT, (float) interpolationFactor)) {
                     player.movePredictorXZLeft(amountXZ);
                 } else {
                     player.moveXZRight(amountXZ);
@@ -628,7 +640,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
                 player.movePredictorYUp(amountY);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.UP, (float) interpolationFactor)) {
                     player.movePredictorYDown(amountY);
                 } else {
                     jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -638,7 +650,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
                 player.movePredictorYDown(amountYNeg);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, (float) interpolationFactor)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
                     crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
@@ -649,7 +661,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         } else if (currentMode == Mode.MULTIPLAYER_HOST && player.isRegistered()) {
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
                 player.movePredictorXZForward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                     player.movePredictorXZBackward(amountXZ);
                 } else {
                     player.moveXZForward(amountXZ);
@@ -659,7 +671,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
                 player.movePredictorXZBackward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                     player.movePredictorXZForward(amountXZ);
                 } else {
                     player.moveXZBackward(amountXZ);
@@ -669,7 +681,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_A]) {
                 player.movePredictorXZLeft(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
                     player.movePredictorXZRight(amountXZ);
                 } else {
                     player.moveXZLeft(amountXZ);
@@ -679,7 +691,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_D]) {
                 player.movePredictorXZRight(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
                     player.movePredictorXZLeft(amountXZ);
                 } else {
                     player.moveXZRight(amountXZ);
@@ -689,7 +701,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if (keys[GLFW.GLFW_KEY_SPACE] && (!jumpPerformed)) {
                 player.movePredictorYUp(amountY);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                     player.movePredictorYDown(amountY);
                 } else {
                     jumpPerformed |= lc.jump(player, amountY, deltaTime);
@@ -699,7 +711,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
                 player.movePredictorYDown(amountYNeg);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player)) {
+                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
                     crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
@@ -1131,9 +1143,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Update World (Sun, Earth motion, etc..)
             gameObject.update((float) deltaTime * ticksPerUpdate);
 
-            // determine visible chunk ids and put into the list (or queue)
-            gameObject.determineVisibleChunks();
-
             // Multiplayer update - get player info ~ 250 ms
             if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled()) {
                 try {
@@ -1181,23 +1190,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
+        // Update and otimize chunks
+        if ((ups & (TPS_QUARTER - 1)) == 0) {
+            gameObject.updateNoptimize();
+        }
     }
 
     /**
-     * Heavy util operation. Takes lot of CPU time.
+     * Heavy util operation. Takes lot of CPU time. Load chunks into game.
      */
-    public void util() {
-        if ((ups & (TPS_QUARTER - 1)) == 0) {
-            // call utility functions (chunk loading etc.)
-            gameObject.utilChunkOperations();
-        }
-
-        if ((ups & (TPS_EIGHTH - 1)) == 0) {
-            // block optimization (separate visible from not visible)
-            gameObject.utilOptimization();
-            // clear visible and invisible chunk lists
-            gameObject.clearChunkLists();
-        }
+    public void utilLoadChunks() {
+        // call utility functions (chunk loading etc.)
+        gameObject.utilChunkOperations();
     }
 
     /**
@@ -1309,14 +1313,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-            // util operations (heavy CPU time), requires a single tick+
-            if (accumulator >= TICK_TIME && !GameRenderer.couldRender()) {
-                // interrupt rendering, is okey
-                gameObject.renderer.interrupt();
-                // util chunks (~chunk loader to Author understanding)
-                util();
-            }
-
             // Poll GLFW Events
             GLFW.glfwPollEvents();
             // Handle input (interrupt) events (keyboard & mouse)
@@ -1330,6 +1326,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 accumulator -= TICK_TIME;
             }
 
+            if (accumulator < TICK_TIME && !GameRenderer.couldRender()) {
+                gameObject.renderer.interrupt();
+                utilLoadChunks();
+            }
+            // utilLoadChunks operations (heavy CPU time), requires a single tick+
+            // utilLoadChunks chunks (~chunk loader to author understanding)
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();
@@ -1699,6 +1701,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     * Frees all the callbacks. Called after the main loop.
      */
     public void cleanUp() {
+        chunkLoaderExecutor.shutdown();
         clientExecutor.shutdown();
         connector.dispose();
 
@@ -1963,6 +1966,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         cfg.setColor(gameObject.levelContainer.levelActors.player.body.getPrimaryRGBColor());
 
         return cfg;
+    }
+
+    /**
+     * Get game varying ticks.
+     *
+     * @return varying ticks
+     */
+    public double getTicks() {
+        return (double) (Game.accumulator * Game.TPS);
     }
 
     public boolean isConnected() {

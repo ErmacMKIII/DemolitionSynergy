@@ -262,8 +262,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @return any chunk operation performed
      */
     public boolean utilChunkOperations() {
-        this.chunkOperationPerformed = this.levelContainer.chunkOperations();
-
+        this.chunkOperationPerformed = false;
+        this.chunkOperationPerformed |= this.levelContainer.chunkOperations();
         return chunkOperationPerformed;
     }
 
@@ -271,11 +271,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Perform optimization (of chunks). Optimization is collecting all tuples
      * with blocklist from all chunks into one tuple selection.
      */
-    public void utilOptimization() {
+    public void updateNoptimize() {
         if (!isWorking()) {
             updateRenderLCLock.lock();
             try {
-                levelContainer.optimize();
+                // run block environment update n optimizaiton
+                levelContainer.updateNoptimize();
             } finally {
                 updateRenderLCLock.unlock();
             }
@@ -327,6 +328,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgressBar().setValue(percent, intrface);
             this.intrface.getProgressBar().getQuad().setEnabled(true);
         } else { // working check avoids locking the monitor
+            createOrUpdateChunkLists();
             levelContainer.update();
             // if single player gravity is affected or if multiplayer and player is registered
             if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
@@ -334,7 +336,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 boolean underGravity = levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
-
+            // update and optimize block environment to render
+            updateNoptimize();
+            clearChunkLists();
             perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
@@ -540,8 +544,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @return is changed
      */
-    public boolean determineVisibleChunks() {
-        return levelContainer.determineVisible();
+    public boolean createOrUpdateChunkLists() {
+        boolean changed = false;
+        if (!isWorking()) {
+            changed |= levelContainer.determineVisible();
+        }
+
+        return changed;
     }
 
     /**
@@ -583,17 +592,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         }
     }
 
-//    /**
-//     * Optimize with working/special tuples
-//     */
-//    private void optimize() {
-//        updateRenderLCLock.lock();
-//        try {
-//            levelContainer.optimize();
-//        } finally {
-//            updateRenderLCLock.unlock();
-//        }
-//    }
     // -------------------------------------------------------------------------
     /**
      * Clear Everything. Game will be 'Free'.
@@ -831,10 +829,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * collide with solid objects or critters.
      *
      * @param preditable Predictable to have collision with environment
+     * @param direction direciton of motion
      * @return test true/false
      */
-    public boolean hasCollisionWith(Predictable preditable) { // collision detection - critter against solid obstacles
-        return LevelContainer.hasCollisionWithEnvironment(preditable);
+    public boolean hasCollisionWith(Predictable preditable, Game.Direction direction) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(preditable, direction);
     }
 
     /**
@@ -842,10 +841,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * collide with solid objects or critters. (virtually) => 0.07f dimension
      *
      * @param observer Predictable to have collision with environment
+     * @param direction direction of motion
      * @return test true/false
      */
-    public boolean hasCollisionWith(Observer observer) { // collision detection - critter against solid obstacles
-        return LevelContainer.hasCollisionWithEnvironment(observer);
+    public boolean hasCollisionWith(Observer observer, Game.Direction direction) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(observer, direction);
     }
 
     /**
@@ -853,10 +853,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * collide with solid objects or critters.
      *
      * @param critter critter (implements predictable). Has (model) body.
+     * @param direction direction of motion
      * @return test true/false
      */
-    public boolean hasCollisionWith(Critter critter) { // collision detection - critter against solid obstacles
-        return LevelContainer.hasCollisionWithEnvironment(critter);
+    public boolean hasCollisionWith(Critter critter, Game.Direction direction) { // collision detection - critter against solid obstacles
+        return LevelContainer.hasCollisionWithEnvironment(critter, direction);
     }
 
     // prints general and detailed information about solid and fluid chunks

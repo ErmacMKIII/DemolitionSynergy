@@ -72,12 +72,12 @@ public class LevelContainer implements GravityEnviroment {
      * Min amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MIN_AMOUNT = 0f;
+    public static final float MIN_AMOUNT = -42f;
     /**
      * Max amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MAX_AMOUNT = 134.4f;
+    public static final float MAX_AMOUNT = 42f;
     /**
      * Step amount of iteration for collision control or gravity control (inner
      * loop).
@@ -532,17 +532,23 @@ public class LevelContainer implements GravityEnviroment {
 
         // Try to spawn the player at a valid location
         boolean playerSpawned = false;
-        while (!playerSpawned && !solidPopLoc.isEmpty()) {
+        OUTER:
+        while (!playerSpawned && !solidPopLoc.isEmpty()) { // search through solid population location
             int randomIndex = random.nextInt(solidPopLoc.size());
             Vector3f solidLoc = solidPopLoc.get(randomIndex);
             Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z); // Adjust y position
 
             player.setPos(playerLoc);
-            if (!hasCollisionWithEnvironment((Critter) player)) {
-                playerSpawned = true;
-            } else {
-                solidPopLoc.remove(randomIndex);  // Remove invalid location
+            INNER:
+            for (Game.Direction dir : Game.Direction.values()) {
+                if (hasCollisionWithEnvironment((Critter) player, dir)) { // if any direction causes collision continue OUTER search
+                    continue OUTER;
+                } else {
+                    solidPopLoc.remove(randomIndex);  // Remove invalid location
+                }
             }
+
+            playerSpawned = true;
         }
 
         // Adjust player position if successfully spawned
@@ -1184,11 +1190,13 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Checks if a {@link Predictable} has collision with the environment.
+     * Called on motion. Not used. Predictable interface.
      *
      * @param predictable the object to check for collision.
+     * @param direction direction XYZ of motion
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(Predictable predictable) {
+    public static boolean hasCollisionWithEnvironment(Predictable predictable, Game.Direction direction) {
         if (!SKYBOX.containsInsideExactly(predictable.getPredictor())) {
             return false; // No need to continue if outside the skybox.
         }
@@ -1204,7 +1212,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Iterate through adjacent positions.
-        for (int j = 0; j <= 13; j++) {
+        final int[] sides = Block.getOppositeSides(direction);
+        OUTER:
+        for (int j : sides) {
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
@@ -1223,12 +1233,14 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Checks if an {@link Observer} has collision with the environment.
+     * Checks if an {@link Observer} has collision with the environment. Called
+     * on motion. In 'editorDo'. Observer (interface) has camera.
      *
      * @param observer the observer to check for collision.
+     * @param direction direction XYZ of motion
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(Observer observer) {
+    public static boolean hasCollisionWithEnvironment(Observer observer, Game.Direction direction) {
         if (!SKYBOX.containsInsideExactly(observer.getPos())
                 || !SKYBOX.intersectsExactly(observer.getPos(), 0.075f, 0.075f, 0.075f)) {
             return true; // Collision detected outside the skybox or with its boundary.
@@ -1245,8 +1257,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Iterate through adjacent positions.
+        final int[] sides = Block.getOppositeSides(direction);
         OUTER:
-        for (int j = 0; j <= 13; j++) {
+        for (int j : sides) {
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(observerPos, j, amount);
                 Vector3f adjAlign = alignVector(adjPos);
@@ -1266,12 +1279,14 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Checks if a {@link Critter} has collision with the environment.
+     * Checks if a {@link Critter} has collision with the environment. Called on
+     * motion. In 'singleplayerDo'.
      *
      * @param critter the critter to check for collision.
+     * @param direction direction XYZ of motion
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(Critter critter) {
+    public static boolean hasCollisionWithEnvironment(Critter critter, Game.Direction direction) {
         if (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
                         critter.body.getHeight(), critter.body.getDepth())) {
@@ -1289,8 +1304,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Iterate through adjacent positions.
-        SIDES:
-        for (int j = 0; j <= 13; j++) {
+        final int[] sides = Block.getOppositeSides(direction);
+        OUTER:
+        for (int j : sides) {
             SCAN:
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 Vector3f adjPos = Block.getAdjacentPos(predictor, j, amount);
@@ -1314,14 +1330,15 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Checks if a {@link Critter} has collision with the environment.
-     * Multiplayer.
+     * Multiplayer. Called on motion. In 'multiplayerDo'.
      *
      * @param critter the critter to check for collision.
      * @param playerServerPos player position according to server
+     * @param direction direction XYZ of motion
      * @param interpFactor interpolation factor
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(Critter critter, Vector3f playerServerPos, float interpFactor) {
+    public static boolean hasCollisionWithEnvironment(Critter critter, Vector3f playerServerPos, Game.Direction direction, float interpFactor) {
         if (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
                         critter.body.getHeight(), critter.body.getDepth())) {
@@ -1339,8 +1356,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Iterate through adjacent positions.        
-        SIDES:
-        for (int j = 0; j <= 13; j++) {
+        final int[] sides = Block.getOppositeSides(direction);
+        OUTER:
+        for (int j : sides) {
             SCAN:
             for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                 // Interpolate the critter's position based on the current interpolation time.
@@ -1367,33 +1385,45 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Applies gravity to the player, making them fall downwards if not
-     * supported below.
+     * supported below. Called on motion. Called in 'update'.
      *
      * @param critter critter affected by gravity
      * @param deltaTime The time elapsed since the last handleInput.
-     * @return {@code true} if the player is falling, {@code false} otherwise.
+     * @return {@code true} if the player is affected by gravity, {@code false}
+     * otherwise.
      */
     @Override
     public boolean gravityDo(Critter critter, float deltaTime) {
         boolean collision = false;
+        // Check for collision in any direciton
+        for (Game.Direction dir : Game.Direction.values()) {
+            collision |= hasCollisionWithEnvironment(critter, dir);
+            if (collision) {
+                fallVelocity = 0.0f;
+                jumpVelocity = 0.0f;
+                return false;
+            }
+        }
         // Initial predictor position
         final Vector3f predInit = new Vector3f(critter.getPredictor());
 
         // Iterate over time steps to check for collisions        
         TICKS:
-        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 16.0f) {
+        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
             float tstHeight;
+            final int[] sides;
             if (jumpVelocity == 0.0f) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                sides = new int[]{Block.BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
                 critter.movePredictorDown(tstHeight);
             } else {
                 tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                sides = new int[]{Block.TOP, Block.TOP_BACK, Block.TOP_FRONT, Block.LEFT_TOP, Block.RIGHT_TOP, Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
                 critter.movePredictorUp(tstHeight);
             }
 
             // Check collision on all sides
-            SIDES:
-            for (int side = 0; side <= 13; side++) {
+            for (int side : sides) {
                 SCAN:
                 for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
@@ -1636,11 +1666,10 @@ public class LevelContainer implements GravityEnviroment {
                 lightSources.updateLight(0, levelActors.player.light);
             }
             lightSources.setModified(0, true); // Player index is always 0
-            // handleInput - set light modified for visible lights
-            IList<Integer> readOnlyVList = vChnkIdList.immutableList();
+            // update light blocks set light modified for visible lights
             lightSources.sourceList.forEach(ls -> {
                 int chnkId = Chunk.chunkFunc(ls.pos);
-                if (readOnlyVList.contains(chnkId)) {
+                if (vChnkIdList.contains(chnkId)) {
                     lightSources.setModified(ls.pos, true);
                 }
             });
@@ -1648,18 +1677,18 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Optimize block environment. Block environment is ensuring that there is
-     * no created overhead in rendering.
+     * Optimize to update block environment. Block environment is ensuring that
+     * there is no created overhead in rendering.
      *
      * Blocks from all the chunks are being taken into consideration.
      *
      */
-    public void optimize() {
+    public void updateNoptimize() {
         if (!working) {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            blockEnvironment.optimize(vChnkIdList, mainCamera);
+            blockEnvironment.updateNoptimize(vChnkIdList, mainCamera);
         }
     }
 

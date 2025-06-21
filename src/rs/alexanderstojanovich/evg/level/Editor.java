@@ -51,7 +51,7 @@ public class Editor {
      * @param lc level container
      */
     public static void selectNew(LevelContainer lc) {
-        deselect();
+//        deselect();
         if (selectedNew == null) {
             selectedNew = new Block("crate");
         }

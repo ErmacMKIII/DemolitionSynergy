@@ -100,20 +100,17 @@ public class BlockEnvironment {
      * @param vqueue visible chunkId queue
      * @param camera in-game camera
      */
-    public void optimize(IList<Integer> vqueue, Camera camera) {
+    public void updateNoptimize(IList<Integer> vqueue, Camera camera) {
         optimizing = true;
-        if (lastFaceBits == 0) {
-            pull();
-        }
 
         // Determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
         workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
-
         int lastFaceBitsCopy = lastFaceBits;
 
         // Create a lookup table for faster tuple access (avoiding multiple filters)
         if (lastFaceBits == 0) {
+            pull();
             tupleLookup.clear();
             for (Tuple t : workingTuples) {
                 tupleLookup
@@ -136,7 +133,7 @@ public class BlockEnvironment {
                             });
 
                     // PASS 2: Process Chunks and Fill Tuples
-                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue.immutableList());
+                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue);
                     if (selectedBlockList != null) {
                         boolean modified = optmTuple.blockList.addAll(
                                 selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits
