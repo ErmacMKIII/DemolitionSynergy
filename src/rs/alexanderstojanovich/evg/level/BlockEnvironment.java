@@ -18,6 +18,9 @@ package rs.alexanderstojanovich.evg.level;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -47,8 +50,44 @@ public class BlockEnvironment {
     public static final int LIGHT_MASK = 0x01;
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
+    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
+
+    public static IList<IList<Integer>> splitFaceBits(int totalBits, int numPasses) {
+        IList<IList<Integer>> passes = new GapList<>();
+
+        // Calculate base size and remainder
+        int baseSize = totalBits / numPasses; // 6
+        int remainder = totalBits % numPasses; // 4
+
+        // Split the face bits into passes
+        int currentBit = 0;
+        for (int i = 0; i < numPasses; i++) {
+            int passSize = baseSize + (i < remainder ? 1 : 0); // Add 1 if this pass gets an extra bit
+            IList<Integer> pass = new GapList<>();
+            for (int j = 0; j < passSize; j++) {
+                pass.add(currentBit++);
+            }
+            passes.add(pass);
+        }
+        return passes;
+    }
 
     public final GameObject gameObject;
+
+    /**
+     * Read Write Lock
+     */
+    public final ReadWriteLock updateRenderRWLock = new ReentrantReadWriteLock();
+
+    /**
+     * Read Lock (renderer, animator, prepare, read tuples)
+     */
+    public final Lock readLock = updateRenderRWLock.readLock();
+
+    /**
+     * Write Lock (update)
+     */
+    public final Lock writeLock = updateRenderRWLock.writeLock();
 
     /**
      * Working tuples (from update)
@@ -78,7 +117,6 @@ public class BlockEnvironment {
     protected final Chunks chunks;
 
     protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
-    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
     public final IList<String> modifiedWorkingTupleNames = new GapList<>();
 
     /**
@@ -105,17 +143,27 @@ public class BlockEnvironment {
 
         // Determine lastFaceBits mask
         final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
-        workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
+        writeLock.lock();
+        try {
+            workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
+        } finally {
+            writeLock.unlock();
+        }
         int lastFaceBitsCopy = lastFaceBits;
 
         // Create a lookup table for faster tuple access (avoiding multiple filters)
         if (lastFaceBits == 0) {
             pull();
             tupleLookup.clear();
-            for (Tuple t : workingTuples) {
-                tupleLookup
-                        .computeIfAbsent(t.texName(), k -> new HashMap<>())
-                        .put(t.faceBits(), t);
+            writeLock.lock();
+            try {
+                for (Tuple t : workingTuples) {
+                    tupleLookup
+                            .computeIfAbsent(t.texName(), k -> new HashMap<>())
+                            .put(t.faceBits(), t);
+                }
+            } finally {
+                writeLock.unlock();
             }
         }
 
@@ -124,24 +172,30 @@ public class BlockEnvironment {
                 final int faceBits = (++lastFaceBitsCopy) & 63;
                 if ((faceBits & (mask0 & 63)) != 0) {
                     // PASS 1: Fetch or Create Tuple
-                    Tuple optmTuple = tupleLookup
-                            .computeIfAbsent(tex, k -> new HashMap<>())
-                            .computeIfAbsent(faceBits, fb -> {
-                                Tuple newTuple = new Tuple(tex, fb);
-                                workingTuples.add(newTuple);
-                                return newTuple;
-                            });
+                    Tuple tuple;
+                    writeLock.lock();
+                    try {
+                        tuple = tupleLookup
+                                .computeIfAbsent(tex, k -> new HashMap<>())
+                                .computeIfAbsent(faceBits, fb -> {
+                                    Tuple newTuple = new Tuple(tex, fb);
+                                    workingTuples.add(newTuple);
+                                    return newTuple;
+                                });
+                    } finally {
+                        writeLock.unlock();
+                    }
 
                     // PASS 2: Process Chunks and Fill Tuples
                     final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue);
                     if (selectedBlockList != null) {
-                        boolean modified = optmTuple.blockList.addAll(
+                        boolean modified = tuple.blockList.addAll(
                                 selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits
-                                && camera.doesSeeEff(blk, 30f) && !optmTuple.blockList.contains(blk))
+                                && camera.doesSeeEff(blk, 30f) && !tuple.blockList.contains(blk))
                         );
 
                         if (modified) {
-                            modifiedWorkingTupleNames.addIfAbsent(optmTuple.getName());
+                            modifiedWorkingTupleNames.addIfAbsent(tuple.getName());
                         }
                     }
                 }
@@ -155,13 +209,17 @@ public class BlockEnvironment {
             workingTuples.sort(Tuple.TUPLE_COMP);
 
             // Only process modified tuples
-            workingTuples
-                    .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
-                    .forEach(wt -> {
-                        wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                        wt.setBuffered(false);
-                    });
-
+            readLock.lock();
+            try {
+                workingTuples
+                        .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
+                        .forEach(wt -> {
+                            wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+                            wt.setBuffered(false);
+                        });
+            } finally {
+                readLock.unlock();
+            }
             // Remove empty tuples
             workingTuples.removeIf(wt -> wt.blockList.isEmpty());
 
@@ -183,29 +241,14 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
-            tuple.prepare(cameraInFluid);
-        }
-    }
-
-    public static IList<IList<Integer>> splitFaceBits(int totalBits, int numPasses) {
-        IList<IList<Integer>> passes = new GapList<>();
-
-        // Calculate base size and remainder
-        int baseSize = totalBits / numPasses; // 6
-        int remainder = totalBits % numPasses; // 4
-
-        // Split the face bits into passes
-        int currentBit = 0;
-        for (int i = 0; i < numPasses; i++) {
-            int passSize = baseSize + (i < remainder ? 1 : 0); // Add 1 if this pass gets an extra bit
-            IList<Integer> pass = new GapList<>();
-            for (int j = 0; j < passSize; j++) {
-                pass.add(currentBit++);
+        readLock.lock();
+        try {
+            for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
+                tuple.prepare(cameraInFluid);
             }
-            passes.add(pass);
+        } finally {
+            readLock.unlock();
         }
-        return passes;
     }
 
     /**
@@ -222,9 +265,14 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid()
-                && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()))) {
-            tuple.prepare(camFront, cameraInFluid);
+        readLock.lock();
+        try {
+            for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid()
+                    && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()))) {
+                tuple.prepare(camFront, cameraInFluid);
+            }
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -236,8 +284,13 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0)) {
-            tuple.animate();
+        readLock.lock();
+        try {
+            for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0)) {
+                tuple.animate();
+            }
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -259,7 +312,16 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.faceBits() > 0)) {
+
+        IList<Tuple> filtered;
+        readLock.lock();
+        try {
+            filtered = optimizedTuples.filter(ot -> ot.faceBits() > 0);
+        } finally {
+            readLock.unlock();
+        }
+
+        for (Tuple tuple : filtered) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
@@ -287,10 +349,18 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
+        IList<Tuple> filtered;
+        readLock.lock();
+        try {
+            optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
+            filtered = optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0);
+        } finally {
+            readLock.unlock();
+        }
         Tuple.renderInstanced(
-                optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
-                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
+                filtered,
+                shaderProgram, lightSources, gameObject.GameAssets.WORLD,
+                waterTexture, shadowTexture
         );
     }
 
@@ -298,6 +368,7 @@ public class BlockEnvironment {
      * Push changes. Push working tuples to optimizing tuples. By coping each
      * optimizing to working.
      */
+    @Deprecated
     public void push() {
         optimizedTuples = workingTuples.copy();
     }
@@ -317,8 +388,13 @@ public class BlockEnvironment {
      * working to optimized.
      */
     public void pull() {
-        workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
-        workingTuples.sort(Tuple.TUPLE_COMP);
+        writeLock.lock();
+        try {
+            workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
+            workingTuples.sort(Tuple.TUPLE_COMP);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     /**
@@ -368,10 +444,15 @@ public class BlockEnvironment {
             return;
         }
 
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && tuple.faceBits() > 0) {
-                tuple.subBufferVertices(); // update lights
-            }
+        IList<Tuple> filtered;
+        writeLock.lock();
+        try {
+            filtered = optimizedTuples.filter(tuple -> tuple.isBuffered() && tuple.faceBits() > 0);
+        } finally {
+            writeLock.unlock();
+        }
+        for (Tuple tuple : filtered) {
+            tuple.subBufferVertices(); // update lights
         }
     }
 

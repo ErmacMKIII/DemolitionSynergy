@@ -26,6 +26,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -108,12 +110,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Async Task Executor (async receive responses)
      */
     public final ExecutorService TaskExecutor = Executors.newSingleThreadExecutor();
-
-    /**
-     * Update/Generate for Level Container Mutex. Responsible for read/write to
-     * chunks.
-     */
-    public static final Lock updateRenderLCLock = new ReentrantLock();
 
     /**
      * Update/Render for Interface Mutex
@@ -273,13 +269,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void updateNoptimize() {
         if (!isWorking()) {
-            updateRenderLCLock.lock();
-            try {
-                // run block environment update n optimizaiton
-                levelContainer.updateNoptimize();
-            } finally {
-                updateRenderLCLock.unlock();
-            }
+            // run block environment update n optimizaiton
+            levelContainer.updateNoptimize();
         }
     }
 
@@ -457,23 +448,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             if (!isWorking()) {
                 // Render Original Scene
-                updateRenderLCLock.lock();
-                try {
-                    this.prepare();
+                levelContainer.prepare();
 
-                    // Render Effects
-                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                        waterRenderer.render();
-                    }
-
-                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                        shadowRenderer.render();
-                    }
-
-                    levelContainer.render(renderFlag);
-                } finally {
-                    updateRenderLCLock.unlock();
+                // Render Effects
+                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                    waterRenderer.render();
                 }
+
+                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                    shadowRenderer.render();
+                }
+
+                levelContainer.render(renderFlag);
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -554,41 +540,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     /**
-     * Prepare for water (and other fluids). Sub-buffer vertices based on
-     * whether or not camera is submerged in fluid. Cause high CPU consumption.
-     *
-     */
-    public void prepare() {
-        if (!isWorking()) {
-            updateRenderLCLock.lock();
-            try {
-                levelContainer.prepare();
-            } finally {
-                updateRenderLCLock.unlock();
-            }
-        }
-    }
-
-    /**
      * Animation for water (and other fluids)
      *
      */
     public void animate() {
         if (!isWorking()) {
-            updateRenderLCLock.lock();
-            try {
-                levelContainer.animate();
-                // animate2 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+            levelContainer.animate();
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
 
-                // animate3 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
+            // animate3 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
 
-                // animate2 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
-            } finally {
-                updateRenderLCLock.unlock();
-            }
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
         }
     }
 
@@ -600,13 +565,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         Editor.deselect();
         CacheModule.deleteCache();
         LevelContainer.AllBlockMap.init();
-        updateRenderLCLock.lock();
-        try {
-            levelContainer.chunks.clear();
-            levelContainer.blockEnvironment.clear();
-        } finally {
-            updateRenderLCLock.unlock();
-        }
+
+        levelContainer.chunks.clear();
+        levelContainer.blockEnvironment.clear();
 
         Arrays.fill(levelContainer.buffer, (byte) 0x00);
         Arrays.fill(levelContainer.bak_buffer, (byte) 0x00);
@@ -648,13 +609,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean loadLevelFromFile(String fileName) {
         boolean ok = false;
         this.clearEverything();
-        updateRenderLCLock.lock();
-        try {
-            ok |= levelContainer.loadLevelFromFile(fileName);
-            intrface.getGuideText().setEnabled(false);
-        } finally {
-            updateRenderLCLock.unlock();
-        }
+
+        ok |= levelContainer.loadLevelFromFile(fileName);
+        intrface.getGuideText().setEnabled(false);
 
         return ok;
     }
@@ -668,13 +625,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public boolean saveLevelToFile(String fileName) {
         boolean ok = false;
-        updateRenderLCLock.lock();
-        try {
-            ok |= levelContainer.saveLevelToFile(fileName);
-            intrface.getGuideText().setEnabled(false);
-        } finally {
-            updateRenderLCLock.unlock();
-        }
+
+        ok |= levelContainer.saveLevelToFile(fileName);
+        intrface.getGuideText().setEnabled(false);
 
         return ok;
     }
@@ -693,13 +646,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateRandomLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        updateRenderLCLock.lock();
-        try {
-            ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-            intrface.getGuideText().setEnabled(false);
-        } finally {
-            updateRenderLCLock.unlock();
-        }
+
+        ok |= levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
+        intrface.getGuideText().setEnabled(false);
 
         return ok;
     }
@@ -717,15 +666,13 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean generateSinglePlayerLevel(int numberOfBlocks) {
         boolean ok = false;
         this.clearEverything();
-        updateRenderLCLock.lock();
+
         try {
             ok |= levelContainer.generateSinglePlayerLevel(randomLevelGenerator, numberOfBlocks);
-            intrface.getGuideText().setEnabled(false);
         } catch (Exception ex) {
-            DSLogger.reportError("Unable to spawn player after the fall!", ex);
-        } finally {
-            updateRenderLCLock.unlock();
+            DSLogger.reportError(ex.getMessage(), ex);
         }
+        intrface.getGuideText().setEnabled(false);
 
         return ok;
     }
@@ -743,13 +690,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = false;
 
         this.clearEverything();
-        updateRenderLCLock.lock();
         try {
             ok |= levelContainer.generateMultiPlayerLevel(randomLevelGenerator, numberOfBlocks);
         } catch (Exception ex) {
             DSLogger.reportError("Unable to spawn player after the fall!", ex);
-        } finally {
-            updateRenderLCLock.unlock();
         }
 
         // Save level to file asynchronously
@@ -761,10 +705,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return null;
         });
 
-//        if (ok) {
-//            // !IMPORTANT -- ENABLE ASYNC READPOINT 
-//            game.asyncReceivedEnabled = true;
-//        }
         return ok;
     }
 

@@ -493,7 +493,7 @@ public class LevelContainer implements GravityEnviroment {
         Player player = (Player) levelContainer.levelActors.player;
         player.setPos(new Vector3f(0.0f, 256.0f, 0.0f));
 
-        Random random = gameObject.getRandomLevelGenerator().random;
+        Random random = gameObject.randomLevelGenerator.random;
 
         // Find suitable chunk in centre to spawn       
         final int halfGrid = Chunk.GRID_SIZE >> 1;
@@ -544,7 +544,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (hasCollisionWithEnvironment((Critter) player, dir)) { // if any direction causes collision continue OUTER search
                     continue OUTER;
                 } else {
-                    solidPopLoc.remove(randomIndex);  // Remove invalid location
+                    solidPopLoc.remove(solidLoc);  // Remove invalid location
                 }
             }
 
