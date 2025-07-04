@@ -26,8 +26,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -100,6 +98,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public final Game game;
     public final GameServer gameServer;
     public final GameRenderer renderer;
+
+    /**
+     * Update/Generate for Level Container Mutex. Responsible for read/write to
+     * chunks.
+     */
+    public static final Lock updateRenderLCLock = new ReentrantLock();
 
     /**
      * Max number of attempts to download the level
@@ -448,18 +452,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             if (!isWorking()) {
                 // Render Original Scene
-                levelContainer.prepare();
+                updateRenderLCLock.lock();
+                try {
+                    levelContainer.prepare();
 
-                // Render Effects
-                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                    waterRenderer.render();
+                    // Render Effects
+                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                        waterRenderer.render();
+                    }
+
+                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                        shadowRenderer.render();
+                    }
+
+                    levelContainer.render(renderFlag);
+                } finally {
+                    updateRenderLCLock.unlock();
                 }
-
-                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                    shadowRenderer.render();
-                }
-
-                levelContainer.render(renderFlag);
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -545,15 +554,20 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void animate() {
         if (!isWorking()) {
-            levelContainer.animate();
-            // animate2 light overlay
-            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+            updateRenderLCLock.lock();
+            try {
+                levelContainer.animate();
+                // animate2 light overlay
+                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
 
-            // animate3 light overlay
-            levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
+                // animate3 light overlay
+                levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
 
-            // animate2 light overlay
-            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+                // animate2 light overlay
+                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+            } finally {
+                updateRenderLCLock.unlock();
+            }
         }
     }
 

@@ -107,7 +107,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static enum Direction {
         LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
     };
-    private Direction direction = null;
 
     public static final int LEFT = 0;
     public static final int RIGHT = 1;
@@ -156,8 +155,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
 
+    /**
+     * Fixed step game time
+     */
     protected static double accumulator = 0.0;
+
+    /**
+     * Progressive game time
+     */
     protected static double gameTicks = 0.0;
+
     protected final int version = GameObject.VERSION;
 
     public static enum Mode {

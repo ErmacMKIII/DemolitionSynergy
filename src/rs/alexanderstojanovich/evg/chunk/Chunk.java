@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.chunk;
 
 import java.util.List;
-import java.util.Objects;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;

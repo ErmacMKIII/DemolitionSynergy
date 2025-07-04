@@ -1409,7 +1409,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions        
         TICKS:
-        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
+        for (float tstTime = 0.0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
             float tstHeight;
             final int[] sides;
             if (jumpVelocity == 0.0f) {

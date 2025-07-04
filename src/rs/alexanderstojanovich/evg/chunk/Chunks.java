@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.chunk;
 
+import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
@@ -86,7 +87,13 @@ public class Chunks {
 
         // block list filter of the tuple
         if (tuple != null) {
-            return tuple.blockList.filter(blk -> Chunk.chunkFunc(blk.pos) == chunkId);
+            Vector3f centre = Chunk.invChunkFunc(chunkId);
+            return tuple.blockList.filter(blk
+                    -> blk.pos.x >= centre.x - Chunk.LENGTH / 2.0f
+                    && blk.pos.x < centre.x + Chunk.LENGTH / 2.0f
+                    && blk.pos.z >= centre.z - Chunk.LENGTH / 2.0f
+                    && blk.pos.z < centre.z + Chunk.LENGTH / 2.0f
+            );
         }
 
         return null;
@@ -119,7 +126,18 @@ public class Chunks {
 
         // block list filter of the tuple
         if (tuple != null) {
-            return tuple.blockList.filter(blk -> chunkIdList.contains(Chunk.chunkFunc(blk.pos)));
+            final IList<Block> filteedBlocks = new GapList<>();
+            for (int chunkId : chunkIdList) {
+                Vector3f centre = Chunk.invChunkFunc(chunkId);
+                IList<Block> filtered = tuple.blockList.filter(blk
+                        -> blk.pos.x >= centre.x - Chunk.LENGTH / 2.0f
+                        && blk.pos.x < centre.x + Chunk.LENGTH / 2.0f
+                        && blk.pos.z >= centre.z - Chunk.LENGTH / 2.0f
+                        && blk.pos.z < centre.z + Chunk.LENGTH / 2.0f);
+                filteedBlocks.addAll(filtered);
+            }
+
+            return filteedBlocks;
         }
 
         return null;
