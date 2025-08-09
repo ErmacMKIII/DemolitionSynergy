@@ -1197,10 +1197,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        // Update and otimize chunks
-        if ((ups & (TPS_QUARTER - 1)) == 0) {
-            gameObject.updateNoptimize();
-        }
     }
 
     /**

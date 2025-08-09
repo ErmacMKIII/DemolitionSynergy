@@ -1683,12 +1683,12 @@ public class LevelContainer implements GravityEnviroment {
      * Blocks from all the chunks are being taken into consideration.
      *
      */
-    public void updateNoptimize() {
-        if (!working) {
+    public void optimizeBlkEnviro() {
+        if (!working && !vChnkIdList.isEmpty()) {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            blockEnvironment.updateNoptimize(vChnkIdList, mainCamera);
+            blockEnvironment.optimizeTuples(vChnkIdList, mainCamera);
         }
     }
 
