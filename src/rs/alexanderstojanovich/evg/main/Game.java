@@ -99,10 +99,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 12E-3f;
+    public static final float AMOUNT = 1.6E-2f;
     public static final float CROUCH_STR_AMOUNT = 4f;
     public static final float JUMP_STR_AMOUNT = 7.5f;
-    public static final float ANGLE = (float) (5E-4d * Math.PI / 180);
+    public static final float ANGLE = 2.5E-4f * AMOUNT * (org.joml.Math.PI_f);
 
     public static enum Direction {
         LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
@@ -158,7 +158,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Fixed step game time
      */
-    protected static double accumulator = 0.0;
+    protected volatile static double accumulator = 0.0;
 
     /**
      * Progressive game time
@@ -477,11 +477,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param amountXZ movement amount on XZ plane
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
-     * @param deltaTime tick time
      *
      * @return did player do something..
      */
-    public boolean singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) {
+    public boolean singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) {
         boolean changed = false;
         causingCollision = false;
         final Player player = lc.levelActors.player;
@@ -531,7 +530,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                 player.movePredictorYDown(amountY);
             } else {
-                jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                jumpPerformed |= lc.jump(player, amountY);
                 changed = true;
             }
         }
@@ -541,7 +540,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
-                crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
+                crouchPerformed |= lc.crouch(player, amountYNeg);
                 changed = true;
             }
         }
@@ -593,12 +592,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param amountXZ movement amount on XZ plane
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
-     * @param deltaTime tick time
      *
      * @return did player do something..
      * @throws java.lang.Exception if deserialization fails
      */
-    public boolean multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg, float deltaTime) throws Exception {
+    public boolean multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) throws Exception {
         boolean changed = false;
         causingCollision = false;
         final Player player = lc.levelActors.player;
@@ -650,7 +648,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.UP, (float) interpolationFactor)) {
                     player.movePredictorYDown(amountY);
                 } else {
-                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    jumpPerformed |= lc.jump(player, amountY);
                     changed = true;
                 }
             }
@@ -660,7 +658,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
+                    crouchPerformed |= lc.crouch(player, amountYNeg);
                     changed = true;
                 }
             }
@@ -711,7 +709,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                     player.movePredictorYDown(amountY);
                 } else {
-                    jumpPerformed |= lc.jump(player, amountY, deltaTime);
+                    jumpPerformed |= lc.jump(player, amountY);
                     changed = true;
                 }
             }
@@ -721,7 +719,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
-                    crouchPerformed |= lc.crouch(player, amountYNeg, deltaTime);
+                    crouchPerformed |= lc.crouch(player, amountYNeg);
                     changed = true;
                 }
             }
@@ -1202,21 +1200,25 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Heavy util operation. Takes lot of CPU time. Load chunks into game.
      */
-    public void utilLoadChunks() {
-        // call utility functions (chunk loading etc.)
-        gameObject.utilChunkOperations();
+    public void loadChunks() {
+        if ((ups & (ticksPerUpdate - 1)) == 0) {
+            // update chunk (integer) list            
+            gameObject.createOrUpdateChunkLists();
+            // call utility functions (chunk loading etc.)
+            gameObject.utilChunkOperations();
+            // optimize chunks by merging all chunks of blocks into single environment
+            gameObject.updateNoptimizeChunks();
+        }
     }
 
     /**
      * Handle game input (client).
      *
-     * @param deltaTime time interval between updates
      */
-    public void handleInput(double deltaTime) {
+    public void handleInput() {
         try {
             if ((ups & (ticksPerUpdate - 1)) == 0) {
-                final float time = (float) deltaTime * ticksPerUpdate;
-                final float amount = Game.AMOUNT * time;
+                final float amount = Game.AMOUNT * (float) accumulator;
                 actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
@@ -1233,7 +1235,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         break;
                     case SINGLE_PLAYER:
                         // player has control
-                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT, (float) (deltaTime));
+                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1246,7 +1248,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
-                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT, (float) (deltaTime));
+                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1319,7 +1321,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Poll GLFW Events
             GLFW.glfwPollEvents();
             // Handle input (interrupt) events (keyboard & mouse)
-            handleInput(TICK_TIME);
+            handleInput();
+
+            if (accumulator >= TICK_TIME) {
+                // Load chunks for the environment
+                loadChunks();
+            }
 
             // Fixed time-step
             while (accumulator >= TICK_TIME) {
@@ -1328,13 +1335,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 ups++;
                 accumulator -= TICK_TIME;
             }
-
-            if (accumulator < TICK_TIME && !GameRenderer.couldRender()) {
-                gameObject.renderer.interrupt();
-                utilLoadChunks();
-            }
-            // utilLoadChunks operations (heavy CPU time), requires a single tick+
-            // utilLoadChunks chunks (~chunk loader to author understanding)
         }
         // stops the music        
         gameObject.getMusicPlayer().stop();

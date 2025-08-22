@@ -642,15 +642,12 @@ public class Chunk { // some operations are mutually exclusive
      */
     public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Camera camera) {
         boolean changed = false;
-
         // current chunk where player is        
         int currChunkId = chunkFunc(camera.pos);
         int currCol = currChunkId % GRID_SIZE;
         int currRow = currChunkId / GRID_SIZE;
 
-        if (!vChnkIdList.contains(currChunkId)) {
-            vChnkIdList.add(currChunkId);
-        }
+        vChnkIdList.addIfAbsent(currChunkId);
 
         // rest of the chunks
         for (int chunkId = 0; chunkId < Chunk.CHUNK_NUM; chunkId++) {
@@ -662,9 +659,9 @@ public class Chunk { // some operations are mutually exclusive
                 int deltaRow = Math.abs(currRow - row);
 
                 if (deltaCol <= 1 && deltaRow <= 1) {
-                    changed |= vChnkIdList.add(chunkId);
+                    changed |= vChnkIdList.addIfAbsent(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
-                    changed |= iChnkIdList.add(chunkId);
+                    changed |= iChnkIdList.addIfAbsent(chunkId);
                 }
 
             }

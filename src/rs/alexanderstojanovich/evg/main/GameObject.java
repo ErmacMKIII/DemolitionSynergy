@@ -24,8 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -98,12 +96,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public final Game game;
     public final GameServer gameServer;
     public final GameRenderer renderer;
-
-    /**
-     * Update/Generate for Level Container Mutex. Responsible for read/write to
-     * chunks.
-     */
-    public static final Lock updateRenderLCLock = new ReentrantLock();
 
     /**
      * Max number of attempts to download the level
@@ -271,10 +263,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Perform optimization (of chunks). Optimization is collecting all tuples
      * with blocklist from all chunks into one tuple selection.
      */
-    public void updateNoptimize() {
+    public void updateNoptimizeChunks() {
         if (!isWorking()) {
             // run block environment update n optimizaiton
-            levelContainer.optimizeBlkEnviro();
+            levelContainer.optimizeBlockEnvironment();
         }
     }
 
@@ -331,9 +323,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 boolean underGravity = levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
                 levelContainer.levelActors.player.setUnderGravity(underGravity);
             }
-            // update and optimize block environment to render
-            updateNoptimize();
-            clearChunkLists();
             perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
@@ -452,23 +441,18 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             }
             if (!isWorking()) {
                 // Render Original Scene
-                updateRenderLCLock.lock();
-                try {
-                    levelContainer.prepare();
+                levelContainer.prepare();
 
-                    // Render Effects
-                    if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
-                        waterRenderer.render();
-                    }
-
-                    if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
-                        shadowRenderer.render();
-                    }
-
-                    levelContainer.render(renderFlag);
-                } finally {
-                    updateRenderLCLock.unlock();
+                // Render Effects
+                if ((renderFlag & BlockEnvironment.WATER_MASK) != 0) {
+                    waterRenderer.render();
                 }
+
+                if ((renderFlag & BlockEnvironment.SHADOW_MASK) != 0) {
+                    shadowRenderer.render();
+                }
+
+                levelContainer.render(renderFlag);
             }
 
             synchronized (UPDATE_RENDER_IFC_MUTEX) {
@@ -520,20 +504,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void animate() {
         if (!isWorking()) {
-            updateRenderLCLock.lock();
-            try {
-                levelContainer.animate();
-                // animate2 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
+            levelContainer.animate();
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
 
-                // animate3 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
+            // animate3 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap3(intrface);
 
-                // animate2 light overlay
-                levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
-            } finally {
-                updateRenderLCLock.unlock();
-            }
+            // animate2 light overlay
+            levelContainer.lightSources.lightOverlay.triangSwap2(intrface);
         }
     }
 

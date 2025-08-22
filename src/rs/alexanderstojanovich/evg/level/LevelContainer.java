@@ -1071,7 +1071,9 @@ public class LevelContainer implements GravityEnviroment {
      */
     public void animate() {
         if (!working) {
-            blockEnvironment.animate();
+            synchronized (blockEnvironment) {
+                blockEnvironment.animate();
+            }
         }
     }
 
@@ -1080,7 +1082,9 @@ public class LevelContainer implements GravityEnviroment {
      */
     public void prepare() {
         if (!working) {
-            blockEnvironment.prepare(levelActors.mainActor().getFront(), actorInFluid);
+            synchronized (blockEnvironment) {
+                blockEnvironment.prepare(levelActors.mainActor().getFront(), actorInFluid);
+            }
         }
     }
 
@@ -1409,7 +1413,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions        
         TICKS:
-        for (float tstTime = 0.0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
+        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
             float tstHeight;
             final int[] sides;
             if (jumpVelocity == 0.0f) {
@@ -1518,12 +1522,11 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param critter The player.
      * @param jumpStrength The amount of upward movement.
-     * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player successfully jumped, {@code false}
      * otherwise.
      */
     @Override
-    public boolean jump(Critter critter, float jumpStrength, float deltaTime) {
+    public boolean jump(Critter critter, float jumpStrength) {
         if (working) {
             return false;
         }
@@ -1546,7 +1549,7 @@ public class LevelContainer implements GravityEnviroment {
      * @return was crouch performed by player (was able to)
      */
     @Override
-    public boolean crouch(Critter critter, float crouchStrength, float deltaTime) {
+    public boolean crouch(Critter critter, float crouchStrength) {
         if (working) {
             return false;
         }
@@ -1605,16 +1608,12 @@ public class LevelContainer implements GravityEnviroment {
         boolean changed = false;
 
         if (!working) {
-            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
-                Integer chunkId = vChnkIdList.poll();
-                if (chunkId != null) { // Avoid NullPointerException
-                    changed |= cacheModule.loadFromDisk(chunkId);
-                }
+            for (int chunkId : vChnkIdList) {
+                changed |= cacheModule.loadFromDisk(chunkId);
             }
 
-            for (int pass = 0; pass < NUM_OF_PASSES_MAX; pass++) {
-                Integer chunkId = iChnkIdList.poll();
-                if (chunkId != null) { // Avoid NullPointerException
+            if (!changed) { // avoid same time save/load
+                for (int chunkId : iChnkIdList) {
                     changed |= cacheModule.saveToDisk(chunkId);
                 }
             }
@@ -1683,12 +1682,14 @@ public class LevelContainer implements GravityEnviroment {
      * Blocks from all the chunks are being taken into consideration.
      *
      */
-    public void optimizeBlkEnviro() {
+    public void optimizeBlockEnvironment() {
         if (!working && !vChnkIdList.isEmpty()) {
             Camera mainCamera = levelActors.mainCamera();
             // provide visible chunk id(entifier) list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
-            blockEnvironment.optimizeTuples(vChnkIdList, mainCamera);
+            synchronized (blockEnvironment) {
+                blockEnvironment.optimizeTuples(vChnkIdList, mainCamera);
+            }
         }
     }
 
@@ -1723,8 +1724,10 @@ public class LevelContainer implements GravityEnviroment {
         }
         SKYBOX.render(lightSources, ShaderProgram.getSkyboxShader());
 
-        // only visible & uncached are in chunk list 
-        blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
+        // only visible & uncached are in chunk list
+        synchronized (blockEnvironment) {
+            blockEnvironment.renderStatic(ShaderProgram.getVoxelShader(), renderFlag);
+        }
         // ----------------------------------------------       
         if (Game.getCurrentMode() == Game.Mode.EDITOR) {
             Block editorNew = Editor.getSelectedNew();
