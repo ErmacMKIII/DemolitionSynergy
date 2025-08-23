@@ -35,7 +35,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * string to the screen. Renders whole text at once. Widely used. Replaces
  * standard Text class.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class DynamicText extends Text {
 

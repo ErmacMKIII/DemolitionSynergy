@@ -22,7 +22,7 @@ import org.joml.Vector2f;
 /**
  * Single character of Text & DynamicText class.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class TextCharacter {
 

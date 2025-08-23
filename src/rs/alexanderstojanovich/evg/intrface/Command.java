@@ -57,7 +57,7 @@ import rs.alexanderstojanovich.evg.util.Trie;
 /**
  * Console commands.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Command implements Callable<Object> {
 // its not actually a thread but its used for remote execution (from Executor)

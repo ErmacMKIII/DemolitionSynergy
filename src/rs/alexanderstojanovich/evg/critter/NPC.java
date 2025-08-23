@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.resources.Assets;
 /**
  * Is non-player capabilities. Doesn't have camera.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class NPC extends Critter {
 

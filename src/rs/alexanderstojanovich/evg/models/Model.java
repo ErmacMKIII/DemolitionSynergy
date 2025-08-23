@@ -34,7 +34,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Model implements Renderable, Comparable<Model> {
 

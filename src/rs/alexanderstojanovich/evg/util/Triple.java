@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.util;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  * @param <A> First value.
  * @param <B> Second value.
  * @param <C> Third value.

@@ -22,7 +22,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 /**
  * Item used in a console. Of previous command inputs.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class HistoryItem {
 

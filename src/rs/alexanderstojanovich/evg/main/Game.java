@@ -75,7 +75,7 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
 /**
  * DSynergy Game client. With multiplayer capabilities.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Game extends IoHandlerAdapter implements DSMachine {
 
@@ -99,21 +99,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 1.6E-2f;
+    public static final float AMOUNT = 1.5f;
     public static final float CROUCH_STR_AMOUNT = 4f;
     public static final float JUMP_STR_AMOUNT = 7.5f;
-    public static final float ANGLE = 2.5E-4f * AMOUNT * (org.joml.Math.PI_f);
+    public static final float ANGLE = 2.5E-2f * AMOUNT * (org.joml.Math.PI_f);
 
     public static enum Direction {
         LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
     };
-
-    public static final int LEFT = 0;
-    public static final int RIGHT = 1;
-    public static final int BOTTOM = 2;
-    public static final int TOP = 3;
-    public static final int BACK = 4;
-    public static final int FRONT = 5;
 
     private static int ups; // current handleInput per second    
     private static int fpsMax = config.getFpsCap(); // fps max or fps cap  
@@ -138,6 +131,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     private static GLFWKeyCallback defaultKeyCallback;
     private static GLFWCursorPosCallback defaultCursorCallback;
     private static GLFWMouseButtonCallback defaultMouseButtonCallback;
+
+    /**
+     * Input logic
+     */
+    public final Input input = new Input();
 
     public static final String ROOT = "/";
     public static final String CURR = "./";
@@ -187,8 +185,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final int MAX_SIZE = 16000; // Max Total Request List SIZE
 
     protected int fulfillNum = 0;
-    public final Object internRequestMutex = new Object();
-    protected final IList<RequestIfc> requests = new GapList<>();
+    protected final IList<RequestIfc> requestList = new GapList<>();
     protected double pingSum = 0.0;
     protected double ping = 0.0;
     protected double waitReceiveTime = 0.0; // seconds
@@ -296,178 +293,221 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
+     * Handles input by setting boolean variables.
+     *
+     * Action performed is also set if anything from input changes.
+     */
+    private void handleInput() {
+        actionPerformed = false;
+
+        // W-A-S-D
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            actionPerformed = input.directionKeys[Direction.UP.ordinal()] = true;
+        }
+
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            actionPerformed = input.directionKeys[Direction.DOWN.ordinal()] = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_A]) {
+            actionPerformed = input.directionKeys[Direction.LEFT.ordinal()] = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_D]) {
+            actionPerformed = input.directionKeys[Direction.RIGHT.ordinal()] = true;
+        }
+        //----------------------------------------------------------------------
+        // page up
+        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+            actionPerformed = input.flyUp = true;
+        }
+
+        // page down
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+            actionPerformed = input.flyDown = true;
+        }
+        //----------------------------------------------------------------------
+        // left arrow
+        if (keys[GLFW.GLFW_KEY_LEFT]) {
+            actionPerformed = input.turnLeft = true;
+        }
+        // right arrow
+        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+            actionPerformed = input.turnRight = true;
+        }
+        //----------------------------------------------------------------------
+        for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
+            if (keys[i]) {
+                actionPerformed = input.numericKeys[i] = true;
+            }
+        }
+        //----------------------------------------------------------------------
+        if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            actionPerformed = input.leftShift = true;
+        }
+
+        if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
+            actionPerformed = input.rightShift = true;
+        }
+        //----------------------------------------------------------------------
+        if (moveMouse) {
+            actionPerformed = true;
+        }
+    }
+
+    /**
      * Handles input for observer Collision detection is being handle in.
      *
      * @param amount movement amount
      *
-     * @return did observer do something.. (changes on input)
      */
-    private boolean observerDo(LevelContainer lc, float amount) {
-        boolean changed = false;
+    private void observerDo(LevelContainer lc, float amount) {
         causingCollision = false;
 
         Observer obs = lc.levelActors.spectator;
 
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+        if (input.directionKeys[Game.Direction.UP.ordinal()]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.FORWARD)) {
-                obs.moveBackward(AMOUNT);
+                obs.moveBackward(amount);
             } else {
                 obs.moveForward(amount);
-                changed = true;
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+        if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.BACKWARD)) {
-                obs.moveForward(AMOUNT);
+                obs.moveForward(amount);
             } else {
                 obs.moveBackward(amount);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A]) {
+        if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.LEFT)) {
-                obs.moveRight(AMOUNT);
+                obs.moveRight(amount);
             } else {
                 obs.moveLeft(amount);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D]) {
+        if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.RIGHT)) {
-                obs.moveLeft(AMOUNT);
+                obs.moveLeft(amount);
             } else {
                 obs.moveRight(amount);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+        if (input.flyUp) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.UP)) {
-                obs.descend(AMOUNT);
+                obs.descend(amount);
             } else {
                 obs.ascend(amount);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+        if (input.flyDown) {
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.DOWN)) {
-                obs.ascend(AMOUNT);
+                obs.ascend(amount);
             } else {
                 obs.descend(amount);
-                changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             lc.levelActors.spectator.turnLeft(ANGLE);
-            changed = true;
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
             lc.levelActors.spectator.turnRight(ANGLE);
-            changed = true;
         }
         if (moveMouse) {
             lc.levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
-            changed = true;
         }
 
-        return changed;
     }
 
     /**
      * Handles input for editor (when in editor mode) Collision detection is
      * being handle in.
      *
-     * @return did editor do something..
      */
-    private boolean editorDo(LevelContainer lc) {
-        boolean changed = false;
-
+    private void editorDo(LevelContainer lc) {
         if (keys[GLFW.GLFW_KEY_N]) {
             Editor.selectNew(lc);
-            changed = true;
+
         }
         //----------------------------------------------------------------------
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.mouseLeftButton && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectCurrSolid(lc);
-            changed = true;
         }
 
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.mouseRightButton && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectCurrFluid(lc);
-            changed = true;
+
         }
         //----------------------------------------------------------------------
-        if (keys[GLFW.GLFW_KEY_1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.LEFT);
-            changed = true;
+
         }
-        if (keys[GLFW.GLFW_KEY_2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.RIGHT);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.BOTTOM);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.TOP);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.BACK);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentSolid(lc, Block.FRONT);
-            changed = true;
+
         }
         //----------------------------------------------------------------------
-        if (keys[GLFW.GLFW_KEY_1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.LEFT);
-            changed = true;
+
         }
-        if (keys[GLFW.GLFW_KEY_2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.RIGHT);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.BOTTOM);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.TOP);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.BACK);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
             Editor.selectAdjacentFluid(lc, Block.FRONT);
-            changed = true;
-
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
             Editor.deselect();
-            changed = true;
+
         }
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
+        if (input.mouseRightButton) {
             Editor.add(lc);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_R]) {
             Editor.remove(lc);
-            changed = true;
         }
 
-        return changed;
     }
 
     /**
@@ -478,50 +518,44 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
      *
-     * @return did player do something..
      */
-    public boolean singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) {
-        boolean changed = false;
+    public void singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+        if (input.directionKeys[Game.Direction.UP.ordinal()]) {
             player.movePredictorXZForward(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.FORWARD)) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
-                changed = true;
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+        if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
             player.movePredictorXZBackward(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.BACKWARD)) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_A]) {
+        if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
             player.movePredictorXZLeft(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
-                changed = true;
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_D]) {
+        if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
             player.movePredictorXZRight(amountXZ);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
-                changed = true;
             }
         }
 
@@ -531,58 +565,50 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 player.movePredictorYDown(amountY);
             } else {
                 jumpPerformed |= lc.jump(player, amountY);
-                changed = true;
             }
         }
 
-        if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
+        if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
             player.movePredictorYDown(amountYNeg);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                 player.movePredictorYUp(amountYNeg);
             } else {
                 crouchPerformed |= lc.crouch(player, amountYNeg);
-                changed = true;
             }
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             lc.levelActors.player.turnLeft(ANGLE);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
             lc.levelActors.player.turnRight(ANGLE);
-            changed = true;
         }
 
         if (moveMouse) {
             lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
-            changed = true;
         }
 
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
-            changed = true;
+        if (input.mouseLeftButton) {
+
         }
 
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-            changed = true;
         }
 
-        if (keys[GLFW.GLFW_KEY_1]) {
+        if (input.numericKeys[1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            changed = true;
         }
 
-        if (keys[GLFW.GLFW_KEY_2]) {
+        if (input.numericKeys[2]) {
             weaponIndex = (--weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            changed = true;
         }
 
-        return changed;
     }
 
     /**
@@ -593,53 +619,48 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param amountY vertical movement amount on Y-axis when jump,
      * @param amountYNeg vertical movement amount on Y-axis when sink,
      *
-     * @return did player do something..
      * @throws java.lang.Exception if deserialization fails
      */
-    public boolean multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) throws Exception {
-        boolean changed = false;
+    public void multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) throws Exception {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
         // Multiplayer-Join mode
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && player.isRegistered() && isAsyncReceivedEnabled()) {
-            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            if (input.directionKeys[Game.Direction.UP.ordinal()]) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.FORWARD, (float) interpolationFactor)) {
                     player.movePredictorXZBackward(amountXZ);
                 } else {
                     player.moveXZForward(amountXZ);
-                    changed = true;
                 }
             }
 
-            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
                 player.movePredictorXZBackward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.BACKWARD, (float) interpolationFactor)) {
                     player.movePredictorXZForward(amountXZ);
                 } else {
                     player.moveXZBackward(amountXZ);
-                    changed = true;
+
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_A]) {
+            if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.LEFT, (float) interpolationFactor)) {
                     player.movePredictorXZRight(amountXZ);
                 } else {
                     player.moveXZLeft(amountXZ);
-                    changed = true;
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_D]) {
+            if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.RIGHT, (float) interpolationFactor)) {
                     player.movePredictorXZLeft(amountXZ);
                 } else {
                     player.moveXZRight(amountXZ);
-                    changed = true;
                 }
             }
 
@@ -649,58 +670,52 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     player.movePredictorYDown(amountY);
                 } else {
                     jumpPerformed |= lc.jump(player, amountY);
-                    changed = true;
                 }
             }
 
-            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
+            if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
                 player.movePredictorYDown(amountYNeg);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
                     crouchPerformed |= lc.crouch(player, amountYNeg);
-                    changed = true;
                 }
             }
 
         } else if (currentMode == Mode.MULTIPLAYER_HOST && player.isRegistered()) {
-            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            if (input.directionKeys[Game.Direction.UP.ordinal()]) {
                 player.movePredictorXZForward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                     player.movePredictorXZBackward(amountXZ);
                 } else {
                     player.moveXZForward(amountXZ);
-                    changed = true;
                 }
             }
 
-            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
                 player.movePredictorXZBackward(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                     player.movePredictorXZForward(amountXZ);
                 } else {
                     player.moveXZBackward(amountXZ);
-                    changed = true;
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_A]) {
+            if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
                     player.movePredictorXZRight(amountXZ);
                 } else {
                     player.moveXZLeft(amountXZ);
-                    changed = true;
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_D]) {
+            if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
                     player.movePredictorXZLeft(amountXZ);
                 } else {
                     player.moveXZRight(amountXZ);
-                    changed = true;
                 }
             }
 
@@ -710,63 +725,58 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     player.movePredictorYDown(amountY);
                 } else {
                     jumpPerformed |= lc.jump(player, amountY);
-                    changed = true;
                 }
             }
 
-            if ((keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) && ((!crouchPerformed))) {
+            if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
                 player.movePredictorYDown(amountYNeg);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                     player.movePredictorYUp(amountYNeg);
                 } else {
                     crouchPerformed |= lc.crouch(player, amountYNeg);
-                    changed = true;
                 }
             }
         }
 
         if (keys[GLFW.GLFW_KEY_LEFT]) {
             lc.levelActors.player.turnLeft(ANGLE);
-            changed = true;
+
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
             lc.levelActors.player.turnRight(ANGLE);
-            changed = true;
+
         }
 
         if (moveMouse) {
             lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
-            changed = true;
         }
 
-        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
-            changed = true;
+        if (input.mouseLeftButton) {
+
         }
 
         if (keys[GLFW.GLFW_KEY_0]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-            changed = true;
+
         }
 
-        if (keys[GLFW.GLFW_KEY_1]) {
+        if (input.numericKeys[1]) {
             weaponIndex = (++weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            changed = true;
         }
 
-        if (keys[GLFW.GLFW_KEY_2]) {
+        if (input.numericKeys[2]) {
             weaponIndex = (--weaponIndex) & 15;
             gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
-            changed = true;
+
         }
 
         if (keys[GLFW.GLFW_KEY_R]) {
-            changed = true;
+
         }
 
-        return changed;
     }
 
     private void setCrosshairColor(Vector4f color) {
@@ -947,9 +957,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // choose the one which fits by unique checksum
         RequestIfc request;
-        synchronized (internRequestMutex) {
-            request = requests.filter(req -> req.getId().equals(response.getId())).getFirstOrNull();
-            requests.remove(request);
+        synchronized (requestList) {
+            request = requestList.filter(req -> req.getId().equals(response.getId())).getFirstOrNull();
+            requestList.remove(request);
         }
         if (request != null) {
             // detailed processing
@@ -969,8 +979,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                     // notify waiters on connect
-                    synchronized (internRequestMutex) {
-                        internRequestMutex.notify();
+                    synchronized (requestList) {
+                        requestList.notify();
                     }
                     break;
                 case REGISTER:
@@ -1023,8 +1033,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                     DSLogger.reportInfo("Disconnected from server!", null);
                     // notify wait on disconnect
-                    synchronized (internRequestMutex) {
-                        internRequestMutex.notifyAll();
+                    synchronized (requestList) {
+                        requestList.notifyAll();
                     }
                     break;
             }
@@ -1042,7 +1052,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 pingSum += tripTime;
                 fulfillNum++;
             } else {
-                // calculate average ping for 8 requests
+                // calculate average ping for 8 requestList
                 ping = pingSum / (double) fulfillNum;
 
                 // reset measurements
@@ -1063,25 +1073,25 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @throws java.lang.Exception
      */
     public void waitAsync(double deltaTime) throws Exception {
-        if (!isAsyncReceivedEnabled() || requests.isEmpty()) {
+        if (!isAsyncReceivedEnabled() || requestList.isEmpty()) {
             return;
         }
 
-        // clean long time unhandled requests
-        // remove all X-requests which exceed max wait time of 45 sec
-        synchronized (internRequestMutex) {
-            requests.removeIf(x -> (System.currentTimeMillis() - x.getTimestamp()) / 1000.0 > MAX_WAIT_RECEIVE_TIME);
+        // clean long time unhandled requestList
+        // remove all X-requestList which exceed max wait time of 45 sec
+        synchronized (requestList) {
+            requestList.removeIf(x -> (System.currentTimeMillis() - x.getTimestamp()) / 1000.0 > MAX_WAIT_RECEIVE_TIME);
         }
 
-        // if too much requests sent close connection with server
-        synchronized (internRequestMutex) {
-            if (requests.size() >= MAX_SIZE) {
+        // if too much requestList sent close connection with server
+        synchronized (requestList) {
+            if (requestList.size() >= MAX_SIZE) {
                 throw new Exception("Too much request sent. Connection will abort!");
             }
         }
 
         // if waiting time is less or equal than 45 sec
-        synchronized (internRequestMutex) {
+        synchronized (requestList) {
             if (waitReceiveTime > MAX_WAIT_RECEIVE_TIME) {
                 connected = ConnectionStatus.LOST;
                 // don't block main thread if game is unresponsive
@@ -1127,15 +1137,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      *
      * @param deltaTime time interval between updates
      */
-    public void update(double deltaTime) {
+    public void updateEnvironment(double deltaTime) {
         // Time Synchronization
         if (Game.currentMode == Mode.MULTIPLAYER_JOIN && (ups & (Game.TPS_QUARTER - 1)) == 0 && isConnected() && isAsyncReceivedEnabled()) {
             try {
                 RequestIfc timeSyncReq = new Request(RequestIfc.RequestType.GET_TIME, DSObject.DataType.VOID, null);
                 timeSyncReq.send(this, session);
-                synchronized (internRequestMutex) {
-                    if (requests.size() < MAX_SIZE) {
-                        requests.add(timeSyncReq);
+                synchronized (requestList) {
+                    if (requestList.size() < MAX_SIZE) {
+                        requestList.add(timeSyncReq);
                     }
                 }
             } catch (Exception ex) {
@@ -1143,7 +1153,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        // update with delta time like gravity or sun
+        // update environment with delta time like gravity or sun
         if ((ups & (ticksPerUpdate - 1)) == 0) {
             // Update World (Sun, Earth motion, etc..)
             gameObject.update((float) deltaTime * ticksPerUpdate);
@@ -1154,9 +1164,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // Send a simple player info message with magic bytes prepended
                     final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
                     piReq.send(this, session);
-                    synchronized (internRequestMutex) {
-                        if (requests.size() < MAX_SIZE) {
-                            requests.add(piReq);
+                    synchronized (requestList) {
+                        if (requestList.size() < MAX_SIZE) {
+                            requestList.add(piReq);
                         }
                     }
                 } catch (Exception ex) {
@@ -1169,7 +1179,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // request get player position (interpolation)
                 this.requestGetPlayerPos();
 
-                // update player model guns etc.
+                // update Environment player model guns etc.
                 this.requestUpdatePlayer();
 
                 // request update player view & pos
@@ -1203,31 +1213,31 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public void loadChunks() {
         if ((ups & (ticksPerUpdate - 1)) == 0) {
             // update chunk (integer) list            
-            gameObject.createOrUpdateChunkLists();
+            boolean changed = gameObject.createOrUpdateChunkLists();
             // call utility functions (chunk loading etc.)
-            gameObject.utilChunkOperations();
+            if (changed) {
+                gameObject.utilChunkOperations();
+            }
             // optimize chunks by merging all chunks of blocks into single environment
             gameObject.updateNoptimizeChunks();
         }
     }
 
     /**
-     * Handle game input (client).
-     *
+     * Update main actor (from input).
      */
-    public void handleInput() {
+    public void updateMainActor() {
         try {
             if ((ups & (ticksPerUpdate - 1)) == 0) {
                 final float amount = Game.AMOUNT * (float) accumulator;
-                actionPerformed = false;
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
                         break;
                     case EDITOR:
                         // observer has control
-                        actionPerformed |= observerDo(gameObject.levelContainer, amount);
-                        actionPerformed |= editorDo(gameObject.levelContainer);
+                        observerDo(gameObject.levelContainer, amount);
+                        editorDo(gameObject.levelContainer);
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1235,7 +1245,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         break;
                     case SINGLE_PLAYER:
                         // player has control
-                        actionPerformed |= singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
+                        singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1248,7 +1258,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
-                        actionPerformed |= multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
+                        multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
                         if (actionPerformed) {
                             LevelContainer.updateActorInFluid(gameObject.levelContainer);
@@ -1323,15 +1333,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Handle input (interrupt) events (keyboard & mouse)
             handleInput();
 
-            if (accumulator >= TICK_TIME) {
-                // Load chunks for the environment
-                loadChunks();
-            }
-
             // Fixed time-step
             while (accumulator >= TICK_TIME) {
+                // Load chunks for the environment
+                loadChunks();
                 // Update with fixed timestep (environment)
-                update(TICK_TIME);
+                updateEnvironment(TICK_TIME);
+                // Update main actor (observer or player)
+                updateMainActor();
+
                 ups++;
                 accumulator -= TICK_TIME;
             }
@@ -1376,13 +1386,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Send a simple hello message with magic bytes prepended
                 final RequestIfc helloRequest = new Request(RequestIfc.RequestType.HELLO, DSObject.DataType.VOID, null);
                 helloRequest.send(this, connFuture.getSession());
-                // add to requests to they can be 'processed' in 'messageReceived'
-                synchronized (internRequestMutex) {
-                    if (requests.size() < MAX_SIZE) {
-                        requests.add(helloRequest);
+                // add to requestList to they can be 'processed' in 'messageReceived'
+                synchronized (requestList) {
+                    if (requestList.size() < MAX_SIZE) {
+                        requestList.add(helloRequest);
                     }
                     // Wait for response (assuming simple echo for demonstration)
-                    internRequestMutex.wait(timeout);
+                    requestList.wait(timeout);
                 }
 
                 // if connected changed status to 'CONNECTED'
@@ -1450,9 +1460,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             );
             register.send(this, session);
 
-//            synchronized (internRequestMutex) {
-//                if (requests.size() < MAX_SIZE) {
-//                    requests.add(register);
+//            synchronized (requestList) {
+//                if (requestList.size() < MAX_SIZE) {
+//                    requestList.add(register);
 //                }
 //                // Wait for response (assuming simple echo for demonstration)
 //                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
@@ -1610,9 +1620,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Send a simple player info message with magic bytes prepended
                 final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
                 piReq.send(this, session);
-                synchronized (internRequestMutex) {
-                    if (requests.size() < MAX_SIZE) {
-                        requests.add(piReq);
+                synchronized (requestList) {
+                    if (requestList.size() < MAX_SIZE) {
+                        requestList.add(piReq);
                     }
                 }
             } catch (Exception ex) {
@@ -1640,13 +1650,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 goodByeRequest.send(this, session);
 
                 if (!gameObject.WINDOW.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
-                    synchronized (internRequestMutex) {
-                        if (requests.size() < MAX_SIZE) {
-                            requests.add(goodByeRequest);
+                    synchronized (requestList) {
+                        if (requestList.size() < MAX_SIZE) {
+                            requestList.add(goodByeRequest);
                         }
 
                         // we have async receive enabled, wait to receive the last message
-                        internRequestMutex.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
+                        requestList.wait(timeout); // goodbye response will notify us & avoid deadlock if server does not respond with goodbye msg (rare)
                     }
                 }
 
@@ -1666,7 +1676,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 pingSum = 0.0;
                 ping = 0.0;
 
-                requests.clear();
+                requestList.clear();
 
                 connected = ConnectionStatus.NOT_CONNECTED;
                 // !IMPORTANT -- DISABLE ASYNC READPOINT/WRITEPOINT (so it doesn't block in process)
@@ -1689,9 +1699,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             String posStr = posInfo.toString();
             RequestIfc posReq = new Request(RequestIfc.RequestType.SET_POS, DSObject.DataType.OBJECT, posStr);
             posReq.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(posReq);
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(posReq);
                 }
             }
         } catch (Exception ex) {
@@ -1726,11 +1736,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Send a request to obtain world info
             final RequestIfc wrldReq = new Request(RequestIfc.RequestType.WORLD_INFO, DSObject.DataType.VOID, null);
             wrldReq.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(wrldReq);
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(wrldReq);
                 }
-                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
+                requestList.wait(DEFAULT_SHORTENED_TIMEOUT);
             }
 
             return true;
@@ -1751,9 +1761,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         RequestIfc playerPosReq = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, gameObject.levelContainer.levelActors.player.uniqueId);
         try {
             playerPosReq.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(playerPosReq);
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(playerPosReq);
                 }
             }
         } catch (Exception ex) {
@@ -1769,9 +1779,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             try {
                 RequestIfc otherPlayerRequest = new Request(RequestIfc.RequestType.GET_POS, DSObject.DataType.STRING, other.uniqueId);
                 otherPlayerRequest.send(this, session);
-                synchronized (internRequestMutex) {
-                    if (requests.size() < MAX_SIZE) {
-                        requests.add(otherPlayerRequest);
+                synchronized (requestList) {
+                    if (requestList.size() < MAX_SIZE) {
+                        requestList.add(otherPlayerRequest);
                     }
                 }
             } catch (Exception ex) {
@@ -1792,9 +1802,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
             );
             request.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(request);
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(request);
                 }
             }
         } catch (Exception ex) {
@@ -1811,9 +1821,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Send a simple 'goodbye' message with magic bytes prepended
             final RequestIfc request = new Request(RequestIfc.RequestType.PING, DSObject.DataType.VOID, null);
             request.send(this, session);
-            synchronized (internRequestMutex) {
-                if (requests.size() < MAX_SIZE) {
-                    requests.add(request);
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(request);
                 }
 
                 // we have async receive enabled, wait to receive the last message
@@ -2143,8 +2153,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         return playerServerPos;
     }
 
-    public IList<RequestIfc> getRequests() {
-        return requests;
+    public IList<RequestIfc> getRequestList() {
+        return requestList;
     }
 
     @Override

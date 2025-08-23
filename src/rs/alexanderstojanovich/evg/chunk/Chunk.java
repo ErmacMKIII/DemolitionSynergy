@@ -40,7 +40,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  *
  * Contains various util functions.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Chunk { // some operations are mutually exclusive    
 

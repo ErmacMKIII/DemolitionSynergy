@@ -43,7 +43,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Console {
 
@@ -473,7 +473,7 @@ public class Console {
     }
 
     /*
-    * Method to update the displayed input text with the cursor at the correct position
+    * Method to updateEnvironment the displayed input text with the cursor at the correct position
      */
     private void updateInputText() {
         // Ensure cursorPosition is within the valid range

@@ -55,7 +55,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 /**
  * Game Engine composed of Game (Loop), Game Renderer and core components.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
@@ -265,7 +265,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void updateNoptimizeChunks() {
         if (!isWorking()) {
-            // run block environment update n optimizaiton
+            // run block environment updateEnvironment n optimizaiton
             levelContainer.optimizeBlockEnvironment();
         }
     }

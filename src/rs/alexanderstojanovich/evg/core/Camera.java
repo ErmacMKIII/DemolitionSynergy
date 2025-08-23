@@ -31,7 +31,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * and Pitch (looking up and down) is available. Uses Euler angles instead of
  * Quaternions.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Camera implements Observer { // is 3D looking camera
 

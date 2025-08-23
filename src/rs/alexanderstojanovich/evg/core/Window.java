@@ -42,7 +42,7 @@ import rs.alexanderstojanovich.evg.util.ImageUtils;
  * Main core class related with the window on which OpenGL is being rendered. It
  * wraps around GLFW window.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Window {
 

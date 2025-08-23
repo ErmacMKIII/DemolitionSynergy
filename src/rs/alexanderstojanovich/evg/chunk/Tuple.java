@@ -41,7 +41,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Tuple extends Series {
     // tuple is distinct rendering object for instanced rendering

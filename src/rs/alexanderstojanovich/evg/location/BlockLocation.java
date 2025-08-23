@@ -27,7 +27,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class BlockLocation {
 

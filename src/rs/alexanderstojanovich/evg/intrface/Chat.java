@@ -37,7 +37,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 /**
  * Chat system. Similar to chat (which was first implemented).
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Chat {
 

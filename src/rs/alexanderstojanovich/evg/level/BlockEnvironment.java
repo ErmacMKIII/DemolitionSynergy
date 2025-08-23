@@ -38,7 +38,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  * Module with blocks from all the chunks. Effectively ready for rendering after
  * optimization.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class BlockEnvironment {
 
@@ -95,11 +95,6 @@ public class BlockEnvironment {
      * Optimizes tuples (from render, finalized form)
      */
     protected final IList<Tuple> optimizedTuples = new GapList<>();
-
-    /**
-     * Mutex for optimized tuples (mutex) access
-     */
-    protected final Object optimizedMutex = new Object();
 
     /**
      * Lookup table for faster tuple access (avoiding multiple filters)
@@ -183,7 +178,7 @@ public class BlockEnvironment {
      * rebuilds if inconsistencies are detected to avoid unnecessary work.
      */
     private void ensureLookupConsistency() {
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             // Check if all lookup tuples exist in optimized list
             boolean consistent = tupleLookup.values().stream()
                     .flatMap(m -> m.values().stream())
@@ -239,7 +234,7 @@ public class BlockEnvironment {
             String tex, Map<Integer, Tuple> faceBitMap,
             int faceBits) {
         Tuple tuple;
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             // Get or create tuple for this texture/facebits combination
             tuple = faceBitMap.computeIfAbsent(faceBits, fb -> {
                 Tuple newTuple = new Tuple(tex, fb);
@@ -295,7 +290,7 @@ public class BlockEnvironment {
      * empty tuples, sorts the final list, and prepares for rendering.
      */
     private void finalizeOptimization() {
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             // Clean up any empty tuples that were created
             optimizedTuples.removeIf(t -> t.blockList.isEmpty());
 
@@ -313,7 +308,7 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizing || optimizedTuples.isEmpty()) {
                 return;
             }
@@ -335,7 +330,7 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizing || optimizedTuples.isEmpty()) {
                 return;
             }
@@ -352,14 +347,14 @@ public class BlockEnvironment {
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizing || optimizedTuples.isEmpty()) {
                 return;
             }
         }
 
         IList<Tuple> filtered;
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0);
         }
         for (Tuple tuple : filtered) {
@@ -374,7 +369,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void render(ShaderProgram shaderProgram, int renderFlag) {
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizing || optimizedTuples.isEmpty()) {
                 return;
             }
@@ -389,7 +384,7 @@ public class BlockEnvironment {
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
         IList<Tuple> filtered;
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             filtered = optimizedTuples.filter(ot -> ot.faceBits() > 0);
         }
 
@@ -409,7 +404,7 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizing || optimizedTuples.isEmpty()) {
                 return;
             }
@@ -424,7 +419,7 @@ public class BlockEnvironment {
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
         IList<Tuple> filtered;
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
             filtered = optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0);
         }
@@ -478,14 +473,14 @@ public class BlockEnvironment {
      * Update vertices. For light definition, for instance.
      */
     public void subBufferVertices() {
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             if (optimizedTuples.isEmpty()) {
                 return;
             }
         }
 
         IList<Tuple> filtered;
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             filtered = optimizedTuples.filter(tuple -> tuple.isBuffered() && tuple.faceBits() > 0);
         }
 
@@ -506,7 +501,7 @@ public class BlockEnvironment {
      */
     public void clear() {
         tupleLookup.clear();
-        synchronized (optimizedMutex) {
+        synchronized (optimizedTuples) {
             optimizedTuples.clear();
         }
     }

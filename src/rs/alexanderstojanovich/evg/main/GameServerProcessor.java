@@ -64,7 +64,7 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
 /**
  * Task to handle each endpoint asynchronously.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class GameServerProcessor extends IoHandlerAdapter {
 
@@ -138,7 +138,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
         request = RequestIfc.receive(gameServer, session, message);
 
         if (request == null || request.getClientAddress() == null) {
-            // avoid processing invalid requests requests
+            // avoid processing invalid requestList requestList
             return new Result(Status.INTERNAL_ERROR, null, null, "Invalid request - Is null or client address is null");
         }
 
@@ -147,7 +147,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
         String clientHostName = clientAddress.getHostName();
 
         if (request == Request.INVALID) {
-            // avoid processing invalid requests requests
+            // avoid processing invalid requestList requestList
             return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Invalid request - Reason Unknown!");
         }
 

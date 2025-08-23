@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.models.Model;
  * Class for all Weapons. Weapons could be model in player hands, models as
  * level item on the ground.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Weapons {
 

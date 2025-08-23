@@ -63,7 +63,7 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
 /**
  * World container. Contains everything.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class LevelContainer implements GravityEnviroment {
 
@@ -82,9 +82,12 @@ public class LevelContainer implements GravityEnviroment {
      * Step amount of iteration for collision control or gravity control (inner
      * loop).
      */
-    public static final float STEP_AMOUNT = 0.5f;
+    public static final float STEP_AMOUNT = 0.05f;
 
     // -------------------------------------------------
+    /**
+     * World level map format. For save/load use.
+     */
     public static enum LevelMapFormat {
         /**
          * Old format. Exists for quite long time.
@@ -1413,7 +1416,7 @@ public class LevelContainer implements GravityEnviroment {
 
         // Iterate over time steps to check for collisions        
         TICKS:
-        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 32.0f) {
+        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 4.0f) {
             float tstHeight;
             final int[] sides;
             if (jumpVelocity == 0.0f) {
@@ -1545,7 +1548,6 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param critter The player.
      * @param crouchStrength The amount of downward movement.
-     * @param deltaTime The time elapsed since the last handleInput.
      * @return was crouch performed by player (was able to)
      */
     @Override
@@ -1665,7 +1667,7 @@ public class LevelContainer implements GravityEnviroment {
                 lightSources.updateLight(0, levelActors.player.light);
             }
             lightSources.setModified(0, true); // Player index is always 0
-            // update light blocks set light modified for visible lights
+            // updateEnvironment light blocks set light modified for visible lights
             lightSources.sourceList.forEach(ls -> {
                 int chnkId = Chunk.chunkFunc(ls.pos);
                 if (vChnkIdList.contains(chnkId)) {

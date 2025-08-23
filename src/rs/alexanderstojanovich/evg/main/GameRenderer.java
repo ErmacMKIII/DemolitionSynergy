@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 /**
  * Game Renderer responsible for rendering scene(s) & interface.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class GameRenderer extends Thread implements Executor {
 

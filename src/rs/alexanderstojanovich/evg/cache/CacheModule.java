@@ -38,7 +38,7 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 /**
  * Cache Module is used for caching chunks to not overweight Game Renderer.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class CacheModule {
 

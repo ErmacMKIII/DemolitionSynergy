@@ -21,7 +21,7 @@ package rs.alexanderstojanovich.evg.net;
  *
  * Capable of serializing/deserializing DSObjects over network.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public interface DSMachine {
 

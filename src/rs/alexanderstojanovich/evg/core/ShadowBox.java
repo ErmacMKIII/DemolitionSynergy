@@ -33,7 +33,7 @@ import rs.alexanderstojanovich.evg.critter.Observer;
  * to the shadow map in the shadow render pass. Everything outside the area
  * won't be." -Karl
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class ShadowBox {
 

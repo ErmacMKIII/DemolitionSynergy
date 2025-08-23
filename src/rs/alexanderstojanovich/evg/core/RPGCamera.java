@@ -25,7 +25,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * Represents 3rd person camera. Could be used as first person if distance from
  * target is set to zero.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class RPGCamera extends Camera {
 
