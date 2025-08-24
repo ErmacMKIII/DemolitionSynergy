@@ -18,7 +18,7 @@ package rs.alexanderstojanovich.evg.main;
 
 /**
  * Game Input (POCO) class.
- * 
+ *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Input {
@@ -92,4 +92,45 @@ public class Input {
      * Key R pressed (Editor remove)
      */
     public boolean keyR_pressed = false;
+
+    /**
+     * Clears all inputs
+     */
+    public void clear() {
+        // Reset direction keys
+        for (int i = 0; i < directionKeys.length; i++) {
+            directionKeys[i] = false;
+        }
+
+        // Reset mouse movement
+        moveMouse = false;
+
+        // Reset fly controls
+        flyUp = false;
+        flyDown = false;
+
+        // Reset camera turning
+        turnLeft = false;
+        turnRight = false;
+
+        // Reset numeric keys
+        for (int i = 0; i < numericKeys.length; i++) {
+            numericKeys[i] = false;
+        }
+
+        // Reset modifier keys
+        leftShift = false;
+        rightShift = false;
+        leftControl = false;
+        rightControl = false;
+
+        // Reset editor controls
+        editorDeselect = false;
+        keyN_pressed = false;
+        keyR_pressed = false;
+
+        // Reset mouse buttons
+        mouseLeftButton = false;
+        mouseRightButton = false;
+    }
 }

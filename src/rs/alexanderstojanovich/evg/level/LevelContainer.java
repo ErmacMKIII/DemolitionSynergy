@@ -72,12 +72,12 @@ public class LevelContainer implements GravityEnviroment {
      * Min amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MIN_AMOUNT = -42f;
+    public static final float MIN_AMOUNT = -14f;
     /**
      * Max amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MAX_AMOUNT = 42f;
+    public static final float MAX_AMOUNT = 14f;
     /**
      * Step amount of iteration for collision control or gravity control (inner
      * loop).

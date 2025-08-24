@@ -20,6 +20,7 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
+import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.models.Block;
 
 /**
@@ -102,6 +103,35 @@ public class Chunks {
     /**
      * Gets the chunk block list using chunk id.
      *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkId provided chunk id.
+     * @param camera observer camera (observing blocks)
+     * @param degrees angle degrees of front view
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public synchronized IList<Block> getFilteredBlockList(String texName, int faceBits, int chunkId, Camera camera, float degrees) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            Vector3f centre = Chunk.invChunkFunc(chunkId);
+            return tuple.blockList.filter(blk
+                    -> blk.pos.x >= centre.x - Chunk.LENGTH / 2.0f
+                    && blk.pos.x < centre.x + Chunk.LENGTH / 2.0f
+                    && blk.pos.z >= centre.z - Chunk.LENGTH / 2.0f
+                    && blk.pos.z < centre.z + Chunk.LENGTH / 2.0f
+                    && camera.doesSeeEff(blk, degrees) // *New* visible blocks
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the chunk block list using chunk id.
+     *
      * @param chunkIdList provided chunk id list
      * @return chunk (if exists non-empty) block list
      */
@@ -126,7 +156,7 @@ public class Chunks {
 
         // block list filter of the tuple
         if (tuple != null) {
-            final IList<Block> filteedBlocks = new GapList<>();
+            final IList<Block> filteredBlocks = new GapList<>();
             for (int chunkId : chunkIdList) {
                 Vector3f centre = Chunk.invChunkFunc(chunkId);
                 IList<Block> filtered = tuple.blockList.filter(blk
@@ -134,10 +164,45 @@ public class Chunks {
                         && blk.pos.x < centre.x + Chunk.LENGTH / 2.0f
                         && blk.pos.z >= centre.z - Chunk.LENGTH / 2.0f
                         && blk.pos.z < centre.z + Chunk.LENGTH / 2.0f);
-                filteedBlocks.addAll(filtered);
+                filteredBlocks.addAll(filtered);
             }
 
-            return filteedBlocks;
+            return filteredBlocks;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkIdList provided chunk id list
+     * @param camera observer camera (observing blocks)
+     * @param degrees angle degrees of front view
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public IList<Block> getFilteredBlockList(String texName, int faceBits, IList<Integer> chunkIdList, Camera camera, float degrees) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            final IList<Block> filteredBlocks = new GapList<>();
+            for (int chunkId : chunkIdList) {
+                Vector3f centre = Chunk.invChunkFunc(chunkId);
+                IList<Block> filtered = tuple.blockList.filter(blk
+                        -> blk.pos.x >= centre.x - Chunk.LENGTH / 2.0f
+                        && blk.pos.x < centre.x + Chunk.LENGTH / 2.0f
+                        && blk.pos.z >= centre.z - Chunk.LENGTH / 2.0f
+                        && blk.pos.z < centre.z + Chunk.LENGTH / 2.0f
+                        && camera.doesSeeEff(blk, degrees) // *New* visible blocks
+                );
+                filteredBlocks.addAll(filtered);
+            }
+
+            return filteredBlocks;
         }
 
         return null;

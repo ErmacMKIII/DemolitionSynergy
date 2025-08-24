@@ -264,17 +264,18 @@ public class BlockEnvironment {
     private boolean processChunkBlocks(IList<Integer> vqueue, Camera camera, Tuple tuple) {
         boolean modified = false;
 
-        // Check each visible chunk for relevant blocks
-        for (int chunkId : vqueue) {
-            IList<Block> blocks = chunks.getFilteredBlockList(
-                    tuple.texName(), tuple.faceBits(), chunkId);
+        final float angleDegrees = 30f;
 
-            if (blocks != null) {
-                // Add visible blocks that aren't already in the tuple
-                for (Block blk : blocks.filter(blk -> camera.doesSeeEff(blk, 30f))) {
-                    modified |= tuple.blockList.addIfAbsent(blk);
-                }
-            }
+        // Clear entire tuple
+        tuple.blockList.clear();
+
+        // Filter each visible chunk for relevant & visible blocks
+        IList<Block> filterBlks = chunks.getFilteredBlockList(
+                tuple.texName(), tuple.faceBits(), vqueue,
+                camera, angleDegrees
+        );
+        if (filterBlks != null && !filterBlks.isEmpty()) {
+            modified |= tuple.blockList.addAll(filterBlks);
         }
 
         // Sort if modifications occurred

@@ -42,6 +42,9 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
+    /**
+     * List of (environment) blocks
+     */
     public final IList<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
     protected int bigVbo = 0;
     // array with offsets in the big float buffer

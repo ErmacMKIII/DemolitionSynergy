@@ -99,10 +99,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public static final double TICK_TIME = 1.0 / (double) TPS;
 
-    public static final float AMOUNT = 1.5f;
+    public static final float AMOUNT = 8f;
     public static final float CROUCH_STR_AMOUNT = 4f;
     public static final float JUMP_STR_AMOUNT = 7.5f;
-    public static final float ANGLE = 2.5E-2f * AMOUNT * (org.joml.Math.PI_f);
+    public static final float ANGLE = 0.0005f * AMOUNT * (org.joml.Math.PI_f);
 
     public static enum Direction {
         LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
@@ -298,6 +298,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Action performed is also set if anything from input changes.
      */
     private void handleInput() {
+        input.clear(); // reset all input
         actionPerformed = false;
 
         // W-A-S-D
@@ -356,7 +357,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Handles input for observer Collision detection is being handle in.
+     * Updates actor for observer. Collision detection is being handle in.
      *
      * @param amount movement amount
      *
@@ -428,8 +429,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Handles input for editor (when in editor mode) Collision detection is
-     * being handle in.
+     * Updates editor observer (actor) when in editor mode. Collision detection
+     * is being handle in.
      *
      */
     private void editorDo(LevelContainer lc) {
@@ -1228,8 +1229,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public void updateMainActor() {
         try {
-            if ((ups & (ticksPerUpdate - 1)) == 0) {
-                final float amount = Game.AMOUNT * (float) accumulator;
+            if (((ups & (ticksPerUpdate - 1)) == 0) && actionPerformed) {
+                final float amount = Game.AMOUNT * (float) Game.TICK_TIME;
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -1303,6 +1304,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         gameObject.intrface.getMainMenu().open();
         gameObject.intrface.getGuideText().setEnabled(false);
 
+        // Main Loop
         while (!gameObject.WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
@@ -1337,6 +1339,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             while (accumulator >= TICK_TIME) {
                 // Load chunks for the environment
                 loadChunks();
+
                 // Update with fixed timestep (environment)
                 updateEnvironment(TICK_TIME);
                 // Update main actor (observer or player)
