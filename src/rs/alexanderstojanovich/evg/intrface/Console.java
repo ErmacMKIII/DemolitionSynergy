@@ -35,7 +35,6 @@ import rs.alexanderstojanovich.evg.intrface.Command.Status;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -149,18 +148,18 @@ public class Console {
                             // Position all messages
                             positionMessages();
 
-                            synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
-                                if (cmd.isRendererCommand()) {
-                                    FutureTask<Object> consoleTask = new FutureTask<>(cmd);
-                                    cmd.status = Command.Status.PENDING;
-                                    GameRenderer.TASK_QUEUE.add(consoleTask);
-                                } else if (cmd.isGameCommand()) {
-                                    CompletableFuture.runAsync(() -> {
-                                        Command.execute(intrface.gameObject, cmd);
-                                    }, commandExecutor);
-                                    cmd.status = Command.Status.PENDING;
-                                }
+//                            synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) { // using commands are known to crash the game => missing element in foreach loop
+                            if (cmd.isRendererCommand()) {
+                                FutureTask<Object> consoleTask = new FutureTask<>(cmd);
+                                cmd.status = Command.Status.PENDING;
+                                GameRenderer.TASK_QUEUE.add(consoleTask);
+                            } else if (cmd.isGameCommand()) {
+                                CompletableFuture.runAsync(() -> {
+                                    Command.execute(intrface.gameObject, cmd);
+                                }, commandExecutor);
+                                cmd.status = Command.Status.PENDING;
                             }
+//                            }
 
                             // Maintain history capacity
                             if (history.size() > HISTORY_CAPACITY) {
@@ -318,24 +317,24 @@ public class Console {
 
         Command.execute(intrface.gameObject, cmd);
 
-        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
-            try {
-                // Add new message to history
-                HistoryItem item = new HistoryItem(this, cmd);
-                history.addFirst(item);
+//        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
+        try {
+            // Add new message to history
+            HistoryItem item = new HistoryItem(this, cmd);
+            history.addFirst(item);
 
-                // Position all messages
-                positionMessages();
+            // Position all messages
+            positionMessages();
 
-                // Maintain history capacity
-                if (history.size() > HISTORY_CAPACITY) {
-                    history.removeLast();
-                    positionMessages(); // Reposition after removal
-                }
-            } catch (Exception ex) {
-                DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+            // Maintain history capacity
+            if (history.size() > HISTORY_CAPACITY) {
+                history.removeLast();
+                positionMessages(); // Reposition after removal
             }
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
         }
+//        }
     }
 
     /**
@@ -354,24 +353,24 @@ public class Console {
 
         Command.execute(intrface.gameObject, cmd);
 
-        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
-            try {
-                // Add new message to history
-                HistoryItem item = new HistoryItem(this, cmd);
-                history.addFirst(item);
+//        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
+        try {
+            // Add new message to history
+            HistoryItem item = new HistoryItem(this, cmd);
+            history.addFirst(item);
 
-                // Position all messages
-                positionMessages();
+            // Position all messages
+            positionMessages();
 
-                // Maintain history capacity
-                if (history.size() > HISTORY_CAPACITY) {
-                    history.removeLast();
-                    positionMessages(); // Reposition after removal
-                }
-            } catch (Exception ex) {
-                DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
+            // Maintain history capacity
+            if (history.size() > HISTORY_CAPACITY) {
+                history.removeLast();
+                positionMessages(); // Reposition after removal
             }
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create console line! =>" + ex.getMessage(), ex);
         }
+//        }
     }
 
     /**

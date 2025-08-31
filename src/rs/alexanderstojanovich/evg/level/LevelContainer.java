@@ -1097,7 +1097,6 @@ public class LevelContainer implements GravityEnviroment {
      * @return if is in fluid
      */
     public boolean isActorInFluidChk() {
-        boolean yea = false;
         Vector3f camPos = levelActors.mainActor().getPos();
 
         Vector3f obsCamPosAlign = new Vector3f(
@@ -1106,29 +1105,27 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = AllBlockMap.isLocationPopulated(obsCamPosAlign, false);
+        if (AllBlockMap.isLocationPopulated(obsCamPosAlign, false)) {
+            return true;
+        }
 
-        if (!yea) {
-            for (int j = 0; j <= 13; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.0f);
-                Vector3f adjAlign = new Vector3f(
-                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                );
+        // Check for all 
+        for (int j = 0; j <= 13; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.0f);
+            Vector3f adjAlign = new Vector3f(
+                    Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+            );
 
-                boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
+            boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
 
-                if (fluidOnLoc) {
-                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
-                    if (yea) {
-                        break;
-                    }
-                }
+            if (fluidOnLoc && Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos)) {
+                return true;
             }
         }
 
-        return yea;
+        return false;
     }
 
     /**
@@ -1138,7 +1135,6 @@ public class LevelContainer implements GravityEnviroment {
      * @return if is in fluid
      */
     public static boolean isActorInFluidChk(LevelContainer lc) {
-        boolean yea = false;
         Vector3f camPos = lc.levelActors.mainActor().getPos();
 
         Vector3f obsCamPosAlign = new Vector3f(
@@ -1147,29 +1143,55 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(camPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = AllBlockMap.isLocationPopulated(obsCamPosAlign, false);
+        if (AllBlockMap.isLocationPopulated(obsCamPosAlign, false)) {
+            return true;
+        }
 
-        if (!yea) {
-            for (int j = 0; j <= 13; j++) {
-                Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.0f);
-                Vector3f adjAlign = new Vector3f(
-                        Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
-                        Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
-                );
+        for (int j = 0; j <= 13; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.0f);
+            Vector3f adjAlign = new Vector3f(
+                    Math.round(adjPos.x + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.y + 0.5f) & 0xFFFFFFFE,
+                    Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
+            );
 
-                boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
+            boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
 
-                if (fluidOnLoc) {
-                    yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos);
-                    if (yea) {
-                        break;
-                    }
-                }
+            if (fluidOnLoc && Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos)) {
+                return true;
             }
         }
 
-        return yea;
+        return false;
+    }
+
+    /**
+     * Is main actor player in fluid check.
+     *
+     * @param lc specified level container
+     * @param critter critter (to check for)
+     * @return if is in fluid
+     */
+    public static boolean isActorInFluidChk(LevelContainer lc, Critter critter) {
+        Vector3f camPos = lc.levelActors.mainActor().getPos();
+
+        Vector3f obsCamPosAlign = alignVector(camPos);
+        if (AllBlockMap.isLocationPopulated(obsCamPosAlign, false)) {
+            return true;
+        }
+
+        for (int j = 0; j <= 13; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(camPos, j, 2.0f);
+            Vector3f adjAlign = alignVector(adjPos);
+
+            boolean fluidOnLoc = AllBlockMap.isLocationPopulated(adjAlign, false);
+
+            if (fluidOnLoc && Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, camPos)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

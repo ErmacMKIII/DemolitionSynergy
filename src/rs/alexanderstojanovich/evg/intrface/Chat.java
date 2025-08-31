@@ -270,26 +270,26 @@ public class Chat {
      * @param msg message output
      */
     public void write(String msg) {
-        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
-            // add to queue
-            DynamicText item;
-            try {
-                item = new DynamicText(intrface.gameObject.GameAssets.FONT, msg, new Vector2f(), 18, 18, intrface);
-                history.addFirst(item);
+//        synchronized (GameObject.UPDATE_RENDER_IFC_MUTEX) {
+        // add to queue
+        DynamicText item;
+        try {
+            item = new DynamicText(intrface.gameObject.GameAssets.FONT, msg, new Vector2f(), 18, 18, intrface);
+            history.addFirst(item);
 
-                // Position all messages including the new one
-                positionMessages();
+            // Position all messages including the new one
+            positionMessages();
 
-            } catch (Exception ex) {
-                DSLogger.reportError("Unable to create chat line! =>" + ex.getMessage(), ex);
-            }
-
-            // if over capacity dequeue last
-            if (history.size() > HISTORY_CAPACITY) {
-                history.removeLast();
-                positionMessages(); // Reposition after removal
-            }
+        } catch (Exception ex) {
+            DSLogger.reportError("Unable to create chat line! =>" + ex.getMessage(), ex);
         }
+
+        // if over capacity dequeue last
+        if (history.size() > HISTORY_CAPACITY) {
+            history.removeLast();
+            positionMessages(); // Reposition after removal
+        }
+//        }
     }
 
     /**

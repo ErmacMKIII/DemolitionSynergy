@@ -288,7 +288,7 @@ public class Text implements ComponentIfc {
      * @param intrface intrface
      * @return char difference
      */
-    protected int setup(Intrface intrface) {
+    protected synchronized int setup(Intrface intrface) {
         int prevSize = txtChList.size();
         txtChList.clear();
         final int lineSize = Math.round(relativeLineSize(intrface));
@@ -351,11 +351,13 @@ public class Text implements ComponentIfc {
             texture.bind(0, shaderProgram, "ifcTexture");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {
-                uvs = txtCh.uvs;
+            synchronized (this) {
+                for (TextCharacter txtCh : txtChList) {
+                    uvs = txtCh.uvs;
 
-                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
-                GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+                    shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+                    GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+                }
             }
 
             Texture.unbind(0);
@@ -387,11 +389,13 @@ public class Text implements ComponentIfc {
             texture.bind(0, shaderProgram, "ifcTexture");
 
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {
-                uvs = txtCh.uvs;
+            synchronized (this) {
+                for (TextCharacter txtCh : txtChList) {
+                    uvs = txtCh.uvs;
 
-                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
-                GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+                    shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+                    GL11.glDrawElements(GL11.GL_TRIANGLES, INDICES.length, GL11.GL_UNSIGNED_INT, 0);
+                }
             }
 
             Texture.unbind(0);

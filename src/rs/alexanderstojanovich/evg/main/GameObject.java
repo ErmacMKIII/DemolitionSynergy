@@ -110,8 +110,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Update/Render for Interface Mutex
      */
-    public static final Object UPDATE_RENDER_IFC_MUTEX = new Object();
-
     protected Quad splashScreen; // on loading
     protected DynamicText initText; // displayed with splash screen
     protected static GameObject instance = null;
@@ -383,9 +381,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             this.intrface.getProgressBar().getQuad().setEnabled(false);
         }
 
-        synchronized (UPDATE_RENDER_IFC_MUTEX) {
-            intrface.update();
-        }
+        intrface.update();
     }
 
     public void assertCheckCollision(boolean collision) {
@@ -454,9 +450,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 levelContainer.render(renderFlag);
             }
 
-            synchronized (UPDATE_RENDER_IFC_MUTEX) {
-                intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
-            }
+            intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
         }
 
         WINDOW.render();
