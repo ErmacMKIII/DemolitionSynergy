@@ -315,7 +315,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgressBar().setValue(percent, intrface);
             this.intrface.getProgressBar().getQuad().setEnabled(true);
         } else { // working check avoids locking the monitor
-            createOrUpdateChunkLists();
             levelContainer.update();
             // if single player gravity is affected or if multiplayer and player is registered
             if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)

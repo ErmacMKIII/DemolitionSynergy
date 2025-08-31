@@ -36,6 +36,15 @@ public class Input {
      * Move mouse
      */
     public boolean moveMouse = false;
+
+    /**
+     * Jump (Single Player & Multiplayer Mode)
+     */
+    public boolean jump = false;
+    /**
+     * Crouch (Single Player & Multiplayer Mode)
+     */
+    public boolean crouch = false;
     /**
      * Fly up (Editor Mode)
      */
@@ -105,6 +114,10 @@ public class Input {
         // Reset mouse movement
         moveMouse = false;
 
+        // Reset jump & crouch
+        jump = false;
+        crouch = false;
+
         // Reset fly controls
         flyUp = false;
         flyDown = false;
@@ -133,4 +146,77 @@ public class Input {
         mouseLeftButton = false;
         mouseRightButton = false;
     }
+
+    public boolean[] getDirectionKeys() {
+        return directionKeys;
+    }
+
+    public boolean isMoveMouse() {
+        return moveMouse;
+    }
+
+    public boolean isJump() {
+        return jump;
+    }
+
+    public boolean isCrouch() {
+        return crouch;
+    }
+
+    public boolean isFlyUp() {
+        return flyUp;
+    }
+
+    public boolean isFlyDown() {
+        return flyDown;
+    }
+
+    public boolean isTurnLeft() {
+        return turnLeft;
+    }
+
+    public boolean isTurnRight() {
+        return turnRight;
+    }
+
+    public boolean[] getNumericKeys() {
+        return numericKeys;
+    }
+
+    public boolean isLeftShift() {
+        return leftShift;
+    }
+
+    public boolean isRightShift() {
+        return rightShift;
+    }
+
+    public boolean isLeftControl() {
+        return leftControl;
+    }
+
+    public boolean isRightControl() {
+        return rightControl;
+    }
+
+    public boolean isEditorDeselect() {
+        return editorDeselect;
+    }
+
+    public boolean isMouseLeftButton() {
+        return mouseLeftButton;
+    }
+
+    public boolean isMouseRightButton() {
+        return mouseRightButton;
+    }
+
+    public boolean isKeyN_pressed() {
+        return keyN_pressed;
+    }
+
+    public boolean isKeyR_pressed() {
+        return keyR_pressed;
+    }
+
 }

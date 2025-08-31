@@ -337,7 +337,10 @@ public class BlockEnvironment {
             }
         }
 
-        IList<Tuple> filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()));
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()));
+        }
 
         for (Tuple tuple : filtered) {
             tuple.prepare(camFront, cameraInFluid);

@@ -319,6 +319,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
         //----------------------------------------------------------------------
         // page up
+        if (keys[GLFW.GLFW_KEY_SPACE]) {
+            actionPerformed = input.jump = true;
+        }
+
+        // crouch
+        if (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) {
+            actionPerformed = input.crouch = true;
+        }
+        //----------------------------------------------------------------------
+        // page up
         if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
             actionPerformed = input.flyUp = true;
         }
@@ -339,7 +349,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         //----------------------------------------------------------------------
         for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
             if (keys[i]) {
-                actionPerformed = input.numericKeys[i] = true;
+                actionPerformed = input.numericKeys[i - GLFW.GLFW_KEY_0] = true;
             }
         }
         //----------------------------------------------------------------------
@@ -560,7 +570,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
+        // This logic avoids multiple jumps unless actor is in fluid (water)
+        if (input.jump && (!jumpPerformed || LevelContainer.isActorInFluid())) {
             player.movePredictorYUp(amountY);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
                 player.movePredictorYDown(amountY);
@@ -569,7 +580,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
+        if (input.crouch && (!crouchPerformed || LevelContainer.isActorInFluid())) {
             player.movePredictorYDown(amountYNeg);
             if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
                 player.movePredictorYUp(amountYNeg);
@@ -665,7 +676,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_SPACE] && ((!jumpPerformed))) {
+            // This logic avoids multiple jumps unless actor is in fluid (water)
+            if (input.jump && (!jumpPerformed || LevelContainer.isActorInFluid())) {
                 player.movePredictorYUp(amountY);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.UP, (float) interpolationFactor)) {
                     player.movePredictorYDown(amountY);
@@ -674,7 +686,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
 
-            if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
+            if (input.crouch && (!crouchPerformed || LevelContainer.isActorInFluid())) {
                 player.movePredictorYDown(amountYNeg);
                 if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor)) {
                     player.movePredictorYUp(amountYNeg);
@@ -1253,7 +1265,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                         // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
-                        jumpPerformed &= !((LevelContainer.isActorInFluid()) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || !gameObject.levelContainer.levelActors.player.isUnderGravity());
                         crouchPerformed = false;
                         break;
                     case MULTIPLAYER_HOST:
@@ -1266,7 +1279,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         }
 
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
-                        jumpPerformed &= !((LevelContainer.isActorInFluid()) || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || !gameObject.levelContainer.levelActors.player.isUnderGravity());
                         crouchPerformed = false;
                         break;
                 }

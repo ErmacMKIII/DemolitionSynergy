@@ -72,12 +72,12 @@ public class LevelContainer implements GravityEnviroment {
      * Min amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MIN_AMOUNT = -14f;
+    public static final float MIN_AMOUNT = -8.4f;
     /**
      * Max amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MAX_AMOUNT = 14f;
+    public static final float MAX_AMOUNT = 8.4f;
     /**
      * Step amount of iteration for collision control or gravity control (inner
      * loop).
@@ -1401,6 +1401,7 @@ public class LevelContainer implements GravityEnviroment {
      */
     @Override
     public boolean gravityDo(Critter critter, float deltaTime) {
+//        DSLogger.reportInfo(String.format("fallVelocity=%s, jumpVelocity=%s, jumpPerformed=%s, actorInFluid=%s", fallVelocity, jumpVelocity, Game.isJumpPerformed(), actorInFluid), null);
         boolean collision = false;
         // Check for collision in any direciton
         for (Game.Direction dir : Game.Direction.values()) {
@@ -1411,15 +1412,19 @@ public class LevelContainer implements GravityEnviroment {
                 return false;
             }
         }
+
         // Initial predictor position
         final Vector3f predInit = new Vector3f(critter.getPredictor());
 
-        // Iterate over time steps to check for collisions        
+        // Determine where critter is going
+        final boolean goingDown = jumpVelocity == 0.0f;
+
+        // Iterate over time steps to check for collisions
+        float tstHeight = 0f;
         TICKS:
-        for (float tstTime = 0.0f; tstTime <= 2.0f * deltaTime; tstTime += (float) Game.TICK_TIME / 4.0f) {
-            float tstHeight;
+        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 16f) {
             final int[] sides;
-            if (jumpVelocity == 0.0f) {
+            if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
                 sides = new int[]{Block.BOTTOM, Block.BOTTOM_BACK, Block.BOTTOM_FRONT, Block.LEFT_BOTTOM, Block.RIGHT_BOTTOM, Block.LEFT, Block.RIGHT, Block.BACK, Block.FRONT};
                 critter.movePredictorDown(tstHeight);
@@ -1430,8 +1435,10 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             // Check collision on all sides
+            COLLISION:
             for (int side : sides) {
                 SCAN:
+                // Standard collision checking (MIN-AMOUNT;MAX-AMOUNT;STEP-AMOUNT)
                 for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
                     Vector3f adjPosAlign = alignVector(adjPos);
@@ -1448,7 +1455,7 @@ public class LevelContainer implements GravityEnviroment {
                 }
             }
 
-            if (jumpVelocity == 0.0f) {
+            if (goingDown) {
                 critter.movePredictorUp(tstHeight);
             } else {
                 critter.movePredictorDown(tstHeight);
@@ -1458,18 +1465,14 @@ public class LevelContainer implements GravityEnviroment {
 
         // If no collision, apply gravity and move the player
         if (!collision) {
-            float deltaHeight;
-            if (jumpVelocity == 0.0f) {
-                deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-            } else {
-                deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-            }
+            float deltaHeight = tstHeight;
+
             // Adjust height for actor in fluid (water)
             if (actorInFluid) {
                 deltaHeight *= 0.125f;
             }
 
-            if (jumpVelocity == 0.0f) {
+            if (goingDown) {
                 critter.movePredictorYDown(deltaHeight);
                 critter.dropY(deltaHeight);
             } else {
@@ -1477,7 +1480,7 @@ public class LevelContainer implements GravityEnviroment {
                 critter.jumpY(deltaHeight);
             }
 
-            if (jumpVelocity == 0.0f) {
+            if (goingDown) {
                 fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             } else {
                 jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
@@ -1535,7 +1538,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         // Initialize jump velocity if player is starting the jump
-        if (fallVelocity == 0.0f || (actorInFluid && jumpVelocity < jumpStrength)) {
+        if (fallVelocity == 0.0f || (actorInFluid && jumpVelocity <= jumpStrength)) {
             jumpVelocity = jumpStrength;
             return true;
         }
