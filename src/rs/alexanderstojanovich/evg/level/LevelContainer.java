@@ -1429,8 +1429,6 @@ public class LevelContainer implements GravityEnviroment {
         for (Game.Direction dir : Game.Direction.values()) {
             collision |= hasCollisionWithEnvironment(critter, dir);
             if (collision) {
-                fallVelocity = 0.0f;
-                jumpVelocity = 0.0f;
                 return false;
             }
         }
@@ -1441,10 +1439,18 @@ public class LevelContainer implements GravityEnviroment {
         // Determine where critter is going
         final boolean goingDown = jumpVelocity == 0.0f;
 
+        // Max time for loop - collision detection
+        final float maxTime;
+        if (goingDown) {
+            maxTime = 2f * deltaTime;
+        } else {
+            maxTime = org.joml.Math.min(jumpVelocity / (2f * GRAVITY_CONSTANT), 2f * deltaTime);
+        }
+
         // Iterate over time steps to check for collisions
         float tstHeight = 0f;
         TICKS:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 16f) {
+        for (float tstTime = 0f; tstTime <= maxTime; tstTime += (float) Game.TICK_TIME / 16f) {
             final int[] sides;
             if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
@@ -1469,8 +1475,6 @@ public class LevelContainer implements GravityEnviroment {
                     if (solidOnLoc) {
                         collision = checkCollisionInternal(adjPosAlign, critter);
                         if (collision) {
-                            fallVelocity = 0.0f;
-                            jumpVelocity = 0.0f;
                             break TICKS;
                         }
                     }
@@ -1519,6 +1523,13 @@ public class LevelContainer implements GravityEnviroment {
             // in case of multiplayer join send to the server
             if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
                 gameObject.game.requestSetPlayerPos();
+            }
+        } else {
+            // Apply collision as nullifying all velocity (@Author)
+            if (goingDown) {
+                fallVelocity = 0.0f;
+            } else {
+                jumpVelocity = 0.0f;
             }
         }
 

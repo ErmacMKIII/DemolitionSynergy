@@ -298,71 +298,73 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Action performed is also set if anything from input changes.
      */
     private void handleInput() {
-        input.clear(); // reset all input
-        actionPerformed = false;
+        if ((ups & (ticksPerUpdate - 1)) == 0) {
+            input.clear(); // reset all input
+            actionPerformed = false;
 
-        // W-A-S-D
-        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
-            actionPerformed = input.directionKeys[Direction.UP.ordinal()] = true;
-        }
-
-        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
-            actionPerformed = input.directionKeys[Direction.DOWN.ordinal()] = true;
-        }
-
-        if (keys[GLFW.GLFW_KEY_A]) {
-            actionPerformed = input.directionKeys[Direction.LEFT.ordinal()] = true;
-        }
-
-        if (keys[GLFW.GLFW_KEY_D]) {
-            actionPerformed = input.directionKeys[Direction.RIGHT.ordinal()] = true;
-        }
-        //----------------------------------------------------------------------
-        // page up
-        if (keys[GLFW.GLFW_KEY_SPACE]) {
-            actionPerformed = input.jump = true;
-        }
-
-        // crouch
-        if (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) {
-            actionPerformed = input.crouch = true;
-        }
-        //----------------------------------------------------------------------
-        // page up
-        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
-            actionPerformed = input.flyUp = true;
-        }
-
-        // page down
-        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
-            actionPerformed = input.flyDown = true;
-        }
-        //----------------------------------------------------------------------
-        // left arrow
-        if (keys[GLFW.GLFW_KEY_LEFT]) {
-            actionPerformed = input.turnLeft = true;
-        }
-        // right arrow
-        if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            actionPerformed = input.turnRight = true;
-        }
-        //----------------------------------------------------------------------
-        for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
-            if (keys[i]) {
-                actionPerformed = input.numericKeys[i - GLFW.GLFW_KEY_0] = true;
+            // W-A-S-D
+            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+                actionPerformed = input.directionKeys[Direction.UP.ordinal()] = true;
             }
-        }
-        //----------------------------------------------------------------------
-        if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            actionPerformed = input.leftShift = true;
-        }
 
-        if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
-            actionPerformed = input.rightShift = true;
-        }
-        //----------------------------------------------------------------------
-        if (moveMouse) {
-            actionPerformed = true;
+            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+                actionPerformed = input.directionKeys[Direction.DOWN.ordinal()] = true;
+            }
+
+            if (keys[GLFW.GLFW_KEY_A]) {
+                actionPerformed = input.directionKeys[Direction.LEFT.ordinal()] = true;
+            }
+
+            if (keys[GLFW.GLFW_KEY_D]) {
+                actionPerformed = input.directionKeys[Direction.RIGHT.ordinal()] = true;
+            }
+            //----------------------------------------------------------------------
+            // page up
+            if (keys[GLFW.GLFW_KEY_SPACE]) {
+                actionPerformed = input.jump = true;
+            }
+
+            // crouch
+            if (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) {
+                actionPerformed = input.crouch = true;
+            }
+            //----------------------------------------------------------------------
+            // page up
+            if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+                actionPerformed = input.flyUp = true;
+            }
+
+            // page down
+            if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+                actionPerformed = input.flyDown = true;
+            }
+            //----------------------------------------------------------------------
+            // left arrow
+            if (keys[GLFW.GLFW_KEY_LEFT]) {
+                actionPerformed = input.turnLeft = true;
+            }
+            // right arrow
+            if (keys[GLFW.GLFW_KEY_RIGHT]) {
+                actionPerformed = input.turnRight = true;
+            }
+            //----------------------------------------------------------------------
+            for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
+                if (keys[i]) {
+                    actionPerformed = input.numericKeys[i - GLFW.GLFW_KEY_0] = true;
+                }
+            }
+            //----------------------------------------------------------------------
+            if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+                actionPerformed = input.leftShift = true;
+            }
+
+            if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
+                actionPerformed = input.rightShift = true;
+            }
+            //----------------------------------------------------------------------
+            if (moveMouse) {
+                actionPerformed = true;
+            }
         }
     }
 
@@ -425,12 +427,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_LEFT]) {
-            lc.levelActors.spectator.turnLeft(ANGLE);
+        if (input.turnLeft) {
+            obs.turnLeft(ANGLE);
+
         }
-        if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            lc.levelActors.spectator.turnRight(ANGLE);
+        if (input.turnRight) {
+            obs.turnRight(ANGLE);
         }
+
         if (moveMouse) {
             lc.levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
@@ -589,11 +593,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_LEFT]) {
+        if (input.turnLeft) {
             lc.levelActors.player.turnLeft(ANGLE);
 
         }
-        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+        if (input.turnRight) {
             lc.levelActors.player.turnRight(ANGLE);
         }
 
@@ -751,13 +755,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
         }
 
-        if (keys[GLFW.GLFW_KEY_LEFT]) {
+        if (input.turnLeft) {
             lc.levelActors.player.turnLeft(ANGLE);
 
         }
-        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+        if (input.turnRight) {
             lc.levelActors.player.turnRight(ANGLE);
-
         }
 
         if (moveMouse) {
@@ -997,7 +1000,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
                     break;
                 case REGISTER:
-                    if (response.getChecksum() == request.getChecksum() && response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
+                    if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK) { // Authorised
                         gameObject.levelContainer.levelActors.player.setRegistered(true);
 
                         DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
@@ -1232,7 +1235,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.utilChunkOperations();
             }
             // optimize chunks by merging all chunks of blocks into single environment
-            gameObject.updateNoptimizeChunks();
+            if (!GameRenderer.couldRender()) {
+                gameObject.updateNoptimizeChunks();
+            }
         }
     }
 
@@ -1252,17 +1257,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         observerDo(gameObject.levelContainer, amount);
                         editorDo(gameObject.levelContainer);
 
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
+                        LevelContainer.updateActorInFluid(gameObject.levelContainer);
                         break;
                     case SINGLE_PLAYER:
                         // player has control
                         singlePlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
+                        LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
                         // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
@@ -1274,9 +1275,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // player has control
                         multiPlayerDo(gameObject.levelContainer, amount, JUMP_STR_AMOUNT, CROUCH_STR_AMOUNT);
 
-                        if (actionPerformed) {
-                            LevelContainer.updateActorInFluid(gameObject.levelContainer);
-                        }
+                        LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
@@ -1477,13 +1476,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             );
             register.send(this, session);
 
-//            synchronized (requestList) {
-//                if (requestList.size() < MAX_SIZE) {
-//                    requestList.add(register);
-//                }
-//                // Wait for response (assuming simple echo for demonstration)
-//                internRequestMutex.wait(DEFAULT_SHORTENED_TIMEOUT);
-//            }
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(register);
+                }
+            }
+
             okey = true;
 
         } catch (Exception ex) {
