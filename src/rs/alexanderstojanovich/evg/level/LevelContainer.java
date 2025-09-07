@@ -1416,20 +1416,21 @@ public class LevelContainer implements GravityEnviroment {
      * Applies gravity to the player, making them fall downwards if not
      * supported below. Called on motion. Called in 'update'.
      *
-     * @param critter critter affected by gravity
+     * @param critter critter affected by gravity (submitted)
      * @param deltaTime The time elapsed since the last handleInput.
      * @return {@code true} if the player is affected by gravity, {@code false}
      * otherwise.
      */
     @Override
-    public boolean gravityDo(Critter critter, float deltaTime) {
+    public Result gravityDo(Critter critter, float deltaTime) {
 //        DSLogger.reportInfo(String.format("fallVelocity=%s, jumpVelocity=%s, jumpPerformed=%s, actorInFluid=%s", fallVelocity, jumpVelocity, Game.isJumpPerformed(), actorInFluid), null);
+        Result result = Result.NEUTRAL;
         boolean collision = false;
         // Check for collision in any direciton
         for (Game.Direction dir : Game.Direction.values()) {
             collision |= hasCollisionWithEnvironment(critter, dir);
             if (collision) {
-                return false;
+                return Result.COLLISION;
             }
         }
 
@@ -1439,18 +1440,10 @@ public class LevelContainer implements GravityEnviroment {
         // Determine where critter is going
         final boolean goingDown = jumpVelocity == 0.0f;
 
-        // Max time for loop - collision detection
-        final float maxTime;
-        if (goingDown) {
-            maxTime = 2f * deltaTime;
-        } else {
-            maxTime = org.joml.Math.min(jumpVelocity / (2f * GRAVITY_CONSTANT), 2f * deltaTime);
-        }
-
         // Iterate over time steps to check for collisions
         float tstHeight = 0f;
         TICKS:
-        for (float tstTime = 0f; tstTime <= maxTime; tstTime += (float) Game.TICK_TIME / 16f) {
+        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 16f) {
             final int[] sides;
             if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
@@ -1475,6 +1468,7 @@ public class LevelContainer implements GravityEnviroment {
                     if (solidOnLoc) {
                         collision = checkCollisionInternal(adjPosAlign, critter);
                         if (collision) {
+                            result = Result.COLLISION;
                             break TICKS;
                         }
                     }
@@ -1501,15 +1495,13 @@ public class LevelContainer implements GravityEnviroment {
             if (goingDown) {
                 critter.movePredictorYDown(deltaHeight);
                 critter.dropY(deltaHeight);
+                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+                result = Result.FALL;
             } else {
                 critter.movePredictorYUp(deltaHeight);
                 critter.jumpY(deltaHeight);
-            }
-
-            if (goingDown) {
-                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
-            } else {
                 jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
+                result = Result.JUMP;
             }
 
             if (fallVelocity == TERMINAL_VELOCITY) {
@@ -1533,7 +1525,10 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        return !collision;
+        // set gravity result for the critter which was submitted
+        critter.setGravityResult(result);
+
+        return result;
     }
 
 //    /**

@@ -30,14 +30,36 @@ public interface GravityEnviroment {
     public static final float TERMINAL_VELOCITY = 100f; // apply only if Game.upsTicks >= 1.0
 
     /**
+     * Gravity Result
+     */
+    public static enum Result {
+        /**
+         * Gravity method returned with no change (Neutral)
+         */
+        NEUTRAL,
+        /**
+         * Gravity method with collision
+         */
+        COLLISION,
+        /**
+         * Gravity method return fall
+         */
+        FALL,
+        /**
+         * Gravity method return jump
+         */
+        JUMP
+    }
+
+    /**
      * Affect Environment with gravity. Object not supported from bottom will
      * fall. Critter not supported from bottom will fall.
      *
      * @param critter critter affected by gravity
      * @param deltaTime delta time
-     * @return did gravity affect
+     * @return gravity effect result
      */
-    public boolean gravityDo(Critter critter, float deltaTime);
+    public Result gravityDo(Critter critter, float deltaTime);
 
     /**
      * Affect Environment with jump against gravity. Assuming that critter will

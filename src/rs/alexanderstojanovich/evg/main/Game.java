@@ -57,6 +57,7 @@ import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.Editor;
+import rs.alexanderstojanovich.evg.level.GravityEnviroment;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.net.DSMachine;
@@ -1248,6 +1249,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         try {
             if (((ups & (ticksPerUpdate - 1)) == 0) && actionPerformed) {
                 final float amount = Game.AMOUNT * (float) Game.TICK_TIME;
+                final GravityEnviroment.Result gravityResult;
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
@@ -1267,9 +1269,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
-                        jumpPerformed &= !(LevelContainer.isActorInFluid() || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
+
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
@@ -1279,7 +1283,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
-                        jumpPerformed &= !(LevelContainer.isActorInFluid() || !gameObject.levelContainer.levelActors.player.isUnderGravity());
+                        gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
                 }

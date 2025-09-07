@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.critter;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.core.Camera;
+import rs.alexanderstojanovich.evg.level.GravityEnviroment.Result;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Model;
@@ -45,7 +46,7 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected Vector3f front = Camera.Z_AXIS;
     protected Vector3f up = Camera.Y_AXIS;
     protected Vector3f right = Camera.X_AXIS;
-    protected boolean underGravity = false;
+    protected Result gravityResult = Result.NEUTRAL;
     protected boolean inJump = false;
 
     /**
@@ -540,12 +541,12 @@ public class Critter implements Predictable, Moveable, Renderable {
         updateCameraVectors(newFront);
     }
 
-    public boolean isUnderGravity() {
-        return underGravity;
+    public Result gravityResult() {
+        return gravityResult;
     }
 
-    public void setUnderGravity(boolean underGravity) {
-        this.underGravity = underGravity;
+    public void setGravityResult(Result gravityResult) {
+        this.gravityResult = gravityResult;
     }
 
     public boolean isInJump() {

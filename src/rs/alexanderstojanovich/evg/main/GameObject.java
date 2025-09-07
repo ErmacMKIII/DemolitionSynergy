@@ -317,8 +317,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             // if single player gravity is affected or if multiplayer and player is registered
             if (levelContainer.gravityOn && (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER)
                     || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
-                boolean underGravity = levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
-                levelContainer.levelActors.player.setUnderGravity(underGravity);
+                levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
             }
             perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)
 
