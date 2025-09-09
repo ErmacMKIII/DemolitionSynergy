@@ -270,7 +270,7 @@ public class BlockEnvironment {
         tuple.blockList.clear();
 
         // Filter each visible chunk for relevant & visible blocks
-        IList<Block> filterBlks = chunks.getFilteredBlockList(
+        IList<Block> filterBlks = chunks.getFilteredBlockListMK2(
                 tuple.texName(), tuple.faceBits(), vqueue,
                 camera, angleDegrees
         );

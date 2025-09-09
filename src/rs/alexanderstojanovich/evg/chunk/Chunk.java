@@ -42,7 +42,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
-public class Chunk { // some operations are mutually exclusive    
+public interface Chunk { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 256;
@@ -305,7 +305,7 @@ public class Chunk { // some operations are mutually exclusive
      * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected static void updateForAdd(IList<Tuple> tupleList, Block block) {
+    private static void updateForAdd(IList<Tuple> tupleList, Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
         int neighborBits = block.isSolid()
                 ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
@@ -378,7 +378,7 @@ public class Chunk { // some operations are mutually exclusive
      * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected static void updateForRem(IList<Tuple> tupleList, Block block) {
+    private static void updateForRem(IList<Tuple> tupleList, Block block) {
         // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);

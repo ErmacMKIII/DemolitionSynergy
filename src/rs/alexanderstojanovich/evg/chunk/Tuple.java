@@ -40,6 +40,8 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
+ * List of world block with same properties like face enabled bits and same
+ * texture name. Designated for instanced rendering.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */

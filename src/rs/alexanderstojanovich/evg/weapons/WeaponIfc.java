@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evg.weapons;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
-import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
@@ -96,19 +95,11 @@ public interface WeaponIfc {
     public Model getModel();
 
     /**
-     * Model on character. Use Main GLSL Shader.
-     *
-     * @param critter critter having that weapon
-     * @return model on character
-     */
-    public Model deriveBodyModel(Critter critter);
-
-    /**
      * Model on ground. Use Main GLSL Shader.
      *
-     * @return
+     * @return get as item.
      */
-    public Model deriveOnGroundItem();
+    public Model asItem();
 
     /**
      * Model in hands. Use Player GLSL Shader.

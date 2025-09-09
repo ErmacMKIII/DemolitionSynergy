@@ -208,6 +208,68 @@ public class Chunks {
         return null;
     }
 
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * This version (MK2) uses access to chunk id as key to provide faster
+     * filtering.
+     *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkIdList provided chunk id list
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public IList<Block> getFilteredBlockListMK2(String texName, int faceBits, IList<Integer> chunkIdList) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            final IList<Block> filteredBlocks = new GapList<>();
+            for (int chunkId : chunkIdList) {
+                IList<Block> filtered = tuple.blockList.getAllByKey1(chunkId);
+                filteredBlocks.addAll(filtered);
+            }
+
+            return filteredBlocks;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets the chunk block list using chunk id.
+     *
+     * This version (MK2) uses access to chunk id as key to provide faster
+     * filtering.
+     *
+     * @param texName tuple texName
+     * @param faceBits face bits of the tuple
+     * @param chunkIdList provided chunk id list
+     * @param camera observer camera (observing blocks)
+     * @param degrees angle degrees of front view
+     * @return null if tuple doest not exist otherwise block list from tuple
+     */
+    public IList<Block> getFilteredBlockListMK2(String texName, int faceBits, IList<Integer> chunkIdList, Camera camera, float degrees) {
+        // binary search of the tuple
+        Tuple tuple = Chunk.getTuple(tupleList, texName, faceBits);
+
+        // block list filter of the tuple
+        if (tuple != null) {
+            final IList<Block> filteredBlocks = new GapList<>();
+            for (int chunkId : chunkIdList) {
+                IList<Block> filtered = tuple.blockList
+                        .getAllByKey1(chunkId)
+                        .filter(blk -> camera.doesSeeEff(blk, degrees)); // *New* visible blocks
+                filteredBlocks.addAll(filtered);
+            }
+
+            return filteredBlocks;
+        }
+
+        return null;
+    }
+
     // all blocks from all the chunks in one big list
     /**
      * Get all block from all the chunks. Whole world of blocks.
