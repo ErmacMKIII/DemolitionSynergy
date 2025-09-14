@@ -898,12 +898,12 @@ public class Block extends Model {
     }
 
     /**
-     * Make new index buffer base on bits form of enabled faces (used only for
-     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * Make new index mainBuffer base on bits form of enabled faces (used only
+     * for blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
      * @param faceBits 6-bit form
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
@@ -924,7 +924,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
@@ -949,7 +949,7 @@ public class Block extends Model {
      *
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IList<Integer> createIndices(int faceBits, int baseConst) {
         // creating indices
@@ -975,13 +975,13 @@ public class Block extends Model {
     }
 
     /**
-     * Make new index buffer base on bits form of enabled faces (used only for
-     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * Make new index mainBuffer base on bits form of enabled faces (used only
+     * for blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer createIntBuffer(int faceBits, int baseConst) {
         // creating indices
@@ -1002,7 +1002,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
@@ -1021,13 +1021,13 @@ public class Block extends Model {
     }
 
     /**
-     * Resize index buffer base on bits form of enabled faces (used only for
+     * Resize index mainBuffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
-     * @param intBuff supplied int buffer (to resize)
+     * @param intBuff supplied int mainBuffer (to resize)
      * @param faceBits 6-bit form
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits) {
         // creating indices
@@ -1048,7 +1048,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
 
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
@@ -1068,14 +1068,14 @@ public class Block extends Model {
     }
 
     /**
-     * Resize index buffer base on bits form of enabled faces (used only for
+     * Resize index mainBuffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
-     * @param intBuff supplied int buffer (to resize)
+     * @param intBuff supplied int mainBuffer (to resize)
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits, int baseConst) {
         // creating indices
@@ -1096,7 +1096,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
 
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {

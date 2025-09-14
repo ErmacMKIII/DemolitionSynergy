@@ -418,7 +418,7 @@ public class Console {
             inText.renderContour(intrface, contourShaderProgram);
 
             // Render history messages
-            for (HistoryItem item : history) {
+            for (HistoryItem item : history.immutableList()) {
                 item.render(intrface, shaderProgram);
             }
 

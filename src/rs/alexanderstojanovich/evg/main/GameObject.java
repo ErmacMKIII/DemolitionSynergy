@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.main;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +45,7 @@ import rs.alexanderstojanovich.evg.level.BlockEnvironment;
 import rs.alexanderstojanovich.evg.level.Editor;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evg.net.LevelMapInfo;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -406,7 +406,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             return;
         }
 
-        masterRenderer.render(); // it clears color bit and depth buffer bit
+        masterRenderer.render(); // it clears color bit and depth mainBuffer bit
         if (splashScreen != null && splashScreen.isEnabled()) {
             if (!splashScreen.isBuffered()) {
                 splashScreen.bufferSmart(intrface);
@@ -465,6 +465,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.intrface.release();
         this.waterRenderer.release();
         this.shadowRenderer.release();
+        CacheModule.release();
+        DSLogger.reportDebug("Cache buffer deleted.", null);
+        this.levelContainer.levelBuffer.release();
         this.levelContainer.blockEnvironment.release();
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
@@ -520,11 +523,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
 
-        Arrays.fill(levelContainer.buffer, (byte) 0x00);
-        Arrays.fill(levelContainer.bak_buffer, (byte) 0x00);
-        levelContainer.pos = 0;
-        levelContainer.bak_pos = 0;
-
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
@@ -561,7 +559,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean ok = false;
         this.clearEverything();
 
-        ok |= levelContainer.loadLevelFromFile(fileName);
+        ok |= levelContainer.levelBuffer.loadLevelFromFile(fileName);
         intrface.getGuideText().setEnabled(false);
 
         return ok;
@@ -577,7 +575,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean saveLevelToFile(String fileName) {
         boolean ok = false;
 
-        ok |= levelContainer.saveLevelToFile(fileName);
+        ok |= levelContainer.levelBuffer.saveLevelToFile(fileName);
         intrface.getGuideText().setEnabled(false);
 
         return ok;
@@ -649,8 +647,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
         // Save level to file asynchronously
         CompletableFuture.supplyAsync(() -> {
-            return levelContainer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
+            return levelContainer.levelBuffer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
         }, this.TaskExecutor).thenApply((Boolean rez) -> {
+            // Copy content to multiplayer upload
+            levelContainer.levelBuffer.copyMain2UploadBuffer();
             levelContainer.levelActors.player.setRegistered(rez);
             intrface.getGuideText().setEnabled(false);
             return null;
@@ -672,21 +672,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         boolean success = false;
         this.clearEverything();
 
-        // Register player with Unique ID (UUID)
+        // Register player with Unique ID (UUID) (Request)
         if (game.registerPlayer()) {
-            // Get world info from server
-            game.getWorldInfo();
-            // Configure-set main actor
-            // Spawn player (set position)
-            levelContainer.spawnPlayer();
-            // Player set position
-            game.requestSetPlayerPos();
-            // Disable guide text (.. player is gonna spawn)
-            intrface.getGuideText().setEnabled(false);
+            // Send Request - Get world info from server
+            // After received response it will load world on its own
+            game.requestWorldInfo(); // This method reset world info to null
             // !IMPORTANT -- ENABLE ASYNC WRITEPOINT 
             game.setAsyncReceivedForceEnabled(true);
-            // It is successful
-            success = true;
+            // Load World Multiplayer
+            // Try up to MAX_ATTEMPTS to get the fragment
+            for (int attempt = 0; attempt < MAX_ATTEMPTS && game.getWorldInfo() == LevelMapInfo.NULL; attempt++) {
+                synchronized (game.requestList) {
+                    game.requestList.wait(Game.DEFAULT_SHORTENED_TIMEOUT); // 3 x 10 sec
+                }
+            }
+            // If resulted is success
+            if (game.getWorldInfo() != LevelMapInfo.NULL) {
+                game.loadWorldMultiplayer(game.worldInfo);
+                // It is successful
+                success = true;
+            }
         } else {
             DSLogger.reportWarning("Not able to register player. Disconnecting.", null);
             intrface.getConsole().write("Not able to register player. Disconnecting.", Command.Status.FAILED);

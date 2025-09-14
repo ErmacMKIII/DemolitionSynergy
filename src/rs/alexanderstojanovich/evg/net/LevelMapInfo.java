@@ -39,6 +39,16 @@ public class LevelMapInfo {
     public final long sizebytes;
 
     /**
+     * NULL Level Info. Initial value when send request.
+     */
+    public static final LevelMapInfo NULL = new LevelMapInfo(null, 0L, -1L);
+
+    /**
+     * Blank Level Info. Not used.
+     */
+    public static final LevelMapInfo BLANK = new LevelMapInfo("", 0L, 0L);
+
+    /**
      * Level Map Info object
      *
      * @param worldname world name obtained from server

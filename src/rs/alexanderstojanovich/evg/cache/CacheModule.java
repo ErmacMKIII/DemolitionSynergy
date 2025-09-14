@@ -23,8 +23,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -49,9 +51,9 @@ public class CacheModule {
 
     public static final int BLOCK_SIZE = 34;
 
-    public static final int DEFAULT_BUFFER_SIZE = 2048; // 2 KB
-    private static final byte[] MEMORY = new byte[0x1000000]; // 16 MB
-    private static int pos = 0;
+    public static final int DEFAULT_BUFFER_SIZE = 16384; // 16 KB
+    public static final int MEMORY_SIZE = 0x1000000;
+    private static final ByteBuffer MEMORY = MemoryUtil.memCalloc(MEMORY_SIZE); // 16 MB
     private final LevelContainer levelContainer;
     public static final IList<CachedInfo> CACHED_CHUNKS = new GapList<>();
     public static final int BLOCKS_PER_RUN = Configuration.getInstance().getBlocksPerRun();
@@ -127,7 +129,10 @@ public class CacheModule {
         }
         try {
             bos = new BufferedOutputStream(new FileOutputStream(file), DEFAULT_BUFFER_SIZE);
-            bos.write(MEMORY, 0, pos);
+            final byte[] buff = new byte[MEMORY.limit()];
+            MEMORY.get(buff);
+            bos.write(buff);
+            MEMORY.clear();
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } catch (IOException ex) {
@@ -154,7 +159,12 @@ public class CacheModule {
             BufferedInputStream bis = null;
             try {
                 bis = new BufferedInputStream(new FileInputStream(file), DEFAULT_BUFFER_SIZE);
-                bis.read(MEMORY, 0, length);
+                final byte[] buff = new byte[MEMORY_SIZE];
+                int someLen = bis.read(buff, 0, length);
+                MEMORY.clear();
+                MemoryUtil.memSet(MEMORY, (byte) 0x00);
+                MEMORY.put(buff, 0, someLen);
+                MEMORY.flip();
             } catch (FileNotFoundException ex) {
                 DSLogger.reportFatalError(ex.getMessage(), ex);
             } catch (IOException ex) {
@@ -192,27 +202,24 @@ public class CacheModule {
                 // this indicates that add with no transfer on fluid blocks will be used!                
                 this.levelContainer.chunks.tupleList.forEach(t -> t.blockList.removeAll(blocks));
                 // SAVE OPERATIONS
-                pos = 0;
-                MEMORY[pos++] = (byte) id;
-                MEMORY[pos++] = (byte) blocks.size();
-                MEMORY[pos++] = (byte) (blocks.size() >> 8);
+                MEMORY.put((byte) id);
+                MEMORY.putInt((int) blocks.size());
                 for (Block blk : blocks) {
                     byte[] texName = blk.texName.getBytes();
-                    System.arraycopy(texName, 0, MEMORY, pos, TEX_LEN);
-                    pos += TEX_LEN;
-                    VectorFloatUtils.vec3fToByteArray(blk.pos, MEMORY, pos);
-                    pos += VEC3_LEN;
+                    MEMORY.put(texName);
+                    byte[] vec3fPosBytes = VectorFloatUtils.vec3fToByteArray(blk.pos);
+                    MEMORY.put(vec3fPosBytes);
                     Vector4f primCol = blk.getPrimaryRGBAColor();
-                    VectorFloatUtils.vec4fToByteArray(primCol, MEMORY, pos);
-                    pos += VEC4_LEN;
+                    byte[] vec4fColByte = VectorFloatUtils.vec4fToByteArray(primCol);
+                    MEMORY.put(vec4fColByte);
                     if (blk.isSolid()) {
-                        MEMORY[pos] = (byte) 0xFF;
+                        MEMORY.put((byte) 0xFF);
                     } else {
-                        MEMORY[pos] = (byte) 0x00;
+                        MEMORY.put((byte) 0x00);
                     }
-                    pos++;
                 }
-                final int cachedSize = pos;
+                MEMORY.flip();
+                final int cachedSize = MEMORY.limit();
 
                 File cacheDir = new File(Game.CACHE);
                 if (!cacheDir.exists()) {
@@ -248,15 +255,13 @@ public class CacheModule {
             CachedInfo cachedInfo = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
             int remainingSize = cachedInfo.cachedSize - cachedInfo.readBytes;
             loadDiskToMem(fileName, remainingSize);
-            int len = 0;
+            int len;
             if (remainingSize == cachedInfo.cachedSize) {
-                pos = 1;
-                // INIT BLOCK ARRAY
-                len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
-                pos += 2;
+                // INIT BLOCK ARRAY                
+                len = MEMORY.getInt();
                 cachedInfo.readBytes += 3;
             } else {
-                pos = cachedInfo.readBytes;
+                MEMORY.position(cachedInfo.readBytes);
                 len = cachedInfo.blockSize - cachedInfo.readBlocks;
             }
             // READ BLOCK ARRAY                                              
@@ -264,18 +269,18 @@ public class CacheModule {
             for (int i = 0; i < runlen; i++) {
                 char[] texNameArr = new char[TEX_LEN];
                 for (int k = 0; k < texNameArr.length; k++) {
-                    texNameArr[k] = (char) MEMORY[pos++];
+                    texNameArr[k] = (char) MEMORY.get();
                 }
                 String texName = String.valueOf(texNameArr);
 
-                Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(MEMORY, pos);
-                pos += VEC3_LEN;
+                byte[] vec3fPosBytes = new byte[VEC3_LEN];
+                MEMORY.get(vec3fPosBytes);
+                Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(vec3fPosBytes);
 
-                Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(MEMORY, pos);
-                pos += VEC4_LEN;
+                byte[] vec4fColBytes = new byte[VEC4_LEN];
+                Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(vec4fColBytes);
 
-                boolean solid = MEMORY[pos] != (byte) 0x00;
-                pos++;
+                boolean solid = MEMORY.get() != (byte) 0x00;
                 Block block = new Block(texName, blockPos, blockCol, solid);
                 // PUT ALL BLOCK WHERE THEY BELONG TO                
                 levelContainer.chunks.addBlock(block);
@@ -283,6 +288,8 @@ public class CacheModule {
                 cachedInfo.readBytes += BLOCK_SIZE;
                 cachedInfo.readBlocks++;
             }
+
+            MEMORY.clear();
 
             // REMOVE FROM CACHED
             if (cachedInfo.cachedSize - cachedInfo.readBytes == 0) {
@@ -316,6 +323,13 @@ public class CacheModule {
     }
 
     /**
+     * Clean up used resources (MEMORY)
+     */
+    public static void release() {
+        MemoryUtil.memFree(MEMORY);
+    }
+
+    /**
      * Is cached.
      *
      * @param chunkId chunk id
@@ -323,10 +337,6 @@ public class CacheModule {
      */
     public static boolean isCached(int chunkId) {
         return CACHED_CHUNKS.containsIf(ci -> ci.chunkId == chunkId);
-    }
-
-    public static int getPos() {
-        return pos;
     }
 
     public LevelContainer getLevelContainer() {

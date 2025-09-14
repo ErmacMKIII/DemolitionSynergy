@@ -16,17 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.regex.Pattern;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -53,11 +43,9 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
-import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
-import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -102,8 +90,14 @@ public class LevelContainer implements GravityEnviroment {
     public final GameObject gameObject;
     protected final Configuration cfg = Configuration.getInstance();
 
+    /**
+     * World Skybox - whole world (except Sun) is contained inside
+     */
     public static final Block SKYBOX = new Block("night");
 
+    /**
+     * Main source of light. Outside of skybox.
+     */
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
     public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
@@ -121,12 +115,6 @@ public class LevelContainer implements GravityEnviroment {
     private final IList<Integer> vChnkIdList = new GapList<>();
     private final IList<Integer> iChnkIdList = new GapList<>();
 
-    public final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
-    public int pos = 0;
-
-    public final byte[] bak_buffer = new byte[0x1000000]; // 16 MB BAK Buffer
-    public int bak_pos = 0;
-
     public static final float BASE = 22.5f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
@@ -136,16 +124,26 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final int MAX_NUM_OF_BLOCKS = 131070;
 
-    private float progress = 0.0f;
+    protected float progress = 0.0f;
 
-    private boolean working = false;
+    protected boolean working = false;
 
     public final LevelActors levelActors;
 
-    // position of all the solid blocks to texture name & neighbors
+    /**
+     * Position of all the solid blocks to texture name & neighbors
+     */
     public static final BlockLocation AllBlockMap = new BlockLocation();
 
+    /**
+     * Module responsible for caching chunks in SSD/HDD file(s).
+     */
     public final CacheModule cacheModule;
+
+    /**
+     * Level Buffer to load or save (world) levels.
+     */
+    public final LevelBuffer levelBuffer;
 
     protected static boolean actorInFluid = false;
 
@@ -160,6 +158,13 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
+    /**
+     * Update on put neighbours location on tex byte properties
+     *
+     * @param vector vec3f where location is
+     *
+     * @return bits property
+     */
     private static byte updatePutNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -178,6 +183,13 @@ public class LevelContainer implements GravityEnviroment {
         return bits;
     }
 
+    /**
+     * Update on remove neighbours location on tex byte properties
+     *
+     * @param vector vec3f where location is
+     *
+     * @return bits property
+     */
     private static byte updateRemNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
@@ -245,6 +257,7 @@ public class LevelContainer implements GravityEnviroment {
 
         this.weapons = new Weapons(this);
         this.levelActors = new LevelActors(this);
+        this.levelBuffer = new LevelBuffer(this);
 
         lightSources.addLight(levelActors.player.light);
         lightSources.addLight(SUNLIGHT);
@@ -536,7 +549,7 @@ public class LevelContainer implements GravityEnviroment {
         // Try to spawn the player at a valid location
         boolean playerSpawned = false;
         OUTER:
-        while (!playerSpawned && !solidPopLoc.isEmpty()) { // search through solid population location
+        while (!playerSpawned && !solidPopLoc.isEmpty() && !gameObject.WINDOW.shouldClose()) { // search through solid population location
             int randomIndex = random.nextInt(solidPopLoc.size());
             Vector3f solidLoc = solidPopLoc.get(randomIndex);
             Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z); // Adjust y position
@@ -562,511 +575,6 @@ public class LevelContainer implements GravityEnviroment {
             // Handle case where no valid spawn location was found (optional)
             throw new Exception("Failed to spawn player in a valid location.");
         }
-    }
-
-    private static String ensureCorrectExtension(String filename) {
-        Pattern pattern = Pattern.compile("\\.(dat|ndat)$");
-        if (!pattern.matcher(filename).find()) {
-            filename += ".dat"; // Default to .dat if no valid extension is found
-        }
-
-        return filename;
-    }
-
-    /**
-     * Store level in binary DAT (old) format to internal level container
-     * buffer.
-     *
-     * @return on success
-     */
-    public boolean storeLevelToBufferOldFormat() {
-        working = true;
-        boolean success = false;
-//        if (progress > 0.0f) {
-//            return false;
-//        }
-        progress = 0.0f;
-        levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-        pos = 0;
-        buffer[0] = 'D';
-        buffer[1] = 'S';
-        pos += 2;
-
-        Camera camera = levelActors.mainCamera();
-        if (camera == null) {
-            return false;
-        }
-
-        byte[] campos = VectorFloatUtils.vec3fToByteArray(camera.getPos());
-        System.arraycopy(campos, 0, buffer, pos, campos.length);
-        pos += campos.length;
-
-        byte[] camfront = VectorFloatUtils.vec3fToByteArray(camera.getFront());
-        System.arraycopy(camfront, 0, buffer, pos, camfront.length);
-        pos += camfront.length;
-
-        byte[] camup = VectorFloatUtils.vec3fToByteArray(camera.getUp());
-        System.arraycopy(camup, 0, buffer, pos, camup.length);
-        pos += camup.length;
-
-        byte[] camright = VectorFloatUtils.vec3fToByteArray(camera.getRight());
-        System.arraycopy(camup, 0, buffer, pos, camright.length);
-        pos += camright.length;
-
-        IList<Vector3f> solidPos = AllBlockMap.getPopulatedLocations(tb -> tb.solid);
-        IList<Vector3f> fluidPos = AllBlockMap.getPopulatedLocations(tb -> !tb.solid);
-
-        buffer[pos++] = 'S';
-        buffer[pos++] = 'O';
-        buffer[pos++] = 'L';
-        buffer[pos++] = 'I';
-        buffer[pos++] = 'D';
-
-        int solidNum = solidPos.size();
-        buffer[pos++] = (byte) (solidNum);
-        buffer[pos++] = (byte) (solidNum >> 8);
-
-        //----------------------------------------------------------------------
-        for (Vector3f sp : solidPos) {
-            if (gameObject.WINDOW.shouldClose()) {
-                break;
-            }
-            byte[] byteArraySolid = Block.toByteArray(sp, AllBlockMap.getLocation(sp));
-            System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
-            pos += 29;
-            progress += 50.0f / (float) solidPos.size();
-        }
-
-        buffer[pos++] = 'F';
-        buffer[pos++] = 'L';
-        buffer[pos++] = 'U';
-        buffer[pos++] = 'I';
-        buffer[pos++] = 'D';
-
-        int fluidNum = fluidPos.size();
-        buffer[pos++] = (byte) (fluidNum);
-        buffer[pos++] = (byte) (fluidNum >> 8);
-
-        for (Vector3f fp : fluidPos) {
-            if (gameObject.WINDOW.shouldClose()) {
-                break;
-            }
-            byte[] byteArrayFluid = Block.toByteArray(fp, AllBlockMap.getLocation(fp));
-            System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
-            pos += 29;
-            progress += 50.0f / (float) fluidPos.size();
-        }
-
-        buffer[pos++] = 'E';
-        buffer[pos++] = 'N';
-        buffer[pos++] = 'D';
-
-        levelActors.unfreeze();
-        progress = 100.0f;
-
-        if (progress == 100.0f && !gameObject.WINDOW.shouldClose()) {
-            success = true;
-        }
-        working = false;
-        gameObject.getMusicPlayer().stop();
-        return success;
-    }
-
-    /**
-     * Store level in binary NDAT (new) format to internal level container
-     * buffer. Used in Multiplayer.
-     *
-     * @return on success
-     */
-    public boolean storeLevelToBufferNewFormat() {
-        working = true;
-        boolean success = false;
-//        if (progress > 0.0f) {
-//            return false;
-//        }
-        progress = 0.0f;
-        levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-        pos = 0;
-        buffer[0] = 'D';
-        buffer[1] = 'S';
-        buffer[2] = '2';
-        pos += 3;
-
-        Camera camera = levelActors.mainCamera();
-        if (camera == null) {
-            return false;
-        }
-
-        byte[] campos = VectorFloatUtils.vec3fToByteArray(camera.getPos());
-        System.arraycopy(campos, 0, buffer, pos, campos.length);
-        pos += campos.length;
-
-        byte[] camfront = VectorFloatUtils.vec3fToByteArray(camera.getFront());
-        System.arraycopy(camfront, 0, buffer, pos, camfront.length);
-        pos += camfront.length;
-
-        byte[] camup = VectorFloatUtils.vec3fToByteArray(camera.getUp());
-        System.arraycopy(camup, 0, buffer, pos, camup.length);
-        pos += camup.length;
-
-        byte[] camright = VectorFloatUtils.vec3fToByteArray(camera.getRight());
-        System.arraycopy(camright, 0, buffer, pos, camright.length);
-        pos += camright.length;
-
-        int allBlkSize = AllBlockMap.locationProperties.size();
-
-        buffer[pos++] = 'B';
-        buffer[pos++] = 'L';
-        buffer[pos++] = 'K';
-        buffer[pos++] = 'S';
-
-        // Store the total number of blocks
-        buffer[pos++] = (byte) (allBlkSize);
-        buffer[pos++] = (byte) (allBlkSize >> 8);
-        buffer[pos++] = (byte) (allBlkSize >> 16);
-        buffer[pos++] = (byte) (allBlkSize >> 24);
-
-        for (String texName : Assets.TEX_WORLD) {
-            IList<Vector3f> blkPos = AllBlockMap.getPopulatedLocations(tb -> tb.texName.equals(texName));
-            int count = blkPos.size();
-            byte[] texNameBytes = texName.getBytes(Charset.forName("US-ASCII"));
-            for (int i = 0; i < 5; i++) {
-                buffer[pos++] = texNameBytes[i];
-            }
-            buffer[pos++] = (byte) (count);
-            buffer[pos++] = (byte) (count >> 8);
-            buffer[pos++] = (byte) (count >> 16);
-            buffer[pos++] = (byte) (count >> 24);
-            for (Vector3f p : blkPos) {
-                if (gameObject.WINDOW.shouldClose()) {
-                    break;
-                }
-                byte[] byteArray = Block.toByteArray(p, AllBlockMap.getLocation(p));
-                System.arraycopy(byteArray, 5, buffer, pos, 24);
-                pos += 29;
-                progress += 100.0f / (float) allBlkSize;
-            }
-        }
-
-        buffer[pos++] = 'E';
-        buffer[pos++] = 'N';
-        buffer[pos++] = 'D';
-
-        levelActors.unfreeze();
-        progress = 100.0f;
-
-        if (progress == 100.0f && !gameObject.WINDOW.shouldClose()) {
-            success = true;
-        }
-        working = false;
-        gameObject.getMusicPlayer().stop();
-        return success;
-    }
-
-    /**
-     * Load level in binary format DAT (old) to internal level container buffer.
-     *
-     * @return on success
-     */
-    public boolean loadLevelFromBufferOldFormat() {
-        working = true;
-        boolean success = false;
-//        if (progress > 0.0f) {
-//            return false;
-//        }
-        progress = 0.0f;
-        levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-        pos = 0;
-        if (buffer[0] == 'D' && buffer[1] == 'S') {
-            chunks.clear();
-
-            AllBlockMap.init();
-
-            lightSources.retainLights(2);
-
-            CacheModule.deleteCache();
-
-            pos += 2;
-            byte[] posArr = new byte[12];
-            System.arraycopy(buffer, pos, posArr, 0, posArr.length);
-            Vector3f campos = VectorFloatUtils.vec3fFromByteArray(posArr);
-            pos += posArr.length;
-
-            byte[] frontArr = new byte[12];
-            System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
-            Vector3f camfront = VectorFloatUtils.vec3fFromByteArray(frontArr);
-            pos += frontArr.length;
-
-            byte[] upArr = new byte[12];
-            System.arraycopy(buffer, pos, frontArr, 0, upArr.length);
-            Vector3f camup = VectorFloatUtils.vec3fFromByteArray(upArr);
-            pos += upArr.length;
-
-            byte[] rightArr = new byte[12];
-            System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
-            Vector3f camright = VectorFloatUtils.vec3fFromByteArray(rightArr);
-            pos += rightArr.length;
-
-            levelActors.configureMainObserver(campos, camfront, camup, camright);
-
-            char[] solid = new char[5];
-            for (int i = 0; i < solid.length; i++) {
-                solid[i] = (char) buffer[pos++];
-            }
-            String strSolid = String.valueOf(solid);
-
-            if (strSolid.equals("SOLID")) {
-                int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-                pos += 2;
-                for (int i = 0; i < solidNum && !gameObject.WINDOW.shouldClose(); i++) {
-                    byte[] byteArraySolid = new byte[29];
-                    System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
-                    Block solidBlock = Block.fromByteArray(byteArraySolid, true);
-                    chunks.addBlock(solidBlock);
-                    pos += 29;
-                    progress += 50.0f / solidNum;
-                }
-
-//                solidChunks.updateSolids();
-                char[] fluid = new char[5];
-                for (int i = 0; i < fluid.length; i++) {
-                    fluid[i] = (char) buffer[pos++];
-                }
-                String strFluid = String.valueOf(fluid);
-
-                if (strFluid.equals("FLUID")) {
-                    int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-                    pos += 2;
-                    for (int i = 0; i < fluidNum && !gameObject.WINDOW.shouldClose(); i++) {
-                        byte[] byteArrayFluid = new byte[29];
-                        System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
-                        Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
-                        chunks.addBlock(fluidBlock);
-                        pos += 29;
-                        progress += 50.0f / fluidNum;
-                    }
-
-//                    fluidChunks.updateFluids();
-                    char[] end = new char[3];
-                    for (int i = 0; i < end.length; i++) {
-                        end[i] = (char) buffer[pos++];
-                    }
-                    String strEnd = String.valueOf(end);
-                    if (strEnd.equals("END")) {
-                        success = true;
-                    }
-                }
-
-            }
-
-        }
-        levelActors.unfreeze();
-        blockEnvironment.clear();
-
-        progress = 100.0f;
-        working = false;
-        gameObject.getMusicPlayer().stop();
-
-        return success;
-    }
-
-    /**
-     * Load level in binary NDAT (new) format from internal level container
-     * buffer. Used in Multiplayer.
-     *
-     * @return on success
-     * @throws java.io.UnsupportedEncodingException
-     */
-    public boolean loadLevelFromBufferNewFormat() throws UnsupportedEncodingException, Exception {
-        working = true;
-        boolean success = false;
-//        if (progress > 0.0f) {
-//            return false;
-//        }
-        progress = 0.0f;
-        levelActors.freeze();
-        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
-        pos = 0;
-
-        // Check the initial format identifiers
-        if (buffer[pos++] == 'D' && buffer[pos++] == 'S' && buffer[pos++] == '2') {
-            AllBlockMap.init();
-            lightSources.retainLights(2);
-            CacheModule.deleteCache();
-
-            byte[] posArr = new byte[12];
-            System.arraycopy(buffer, pos, posArr, 0, posArr.length);
-            Vector3f campos = VectorFloatUtils.vec3fFromByteArray(posArr);
-            pos += posArr.length;
-
-            byte[] frontArr = new byte[12];
-            System.arraycopy(buffer, pos, frontArr, 0, frontArr.length);
-            Vector3f camfront = VectorFloatUtils.vec3fFromByteArray(frontArr);
-            pos += frontArr.length;
-
-            byte[] upArr = new byte[12];
-            System.arraycopy(buffer, pos, upArr, 0, upArr.length);
-            Vector3f camup = VectorFloatUtils.vec3fFromByteArray(upArr);
-            pos += upArr.length;
-
-            byte[] rightArr = new byte[12];
-            System.arraycopy(buffer, pos, rightArr, 0, rightArr.length);
-            Vector3f camright = VectorFloatUtils.vec3fFromByteArray(rightArr);
-            pos += rightArr.length;
-
-            levelActors.configureMainObserver(campos, camfront, camup, camright);
-
-            if (buffer[pos++] == 'B' && buffer[pos++] == 'L' && buffer[pos++] == 'K' && buffer[pos++] == 'S') {
-                // Read the total number of blocks
-                int totalBlocks = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8)
-                        | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
-
-                if (totalBlocks <= 0) { // 'Empty world'
-                    levelActors.unfreeze();
-                    blockEnvironment.clear();
-
-                    progress = 100.0f;
-                    working = false;
-                    gameObject.getMusicPlayer().stop();
-                    throw new Exception("No blocks to process!");
-                }
-
-                while (true) {
-                    char[] texNameChars = new char[5];
-                    for (int i = 0; i < texNameChars.length; i++) {
-                        texNameChars[i] = (char) buffer[pos++];
-                    }
-                    String texName = new String(texNameChars);
-
-                    int count = (buffer[pos++] & 0xFF) | ((buffer[pos++] & 0xFF) << 8)
-                            | ((buffer[pos++] & 0xFF) << 16) | ((buffer[pos++] & 0xFF) << 24);
-
-                    for (int i = 0; i < count && !gameObject.WINDOW.shouldClose(); i++) {
-                        if (gameObject.game.isConnected() && ((i & 4095) == 0)) { // each 4x 1024-th block
-                            gameObject.game.sendPingRequest();
-                        }
-
-                        byte[] byteArrayBlock = new byte[29];
-                        System.arraycopy(texName.getBytes("US-ASCII"), 0, byteArrayBlock, 0, 5);
-                        System.arraycopy(buffer, pos, byteArrayBlock, 5, 24);
-                        Block block = Block.fromByteArray(byteArrayBlock, !texName.equals("water"));
-                        chunks.addBlock(block);
-                        pos += 29;
-                        progress += 100.0f / (float) totalBlocks;
-                    }
-
-                    if (buffer[pos] == 'E' && buffer[pos + 1] == 'N' && buffer[pos + 2] == 'D') {
-                        pos += 3;
-                        success = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        levelActors.unfreeze();
-        blockEnvironment.clear();
-
-        progress = 100.0f;
-        working = false;
-        gameObject.getMusicPlayer().stop();
-
-        return success;
-    }
-
-    /**
-     * Save level to exported file. Extension is chosen (dat|ndat) in filename
-     * arg.
-     *
-     * @param filename filename to export on drive (dat|ndat).
-     * @return on success
-     */
-    public boolean saveLevelToFile(String filename) {
-        if (working) {
-            return false;
-        }
-        boolean success = false;
-        ensureCorrectExtension(filename);
-
-        BufferedOutputStream bos = null;
-        File file = new File(filename);
-        if (file.exists()) {
-            file.delete();
-        }
-
-        if (filename.endsWith(".dat")) {
-            success |= storeLevelToBufferOldFormat(); // saves level to buffer first
-        } else if (filename.endsWith(".ndat")) {
-            success |= storeLevelToBufferNewFormat(); // saves level to buffer first
-        }
-
-        try {
-            bos = new BufferedOutputStream(new FileOutputStream(file));
-            bos.write(buffer, 0, pos); // save buffer to file at pos mark
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (bos != null) {
-            try {
-                bos.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-        return success;
-    }
-
-    /**
-     * Load level from imported file. Extension is chosen (dat|ndat) in filename
-     * arg.
-     *
-     * @param filename filename to export on drive (dat|ndat).
-     * @return on success
-     */
-    public boolean loadLevelFromFile(String filename) {
-        if (working) {
-            return false;
-        }
-        boolean success = false;
-        if (filename.isEmpty()) {
-            return false;
-        }
-        ensureCorrectExtension(filename);
-
-        File file = new File(filename);
-        BufferedInputStream bis = null;
-        if (!file.exists()) {
-            return false; // this prevents further fail
-        }
-        try {
-            bis = new BufferedInputStream(new FileInputStream(file));
-            bis.read(buffer);
-            if (filename.endsWith(".dat")) {
-                success |= loadLevelFromBufferOldFormat();
-            } else if (filename.endsWith(".ndat")) {
-                success |= loadLevelFromBufferNewFormat();
-            }
-
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (IOException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        } catch (Exception ex) {
-            DSLogger.reportError(ex.getMessage(), ex); // zero blocks
-        }
-        if (bis != null) {
-            try {
-                bis.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-        return success;
     }
 
     /**
@@ -1460,7 +968,7 @@ public class LevelContainer implements GravityEnviroment {
             for (int side : sides) {
                 SCAN:
                 // Standard collision checking (MIN-AMOUNT;MAX-AMOUNT;STEP-AMOUNT)
-                for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                for (float amount = -2.1f; amount <= 2.1f; amount += 0.05f) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
                     Vector3f adjPosAlign = alignVector(adjPos);
 
@@ -1879,14 +1387,6 @@ public class LevelContainer implements GravityEnviroment {
 
     public IList<Integer> getiChnkIdList() {
         return iChnkIdList;
-    }
-
-    public byte[] getBuffer() {
-        return buffer;
-    }
-
-    public int getPos() {
-        return pos;
     }
 
     public AudioPlayer getMusicPlayer() {

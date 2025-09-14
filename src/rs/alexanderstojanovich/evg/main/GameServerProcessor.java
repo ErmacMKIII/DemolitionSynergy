@@ -78,7 +78,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
      */
     public final GameServer gameServer;
 
-    public static final int BUFF_SIZE = 8192; // append bytes (chunk) buffer size
+    public static final int BUFF_SIZE = 8192; // append bytes (chunk) mainBuffer size
 
     public static final int FAIL_ATTEMPT_MAX = 10;
     public static final int TOTAL_FAIL_ATTEMPT_MAX = 3000;
@@ -338,13 +338,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 break;
             case DOWNLOAD:
                 // Server alraedy saved the level
-                okey = gameServer.gameObject.levelContainer.storeLevelToBufferNewFormat();
-                if (!okey) {
-                    return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Unable to save map level file!");
-                }
-                System.arraycopy(gameServer.gameObject.levelContainer.buffer, 0, gameServer.gameObject.levelContainer.bak_buffer, 0, gameServer.gameObject.levelContainer.pos);
-                gameServer.gameObject.levelContainer.bak_pos = gameServer.gameObject.levelContainer.pos;
-                totalBytes = gameServer.gameObject.levelContainer.bak_pos;
+                totalBytes = gameServer.gameObject.levelContainer.levelBuffer.uploadBuffer.limit();
                 final int bytesPerFragment = BUFF_SIZE;
                 int fullFragments = totalBytes / bytesPerFragment;
                 int remainingBytes = totalBytes % bytesPerFragment;
@@ -360,8 +354,8 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 break;
             case GET_FRAGMENT:
                 int n = (int) request.getData(); // Assuming the N-th fragment number is sent in the request data
-                totalBytes = gameServer.gameObject.levelContainer.bak_pos;
-                final byte[] buffer = gameServer.gameObject.levelContainer.bak_buffer;
+                totalBytes = gameServer.gameObject.levelContainer.levelBuffer.uploadBuffer.limit();
+                final ByteBuffer buffer = gameServer.gameObject.levelContainer.levelBuffer.uploadBuffer;
 
                 if (n < 0 || n * BUFF_SIZE >= totalBytes) {
                     response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, "Invalid fragment number");
@@ -373,7 +367,10 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 int fragmentEnd = Math.min(fragmentStart + BUFF_SIZE, totalBytes);
                 int fragmentSize = fragmentEnd - fragmentStart;
                 byte[] fragment = new byte[fragmentSize];
-                System.arraycopy(buffer, fragmentStart, fragment, 0, fragmentSize);
+
+                buffer.position(fragmentStart); // Position at fragment
+                buffer.get(fragment, 0, fragmentSize); // Read from BAK Buffer into fragment buffer
+                buffer.rewind(); // Clear BAK Buffer, so it could be read from beginning
 
                 IoBuffer buffer1 = IoBuffer.allocate(fragmentSize, true);
                 buffer1.put(fragment);
@@ -433,7 +430,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
 
                 if (mapFileOrNull == null) {
                     mapFileOrNull = gameServer.worldName + ".ndat";
-                    okey = gameServer.gameObject.levelContainer.saveLevelToFile(mapFileOrNull);
+                    okey = gameServer.gameObject.levelContainer.levelBuffer.saveLevelToFile(mapFileOrNull);
                     if (!okey) {
                         return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Level still does not exist!");
                     }
@@ -454,7 +451,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                     int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
                     ByteBuffer buffc = ByteBuffer.allocate((int) fileChannel.size());
                     while ((fileChannel.read(buffc)) > 0) {
-                        // Do nothing, just read the file into the buffer
+                        // Do nothing, just read the file into the mainBuffer
                     }
                     buffc.flip();
                     checksum.update(buffc);

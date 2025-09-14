@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -105,6 +104,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final float JUMP_STR_AMOUNT = 7.5f;
     public static final float ANGLE = 0.0005f * AMOUNT * (org.joml.Math.PI_f);
 
+    /**
+     * Direction of the game player motion when key is pressed
+     */
     public static enum Direction {
         LEFT, RIGHT, UP, DOWN, BACKWARD, FORWARD
     };
@@ -113,7 +115,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     private static int fpsMax = config.getFpsCap(); // fps max or fps cap  
 
     // if this is reach game will close without exception!
+    /**
+     * Maximum game client responsiveness (in the game main loop or game
+     * renderer loop). Everything above this will close the game.
+     */
     public static final double CRITICAL_TIME = 15.0;
+    /**
+     * Maximum receive time until last response until game is considered that is
+     * lost connection.
+     */
     public static final int MAX_WAIT_RECEIVE_TIME = 45; // 45 Seconds
 
     private final boolean[] keys = new boolean[512];
@@ -134,7 +144,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     private static GLFWMouseButtonCallback defaultMouseButtonCallback;
 
     /**
-     * Input logic
+     * Input logic (button pressed, mouse moved)
      */
     public final Input input = new Input();
 
@@ -164,10 +174,35 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     protected static double gameTicks = 0.0;
 
+    /**
+     * Game version (for instance 56)
+     */
     protected final int version = GameObject.VERSION;
 
+    /**
+     * Operating game modes
+     */
     public static enum Mode {
-        FREE, SINGLE_PLAYER, MULTIPLAYER_HOST, MULTIPLAYER_JOIN, EDITOR
+        /**
+         * Game is in initialized/reset state where player has no control
+         */
+        FREE,
+        /**
+         * Single player game mode
+         */
+        SINGLE_PLAYER,
+        /**
+         * Client behaves as server host for multiplayer game
+         */
+        MULTIPLAYER_HOST,
+        /**
+         * Client joins server hosted or dedicated game
+         */
+        MULTIPLAYER_JOIN,
+        /**
+         * Client mode for creating world levels
+         */
+        EDITOR
     };
     private static Mode currentMode = Mode.FREE;
 
@@ -177,39 +212,70 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     protected static boolean causingCollision = false; // collision with solid environment (all critters)    
     protected boolean running = false;
 
+    /**
+     * Default timeout
+     */
     protected static final int DEFAULT_TIMEOUT = 30000; // 30 sec
+    /**
+     * Extended timeout
+     */
     protected static final int DEFAULT_EXTENDED_TIMEOUT = 120000; // 2 minutes
+    /**
+     * Shortened timeout. Used in fragment download
+     */
     protected static final int DEFAULT_SHORTENED_TIMEOUT = 10000; // 10 seconds 'TIMEOUT FOR FRAGMENTS' or 'GOODBYE'
 
+    /**
+     * Maximum attempts to read fragments or download (world) level map
+     */
     public static final int MAX_ATTEMPTS = 3; // 'ATTEMPTS FOR FRAGMENTS'
+    /**
+     * Request sample size
+     */
     public static final int REQUEST_FULFILLMENT_LENGTH = 8; // Used in calculaton for AVG ping
+    /**
+     * Maximum size of request size. Size of list above this size will result in
+     * disconnect from server (for safety).
+     */
     public static final int MAX_SIZE = 16000; // Max Total Request List SIZE
 
     protected int fulfillNum = 0;
+    /**
+     * Request list to game server
+     */
     protected final IList<RequestIfc> requestList = new GapList<>();
     protected double pingSum = 0.0;
     protected double ping = 0.0;
+    /**
+     * Time to wait until last
+     */
     protected double waitReceiveTime = 0.0; // seconds
-
     /**
      * Connect to server stuff & endpoint
      */
     protected String serverHostName = config.getServerIP();
+    /**
+     * Server IP. Could be DS in client mode or dedicated server DSS.
+     */
     protected InetAddress serverInetAddr = null;
 
+    /**
+     * Client UDP Port
+     */
     protected int port = config.getClientPort();
+    /**
+     * Client timeout (connection to server. Defaults to 30 sec)
+     */
     protected int timeout = DEFAULT_TIMEOUT;
-    public static final int BUFF_SIZE = 8192; // read bytes (chunk) buffer size
+    /**
+     * Default buffer size for fragments
+     */
+    public static final int BUFF_SIZE = 8192; // read bytes (chunk) mainBuffer size
 
     /**
      * Async Client Executor (async receive responses)
      */
     public final ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-
-    /*
-     * Util chunk loader
-     */
-    public final ExecutorService chunkLoaderExecutor = Executors.newSingleThreadExecutor();
 
     /**
      * Connection Status (Client)
@@ -265,8 +331,28 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Download status from the (world) level map
      */
     public static enum DownloadStatus {
-        ERR, WARNING, OK
+        /**
+         * Download result is erroneous
+         */
+        ERROR,
+        /**
+         * Download resulted in warning
+         */
+        WARNING,
+        /**
+         * Download is pending (still in progress)
+         */
+        PENDING,
+        /**
+         * Download finished successfully
+         */
+        OK
     }
+
+    /**
+     * Download status
+     */
+    protected DownloadStatus downloadStatus = DownloadStatus.PENDING;
 
     /**
      * Connection session
@@ -277,6 +363,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * UDP connector for (Game) client
      */
     protected NioDatagramConnector connector = new NioDatagramConnector();
+
+    /**
+     * World Level Map Info (obtained from server)
+     */
+    protected LevelMapInfo worldInfo = null;
 
     /**
      * Construct new game (client) view. Demolition Synergy client.
@@ -934,10 +1025,14 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // '*' - indicates everyone
                 // 'basically if this response is for me' - my (player) guid 
                 if (response.getReceiverGuid().equals("*") || response.getReceiverGuid().equals(getGuid())) {
-                    process(response);
-                    if (config.getLogLevel() == DSLogger.DSLogLevel.DEBUG || config.getLogLevel() == DSLogger.DSLogLevel.ALL) {
-                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
-                        DSLogger.reportInfo(String.valueOf(response.getData()), null);
+                    try {
+                        process(response);
+                        if (config.getLogLevel() == DSLogger.DSLogLevel.DEBUG || config.getLogLevel() == DSLogger.DSLogLevel.ALL) {
+                            gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
+                            DSLogger.reportInfo(String.valueOf(response.getData()), null);
+                        }
+                    } catch (Exception ex) {
+                        DSLogger.reportError("Error during processing: " + ex.getMessage(), ex);
                     }
                 }
             });
@@ -949,8 +1044,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Process received response (client-side)
      *
      * @param response client received response
+     * @throws java.lang.Exception if spawn player fails
      */
-    public void process(ResponseIfc response) {
+    public void process(ResponseIfc response) throws Exception {
         if (response.getChecksum() == 0L && String.valueOf(response.getData()).contains(":")) {
             // write chat messages
             gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
@@ -959,7 +1055,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // this is issued kick from the server to the Guid of this machine
-        if (response.getData().equals("KICK")) {
+        if (response.getData() != null && response.getData().equals("KICK")) {
             // disable async 'read point' in 'message received'
             asyncReceivedEnabled.set(false);
 
@@ -1012,10 +1108,18 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     }
                     break;
                 case WORLD_INFO:
+                    // Reset value is in request                   
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    // Set value for world info
                     LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(response.getData()));
-                    loadWorld(jsonWorldInfo);
+                    // Request to get fragments from the world
+                    // To Load the world via download of such fragments
+                    this.worldInfo = jsonWorldInfo;
+                    // notify wait on disconnect
+                    synchronized (requestList) {
+                        requestList.notifyAll();
+                    }
                     break;
                 case PING:
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
@@ -1053,6 +1157,110 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     synchronized (requestList) {
                         requestList.notifyAll();
                     }
+                    break;
+                case DOWNLOAD:
+                    // This 'keeps' wait-loop on
+                    downloadStatus = DownloadStatus.PENDING;
+                    if (response.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response.getData() >= 0) {
+                        // !IMPORTANT -- DISABLE ASYNC WRITEPOINT 
+                        this.setAsyncReceivedForceEnabled(false);
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), response.getData().toString()), null);
+                        // Display server response in client console
+                        gameObject.intrface.getConsole().write(String.format("Download %s fragments", response.getData()));
+
+                        // Define a buffer to hold the received data
+                        byte[] buffer = new byte[Game.BUFF_SIZE];
+                        int totalBytesRead = 0;
+                        // Total fragment(s) (indices)
+                        final int totalIndices = (int) response.getData();
+
+                        if (totalIndices == 0) {
+                            // World is empty
+                            DSLogger.reportWarning("World is empty. Disconnecting.", null);
+
+                            // World is empty
+                            gameObject.intrface.getConsole().write("World is empty. Disconnecting.", Command.Status.WARNING);
+
+                            disconnectFromServer();
+                            gameObject.clearEverything();
+
+                            downloadStatus = DownloadStatus.WARNING;
+                        }
+
+                        // Clear the main buffer where the (world) level is gonna be put
+                        gameObject.levelContainer.levelBuffer.uploadBuffer.clear();
+                        // Loop through all fragment indices
+                        for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
+                            boolean success = false;
+
+                            // Try up to MAX_ATTEMPTS to get the fragment
+                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success; attempt++) {
+                                // Request the next fragment
+                                RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
+                                fragmentRequest.send(this, session);
+
+                                // Wait for the response with a timeout
+                                ReadFuture future = session.read();
+                                if (future.await(Game.DEFAULT_SHORTENED_TIMEOUT)) { // 10 sec x 3 times
+                                    // Response received within timeout
+                                    Object message = future.getMessage();
+                                    if (message instanceof IoBuffer) {
+                                        IoBuffer buffer1 = (IoBuffer) message;
+                                        buffer1.get(buffer, 0, buffer1.remaining());
+                                        int bytesRead = buffer1.position();
+
+                                        // Write the received data to the mainBuffer
+                                        gameObject.levelContainer.levelBuffer.uploadBuffer.put(buffer, 0, bytesRead);
+                                        totalBytesRead += bytesRead;
+
+                                        DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
+                                        gameObject.intrface.getConsole().write(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead));
+
+                                        success = true; // Fragment successfully received                                        
+
+                                        if (connected == ConnectionStatus.RECONNECTED) {
+                                            // Reset reconnected to connected
+                                            connected = ConnectionStatus.CONNECTED;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!success) {
+                                // If not successful after MAX_ATTEMPTS, log the failure
+                                DSLogger.reportError(String.format("Failed to receive fragment %d after %d attempts", fragmentIndex, MAX_ATTEMPTS), null);
+
+                                // If not successful after MAX_ATTEMPTS, log the failure (Console)
+                                gameObject.intrface.getConsole().write(String.format("Failed to receive fragment %d after %d attempts", fragmentIndex, MAX_ATTEMPTS), Command.Status.FAILED);
+
+                                downloadStatus = DownloadStatus.ERROR;
+                            }
+                        }
+
+                        // Write finished. Make the buffer readable.
+                        gameObject.levelContainer.levelBuffer.uploadBuffer.flip();
+
+                        // Logging download information
+                        DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
+                        gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
+                    } else {
+                        // Handle error response from server
+                        DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(response.getResponseStatus()), String.valueOf(response.getData())), null);
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), Command.Status.FAILED);
+
+                        downloadStatus = DownloadStatus.ERROR;
+                    }
+
+                    // Set download status to OK
+                    if (downloadStatus != DownloadStatus.ERROR) {
+                        downloadStatus = DownloadStatus.OK;
+                    }
+
+                    // notify wait on disconnect
+                    synchronized (requestList) {
+                        requestList.notifyAll();
+                    }
+                    this.setAsyncReceivedForceEnabled(true);
                     break;
             }
 
@@ -1461,8 +1669,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Connect to server (host). Multiplayer. Requires acceptance test to be
-     * passed. According to protocol.
+     * Registers player UUID (16 characters) to server (host). Multiplayer.
+     * Requires acceptance test to be passed. According to protocol.
      *
      * @return endpoint if connection succeeds and acceptance test is passed
      */
@@ -1504,10 +1712,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param bytesRead The number of bytes read into the buffer.
      * @return True if the end-of-stream marker is found, otherwise false.
      */
-//    private static boolean isEndOfStream(byte[] buffer, int bytesRead) {
+//    private static boolean isEndOfStream(byte[] mainBuffer, int bytesRead) {
 //        if (bytesRead >= Game.EOS.length) {
 //            for (int i = 0; i <= bytesRead - Game.EOS.length; i++) {
-//                if (Arrays.equals(Arrays.copyOfRange(buffer, i, i + Game.EOS.length), Game.EOS)) {
+//                if (Arrays.equals(Arrays.copyOfRange(mainBuffer, i, i + Game.EOS.length), Game.EOS)) {
 //                    return true;
 //                }
 //            }
@@ -1516,116 +1724,30 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 //    }
     /**
      * Download level (map) from the server
-     *
-     * @return true if the download was successful, false otherwise
      */
-    public DownloadStatus downloadLevel() {
+    public void downloadLevel() {
         if (!isConnected()) {
-            return DownloadStatus.ERR;
+            downloadStatus = DownloadStatus.ERROR;
+            return;
         }
-
-        Arrays.fill(gameObject.levelContainer.buffer, (byte) 0x00);
         try {
+            downloadStatus = DownloadStatus.PENDING;
             // Send a request to begin downloading the level
             final RequestIfc downlBeginRequest = new Request(RequestIfc.RequestType.DOWNLOAD, DSObject.DataType.VOID, null);
             downlBeginRequest.send(this, session);
 
-            ResponseIfc response0 = ResponseIfc.receive(this, session);
-            if (response0.getResponseStatus() == ResponseIfc.ResponseStatus.OK && (int) response0.getData() >= 0) {
-                DSLogger.reportInfo(String.format("Server response: %s : %s", response0.getResponseStatus().toString(), response0.getData().toString()), null);
-                // Display server response in client console
-                gameObject.intrface.getConsole().write(String.format("Download %s fragments", response0.getData()));
-
-                // Define a buffer to hold the received data
-                byte[] buffer = new byte[Game.BUFF_SIZE];
-                int totalBytesRead = 0;
-                final int totalIndices = (int) response0.getData();
-
-                if (totalIndices == 0) {
-                    // World is empty
-                    DSLogger.reportWarning("World is empty. Disconnecting.", null);
-
-                    // World is empty
-                    gameObject.intrface.getConsole().write("World is empty. Disconnecting.", Command.Status.WARNING);
-
-                    disconnectFromServer();
-                    gameObject.clearEverything();
-
-                    return DownloadStatus.WARNING;
+            synchronized (requestList) {
+                if (requestList.size() < MAX_SIZE) {
+                    requestList.add(downlBeginRequest);
                 }
 
-                // Loop through all fragment indices
-                for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
-                    boolean success = false;
-
-                    // Try up to MAX_ATTEMPTS to get the fragment
-                    for (int attempt = 0; attempt < MAX_ATTEMPTS && !success; attempt++) {
-                        // Request the next fragment
-                        RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
-                        fragmentRequest.send(this, session);
-
-                        // Wait for the response with a timeout
-                        ReadFuture future = session.read();
-                        if (future.await(Game.DEFAULT_SHORTENED_TIMEOUT)) { // 10 sec x 3 times
-                            // Response received within timeout
-                            Object message = future.getMessage();
-                            if (message instanceof IoBuffer) {
-                                IoBuffer buffer1 = (IoBuffer) message;
-                                buffer1.get(buffer, 0, buffer1.remaining());
-                                int bytesRead = buffer1.position();
-
-                                // Write the received data to the buffer
-                                System.arraycopy(buffer, 0, gameObject.levelContainer.buffer, totalBytesRead, bytesRead);
-                                totalBytesRead += bytesRead;
-
-                                DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
-                                gameObject.intrface.getConsole().write(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead));
-
-                                success = true; // Fragment successfully received
-
-                                if (connected == ConnectionStatus.RECONNECTED) {
-                                    // Reset reconnected to connected
-                                    connected = ConnectionStatus.CONNECTED;
-                                }
-                            }
-                        } else {
-                            // Timeout occurred, log and retry
-                            DSLogger.reportWarning(String.format("Timeout while waiting for fragment %d, attempt %d", fragmentIndex, attempt + 1), null);
-
-                            // Timeout occurred, log and retry
-                            gameObject.intrface.getConsole().write(String.format("Timeout while waiting for fragment %d, attempt %d", fragmentIndex, attempt + 1), Command.Status.WARNING);
-
-                            // Try reconnect if session is lost - otherwise no action
-                            if (connected == ConnectionStatus.LOST) {
-                                reconnect();
-                            }
-                        }
-                    }
-
-                    if (!success) {
-                        // If not successful after MAX_ATTEMPTS, log the failure
-                        DSLogger.reportError(String.format("Failed to receive fragment %d after %d attempts", fragmentIndex, MAX_ATTEMPTS), null);
-
-                        // If not successful after MAX_ATTEMPTS, log the failure (Console)
-                        gameObject.intrface.getConsole().write(String.format("Failed to receive fragment %d after %d attempts", fragmentIndex, MAX_ATTEMPTS), Command.Status.FAILED);
-
-                        return DownloadStatus.ERR;
-                    }
-                }
-
-                // Logging download information
-                DSLogger.reportInfo(String.format("Download: %d bytes", totalBytesRead), null);
-                gameObject.intrface.getConsole().write(String.format("Download: %d bytes", totalBytesRead));
-            } else {
-                // Handle error response from server
-                DSLogger.reportInfo(String.format("Server response: %s : %s", String.valueOf(response0.getResponseStatus()), String.valueOf(response0.getData())), null);
-                gameObject.intrface.getConsole().write(String.valueOf(response0.getData()), Command.Status.FAILED);
+                requestList.wait(Game.DEFAULT_TIMEOUT);
             }
         } catch (Exception ex) {
-            DSLogger.reportError("Unable to connect to server!", ex);
+            downloadStatus = DownloadStatus.ERROR;
+            DSLogger.reportError("Download of level timed out - " + ex.getMessage(), ex);
+            gameObject.intrface.getConsole().write("Download of level timed out!", Command.Status.FAILED);
         }
-
-        return DownloadStatus.OK;
     }
 
     /**
@@ -1734,7 +1856,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     * Frees all the callbacks. Called after the main loop.
      */
     public void cleanUp() {
-        chunkLoaderExecutor.shutdown();
         clientExecutor.shutdown();
         connector.dispose();
 
@@ -1749,27 +1870,23 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Get World info from the server (Multiplayer). Request is send and
      * response is awaited.
      *
-     * @return success (true) or failure (false) boolean result
      */
-    public boolean getWorldInfo() {
+    public void requestWorldInfo() {
         try {
             // Send a request to obtain world info
+            this.worldInfo = LevelMapInfo.NULL;
             final RequestIfc wrldReq = new Request(RequestIfc.RequestType.WORLD_INFO, DSObject.DataType.VOID, null);
             wrldReq.send(this, session);
             synchronized (requestList) {
                 if (requestList.size() < MAX_SIZE) {
                     requestList.add(wrldReq);
                 }
-                requestList.wait(DEFAULT_SHORTENED_TIMEOUT);
             }
 
-            return true;
         } catch (Exception ex) {
             DSLogger.reportError("Network Error occurred!", ex);
             DSLogger.reportError(ex.getMessage(), ex);
         }
-
-        return false;
     }
 
     /**
@@ -1870,15 +1987,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Once World Info response is received load the world.
+     * Once World Info response is received load the world. Multiplayer.
      *
      * @param worldInfo world info as Json.
      * @return success indicator (true - success, false - failure)
      */
-    public boolean loadWorld(LevelMapInfo worldInfo) {
+    public boolean loadWorldMultiplayer(LevelMapInfo worldInfo) {
         boolean success = false;
-        int numberOfAttempts = 0;
-        Game.DownloadStatus status = Game.DownloadStatus.ERR;
 
         // Locate all level map files with dat or ndat extension
         File clientDir = new File("./");
@@ -1898,7 +2013,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
                     ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
                     while (fileChannel.read(buffer) > 0) {
-                        // Do nothing, just read the file into the buffer
+                        // Do nothing, just read the file into the mainBuffer
                     }
                     buffer.flip();
                     checksum.update(buffer);
@@ -1916,57 +2031,69 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (lvlMapIsCorrect) {
             DSLogger.reportInfo("Level Map OK!", null);
             gameObject.intrface.getConsole().write("Level Map OK!");
-
-            gameObject.levelContainer.loadLevelFromFile(mapFileOrNull);
+            // This will load level to main buffer
+            gameObject.levelContainer.levelBuffer.loadLevelFromFile(mapFileOrNull);
         } else {
-            do {
-                status = this.downloadLevel();
-            } while (status == Game.DownloadStatus.ERR && ++numberOfAttempts <= MAX_ATTEMPTS);
+            for (int attempt = 0; attempt < MAX_ATTEMPTS && downloadStatus == Game.DownloadStatus.PENDING; attempt++) {
+                // This will load level to upload buffer if successful
+                // Operation is blocking
+                this.downloadLevel();
+            }
 
-            if (status == Game.DownloadStatus.WARNING) {
-                DSLogger.reportWarning("Connected to empty world - disconnect!", null);
-                gameObject.intrface.getConsole().write("Connected to empty world - disconnect!");
+            if (downloadStatus == Game.DownloadStatus.ERROR) {
+                DSLogger.reportError("Failed to download level! Disconnect!", null);
+                gameObject.intrface.getConsole().write("Failed to download level! Disconnect!", Command.Status.FAILED);
                 this.disconnectFromServer();
+                gameObject.clearEverything();
                 return false;
             }
 
-            try {
-                // Load downloaded level (from fragments)
-                gameObject.levelContainer.loadLevelFromBufferNewFormat();
-            } catch (UnsupportedEncodingException ex) {
-                DSLogger.reportError(ex.getMessage(), ex);
-            } catch (Exception ex) {
+            if (downloadStatus == Game.DownloadStatus.WARNING) {
                 DSLogger.reportWarning("Connected to empty world - disconnect!", null);
                 gameObject.intrface.getConsole().write("Connected to empty world - disconnect!");
                 this.disconnectFromServer();
                 gameObject.clearEverything();
                 return false;
             }
-            // Save world to world name + ndat. For example MyWorld.ndat
-            gameObject.levelContainer.saveLevelToFile(worldInfo.worldname + ".ndat");
         }
 
-        if (lvlMapIsCorrect || status == Game.DownloadStatus.OK) {
+        // If level map is correct (altogether) with checksum loaded from the file
+        // Or game has download level with OK Status
+        if (lvlMapIsCorrect || downloadStatus == Game.DownloadStatus.OK) {
             try {
+                // If world level was obtained via download (so located in upload buffer)
+                if (!lvlMapIsCorrect && downloadStatus == Game.DownloadStatus.OK) {
+                    // Copy from upload to main buffer
+                    gameObject.levelContainer.levelBuffer.copyUpload2MainBuffer();
+                    // Load downloaded level (from fragments)
+                    gameObject.levelContainer.levelBuffer.loadLevelFromBufferNewFormat();
+                }
 
-                DSLogger.reportInfo(String.format("World '%s.ndat' saved!", worldInfo.worldname), null);
-                gameObject.intrface.getConsole().write(String.format("World '%s.ndat' saved!", worldInfo.worldname));
                 // Avoid reconnection errors
                 // On reconnecting, the player needs to be registered again
                 if (!gameObject.levelContainer.levelActors.player.isRegistered()) {
                     registerPlayer();
                 }
+                // Level is loaded player can spawn
+                gameObject.levelContainer.spawnPlayer();
+
+                // Save world to world name + ndat. For example MyWorld.ndat
+                gameObject.levelContainer.levelBuffer.saveLevelToFile(worldInfo.worldname + ".ndat");
+                DSLogger.reportInfo(String.format("World '%s.ndat' saved!", worldInfo.worldname), null);
+                gameObject.intrface.getConsole().write(String.format("World '%s.ndat' saved!", worldInfo.worldname));
 
                 success = true;
             } catch (Exception ex) {
                 DSLogger.reportWarning("Not able to spawn player. Disconnecting.", null);
                 gameObject.intrface.getConsole().write("Not able to spawn player. Disconnecting.", Command.Status.WARNING);
                 this.disconnectFromServer();
+                gameObject.clearEverything();
             }
         } else {
             DSLogger.reportWarning("Not able to load level. Disconnecting.", null);
             gameObject.intrface.getConsole().write("Not able to load level. Disconnecting.", Command.Status.FAILED);
             this.disconnectFromServer();
+            gameObject.clearEverything();
         }
 
         return success;
@@ -2212,6 +2339,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
     public static void setTicksPerUpdate(int ticksPerUpdate) {
         Game.ticksPerUpdate = ticksPerUpdate;
+    }
+
+    public LevelMapInfo getWorldInfo() {
+        return worldInfo;
     }
 
 }
