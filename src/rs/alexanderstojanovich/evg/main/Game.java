@@ -1588,7 +1588,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isConnected()) {
             DSLogger.reportWarning("Error - you are already connected to Game Server!", null);
             gameObject.intrface.getConsole().write("Error - you are already connected to Game Server!", Command.Status.WARNING);
-            
+
             return false;
         }
         try {
@@ -1801,7 +1801,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                 // player is not registered anymore
                 gameObject.levelContainer.levelActors.player.setRegistered(false);
-                session.closeOnFlush().await(timeout);
+                session.closeNow().await(timeout);
                 connector.getManagedSessions().values().forEach((IoSession ss) -> {
                     try {
                         ss.closeNow().await(DEFAULT_SHORTENED_TIMEOUT);
@@ -2065,7 +2065,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // Load downloaded level (from fragments)
                     gameObject.levelContainer.levelBuffer.loadLevelFromBufferNewFormat();
                 }
-                
+
                 // Avoid reconnection errors
                 // On reconnecting, the player needs to be registered again
                 if (!gameObject.levelContainer.levelActors.player.isRegistered()) {
@@ -2075,7 +2075,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 gameObject.levelContainer.spawnPlayer();
                 // Hide guide text
                 gameObject.intrface.getGuideText().setEnabled(false);
-                
+
                 // Save world to world name + ndat. For example MyWorld.ndat
                 gameObject.levelContainer.levelBuffer.saveLevelToFile(worldInfo.worldname + ".ndat");
                 DSLogger.reportInfo(String.format("World '%s.ndat' saved!", worldInfo.worldname), null);
