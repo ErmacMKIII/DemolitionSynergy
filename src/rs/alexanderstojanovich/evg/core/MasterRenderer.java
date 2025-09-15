@@ -27,7 +27,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 /**
  * Responsible for primitive rendering. OpenGL initialization happens here.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class MasterRenderer implements CoreRenderer {
 

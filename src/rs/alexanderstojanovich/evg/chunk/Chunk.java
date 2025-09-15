@@ -17,7 +17,6 @@
 package rs.alexanderstojanovich.evg.chunk;
 
 import java.util.List;
-import java.util.Objects;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -41,17 +40,34 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
  *
  * Contains various util functions.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
-public class Chunk { // some operations are mutually exclusive    
+public interface Chunk { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
+    /**
+     * Bound to determine vec x/z length of the chunk
+     */
     public static final int BOUND = 256;
+    /**
+     * Visibility of chunks. Not used in live code
+     */
     public static final float VISION = 256.0f; // determines visibility
+    /**
+     * Row by column grid size.
+     */
     public static final int GRID_SIZE = 4;
-
+    /**
+     * One over grid size;
+     */
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
+    /**
+     * Number of chunks
+     */
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
+    /**
+     * Length x/z of one chunk
+     */
     public static final float LENGTH = BOUND * STEP * 2.0f;
 
     // is a group of blocks which are prepared for instanced rendering
@@ -306,7 +322,7 @@ public class Chunk { // some operations are mutually exclusive
      * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected static void updateForAdd(IList<Tuple> tupleList, Block block) {
+    private static void updateForAdd(IList<Tuple> tupleList, Block block) {
         // only same solidity - solid to solid or fluid to fluid is updated        
         int neighborBits = block.isSolid()
                 ? LevelContainer.AllBlockMap.getNeighborSolidBits(block.pos)
@@ -379,7 +395,7 @@ public class Chunk { // some operations are mutually exclusive
      * @param tupleList provided tuple list
      * @param block block to update
      */
-    protected static void updateForRem(IList<Tuple> tupleList, Block block) {
+    private static void updateForRem(IList<Tuple> tupleList, Block block) {
         // setSafeCheck adjacent blocks
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f adjPos = Block.getAdjacentPos(block.pos, j);
@@ -643,15 +659,12 @@ public class Chunk { // some operations are mutually exclusive
      */
     public static boolean determineVisible(IList<Integer> vChnkIdList, IList<Integer> iChnkIdList, Camera camera) {
         boolean changed = false;
-
         // current chunk where player is        
         int currChunkId = chunkFunc(camera.pos);
         int currCol = currChunkId % GRID_SIZE;
         int currRow = currChunkId / GRID_SIZE;
 
-        if (!vChnkIdList.contains(currChunkId)) {
-            vChnkIdList.add(currChunkId);
-        }
+        vChnkIdList.addIfAbsent(currChunkId);
 
         // rest of the chunks
         for (int chunkId = 0; chunkId < Chunk.CHUNK_NUM; chunkId++) {
@@ -663,9 +676,9 @@ public class Chunk { // some operations are mutually exclusive
                 int deltaRow = Math.abs(currRow - row);
 
                 if (deltaCol <= 1 && deltaRow <= 1) {
-                    changed |= vChnkIdList.add(chunkId);
+                    changed |= vChnkIdList.addIfAbsent(chunkId);
                 } else if (!iChnkIdList.contains(chunkId)) {
-                    changed |= iChnkIdList.add(chunkId);
+                    changed |= iChnkIdList.addIfAbsent(chunkId);
                 }
 
             }

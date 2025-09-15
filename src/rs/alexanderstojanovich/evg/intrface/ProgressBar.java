@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  *
  * Progress Bar. Could be used in conjuction with text.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class ProgressBar {
 

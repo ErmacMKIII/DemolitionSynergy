@@ -21,7 +21,7 @@ import com.google.gson.Gson;
 /**
  * DSObject is common term for Request and Response in DSynergy.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class LevelMapInfo {
 
@@ -37,6 +37,16 @@ public class LevelMapInfo {
      * size of level in bytes
      */
     public final long sizebytes;
+
+    /**
+     * NULL Level Info. Initial value when send request.
+     */
+    public static final LevelMapInfo NULL = new LevelMapInfo(null, 0L, -1L);
+
+    /**
+     * Blank Level Info. Not used.
+     */
+    public static final LevelMapInfo BLANK = new LevelMapInfo("", 0L, 0L);
 
     /**
      * Level Map Info object

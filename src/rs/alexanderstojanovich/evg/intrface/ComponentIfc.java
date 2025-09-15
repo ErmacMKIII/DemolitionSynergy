@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 /**
  * Interface component 2D
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public interface ComponentIfc {
 

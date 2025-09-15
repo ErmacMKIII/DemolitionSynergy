@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 /**
  * Capabilities observing. Can move in 3D space and observe.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public interface Observer extends Moveable {
 

@@ -17,11 +17,12 @@
 package rs.alexanderstojanovich.evg.core;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evg.critter.Observer;
+import rs.alexanderstojanovich.evg.models.Mesh;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -31,7 +32,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
  * and Pitch (looking up and down) is available. Uses Euler angles instead of
  * Quaternions.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Camera implements Observer { // is 3D looking camera
 
@@ -314,58 +315,88 @@ public class Camera implements Observer { // is 3D looking camera
      * @return wether or not camera does see model
      */
     public boolean doesSeeEff(Model model) {
-        boolean yea = false;
+        final float cosine = (float) Math.cos(Math.toRadians(0.25f));
+        final Vector3f camFrontNeg = new Vector3f(-front.x, -front.y, -front.z);
 
-        Vector3f camFrontNeg = new Vector3f(-front.x, -front.y, -front.z);
+        // Reusable vectors to avoid object creation in loop
+        final Vector3f directionToVertex = new Vector3f();
+        final Vector3f modelToCam = new Vector3f();
 
-        // Remove duplicates & return vertex position(s)
-        final List<Vector3f> v_PosList = model.meshes.getFirst().vertices.stream()
-                .map(Vertex::getPos)
-                .distinct()
-                .collect(Collectors.toList());
+        // Calculate model-to-camera vector once
+        model.pos.sub(pos, modelToCam);
 
-        // Now iterate and perform calculations
-        for (Vector3f v_pos : v_PosList) {
-            Vector3f temp = new Vector3f();
-            Vector3f vx = v_pos.add(model.pos.sub(pos, temp), temp).normalize(temp);
-            if (vx.dot(camFrontNeg) <= 0.25f) {
-                yea = true;
-                break;
+        // Use direct array access instead of streams for better performance
+        final Mesh firstMesh = model.meshes.getFirst();
+        final Vertex[] vertices = firstMesh.vertices.toArray(Vertex[]::new);
+        final int vertexCount = vertices.length;
+
+        // Use Set for deduplication with better performance characteristics
+        final Set<Vector3f> seenPositions = new HashSet<>(vertexCount);
+
+        for (int i = 0; i < vertexCount; i++) {
+            Vector3f vertexPos = vertices[i].getPos();
+
+            // Skip duplicate positions
+            if (!seenPositions.add(vertexPos)) {
+                continue;
+            }
+
+            // Calculate direction: vertexPos + (model.pos - pos) then normalize
+            directionToVertex.set(vertexPos).add(modelToCam).normalize();
+
+            if (directionToVertex.dot(camFrontNeg) <= cosine) {
+                return true; // Early return when found
             }
         }
-        return yea;
+
+        return false;
     }
 
     /**
-     * Efficient small function to determine if camera does see model from its
-     * position and front vector. Efficiency comes from removing duplicate
-     * vertices first. (Before check.)
+     * Optimized function to determine if camera sees model from its position
+     * and front vector. Uses efficient vector operations, avoids object
+     * creation in loops, and provides early exit.
      *
      * @param model observation model
      * @param degrees angle degrees of front view
      * @return whether or not the camera does see the model
      */
     public boolean doesSeeEff(Model model, float degrees) {
-        boolean isVisible = false;
-        final float cosine = org.joml.Math.cos(org.joml.Math.toRadians(degrees));
+        final float cosine = (float) Math.cos(Math.toRadians(degrees));
         final Vector3f camFrontNeg = new Vector3f(-front.x, -front.y, -front.z);
 
-        // Remove duplicates & return vertex positions
-        final List<Vector3f> uniqueVertexPositions = model.meshes.getFirst().vertices.stream()
-                .map(Vertex::getPos)
-                .distinct()
-                .collect(Collectors.toList());
+        // Reusable vectors to avoid object creation in loop
+        final Vector3f directionToVertex = new Vector3f();
+        final Vector3f modelToCam = new Vector3f();
 
-        // Iterate over unique vertex positions
-        for (Vector3f vertexPos : uniqueVertexPositions) {
-            Vector3f temp = new Vector3f();
-            Vector3f directionToVertex = vertexPos.add(model.pos.sub(pos, temp), temp).normalize(temp);
+        // Calculate model-to-camera vector once
+        model.pos.sub(pos, modelToCam);
+
+        // Use direct array access instead of streams for better performance
+        final Mesh firstMesh = model.meshes.getFirst();
+        final Vertex[] vertices = firstMesh.vertices.toArray(Vertex[]::new);
+        final int vertexCount = vertices.length;
+
+        // Use Set for deduplication with better performance characteristics
+        final Set<Vector3f> seenPositions = new HashSet<>(vertexCount);
+
+        for (int i = 0; i < vertexCount; i++) {
+            Vector3f vertexPos = vertices[i].getPos();
+
+            // Skip duplicate positions
+            if (!seenPositions.add(vertexPos)) {
+                continue;
+            }
+
+            // Calculate direction: vertexPos + (model.pos - pos) then normalize
+            directionToVertex.set(vertexPos).add(modelToCam).normalize();
+
             if (directionToVertex.dot(camFrontNeg) <= cosine) {
-                isVisible = true;
-                break;
+                return true; // Early return when found
             }
         }
-        return isVisible;
+
+        return false;
     }
 
     @Override

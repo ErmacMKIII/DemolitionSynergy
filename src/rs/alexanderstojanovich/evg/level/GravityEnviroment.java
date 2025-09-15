@@ -21,7 +21,7 @@ import rs.alexanderstojanovich.evg.critter.Critter;
 /**
  * Interface for gravity (world) environment.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public interface GravityEnviroment {
 
@@ -30,14 +30,36 @@ public interface GravityEnviroment {
     public static final float TERMINAL_VELOCITY = 100f; // apply only if Game.upsTicks >= 1.0
 
     /**
+     * Gravity Result
+     */
+    public static enum Result {
+        /**
+         * Gravity method returned with no change (Neutral)
+         */
+        NEUTRAL,
+        /**
+         * Gravity method with collision
+         */
+        COLLISION,
+        /**
+         * Gravity method return fall
+         */
+        FALL,
+        /**
+         * Gravity method return jump
+         */
+        JUMP
+    }
+
+    /**
      * Affect Environment with gravity. Object not supported from bottom will
      * fall. Critter not supported from bottom will fall.
      *
      * @param critter critter affected by gravity
      * @param deltaTime delta time
-     * @return did gravity affect
+     * @return gravity effect result
      */
-    public boolean gravityDo(Critter critter, float deltaTime);
+    public Result gravityDo(Critter critter, float deltaTime);
 
     /**
      * Affect Environment with jump against gravity. Assuming that critter will
@@ -45,10 +67,9 @@ public interface GravityEnviroment {
      *
      * @param critter level actor critter (player or npc)
      * @param amountY amount Y-axis multiplier (velocity)
-     * @param deltaTime delta time
      * @return did critter jump
      */
-    public boolean jump(Critter critter, float amountY, float deltaTime);
+    public boolean jump(Critter critter, float amountY);
 
     /**
      * Makes the player push downwards, pressuring the bottom surface (or air),
@@ -56,10 +77,9 @@ public interface GravityEnviroment {
      *
      * @param critter The player.
      * @param amountYNeg The amount of upward movement.
-     * @param deltaTime The time elapsed since the last handleInput.
      * @return did critter crouch
      */
-    public boolean crouch(Critter critter, float amountYNeg, float deltaTime);
+    public boolean crouch(Critter critter, float amountYNeg);
 
     /**
      * Get falling velocity

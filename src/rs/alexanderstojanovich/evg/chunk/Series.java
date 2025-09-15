@@ -24,8 +24,8 @@ import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.system.MemoryUtil;
-import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.IList;
+import org.magicwerk.brownies.collections.Key1List;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Block;
@@ -35,14 +35,21 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * List of world blocks.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Series { // mutual class for both solid blocks and fluid blocks with improved rendering
 
     public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
-    public final IList<Block> blockList = new BigList<>(DYNAMIC_INCREMENT);
+    /**
+     * List of (environment) blocks with access keys to chunk id
+     */
+    public final Key1List<Block, Integer> blockList = new Key1List.Builder<Block, Integer>()
+            .withKey1Map(blk -> Chunk.chunkFunc(blk.pos))
+            .withKey1Sort(true)
+            .build();
     protected int bigVbo = 0;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold

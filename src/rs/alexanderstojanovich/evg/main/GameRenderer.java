@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 /**
  * Game Renderer responsible for rendering scene(s) & interface.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class GameRenderer extends Thread implements Executor {
 
@@ -183,17 +183,9 @@ public class GameRenderer extends Thread implements Executor {
      * @return could render bool
      */
     public static boolean couldRender() {
-        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator * Game.TPS) < 1.0;
+        return fpsTicks >= 1.0 && GameRenderer.numOfPasses < GameRenderer.NUM_OF_PASSES_MAX && (Game.accumulator < Game.TICK_TIME);
     }
 
-//    /**
-//     * Could Game Render animate.
-//     *
-//     * @return could render bool
-//     */
-//    public static boolean couldAnimate() {
-//        return (Math.round(fpsTicks) & 7) == 0;
-//    }
     /**
      * Cleans all the buffers from the renderer (optimized tuples contains them,
      * interface as well).

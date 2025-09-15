@@ -40,8 +40,10 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
+ * List of world block with same properties like face enabled bits and same
+ * texture name. Designated for instanced rendering.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Tuple extends Series {
     // tuple is distinct rendering object for instanced rendering

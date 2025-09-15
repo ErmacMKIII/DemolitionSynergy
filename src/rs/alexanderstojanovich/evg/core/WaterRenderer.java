@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.MathUtils;
 /**
  * Responsible for rendering the water reflections. Requires more CPU/GPU usage.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class WaterRenderer implements CoreRenderer {
 

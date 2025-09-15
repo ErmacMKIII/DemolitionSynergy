@@ -21,7 +21,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 /**
  * One unit for updating after add/rem for chunks.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class TransferUnit {
 

@@ -17,14 +17,13 @@
 package rs.alexanderstojanovich.evg.weapons;
 
 import rs.alexanderstojanovich.evg.audio.AudioFile;
-import rs.alexanderstojanovich.evg.critter.Critter;
 import rs.alexanderstojanovich.evg.models.Model;
 
 /**
  * Demolition Synergy weapon interface. Contains all texture, models and sounds
  * associated with weapon.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Weapon implements WeaponIfc {
 
@@ -55,6 +54,10 @@ public class Weapon implements WeaponIfc {
      */
     public final Model inHands;
 
+    /**
+     * Weapon clazz (small gun - one hand, small gun - two hands, big gun - two
+     * hands)
+     */
     public final Clazz clazz;
 
     /**
@@ -73,42 +76,12 @@ public class Weapon implements WeaponIfc {
     }
 
     /**
-     * Derive model for character (or critter)
-     *
-     * @param critter critter having weapon
-     * @return weapon on body for that critter
-     */
-    @Override
-    public Model deriveBodyModel(Critter critter) {
-        Model result = new Model(model);
-        switch (clazz) {
-            case None:
-            default:
-                break;
-            case OneHandedSmallGun:
-                result.pos.set(critter.body.pos.x + critter.body.getWidth() / 2.0f, critter.body.pos.y, 1.5f * (critter.body.pos.z + critter.body.getDepth() / 2.0f));
-                break;
-            case TwoHandedSmallGun:
-                result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
-                break;
-            case TwoHandedBigGuns:
-                result.pos.set(critter.body.pos.x - critter.body.getWidth() / 2.0f, 1.5f * critter.body.pos.y, critter.body.pos.z + critter.body.getDepth() / 2.0f);
-                break;
-        }
-
-        result.setScale(0.38f);
-        result.setrY(critter.body.getrY());
-
-        return result;
-    }
-
-    /**
      * Derive model on ground (as level container item).
      *
      * @return
      */
     @Override
-    public Model deriveOnGroundItem() {
+    public Model asItem() {
         Model result = new Model(model);
 
         return result;

@@ -21,7 +21,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 /**
  * Menu item. Used widely in menus.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class MenuItem {
 

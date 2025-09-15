@@ -42,7 +42,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 /**
  * Demolition Synergy Game Server
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class GameServer implements DSMachine, Runnable {
 

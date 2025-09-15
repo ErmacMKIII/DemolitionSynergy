@@ -25,7 +25,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Main {
 
@@ -55,7 +55,7 @@ public class Main {
             }
             MasterAudio.init(); // audio init before game loading
             //----------------------------------------------------------------------
-            // initialize game creation (only creates window)
+            // initialize game engine creation (only creates window)
             final GameObject gameObject = new GameObject(); // throws ex
             // start the game loop & renderer
             gameObject.start();

@@ -20,7 +20,7 @@ package rs.alexanderstojanovich.evg.cache;
  * Contains info about cached chunk. Most of the info can be read from this
  * class (instance).
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class CachedInfo {
 

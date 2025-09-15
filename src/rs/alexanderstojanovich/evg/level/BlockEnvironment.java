@@ -38,158 +38,36 @@ import rs.alexanderstojanovich.evg.texture.Texture;
  * Module with blocks from all the chunks. Effectively ready for rendering after
  * optimization.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class BlockEnvironment {
 
+    /**
+     * Shared configuration instance for game settings
+     */
     public static final Configuration cfg = Configuration.getInstance();
 
     public static final int LIGHT_MASK = 0x01;
     public static final int WATER_MASK = 0x02;
     public static final int SHADOW_MASK = 0x04;
 
-    public final GameObject gameObject;
-
-    /**
-     * Working tuples (from update)
-     */
-    protected volatile IList<Tuple> workingTuples = new GapList<>();
-    /**
-     * Optimizes tuples (from render)
-     */
-    protected volatile IList<Tuple> optimizedTuples = new GapList<>();
-    /**
-     * Lookup table for faster tuple access (avoiding multiple filters)
-     */
-    protected final Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
-
-    /**
-     * Some tlist based on split facebits(0-63) into Max Iterations of Game
-     * Renderer
-     */
-    protected final IList<IList<Integer>> sometIList = splitFaceBits(64, GameRenderer.NUM_OF_PASSES_MAX);
-
-    /**
-     * Modified tuples (from update/render). Meaning from update they are
-     * modified and need to be pushed to render.
-     */
-//    public final IList<Tuple> modifiedTuples = new GapList<>();
-    protected volatile boolean optimizing = false;
-    protected final Chunks chunks;
-
-    protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
     public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
-    public final IList<String> modifiedWorkingTupleNames = new GapList<>();
+    /**
+     * Bitmask for face bits (6 bits = 64 possible combinations)
+     */
+    private static final int FACE_BITS_MASK = 0x3F;
 
     /**
-     * Contains all batched buffer(s). As one.
+     * Flag indicating optimization is in progress. Volatile ensures proper
+     * visibility across threads.
      */
-    public final TupleBufferObject tupleBuffObj = new TupleBufferObject(optimizedTuples);
-
-    public BlockEnvironment(GameObject gameObject, Chunks chunks) {
-        this.gameObject = gameObject;
-        this.chunks = chunks;
-    }
+    protected volatile boolean optimizing = false;
 
     /**
-     * Optimization for tuples from all the chunks. The world is built
-     * incrementally and consists of two passes. Also includes modifications to
-     * work with Tuple Buffer Object (TBO). Modified tuples are pushed to the
-     * optimized stream. (Chat GPT)
-     *
-     * @param vqueue visible chunkId queue
-     * @param camera in-game camera
+     * Flag indicating tuples need GPU buffer updates. Set when tuples are
+     * modified and cleared after finalization.
      */
-    public void optimize(IList<Integer> vqueue, Camera camera) {
-        optimizing = true;
-        if (lastFaceBits == 0) {
-            pull();
-        }
-
-        // Determine lastFaceBits mask
-        final int mask0 = Block.getVisibleFaceBitsFast(camera.getFront(), LevelContainer.actorInFluid ? 0f : 45f);
-        workingTuples.removeIf(ot -> (ot.faceBits() & mask0) == 0);
-
-        int lastFaceBitsCopy = lastFaceBits;
-
-        // Create a lookup table for faster tuple access (avoiding multiple filters)
-        if (lastFaceBits == 0) {
-            tupleLookup.clear();
-            for (Tuple t : workingTuples) {
-                tupleLookup
-                        .computeIfAbsent(t.texName(), k -> new HashMap<>())
-                        .put(t.faceBits(), t);
-            }
-        }
-
-        for (String tex : Assets.TEX_WORLD) {
-            for (int j = 0; j < NUM_OF_PASSES_MAX; j++) {
-                final int faceBits = (++lastFaceBitsCopy) & 63;
-                if ((faceBits & (mask0 & 63)) != 0) {
-                    // PASS 1: Fetch or Create Tuple
-                    Tuple optmTuple = tupleLookup
-                            .computeIfAbsent(tex, k -> new HashMap<>())
-                            .computeIfAbsent(faceBits, fb -> {
-                                Tuple newTuple = new Tuple(tex, fb);
-                                workingTuples.add(newTuple);
-                                return newTuple;
-                            });
-
-                    // PASS 2: Process Chunks and Fill Tuples
-                    final IList<Block> selectedBlockList = chunks.getFilteredBlockList(tex, faceBits, vqueue.immutableList());
-                    if (selectedBlockList != null) {
-                        boolean modified = optmTuple.blockList.addAll(
-                                selectedBlockList.filter(blk -> blk.getTexName().equals(tex) && blk.getFaceBits() == faceBits
-                                && camera.doesSeeEff(blk, 30f) && !optmTuple.blockList.contains(blk))
-                        );
-
-                        if (modified) {
-                            modifiedWorkingTupleNames.addIfAbsent(optmTuple.getName());
-                        }
-                    }
-                }
-            }
-        }
-
-        lastFaceBits += NUM_OF_PASSES_MAX;
-        lastFaceBits &= 63;
-
-        if (lastFaceBits == 0) {
-            workingTuples.sort(Tuple.TUPLE_COMP);
-
-            // Only process modified tuples
-            workingTuples
-                    .filter(wt -> modifiedWorkingTupleNames.contains(wt.getName()))
-                    .forEach(wt -> {
-                        wt.blockList.sort(Block.UNIQUE_BLOCK_CMP);
-                        wt.setBuffered(false);
-                    });
-
-            // Remove empty tuples
-            workingTuples.removeIf(wt -> wt.blockList.isEmpty());
-
-            modifiedWorkingTupleNames.clear();
-            swap();
-        }
-
-        optimizing = false;
-    }
-
-    /**
-     * Reorder group of vertices of optimized tuples if underwater
-     *
-     * @param cameraInFluid is camera in fluid (checked by level container
-     * externally)
-     */
-    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (optimizing || optimizedTuples.isEmpty()) {
-            return;
-        }
-
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0)) {
-            tuple.prepare(cameraInFluid);
-        }
-    }
+    protected boolean needsRebuffer = false;
 
     public static IList<IList<Integer>> splitFaceBits(int totalBits, int numPasses) {
         IList<IList<Integer>> passes = new GapList<>();
@@ -211,6 +89,238 @@ public class BlockEnvironment {
         return passes;
     }
 
+    public final GameObject gameObject;
+
+    /**
+     * Optimizes tuples (from render, finalized form)
+     */
+    protected final IList<Tuple> optimizedTuples = new GapList<>();
+
+    /**
+     * Lookup table for faster tuple access (avoiding multiple filters)
+     */
+    protected final Map<String, Map<Integer, Tuple>> tupleLookup = new HashMap<>();
+
+    /**
+     * Some tlist based on split facebits(0-63) into Max Iterations of Game
+     * Renderer
+     */
+    protected final IList<IList<Integer>> sometIList = splitFaceBits(64, GameRenderer.NUM_OF_PASSES_MAX);
+
+    /**
+     * Modified tuples (from update/render). Meaning from update they are
+     * modified and need to be pushed to render.
+     */
+    protected final Chunks chunks;
+
+    protected int lastFaceBits = 0; // starting from one, cuz zero is not rendered
+
+    /**
+     * Contains all batched buffer(s). As one.
+     */
+    public final @Deprecated
+    TupleBufferObject tupleBuffObj = null;
+
+    public BlockEnvironment(GameObject gameObject, Chunks chunks) {
+        this.gameObject = gameObject;
+        this.chunks = chunks;
+    }
+
+    /**
+     * Optimizes the block environment by processing visible chunks. Performs
+     * incremental optimization across multiple frames, modifying tuples
+     * directly in the optimized list rather than using transient copies.
+     *
+     * @param vqueue list of visible chunk IDs to process
+     * @param camera the game camera for visibility determination
+     */
+    public void optimizeTuples(IList<Integer> vqueue, Camera camera) {
+        optimizing = true;
+        try {
+            // Determine which faces are visible based on camera
+            final int faceMask = calculateFaceMask(camera);
+
+            // Rebuild lookup if starting new cycle and inconsistencies exist
+            if (lastFaceBits == 0) {
+                ensureLookupConsistency();
+            }
+
+            // Process all visible chunks for current face bits
+            processVisibleChunks(vqueue, camera, faceMask);
+
+            // Advance face bits counter for next pass
+            lastFaceBits = (lastFaceBits + cfg.getOptimizationPasses()) & FACE_BITS_MASK;
+
+            // Finalize if completed full cycle and changes occurred
+            if (lastFaceBits == 0 && needsRebuffer) {
+                finalizeOptimization();
+//                DSLogger.reportInfo("size=" + optimizedTuples.size(), null);
+            }
+        } finally {
+            optimizing = false;
+        }
+    }
+
+    /**
+     * Calculates which block faces are visible based on camera orientation.
+     *
+     * @param camera the game camera to check against
+     * @return bitmask of currently visible faces
+     */
+    private int calculateFaceMask(Camera camera) {
+        // Adjust angle based on whether actor is in fluid
+        final float angleAdjust = LevelContainer.actorInFluid ? 0f : 45f;
+        return Block.getVisibleFaceBitsFast(camera.getFront(), angleAdjust) & FACE_BITS_MASK;
+    }
+
+    /**
+     * Ensures the lookup table accurately reflects the optimized tuples. Only
+     * rebuilds if inconsistencies are detected to avoid unnecessary work.
+     */
+    private void ensureLookupConsistency() {
+        synchronized (optimizedTuples) {
+            // Check if all lookup tuples exist in optimized list
+            boolean consistent = tupleLookup.values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .allMatch(t -> optimizedTuples.contains(t));
+
+            if (!consistent || tupleLookup.isEmpty()) {
+                tupleLookup.clear();
+                for (Tuple t : optimizedTuples) {
+                    tupleLookup.computeIfAbsent(t.texName(), k -> new HashMap<>())
+                            .put(t.faceBits(), t);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processes all visible chunks for the current optimization pass.
+     *
+     * @param vqueue visible chunk IDs to process
+     * @param camera game camera for visibility checks
+     * @param faceMask bitmask of currently visible faces
+     */
+    private void processVisibleChunks(IList<Integer> vqueue, Camera camera, int faceMask) {
+        int currentFaceBits = lastFaceBits;
+
+        // Process each texture type in the world
+        for (String tex : Assets.TEX_WORLD) {
+            // Get or create face bit mapping for this texture
+            Map<Integer, Tuple> faceBitMap = tupleLookup.computeIfAbsent(tex, k -> new HashMap<>());
+
+            // Process configured number of face bits in this pass
+            for (int i = 0; i < cfg.getOptimizationPasses(); i++) {
+                currentFaceBits = (currentFaceBits + 1) & FACE_BITS_MASK;
+
+                // Only process if these face bits are currently visible
+                if ((currentFaceBits & faceMask) != 0) {
+                    processFaceBitGroup(vqueue, camera, tex, faceBitMap, currentFaceBits);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processes a specific face bit group for a texture across visible chunks.
+     *
+     * @param vqueue visible chunk IDs
+     * @param camera game camera
+     * @param tex current texture being processed
+     * @param faceBitMap map of face bits to tuples for this texture
+     * @param faceBits current face bits being processed
+     */
+    private void processFaceBitGroup(IList<Integer> vqueue, Camera camera,
+            String tex, Map<Integer, Tuple> faceBitMap,
+            int faceBits) {
+        Tuple tuple;
+        synchronized (optimizedTuples) {
+            // Get or create tuple for this texture/facebits combination
+            tuple = faceBitMap.computeIfAbsent(faceBits, fb -> {
+                Tuple newTuple = new Tuple(tex, fb);
+                optimizedTuples.add(newTuple);
+                needsRebuffer = true;
+                return newTuple;
+            });
+        }
+
+        // Process blocks from visible chunks
+        boolean modified = processChunkBlocks(vqueue, camera, tuple);
+
+        if (modified) {
+            tuple.setBuffered(false);
+            needsRebuffer = true;
+        }
+    }
+
+    /**
+     * Processes blocks from visible chunks for a specific tuple.
+     *
+     * @param vqueue visible chunk IDs
+     * @param camera game camera
+     * @param tuple the tuple being updated
+     * @return true if the tuple was modified, false otherwise
+     */
+    private boolean processChunkBlocks(IList<Integer> vqueue, Camera camera, Tuple tuple) {
+        boolean modified = false;
+
+        final float angleDegrees = 30f;
+
+        // Clear entire tuple
+        tuple.blockList.clear();
+
+        // Filter each visible chunk for relevant & visible blocks
+        IList<Block> filterBlks = chunks.getFilteredBlockListMK2(
+                tuple.texName(), tuple.faceBits(), vqueue,
+                camera, angleDegrees
+        );
+        if (filterBlks != null && !filterBlks.isEmpty()) {
+            modified |= tuple.blockList.addAll(filterBlks);
+        }
+
+        // Sort if modifications occurred
+        if (modified) {
+            tuple.blockList.sort(Block.UNIQUE_BLOCK_CMP);
+        }
+
+        return modified;
+    }
+
+    /**
+     * Finalizes the optimization process after completing a full cycle. Removes
+     * empty tuples, sorts the final list, and prepares for rendering.
+     */
+    private void finalizeOptimization() {
+        synchronized (optimizedTuples) {
+            // Clean up any empty tuples that were created
+            optimizedTuples.removeIf(t -> t.blockList.isEmpty());
+
+            // Ensure consistent ordering for rendering
+            optimizedTuples.sort(Tuple.TUPLE_COMP);
+        }
+        // Reset flag until next changes occur
+        needsRebuffer = false;
+    }
+
+    /**
+     * Reorder group of vertices of optimized tuples if underwater
+     *
+     * @param cameraInFluid is camera in fluid (checked by level container
+     * externally)
+     */
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
+        synchronized (optimizedTuples) {
+            if (optimizing || optimizedTuples.isEmpty()) {
+                return;
+            }
+        }
+
+        IList<Tuple> filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.faceBits() != 0);
+        for (Tuple tuple : filtered) {
+            tuple.prepare(cameraInFluid);
+        }
+    }
+
     /**
      * Reorder group of vertices of optimized tuples if underwater
      *
@@ -221,12 +331,18 @@ public class BlockEnvironment {
      * externally)
      */
     public void prepare(Vector3f camFront, boolean cameraInFluid) { // call only for fluid blocks before rendering
-        if (optimizing || optimizedTuples.isEmpty()) {
-            return;
+        synchronized (optimizedTuples) {
+            if (optimizing || optimizedTuples.isEmpty()) {
+                return;
+            }
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid()
-                && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()))) {
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && sometIList.get(GameRenderer.getFps() & (GameRenderer.NUM_OF_PASSES_MAX - 1)).contains(ot.faceBits()));
+        }
+
+        for (Tuple tuple : filtered) {
             tuple.prepare(camFront, cameraInFluid);
         }
     }
@@ -235,11 +351,17 @@ public class BlockEnvironment {
      * Animate water (call only for fluid blocks)
      */
     public void animate() { // call only for fluid blocks
-        if (optimizing || optimizedTuples.isEmpty()) {
-            return;
+        synchronized (optimizedTuples) {
+            if (optimizing || optimizedTuples.isEmpty()) {
+                return;
+            }
         }
 
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0)) {
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            filtered = optimizedTuples.filter(ot -> ot.isBuffered() && !ot.isSolid() && ot.texName().equals("water") && ot.faceBits() > 0);
+        }
+        for (Tuple tuple : filtered) {
             tuple.animate();
         }
     }
@@ -251,8 +373,10 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void render(ShaderProgram shaderProgram, int renderFlag) {
-        if (optimizing || optimizedTuples.isEmpty()) {
-            return;
+        synchronized (optimizedTuples) {
+            if (optimizing || optimizedTuples.isEmpty()) {
+                return;
+            }
         }
 
         final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
@@ -262,7 +386,13 @@ public class BlockEnvironment {
         final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        for (Tuple tuple : optimizedTuples.filter(ot -> ot.faceBits() > 0)) {
+
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            filtered = optimizedTuples.filter(ot -> ot.faceBits() > 0);
+        }
+
+        for (Tuple tuple : filtered) {
             if (!tuple.isBuffered()) {
                 tuple.bufferAll();
             }
@@ -278,8 +408,10 @@ public class BlockEnvironment {
      * @param renderFlag what is renderered
      */
     public void renderStatic(ShaderProgram shaderProgram, int renderFlag) {
-        if (optimizing || optimizedTuples.isEmpty()) {
-            return;
+        synchronized (optimizedTuples) {
+            if (optimizing || optimizedTuples.isEmpty()) {
+                return;
+            }
         }
 
         final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
@@ -290,38 +422,16 @@ public class BlockEnvironment {
         final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
         final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
 
-        optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
+            filtered = optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0);
+        }
         Tuple.renderInstanced(
-                optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0),
-                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
+                filtered,
+                shaderProgram, lightSources, gameObject.GameAssets.WORLD,
+                waterTexture, shadowTexture
         );
-    }
-
-    /**
-     * Push changes. Push working tuples to optimizing tuples. By coping each
-     * optimizing to working.
-     */
-    public void push() {
-        optimizedTuples = workingTuples.copy();
-    }
-
-    /**
-     * Swap working tuples with optimized tuples. What was built by optimization
-     * could be rendered (drawn). Called from Game Renderer.
-     */
-    public void swap() {
-        IList<Tuple> temp = optimizedTuples;
-        optimizedTuples = workingTuples;
-        workingTuples = temp;
-    }
-
-    /**
-     * Pull from recent. Pull optimized tuples to working tuples. By coping each
-     * working to optimized.
-     */
-    public void pull() {
-        workingTuples.addAll(optimizedTuples.filter(ot -> !workingTuples.contains(ot)));
-        workingTuples.sort(Tuple.TUPLE_COMP);
     }
 
     /**
@@ -367,30 +477,37 @@ public class BlockEnvironment {
      * Update vertices. For light definition, for instance.
      */
     public void subBufferVertices() {
-        if (optimizedTuples.isEmpty()) {
-            return;
-        }
-
-        for (Tuple tuple : optimizedTuples) {
-            if (tuple.isBuffered() && tuple.faceBits() > 0) {
-                tuple.subBufferVertices(); // update lights
+        synchronized (optimizedTuples) {
+            if (optimizedTuples.isEmpty()) {
+                return;
             }
         }
-    }
 
-    /**
-     * Clear working & optimization tuples
-     */
-    public void clear() {
-        workingTuples.clear();
-        optimizedTuples.clear();
+        IList<Tuple> filtered;
+        synchronized (optimizedTuples) {
+            filtered = optimizedTuples.filter(tuple -> tuple.isBuffered() && tuple.faceBits() > 0);
+        }
+
+        for (Tuple tuple : filtered) {
+            tuple.subBufferVertices(); // update lights
+        }
     }
 
     /**
      * Delete all the resources
      */
-    public void release() {
+    public synchronized void release() {
         optimizedTuples.forEach(t -> t.release());
+    }
+
+    /**
+     * Clear optimization tuples
+     */
+    public void clear() {
+        tupleLookup.clear();
+        synchronized (optimizedTuples) {
+            optimizedTuples.clear();
+        }
     }
 
     public IList<Tuple> getOptimizedTuples() {
@@ -411,14 +528,6 @@ public class BlockEnvironment {
 
     public int getLastFaceBits() {
         return lastFaceBits;
-    }
-
-    public IList<Tuple> getWorkingTuples() {
-        return workingTuples;
-    }
-
-    public IList<String> getModifiedWorkingTupleNames() {
-        return modifiedWorkingTupleNames;
     }
 
     public Map<String, Map<Integer, Tuple>> getTupleLookup() {

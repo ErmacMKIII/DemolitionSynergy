@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.weapons.Weapons;
  * Player is rendered from Third Person and First Person as two different modes
  * of same camera.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Player extends Critter implements Observer {
 
@@ -45,7 +45,7 @@ public class Player extends Critter implements Observer {
     public static enum CameraView {
         FIRST_PERSON, THIRD_PERSON
     }
-    protected CameraView cameraView = CameraView.THIRD_PERSON;
+    protected CameraView cameraView = CameraView.FIRST_PERSON;
 
     protected final RPGCamera camera;
     public final LightSource light;

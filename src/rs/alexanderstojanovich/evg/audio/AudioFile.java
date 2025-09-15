@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * Represents decoded audio file. Audio file(s) are can be played with audio
  * player.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class AudioFile { // only ogg are supported
 

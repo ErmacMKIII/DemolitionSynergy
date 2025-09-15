@@ -25,7 +25,7 @@ import rs.alexanderstojanovich.evg.texture.Texture;
 /**
  * Class responsible for "Rendering to Texture"
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class FrameBuffer {
 

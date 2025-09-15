@@ -32,7 +32,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 /**
  * Project lights to the screen. Makes feel of light environment.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class LightOverlay extends Quad {
 

@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * Audio player is used to play decoded audio tracks. Loop can be optionally
  * set. Volume can be adjusted.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class AudioPlayer {
 

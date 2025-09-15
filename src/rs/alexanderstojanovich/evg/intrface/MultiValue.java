@@ -23,7 +23,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class MultiValue implements MenuValue { // customizable list of items (objects) which also has selected item
 

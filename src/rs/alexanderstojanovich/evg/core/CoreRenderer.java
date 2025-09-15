@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evg.core;
 /**
  * Generic renderer interface
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public interface CoreRenderer {
 

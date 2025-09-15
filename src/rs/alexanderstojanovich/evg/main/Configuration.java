@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Configuration {
 
@@ -40,7 +40,7 @@ public class Configuration {
     private boolean vsync = false;
     private int waterEffects = 0;
     private int shadowEffects = 0;
-    private float mouseSensitivity = 3.0f;
+    private float mouseSensitivity = 10f;
     private DSLogger.DSLogLevel logLevel = DSLogger.DSLogLevel.ERR;
     private boolean logToFile = false;
     private float musicVolume = 0.2f;

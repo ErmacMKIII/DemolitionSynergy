@@ -36,11 +36,17 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
-import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
+import rs.alexanderstojanovich.evg.main.Game;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.BACKWARD;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.DOWN;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.FORWARD;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.LEFT;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.RIGHT;
+import static rs.alexanderstojanovich.evg.main.Game.Direction.UP;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
@@ -52,7 +58,7 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Block extends Model {
 
@@ -71,15 +77,15 @@ public class Block extends Model {
     public static final int BACK = 4;
     public static final int FRONT = 5;
 
-    public static final int LEFT_BOTTOM = 6;
-    public static final int RIGHT_BOTTOM = 7;
-    public static final int LEFT_TOP = 8;
-    public static final int RIGHT_TOP = 9;
+    public static final int LEFT_BOTTOM = 6;        // -x-y
+    public static final int RIGHT_BOTTOM = 7;      // +x-y
+    public static final int LEFT_TOP = 8;         //  -x+y  
+    public static final int RIGHT_TOP = 9;       //   +x+y
 
-    public static final int BOTTOM_BACK = 10;
-    public static final int BOTTOM_FRONT = 11;
-    public static final int TOP_BACK = 12;
-    public static final int TOP_FRONT = 13;
+    public static final int BOTTOM_BACK = 10;    // -y-z
+    public static final int BOTTOM_FRONT = 11;   // -y+z
+    public static final int TOP_BACK = 12;       // +y+-z
+    public static final int TOP_FRONT = 13;      // +y+z
 
     // which faces we enabled for rendering and which we disabled
     private final boolean[] enabledFaces = new boolean[6];
@@ -892,12 +898,12 @@ public class Block extends Model {
     }
 
     /**
-     * Make new index buffer base on bits form of enabled faces (used only for
-     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * Make new index mainBuffer base on bits form of enabled faces (used only
+     * for blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
      * @param faceBits 6-bit form
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
@@ -918,7 +924,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
@@ -943,7 +949,7 @@ public class Block extends Model {
      *
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IList<Integer> createIndices(int faceBits, int baseConst) {
         // creating indices
@@ -969,13 +975,13 @@ public class Block extends Model {
     }
 
     /**
-     * Make new index buffer base on bits form of enabled faces (used only for
-     * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
+     * Make new index mainBuffer base on bits form of enabled faces (used only
+     * for blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer createIntBuffer(int faceBits, int baseConst) {
         // creating indices
@@ -996,7 +1002,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         IntBuffer intBuff = MemoryUtil.memAllocInt(indices.size());
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
             DSLogger.reportError("Could not allocate memory address!", null);
@@ -1015,13 +1021,13 @@ public class Block extends Model {
     }
 
     /**
-     * Resize index buffer base on bits form of enabled faces (used only for
+     * Resize index mainBuffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
-     * @param intBuff supplied int buffer (to resize)
+     * @param intBuff supplied int mainBuffer (to resize)
      * @param faceBits 6-bit form
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits) {
         // creating indices
@@ -1042,7 +1048,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
 
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
@@ -1062,14 +1068,14 @@ public class Block extends Model {
     }
 
     /**
-     * Resize index buffer base on bits form of enabled faces (used only for
+     * Resize index mainBuffer base on bits form of enabled faces (used only for
      * blocks) Representation form is 6-bit [LEFT, RIGHT, BOTTOM, TOP, BACK,
      * FRONT]
      *
-     * @param intBuff supplied int buffer (to resize)
+     * @param intBuff supplied int mainBuffer (to resize)
      * @param faceBits 6-bit form
      * @param baseConst const to add to all indices
-     * @return index buffer
+     * @return index mainBuffer
      */
     public static IntBuffer resizeIntBuffer(IntBuffer intBuff, int faceBits, int baseConst) {
         // creating indices
@@ -1090,7 +1096,7 @@ public class Block extends Model {
             }
             faceBits >>= 1; // move bits to the right so they are compared again            
         }
-        // storing indices in the buffer
+        // storing indices in the mainBuffer
         intBuff = MemoryUtil.memRealloc(intBuff, indices.size());
 
         if (intBuff.capacity() != 0 && MemoryUtil.memAddressSafe(intBuff) == MemoryUtil.NULL) {
@@ -1517,6 +1523,102 @@ public class Block extends Model {
         Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;
+    }
+
+    /**
+     * Returns the opposite side based on the given direction.
+     *
+     * @param direction The direction to get opposite side for
+     * @return The opposite side constant, or NONE if direction is invalid
+     */
+    public static int getOppositeSide(Game.Direction direction) {
+        if (direction == null) {
+            return Block.NONE;
+        }
+
+        switch (direction) {
+            case LEFT:
+                return Block.RIGHT;  // Opposite of left is right
+            case RIGHT:
+                return Block.LEFT;   // Opposite of right is left
+            case UP:
+                return Block.BOTTOM; // Opposite of up is bottom
+            case DOWN:
+                return Block.TOP;    // Opposite of down is top
+            case BACKWARD:
+                return Block.FRONT;  // Opposite of backward is front
+            case FORWARD:
+                return Block.BACK;   // Opposite of forward is back
+            default:
+                return Block.NONE;   // Unknown direction
+        }
+    }
+
+    /**
+     * Returns an array of opposite sides based on the given direction. Includes
+     * both the main opposite side and adjacent combinations.
+     *
+     * @param direction The direction to get opposite sides for
+     * @return An array of opposite side constants, or {NONE} if direction is
+     * invalid
+     */
+    public static int[] getOppositeSides(Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        switch (direction) {
+            case LEFT: // -x -> +x
+                return new int[]{
+                    Block.RIGHT,
+                    Block.RIGHT_BOTTOM,
+                    Block.RIGHT_TOP,
+                    Block.BOTTOM_BACK,
+                    Block.BOTTOM_FRONT
+                };
+            case RIGHT:
+                return new int[]{
+                    Block.LEFT,
+                    Block.LEFT_BOTTOM,
+                    Block.LEFT_TOP,
+                    Block.TOP_BACK,
+                    Block.TOP_FRONT
+                };
+            case UP:
+                return new int[]{
+                    Block.BOTTOM,
+                    Block.BOTTOM_BACK,
+                    Block.BOTTOM_FRONT,
+                    Block.LEFT_BOTTOM,
+                    Block.RIGHT_BOTTOM
+                };
+            case DOWN:
+                return new int[]{
+                    Block.TOP,
+                    Block.TOP_BACK,
+                    Block.TOP_FRONT,
+                    Block.LEFT_TOP,
+                    Block.RIGHT_TOP
+                };
+            case BACKWARD:
+                return new int[]{
+                    Block.FRONT,
+                    Block.TOP_FRONT,
+                    Block.BOTTOM_FRONT,
+                    Block.LEFT_TOP, // Added more comprehensive front-facing sides
+                    Block.RIGHT_TOP
+                };
+            case FORWARD:
+                return new int[]{
+                    Block.BACK,
+                    Block.BOTTOM_BACK,
+                    Block.TOP_BACK,
+                    Block.LEFT_BOTTOM,
+                    Block.RIGHT_BOTTOM
+                };
+            default:
+                return new int[]{Block.NONE};
+        }
     }
 
     @Override

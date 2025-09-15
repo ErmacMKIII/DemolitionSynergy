@@ -20,7 +20,7 @@ import java.util.Objects;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  * @param <Key> the first part of the pair.
  * @param <Value> the second part of the pair.
  */

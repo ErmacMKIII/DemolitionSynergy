@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.intrface;
 
 import java.nio.FloatBuffer;
+import java.util.Collections;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
@@ -35,7 +36,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * string to the screen. Renders whole text at once. Widely used. Replaces
  * standard Text class.
  *
- * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class DynamicText extends Text {
 
@@ -59,7 +60,10 @@ public class DynamicText extends Text {
 
     @Override
     public boolean bufferVertices() {
-        int someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        int someSize;
+        synchronized (this) {
+            someSize = txtChList.size() * Quad.VERTEX_COUNT * Quad.VERTEX_SIZE;
+        }
         if (bigFloatBuff == null || bigFloatBuff.capacity() == 0) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
         } else if (bigFloatBuff.capacity() != 0 && bigFloatBuff.capacity() < someSize) {
@@ -76,12 +80,14 @@ public class DynamicText extends Text {
             throw new RuntimeException("Could not allocate memory address!");
         }
 
-        for (TextCharacter txtCh : txtChList) {
-            for (int v = 0; v < 4; v++) {
-                bigFloatBuff.put(VERTICES[v].x);
-                bigFloatBuff.put(VERTICES[v].y);
-                bigFloatBuff.put(txtCh.uvs[v].x);
-                bigFloatBuff.put(txtCh.uvs[v].y);
+        synchronized (this) {
+            for (TextCharacter txtCh : txtChList) {
+                for (int v = 0; v < 4; v++) {
+                    bigFloatBuff.put(VERTICES[v].x);
+                    bigFloatBuff.put(VERTICES[v].y);
+                    bigFloatBuff.put(txtCh.uvs[v].x);
+                    bigFloatBuff.put(txtCh.uvs[v].y);
+                }
             }
         }
 
@@ -136,12 +142,14 @@ public class DynamicText extends Text {
             throw new RuntimeException("Could not allocate memory address!");
         }
 
-        for (TextCharacter txtCh : txtChList) {
-            for (int v = 0; v < 4; v++) {
-                bigFloatBuff.put(VERTICES[v].x);
-                bigFloatBuff.put(VERTICES[v].y);
-                bigFloatBuff.put(txtCh.uvs[v].x);
-                bigFloatBuff.put(txtCh.uvs[v].y);
+        synchronized (this) {
+            for (TextCharacter txtCh : txtChList) {
+                for (int v = 0; v < 4; v++) {
+                    bigFloatBuff.put(VERTICES[v].x);
+                    bigFloatBuff.put(VERTICES[v].y);
+                    bigFloatBuff.put(txtCh.uvs[v].x);
+                    bigFloatBuff.put(txtCh.uvs[v].y);
+                }
             }
         }
 
@@ -201,16 +209,18 @@ public class DynamicText extends Text {
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {
-                shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+            synchronized (this) {
+                for (TextCharacter txtCh : txtChList) {
+                    shaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
 
-                GL32.glDrawElementsBaseVertex(
-                        GL11.GL_TRIANGLES,
-                        INDICES.length,
-                        GL11.GL_UNSIGNED_INT,
-                        0,
-                        index++ << 2 // vertex size is 4
-                );
+                    GL32.glDrawElementsBaseVertex(
+                            GL11.GL_TRIANGLES,
+                            INDICES.length,
+                            GL11.GL_UNSIGNED_INT,
+                            0,
+                            index++ << 2 // vertex size is 4
+                    );
+                }
             }
 
             Texture.unbind(0);
@@ -244,16 +254,18 @@ public class DynamicText extends Text {
 
             int index = 0;
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
-            for (TextCharacter txtCh : txtChList) {
-                contourShaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
+            synchronized (this) {
+                for (TextCharacter txtCh : txtChList) {
+                    contourShaderProgram.updateUniform(txtCh.modelMat4, "modelMatrix");
 
-                GL32.glDrawElementsBaseVertex(
-                        GL11.GL_TRIANGLES,
-                        INDICES.length,
-                        GL11.GL_UNSIGNED_INT,
-                        0,
-                        index++ << 2 // vertex size is 4
-                );
+                    GL32.glDrawElementsBaseVertex(
+                            GL11.GL_TRIANGLES,
+                            INDICES.length,
+                            GL11.GL_UNSIGNED_INT,
+                            0,
+                            index++ << 2 // vertex size is 4
+                    );
+                }
             }
 
             Texture.unbind(0);
