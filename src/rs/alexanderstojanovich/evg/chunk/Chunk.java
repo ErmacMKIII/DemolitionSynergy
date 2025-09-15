@@ -45,12 +45,29 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public interface Chunk { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
+    /**
+     * Bound to determine vec x/z length of the chunk
+     */
     public static final int BOUND = 256;
+    /**
+     * Visibility of chunks. Not used in live code
+     */
     public static final float VISION = 256.0f; // determines visibility
+    /**
+     * Row by column grid size.
+     */
     public static final int GRID_SIZE = 4;
-
+    /**
+     * One over grid size;
+     */
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
+    /**
+     * Number of chunks
+     */
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
+    /**
+     * Length x/z of one chunk
+     */
     public static final float LENGTH = BOUND * STEP * 2.0f;
 
     // is a group of blocks which are prepared for instanced rendering

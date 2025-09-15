@@ -45,7 +45,7 @@ public class Player extends Critter implements Observer {
     public static enum CameraView {
         FIRST_PERSON, THIRD_PERSON
     }
-    protected CameraView cameraView = CameraView.THIRD_PERSON;
+    protected CameraView cameraView = CameraView.FIRST_PERSON;
 
     protected final RPGCamera camera;
     public final LightSource light;

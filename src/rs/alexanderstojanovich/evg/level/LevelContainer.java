@@ -60,12 +60,12 @@ public class LevelContainer implements GravityEnviroment {
      * Min amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MIN_AMOUNT = -8.4f;
+    public static final float MIN_AMOUNT = -2f;
     /**
      * Max amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MAX_AMOUNT = 8.4f;
+    public static final float MAX_AMOUNT = 2f;
     /**
      * Step amount of iteration for collision control or gravity control (inner
      * loop).
@@ -89,6 +89,13 @@ public class LevelContainer implements GravityEnviroment {
 
     public final GameObject gameObject;
     protected final Configuration cfg = Configuration.getInstance();
+    protected final int iterationMax = cfg.getOptimizationPasses();
+
+    /**
+     * Last Iteration (starting from 0). Need to know where to resume from last
+     * point
+     */
+    protected int lastIteration = 0; // starting from one, cuz zero is not rendered
 
     /**
      * World Skybox - whole world (except Sun) is contained inside
@@ -569,7 +576,9 @@ public class LevelContainer implements GravityEnviroment {
 
         // Adjust player position if successfully spawned
         if (playerSpawned) {
-            player.jumpY(0.0f); // Some bad workaround
+            player.jumpY(Game.JUMP_STR_AMOUNT / 16f); // Some bad workaround
+            player.switchViewToggle();
+            player.switchViewToggle();
             gravityOn = true; // Re-enable gravity
         } else {
             // Handle case where no valid spawn location was found (optional)
@@ -968,7 +977,7 @@ public class LevelContainer implements GravityEnviroment {
             for (int side : sides) {
                 SCAN:
                 // Standard collision checking (MIN-AMOUNT;MAX-AMOUNT;STEP-AMOUNT)
-                for (float amount = -2.1f; amount <= 2.1f; amount += 0.05f) {
+                for (float amount = -MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), side, amount);
                     Vector3f adjPosAlign = alignVector(adjPos);
 
@@ -1149,15 +1158,19 @@ public class LevelContainer implements GravityEnviroment {
         boolean changed = false;
 
         if (!working) {
-            for (int chunkId : vChnkIdList) {
+            for (int i = lastIteration; i < iterationMax; i++) {
+                int chunkId = vChnkIdList.get(i % vChnkIdList.size());
                 changed |= cacheModule.loadFromDisk(chunkId);
             }
 
             if (!changed) { // avoid same time save/load
-                for (int chunkId : iChnkIdList) {
+                for (int i = lastIteration; i < iterationMax; i++) {
+                    int chunkId = iChnkIdList.get(i % iChnkIdList.size());
                     changed |= cacheModule.saveToDisk(chunkId);
                 }
             }
+
+            lastIteration = (lastIteration + iterationMax) & (Chunk.CHUNK_NUM - 1);
         }
 
         return changed;

@@ -522,13 +522,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
         levelContainer.chunks.clear();
         levelContainer.blockEnvironment.clear();
-
+        levelContainer.levelBuffer.clear();
+        
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
         levelContainer.levelActors.npcList.clear();
         levelContainer.levelActors.otherPlayers.clear();
-        if (!gameServer.isShutDownSignal()) {
+        if (!gameServer.isShutDownSignal() && !WINDOW.shouldClose()) {
             WINDOW.setTitle(GameObject.WINDOW_TITLE);
         }
         Game.setCurrentMode(Game.Mode.FREE);
@@ -677,8 +678,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             // Send Request - Get world info from server
             // After received response it will load world on its own
             game.requestWorldInfo(); // This method reset world info to null
-            // !IMPORTANT -- ENABLE ASYNC WRITEPOINT 
-            game.setAsyncReceivedForceEnabled(true);
+            
             // Load World Multiplayer
             // Try up to MAX_ATTEMPTS to get the fragment
             for (int attempt = 0; attempt < MAX_ATTEMPTS && game.getWorldInfo() == LevelMapInfo.NULL; attempt++) {

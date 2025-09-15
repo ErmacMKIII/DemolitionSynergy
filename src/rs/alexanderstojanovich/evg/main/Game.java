@@ -1019,25 +1019,22 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception { // pool-3-thread-1
-        if (isAsyncReceivedEnabled() && !gameObject.WINDOW.shouldClose()) {
-            // receive & process 
-            ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
-                // '*' - indicates everyone
-                // 'basically if this response is for me' - my (player) guid 
-                if (response.getReceiverGuid().equals("*") || response.getReceiverGuid().equals(getGuid())) {
-                    try {
-                        process(response);
-                        if (config.getLogLevel() == DSLogger.DSLogLevel.DEBUG || config.getLogLevel() == DSLogger.DSLogLevel.ALL) {
-                            gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
-                            DSLogger.reportInfo(String.valueOf(response.getData()), null);
-                        }
-                    } catch (Exception ex) {
-                        DSLogger.reportError("Error during processing: " + ex.getMessage(), ex);
+        // receive & process 
+        ResponseIfc.receiveAsync(this, session, clientExecutor).thenAccept((ResponseIfc response) -> {
+            // '*' - indicates everyone
+            // 'basically if this response is for me' - my (player) guid 
+            if (response.getReceiverGuid().equals("*") || response.getReceiverGuid().equals(getGuid())) {
+                try {
+                    process(response);
+                    if (config.getLogLevel() == DSLogger.DSLogLevel.DEBUG || config.getLogLevel() == DSLogger.DSLogLevel.ALL) {
+                        gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
+                        DSLogger.reportInfo(String.valueOf(response.getData()), null);
                     }
+                } catch (Exception ex) {
+                    DSLogger.reportError("Error during processing: " + ex.getMessage(), ex);
                 }
-            });
-
-        }
+            }
+        });
     }
 
     /**
@@ -1090,7 +1087,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         disconnectFromServer();
                     }
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
-                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
+                    gameObject.intrface.getConsole().write(String.valueOf(response.getData()), response.getResponseStatus() == ResponseIfc.ResponseStatus.OK ? Command.Status.SUCCEEDED : Command.Status.FAILED);
                     // notify waiters on connect
                     synchronized (requestList) {
                         requestList.notify();
@@ -1591,7 +1588,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (isConnected()) {
             DSLogger.reportWarning("Error - you are already connected to Game Server!", null);
             gameObject.intrface.getConsole().write("Error - you are already connected to Game Server!", Command.Status.WARNING);
-
+            
             return false;
         }
         try {
@@ -2068,7 +2065,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     // Load downloaded level (from fragments)
                     gameObject.levelContainer.levelBuffer.loadLevelFromBufferNewFormat();
                 }
-
+                
                 // Avoid reconnection errors
                 // On reconnecting, the player needs to be registered again
                 if (!gameObject.levelContainer.levelActors.player.isRegistered()) {
@@ -2076,7 +2073,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
                 // Level is loaded player can spawn
                 gameObject.levelContainer.spawnPlayer();
-
+                // Hide guide text
+                gameObject.intrface.getGuideText().setEnabled(false);
+                
                 // Save world to world name + ndat. For example MyWorld.ndat
                 gameObject.levelContainer.levelBuffer.saveLevelToFile(worldInfo.worldname + ".ndat");
                 DSLogger.reportInfo(String.format("World '%s.ndat' saved!", worldInfo.worldname), null);
