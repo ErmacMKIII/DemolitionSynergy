@@ -35,9 +35,7 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32C;
-import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioDatagramConnector;
@@ -271,7 +269,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Default buffer size for fragments
      */
     public static final int BUFF_SIZE = 8192; // read bytes (chunk) mainBuffer size
-
+    /**
+     * Default buffer size for fragments
+     */
+    public static final int READBUFF_SIZE = 16384; // read bytes buffer size of read channel
     /**
      * Async Client Executor (async receive responses)
      */
@@ -1165,8 +1166,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // Display server response in client console
                         gameObject.intrface.getConsole().write(String.format("Download %s fragments", response.getData()));
 
-                        // Define a buffer to hold the received data
-                        byte[] buffer = new byte[Game.BUFF_SIZE];
                         int totalBytesRead = 0;
                         // Total fragment(s) (indices)
                         final int totalIndices = (int) response.getData();
@@ -1186,39 +1185,35 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         // Clear the main buffer where the (world) level is gonna be put
                         gameObject.levelContainer.levelBuffer.uploadBuffer.clear();
+                        // Set short timeout of 10 sec
+                        this.timeout = Game.DEFAULT_SHORTENED_TIMEOUT;
                         // Loop through all fragment indices
-                        for (int fragmentIndex = 0; fragmentIndex < totalIndices; fragmentIndex++) {
+                        for (int fragmentIndex = 0; fragmentIndex < totalIndices && !gameObject.WINDOW.shouldClose(); fragmentIndex++) {
                             boolean success = false;
 
                             // Try up to MAX_ATTEMPTS to get the fragment
-                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success; attempt++) {
+                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success && !gameObject.WINDOW.shouldClose(); attempt++) {
                                 // Request the next fragment
                                 RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
                                 fragmentRequest.send(this, session);
 
-                                // Wait for the response with a timeout
-                                ReadFuture future = session.read();
-                                if (future.await(Game.DEFAULT_SHORTENED_TIMEOUT)) { // 10 sec x 3 times
-                                    // Response received within timeout
-                                    Object message = future.getMessage();
-                                    if (message instanceof IoBuffer) {
-                                        IoBuffer buffer1 = (IoBuffer) message;
-                                        buffer1.get(buffer, 0, buffer1.remaining());
-                                        int bytesRead = buffer1.position();
+                                ResponseIfc response1 = ResponseIfc.receive(this, session);
+                                if (response1 != Response.INVALID && response1.getResponseStatus() == ResponseIfc.ResponseStatus.OK) {
+                                    byte[] data = (byte[]) response1.getData();
+                                    int bytesRead = data.length;
 
-                                        // Write the received data to the mainBuffer
-                                        gameObject.levelContainer.levelBuffer.uploadBuffer.put(buffer, 0, bytesRead);
-                                        totalBytesRead += bytesRead;
+                                    // Write the received data to the mainBuffer
+                                    gameObject.levelContainer.levelBuffer.uploadBuffer.put(data, 0, bytesRead);
+                                    totalBytesRead += bytesRead;
 
-                                        DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
-                                        gameObject.intrface.getConsole().write(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead));
+                                    DSLogger.reportInfo(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead), null);
+                                    gameObject.intrface.getConsole().write(String.format("Received %d fragment, bytes read: %d", fragmentIndex, bytesRead));
 
-                                        success = true; // Fragment successfully received                                        
+                                    success = true; // Fragment successfully received                                        
 
-                                        if (connected == ConnectionStatus.RECONNECTED) {
-                                            // Reset reconnected to connected
-                                            connected = ConnectionStatus.CONNECTED;
-                                        }
+                                    if (connected == ConnectionStatus.RECONNECTED) {
+                                        // Reset reconnected to connected
+                                        connected = ConnectionStatus.CONNECTED;
                                     }
                                 }
                             }
@@ -1233,6 +1228,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                                 downloadStatus = DownloadStatus.ERROR;
                             }
                         }
+
+                        // Restore back to normal timeout
+                        this.timeout = Game.DEFAULT_TIMEOUT;
 
                         // Write finished. Make the buffer readable.
                         gameObject.levelContainer.levelBuffer.uploadBuffer.flip();
@@ -1604,7 +1602,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if (connFuture.isConnected()) {
                 this.session = connFuture.getSession();
                 this.session.getConfig().setUseReadOperation(true);
-                this.session.getConfig().setReadBufferSize(BUFF_SIZE);
+                this.session.getConfig().setReadBufferSize(READBUFF_SIZE);
 
                 // enable async receive
                 asyncReceivedEnabled.set(true);

@@ -156,6 +156,32 @@ public class Response implements ResponseIfc {
                         out.writeFloat(vec4.z);
                         out.writeFloat(vec4.w);
                         break;
+                    case ARRAY:
+                        if (data instanceof byte[]) {
+                            out.writeByte(1);
+                            byte[] arr1 = (byte[]) data;
+                            out.writeShort(arr1.length);
+                            for (byte b : arr1) {
+                                out.writeByte(b);
+                            }
+                        } else if (data instanceof short[]) {
+                            out.writeByte(2);
+                            short[] arr2 = (short[]) data;
+                            out.writeShort(arr2.length);
+                            for (short sh : arr2) {
+                                out.writeShort(sh);
+                            }
+                        } else if (data instanceof int[]) {
+                            out.writeByte(4);
+                            byte[] arr4 = (byte[]) data;
+                            out.writeShort(arr4.length);
+                            for (byte b : arr4) {
+                                out.writeInt(b);
+                            }
+                        } else {
+                            throw new IOException("Unsupported ARRAY type during serialization!");
+                        }
+                        break;
                     default:
                         throw new IOException("Unsupported data type during serialization!");
                 }
@@ -232,6 +258,33 @@ public class Response implements ResponseIfc {
                     data = new Vector4f(vx, vy, vz, vw);
                     break;
                 case VOID:
+                    break;
+                case ARRAY:
+                    int sizeOf = in.readByte();
+                    int length = in.readUnsignedShort();
+                    switch (sizeOf) {
+                        case 1:
+                            byte[] arr1 = new byte[length];
+                            for (int i = 0; i < length; i++) {
+                                arr1[i] = in.readByte();
+                            }
+                            data = arr1;
+                            break;
+                        case 2:
+                            short[] arr2 = new short[length];
+                            for (int i = 0; i < length; i++) {
+                                arr2[i] = in.readByte();
+                            }
+                            data = arr2;
+                        case 4:
+                            int[] arr4 = new int[length];
+                            for (int i = 0; i < length; i++) {
+                                arr4[i] = in.readByte();
+                            }
+                            data = arr4;
+                        default:
+                            throw new IOException("Unsupported ARRAY format during deserialization!");
+                    }
                     break;
                 default:
                     throw new IOException("Unsupported data type during deserialization!");
