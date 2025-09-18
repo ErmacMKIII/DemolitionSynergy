@@ -115,6 +115,9 @@ public interface ResponseIfc extends DSObject {
     public static CompletableFuture<ResponseIfc> receiveAsync(Game client, IoSession session, ExecutorService executor) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (!client.isAsyncReceivedEnabled()) {
+                    return Response.INVALID;
+                }
                 return receive(client, session);
             } catch (Exception e) {
                 return Response.INVALID;
