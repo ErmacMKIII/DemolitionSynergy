@@ -31,6 +31,7 @@ import org.apache.mina.core.session.IoSession;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.main.Game;
+import static rs.alexanderstojanovich.evg.net.DSObject.DataType.ARRAY;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.BOOL;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.DOUBLE;
 import static rs.alexanderstojanovich.evg.net.DSObject.DataType.FLOAT;
@@ -177,6 +178,32 @@ public class Request implements RequestIfc {
                         out.writeFloat(vec4.z);
                         out.writeFloat(vec4.w);
                         break;
+                    case ARRAY:
+                        if (data instanceof byte[]) {
+                            out.writeByte(1);
+                            byte[] arr1 = (byte[]) data;
+                            out.writeShort(arr1.length);
+                            for (byte b : arr1) {
+                                out.writeByte(b);
+                            }
+                        } else if (data instanceof short[]) {
+                            out.writeByte(2);
+                            short[] arr2 = (short[]) data;
+                            out.writeShort(arr2.length);
+                            for (short sh : arr2) {
+                                out.writeShort(sh);
+                            }
+                        } else if (data instanceof int[]) {
+                            out.writeByte(4);
+                            int[] arr4 = (int[]) data;
+                            out.writeShort(arr4.length);
+                            for (int b : arr4) {
+                                out.writeInt(b);
+                            }
+                        } else {
+                            throw new IOException("Unsupported ARRAY type during serialization!");
+                        }
+                        break;
                     default:
                         throw new IOException("Unsupported data type during serialization!");
                 }
@@ -265,7 +292,7 @@ public class Request implements RequestIfc {
                     break;
                 case ARRAY:
                     int sizeOf = in.readByte();
-                    int length = in.readUnsignedShort();
+                    int length = in.readShort();
                     switch (sizeOf) {
                         case 1:
                             byte[] arr1 = new byte[length];
@@ -277,13 +304,13 @@ public class Request implements RequestIfc {
                         case 2:
                             short[] arr2 = new short[length];
                             for (int i = 0; i < length; i++) {
-                                arr2[i] = in.readByte();
+                                arr2[i] = in.readShort();
                             }
                             data = arr2;
                         case 4:
                             int[] arr4 = new int[length];
                             for (int i = 0; i < length; i++) {
-                                arr4[i] = in.readByte();
+                                arr4[i] = in.readInt();
                             }
                             data = arr4;
                         default:

@@ -173,9 +173,9 @@ public class Response implements ResponseIfc {
                             }
                         } else if (data instanceof int[]) {
                             out.writeByte(4);
-                            byte[] arr4 = (byte[]) data;
+                            int[] arr4 = (int[]) data;
                             out.writeShort(arr4.length);
-                            for (byte b : arr4) {
+                            for (int b : arr4) {
                                 out.writeInt(b);
                             }
                         } else {
@@ -261,7 +261,7 @@ public class Response implements ResponseIfc {
                     break;
                 case ARRAY:
                     int sizeOf = in.readByte();
-                    int length = in.readUnsignedShort();
+                    int length = in.readShort();
                     switch (sizeOf) {
                         case 1:
                             byte[] arr1 = new byte[length];
@@ -273,13 +273,13 @@ public class Response implements ResponseIfc {
                         case 2:
                             short[] arr2 = new short[length];
                             for (int i = 0; i < length; i++) {
-                                arr2[i] = in.readByte();
+                                arr2[i] = in.readShort();
                             }
                             data = arr2;
                         case 4:
                             int[] arr4 = new int[length];
                             for (int i = 0; i < length; i++) {
-                                arr4[i] = in.readByte();
+                                arr4[i] = in.readInt();
                             }
                             data = arr4;
                         default:
