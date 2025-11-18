@@ -1,0 +1,64 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-assimp-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-openal-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-integration-beans-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/gson-2.11.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-opengl-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/joml-primitives-1.10.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-example-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-integration-ognl-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-assimp-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-opengl.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-stb.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-core-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-core-2.1.10-sources.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-transport-apr-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-openal-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-stb-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jackson-core-2.7.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/log4j-core-2.23.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-assimp-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/spring-2.5.6.SEC03.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-glfw.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-statemachine-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jzlib-1.1.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-stb-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/slf4j-api-1.7.36.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-opengl-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jackson-annotations-2.7.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/javassist-3.29.0-GA.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjglx-debug-1.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/commons-logging-1.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/brownies-collections-0.9.23.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-opengl-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-filter-compression-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jackson-databind-2.7.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-openal-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/log4j-api-2.23.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-integration-jmx-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/log4j-1.2-api-2.23.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-glfw-natives-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-http-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/ognl-3.3.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-glfw-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/joml-1.10.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/xbean-spring-4.23.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-glfw-natives-linux.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jorbis-oggdecoder-1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/mina-integration-xbean-2.1.10.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-assimp.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-stb-natives-windows.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/lwjgl-openal.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/jcl-over-slf4j-1.7.36.jar!/" />
+      <root url="jar://$PROJECT_DIR$/dist/lib/tomcat-jni-10.0.27.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
