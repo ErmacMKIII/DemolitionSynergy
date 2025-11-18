@@ -556,7 +556,7 @@ public class LevelContainer implements GravityEnviroment {
         // Try to spawn the player at a valid location
         boolean playerSpawned = false;
         OUTER:
-        while (!playerSpawned && !solidPopLoc.isEmpty() && !gameObject.WINDOW.shouldClose()) { // search through solid population location
+        while (!playerSpawned && !solidPopLoc.isEmpty() && !gameObject.gameWindow.shouldClose()) { // search through solid population location
             int randomIndex = random.nextInt(solidPopLoc.size());
             Vector3f solidLoc = solidPopLoc.get(randomIndex);
             Vector3f playerLoc = new Vector3f(solidLoc.x, solidLoc.y + 2.2f, solidLoc.z); // Adjust y position
@@ -1371,7 +1371,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return gameObject.WINDOW;
+        return gameObject.gameWindow;
     }
 
     public float getProgress() {

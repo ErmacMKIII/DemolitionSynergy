@@ -141,7 +141,7 @@ public class LevelBuffer {
         mainBuffer.putShort((short) solidNum);
         //----------------------------------------------------------------------
         for (Vector3f sp : solidPos) {
-            if (levelContainer.gameObject.WINDOW.shouldClose()) {
+            if (levelContainer.gameObject.gameWindow.shouldClose()) {
                 break;
             }
             byte[] byteArraySolid = Block.toByteArray(sp, AllBlockMap.getLocation(sp));
@@ -158,7 +158,7 @@ public class LevelBuffer {
         int fluidNum = fluidPos.size();
         mainBuffer.putShort((short) fluidNum);
         for (Vector3f fp : fluidPos) {
-            if (levelContainer.gameObject.WINDOW.shouldClose()) {
+            if (levelContainer.gameObject.gameWindow.shouldClose()) {
                 break;
             }
             byte[] byteArrayFluid = Block.toByteArray(fp, AllBlockMap.getLocation(fp));
@@ -174,7 +174,7 @@ public class LevelBuffer {
         levelContainer.levelActors.unfreeze();
         levelContainer.progress = 100.0f;
 
-        if (levelContainer.progress == 100.0f && !levelContainer.gameObject.WINDOW.shouldClose()) {
+        if (levelContainer.progress == 100.0f && !levelContainer.gameObject.gameWindow.shouldClose()) {
             success = true;
         }
         levelContainer.working = false;
@@ -239,7 +239,7 @@ public class LevelBuffer {
             mainBuffer.putInt(count);
 
             for (Vector3f p : blkPos) {
-                if (levelContainer.gameObject.WINDOW.shouldClose()) {
+                if (levelContainer.gameObject.gameWindow.shouldClose()) {
                     break;
                 }
                 TexByte texByte = AllBlockMap.getLocation(p);
@@ -263,7 +263,7 @@ public class LevelBuffer {
         levelContainer.levelActors.unfreeze();
         levelContainer.progress = 100.0f;
 
-        if (levelContainer.progress == 100.0f && !levelContainer.gameObject.WINDOW.shouldClose()) {
+        if (levelContainer.progress == 100.0f && !levelContainer.gameObject.gameWindow.shouldClose()) {
             success = true;
         }
         levelContainer.working = false;
@@ -321,7 +321,7 @@ public class LevelBuffer {
 
             if (strSolid.equals("SOLID")) {
                 int solidNum = mainBuffer.getShort() & 0xFFFF; // Convert to unsigned
-                for (int i = 0; i < solidNum && !levelContainer.gameObject.WINDOW.shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !levelContainer.gameObject.gameWindow.shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[29];
                     mainBuffer.get(byteArraySolid);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
@@ -338,7 +338,7 @@ public class LevelBuffer {
 
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = mainBuffer.getShort() & 0xFFFF; // Convert to unsigned
-                    for (int i = 0; i < fluidNum && !levelContainer.gameObject.WINDOW.shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !levelContainer.gameObject.gameWindow.shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[29];
                         mainBuffer.get(byteArrayFluid);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
@@ -439,7 +439,7 @@ public class LevelBuffer {
                         throw new Exception("Error in level ndat file. File could be corrupted!");
                     }
 
-                    for (int i = 0; i < count && !levelContainer.gameObject.WINDOW.shouldClose(); i++) {
+                    for (int i = 0; i < count && !levelContainer.gameObject.gameWindow.shouldClose(); i++) {
                         byte[] vec3fPosBytes = new byte[VEC3_LEN];
                         mainBuffer.get(vec3fPosBytes);
                         Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(vec3fPosBytes);

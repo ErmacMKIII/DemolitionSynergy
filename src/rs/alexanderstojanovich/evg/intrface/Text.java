@@ -449,23 +449,23 @@ public class Text implements ComponentIfc {
     }
 
     public float getRelativeCharWidth(Intrface intrface) {
-        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor / (float) intrface.gameObject.gameWindow.getWidth();
     }
 
     public float getRelativeWidth(Intrface intrface) {
-        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return charWidth * widthFactor * content.length() / (float) intrface.gameObject.WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getWidth() / (float) Window.MIN_WIDTH;
+        return charWidth * widthFactor * content.length() / (float) intrface.gameObject.gameWindow.getWidth();
     }
 
     public float getRelativeCharHeight(Intrface intrface) {
-        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor / (float) intrface.gameObject.gameWindow.getHeight();
     }
 
     public float getRelativeHeight(Intrface intrface) {
-        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return charHeight * heightFactor * numberOfLines(intrface) / (float) intrface.gameObject.WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getHeight() / (float) Window.MIN_HEIGHT;
+        return charHeight * heightFactor * numberOfLines(intrface) / (float) intrface.gameObject.gameWindow.getHeight();
     }
 
     // it aligns position to next char position (useful if characters are cut out or so)

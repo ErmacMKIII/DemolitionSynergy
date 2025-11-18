@@ -449,7 +449,7 @@ public class Command implements Callable<Object> {
             case MONITOR_ID:
                 switch (command.mode) {
                     case GET:
-                        result = Long.toHexString(gameObject.WINDOW.getMonitorID());
+                        result = Long.toHexString(gameObject.gameWindow.getMonitorID());
                         command.status = Status.SUCCEEDED;
                         break;
                 }
@@ -458,7 +458,7 @@ public class Command implements Callable<Object> {
                 switch (command.mode) {
                     case GET:
                         StringBuilder sb = new StringBuilder();
-                        gameObject.WINDOW.getMonitors().forEach(monitor -> sb.append(Long.toHexString(monitor)).append(","));
+                        gameObject.gameWindow.getMonitors().forEach(monitor -> sb.append(Long.toHexString(monitor)).append(","));
                         sb.setLength(sb.length() - 1);
                         result = sb.toString();
                         command.status = Status.SUCCEEDED;
@@ -508,23 +508,27 @@ public class Command implements Callable<Object> {
             case RESOLUTION:
                 switch (command.mode) {
                     case GET:
-                        result = gameObject.WINDOW.getWidth() + "x" + gameObject.WINDOW.getHeight();
+                        result = gameObject.gameWindow.getWidth() + "x" + gameObject.gameWindow.getHeight();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         // changing resolution if necessary
                         int width = (int) command.args.get(0);
                         int height = (int) command.args.get(1);
-                        boolean status = gameObject.WINDOW.setResolution(width, height);
+                        boolean status = gameObject.gameWindow.setResolution(width, height);
                         if (status) {
                             gameObject.masterRenderer.setResolution(width, height);
                             gameObject.perspectiveRenderer.updatePerspective();
                             optionsMenu.items.getIf(x -> x.keyText.getContent().equals("RESOLUTION")).getMenuValue().setCurrentValue(width + "x" + height);
+                            // resize panel of console properly
+                            gameObject.intrface.getConsole().getPanel().setWidth(width);
+                            gameObject.intrface.getConsole().getPanel().setHeight(height / 2);
+                            gameObject.intrface.getConsole().getPanel().unbuffer();
+                            gameObject.gameWindow.centerTheWindow();
                             command.status = Status.SUCCEEDED;
                         } else {
                             command.status = Status.FAILED;
                         }
-                        gameObject.WINDOW.centerTheWindow();
                         break;
                 }
 
@@ -532,31 +536,26 @@ public class Command implements Callable<Object> {
             case FULLSCREEN:
                 switch (command.mode) {
                     case GET:
-                        result = gameObject.WINDOW.isFullscreen();
+                        result = gameObject.gameWindow.isFullscreen();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         boolean bool = (boolean) command.args.get(0);
-                        gameObject.WINDOW.setFullscreen(bool);
-                        gameObject.WINDOW.centerTheWindow();
+                        gameObject.gameWindow.setFullscreen(bool);
+                        gameObject.gameWindow.centerTheWindow();
                         optionsMenu.items.getIf(x -> x.keyText.getContent().equals("FULLSCREEN")).getMenuValue().setCurrentValue(bool ? "ON" : "OFF");
                         break;
                 }
                 break;
-//            case WINDOWED:
-//                GameObject.WINDOW.windowed();
-//                GameObject.WINDOW.centerTheWindow();
-//                command.status = Status.SUCCEEDED;
-//                break;
             case VSYNC: // OpenGL
                 switch (command.mode) {
                     case GET:
-                        result = gameObject.WINDOW.isVsync();
+                        result = gameObject.gameWindow.isVsync();
                         command.status = Status.SUCCEEDED;
                         break;
                     case SET:
                         boolean bool = (boolean) command.args.get(0);
-                        gameObject.WINDOW.setVSync(bool);
+                        gameObject.gameWindow.setVSync(bool);
                         optionsMenu.items.getIf(x -> x.keyText.getContent().equals("VSYNC")).getMenuValue().setCurrentValue(bool ? "ON" : "OFF");
                         command.status = Status.SUCCEEDED;
                         break;
@@ -665,7 +664,7 @@ public class Command implements Callable<Object> {
                     screenshot.delete();
                 }
                 try {
-                    ImageIO.write(gameObject.WINDOW.getScreenshot(), "PNG", screenshot);
+                    ImageIO.write(gameObject.gameWindow.getScreenshot(), "PNG", screenshot);
                 } catch (IOException ex) {
                     DSLogger.reportError(ex.getMessage(), ex);
                 }
@@ -675,7 +674,7 @@ public class Command implements Callable<Object> {
                 break;
             case EXIT:
                 gameObject.game.disconnectFromServer();
-                gameObject.WINDOW.close();
+                gameObject.gameWindow.close();
                 command.status = Status.SUCCEEDED;
                 break;
             case POSITION:
@@ -841,7 +840,7 @@ public class Command implements Callable<Object> {
                                 gameObject.intrface.getConsole().write("Connected to server!");
                                 double endTime = GLFW.glfwGetTime();
                                 long tripTime = Math.round((endTime - beginTime) * 1000.0);
-                                gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
                                 if (gameObject.generateMultiPlayerLevelAsJoin()) {
                                     Game.setCurrentMode(Game.Mode.MULTIPLAYER_JOIN);
                                     gameObject.intrface.getGameMenu().getTitle().setContent("MULTIPLAYER");
@@ -908,7 +907,7 @@ public class Command implements Callable<Object> {
                                     boolean ok = false;
                                     if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
                                         ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
-                                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
+                                        gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
                                         Game.setCurrentMode(Game.Mode.MULTIPLAYER_HOST);
                                         gameObject.intrface.getGameMenu().getTitle().setContent("MULTIPLAYER");
                                     }

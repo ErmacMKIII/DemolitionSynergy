@@ -60,7 +60,7 @@ public class PerspectiveRenderer implements CoreRenderer {
      * Update perspective to window resolution (dimension)
      */
     public void updatePerspective() {
-        loadPerspective(FOV, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), NEAR_PLANE, FAR_PLANE);
+        loadPerspective(FOV, gameObject.gameWindow.getWidth(), gameObject.gameWindow.getHeight(), NEAR_PLANE, FAR_PLANE);
     }
 
     /**

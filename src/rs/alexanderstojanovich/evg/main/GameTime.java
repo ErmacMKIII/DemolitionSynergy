@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evg.main;
 import org.joml.Vector3f;
 
 /**
+ * Game time. Method now retrieves current game time as structure.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -37,7 +38,7 @@ public class GameTime {
     protected int days = 0;
 
     /**
-     * Get current ingame time fields in HH:mm:ss (in 24 hour format).
+     * Get current game time fields in HH:mm:ss (in 24-hour format).
      *
      * @return GameTime
      */

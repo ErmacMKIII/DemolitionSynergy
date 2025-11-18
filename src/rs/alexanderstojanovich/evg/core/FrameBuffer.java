@@ -137,7 +137,7 @@ public class FrameBuffer {
     public static void unbind(GameObject gameObject) {
         // render to the screen
         GL30.glBindFramebuffer(GL30.GL_FRAMEBUFFER, 0);
-        GL11.glViewport(0, 0, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight());
+        GL11.glViewport(0, 0, gameObject.gameWindow.getWidth(), gameObject.gameWindow.getHeight());
     }
 
     public void release() {

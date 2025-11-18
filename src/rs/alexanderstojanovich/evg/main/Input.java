@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.Arrays;
+
 /**
  * Game Input (POCO) class.
  *
@@ -107,9 +109,7 @@ public class Input {
      */
     public void clear() {
         // Reset direction keys
-        for (int i = 0; i < directionKeys.length; i++) {
-            directionKeys[i] = false;
-        }
+        Arrays.fill(directionKeys, false);
 
         // Reset mouse movement
         moveMouse = false;
@@ -127,9 +127,7 @@ public class Input {
         turnRight = false;
 
         // Reset numeric keys
-        for (int i = 0; i < numericKeys.length; i++) {
-            numericKeys[i] = false;
-        }
+        Arrays.fill(numericKeys, false);
 
         // Reset modifier keys
         leftShift = false;

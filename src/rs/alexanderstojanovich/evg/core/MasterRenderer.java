@@ -47,13 +47,13 @@ public class MasterRenderer implements CoreRenderer {
      */
     public void initGL(Configuration cfg) {
         // load context
-        gameObject.WINDOW.loadContext();
+        gameObject.gameWindow.loadContext();
 
         // create openGL context        
         glCaps = GL.createCapabilities();
 
         // enable/disable vsync
-        gameObject.WINDOW.setVSync(cfg.isVsync());
+        gameObject.gameWindow.setVSync(cfg.isVsync());
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);

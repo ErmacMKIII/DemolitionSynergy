@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.joml.Vector4f;
 
 /**
+ * Location property. Used in {@link BlockLocation} class.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */

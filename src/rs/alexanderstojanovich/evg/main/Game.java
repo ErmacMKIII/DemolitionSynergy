@@ -969,15 +969,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
         };
-        GLFW.glfwSetKeyCallback(gameObject.WINDOW.getWindowID(), defaultKeyCallback);
+        GLFW.glfwSetKeyCallback(gameObject.gameWindow.getWindowID(), defaultKeyCallback);
 
-        GLFW.glfwSetInputMode(gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPos(gameObject.WINDOW.getWindowID(), gameObject.WINDOW.getWidth() / 2.0, gameObject.WINDOW.getHeight() / 2.0);
+        GLFW.glfwSetInputMode(gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPos(gameObject.gameWindow.getWindowID(), gameObject.gameWindow.getWidth() / 2.0, gameObject.gameWindow.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                float xposGL = (float) (xpos / gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
-                float yposGL = (float) (0.5f - ypos / gameObject.WINDOW.getHeight()) * 2.0f;
+                float xposGL = (float) (xpos / gameObject.gameWindow.getWidth() - 0.5f) * 2.0f;
+                float yposGL = (float) (0.5f - ypos / gameObject.gameWindow.getHeight()) * 2.0f;
 
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
@@ -990,7 +990,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 lastY = (float) yposGL;
             }
         };
-        GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
+        GLFW.glfwSetCursorPosCallback(gameObject.gameWindow.getWindowID(), defaultCursorCallback);
 
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
@@ -1002,7 +1002,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
         };
-        GLFW.glfwSetMouseButtonCallback(gameObject.WINDOW.getWindowID(), defaultMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(gameObject.gameWindow.getWindowID(), defaultMouseButtonCallback);
     }
 
     @Override
@@ -1188,11 +1188,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // Set short timeout of 10 sec
                         this.timeout = Game.DEFAULT_SHORTENED_TIMEOUT;
                         // Loop through all fragment indices
-                        for (int fragmentIndex = 0; fragmentIndex < totalIndices && !gameObject.WINDOW.shouldClose(); fragmentIndex++) {
+                        for (int fragmentIndex = 0; fragmentIndex < totalIndices && !gameObject.gameWindow.shouldClose(); fragmentIndex++) {
                             boolean success = false;
 
                             // Try up to MAX_ATTEMPTS to get the fragment
-                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success && !gameObject.WINDOW.shouldClose(); attempt++) {
+                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success && !gameObject.gameWindow.shouldClose(); attempt++) {
                                 // Request the next fragment
                                 RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
                                 fragmentRequest.send(this, session);
@@ -1344,7 +1344,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // display ping in game window title
-        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
+        gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
 
         // calculate interpolation factor
         interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
@@ -1526,7 +1526,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         gameObject.intrface.getGuideText().setEnabled(false);
 
         // Main Loop
-        while (!gameObject.WINDOW.shouldClose()) {
+        while (!gameObject.gameWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             gameTicks += deltaTime * Game.TPS;
@@ -1540,7 +1540,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Detecting critical status
             if (ups == 0 && deltaTime > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.WINDOW.close();
+                gameObject.gameWindow.close();
                 break;
             }
 
@@ -1786,7 +1786,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                if (!gameObject.WINDOW.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
+                if (!gameObject.gameWindow.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
                     synchronized (requestList) {
                         if (requestList.size() < MAX_SIZE) {
                             requestList.add(goodByeRequest);
@@ -2105,10 +2105,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static Configuration makeConfig(GameObject gameObject) {
         Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
-        cfg.setWidth(gameObject.WINDOW.getWidth());
-        cfg.setHeight(gameObject.WINDOW.getHeight());
-        cfg.setFullscreen(gameObject.WINDOW.isFullscreen());
-        cfg.setVsync(gameObject.WINDOW.isVsync());
+        cfg.setWidth(gameObject.gameWindow.getWidth());
+        cfg.setHeight(gameObject.gameWindow.getHeight());
+        cfg.setFullscreen(gameObject.gameWindow.isFullscreen());
+        cfg.setVsync(gameObject.gameWindow.isVsync());
         cfg.setWaterEffects(gameObject.waterRenderer.getEffectsQuality().ordinal());
         cfg.setShadowEffects(gameObject.shadowRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);

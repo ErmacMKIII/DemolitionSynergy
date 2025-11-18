@@ -41,12 +41,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Game;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.BACKWARD;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.DOWN;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.FORWARD;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.LEFT;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.RIGHT;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.UP;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
@@ -57,6 +51,9 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
+ * World block.
+ * Based on model.
+ * Each has unique id.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -92,7 +89,8 @@ public class Block extends Model {
 
     private boolean verticesReversed = false;
 
-    protected int id = 0;
+    // unique id
+    private final int id;
 
     public static final Vector3f[] FACE_NORMALS = {
         new Vector3f(-1.0f, 0.0f, 0.0f),
@@ -165,6 +163,7 @@ public class Block extends Model {
 
     public Block(Model other) {
         super(other);
+        id = genId();
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
@@ -649,8 +648,7 @@ public class Block extends Model {
 
     /**
      * Reverse face vertex order. All Faces. (Water)
-     *
-     * Faces are provided before hand. Therefore potential for reducing overhead
+     * Faces are provided beforehand. Therefore, potential for reducing overhead
      * (and improve performance).
      *
      * @param camFront camera front (ray trace cap)
@@ -847,8 +845,6 @@ public class Block extends Model {
                 disableFace(j);
             }
         }
-
-        this.id = genId();
 
         return counter;
     }
@@ -1625,7 +1621,7 @@ public class Block extends Model {
     public String toString() {
         StringBuilder sb = new StringBuilder(super.toString());
         sb.append("Block{");
-        sb.append("enabledFaces=").append(enabledFaces);
+        sb.append("enabledFaces=").append(Arrays.toString(enabledFaces));
         sb.append(", verticesReversed=").append(verticesReversed);
         sb.append('}');
         return sb.toString();
@@ -1652,7 +1648,7 @@ public class Block extends Model {
      * @return unique int
      */
     private int genId() {
-        return ModelUtils.blockSpecsToUniqueInt(solid, texName, getFaceBits(), pos);
+        return ModelUtils.blockSpecsToUniqueInt(solid, texName, pos);
     }
 
     /**
@@ -1667,25 +1663,21 @@ public class Block extends Model {
     @Override
     public void setTexNameWithDeepCopy(String texName) {
         super.setTexNameWithDeepCopy(texName);
-        id = genId();
     }
 
     @Override
     public void setTexName(String texName) {
         super.setTexName(texName);
-        id = genId();
     }
 
     @Override
     public void setPos(Vector3f pos) {
         super.setPos(pos);
-        id = genId();
     }
 
     @Override
     public void setSolid(boolean solid) {
         super.setSolid(solid);
-        id = genId();
     }
 
 }

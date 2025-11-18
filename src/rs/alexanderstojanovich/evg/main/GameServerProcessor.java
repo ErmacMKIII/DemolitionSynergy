@@ -41,19 +41,11 @@ import static rs.alexanderstojanovich.evg.main.GameServer.MAX_CLIENTS;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.net.ClientInfo;
 import rs.alexanderstojanovich.evg.net.DSObject;
-import static rs.alexanderstojanovich.evg.net.DSObject.DataType.INT;
-import static rs.alexanderstojanovich.evg.net.DSObject.DataType.STRING;
 import rs.alexanderstojanovich.evg.net.LevelMapInfo;
 import rs.alexanderstojanovich.evg.net.PlayerInfo;
 import rs.alexanderstojanovich.evg.net.PosInfo;
 import rs.alexanderstojanovich.evg.net.Request;
 import rs.alexanderstojanovich.evg.net.RequestIfc;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.DOWNLOAD;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_POS;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GET_TIME;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.GOODBYE;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.HELLO;
-import static rs.alexanderstojanovich.evg.net.RequestIfc.RequestType.PING;
 import rs.alexanderstojanovich.evg.net.Response;
 import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -189,7 +181,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                     msg = String.format("Hello, you are connected to %s, v%s, for help append \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
                     response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                     gameServer.clients.add(new ClientInfo(session, clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
-                    gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
+                    gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                     response.send(clientGuid, gameServer, session);
                 }
                 break;
@@ -245,7 +237,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(clientGuid, gameServer, session);
                 gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
-                gameServer.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
+                gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
                 if (clientGuid != null) {
                     GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }

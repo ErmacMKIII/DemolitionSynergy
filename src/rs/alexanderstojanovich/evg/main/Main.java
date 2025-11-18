@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
+ * Main class with main method for Demolition Synergy (game client)
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -38,7 +39,7 @@ public class Main {
             CacheModule.deleteCache();
             Configuration inCfg = Configuration.getInstance();
             inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults
-            IList<String> argsList = new GapList();
+            IList<String> argsList = new GapList<>();
             argsList.addAll(Arrays.asList(args));
             final boolean logToFile = (argsList.contains("-logtofile") || inCfg.isLogToFile()); // determine debug flag (write in a log file or not)
             String arg = argsList.getIf(a -> a.equals("-" + DSLogger.DSLogLevel.ERR.name()) || a.equals("-" + DSLogger.DSLogLevel.DEBUG.name()) || a.equals("-" + DSLogger.DSLogLevel.ALL.name()));

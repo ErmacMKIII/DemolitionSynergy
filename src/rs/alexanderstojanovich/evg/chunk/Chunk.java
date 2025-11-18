@@ -111,7 +111,7 @@ public interface Chunk { // some operations are mutually exclusive
      * @return block if found (null if not found)
      */
     public static Block getBlock(Tuple tuple, Vector3f pos) {
-        Integer key = ModelUtils.blockSpecsToUniqueInt(tuple.isSolid(), tuple.texName(), tuple.faceBits(), pos);
+        Integer key = ModelUtils.blockSpecsToUniqueInt(tuple.isSolid(), tuple.texName(), pos);
         int left = 0;
         int right = tuple.blockList.size() - 1;
         int startIndex = -1;

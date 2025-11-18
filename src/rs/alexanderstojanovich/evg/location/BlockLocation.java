@@ -32,6 +32,9 @@ import rs.alexanderstojanovich.evg.models.Block;
  */
 public class BlockLocation {
 
+    /**
+     * Big static array of location property (what type of block occupies x-y-z space)
+     */
     protected final TexByte[][][] locationMap = new TexByte[Chunk.BOUND][Chunk.BOUND][Chunk.BOUND];
     public final Key1List<TexByte, Integer> locationProperties = new Key1List.Builder<TexByte, Integer>()
             .withListBig(true)

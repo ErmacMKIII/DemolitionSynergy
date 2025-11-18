@@ -48,6 +48,10 @@ Unique features:
 ![Alt text](/misc/DSynergy10.png?raw=true "Multiplayer #2")
 
 # How To Build
+
+Build can be opened with Apache NetBeans IDE 21 (becoming obsolete).
+However, advised to use IntelliJ IDEA 2025.2.4 (Community Edition).
+
 Build was coded in Apache NetBeans IDE 21. Requires Java JDK 11 (or later).
 In order to build the project you are gonna need NetBeans IDE 16 (or later) and following libraries:
 1. LWJGL 3.3.6 with JOML 1.10.7 (not installed, follow the steps below),

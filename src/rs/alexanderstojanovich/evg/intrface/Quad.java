@@ -338,13 +338,13 @@ public class Quad implements ComponentIfc {
     }
 
     public float giveRelativeWidth(Intrface intrface) {
-        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return width * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getWidth() / (float) Window.MIN_WIDTH;
+        return width * widthFactor / (float) intrface.gameObject.gameWindow.getWidth();
     }
 
     public float giveRelativeHeight(Intrface intrface) {
-        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return height * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getHeight() / (float) Window.MIN_HEIGHT;
+        return height * heightFactor / (float) intrface.gameObject.gameWindow.getHeight();
     }
 
     /**

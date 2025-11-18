@@ -633,32 +633,23 @@ public class ModelUtils {
      *
      * @param solid is block solid
      * @param texName texName[5] string,
-     * @param facebits
      * @param pos float3(x,y,z) vector
      *
      * @return unique int
      */
-    public static int blockSpecsToUniqueInt(boolean solid, String texName, int facebits, Vector3f pos) {
-        // Convert boolean solid to integer (0 for false, 1 for true)
-        int a = solid ? 1 : 0;
-
-        // Texture index
-        int b = Texture.getOrDefaultIndex(texName);
-
-        // Use Chunk function for the position
-        int c = Chunk.chunkFunc(pos);
-
-        // Scale and convert position components to integers
+    public static int blockSpecsToUniqueInt(boolean solid, String texName, Vector3f pos) {
+        // Convert position to integer coordinates (assuming reasonable bounds)
         int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
         int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
         int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
 
-        // Combine position components into a single value
-        int posHash = x * 73856093 ^ y * 19349663 ^ z * 83492791; // Use large prime numbers
+        // Bit packing: [solid(1bit)][facebits(3bits)][texture(8bits)][x(8bits)][y(8bits)][z(8bits)]
+        int result = (solid ? 1 : 0) << 31;        // bit 31
+        result |= (Texture.getOrDefaultIndex(texName) & 0xFF) << 20; // bits 20-27
+        result |= (x & 0xFF) << 12;                // bits 12-19
+        result |= (y & 0xFF) << 4;                 // bits 4-11
+        result |= (z & 0xF);                       // bits 0-3
 
-        // Combine all components into a single unique integer
-        int result = Short.MAX_VALUE | ((a * 31) ^ (b * 17) ^ (c * 13) ^ (facebits * 7) ^ posHash);
-
-        return result;
+        return result & 0x7FFFFFFF; // Ensure positive
     }
 }

@@ -226,7 +226,7 @@ public class Intrface {
                             break;
                         case "EXIT":
                             gameObject.game.disconnectFromServer();
-                            gameObject.WINDOW.close();
+                            gameObject.gameWindow.close();
                             break;
                     }
                 }
@@ -276,7 +276,7 @@ public class Intrface {
             gameMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
             // -----------------------------------------------------------------
             saveDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!", this) {
+                    "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCCESSFULLY!", "SAVING LEVEL FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     Editor.deselect();
@@ -290,7 +290,7 @@ public class Intrface {
             };
 
             loadDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!", this) {
+                    "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCCESSFULLY!", "LOADING LEVEL FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status;
@@ -337,7 +337,7 @@ public class Intrface {
             loadLvlMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
             randLvlDialog = new ConcurrentDialog(gameObject.GameAssets.FONT, new Vector2f(-0.95f, 0.65f),
-                    "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCESSFULLY!", "LEVEL GENERATION FAILED!", this) {
+                    "GENERATE RANDOM LEVEL\n(TIME-CONSUMING OPERATION) (Y/N)? ", "LEVEL GENERATED SUCCESSFULLY!", "LEVEL GENERATION FAILED!", this) {
                 @Override
                 protected ExecStatus execute(String command) {
                     ExecStatus status = ExecStatus.IN_PROGRESS;
@@ -441,7 +441,7 @@ public class Intrface {
                                 if (gameObject.gameServer.isRunning() && !gameObject.gameServer.isShutDownSignal()) {
                                     ok |= gameObject.generateMultiPlayerLevelAsHost(numBlocks);
                                     status = (ok) ? ExecStatus.SUCCESS : ExecStatus.FAILURE;
-                                    gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
+                                    gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.gameServer.getWorldName() + " - Player Count: " + (1 + gameObject.gameServer.clients.size()));
                                     Game.setCurrentMode(Mode.MULTIPLAYER_HOST);
                                     gameMenu.getTitle().setContent("MULTIPLAYER");
                                 }
@@ -462,7 +462,7 @@ public class Intrface {
 
             Object[] ticksPerUpdate = {1, 2, 3};
             Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
-            Object[] resolutions = gameObject.WINDOW.giveAllResolutions();
+            Object[] resolutions = gameObject.gameWindow.giveAllResolutions();
             Object[] swtch = {"OFF", "ON"};
             Object[] swtchFX = {"NONE", "LOW", "MEDIUM", "HIGH", "ULTRA"};
             Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
@@ -479,9 +479,9 @@ public class Intrface {
                     this,
                     resolutions,
                     MenuValue.Type.STRING,
-                    String.valueOf(gameObject.WINDOW.getWidth()) + "x" + String.valueOf(gameObject.WINDOW.getHeight()))));
-            optionsMenuPairs.add(new MenuItem(this, "FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isFullscreen() ? "ON" : "OFF")));
-            optionsMenuPairs.add(new MenuItem(this, "VSYNC", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.WINDOW.isVsync() ? "ON" : "OFF")));
+                    String.valueOf(gameObject.gameWindow.getWidth()) + "x" + String.valueOf(gameObject.gameWindow.getHeight()))));
+            optionsMenuPairs.add(new MenuItem(this, "FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.gameWindow.isFullscreen() ? "ON" : "OFF")));
+            optionsMenuPairs.add(new MenuItem(this, "VSYNC", Menu.EditType.EditMultiValue, new MultiValue(this, swtch, MenuValue.Type.STRING, gameObject.gameWindow.isVsync() ? "ON" : "OFF")));
             optionsMenuPairs.add(new MenuItem(this, "WATER EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(this, swtchFX, MenuValue.Type.STRING, gameObject.waterRenderer.getEffectsQuality().toString())));
             optionsMenuPairs.add(new MenuItem(this, "SHADOW EFFECTS", Menu.EditType.EditMultiValue, new MultiValue(this, swtchFX, MenuValue.Type.STRING, gameObject.shadowRenderer.getEffectsQuality().toString())));
             optionsMenuPairs.add(new MenuItem(this, "MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(this, mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
@@ -916,7 +916,7 @@ public class Intrface {
                                         console.write("Connected to server!");
                                         double endTime = GLFW.glfwGetTime();
                                         long tripTime = Math.round((endTime - beginTime) * 1000.0);
-                                        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
+                                        gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + " ( " + tripTime + " ms )");
                                         if (gameObject.generateMultiPlayerLevelAsJoin()) {
                                             Game.setCurrentMode(Mode.MULTIPLAYER_JOIN);
                                             gameMenu.getTitle().setContent("MULTIPLAYER");

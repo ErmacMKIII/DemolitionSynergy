@@ -202,7 +202,7 @@ public class GameServer implements DSMachine, Runnable {
                 clients.removeIf(cli -> cli.timeToLive <= 0 || kicklist.contains(cli.uniqueId));
 
                 // Update server window title with current player count
-                GameServer.this.gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
+                GameServer.this.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
             }
         };
         timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
@@ -220,7 +220,7 @@ public class GameServer implements DSMachine, Runnable {
             // Send 'notification' that server ic shutting down..
             this.shutDownSignal = true;
             // Reset server window title
-            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE);
+            gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE);
 
             // Kick all players (and close their sessions internally)            
             clients.immutableList().forEach(cli -> kickPlayer(cli.uniqueId));
@@ -309,7 +309,7 @@ public class GameServer implements DSMachine, Runnable {
             acceptor.bind(endpoint);
 
             // Update server window title with current player count
-            gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
+            gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
 
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
