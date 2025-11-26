@@ -143,6 +143,11 @@ public class LevelContainer implements GravityEnviroment {
     public static final BlockLocation AllBlockMap = new BlockLocation();
 
     /**
+     * Various items like e.g. weapons on the ground
+     */
+    public final ItemSystem items = new ItemSystem();
+
+    /**
      * Module responsible for caching chunks in SSD/HDD file(s).
      */
     public final CacheModule cacheModule;
@@ -159,11 +164,12 @@ public class LevelContainer implements GravityEnviroment {
     protected float fallVelocity = 0.0f;
     protected float jumpVelocity = 0.0f;
 
+    /**
+     * Weapon in hands
+     */
     public final Weapons weapons;
 
     public boolean gravityOn = false;
-
-    public static final int NUM_OF_PASSES_MAX = Configuration.getInstance().getOptimizationPasses();
 
     /**
      * Update on put neighbours location on tex byte properties
@@ -312,6 +318,7 @@ public class LevelContainer implements GravityEnviroment {
         gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
 
         chunks.clear();
+        items.clear();
         levelActors.npcList.clear();
         AllBlockMap.init();
 
@@ -331,6 +338,9 @@ public class LevelContainer implements GravityEnviroment {
                 blk.getPrimaryRGBAColor().z = 0.0f;
 
                 chunks.addBlock(blk);
+
+                Model weaponItem = weapons.DESERT_EAGLE.asItem(new Vector3f(blk.pos.x, blk.pos.y + 2f, blk.pos.z), blk.getPrimaryRGBAColor());
+                items.allWeaponItems.add(weaponItem);
 
                 progress += 100.0f / 9.0f;
             }
@@ -375,7 +385,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         chunks.clear();
-
+        items.clear();
         AllBlockMap.init();
 
         lightSources.retainLights(2);
@@ -422,7 +432,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         chunks.clear();
-
+        items.clear();
         AllBlockMap.init();
 
         lightSources.retainLights(2);
@@ -474,7 +484,7 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         chunks.clear();
-
+        items.clear();
         AllBlockMap.init();
 
         lightSources.retainLights(2);
@@ -1230,20 +1240,22 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Optimize to update block environment. Block environment is ensuring that
-     * there is no created overhead in rendering.
-     *
+     * Optimize to update block environment & items in environment.
+     * Block environment is ensuring that there is no created overhead in rendering.
      * Blocks from all the chunks are being taken into consideration.
-     *
+     * All items are being preprocessed and selected prior render.
      */
-    public void optimizeBlockEnvironment() {
+    public void optimizeEnvironment() {
         if (!working && !vChnkIdList.isEmpty()) {
             Camera mainCamera = levelActors.mainCamera();
-            // provide visible chunk id(entifier) list, camera view eye and camera position
+            // provide visible chunk identifier list, camera view eye and camera position
             // where all the blocks are pulled into optimized tuples
             synchronized (blockEnvironment) {
                 blockEnvironment.optimizeTuples(vChnkIdList, mainCamera);
             }
+
+            // preprocess items which are rendered
+            items.preprocessItems(vChnkIdList, mainCamera);
         }
     }
 
@@ -1260,7 +1272,7 @@ public class LevelContainer implements GravityEnviroment {
         // this portion of the code renders level actors
         // render observer/player
         levelActors.render(lightSources, ShaderProgram.getPlayerShader(), ShaderProgram.getMainShader());
-        // render same camera to eniromental (voxel) shaders
+        // render same camera to environmental (voxel) shaders
         for (ShaderProgram sp : ShaderProgram.ENVIRONMENTAL_SHADERS) {
             levelActors.mainCamera().render(sp);
         }
@@ -1269,7 +1281,7 @@ public class LevelContainer implements GravityEnviroment {
             SUN.bufferAll();
         }
 
-        if (SUNLIGHT.getIntensity() > 0.0f) {
+        if (SUNLIGHT.getIntensity() > 0.0f && levelActors.mainCamera().doesSeeEff(SUN, 15f)) {
             SUN.render(lightSources, ShaderProgram.getMainShader());
         }
 
@@ -1293,13 +1305,17 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             Block selectionDecal = Editor.Decal;
-            if (selectionDecal != null && Editor.isDecalActive()) {
+            if (Editor.isDecalActive()) {
                 if (!selectionDecal.isBuffered()) {
                     selectionDecal.bufferAll();
                 }
                 selectionDecal.renderContour(lightSources, ShaderProgram.getContourShader());
             }
         }
+
+        // render weapons (animated)
+        items.render(lightSources, ShaderProgram.getMainShader());
+
         // render light overlay
         LightSources.render(gameObject.intrface, levelActors.mainCamera(), this, ShaderProgram.getLightShader());
         lightSources.resetAllModified();
@@ -1327,7 +1343,7 @@ public class LevelContainer implements GravityEnviroment {
             SUN.bufferAll();
         }
 
-        if (SUNLIGHT.getIntensity() > 0.0f) {
+        if (SUNLIGHT.getIntensity() > 0.0f && levelActors.mainCamera().doesSeeEff(SUN, 15f)) {
             SUN.render(lightSources, baseShader);
         }
 
@@ -1349,13 +1365,16 @@ public class LevelContainer implements GravityEnviroment {
             }
 
             Block selectionDecal = Editor.Decal;
-            if (selectionDecal != null && Editor.isDecalActive()) {
+            if (Editor.isDecalActive()) {
                 if (!selectionDecal.isBuffered()) {
                     selectionDecal.bufferAll();
                 }
                 selectionDecal.renderContour(lightSources, baseShader);
             }
         }
+
+        // render weapons
+        items.render(lightSources, ShaderProgram.getMainShader());
     }
 
     // -------------------------------------------------------------------------

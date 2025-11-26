@@ -182,7 +182,7 @@ public class BlockEnvironment {
             // Check if all lookup tuples exist in optimized list
             boolean consistent = tupleLookup.values().stream()
                     .flatMap(m -> m.values().stream())
-                    .allMatch(t -> optimizedTuples.contains(t));
+                    .allMatch(optimizedTuples::contains);
 
             if (!consistent || tupleLookup.isEmpty()) {
                 tupleLookup.clear();
@@ -264,7 +264,7 @@ public class BlockEnvironment {
     private boolean processChunkBlocks(IList<Integer> vqueue, Camera camera, Tuple tuple) {
         boolean modified = false;
 
-        final float angleDegrees = 30f;
+        final float angleDegrees = 15f;
 
         // Clear entire tuple
         tuple.blockList.clear();
@@ -424,7 +424,7 @@ public class BlockEnvironment {
 
         IList<Tuple> filtered;
         synchronized (optimizedTuples) {
-            optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(ot -> ot.bufferAll());
+            optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(Tuple::bufferAll);
             filtered = optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0);
         }
         Tuple.renderInstanced(
@@ -497,7 +497,7 @@ public class BlockEnvironment {
      * Delete all the resources
      */
     public synchronized void release() {
-        optimizedTuples.forEach(t -> t.release());
+        optimizedTuples.forEach(Tuple::release);
     }
 
     /**

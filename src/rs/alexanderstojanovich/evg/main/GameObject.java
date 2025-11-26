@@ -259,12 +259,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     /**
      * Perform optimization (of chunks). Optimization is collecting all tuples
-     * with blocklist from all chunks into one tuple selection.
+     * with blocklist from all chunks into one tuple selection. Also, optimization is done to the items.
      */
     public void updateNoptimizeChunks() {
         if (!isWorking()) {
-            // run block environment updateEnvironment n optimizaiton
-            levelContainer.optimizeBlockEnvironment();
+            // run block environment update and optimization
+            levelContainer.optimizeEnvironment();
         }
     }
 
@@ -529,6 +529,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.levelActors.spectator.setPos(new Vector3f());
         levelContainer.levelActors.npcList.clear();
         levelContainer.levelActors.otherPlayers.clear();
+        levelContainer.items.clear();
         if (!gameServer.isShutDownSignal() && !gameWindow.shouldClose()) {
             gameWindow.setTitle(GameObject.WINDOW_TITLE);
         }

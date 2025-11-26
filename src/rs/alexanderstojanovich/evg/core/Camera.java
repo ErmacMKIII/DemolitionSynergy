@@ -315,7 +315,7 @@ public class Camera implements Observer { // is 3D looking camera
      * @return wether or not camera does see model
      */
     public boolean doesSeeEff(Model model) {
-        final float cosine = (float) Math.cos(Math.toRadians(0.25f));
+        final float cosine = (float) Math.cos(Math.toRadians(45f));
         final Vector3f camFrontNeg = new Vector3f(-front.x, -front.y, -front.z);
 
         // Reusable vectors to avoid object creation in loop
