@@ -25,6 +25,7 @@ import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL32;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.light.LightSources;
@@ -257,53 +258,90 @@ public class Model implements Renderable, Comparable<Model> {
      * BLOCKS etc}
      * @param shaderProgram shaderProgram for the models
      */
-    @Deprecated
     public static void render(List<Model> models, int vbo, int ibo, LightSources lightSources, ShaderProgram shaderProgram) {
+        // Bind common buffers once
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
+        // Enable vertex attribute arrays
         GL20.glEnableVertexAttribArray(0);
         GL20.glEnableVertexAttribArray(1);
         GL20.glEnableVertexAttribArray(2);
 
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // this is for pos
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // this is for normal
-        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // this is for uv
+        // Setup vertex attribute pointers (these are the same for all models)
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 0); // pos
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 12); // normal
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, Vertex.SIZE * 4, 24); // uv
 
         if (shaderProgram != null) {
             shaderProgram.bind();
 
+            // Bind attributes (only once, outside the loop)
             shaderProgram.bindAttribute(0, "pos");
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
 
-            for (Model model : models) {
-                model.transform(shaderProgram);
-                lightSources.updateLightsInShaderIfModified(shaderProgram);
+            // Update game time uniform (only once, same for all models)
+            shaderProgram.updateUniform((float) GameTime.Now().getTime(), "gameTime");
 
-                if (!model.meshes.isEmpty() && !model.safeCheck && !model.materials.isEmpty() && model.materials.getFirst().texture.isBuffered()) {
-                    final Mesh mesh = model.meshes.getFirst();
-                    Texture primaryTexture = Texture.getOrDefault(model.texName);
-                    if (primaryTexture != null) { // this is primary texture
-                        model.primaryColor(shaderProgram);
-                        primaryTexture.bind(0, shaderProgram, "modelTexture0");
-                    }
-                    GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(), GL11.GL_UNSIGNED_INT, 0);
-                    Texture.unbind(0);
-                    Texture.unbind(1);
+            // Update lights in shader (only once if not modified)
+            lightSources.updateLightsInShaderIfModified(shaderProgram);
+
+            // Track offset in the index buffer for each model
+            int indexOffset = 0;
+
+            for (Model model : models) {
+                // Skip models that are not ready for rendering
+                if (model.meshes.isEmpty() || model.safeCheck || model.materials.isEmpty()
+                        || !model.materials.getFirst().texture.isBuffered()) {
+                    continue;
                 }
+
+                final Mesh mesh = model.meshes.getFirst();
+
+                // Update model-specific transformation matrix
+                model.transform(shaderProgram);
+
+                // Bind primary texture
+                Texture primaryTexture = Texture.getOrDefault(model.texName);
+                if (primaryTexture != null) {
+                    model.primaryColor(shaderProgram);
+                    primaryTexture.bind(0, shaderProgram, "modelTexture0");
+                }
+
+                // Bind secondary texture (water) if available
+                if (model.waterTexture != null) {
+                    model.secondaryColor(shaderProgram);
+                    model.waterTexture.bind(1, shaderProgram, "modelTexture1");
+                }
+
+                // Draw the model with correct offset in index buffer
+                GL11.glDrawElements(GL11.GL_TRIANGLES, mesh.indices.size(),
+                        GL11.GL_UNSIGNED_INT, (long) indexOffset * Integer.BYTES);
+
+                // Unbind textures after drawing
+                Texture.unbind(0);
+                Texture.unbind(1);
+
+                // Advance offset for next model (assuming models are tightly packed in buffers)
+                indexOffset += mesh.indices.size();
             }
+
+            // Unbind element array buffer
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
         }
-        ShaderProgram.unbind();
 
+        // Cleanup: unbind shader and buffers
+        ShaderProgram.unbind();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+
+        // Disable vertex attribute arrays
         GL20.glDisableVertexAttribArray(0);
         GL20.glDisableVertexAttribArray(1);
         GL20.glDisableVertexAttribArray(2);
-
     }
 
-//    @Deprecated
+    //    @Deprecated
 //    public void release() {
 //        if (buffered) {
 //            GL15.glDeleteBuffers(vbo);
@@ -804,8 +842,22 @@ public class Model implements Renderable, Comparable<Model> {
         setSafeCheck();
     }
 
+    /**
+     * Get vertices of the model (it's mesh).
+     *
+     * @return model vertices
+     */
     public IList<Vertex> getVertices() {
         return meshes.getFirst().vertices;
+    }
+
+    /**
+     * Get indices of the model (it's mesh index of vertices order).
+     *
+     * @return model vertices
+     */
+    public IList<Integer> getIndices() {
+        return meshes.getFirst().indices;
     }
 
     public boolean isSafeCheck() {

@@ -469,6 +469,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Cache buffer deleted.", null);
         this.levelContainer.levelBuffer.release();
         this.levelContainer.blockEnvironment.release();
+        this.levelContainer.items.release();
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
 //        Quad.globlRelease();
