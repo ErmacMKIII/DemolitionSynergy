@@ -95,6 +95,12 @@ public class Input {
      * Mouse right used.
      */
     public boolean mouseRightButton = false;
+
+
+    /**
+     * Key F pressed (Editor new)
+     */
+    public boolean keyF_pressed = false;
     /**
      * Key N pressed (Editor new)
      */
@@ -137,6 +143,7 @@ public class Input {
 
         // Reset editor controls
         editorDeselect = false;
+        keyF_pressed = false;
         keyN_pressed = false;
         keyR_pressed = false;
 
@@ -209,6 +216,9 @@ public class Input {
         return mouseRightButton;
     }
 
+    public boolean isKeyF_pressed() {
+        return keyF_pressed;
+    }
     public boolean isKeyN_pressed() {
         return keyN_pressed;
     }

@@ -105,8 +105,7 @@ public class Editor {
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 int primaryKey = locVal.blkId;
-                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
-                selectedCurr = blk;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
 
                 break SCAN;
             }
@@ -147,8 +146,7 @@ public class Editor {
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 int primaryKey = locVal.blkId;
-                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
-                selectedCurr = blk;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
 
                 break SCAN;
             }

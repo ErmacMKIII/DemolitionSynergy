@@ -450,9 +450,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
                 actionPerformed = input.leftShift = true;
             }
-
             if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
                 actionPerformed = input.rightShift = true;
+            }
+            // Fix: Check mouseButtons array instead of keys array
+            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
+                actionPerformed = input.mouseLeftButton = true;
+            }
+            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
+                actionPerformed = input.mouseRightButton = true;
             }
             //----------------------------------------------------------------------
             if (moveMouse) {
@@ -541,76 +547,62 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      *
      */
     private void editorDo(LevelContainer lc) {
-        if (keys[GLFW.GLFW_KEY_N]) {
+        if (input.isKeyN_pressed()) {
             Editor.selectNew(lc);
-
         }
         //----------------------------------------------------------------------
-        if (input.mouseLeftButton && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrSolid(lc);
-        }
-
-        if (input.mouseRightButton && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrFluid(lc);
-
-        }
         //----------------------------------------------------------------------
-        if (input.numericKeys[1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[1] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.LEFT);
-
         }
-        if (input.numericKeys[2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[2] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.RIGHT);
-
         }
-        if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[3] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.BOTTOM);
-
         }
-        if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[4] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.TOP);
-
         }
-        if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[5] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.BACK);
-
         }
-        if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[6] && !(input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentSolid(lc, Block.FRONT);
-
         }
         //----------------------------------------------------------------------
-        if (input.numericKeys[1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[1] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.LEFT);
-
         }
-        if (input.numericKeys[2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[2] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.RIGHT);
-
         }
-        if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[3] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.BOTTOM);
-
         }
-        if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[4] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.TOP);
-
         }
-        if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[5] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.BACK);
-
         }
-        if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+        if (input.numericKeys[6] && (input.isLeftShift() || input.isRightShift())) {
             Editor.selectAdjacentFluid(lc, Block.FRONT);
         }
         //----------------------------------------------------------------------
-        if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
+        if (input.numericKeys[0] || input.keyF_pressed) {
             Editor.deselect();
-
         }
+        if (input.mouseLeftButton) {
+            if (input.isLeftShift() || input.isRightShift()) {
+                Editor.selectCurrFluid(lc);
+            } else {
+                Editor.selectCurrSolid(lc);
+            }
+        }
+
         if (input.mouseRightButton) {
             Editor.add(lc);
-
         }
         if (keys[GLFW.GLFW_KEY_R]) {
             Editor.remove(lc);
@@ -1470,13 +1462,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
-                        // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
+                        // causes of stopping repeatable jump (underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
-
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
@@ -1484,7 +1475,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
-                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        // causes of stopping repeatable jump (ups quarter, underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
