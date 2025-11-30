@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -447,6 +447,16 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
             //----------------------------------------------------------------------
+            if (keys[GLFW.GLFW_KEY_F]) {
+                actionPerformed = input.keyF_pressed = true;
+            }
+            if (keys[GLFW.GLFW_KEY_N]) {
+                actionPerformed = input.keyN_pressed = true;
+            }
+            if (keys[GLFW.GLFW_KEY_R]) {
+                actionPerformed = input.keyR_pressed = true;
+            }
+            //----------------------------------------------------------------------
             if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
                 actionPerformed = input.leftShift = true;
             }
@@ -544,7 +554,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Updates editor observer (actor) when in editor mode. Collision detection
      * is being handle in.
-     *
      */
     private void editorDo(LevelContainer lc) {
         if (input.isKeyN_pressed()) {
@@ -604,7 +613,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if (input.mouseRightButton) {
             Editor.add(lc);
         }
-        if (keys[GLFW.GLFW_KEY_R]) {
+        if (input.isKeyR_pressed()) {
             Editor.remove(lc);
         }
 

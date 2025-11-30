@@ -27,6 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -38,9 +39,11 @@ import rs.alexanderstojanovich.evg.core.Camera;
 import static rs.alexanderstojanovich.evg.level.LevelContainer.AllBlockMap;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.models.Block;
+import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 
 /**
  * Class responsible for load/save world operations.
@@ -192,9 +195,6 @@ public class LevelBuffer {
     public boolean storeLevelToBufferNewFormat() {
         levelContainer.working = true;
         boolean success = false;
-//        if (levelContainer.progress > 0.0f) {
-//            return false;
-//        }
         levelContainer.progress = 0.0f;
         levelContainer.levelActors.freeze();
         levelContainer.gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
@@ -227,7 +227,6 @@ public class LevelBuffer {
         mainBuffer.put((byte) 'K');
         mainBuffer.put((byte) 'S');
 
-        // Store the total number of blocks
         mainBuffer.putInt(allBlkSize);
 
         for (String texName : Assets.TEX_WORLD) {
@@ -253,8 +252,41 @@ public class LevelBuffer {
                 boolean solid = texByte.solid;
                 mainBuffer.put(solid ? (byte) 0xFF : (byte) 0x00);
 
-                levelContainer.progress += 100.0f / (float) allBlkSize;
+                levelContainer.progress += 50.0f / (float) allBlkSize;
             }
+        }
+
+        // Store weapon items
+        mainBuffer.put((byte) 'W');
+        mainBuffer.put((byte) 'E');
+        mainBuffer.put((byte) 'A');
+        mainBuffer.put((byte) 'P');
+
+        int weaponCount = levelContainer.items.allWeaponItems.size();
+        mainBuffer.putInt(weaponCount);
+
+        for (int i = 0; i < weaponCount; i++) {
+            if (levelContainer.gameObject.gameWindow.shouldClose()) {
+                break;
+            }
+            Model weaponModel = levelContainer.items.allWeaponItems.get(i);
+
+            // Weapon texture name (5 chars)
+            String weaponTexName = weaponModel.getTexName();
+            byte[] texNameBytes = weaponTexName.getBytes(StandardCharsets.US_ASCII);
+            for (int j = 0; j < 5; j++) {
+                mainBuffer.put(texNameBytes[j]);
+            }
+
+            // Weapon position (vec3f)
+            byte[] weaponPos = VectorFloatUtils.vec3fToByteArray(weaponModel.getPos());
+            mainBuffer.put(weaponPos);
+
+            // Weapon color (vec4f)
+            byte[] weaponCol = VectorFloatUtils.vec4fToByteArray(weaponModel.getPrimaryRGBAColor());
+            mainBuffer.put(weaponCol);
+
+            levelContainer.progress += 50.0f / (float) weaponCount;
         }
 
         mainBuffer.put((byte) 'E');
@@ -376,19 +408,14 @@ public class LevelBuffer {
      * buffer. Used in Multiplayer.
      *
      * @return on success
-     * @throws java.io.UnsupportedEncodingException
      */
-    public boolean loadLevelFromBufferNewFormat() throws UnsupportedEncodingException, Exception {
+    public boolean loadLevelFromBufferNewFormat() throws Exception {
         levelContainer.working = true;
         boolean success = false;
-//        if (levelContainer.progress > 0.0f) {
-//            return false;
-//        }
         levelContainer.progress = 0.0f;
         levelContainer.levelActors.freeze();
         levelContainer.gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true, true);
 
-        // Check the initial format identifiers
         if (mainBuffer.get() == 'D' && mainBuffer.get() == 'S' && mainBuffer.get() == '2') {
 
             AllBlockMap.init();
@@ -414,7 +441,6 @@ public class LevelBuffer {
             levelContainer.levelActors.configureMainObserver(campos, camfront, camup, camright);
 
             if (mainBuffer.get() == 'B' && mainBuffer.get() == 'L' && mainBuffer.get() == 'K' && mainBuffer.get() == 'S') {
-                // Read the total number of blocks
                 final int totalBlocks = mainBuffer.getInt();
                 if (totalBlocks <= 0) { // 'Empty world'
                     levelContainer.levelActors.unfreeze();
@@ -427,16 +453,17 @@ public class LevelBuffer {
                 }
 
                 int totalCount = totalBlocks;
-                while (totalCount != 0) {
+                int textureSetsProcessed = 0; // To track progress based on texture sets
+                while (totalCount != 0 || textureSetsProcessed < Assets.TEX_WORLD.length) {
                     char[] texNameChars = new char[5];
                     for (int i = 0; i < texNameChars.length; i++) {
                         texNameChars[i] = (char) mainBuffer.get();
                     }
                     String texName = new String(texNameChars);
+                    textureSetsProcessed++;
 
-                    // Block count for that texture type
                     int count = mainBuffer.getInt();
-                    if (count <= 0 || count > totalBlocks) {
+                    if (count < 0 || count > totalBlocks) {
                         throw new Exception("Error in level ndat file. File could be corrupted!");
                     }
 
@@ -453,7 +480,7 @@ public class LevelBuffer {
                         Block block = new Block(texName, blockPos, blockCol, solid);
                         levelContainer.chunks.addBlock(block);
 
-                        levelContainer.progress += 100.0f / (float) totalBlocks;
+                        levelContainer.progress += 50.0f / (float) totalBlocks;
                         if (totalCount-- < 0) {
                             throw new Exception("Error in level ndat file. File could be corrupted!");
                         }
@@ -462,6 +489,39 @@ public class LevelBuffer {
                     if (totalCount < 0) {
                         throw new Exception("Error in level ndat file. File could be corrupted!");
                     }
+                }
+            }
+
+            // Load weapon items
+            if (mainBuffer.get() == 'W' && mainBuffer.get() == 'E' && mainBuffer.get() == 'A' && mainBuffer.get() == 'P') {
+                int weaponCount = mainBuffer.getInt();
+
+                levelContainer.items.allWeaponItems.clear();
+
+                for (int i = 0; i < weaponCount && !levelContainer.gameObject.gameWindow.shouldClose(); i++) {
+                    char[] texNameChars = new char[5];
+                    for (int j = 0; j < texNameChars.length; j++) {
+                        texNameChars[j] = (char) mainBuffer.get();
+                    }
+                    String weaponTexName = new String(texNameChars);
+
+                    byte[] vec3fPosBytes = new byte[VEC3_LEN];
+                    mainBuffer.get(vec3fPosBytes);
+                    Vector3f weaponPos = VectorFloatUtils.vec3fFromByteArray(vec3fPosBytes);
+
+                    byte[] vec4fColBytes = new byte[VEC4_LEN];
+                    mainBuffer.get(vec4fColBytes);
+                    Vector4f weaponCol = VectorFloatUtils.vec4fFromByteArray(vec4fColBytes);
+
+                    // Reconstruct weapon model (you may need to adapt this based on your Model constructor)
+                    WeaponIfc weaponIfc = Arrays.stream(levelContainer.weapons.AllWeapons)
+                            .filter(x -> x.getTexName().equals(weaponTexName))
+                            .findFirst().get();
+                    Model weaponModel = weaponIfc.asItem(weaponPos, weaponCol);
+
+                    levelContainer.items.allWeaponItems.add(weaponModel);
+
+                    levelContainer.progress += 50.0f / (float) weaponCount;
                 }
             }
         }

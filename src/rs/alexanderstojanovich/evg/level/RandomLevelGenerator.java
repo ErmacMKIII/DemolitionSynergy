@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -302,7 +302,7 @@ public class RandomLevelGenerator {
     /**
      * Noise Task result
      */
-    protected class BlockResult {
+    protected static class BlockResult {
 
         public final int solidBlocks;
         public final int fluidBlocks;
@@ -468,12 +468,18 @@ public class RandomLevelGenerator {
 
     /**
      * Part II - Generate by Random.
+     * Blocks are generated in random patterns. This operation is very fast
+     * and attempts to cluster adjacent blocks to form contiguous structures
+     * (helps prevent water leaking).
      *
-     * Blocks are generated in random patterns. This operation is very fast.
-     *
-     * (To prevent water leaking).
-     *
-     * @param solidBlocks
+     * @param solidBlocks  number of solid blocks to generate
+     * @param fluidBlocks  number of fluid blocks to generate
+     * @param totalAmount  total number of blocks (used to report progress)
+     * @param posMin       minimum X/Z coordinate (inclusive, expected even)
+     * @param posMax       maximum X/Z coordinate (inclusive, expected even)
+     * @param hMin         minimum Y coordinate (inclusive, expected even)
+     * @param hMax         maximum Y coordinate (inclusive, expected even)
+     * @return the number of blocks actually generated
      */
     private int generateByRandom(int solidBlocks, int fluidBlocks, int totalAmount, int posMin, int posMax, int hMin, int hMax) {
         int genBlks = 0; // holds result
@@ -560,13 +566,24 @@ public class RandomLevelGenerator {
     }
 
     /**
-     * *
      * Part III - Generate fluid series.
      *
-     * All water blocks, apart from top one (rarely) are sides are surrounded by
-     * solid blocks. (To prevent water leaking).
+     * Ensures that most fluid blocks (water) are enclosed by solid blocks on their
+     * sides to prevent fluid leakage. For every fluid block currently present in
+     * the global block map, this method inspects adjacent free faces and attempts
+     * to place solid blocks to seal them. The top face is treated specially and
+     * will only be sealed with a probability to allow some open water surfaces.
      *
-     * @param solidBlocks
+     * The method updates the generation progress on the associated
+     * `levelContainer` and will stop early if the application window requests
+     * closing.
+     *
+     * Side effects:
+     * - Adds new solid `Block` instances to `levelContainer.chunks`.
+     * - Consumes from the `solidBlocks` budget as blocks are placed.
+     *
+     * @param solidBlocks the maximum number of solid blocks available for sealing
+     *                    fluid faces; may be reduced to zero during execution.
      */
     private void generateFluidSeries(int solidBlocks) {
         // Clouds arent generated only fluid
@@ -601,7 +618,7 @@ public class RandomLevelGenerator {
     /**
      * Weapon Task result
      */
-    protected class WeaponResult {
+    protected static class WeaponResult {
         public final int itemsGenerated;
 
         public WeaponResult(int itemsGenerated) {

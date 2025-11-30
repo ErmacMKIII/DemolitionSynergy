@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -640,12 +640,12 @@ public class Intrface {
 
             IList<MenuItem> creditsMenuPairs = new GapList<>();
             creditsMenuPairs.add(new MenuItem(this, "Programmer", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Aleksandar \"Ermac\" Stojanovic", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "\n", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Art", Menu.EditType.EditNoValue, null));
-            creditsMenuPairs.add(new MenuItem(this, "Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+            creditsMenuPairs.add(new MenuItem(this, "Aleksandar \"Ermac\" Stojanovic", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Music/FX", Menu.EditType.EditNoValue, null));
             creditsMenuPairs.add(new MenuItem(this, "Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
 

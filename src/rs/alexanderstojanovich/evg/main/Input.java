@@ -98,7 +98,7 @@ public class Input {
 
 
     /**
-     * Key F pressed (Editor new)
+     * Key F pressed (Editor deselect)
      */
     public boolean keyF_pressed = false;
     /**

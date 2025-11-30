@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2024 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -156,6 +156,9 @@ public class GameServer implements DSMachine, Runnable {
      */
     public void startServer() {
         this.shutDownSignal = false;
+
+        // Reset total failed attempts (important on server restart)
+        TotalFailedAttempts = 0;
 
         // Start server helper
         serverHelperExecutor = Executors.newSingleThreadExecutor();
