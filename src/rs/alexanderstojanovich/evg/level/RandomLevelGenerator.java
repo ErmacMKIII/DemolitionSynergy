@@ -17,9 +17,7 @@
 package rs.alexanderstojanovich.evg.level;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -32,13 +30,11 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.MathUtils;
-import rs.alexanderstojanovich.evg.weapons.Weapon;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 
 /**
@@ -603,70 +599,118 @@ public class RandomLevelGenerator {
     }
 
     /**
-     * Generate weapon items. Weapon items can appear only on solid blocks (above the water often and underwater rarely)
-     *
-     * @param numberOfBlocks parsed number of desired total blocks in the level
+     * Weapon Task result
      */
-    private void generateWeaponItems(int numberOfBlocks) {
-        // Reset progress
-        levelContainer.setProgress(0.0f);
-        // Random pool
-        Map<WeaponIfc.Clazz, Integer> poolMap = Map.ofEntries(
-            Map.entry( WeaponIfc.Clazz.OneHandedSmallGun, numberOfBlocks >> 10 ),
-            Map.entry( WeaponIfc.Clazz.TwoHandedSmallGun, numberOfBlocks >> 12 ),
-            Map.entry( WeaponIfc.Clazz.TwoHandedBigGuns, numberOfBlocks >> 14 )
-        );
+    protected class WeaponResult {
+        public final int itemsGenerated;
 
-        // Count total amount of weapons
-        int count = 0;
-        for (Integer v : poolMap.values()) {
-            count += v;
+        public WeaponResult(int itemsGenerated) {
+            this.itemsGenerated = itemsGenerated;
+        }
+    }
+
+    /**
+     * WeaponTask: Responsible for generating weapon items for one weapon class.
+     */
+    protected class WeaponTask implements Callable<WeaponResult> {
+        private final WeaponIfc.Clazz clazz;
+        private final int itemCount;
+        private final int totalCount;
+        private final IList<Vector3f> usedLocations;
+
+        public WeaponTask(WeaponIfc.Clazz clazz, int itemCount, int totalCount, IList<Vector3f> usedLocations) {
+            this.clazz = clazz;
+            this.itemCount = itemCount;
+            this.totalCount = totalCount;
+            this.usedLocations = usedLocations;
         }
 
-        // Used locations (only one weapon can occupy only one space)
-        IList<Vector3f> usedLocations = new GapList<>();
-
-        for (var entry : poolMap.entrySet()) {
+        @Override
+        public WeaponResult call() throws Exception {
+            int generated = 0;
             IList<WeaponIfc> allWeaponsByClazz = new GapList<>(Arrays.asList(levelContainer.weapons.AllWeapons));
-            IList<WeaponIfc> weapons = allWeaponsByClazz.filter(wep -> wep.getClazz() == entry.getKey());
-            for (int i = 0; i < entry.getValue(); i++) {
-                // Choose random index from all-weapons preset
+            IList<WeaponIfc> weapons = allWeaponsByClazz.filter(wep -> wep.getClazz() == clazz);
+
+            // Generate weapon items
+            for (int i = 0; i < itemCount; i++) {
                 int randIndex = random.nextInt(weapons.size());
-                // Random weapon
                 WeaponIfc randWeapon = weapons.get(randIndex);
 
-                // Solid populated locations (where weapon can spawn)
+                // find random solid location
                 IList<Vector3f> solidLocs;
                 if (random.nextFloat() >= 0.33f) {
-                    // above water
                     solidLocs = LevelContainer.AllBlockMap.getPopulatedLocations(texByte -> texByte.isSolid() && (~texByte.byteValue & Block.Y_MASK) != 0);
                 } else {
-                    // underwater
                     solidLocs = LevelContainer.AllBlockMap.getPopulatedLocations(texByte -> texByte.isSolid() && (~texByte.byteValue & Block.Y_MASK) == 0);
                 }
-                // Random location index
-                randIndex = random.nextInt(solidLocs.size());
 
-                // Random (solid) location
+                randIndex = random.nextInt(solidLocs.size());
                 Vector3f loc = solidLocs.get(randIndex);
 
-                if (usedLocations.contains(loc)) {
-                    levelContainer.incProgress(100.0f / (float) count);
-                    continue; // skip; weapon will not spawn
+                synchronized (usedLocations) {
+                    // check if location is already used
+                    if (usedLocations.contains(loc)) {
+                        levelContainer.incProgress(100.0f / (float) totalCount);
+                        continue;
+                    }
+                    usedLocations.add(loc);
                 }
 
-                // Weapon location (from random)
                 Vector3f wepLoc = new Vector3f(loc.x, loc.y + 2f, loc.z);
-
-                // Place weapon at random index -> solid location
                 Model weaponItem = randWeapon.asItem(wepLoc, GlobalColors.WHITE_RGBA);
-                levelContainer.items.allWeaponItems.add(weaponItem);
 
-                // Don't forget to add to used locations (since this place is now occupied)
-                usedLocations.add(loc);
+                // add to level container
+                synchronized (levelContainer.items.allWeaponItems) {
+                    levelContainer.items.allWeaponItems.add(weaponItem);
+                }
 
-                levelContainer.incProgress(100.0f / (float) count);
+                generated++;
+                levelContainer.incProgress(100.0f / (float) totalCount);
             }
+
+            return new WeaponResult(generated);
+        }
+    }
+
+    /**
+     * Generate weapon items in parallel tasks.
+     */
+    private void generateWeaponItems(int numberOfBlocks) {
+        levelContainer.setProgress(0.0f);
+
+        // Define pool map based on number of blocks
+        List<Integer> poolMap = Arrays.asList(
+                numberOfBlocks >> 10,
+                numberOfBlocks >> 12,
+                numberOfBlocks >> 14
+        );
+        int totalCount = poolMap.stream().mapToInt(Integer::intValue).sum();
+
+        // Initialize tasks
+        final WeaponIfc.Clazz[] classes = {WeaponIfc.Clazz.OneHandedSmallGun, WeaponIfc.Clazz.TwoHandedSmallGun, WeaponIfc.Clazz.TwoHandedBigGuns};
+        IList<Vector3f> usedLocations = new GapList<>();
+        ExecutorService exec = Executors.newFixedThreadPool(numberOfCores);
+        IList<Future<WeaponResult>> tasks = new GapList<>();
+
+        try {
+            // Loop through weapon classes and assign tasks
+            for (var clazz : classes) {
+                int itemCount = poolMap.get(clazz.ordinal() - 1);
+                WeaponTask task = new WeaponTask(clazz, itemCount, totalCount, usedLocations);
+                tasks.add(exec.submit(task));
+            }
+
+            // Process task results
+            for (Future<WeaponResult> future : tasks) {
+                future.get();
+            }
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            DSLogger.reportError("Interrupted during weapon generation", ex);
+        } catch (ExecutionException ex) {
+            DSLogger.reportError("Error during weapon generation", ex);
+        } finally {
+            exec.shutdown();
         }
     }
 

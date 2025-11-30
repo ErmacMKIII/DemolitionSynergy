@@ -930,22 +930,23 @@ public class LevelContainer implements GravityEnviroment {
      *
      * @param critter critter affected by gravity (submitted)
      * @param deltaTime The time elapsed since the last handleInput.
-     * @return {@code true} if the player is affected by gravity, {@code false}
+     * @return {@code GravityEnvironment.Result} if the player is affected by gravity
      * otherwise.
      */
     @Override
     public Result gravityDo(Critter critter, float deltaTime) {
-        Result result = Result.NEUTRAL;
         boolean collision = false;
 
         // Check for collision in any direction
         for (Game.Direction dir : Game.Direction.values()) {
             collision |= hasCollisionWithEnvironment(critter, dir);
             if (collision) {
-                return Result.COLLISION;
+                // Not affected by gravity if collision detected
+                return Result.NEUTRAL; // Early exit if collision detected
             }
         }
 
+        Result result;
         final Vector3f predInit = new Vector3f(critter.getPredictor());
 
         // FIX: Switch to falling immediately when jump velocity depletes
@@ -961,7 +962,7 @@ public class LevelContainer implements GravityEnviroment {
 
         float tstHeight = 0f;
         TICKS:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME) {
+        for (float tstTime = 0f; tstTime <= deltaTime && !collision; tstTime += (float) Game.TICK_TIME) {
 
             if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
@@ -1025,6 +1026,9 @@ public class LevelContainer implements GravityEnviroment {
                 // FIX: Start falling immediately after collision
                 fallVelocity = GRAVITY_CONSTANT * deltaTime * 0.25f;
             }
+
+            // Adjust position to be just above the collision point
+            result = Result.COLLISION;
         }
 
         critter.setGravityResult(result);
