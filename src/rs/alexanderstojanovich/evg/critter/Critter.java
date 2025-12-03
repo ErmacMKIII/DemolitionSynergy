@@ -399,12 +399,158 @@ public class Critter implements Predictable, Moveable, Renderable {
     }
 
     /**
+     * Switch body model rendered in 3rd person.
+     * Overload used for other players' critters when switching their models
+     *
+     * @param weapon weapon to switch to
+     */
+    public void switchBodyModel(WeaponIfc weapon) {
+        Vector4f colCopy = this.body.getPrimaryRGBAColor();
+        Vector3f posCopy = this.body.pos;
+        float rYCopy = this.body.getrY();
+
+        // which weapon is active in hands
+//        final WeaponIfc weapon = activeWeapon();
+
+        // model class or skin (array of models for that skin)
+        switch (modelClazz) {
+            case "alex":
+                // switch to body model having that weapon class
+                if (weapon == Weapons.NONE) {
+                    this.body = assets.ALEX_BODY_DEFAULT;
+                } else {
+                    switch (weapon.getTexName()) {
+                        case Assets.W01M9:
+                            this.body = assets.ALEX_BODY_1H_SG_W01M9;
+                            break;
+                        case Assets.W02M1:
+                            this.body = assets.ALEX_BODY_1H_SG_W02M1;
+                            break;
+                        case Assets.W03DE:
+                            this.body = assets.ALEX_BODY_1H_SG_W03DE;
+                            break;
+                        case Assets.W04UZ:
+                            this.body = assets.ALEX_BODY_1H_SG_W04UZ;
+                            break;
+                        case Assets.W05M5:
+                            this.body = assets.ALEX_BODY_2H_SG_W05M5;
+                            break;
+                        case Assets.W06P9:
+                            this.body = assets.ALEX_BODY_2H_SG_W06P9;
+                            break;
+                        case Assets.W07AK:
+                            this.body = assets.ALEX_BODY_2H_SG_W07AK;
+                            break;
+                        case Assets.W08M4:
+                            this.body = assets.ALEX_BODY_2H_SG_W08M4;
+                            break;
+                        case Assets.W09G3:
+                            this.body = assets.ALEX_BODY_2H_SG_W09G3;
+                            break;
+                        case Assets.W10M6:
+                            this.body = assets.ALEX_BODY_2H_BG_W10M6;
+                            break;
+                        case Assets.W11MS:
+                            this.body = assets.ALEX_BODY_2H_BG_W11MS;
+                            break;
+                        case Assets.W12W2:
+                            this.body = assets.ALEX_BODY_2H_SG_W12W2;
+                            break;
+                        case Assets.W13B9:
+                            this.body = assets.ALEX_BODY_2H_SG_W13B9;
+                            break;
+                        case Assets.W14R7:
+                            this.body = assets.ALEX_BODY_2H_SG_W14R7;
+                            break;
+                        case Assets.W15DR:
+                            this.body = assets.ALEX_BODY_2H_SG_W15DR;
+                            break;
+                        case Assets.W16M8:
+                            this.body = assets.ALEX_BODY_2H_BG_W16M8;
+                            break;
+                    }
+                }
+                break;
+            case "steve":
+                // switch to body model having that weapon class
+                if (weapon == Weapons.NONE) {
+                    this.body = assets.STEVE_BODY_DEFAULT;
+                } else {
+                    switch (weapon.getTexName()) {
+                        case Assets.W01M9:
+                            this.body = assets.STEVE_BODY_1H_SG_W01M9;
+                            break;
+                        case Assets.W02M1:
+                            this.body = assets.STEVE_BODY_1H_SG_W02M1;
+                            break;
+                        case Assets.W03DE:
+                            this.body = assets.STEVE_BODY_1H_SG_W03DE;
+                            break;
+                        case Assets.W04UZ:
+                            this.body = assets.STEVE_BODY_1H_SG_W04UZ;
+                            break;
+                        case Assets.W05M5:
+                            this.body = assets.STEVE_BODY_2H_SG_W05M5;
+                            break;
+                        case Assets.W06P9:
+                            this.body = assets.STEVE_BODY_2H_SG_W06P9;
+                            break;
+                        case Assets.W07AK:
+                            this.body = assets.STEVE_BODY_2H_SG_W07AK;
+                            break;
+                        case Assets.W08M4:
+                            this.body = assets.STEVE_BODY_2H_SG_W08M4;
+                            break;
+                        case Assets.W09G3:
+                            this.body = assets.STEVE_BODY_2H_SG_W09G3;
+                            break;
+                        case Assets.W10M6:
+                            this.body = assets.STEVE_BODY_2H_BG_W10M6;
+                            break;
+                        case Assets.W11MS:
+                            this.body = assets.STEVE_BODY_2H_BG_W11MS;
+                            break;
+                        case Assets.W12W2:
+                            this.body = assets.STEVE_BODY_2H_SG_W12W2;
+                            break;
+                        case Assets.W13B9:
+                            this.body = assets.STEVE_BODY_2H_SG_W13B9;
+                            break;
+                        case Assets.W14R7:
+                            this.body = assets.STEVE_BODY_2H_SG_W14R7;
+                            break;
+                        case Assets.W15DR:
+                            this.body = assets.STEVE_BODY_2H_SG_W15DR;
+                            break;
+                        case Assets.W16M8:
+                            this.body = assets.STEVE_BODY_2H_BG_W16M8;
+                            break;
+                    }
+                }
+                break;
+        }
+
+        // set the color copy
+        this.body.setPrimaryRGBAColor(colCopy);
+        // set the copied position VEC3
+        this.body.pos.set(posCopy);
+        // rotation Y-axis angle copy
+        this.body.setrY(rYCopy);
+    }
+
+    /**
      * Get active weapon in hands
      *
      * @return weapon in hands
      */
     public WeaponIfc activeWeapon() {
-        return (activeHand == Hand.PRIMARY) ? primaryWeapon : secondaryWeapon;
+        if (activeHand == Hand.PRIMARY) {
+            return primaryWeapon;
+        } else if (activeHand == Hand.SECONDARY) {
+            return secondaryWeapon;
+        } else {
+            return Weapons.NONE;
+        }
     }
 
     @Override
@@ -638,5 +784,21 @@ public class Critter implements Predictable, Moveable, Renderable {
     public void switchWeapon(Hand hand) {
         this.activeHand = hand;
         this.switchBodyModel();
+    }
+
+    /**
+     * Switch to weapon in hands. Used for direct weapon switch for other players.
+     *
+     * @param weapon weapon to switch to
+     */
+    public void switchWeapon(WeaponIfc weapon) {
+        if (weapon == primaryWeapon) {
+            this.activeHand = Hand.PRIMARY;
+        } else if (weapon == secondaryWeapon) {
+            this.activeHand = Hand.SECONDARY;
+        } else {
+            this.activeHand = Hand.NONE;
+        }
+        this.switchBodyModel(weapon);
     }
 }

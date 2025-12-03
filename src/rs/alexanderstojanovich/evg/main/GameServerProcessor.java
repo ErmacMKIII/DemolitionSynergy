@@ -455,8 +455,8 @@ public class GameServerProcessor extends IoHandlerAdapter {
             case SET_PLAYER_INFO:
                 switch (request.getDataType()) {
                     case OBJECT: {
-                        String jsonStro = request.getData().toString();
-                        PlayerInfo info = PlayerInfo.fromJson(jsonStro);
+                        String jsonString = request.getData().toString();
+                        PlayerInfo info = PlayerInfo.fromJson(jsonString);
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         Critter targCrit = levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(info.uniqueId));
                         if (targCrit == null) {
@@ -474,7 +474,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                             } else {
                                 weapon = targCrit.activeWeapon(); // *LATER*
                             }
-                            targCrit.switchWeapon(targCrit.getActiveHand());
+                            targCrit.switchWeapon(weapon);
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "OK - Player info updated.");
                         }
                         break;

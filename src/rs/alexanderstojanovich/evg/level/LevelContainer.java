@@ -1164,11 +1164,13 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
+        // Initialize test height and time variables
         final boolean goingDown = jumpVelocity == 0.0f;
-
-        float tstHeight = 0f;
+        float tstHeight;
+        float tstTime;
+        // Simulate movement in small increments to check for collisions
         TICKS:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 64f) {
+        for (tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 64f) {
             // Calculate the test height based on whether the critter is going up or down
             if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
@@ -1182,39 +1184,56 @@ public class LevelContainer implements GravityEnviroment {
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
             collision |= hasCollisionYWithEnvironment(critter, direction);
             if (collision) {
+                // Collision detected, exit the loop
+                // Adjust tstTime to the last successful increment
+                tstTime -= (float) Game.TICK_TIME / 64f;
                 break;
             }
 
+            // Continue to next increment
             if (goingDown) {
                 critter.movePredictorUp(tstHeight);
             } else {
                 critter.movePredictorDown(tstHeight);
             }
         }
+        // Loop ended, restore initial predictor position
         critter.getPredictor().set(predInit);
 
+        // Apply gravity effects based on collision detection
         if (!collision) {
-            float deltaHeight = tstHeight;
-
-            if (actorInFluid) {
-                deltaHeight *= 0.125f;
-                // FIX: Reduce jump strength in fluid
-                jumpVelocity *= 0.95f;
-            }
-
+            // No collision detected, apply gravity effects
+            // Apply the calculated movement
             if (goingDown) {
-                critter.movePredictorYDown(deltaHeight);
-                critter.dropY(deltaHeight);
-                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+                tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                // Adjust for fluid environment
+                if (actorInFluid) {
+                    // FIX: Reduce effective height change in fluid
+                    tstHeight *= 0.125f;
+                    // FIX: Reduce jump strength in fluid
+                    jumpVelocity *= 0.95f;
+                }
+                critter.movePredictorYDown(tstHeight);
+                critter.dropY(tstHeight);
+                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
                 result = Result.FALL;
             } else {
-                critter.movePredictorYUp(deltaHeight);
-                critter.jumpY(deltaHeight);
+                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                // Adjust for fluid environment
+                if (actorInFluid) {
+                    // FIX: Reduce effective height change in fluid
+                    tstHeight *= 0.125f;
+                    // FIX: Reduce jump strength in fluid
+                    jumpVelocity *= 0.95f;
+                }
+                critter.movePredictorYUp(tstHeight);
+                critter.jumpY(tstHeight);
                 // FIX: More aggressive deceleration
-                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime * 1.5f, 0.0f);
+                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
                 result = Result.JUMP;
             }
 
+            // Respawn player if terminal velocity is reached
             if (fallVelocity == TERMINAL_VELOCITY) {
                 try {
                     spawnPlayer(); // Respawn player if terminal velocity is reached
@@ -1233,7 +1252,7 @@ public class LevelContainer implements GravityEnviroment {
             } else {
                 jumpVelocity = 0.0f;
                 // FIX: Start falling immediately after collision
-                fallVelocity = GRAVITY_CONSTANT * deltaTime * 0.25f;
+                fallVelocity = GRAVITY_CONSTANT * tstTime * 0.25f;
             }
 
             // Adjust position to be just above the collision point
@@ -1427,7 +1446,8 @@ public class LevelContainer implements GravityEnviroment {
                 }
             });
 
-            final float minDist = 0.25f;
+            // min distance to pick up items
+            final float minDist = 0.5f;
             // check for picked up items
             for (Model item : items.selectedWeaponItems) {
                 // check if player is close enough to pick the item

@@ -1505,7 +1505,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // causes of stopping repeatable jump (underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
-                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.JUMP);
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
                     case MULTIPLAYER_HOST:
@@ -1518,7 +1518,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // causes of stopping repeatable jump (ups quarter, underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
-                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.JUMP);
+                        jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
                 }
