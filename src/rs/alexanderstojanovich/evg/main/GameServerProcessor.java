@@ -372,9 +372,9 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                 Gson gson = new Gson();
                 IList<PlayerInfo> playerInfos = new GapList<>();
-                playerInfos.add(new PlayerInfo(levelActors.player.getName(), levelActors.player.body.texName, levelActors.player.uniqueId, levelActors.player.body.getPrimaryRGBAColor(), levelActors.player.getWeapon().getTexName()));
+                playerInfos.add(new PlayerInfo(levelActors.player.getName(), levelActors.player.body.texName, levelActors.player.uniqueId, levelActors.player.body.getPrimaryRGBAColor(), levelActors.player.activeWeapon().getTexName()));
                 levelActors.otherPlayers.forEach(op -> {
-                    playerInfos.add(new PlayerInfo(op.getName(), op.body.texName, op.uniqueId, op.body.getPrimaryRGBAColor(), op.getWeapon().getTexName()));
+                    playerInfos.add(new PlayerInfo(op.getName(), op.body.texName, op.uniqueId, op.body.getPrimaryRGBAColor(), op.activeWeapon().getTexName()));
                 });
                 String obj = gson.toJson(playerInfos, IList.class);
                 response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, obj);
@@ -471,8 +471,10 @@ public class GameServerProcessor extends IoHandlerAdapter {
                             WeaponIfc weapon = weaponsAsList.getIf(w -> w.getTexName().equals(info.weapon));
                             if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
                                 weapon = Weapons.NONE;
+                            } else {
+                                weapon = targCrit.activeWeapon(); // *LATER*
                             }
-                            targCrit.switchWeapon(weapon);
+                            targCrit.switchWeapon(targCrit.getActiveHand());
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, "OK - Player info updated.");
                         }
                         break;

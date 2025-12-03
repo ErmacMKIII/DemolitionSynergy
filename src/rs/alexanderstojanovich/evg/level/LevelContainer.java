@@ -45,6 +45,7 @@ import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
+import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
@@ -59,7 +60,7 @@ public class LevelContainer implements GravityEnviroment {
      * Min amount of iteration for collision control or gravity control (inner
      * loop)
      */
-    public static final float MIN_AMOUNT = 0f;
+    public static final float MIN_AMOUNT = -16.8f;
     /**
      * Max amount of iteration for collision control or gravity control (inner
      * loop)
@@ -870,6 +871,96 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
+     * Checks if a {@link Critter} has collision with the environment. Called on
+     * motion. In 'singleplayerDo'. XZ only.
+     *
+     * @param critter the critter to check for collision.
+     * @param direction direction XYZ of motion
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
+    public static boolean hasCollisionXZWithEnvironment(Critter critter, Game.Direction direction) {
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                critter.body.getHeight(), critter.body.getDepth())) {
+            return true;
+        }
+
+        Vector3f predictor = critter.getPredictor();
+        Vector3f predAlign = alignVector(predictor);
+
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
+
+        // FIX: Only check the specific direction
+        // Iterate through adjacent positions.
+        final int[] sides = Block.getOppositeSidesXZ(critter.getFront(), critter.getRight(), direction);
+        for (int side : sides) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                Vector3f adjPos = Block.getAdjacentPos(predictor, side, amount);
+                Vector3f adjAlign = alignVector(adjPos);
+
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictor)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                            predictor, 1.05f * critter.body.getWidth(),
+                            1.05f * critter.body.getHeight(),
+                            1.05f * critter.body.getDepth())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if a {@link Critter} has collision with the environment. Called on
+     * motion. In 'singleplayerDo'. Y only.
+     *
+     * @param critter the critter to check for collision.
+     * @param direction direction XYZ of motion
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
+    public static boolean hasCollisionYWithEnvironment(Critter critter, Game.Direction direction) {
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                critter.body.getHeight(), critter.body.getDepth())) {
+            return true;
+        }
+
+        Vector3f predictor = critter.getPredictor();
+        Vector3f predAlign = alignVector(predictor);
+
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
+
+        // FIX: Only check the specific direction
+        // Iterate through adjacent positions.
+        final int[] sides = Block.getOppositeSidesY(critter.getUp(), direction);
+        for (int side : sides) {
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                Vector3f adjPos = Block.getAdjacentPos(predictor, side, amount);
+                Vector3f adjAlign = alignVector(adjPos);
+
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, predictor)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                            predictor, 1.05f * critter.body.getWidth(),
+                            1.05f * critter.body.getHeight(),
+                            1.05f * critter.body.getDepth())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Checks if a {@link Critter} has collision with the environment.
      * Multiplayer. Called on motion. In 'multiplayerDo'.
      *
@@ -925,6 +1016,116 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
+     * Checks if a {@link Critter} has collision with the environment.
+     * Multiplayer. Called on motion. In 'multiplayerDo'. XZ only.
+     *
+     * @param critter the critter to check for collision.
+     * @param playerServerPos player position according to server
+     * @param direction direction XYZ of motion
+     * @param interpFactor interpolation factor
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
+    public static boolean hasCollisionXZWithEnvironment(Critter critter, Vector3f playerServerPos, Game.Direction direction, float interpFactor) {
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                critter.body.getHeight(), critter.body.getDepth())) {
+            return true; // Collision detected outside the skybox or with its boundary.
+        }
+
+        Vector3f predictor = critter.getPredictor();
+
+        // Round the critter's predictor coordinates to align with the grid.
+        Vector3f predAlign = alignVector(predictor);
+
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
+
+        // Iterate through adjacent positions.
+        final int[] sides = Block.getOppositeSidesXZ(critter.getFront(), critter.getRight(), direction);
+        OUTER:
+        for (int j : sides) {
+            SCAN:
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                // Interpolate the critter's position based on the current interpolation time.
+                Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
+
+                Vector3f adjPos = Block.getAdjacentPos(interpolatedPos, j, amount);
+                Vector3f adjAlign = alignVector(adjPos);
+
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, interpolatedPos)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                            interpolatedPos, 1.05f * critter.body.getWidth(),
+                            1.05f * critter.body.getHeight(),
+                            1.05f * critter.body.getDepth())) {
+                        return true; // Collision detected, no need to continue checking.
+                    }
+                }
+            }
+        }
+
+        return false; // No collision detected.
+    }
+
+    /**
+     * Checks if a {@link Critter} has collision with the environment.
+     * Multiplayer. Called on motion. In 'multiplayerDo'. Y only.
+     *
+     * @param critter the critter to check for collision.
+     * @param playerServerPos player position according to server
+     * @param direction direction XYZ of motion
+     * @param interpFactor interpolation factor
+     * @return {@code true} if collision is detected, {@code false} otherwise.
+     */
+    public static boolean hasCollisionYWithEnvironment(Critter critter, Vector3f playerServerPos, Game.Direction direction, float interpFactor) {
+        if (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.body.getWidth(),
+                critter.body.getHeight(), critter.body.getDepth())) {
+            return true; // Collision detected outside the skybox or with its boundary.
+        }
+
+        Vector3f predictor = critter.getPredictor();
+
+        // Round the critter's predictor coordinates to align with the grid.
+        Vector3f predAlign = alignVector(predictor);
+
+        // Check collision with solid blocks at the predicted position.
+        if (AllBlockMap.isLocationPopulated(predAlign, true)) {
+            return true;
+        }
+
+        // Iterate through adjacent positions.
+        final int[] sides = Block.getOppositeSidesY(critter.getUp(), direction);
+        OUTER:
+        for (int j : sides) {
+            SCAN:
+            for (float amount = MIN_AMOUNT; amount <= MAX_AMOUNT; amount += STEP_AMOUNT) {
+                // Interpolate the critter's position based on the current interpolation time.
+                Vector3f interpolatedPos = new Vector3f(critter.getPredictor()).lerp(playerServerPos, interpFactor);
+
+                Vector3f adjPos = Block.getAdjacentPos(interpolatedPos, j, amount);
+                Vector3f adjAlign = alignVector(adjPos);
+
+                // Check collision with solid blocks at the adjacent position.
+                if (AllBlockMap.isLocationPopulated(adjAlign, true)) {
+                    if (Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, interpolatedPos)
+                            || Model.intersectsEqually(adjAlign, 2.1f, 2.1f, 2.1f,
+                            interpolatedPos, 1.05f * critter.body.getWidth(),
+                            1.05f * critter.body.getHeight(),
+                            1.05f * critter.body.getDepth())) {
+                        return true; // Collision detected, no need to continue checking.
+                    }
+                }
+            }
+        }
+
+        return false; // No collision detected.
+    }
+
+    /**
      * Applies gravity to the player, making them fall downwards if not
      * supported below. Called on motion. Called in 'update'.
      *
@@ -937,16 +1138,21 @@ public class LevelContainer implements GravityEnviroment {
     public Result gravityDo(Critter critter, float deltaTime) {
         boolean collision = false;
 
+        // Initialize result variable
+        Result result;
         // Check for collision in any direction
         for (Game.Direction dir : Game.Direction.values()) {
             collision |= hasCollisionWithEnvironment(critter, dir);
             if (collision) {
+                result = Result.NEUTRAL;
+                critter.setGravityResult(result);
+//                DSLogger.reportInfo(result.toString(), null);
                 // Not affected by gravity if collision detected
-                return Result.NEUTRAL; // Early exit if collision detected
+                return result; // Early exit if collision detected
             }
         }
 
-        Result result;
+        // Store initial predictor position
         final Vector3f predInit = new Vector3f(critter.getPredictor());
 
         // FIX: Switch to falling immediately when jump velocity depletes
@@ -962,8 +1168,8 @@ public class LevelContainer implements GravityEnviroment {
 
         float tstHeight = 0f;
         TICKS:
-        for (float tstTime = 0f; tstTime <= deltaTime && !collision; tstTime += (float) Game.TICK_TIME) {
-
+        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 64f) {
+            // Calculate the test height based on whether the critter is going up or down
             if (goingDown) {
                 tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
                 critter.movePredictorDown(tstHeight);
@@ -974,7 +1180,10 @@ public class LevelContainer implements GravityEnviroment {
 
             // Check for collision in the intended opposite direction
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
-            collision |= hasCollisionWithEnvironment(critter, direction);
+            collision |= hasCollisionYWithEnvironment(critter, direction);
+            if (collision) {
+                break;
+            }
 
             if (goingDown) {
                 critter.movePredictorUp(tstHeight);
@@ -1032,6 +1241,9 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         critter.setGravityResult(result);
+
+//        DSLogger.reportInfo(result.toString(), null);
+
         return result;
     }
 
@@ -1214,6 +1426,33 @@ public class LevelContainer implements GravityEnviroment {
                     lightSources.setModified(ls.pos, true);
                 }
             });
+
+            final float minDist = 0.25f;
+            // check for picked up items
+            for (Model item : items.selectedWeaponItems) {
+                // check if player is close enough to pick the item
+                if (levelActors.player.getPos().distance(item.pos) <= minDist) {
+                    // if weapon found, add to inventory
+                    WeaponIfc weapon = Arrays.stream(weapons.AllWeapons).filter(w -> w.getTexName().equals(item.texName)).findFirst().orElse(null);
+                    if (weapon != null) {
+                        // add to inventory
+                        switch (weapon.getClazz()) {
+                            case OneHandedSmallGun:
+                                if (levelActors.player.getSecondaryWeapon() == Weapons.NONE) {
+                                    levelActors.player.setSecondaryWeapon(weapon);
+                                }
+                                break;
+                            case TwoHandedSmallGun:
+                            case TwoHandedBigGuns:
+                                if (levelActors.player.getPrimaryWeapon() == Weapons.NONE) {
+                                    levelActors.player.setPrimaryWeapon(weapon);
+                                }
+                                break;
+                        }
+                    }
+                    break;
+                }
+            }
         }
     }
 

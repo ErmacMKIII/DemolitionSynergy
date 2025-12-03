@@ -329,7 +329,7 @@ public class ModelUtils {
             return null;
         }
 
-        int globlIndex = -1;
+        int globlIndex = 0;
         int texIndex = -1;
         final float oneOver = 1.0f / (float) gridSize;
 
@@ -387,7 +387,7 @@ public class ModelUtils {
                 } else if (things[0].equals("g")) {
                     // Detect group name
                     if (things.length >= 2 && pattern.asPredicate().test(things[1])) {
-                        globlIndex++;
+                        globlIndex = 1; // Switch to gun texture
                     }
                 } else if (things[0].equals("f")) {
                     if (things.length < 4) {
@@ -629,27 +629,30 @@ public class ModelUtils {
     }
 
     /**
-     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
+     * Convert block specs {texName, VEC3} to unique int (hashcode).
+     * Used for block id generation.
      *
-     * @param solid is block solid
      * @param texName texName[5] string,
      * @param pos float3(x,y,z) vector
      *
      * @return unique int
      */
-    public static int blockSpecsToUniqueInt(boolean solid, String texName, Vector3f pos) {
-        // Convert position to integer coordinates (assuming reasonable bounds)
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
+    public static int blockSpecsToUniqueInt(String texName, Vector3f pos) {
+        // Direct computation - 10-15 CPU operations total
 
-        // Bit packing: [solid(1bit)][facebits(3bits)][texture(8bits)][x(8bits)][y(8bits)][z(8bits)]
-        int result = (solid ? 1 : 0) << 31;        // bit 31
-        result |= (Texture.getOrDefaultIndex(texName) & 0xFF) << 20; // bits 20-27
-        result |= (x & 0xFF) << 12;                // bits 12-19
-        result |= (y & 0xFF) << 4;                 // bits 4-11
-        result |= (z & 0xF);                       // bits 0-3
+        // 1. Texture hash: 5 operations
+        int texHash = texName.charAt(0)
+                ^ (texName.charAt(1) << 6)
+                ^ (texName.charAt(2) << 12)
+                ^ (texName.charAt(3) << 18)
+                ^ (texName.charAt(4) << 24);
 
-        return result & 0x7FFFFFFF; // Ensure positive
+        // 2. Position hash: 3 multiplies, 3 casts, 3 masks, 2 shifts
+        int posHash = ((int)(pos.x * Chunk.GRID_SIZE) & Chunk.SOME_MASK)
+                | (((int)(pos.y * Chunk.GRID_SIZE) & Chunk.SOME_MASK) << 10)
+                | (((int)(pos.z * Chunk.GRID_SIZE) & Chunk.SOME_MASK) << 20);
+
+        // 3. Combine: 1 operation
+        return texHash ^ posHash;
     }
 }

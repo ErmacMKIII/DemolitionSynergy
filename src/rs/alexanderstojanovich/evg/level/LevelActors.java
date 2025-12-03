@@ -207,7 +207,7 @@ public class LevelActors {
                 if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
                     weapon = Weapons.NONE;
                 }
-                opOrNull.switchWeapon(weapon);
+                opOrNull.switchWeapon(opOrNull.getActiveHand());
             }
         });
 
@@ -244,7 +244,7 @@ public class LevelActors {
 
         int index = 0;
         for (Critter crit : otherPlayers) {
-            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.getWeapon().getTexName());
+            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.activeWeapon().getTexName());
             result[index++] = pi;
         }
 

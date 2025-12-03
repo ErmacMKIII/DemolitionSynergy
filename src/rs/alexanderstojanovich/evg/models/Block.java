@@ -775,6 +775,60 @@ public class Block extends Model {
         verticesReversed = !verticesReversed;
     }
 
+// Java
+    /**
+     * Returns opposite sides for Y-axis movement based on camera up vector.
+     * Used for vertical collision checks: when moving up/down relative to camera,
+     * return the faces to test on blocks (main face + adjacent combinations).
+     *
+     * @param camUp camera up vector
+     * @param direction movement direction (expected UP or DOWN)
+     * @return array of opposite side constants, or {NONE} if direction is invalid
+     */
+    public static int[] getOppositeSidesY(Vector3f camUp, Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        Vector3f moveDir = new Vector3f();
+
+        // Determine movement direction in world-space based on camera up
+        switch (direction) {
+            case UP:
+                // moving "up" relative to camera
+                moveDir.set(camUp.x, camUp.y, camUp.z).normalize();
+                break;
+            case DOWN:
+                // moving "down" relative to camera
+                moveDir.set(-camUp.x, -camUp.y, -camUp.z).normalize();
+                break;
+            default:
+                return new int[]{Block.NONE};
+        }
+
+        // Collect sides to check: if moving in +Y world direction, check BOTTOM (-Y)
+        // If moving in -Y world direction, check TOP (+Y)
+        IList<Integer> sides = new GapList<>();
+        if (moveDir.y > 0.0f) {
+            sides.add(Block.BOTTOM);
+            sides.add(Block.LEFT_BOTTOM);
+            sides.add(Block.RIGHT_BOTTOM);
+            sides.add(Block.BOTTOM_BACK);
+            sides.add(Block.BOTTOM_FRONT);
+        } else if (moveDir.y < 0.0f) {
+            sides.add(Block.TOP);
+            sides.add(Block.LEFT_TOP);
+            sides.add(Block.RIGHT_TOP);
+            sides.add(Block.TOP_BACK);
+            sides.add(Block.TOP_FRONT);
+        } else {
+            // If moveDir.y == 0, no vertical component -> return NONE
+            return new int[]{Block.NONE};
+        }
+
+        return sides.stream().mapToInt(i -> i).toArray();
+    }
+
     /**
      * Reverse face vertex order. All Faces. (Water)
      *
@@ -1888,7 +1942,7 @@ public class Block extends Model {
      * @return unique int
      */
     private int genId() {
-        return ModelUtils.blockSpecsToUniqueInt(solid, texName, pos);
+        return ModelUtils.blockSpecsToUniqueInt(texName, pos);
     }
 
     /**

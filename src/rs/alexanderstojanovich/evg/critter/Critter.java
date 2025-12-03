@@ -50,9 +50,28 @@ public class Critter implements Predictable, Moveable, Renderable {
     protected boolean inJump = false;
 
     /**
-     * Critter (could be Player) has nothing in hands (no-weapon)
+     * Weapon in hands
      */
-    protected WeaponIfc weapon = Weapons.NONE;
+    public enum Hand {
+        NONE,
+        PRIMARY,
+        SECONDARY
+    }
+
+    /**
+     * Which weapon is active in hands
+     */
+    protected Hand activeHand = Hand.PRIMARY;
+
+    /**
+     * Primary weapon for Critter (could be Player) and initially has nothing in hands (no-weapon)
+     */
+    protected WeaponIfc primaryWeapon = Weapons.NONE;
+
+    /**
+     * Secondary Critter (could be Player) and initially has nothing in hands (no-weapon)
+     */
+    protected WeaponIfc secondaryWeapon = Weapons.NONE;
 
     /**
      * Game assets resources
@@ -250,6 +269,9 @@ public class Critter implements Predictable, Moveable, Renderable {
         Vector3f posCopy = this.body.pos;
         float rYCopy = this.body.getrY();
 
+        // which weapon is active in hands
+        final WeaponIfc weapon = activeWeapon();
+
         // model class or skin (array of models for that skin)
         switch (modelClazz) {
             case "alex":
@@ -377,24 +399,12 @@ public class Critter implements Predictable, Moveable, Renderable {
     }
 
     /**
-     * Switch to weapon in hands
+     * Get active weapon in hands
      *
-     * @param weapons all weapons instance (wraps array)
-     * @param index index of (weapon) enumeration
+     * @return weapon in hands
      */
-    public void switchWeapon(Weapons weapons, int index) {
-        this.weapon = weapons.AllWeapons[index];
-        this.switchBodyModel();
-    }
-
-    /**
-     * Switch to weapon in hands
-     *
-     * @param weapon weapon to switch to
-     */
-    public void switchWeapon(WeaponIfc weapon) {
-        this.weapon = weapon;
-        this.switchBodyModel();
+    public WeaponIfc activeWeapon() {
+        return (activeHand == Hand.PRIMARY) ? primaryWeapon : secondaryWeapon;
     }
 
     @Override
@@ -581,8 +591,38 @@ public class Critter implements Predictable, Moveable, Renderable {
         return right;
     }
 
-    public WeaponIfc getWeapon() {
-        return weapon;
+    public Hand getActiveHand() {
+        return activeHand;
+    }
+
+    public WeaponIfc getPrimaryWeapon() {
+        return primaryWeapon;
+    }
+
+    public WeaponIfc getSecondaryWeapon() {
+        return secondaryWeapon;
+    }
+
+    /**
+     * Set primary weapon for the critter
+     *
+     * @param primaryWeapon weapon to be set as primary
+     */
+    public void setPrimaryWeapon(WeaponIfc primaryWeapon) {
+        this.primaryWeapon = primaryWeapon;
+    }
+
+    /**
+     * Set secondary weapon for the critter
+     *
+     * @param secondaryWeapon weapon to be set as secondary
+     */
+    public void setSecondaryWeapon(WeaponIfc secondaryWeapon) {
+        this.secondaryWeapon = secondaryWeapon;
+    }
+
+    public String getModelClazz() {
+        return modelClazz;
     }
 
     public void setModelClazz(String modelClazz) {
@@ -590,4 +630,13 @@ public class Critter implements Predictable, Moveable, Renderable {
         switchBodyModel();
     }
 
+    /**
+     * Switch to weapon in hands
+     *
+     * @param hand which hand to switch to primary or secondary
+     */
+    public void switchWeapon(Hand hand) {
+        this.activeHand = hand;
+        this.switchBodyModel();
+    }
 }

@@ -48,7 +48,7 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Tuple extends Series {
     // tuple is distinct rendering object for instanced rendering
     // all blocks in the tuple have the same properties, 
-    // like model matrices, color and texture name, and enabled faces in 6-bit represenation
+    // like model matrices, color and texture name, and enabled faces in 6-bit representation
     // iboMap is not used here
 
     public static final int VEC2_SIZE = 2;
@@ -123,7 +123,7 @@ public class Tuple extends Series {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        Integer key = ModelUtils.blockSpecsToUniqueInt(isSolid(), this.texName(), pos);
+        Integer key = ModelUtils.blockSpecsToUniqueInt(this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
