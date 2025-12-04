@@ -1,0 +1,16 @@
+<component name="ArtifactManager">
+  <artifact name="DSynergy">
+    <output-path>$PROJECT_DIR$/out/artifacts/DemolitionSynergy</output-path>
+    <root id="root">
+      <element id="directory" name="lib">
+        <element id="directory" name="DSynergy_LWJGL3.3.6_JOML1.10.7">
+          <element id="library" level="project" name="DSynergy_LWJGL3.3.6_JOML1.10.7" />
+        </element>
+        <element id="library" level="project" name="lib" />
+      </element>
+      <element id="archive" name="DSynergy.jar">
+        <element id="module-output" name="DemolitionSynergy" />
+      </element>
+    </root>
+  </artifact>
+</component>
