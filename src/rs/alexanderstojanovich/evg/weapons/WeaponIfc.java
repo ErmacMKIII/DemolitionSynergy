@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2024 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 package rs.alexanderstojanovich.evg.weapons;
 
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.models.Model;
 
@@ -96,10 +97,12 @@ public interface WeaponIfc {
 
     /**
      * Model on ground. Use Main GLSL Shader.
+     * @param pos position of the weapon item
+     * @param color color of the weapon item
      *
-     * @return get as item.
+     * @return get as item (Model).
      */
-    public Model asItem();
+    public Model asItem(Vector3f pos, Vector4f color);
 
     /**
      * Model in hands. Use Player GLSL Shader.

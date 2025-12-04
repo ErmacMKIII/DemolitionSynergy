@@ -329,7 +329,7 @@ public class ModelUtils {
             return null;
         }
 
-        int globlIndex = -1;
+        int globlIndex = 0;
         int texIndex = -1;
         final float oneOver = 1.0f / (float) gridSize;
 
@@ -387,7 +387,7 @@ public class ModelUtils {
                 } else if (things[0].equals("g")) {
                     // Detect group name
                     if (things.length >= 2 && pattern.asPredicate().test(things[1])) {
-                        globlIndex++;
+                        globlIndex = 1; // Switch to gun texture
                     }
                 } else if (things[0].equals("f")) {
                     if (things.length < 4) {
@@ -629,36 +629,30 @@ public class ModelUtils {
     }
 
     /**
-     * Convert block specs {solid, texName, VEC3} to unique int (hashcode).
+     * Convert block specs {texName, VEC3} to unique int (hashcode).
+     * Used for block id generation.
      *
-     * @param solid is block solid
      * @param texName texName[5] string,
-     * @param facebits
      * @param pos float3(x,y,z) vector
      *
      * @return unique int
      */
-    public static int blockSpecsToUniqueInt(boolean solid, String texName, int facebits, Vector3f pos) {
-        // Convert boolean solid to integer (0 for false, 1 for true)
-        int a = solid ? 1 : 0;
+    public static int blockSpecsToUniqueInt(String texName, Vector3f pos) {
+        // Direct computation - 10-15 CPU operations total
 
-        // Texture index
-        int b = Texture.getOrDefaultIndex(texName);
+        // 1. Texture hash: 5 operations
+        int texHash = texName.charAt(0)
+                ^ (texName.charAt(1) << 6)
+                ^ (texName.charAt(2) << 12)
+                ^ (texName.charAt(3) << 18)
+                ^ (texName.charAt(4) << 24);
 
-        // Use Chunk function for the position
-        int c = Chunk.chunkFunc(pos);
+        // 2. Position hash: 3 multiplies, 3 casts, 3 masks, 2 shifts
+        int posHash = ((int)(pos.x * Chunk.GRID_SIZE) & Chunk.SOME_MASK)
+                | (((int)(pos.y * Chunk.GRID_SIZE) & Chunk.SOME_MASK) << 10)
+                | (((int)(pos.z * Chunk.GRID_SIZE) & Chunk.SOME_MASK) << 20);
 
-        // Scale and convert position components to integers
-        int x = Math.round((pos.x + Chunk.BOUND) / 2.0f);
-        int y = Math.round((pos.y + Chunk.BOUND) / 2.0f);
-        int z = Math.round((pos.z + Chunk.BOUND) / 2.0f);
-
-        // Combine position components into a single value
-        int posHash = x * 73856093 ^ y * 19349663 ^ z * 83492791; // Use large prime numbers
-
-        // Combine all components into a single unique integer
-        int result = Short.MAX_VALUE | ((a * 31) ^ (b * 17) ^ (c * 13) ^ (facebits * 7) ^ posHash);
-
-        return result;
+        // 3. Combine: 1 operation
+        return texHash ^ posHash;
     }
 }

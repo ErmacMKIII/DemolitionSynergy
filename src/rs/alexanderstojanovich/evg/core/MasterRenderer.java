@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,13 +47,13 @@ public class MasterRenderer implements CoreRenderer {
      */
     public void initGL(Configuration cfg) {
         // load context
-        gameObject.WINDOW.loadContext();
+        gameObject.gameWindow.loadContext();
 
         // create openGL context        
         glCaps = GL.createCapabilities();
 
         // enable/disable vsync
-        gameObject.WINDOW.setVSync(cfg.isVsync());
+        gameObject.gameWindow.setVSync(cfg.isVsync());
 
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);

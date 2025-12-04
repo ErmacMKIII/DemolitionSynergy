@@ -28,7 +28,6 @@ import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.main.Game;
-import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
@@ -158,9 +157,9 @@ public class Chat {
                         cursorPosition = input.length();
                     }
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_RELEASE) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
+                    GLFW.glfwSetClipboardString(intrface.gameObject.gameWindow.getWindowID(), input);
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_RELEASE) {
-                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.gameWindow.getWindowID());
                     clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
 
                     if (clipboard != null && !clipboard.isEmpty()) {
@@ -210,11 +209,11 @@ public class Chat {
         input.setLength(0);
 
         // Enable the cursor for text input
-        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
 
         // Set the custom key and character callbacks for the chat
-        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
-        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), glfwKeyCallback);
+        GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), glfwCharCallback);
 
         // Avoid blocking the application with glfwWaitEvents
         GLFW.glfwPostEmptyEvent(); // Notify GLFW to process events immediately
@@ -226,11 +225,11 @@ public class Chat {
      * Closes the chat by resetting callbacks and disabling rendering.
      */
     public void close() {
-        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultKeyCallback());
-        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), null);
-        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultCursorCallback());
-        GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), Game.getDefaultKeyCallback());
+        GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), null);
+        GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.gameWindow.getWindowID(), Game.getDefaultCursorCallback());
+        GLFW.glfwSetScrollCallback(intrface.gameObject.gameWindow.getWindowID(), null);
 
         inText.setContent("");
         input.setLength(0);

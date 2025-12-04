@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,8 +105,7 @@ public class Editor {
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 int primaryKey = locVal.blkId;
-                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
-                selectedCurr = blk;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
 
                 break SCAN;
             }
@@ -147,8 +146,7 @@ public class Editor {
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
                 int primaryKey = locVal.blkId;
-                Block blk = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
-                selectedCurr = blk;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
 
                 break SCAN;
             }

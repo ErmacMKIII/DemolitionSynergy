@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -207,7 +207,7 @@ public class LevelActors {
                 if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
                     weapon = Weapons.NONE;
                 }
-                opOrNull.switchWeapon(weapon);
+                opOrNull.switchWeapon(opOrNull.getActiveHand());
             }
         });
 
@@ -244,7 +244,7 @@ public class LevelActors {
 
         int index = 0;
         for (Critter crit : otherPlayers) {
-            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.getWeapon().getTexName());
+            PlayerInfo pi = new PlayerInfo(crit.getName(), crit.getBody().texName, crit.uniqueId, crit.body.getPrimaryRGBAColor(), crit.activeWeapon().getTexName());
             result[index++] = pi;
         }
 

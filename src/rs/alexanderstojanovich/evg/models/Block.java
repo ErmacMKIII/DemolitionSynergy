@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,12 +41,6 @@ import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Game;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.BACKWARD;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.DOWN;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.FORWARD;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.LEFT;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.RIGHT;
-import static rs.alexanderstojanovich.evg.main.Game.Direction.UP;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
@@ -57,6 +51,9 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
+ * World block.
+ * Based on model.
+ * Each has unique id.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -92,7 +89,8 @@ public class Block extends Model {
 
     private boolean verticesReversed = false;
 
-    protected int id = 0;
+    // unique id
+    private final int id;
 
     public static final Vector3f[] FACE_NORMALS = {
         new Vector3f(-1.0f, 0.0f, 0.0f),
@@ -165,6 +163,7 @@ public class Block extends Model {
 
     public Block(Model other) {
         super(other);
+        id = genId();
     }
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
@@ -563,6 +562,159 @@ public class Block extends Model {
         return result;
     }
 
+    /**
+     * Returns opposite sides for XZ plane movement based on camera orientation
+     * and movement direction. Used for horizontal collision detection.
+     *
+     * @param camFront camera front vector
+     * @param camRight camera right vector
+     * @param direction game direction (UP=forward, DOWN=backward, LEFT=left, RIGHT=right)
+     * @return array of opposite side constants to check for collision
+     */
+    public static int[] getOppositeSidesXZ(Vector3f camFront, Vector3f camRight, Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        Vector3f moveDir = new Vector3f();
+
+        // Determine movement direction in world space
+        switch (direction) {
+            case FORWARD: // Forward relative to camera (XZ plane)
+                moveDir.set(-camFront.x, 0f, -camFront.z).normalize();
+                break;
+            case BACKWARD: // Backward relative to camera (XZ plane)
+                moveDir.set(camFront.x, 0f, camFront.z).normalize();
+                break;
+            case LEFT: // Left relative to camera
+                moveDir.set(camRight.x, 0f, camRight.z).normalize();
+                break;
+            case RIGHT: // Right relative to camera
+                moveDir.set(-camRight.x, 0f, -camRight.z).normalize();
+                break;
+            default:
+                return new int[]{Block.NONE};
+        }
+
+        // Determine primary opposite sides based on movement direction
+        IList<Integer> sides = new GapList<>();
+
+        // If moving in +X direction, check LEFT (-X) faces
+        // If moving in -X direction, check RIGHT (+X) faces
+        if (moveDir.x > 0.0f) {
+            sides.add(Block.LEFT);
+            sides.add(Block.LEFT_BOTTOM);
+            sides.add(Block.LEFT_TOP);
+        } else if (moveDir.x < 0.0f) {
+            sides.add(Block.RIGHT);
+            sides.add(Block.RIGHT_BOTTOM);
+            sides.add(Block.RIGHT_TOP);
+        }
+
+        // If moving in +Z direction, check BACK (-Z) faces
+        // If moving in -Z direction, check FRONT (+Z) faces
+        if (moveDir.z > 0.0f) {
+            sides.add(Block.BACK);
+            sides.add(Block.BOTTOM_BACK);
+            sides.add(Block.TOP_BACK);
+        } else if (moveDir.z < 0.0f) {
+            sides.add(Block.FRONT);
+            sides.add(Block.BOTTOM_FRONT);
+            sides.add(Block.TOP_FRONT);
+        }
+
+        // Convert to array
+        return sides.stream().mapToInt(side -> side).toArray();
+    }
+
+    /**
+     * Returns opposite sides for XYZ movement based on camera orientation
+     * and movement direction. Used for full 3D collision detection.
+     *
+     * @param camFront camera front vector
+     * @param camUp camera up vector
+     * @param camRight camera right vector
+     * @param direction game direction (FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN)
+     * @return array of opposite side constants to check for collision
+     */
+    public static int[] getOppositeSidesXYZ(Vector3f camFront, Vector3f camUp, Vector3f camRight, Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        Vector3f moveDir = new Vector3f();
+
+        // Determine movement direction in world space
+        switch (direction) {
+            case FORWARD: // Forward relative to camera
+                moveDir.set(-camFront.x, -camFront.y, -camFront.z).normalize();
+                break;
+            case BACKWARD: // Backward relative to camera
+                moveDir.set(camFront.x, camFront.y, camFront.z).normalize();
+                break;
+            case LEFT: // Left relative to camera
+                moveDir.set(camRight.x, camRight.y, camRight.z).normalize();
+                break;
+            case RIGHT: // Right relative to camera
+                moveDir.set(-camRight.x, -camRight.y, -camRight.z).normalize();
+                break;
+            case UP: // Up relative to camera
+                moveDir.set(camUp.x, camUp.y, camUp.z).normalize();
+                break;
+            case DOWN: // Down relative to camera
+                moveDir.set(-camUp.x, -camUp.y, -camUp.z).normalize();
+                break;
+            default:
+                return new int[]{Block.NONE};
+        }
+
+        // Determine primary opposite sides based on movement direction
+        IList<Integer> sides = new GapList<>();
+
+        // If moving in +X direction, check LEFT (-X) faces
+        // If moving in -X direction, check RIGHT (+X) faces
+        if (moveDir.x > 0.0f) {
+            sides.add(Block.LEFT);
+            sides.add(Block.LEFT_BOTTOM);
+            sides.add(Block.LEFT_TOP);
+        } else if (moveDir.x < 0.0f) {
+            sides.add(Block.RIGHT);
+            sides.add(Block.RIGHT_BOTTOM);
+            sides.add(Block.RIGHT_TOP);
+        }
+
+        // If moving in +Y direction, check BOTTOM (-Y) faces
+        // If moving in -Y direction, check TOP (+Y) faces
+        if (moveDir.y > 0.0f) {
+            sides.add(Block.BOTTOM);
+            sides.add(Block.LEFT_BOTTOM);
+            sides.add(Block.RIGHT_BOTTOM);
+            sides.add(Block.BOTTOM_BACK);
+            sides.add(Block.BOTTOM_FRONT);
+        } else if (moveDir.y < 0.0f) {
+            sides.add(Block.TOP);
+            sides.add(Block.LEFT_TOP);
+            sides.add(Block.RIGHT_TOP);
+            sides.add(Block.TOP_BACK);
+            sides.add(Block.TOP_FRONT);
+        }
+
+        // If moving in +Z direction, check BACK (-Z) faces
+        // If moving in -Z direction, check FRONT (+Z) faces
+        if (moveDir.z > 0.0f) {
+            sides.add(Block.BACK);
+            sides.add(Block.BOTTOM_BACK);
+            sides.add(Block.TOP_BACK);
+        } else if (moveDir.z < 0.0f) {
+            sides.add(Block.FRONT);
+            sides.add(Block.BOTTOM_FRONT);
+            sides.add(Block.TOP_FRONT);
+        }
+
+        // Convert to array
+        return sides.stream().mapToInt(side -> side).toArray();
+    }
+
     public void disableFace(int faceNum) {
         final IList<Vertex> vertices = meshes.getFirst().vertices;
         for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
@@ -623,6 +775,60 @@ public class Block extends Model {
         verticesReversed = !verticesReversed;
     }
 
+// Java
+    /**
+     * Returns opposite sides for Y-axis movement based on camera up vector.
+     * Used for vertical collision checks: when moving up/down relative to camera,
+     * return the faces to test on blocks (main face + adjacent combinations).
+     *
+     * @param camUp camera up vector
+     * @param direction movement direction (expected UP or DOWN)
+     * @return array of opposite side constants, or {NONE} if direction is invalid
+     */
+    public static int[] getOppositeSidesY(Vector3f camUp, Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        Vector3f moveDir = new Vector3f();
+
+        // Determine movement direction in world-space based on camera up
+        switch (direction) {
+            case UP:
+                // moving "up" relative to camera
+                moveDir.set(camUp.x, camUp.y, camUp.z).normalize();
+                break;
+            case DOWN:
+                // moving "down" relative to camera
+                moveDir.set(-camUp.x, -camUp.y, -camUp.z).normalize();
+                break;
+            default:
+                return new int[]{Block.NONE};
+        }
+
+        // Collect sides to check: if moving in +Y world direction, check BOTTOM (-Y)
+        // If moving in -Y world direction, check TOP (+Y)
+        IList<Integer> sides = new GapList<>();
+        if (moveDir.y > 0.0f) {
+            sides.add(Block.BOTTOM);
+            sides.add(Block.LEFT_BOTTOM);
+            sides.add(Block.RIGHT_BOTTOM);
+            sides.add(Block.BOTTOM_BACK);
+            sides.add(Block.BOTTOM_FRONT);
+        } else if (moveDir.y < 0.0f) {
+            sides.add(Block.TOP);
+            sides.add(Block.LEFT_TOP);
+            sides.add(Block.RIGHT_TOP);
+            sides.add(Block.TOP_BACK);
+            sides.add(Block.TOP_FRONT);
+        } else {
+            // If moveDir.y == 0, no vertical component -> return NONE
+            return new int[]{Block.NONE};
+        }
+
+        return sides.stream().mapToInt(i -> i).toArray();
+    }
+
     /**
      * Reverse face vertex order. All Faces. (Water)
      *
@@ -649,8 +855,7 @@ public class Block extends Model {
 
     /**
      * Reverse face vertex order. All Faces. (Water)
-     *
-     * Faces are provided before hand. Therefore potential for reducing overhead
+     * Faces are provided beforehand. Therefore, potential for reducing overhead
      * (and improve performance).
      *
      * @param camFront camera front (ray trace cap)
@@ -847,8 +1052,6 @@ public class Block extends Model {
                 disableFace(j);
             }
         }
-
-        this.id = genId();
 
         return counter;
     }
@@ -1621,11 +1824,98 @@ public class Block extends Model {
         }
     }
 
+    /**
+     * Returns the side constant based on the given direction.
+     *
+     * @param direction The direction to get side for
+     * @return The side constant, or NONE if direction is invalid
+     */
+    public static int getSide(Game.Direction direction) {
+        if (direction == null) {
+            return Block.NONE;
+        }
+
+        switch (direction) {
+            case LEFT:
+                return Block.LEFT;
+            case RIGHT:
+                return Block.RIGHT;
+            case UP:
+                return Block.TOP;
+            case DOWN:
+                return Block.BOTTOM;
+            case BACKWARD:
+                return Block.BACK;
+            case FORWARD:
+                return Block.FRONT;
+            default:
+                return Block.NONE;
+        }
+    }
+
+    /**
+     * Returns an array of sides based on the given direction. Includes
+     * both the main side and adjacent combinations.
+     *
+     * @param direction The direction to get sides for
+     * @return An array of side constants, or {NONE} if direction is invalid
+     */
+    public static int[] getSides(Game.Direction direction) {
+        if (direction == null) {
+            return new int[]{Block.NONE};
+        }
+
+        switch (direction) {
+            case LEFT: // -x
+                return new int[]{
+                        Block.LEFT,
+                        Block.LEFT_BOTTOM,
+                        Block.LEFT_TOP
+                };
+            case RIGHT: // +x
+                return new int[]{
+                        Block.RIGHT,
+                        Block.RIGHT_BOTTOM,
+                        Block.RIGHT_TOP
+                };
+            case UP: // +y
+                return new int[]{
+                        Block.TOP,
+                        Block.LEFT_TOP,
+                        Block.RIGHT_TOP,
+                        Block.TOP_BACK,
+                        Block.TOP_FRONT
+                };
+            case DOWN: // -y
+                return new int[]{
+                        Block.BOTTOM,
+                        Block.LEFT_BOTTOM,
+                        Block.RIGHT_BOTTOM,
+                        Block.BOTTOM_BACK,
+                        Block.BOTTOM_FRONT
+                };
+            case BACKWARD: // -z
+                return new int[]{
+                        Block.BACK,
+                        Block.BOTTOM_BACK,
+                        Block.TOP_BACK
+                };
+            case FORWARD: // +z
+                return new int[]{
+                        Block.FRONT,
+                        Block.BOTTOM_FRONT,
+                        Block.TOP_FRONT
+                };
+            default:
+                return new int[]{Block.NONE};
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(super.toString());
         sb.append("Block{");
-        sb.append("enabledFaces=").append(enabledFaces);
+        sb.append("enabledFaces=").append(Arrays.toString(enabledFaces));
         sb.append(", verticesReversed=").append(verticesReversed);
         sb.append('}');
         return sb.toString();
@@ -1652,7 +1942,7 @@ public class Block extends Model {
      * @return unique int
      */
     private int genId() {
-        return ModelUtils.blockSpecsToUniqueInt(solid, texName, getFaceBits(), pos);
+        return ModelUtils.blockSpecsToUniqueInt(texName, pos);
     }
 
     /**
@@ -1667,25 +1957,21 @@ public class Block extends Model {
     @Override
     public void setTexNameWithDeepCopy(String texName) {
         super.setTexNameWithDeepCopy(texName);
-        id = genId();
     }
 
     @Override
     public void setTexName(String texName) {
         super.setTexName(texName);
-        id = genId();
     }
 
     @Override
     public void setPos(Vector3f pos) {
         super.setPos(pos);
-        id = genId();
     }
 
     @Override
     public void setSolid(boolean solid) {
         super.setSolid(solid);
-        id = genId();
     }
 
 }

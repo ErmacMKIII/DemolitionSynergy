@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -233,31 +233,6 @@ public class Window {
         GLFW.glfwSetWindowPos(windowID, xpos, ypos);
     }
 
-//    @Deprecated
-//    public void fullscreen() {
-//        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
-//        GLFW.glfwSetWindowMonitor(windowID, monitorID, 0, 0, width, height, vidmode.refreshRate());
-//        fullscreen = true;
-//    }
-//
-//    @Deprecated
-//    public void windowed() {
-//        GLFWVidMode vidmode = GLFW.glfwGetVideoMode(monitorID);
-//        GLFW.glfwSetWindowMonitor(windowID, 0, 0, 0, width, height, vidmode.refreshRate());
-//        fullscreen = false;
-//    }
-//
-//    @Deprecated
-//    public void enableVSync() {
-//        GLFW.glfwSwapInterval(1);
-//        vsync = true;
-//    }
-//
-//    @Deprecated
-//    public void disableVSync() {
-//        GLFW.glfwSwapInterval(0);
-//        vsync = false;
-//    }
     /**
      * Set window title. (Game Server may change title)
      *

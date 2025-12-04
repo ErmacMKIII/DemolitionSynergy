@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ public class PerspectiveRenderer implements CoreRenderer {
      * Update perspective to window resolution (dimension)
      */
     public void updatePerspective() {
-        loadPerspective(FOV, gameObject.WINDOW.getWidth(), gameObject.WINDOW.getHeight(), NEAR_PLANE, FAR_PLANE);
+        loadPerspective(FOV, gameObject.gameWindow.getWidth(), gameObject.gameWindow.getHeight(), NEAR_PLANE, FAR_PLANE);
     }
 
     /**

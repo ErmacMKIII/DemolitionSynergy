@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.DSLogger>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.DSLogger>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ import org.apache.logging.log4j.core.layout.PatternLayout;
 
 /**
  *
- * @author Alexander Stojanovich <coas91@rocketmail.DSLogger>
+ * @author Aleksandar Stojanovic <coas91@rocketmail.DSLogger>
  */
 public class DSLogger {
 

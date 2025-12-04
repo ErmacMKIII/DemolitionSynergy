@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2024 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ public class ShadowRenderer implements CoreRenderer {
           Whether the shadow box needs to be in world space depends on where the shadow mapping calculations are performed and how the shadow box is defined. 
           If you calculate the shadow box in world space, you'll likely transform it to light space before creating the orthographic projection matrix for shadow mapping. 
           This transformation ensures that the shadow mapping is consistent with the position and orientation of the light source. -Chat GPT*/
-        final float aspectRatio = gameObject.WINDOW.getAspectRatio();
+        final float aspectRatio = gameObject.gameWindow.getAspectRatio();
         ShadowBox.createOrUpdate(
                 shadowDistance,
                 aspectRatio,

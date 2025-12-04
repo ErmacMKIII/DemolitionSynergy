@@ -6,7 +6,7 @@ import org.joml.Vector4f;
 /**
  * Player information class.
  *
- * Author: Alexander Stojanovich <coas91@rocketmail.com>
+ * Author: Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class PlayerInfo {
 

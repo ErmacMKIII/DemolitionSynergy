@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -326,8 +326,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      */
     public final GameObject gameObject;
 
-    public int weaponIndex = 0;
-
     /**
      * Download status from the (world) level map
      */
@@ -397,11 +395,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // W-A-S-D
             if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
-                actionPerformed = input.directionKeys[Direction.UP.ordinal()] = true;
+                actionPerformed = input.directionKeys[Direction.FORWARD.ordinal()] = true;
             }
 
             if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
-                actionPerformed = input.directionKeys[Direction.DOWN.ordinal()] = true;
+                actionPerformed = input.directionKeys[Direction.BACKWARD.ordinal()] = true;
             }
 
             if (keys[GLFW.GLFW_KEY_A]) {
@@ -447,12 +445,28 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
             //----------------------------------------------------------------------
+            if (keys[GLFW.GLFW_KEY_F]) {
+                actionPerformed = input.keyF_pressed = true;
+            }
+            if (keys[GLFW.GLFW_KEY_N]) {
+                actionPerformed = input.keyN_pressed = true;
+            }
+            if (keys[GLFW.GLFW_KEY_R]) {
+                actionPerformed = input.keyR_pressed = true;
+            }
+            //----------------------------------------------------------------------
             if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
                 actionPerformed = input.leftShift = true;
             }
-
             if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
                 actionPerformed = input.rightShift = true;
+            }
+            // Fix: Check mouseButtons array instead of keys array
+            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
+                actionPerformed = input.mouseLeftButton = true;
+            }
+            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
+                actionPerformed = input.mouseRightButton = true;
             }
             //----------------------------------------------------------------------
             if (moveMouse) {
@@ -462,428 +476,446 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Updates actor for observer. Collision detection is being handle in.
+     * Updates actor for observer. Collision detection is being handled in.
+     * Separates collision check from movement logic for cleaner code.
      *
+     * @param lc level container
      * @param amount movement amount
-     *
      */
     private void observerDo(LevelContainer lc, float amount) {
         causingCollision = false;
-
         Observer obs = lc.levelActors.spectator;
 
-        if (input.directionKeys[Game.Direction.UP.ordinal()]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.FORWARD)) {
+        // Handle forward movement with collision detection
+        if (input.directionKeys[Direction.FORWARD.ordinal()]) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.FORWARD);
+            if (causingCollision) {
                 obs.moveBackward(amount);
             } else {
                 obs.moveForward(amount);
             }
         }
 
-        if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.BACKWARD)) {
+        // Handle backward movement with collision detection
+        if (input.directionKeys[Direction.BACKWARD.ordinal()]) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.BACKWARD);
+            if (causingCollision) {
                 obs.moveForward(amount);
             } else {
                 obs.moveBackward(amount);
             }
         }
 
+        // Handle left movement with collision detection
         if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.LEFT)) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.LEFT);
+            if (causingCollision) {
                 obs.moveRight(amount);
             } else {
                 obs.moveLeft(amount);
             }
         }
 
+        // Handle right movement with collision detection
         if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.RIGHT)) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.RIGHT);
+            if (causingCollision) {
                 obs.moveLeft(amount);
             } else {
                 obs.moveRight(amount);
             }
         }
 
+        // Handle upward flight with collision detection
         if (input.flyUp) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.UP)) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.UP);
+            if (causingCollision) {
                 obs.descend(amount);
             } else {
                 obs.ascend(amount);
             }
         }
 
+        // Handle downward flight with collision detection
         if (input.flyDown) {
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.DOWN)) {
+            causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.DOWN);
+            if (causingCollision) {
                 obs.ascend(amount);
             } else {
                 obs.descend(amount);
             }
         }
 
+        // Handle camera rotation via keyboard
         if (input.turnLeft) {
             obs.turnLeft(ANGLE);
-
         }
         if (input.turnRight) {
             obs.turnRight(ANGLE);
         }
 
+        // Handle camera rotation via mouse
         if (moveMouse) {
             lc.levelActors.spectator.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
-
     }
 
     /**
-     * Updates editor observer (actor) when in editor mode. Collision detection
-     * is being handle in.
-     *
-     */
-    private void editorDo(LevelContainer lc) {
-        if (keys[GLFW.GLFW_KEY_N]) {
-            Editor.selectNew(lc);
-
-        }
-        //----------------------------------------------------------------------
-        if (input.mouseLeftButton && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrSolid(lc);
-        }
-
-        if (input.mouseRightButton && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrFluid(lc);
-
-        }
-        //----------------------------------------------------------------------
-        if (input.numericKeys[1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.LEFT);
-
-        }
-        if (input.numericKeys[2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.RIGHT);
-
-        }
-        if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.BOTTOM);
-
-        }
-        if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.TOP);
-
-        }
-        if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.BACK);
-
-        }
-        if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(lc, Block.FRONT);
-
-        }
-        //----------------------------------------------------------------------
-        if (input.numericKeys[1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.LEFT);
-
-        }
-        if (input.numericKeys[2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.RIGHT);
-
-        }
-        if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.BOTTOM);
-
-        }
-        if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.TOP);
-
-        }
-        if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.BACK);
-
-        }
-        if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(lc, Block.FRONT);
-        }
-        //----------------------------------------------------------------------
-        if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
-            Editor.deselect();
-
-        }
-        if (input.mouseRightButton) {
-            Editor.add(lc);
-
-        }
-        if (keys[GLFW.GLFW_KEY_R]) {
-            Editor.remove(lc);
-        }
-
-    }
-
-    /**
-     * Handle input for player (Single player mode & Multiplayer mode)
+     * Handle input for player (Single player mode).
+     * Movement predictor is used for collision detection before actual movement.
      *
      * @param lc level (environment) container
      * @param amountXZ movement amount on XZ plane
-     * @param amountY vertical movement amount on Y-axis when jump,
-     * @param amountYNeg vertical movement amount on Y-axis when sink,
-     *
+     * @param amountY vertical movement amount on Y-axis when jump
+     * @param amountYNeg vertical movement amount on Y-axis when sink
      */
     public void singlePlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        if (input.directionKeys[Game.Direction.UP.ordinal()]) {
+        // Handle forward XZ movement with predictor-based collision
+        if (input.directionKeys[Direction.FORWARD.ordinal()]) {
             player.movePredictorXZForward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.FORWARD)) {
+            causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.FORWARD);
+            if (causingCollision) {
                 player.movePredictorXZBackward(amountXZ);
             } else {
                 player.moveXZForward(amountXZ);
             }
         }
 
-        if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
+        // Handle backward XZ movement with predictor-based collision
+        if (input.directionKeys[Direction.BACKWARD.ordinal()]) {
             player.movePredictorXZBackward(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.BACKWARD)) {
+            causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.BACKWARD);
+            if (causingCollision) {
                 player.movePredictorXZForward(amountXZ);
             } else {
                 player.moveXZBackward(amountXZ);
             }
         }
 
+        // Handle left XZ movement with predictor-based collision
         if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
             player.movePredictorXZLeft(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
+            causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.LEFT);
+            if (causingCollision) {
                 player.movePredictorXZRight(amountXZ);
             } else {
                 player.moveXZLeft(amountXZ);
             }
         }
 
+        // Handle right XZ movement with predictor-based collision
         if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
             player.movePredictorXZRight(amountXZ);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
+            causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.RIGHT);
+            if (causingCollision) {
                 player.movePredictorXZLeft(amountXZ);
             } else {
                 player.moveXZRight(amountXZ);
             }
         }
 
-        // This logic avoids multiple jumps unless actor is in fluid (water)
+        // Handle jump - avoid multiple jumps unless actor is in fluid (water)
         if (input.jump && (!jumpPerformed || LevelContainer.isActorInFluid())) {
             player.movePredictorYUp(amountY);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
+            causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, Direction.UP);
+            if (causingCollision) {
                 player.movePredictorYDown(amountY);
             } else {
-                jumpPerformed |= lc.jump(player, amountY);
+                jumpPerformed = lc.jump(player, amountY);
             }
         }
 
+        // Handle crouch - avoid multiple crouches unless actor is in fluid (water)
         if (input.crouch && (!crouchPerformed || LevelContainer.isActorInFluid())) {
             player.movePredictorYDown(amountYNeg);
-            if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
+            causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, Direction.DOWN);
+            if (causingCollision) {
                 player.movePredictorYUp(amountYNeg);
             } else {
-                crouchPerformed |= lc.crouch(player, amountYNeg);
+                crouchPerformed = lc.crouch(player, amountYNeg);
             }
         }
 
+        // Handle camera rotation via keyboard
         if (input.turnLeft) {
             lc.levelActors.player.turnLeft(ANGLE);
-
         }
         if (input.turnRight) {
             lc.levelActors.player.turnRight(ANGLE);
         }
 
+        // Handle camera rotation via mouse
         if (moveMouse) {
             lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
 
-        if (input.mouseLeftButton) {
-
+        // Handle weapon switching
+        if (input.numericKeys[0]) {
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.NONE);
         }
 
-        if (keys[GLFW.GLFW_KEY_0]) {
-            weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-        }
-
+        // Primary weapon
         if (input.numericKeys[1]) {
-            weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.PRIMARY);
         }
 
+        // Secondary weapon
         if (input.numericKeys[2]) {
-            weaponIndex = (--weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.SECONDARY);
         }
-
     }
 
     /**
-     * Handle input for player (Single player mode & Multiplayer mode)
+     * Handle input for player (Multiplayer mode).
+     * Uses server position interpolation for MULTIPLAYER_JOIN mode.
+     * Movement predictor is used for collision detection before actual movement.
      *
      * @param lc level (environment) container
      * @param amountXZ movement amount on XZ plane
-     * @param amountY vertical movement amount on Y-axis when jump,
-     * @param amountYNeg vertical movement amount on Y-axis when sink,
-     *
+     * @param amountY vertical movement amount on Y-axis when jump
+     * @param amountYNeg vertical movement amount on Y-axis when sink
      * @throws java.lang.Exception if deserialization fails
      */
     public void multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) throws Exception {
         causingCollision = false;
         final Player player = lc.levelActors.player;
 
-        // Multiplayer-Join mode
+        // Multiplayer-Join mode - uses server position for interpolation
         if (isConnected() && currentMode == Mode.MULTIPLAYER_JOIN && player.isRegistered() && isAsyncReceivedEnabled()) {
-            if (input.directionKeys[Game.Direction.UP.ordinal()]) {
+            // Handle forward XZ movement with server-interpolated collision
+            if (input.directionKeys[Direction.FORWARD.ordinal()]) {
                 player.movePredictorXZForward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.FORWARD, (float) interpolationFactor)) {
-                    player.movePredictorXZBackward(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.FORWARD, (float) interpolationFactor);
+                if (!causingCollision) {
                     player.moveXZForward(amountXZ);
-                }
-            }
-
-            if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
-                player.movePredictorXZBackward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.BACKWARD, (float) interpolationFactor)) {
-                    player.movePredictorXZForward(amountXZ);
                 } else {
-                    player.moveXZBackward(amountXZ);
-
+                    player.movePredictorXZBackward(amountXZ);
                 }
             }
 
+            // Handle backward XZ movement with server-interpolated collision
+            if (input.directionKeys[Direction.BACKWARD.ordinal()]) {
+                player.movePredictorXZBackward(amountXZ);
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.BACKWARD, (float) interpolationFactor);
+                if (!causingCollision) {
+                    player.moveXZBackward(amountXZ);
+                } else {
+                    player.movePredictorXZForward(amountXZ);
+                }
+            }
+
+            // Handle left XZ movement with server-interpolated collision
             if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.LEFT, (float) interpolationFactor)) {
-                    player.movePredictorXZRight(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.LEFT, (float) interpolationFactor);
+                if (!causingCollision) {
                     player.moveXZLeft(amountXZ);
+                } else {
+                    player.movePredictorXZRight(amountXZ);
                 }
             }
 
+            // Handle right XZ movement with server-interpolated collision
             if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.RIGHT, (float) interpolationFactor)) {
-                    player.movePredictorXZLeft(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.RIGHT, (float) interpolationFactor);
+                if (!causingCollision) {
                     player.moveXZRight(amountXZ);
+                } else {
+                    player.movePredictorXZLeft(amountXZ);
                 }
             }
 
-            // This logic avoids multiple jumps unless actor is in fluid (water)
+            // Handle jump with server-interpolated collision - avoid multiple jumps unless in fluid
             if (input.jump && (!jumpPerformed || LevelContainer.isActorInFluid())) {
                 player.movePredictorYUp(amountY);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.UP, (float) interpolationFactor)) {
-                    player.movePredictorYDown(amountY);
+                causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, playerServerPos, Direction.UP, (float) interpolationFactor);
+                if (!causingCollision) {
+                    jumpPerformed = lc.jump(player, amountY);
                 } else {
-                    jumpPerformed |= lc.jump(player, amountY);
+                    player.movePredictorYDown(amountY);
                 }
             }
 
+            // Handle crouch with server-interpolated collision - avoid multiple crouches unless in fluid
             if (input.crouch && (!crouchPerformed || LevelContainer.isActorInFluid())) {
                 player.movePredictorYDown(amountYNeg);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor)) {
-                    player.movePredictorYUp(amountYNeg);
+                causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, playerServerPos, Direction.DOWN, (float) interpolationFactor);
+                if (!causingCollision) {
+                    crouchPerformed = lc.crouch(player, amountYNeg);
                 } else {
-                    crouchPerformed |= lc.crouch(player, amountYNeg);
+                    player.movePredictorYUp(amountYNeg);
                 }
             }
 
         } else if (currentMode == Mode.MULTIPLAYER_HOST && player.isRegistered()) {
-            if (input.directionKeys[Game.Direction.UP.ordinal()]) {
+            // Multiplayer-Host mode - standard collision without interpolation
+            // Handle forward XZ movement
+            if (input.directionKeys[Direction.FORWARD.ordinal()]) {
                 player.movePredictorXZForward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
-                    player.movePredictorXZBackward(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.FORWARD);
+                if (!causingCollision) {
                     player.moveXZForward(amountXZ);
-                }
-            }
-
-            if (input.directionKeys[Game.Direction.DOWN.ordinal()]) {
-                player.movePredictorXZBackward(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
-                    player.movePredictorXZForward(amountXZ);
                 } else {
-                    player.moveXZBackward(amountXZ);
+                    player.movePredictorXZBackward(amountXZ);
                 }
             }
 
+            // Handle backward XZ movement
+            if (input.directionKeys[Direction.BACKWARD.ordinal()]) {
+                player.movePredictorXZBackward(amountXZ);
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.BACKWARD);
+                if (!causingCollision) {
+                    player.moveXZBackward(amountXZ);
+                } else {
+                    player.movePredictorXZForward(amountXZ);
+                }
+            }
+
+            // Handle left XZ movement
             if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.LEFT)) {
-                    player.movePredictorXZRight(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.LEFT);
+                if (!causingCollision) {
                     player.moveXZLeft(amountXZ);
+                } else {
+                    player.movePredictorXZRight(amountXZ);
                 }
             }
 
+            // Handle right XZ movement
             if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.RIGHT)) {
-                    player.movePredictorXZLeft(amountXZ);
-                } else {
+                causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.RIGHT);
+                if (!causingCollision) {
                     player.moveXZRight(amountXZ);
+                } else {
+                    player.movePredictorXZLeft(amountXZ);
                 }
             }
 
-            if (keys[GLFW.GLFW_KEY_SPACE] && (!jumpPerformed)) {
+            // Handle jump - avoid multiple jumps
+            if (keys[GLFW.GLFW_KEY_SPACE] && !jumpPerformed) {
                 player.movePredictorYUp(amountY);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.UP)) {
-                    player.movePredictorYDown(amountY);
+                causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, Direction.UP);
+                if (!causingCollision) {
+                    jumpPerformed = lc.jump(player, amountY);
                 } else {
-                    jumpPerformed |= lc.jump(player, amountY);
+                    player.movePredictorYDown(amountY);
                 }
             }
 
-            if ((input.leftControl || input.rightControl) && ((!crouchPerformed))) {
+            // Handle crouch - avoid multiple crouches
+            if ((input.leftControl || input.rightControl) && !crouchPerformed) {
                 player.movePredictorYDown(amountYNeg);
-                if (causingCollision = LevelContainer.hasCollisionWithEnvironment((Critter) player, Direction.DOWN)) {
-                    player.movePredictorYUp(amountYNeg);
+                causingCollision = LevelContainer.hasCollisionYWithEnvironment((Critter) player, Direction.DOWN);
+                if (!causingCollision) {
+                    crouchPerformed = lc.crouch(player, amountYNeg);
                 } else {
-                    crouchPerformed |= lc.crouch(player, amountYNeg);
+                    player.movePredictorYUp(amountYNeg);
                 }
             }
         }
 
+        // Handle camera rotation via keyboard (common to both modes)
         if (input.turnLeft) {
             lc.levelActors.player.turnLeft(ANGLE);
-
         }
         if (input.turnRight) {
             lc.levelActors.player.turnRight(ANGLE);
         }
 
+        // Handle camera rotation via mouse (common to both modes)
         if (moveMouse) {
             lc.levelActors.player.lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
 
-        if (input.mouseLeftButton) {
-
+        // Handle weapon switching (common to both modes)
+        if (input.numericKeys[0]) {
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.NONE);
         }
 
-        if (keys[GLFW.GLFW_KEY_0]) {
-            weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(Weapons.NONE);
-
-        }
-
+        // Primary weapon
         if (input.numericKeys[1]) {
-            weaponIndex = (++weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.PRIMARY);
         }
 
+        // Secondary weapon
         if (input.numericKeys[2]) {
-            weaponIndex = (--weaponIndex) & 15;
-            gameObject.getLevelContainer().levelActors.getPlayer().switchWeapon(gameObject.levelContainer.weapons, weaponIndex);
+            gameObject.getLevelContainer().levelActors.player.switchWeapon(Critter.Hand.SECONDARY);
+        }
+    }
 
+    /**
+     * Updates editor observer (actor) when in editor mode. Collision detection
+     * is being handle in.
+     */
+    private void editorDo(LevelContainer lc) {
+        if (input.isKeyN_pressed()) {
+            Editor.selectNew(lc);
+        }
+        //----------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        if (input.numericKeys[1] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.LEFT);
+        }
+        if (input.numericKeys[2] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.RIGHT);
+        }
+        if (input.numericKeys[3] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.BOTTOM);
+        }
+        if (input.numericKeys[4] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.TOP);
+        }
+        if (input.numericKeys[5] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.BACK);
+        }
+        if (input.numericKeys[6] && !(input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentSolid(lc, Block.FRONT);
+        }
+        //----------------------------------------------------------------------
+        if (input.numericKeys[1] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.LEFT);
+        }
+        if (input.numericKeys[2] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.RIGHT);
+        }
+        if (input.numericKeys[3] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.BOTTOM);
+        }
+        if (input.numericKeys[4] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.TOP);
+        }
+        if (input.numericKeys[5] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.BACK);
+        }
+        if (input.numericKeys[6] && (input.isLeftShift() || input.isRightShift())) {
+            Editor.selectAdjacentFluid(lc, Block.FRONT);
+        }
+        //----------------------------------------------------------------------
+        if (input.numericKeys[0] || input.keyF_pressed) {
+            Editor.deselect();
+        }
+        if (input.mouseLeftButton) {
+            if (input.isLeftShift() || input.isRightShift()) {
+                Editor.selectCurrFluid(lc);
+            } else {
+                Editor.selectCurrSolid(lc);
+            }
         }
 
-        if (keys[GLFW.GLFW_KEY_R]) {
-
+        if (input.mouseRightButton) {
+            Editor.add(lc);
+        }
+        if (input.isKeyR_pressed()) {
+            Editor.remove(lc);
         }
 
     }
@@ -969,15 +1001,15 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
         };
-        GLFW.glfwSetKeyCallback(gameObject.WINDOW.getWindowID(), defaultKeyCallback);
+        GLFW.glfwSetKeyCallback(gameObject.gameWindow.getWindowID(), defaultKeyCallback);
 
-        GLFW.glfwSetInputMode(gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPos(gameObject.WINDOW.getWindowID(), gameObject.WINDOW.getWidth() / 2.0, gameObject.WINDOW.getHeight() / 2.0);
+        GLFW.glfwSetInputMode(gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPos(gameObject.gameWindow.getWindowID(), gameObject.gameWindow.getWidth() / 2.0, gameObject.gameWindow.getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                float xposGL = (float) (xpos / gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
-                float yposGL = (float) (0.5f - ypos / gameObject.WINDOW.getHeight()) * 2.0f;
+                float xposGL = (float) (xpos / gameObject.gameWindow.getWidth() - 0.5f) * 2.0f;
+                float yposGL = (float) (0.5f - ypos / gameObject.gameWindow.getHeight()) * 2.0f;
 
                 xoffset = xposGL - lastX;
                 yoffset = yposGL - lastY;
@@ -990,7 +1022,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 lastY = (float) yposGL;
             }
         };
-        GLFW.glfwSetCursorPosCallback(gameObject.WINDOW.getWindowID(), defaultCursorCallback);
+        GLFW.glfwSetCursorPosCallback(gameObject.gameWindow.getWindowID(), defaultCursorCallback);
 
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
@@ -1002,7 +1034,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 }
             }
         };
-        GLFW.glfwSetMouseButtonCallback(gameObject.WINDOW.getWindowID(), defaultMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(gameObject.gameWindow.getWindowID(), defaultMouseButtonCallback);
     }
 
     @Override
@@ -1188,11 +1220,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         // Set short timeout of 10 sec
                         this.timeout = Game.DEFAULT_SHORTENED_TIMEOUT;
                         // Loop through all fragment indices
-                        for (int fragmentIndex = 0; fragmentIndex < totalIndices && !gameObject.WINDOW.shouldClose(); fragmentIndex++) {
+                        for (int fragmentIndex = 0; fragmentIndex < totalIndices && !gameObject.gameWindow.shouldClose(); fragmentIndex++) {
                             boolean success = false;
 
                             // Try up to MAX_ATTEMPTS to get the fragment
-                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success && !gameObject.WINDOW.shouldClose(); attempt++) {
+                            for (int attempt = 0; attempt < MAX_ATTEMPTS && !success && !gameObject.gameWindow.shouldClose(); attempt++) {
                                 // Request the next fragment
                                 RequestIfc fragmentRequest = new Request(RequestIfc.RequestType.GET_FRAGMENT, DSObject.DataType.INT, fragmentIndex);
                                 fragmentRequest.send(this, session);
@@ -1344,7 +1376,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // display ping in game window title
-        gameObject.WINDOW.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
+        gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
 
         // calculate interpolation factor
         interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
@@ -1470,13 +1502,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
-                        // causes of stopping repeateble jump (underwater, under gravity) ~ Author understanding
+                        // causes of stopping repeatable jump (underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
                         break;
-
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
                         // player has control
@@ -1484,7 +1515,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
                         LevelContainer.updateActorInFluid(gameObject.levelContainer);
 
-                        // causes of stopping repeateble jump (ups quarter, underwater, under gravity) ~ Author understanding
+                        // causes of stopping repeatable jump (ups quarter, underwater, under gravity) ~ Author understanding
                         // negate jump performed if actor is in fluid or not affected by gravity jump can be performed again
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
@@ -1526,7 +1557,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         gameObject.intrface.getGuideText().setEnabled(false);
 
         // Main Loop
-        while (!gameObject.WINDOW.shouldClose()) {
+        while (!gameObject.gameWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             gameTicks += deltaTime * Game.TPS;
@@ -1540,7 +1571,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Detecting critical status
             if (ups == 0 && deltaTime > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.WINDOW.close();
+                gameObject.gameWindow.close();
                 break;
             }
 
@@ -1680,7 +1711,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Send a simple 'goodbye' message with magic bytes prepended
             final Player player = gameObject.levelContainer.levelActors.player;
             final RequestIfc register = new Request(RequestIfc.RequestType.REGISTER,
-                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
+                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.activeWeapon().getTexName()).toString()
             );
             register.send(this, session);
 
@@ -1786,7 +1817,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 final RequestIfc goodByeRequest = new Request(RequestIfc.RequestType.GOODBYE, DSObject.DataType.VOID, null);
                 goodByeRequest.send(this, session);
 
-                if (!gameObject.WINDOW.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
+                if (!gameObject.gameWindow.shouldClose()) { // if 'EXIT' fomr Main Menu or 'QUIT/EXIT' command don't wait for response from the (game) server
                     synchronized (requestList) {
                         if (requestList.size() < MAX_SIZE) {
                             requestList.add(goodByeRequest);
@@ -1931,7 +1962,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // Send player (info) update to the server
             final Player player = gameObject.levelContainer.levelActors.player;
             final RequestIfc request = new Request(RequestIfc.RequestType.SET_PLAYER_INFO,
-                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.getWeapon().getTexName()).toString()
+                    DSObject.DataType.OBJECT, new PlayerInfo(player.getName(), player.body.texName, player.uniqueId, player.body.getPrimaryRGBAColor(), player.activeWeapon().getTexName()).toString()
             );
             request.send(this, session);
             synchronized (requestList) {
@@ -2105,10 +2136,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static Configuration makeConfig(GameObject gameObject) {
         Configuration cfg = Configuration.getInstance();
         cfg.setFpsCap(fpsMax);
-        cfg.setWidth(gameObject.WINDOW.getWidth());
-        cfg.setHeight(gameObject.WINDOW.getHeight());
-        cfg.setFullscreen(gameObject.WINDOW.isFullscreen());
-        cfg.setVsync(gameObject.WINDOW.isVsync());
+        cfg.setWidth(gameObject.gameWindow.getWidth());
+        cfg.setHeight(gameObject.gameWindow.getHeight());
+        cfg.setFullscreen(gameObject.gameWindow.isFullscreen());
+        cfg.setVsync(gameObject.gameWindow.isVsync());
         cfg.setWaterEffects(gameObject.waterRenderer.getEffectsQuality().ordinal());
         cfg.setShadowEffects(gameObject.shadowRenderer.getEffectsQuality().ordinal());
         cfg.setMouseSensitivity(mouseSensitivity);

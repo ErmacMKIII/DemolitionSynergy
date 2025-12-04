@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2024 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.weapons;
 
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 import rs.alexanderstojanovich.evg.audio.AudioFile;
 import rs.alexanderstojanovich.evg.models.Model;
 
@@ -77,12 +79,16 @@ public class Weapon implements WeaponIfc {
 
     /**
      * Derive model on ground (as level container item).
-     *
-     * @return
+     * @param pos position of the weapon item
+     * @param color color of the weapon item
+     * @return item as Model
      */
     @Override
-    public Model asItem() {
+    public Model asItem(Vector3f pos, Vector4f color) {
         Model result = new Model(model);
+
+        result.pos = new Vector3f(pos);
+        result.setPrimaryRGBAColor(new Vector4f(color));
 
         return result;
     }

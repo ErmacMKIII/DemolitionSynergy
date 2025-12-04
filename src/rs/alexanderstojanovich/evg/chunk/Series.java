@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import org.lwjgl.system.MemoryUtil;
 import org.magicwerk.brownies.collections.IList;
 import org.magicwerk.brownies.collections.Key1List;
 import rs.alexanderstojanovich.evg.light.LightSources;
-import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -40,8 +39,6 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Series { // mutual class for both solid blocks and fluid blocks with improved rendering
-
-    public static final int DYNAMIC_INCREMENT = Configuration.getInstance().getBlockDynamicSize();
 
     /**
      * List of (environment) blocks with access keys to chunk id

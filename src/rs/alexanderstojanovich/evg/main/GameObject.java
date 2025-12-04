@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,14 +72,14 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     private final Configuration cfg = Configuration.getInstance();
 
     public static final boolean IS_DEVELOPMENT = false;
-    public static final int VERSION = 57;
+    public static final int VERSION = 58;
     public static final String WINDOW_TITLE = String.format("Demolition Synergy - v%s%s", VERSION, IS_DEVELOPMENT ? " (DEVELOPMENT)" : "");
     // makes default window -> Renderer sets resolution from config
 
     /**
      * Game GLFW Window
      */
-    public final Window WINDOW;
+    public final Window gameWindow;
 
     public final MasterRenderer masterRenderer;
     public final LevelContainer levelContainer;
@@ -139,11 +139,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         final int width = cfg.getWidth();
         final int height = cfg.getHeight();
         // creating the window
-        WINDOW = Window.getInstance(width, height, WINDOW_TITLE);
+        gameWindow = Window.getInstance(width, height, WINDOW_TITLE);
 
-        WINDOW.setFullscreen(cfg.isFullscreen());
+        gameWindow.setFullscreen(cfg.isFullscreen());
 //        WINDOW.setVSync(cfg.isVsync()); //=> code disabled due to not in Renderer
-        WINDOW.centerTheWindow();
+        gameWindow.centerTheWindow();
         //----------------------------------------------------------------------        
         this.splashScreen = new Quad(width, height, GameAssets.SPLASH, true, null);
         this.splashScreen.setColor(new Vector4f(1.1f, 1.37f, 0.1f, 1.0f));
@@ -259,12 +259,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     /**
      * Perform optimization (of chunks). Optimization is collecting all tuples
-     * with blocklist from all chunks into one tuple selection.
+     * with blocklist from all chunks into one tuple selection. Also, optimization is done to the items.
      */
     public void updateNoptimizeChunks() {
         if (!isWorking()) {
-            // run block environment updateEnvironment n optimizaiton
-            levelContainer.optimizeBlockEnvironment();
+            // run block environment update and optimization
+            levelContainer.optimizeEnvironment();
         }
     }
 
@@ -402,7 +402,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public void render() {
-        if (!initializedWindow || this.WINDOW.shouldClose()) {
+        if (!initializedWindow || this.gameWindow.shouldClose()) {
             return;
         }
 
@@ -452,7 +452,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.render(ShaderProgram.getIntrfaceShader(), ShaderProgram.getIntrfaceContourShader());
         }
 
-        WINDOW.render();
+        gameWindow.render();
     }
 
     /*
@@ -469,6 +469,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         DSLogger.reportDebug("Cache buffer deleted.", null);
         this.levelContainer.levelBuffer.release();
         this.levelContainer.blockEnvironment.release();
+        this.levelContainer.items.release();
         DSLogger.reportDebug("Optimized tuples deleted.", null);
 
 //        Quad.globlRelease();
@@ -529,8 +530,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         levelContainer.levelActors.spectator.setPos(new Vector3f());
         levelContainer.levelActors.npcList.clear();
         levelContainer.levelActors.otherPlayers.clear();
-        if (!gameServer.isShutDownSignal() && !WINDOW.shouldClose()) {
-            WINDOW.setTitle(GameObject.WINDOW_TITLE);
+        levelContainer.items.clear();
+        if (!gameServer.isShutDownSignal() && !gameWindow.shouldClose()) {
+            gameWindow.setTitle(GameObject.WINDOW_TITLE);
         }
         Game.setCurrentMode(Game.Mode.FREE);
         // fix menu being opened
@@ -717,7 +719,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public void destroy() {
         TaskExecutor.shutdown();
-        WINDOW.destroy();
+        gameWindow.destroy();
     }
 
     /**
@@ -827,6 +829,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     public boolean isChunkOperationPerformed() {
         return chunkOperationPerformed;
+    }
+
+    public Window getGameWindow() {
+        return gameWindow;
     }
 
 }

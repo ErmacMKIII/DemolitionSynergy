@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -121,6 +121,8 @@ public class Player extends Critter implements Observer {
      */
     public void renderWeaponInHand(LightSources ls, ShaderProgram sp) {
         if (cameraView == CameraView.FIRST_PERSON) {
+            // render only in first person view
+            WeaponIfc weapon = activeWeapon();
             if (!weapon.inHands().isBuffered()) {
                 weapon.inHands().bufferAll();
             }
@@ -137,24 +139,11 @@ public class Player extends Critter implements Observer {
     /**
      * Switch to weapon in hands
      *
-     * @param weapons all weapons instance (wraps array)
-     * @param index index of (weapon) enumeration
+     * @param hand hand to switch weapon from
      */
     @Override
-    public void switchWeapon(Weapons weapons, int index) {
-        super.switchWeapon(weapons, index);
-        // set the camera target model assuming it was changed
-        this.camera.setTarget(body);
-    }
-
-    /**
-     * Switch to weapon in hands
-     *
-     * @param weapon weapon to switch to
-     */
-    @Override
-    public void switchWeapon(WeaponIfc weapon) {
-        super.switchWeapon(weapon);
+    public void switchWeapon(Hand hand) {
+        super.switchWeapon(hand);
         // set the camera target model assuming it was changed
         this.camera.setTarget(body);
     }

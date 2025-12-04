@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.util.Arrays;
+
 /**
  * Game Input (POCO) class.
  *
@@ -93,6 +95,12 @@ public class Input {
      * Mouse right used.
      */
     public boolean mouseRightButton = false;
+
+
+    /**
+     * Key F pressed (Editor deselect)
+     */
+    public boolean keyF_pressed = false;
     /**
      * Key N pressed (Editor new)
      */
@@ -107,9 +115,7 @@ public class Input {
      */
     public void clear() {
         // Reset direction keys
-        for (int i = 0; i < directionKeys.length; i++) {
-            directionKeys[i] = false;
-        }
+        Arrays.fill(directionKeys, false);
 
         // Reset mouse movement
         moveMouse = false;
@@ -127,9 +133,7 @@ public class Input {
         turnRight = false;
 
         // Reset numeric keys
-        for (int i = 0; i < numericKeys.length; i++) {
-            numericKeys[i] = false;
-        }
+        Arrays.fill(numericKeys, false);
 
         // Reset modifier keys
         leftShift = false;
@@ -139,6 +143,7 @@ public class Input {
 
         // Reset editor controls
         editorDeselect = false;
+        keyF_pressed = false;
         keyN_pressed = false;
         keyR_pressed = false;
 
@@ -211,6 +216,9 @@ public class Input {
         return mouseRightButton;
     }
 
+    public boolean isKeyF_pressed() {
+        return keyF_pressed;
+    }
     public boolean isKeyN_pressed() {
         return keyN_pressed;
     }

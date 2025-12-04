@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
 /**
+ * Game console (Executes commands, prints log).
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -194,12 +195,12 @@ public class Console {
                         cursorPosition = input.length();
                     }
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_RELEASE) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), input);
+                    GLFW.glfwSetClipboardString(intrface.gameObject.gameWindow.getWindowID(), input);
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_RELEASE) {
-                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.gameWindow.getWindowID());
                     clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
 
-                    if (clipboard != null && !clipboard.isEmpty()) {
+                    if (!clipboard.isEmpty()) {
                         input.insert(cursorPosition, clipboard);
                         cursorPosition += clipboard.length();
                         updateInputText();
@@ -261,17 +262,17 @@ public class Console {
             inText.setContent("]_");
 
             // Enable the cursor for text input
-            GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
 
             // Disable the default cursor position callback while in console
-            GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+            GLFW.glfwSetCursorPosCallback(intrface.gameObject.gameWindow.getWindowID(), null);
 
             // Set the custom key and character callbacks for the console
-            GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
-            GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCharCallback);
+            GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), glfwKeyCallback);
+            GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), glfwCharCallback);
 
             // Optionally set scroll behavior for console
-            GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), glfwScrollCallback);
+            GLFW.glfwSetScrollCallback(intrface.gameObject.gameWindow.getWindowID(), glfwScrollCallback);
 
             // Avoid blocking the application with glfwWaitEvents
             GLFW.glfwPostEmptyEvent(); // Notify GLFW to process events immediately
@@ -284,11 +285,11 @@ public class Console {
      * Closes the console by resetting callbacks and disabling rendering.
      */
     public void close() {
-        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultKeyCallback());
-        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), null);
-        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), Game.getDefaultCursorCallback());
-        GLFW.glfwSetScrollCallback(intrface.gameObject.WINDOW.getWindowID(), null);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), Game.getDefaultKeyCallback());
+        GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), null);
+        GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.gameWindow.getWindowID(), Game.getDefaultCursorCallback());
+        GLFW.glfwSetScrollCallback(intrface.gameObject.gameWindow.getWindowID(), null);
 
         inText.setContent("");
         completes.setContent("");
@@ -445,7 +446,7 @@ public class Console {
     * Delete all the GL Buffers.
      */
     public void release() {
-        this.history.forEach(i -> i.release());
+        this.history.forEach(HistoryItem::release);
         this.inText.release();
     }
 
@@ -460,13 +461,13 @@ public class Console {
         switch (status) {
             case PENDING:
                 return new Vector4f(GlobalColors.WHITE, 1.0f);
-            default:
-            case FAILED:
-                return new Vector4f(GlobalColors.RED, 1.0f);
             case SUCCEEDED:
                 return new Vector4f(GlobalColors.GREEN, 1.0f);
             case WARNING:
                 return new Vector4f(GlobalColors.YELLOW, 1.0f);
+            case FAILED:
+            default:
+                return new Vector4f(GlobalColors.RED, 1.0f);
         }
 
     }

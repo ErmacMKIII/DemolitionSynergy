@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ public class GameRenderer extends Thread implements Executor {
     protected static double glCommandTimer = 0.0;
 
     protected static double ANIMATION_RATE = 0.25;
-    protected static double GL_COMMAND_POLL_RATE = 1.0;
+    protected static double GL_COMMAND_POLL_RATE = 0.125;
 
     /**
      * Core component. Game renderer. Everything rendered to the screen happens
@@ -108,7 +108,7 @@ public class GameRenderer extends Thread implements Executor {
         double currTime;
         double deltaTime; // time between frames
 
-        while (!gameObject.WINDOW.shouldClose()) {
+        while (!gameObject.gameWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             fpsTicks += deltaTime * Game.getFpsMax();
@@ -117,7 +117,7 @@ public class GameRenderer extends Thread implements Executor {
             // Detecting critical status
             if (fps == 0 && deltaTime > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.WINDOW.close();
+                gameObject.gameWindow.close();
                 break;
             }
 
@@ -195,6 +195,10 @@ public class GameRenderer extends Thread implements Executor {
         DSLogger.reportDebug("Game content resources deleted.", null);
     }
 
+    /**
+     * Execute command for this Game Renderer
+     * @param command the runnable task
+     */
     @Override
     public void execute(Runnable command) {
         command.run();

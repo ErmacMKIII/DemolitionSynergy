@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -125,8 +125,8 @@ public abstract class Menu {
             @Override
             public void invoke(long window, double xpos, double ypos) {
                 // get the new values
-                float new_xposGL = (float) (xpos / intrface.gameObject.WINDOW.getWidth() - 0.5f) * 2.0f;
-                float new_yposGL = (float) (0.5f - ypos / intrface.gameObject.WINDOW.getHeight()) * 2.0f;
+                float new_xposGL = (float) (xpos / intrface.gameObject.gameWindow.getWidth() - 0.5f) * 2.0f;
+                float new_yposGL = (float) (0.5f - ypos / intrface.gameObject.gameWindow.getHeight()) * 2.0f;
 
                 // if new and prev values aren't the same user moved the mouse
                 if (new_xposGL != xposGL || new_yposGL != yposGL) {
@@ -156,7 +156,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
+                    GLFW.glfwSetCursorPos(intrface.gameObject.gameWindow.getWindowID(), intrface.gameObject.gameWindow.getWidth() / 2.0, intrface.gameObject.gameWindow.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev(intrface);
@@ -171,13 +171,13 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(intrface.gameObject.WINDOW.getWindowID(), intrface.gameObject.WINDOW.getWidth() / 2.0, intrface.gameObject.WINDOW.getHeight() / 2.0);
+                    GLFW.glfwSetCursorPos(intrface.gameObject.gameWindow.getWindowID(), intrface.gameObject.gameWindow.getWidth() / 2.0, intrface.gameObject.gameWindow.getHeight() / 2.0);
                     intrface.gameObject.getSoundFXPlayer().play(AudioFile.MENU_ACCEPT, new Vector3f());
                     execute();
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_C && action == GLFW.GLFW_PRESS) {
-                    GLFW.glfwSetClipboardString(intrface.gameObject.WINDOW.getWindowID(), Menu.this.items.get(selected).menuValue.getCurrentValue().toString());
+                    GLFW.glfwSetClipboardString(intrface.gameObject.gameWindow.getWindowID(), Menu.this.items.get(selected).menuValue.getCurrentValue().toString());
                 } else if (ctrlPressed && key == GLFW.GLFW_KEY_V && action == GLFW.GLFW_PRESS) {
-                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.WINDOW.getWindowID());
+                    String clipboard = GLFW.glfwGetClipboardString(intrface.gameObject.gameWindow.getWindowID());
                     clipboard = (clipboard.length() <= 256) ? clipboard : clipboard.substring(0, 256);
                     if (clipboard != null) {
                         Menu.this.items.get(selected).menuValue.setCurrentValue(clipboard);
@@ -220,11 +220,11 @@ public abstract class Menu {
      */
     public void open() {
         enabled = true;
-        GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), glfwCursorPosCallback);
-        GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), null);
-        GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), glfwKeyCallback);
-        GLFW.glfwSetMouseButtonCallback(intrface.gameObject.WINDOW.getWindowID(), glfwMouseButtonCallback);
+        GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+        GLFW.glfwSetCursorPosCallback(intrface.gameObject.gameWindow.getWindowID(), glfwCursorPosCallback);
+        GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), null);
+        GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), glfwKeyCallback);
+        GLFW.glfwSetMouseButtonCallback(intrface.gameObject.gameWindow.getWindowID(), glfwMouseButtonCallback);
     }
 
     protected int longestWord() {
@@ -356,7 +356,7 @@ public abstract class Menu {
     }
 
     public Window getMyWindow() {
-        return intrface.gameObject.WINDOW;
+        return intrface.gameObject.gameWindow;
     }
 
     public Quad getLogo() {

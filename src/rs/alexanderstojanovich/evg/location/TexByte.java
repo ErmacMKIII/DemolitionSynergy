@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2022 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.joml.Vector4f;
 
 /**
+ * Location property. Used in {@link BlockLocation} class.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,11 +139,11 @@ public abstract class Dialog {
             done = false;
             dialog.setContent(question + "_");
             dialog.color = GlobalColors.WHITE_RGBA;
-            GLFW.glfwSetInputMode(intrface.gameObject.WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(intrface.gameObject.WINDOW.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(intrface.gameObject.WINDOW.getWindowID(), keyCallback);
+            GLFW.glfwSetInputMode(intrface.gameObject.gameWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(intrface.gameObject.gameWindow.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(intrface.gameObject.gameWindow.getWindowID(), keyCallback);
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(intrface.gameObject.WINDOW.getWindowID(), charCallback);
+            GLFW.glfwSetCharCallback(intrface.gameObject.gameWindow.getWindowID(), charCallback);
         }
     }
 

@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
+ * Copyright (C) 2020 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -338,13 +338,13 @@ public class Quad implements ComponentIfc {
     }
 
     public float giveRelativeWidth(Intrface intrface) {
-        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getWidth() / (float) Window.MIN_WIDTH;
-        return width * widthFactor / (float) intrface.gameObject.WINDOW.getWidth();
+        float widthFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getWidth() / (float) Window.MIN_WIDTH;
+        return width * widthFactor / (float) intrface.gameObject.gameWindow.getWidth();
     }
 
     public float giveRelativeHeight(Intrface intrface) {
-        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.WINDOW.getHeight() / (float) Window.MIN_HEIGHT;
-        return height * heightFactor / (float) intrface.gameObject.WINDOW.getHeight();
+        float heightFactor = (ignoreFactor) ? 1.0f : intrface.gameObject.gameWindow.getHeight() / (float) Window.MIN_HEIGHT;
+        return height * heightFactor / (float) intrface.gameObject.gameWindow.getHeight();
     }
 
     /**
