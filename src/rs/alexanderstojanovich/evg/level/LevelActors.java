@@ -207,7 +207,7 @@ public class LevelActors {
                 if (weapon == null) { // if there is no weapon, switch to 'NONE' - unarmed, avoid nulls!
                     weapon = Weapons.NONE;
                 }
-                opOrNull.switchWeapon(opOrNull.getActiveHand());
+                opOrNull.switchWeapon(weapon);
             }
         });
 

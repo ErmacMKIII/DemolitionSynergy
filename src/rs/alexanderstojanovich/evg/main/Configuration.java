@@ -289,7 +289,7 @@ public class Configuration {
             pw.println("Width = " + width);
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
-            pw.println("# Maximum Framerate set to refresh rate if is enabled");
+            pw.println("# Maximum framerate set to refresh rate if is enabled");
             pw.println("VSync = " + vsync);
             pw.println("# Water Effects (e.g. water reflections) {NONE=0, LOW=1, MEDIUM=2, HIGH=3, ULTRA=4}");
             pw.println("WaterEffects = " + waterEffects);
@@ -300,7 +300,7 @@ public class Configuration {
             pw.println("SoundFXVolume = " + soundFXVolume);
             pw.println("# Log Level {ERR=0(default), DEBUG=1, ALL=2}");
             pw.println("LogLevel = " + logLevel.ordinal());
-            pw.println("# If true generate log file, otherwise print only to console. Used in conjuction with log level.");
+            pw.println("# If true generate log file, otherwise print only to console. Used in conjunction with log level.");
             pw.println("LogToFile = " + logToFile);
             pw.println("BlockDynamicSize = " + blockDynamicSize);
             pw.println("TextDynamicSize = " + textDynamicSize);
@@ -312,7 +312,7 @@ public class Configuration {
             pw.println("TextureSize = " + textureSize);
             pw.println("# Game Ticks (decimal). Must be greater or equal zero");
             pw.println("GameTicks = " + gameTicks);
-            pw.println("# Game Time (decimal). Must be metween (0, 5]");
+            pw.println("# Game Time (decimal). Must be between (0, 5]");
             pw.println("GameTimeMultiplier = " + gameTimeMultiplier);
             pw.println("# Block number load per cache run. Must be between (0, 25000]");
             pw.println("BlocksPerRun = " + blocksPerRun);
@@ -320,7 +320,7 @@ public class Configuration {
             pw.println("TicksPerUpdate = " + ticksPerUpdate);
             pw.println("# Local IP address used to host the server on (local) machine. Used with server port.");
             pw.println("LocalIP = " + localIP);
-            pw.println("# Preferred game server (local or public IP address) for client to connect. Used in conjuction with client port.");
+            pw.println("# Preferred game server (local or public IP address) for client to connect. Used in conjunction with client port.");
             pw.println("ServerIP = " + serverIP);
             pw.println("# Preferred game server port (to run the server). Must be in range 13660-13669");
             pw.println("ServerPort = " + serverPort);
