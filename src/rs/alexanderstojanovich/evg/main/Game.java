@@ -1378,9 +1378,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // display ping in game window title
         gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
 
+        // Convert ping from ms to seconds for interpolation
+        double pingSeconds = ping / 1000.0;
         // calculate interpolation factor
-        interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+        interpolationFactor = Math.min(1.0, deltaTime / (pingSeconds + deltaTime));
 
+        // increase wait receive time by delta time (which is multiplied tick time by ticks per update in update loop)
         waitReceiveTime += deltaTime;
     }
 
