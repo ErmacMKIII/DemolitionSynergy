@@ -1170,15 +1170,17 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        // Initialize test height, test velocities and time variables
+        // Initialize test height
         final boolean goingDown = jumpVelocity == 0.0f;
         float tstHeight;
-        float tstTime;
+        // Initialize test velocities
         float tstFallVelocity = fallVelocity;
         float tstJumpVelocity = jumpVelocity;
         // Simulate movement in small increments to check for collisions
+        final float tstStepTime = (float) Game.TICK_TIME / 8f;
+        // Try to reach max as close as possible to deltaTime within and without collision
         TICKS:
-        for (tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 8f) {
+        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += tstStepTime) {
             // Calculate the test height and test velocities based on whether the critter is going up or down
             if (goingDown) {
                 tstHeight = tstFallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
@@ -1213,32 +1215,28 @@ public class LevelContainer implements GravityEnviroment {
                 // Collision detected, exit the loop
                 break;
             }
-
             // Continue to next increment
-            if (goingDown) {
-                critter.movePredictorUp(tstHeight);
-            } else {
-                critter.movePredictorDown(tstHeight);
-            }
         }
 
         // Loop ended, restore initial predictor position
         critter.getPredictor().set(predInit);
 
-        // Apply gravity effects if there is no collision
+        // No collision detected, apply movement (for the full deltaTime)
         if (!collision) {
-            // Again, calculate the test height based on whether the critter is going up or down
+            float deltaHeight; // height which will be applied
+            // Calculate the test height and test velocities based on whether the critter is going up or down
             if (goingDown) {
-                tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                critter.movePredictorDown(tstHeight);
+                deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             } else {
-                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                critter.movePredictorUp(tstHeight);
+                deltaHeight =  jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
             }
+
             // Adjust for fluid environment
             if (actorInFluid) {
                 // FIX: Reduce effective height change in fluid
-                tstHeight *= 0.125f;
+                deltaHeight *= 0.125f;
                 // FIX: Reduce jump strength in fluid
                 jumpVelocity *= 0.95f;
             }
@@ -1246,25 +1244,24 @@ public class LevelContainer implements GravityEnviroment {
             // Apply gravity effects
             // Apply the calculated movement
             if (goingDown) {
-                critter.movePredictorYDown(tstHeight);
-                critter.dropY(tstHeight);
-                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
+                critter.movePredictorYDown(deltaHeight);
+                critter.dropY(deltaHeight);
                 result = Result.FALL;
             } else {
-                critter.movePredictorYUp(tstHeight);
-                critter.jumpY(tstHeight);
-                // FIX: More aggressive deceleration
-                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
+                critter.movePredictorYUp(deltaHeight);
+                critter.jumpY(deltaHeight);
                 result = Result.JUMP;
             }
+        }
 
-            // Respawn player if terminal velocity is reached
-            if (fallVelocity == TERMINAL_VELOCITY) {
-                try {
-                    spawnPlayer(); // Respawn player if terminal velocity is reached
-                } catch (Exception ex) {
-                    DSLogger.reportError("Unable to spawn player after the fall!", ex);
-                }
+        // Respawn player if terminal velocity is reached
+        if (fallVelocity == TERMINAL_VELOCITY) {
+            try {
+                fallVelocity = 0.0f;
+                jumpVelocity = 0.0f;
+                spawnPlayer(); // Respawn player if terminal velocity is reached
+            } catch (Exception ex) {
+                DSLogger.reportError("Unable to spawn player after the fall!", ex);
             }
         }
 
