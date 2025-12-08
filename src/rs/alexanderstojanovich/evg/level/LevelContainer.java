@@ -1139,13 +1139,17 @@ public class LevelContainer implements GravityEnviroment {
     public Result gravityDo(Critter critter, float deltaTime) {
         boolean collision = false;
 
+        // Cache multiplayer mode
+        final boolean isMultiplayer = gameObject.game.isConnected()
+                && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN
+                && gameObject.game.isAsyncReceivedEnabled();
         // Hold gravity result as outcome of this method
         // Initialize as NEUTRAL
         Result result = Result.NEUTRAL;
         // Check for collision in any direction
         for (Game.Direction dir : Game.Direction.values()) {
             // Check for collision with environment in multiplayer or singleplayer mode
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+            if (isMultiplayer) {
                 collision |= hasCollisionWithEnvironment(critter, gameObject.game.getPlayerServerPos(), dir, (float) gameObject.game.getInterpolationFactor());
             } else {
                 collision |= hasCollisionWithEnvironment(critter, dir);
@@ -1177,7 +1181,7 @@ public class LevelContainer implements GravityEnviroment {
         float tstFallVelocity = fallVelocity;
         float tstJumpVelocity = jumpVelocity;
         // Simulate movement in small increments to check for collisions
-        final float tstStepTime = (float) Game.TICK_TIME / 8f;
+        final float tstStepTime = (float) Game.TICK_TIME / 3f;
         // Try to reach max as close as possible to deltaTime within and without collision
         TICKS:
         for (float tstTime = 0f; tstTime <= deltaTime; tstTime += tstStepTime) {
@@ -1187,7 +1191,7 @@ public class LevelContainer implements GravityEnviroment {
                 tstFallVelocity = Math.min(tstFallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
                 critter.movePredictorDown(tstHeight);
             } else {
-                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                tstHeight = tstJumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
                 tstJumpVelocity = Math.max(tstJumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
                 critter.movePredictorUp(tstHeight);
             }
@@ -1195,7 +1199,7 @@ public class LevelContainer implements GravityEnviroment {
             // Check for collision in the intended opposite direction
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
             // Check for collision with environment in multiplayer or singleplayer mode
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+            if (isMultiplayer) {
                 collision |= hasCollisionYWithEnvironment(critter, gameObject.game.getPlayerServerPos(), direction, (float) gameObject.game.getInterpolationFactor());
             } else {
                 collision |= hasCollisionYWithEnvironment(critter, direction);
