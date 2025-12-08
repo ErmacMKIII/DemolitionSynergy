@@ -30,6 +30,7 @@ import rs.alexanderstojanovich.evg.chunk.Chunks;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.core.Window;
 import rs.alexanderstojanovich.evg.critter.Critter;
+import rs.alexanderstojanovich.evg.critter.Observer;
 import rs.alexanderstojanovich.evg.critter.Player;
 import rs.alexanderstojanovich.evg.critter.Predictable;
 import rs.alexanderstojanovich.evg.light.LightSource;
@@ -44,6 +45,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
@@ -414,7 +416,7 @@ public class LevelContainer implements GravityEnviroment {
      * @param randomLevelGenerator random level generator (from game object)
      * @param numberOfBlocks pre-defined number of blocks
      * @return on success
-     * @throws java.lang.Exception if player spawn fails
+     * @throws Exception if player spawn fails
      */
     public boolean generateSinglePlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) throws Exception {
         if (working) {
@@ -466,7 +468,7 @@ public class LevelContainer implements GravityEnviroment {
      * @param randomLevelGenerator random level generator (from game object)
      * @param numberOfBlocks pre-defined number of blocks
      * @return on success
-     * @throws java.lang.Exception if player spawn fails
+     * @throws Exception if player spawn fails
      */
     public boolean generateMultiPlayerLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) throws Exception {
         if (working) {
@@ -515,7 +517,7 @@ public class LevelContainer implements GravityEnviroment {
     /**
      * Set player position. Spawn him/her.
      *
-     * @throws java.lang.Exception if spawn player fails
+     * @throws Exception if spawn player fails
      */
     public void spawnPlayer() throws Exception {
         // Manually turn off gravity so it doesn't affect player during spawn
@@ -784,14 +786,14 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Checks if an {@link rs.alexanderstojanovich.evg.critter.Observer} has collision with the environment. Called
+     * Checks if an {@link Observer} has collision with the environment. Called
      * on motion. In 'editorDo'. Observer (interface) has camera.
      *
      * @param observer the observer to check for collision.
      * @param direction direction XYZ of motion
      * @return {@code true} if collision is detected, {@code false} otherwise.
      */
-    public static boolean hasCollisionWithEnvironment(rs.alexanderstojanovich.evg.critter.Observer observer, Game.Direction direction) {
+    public static boolean hasCollisionWithEnvironment(Observer observer, Game.Direction direction) {
         if (!SKYBOX.containsInsideExactly(observer.getPos())
                 || !SKYBOX.intersectsExactly(observer.getPos(), 0.075f, 0.075f, 0.075f)) {
             return true;
@@ -1138,15 +1140,23 @@ public class LevelContainer implements GravityEnviroment {
     public Result gravityDo(Critter critter, float deltaTime) {
         boolean collision = false;
 
-        // Initialize result variable
-        Result result;
+        // Cache multiplayer mode
+        final boolean isMultiplayer = gameObject.game.isConnected()
+                && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN
+                && gameObject.game.isAsyncReceivedEnabled();
+        // Hold gravity result as outcome of this method
+        // Initialize as NEUTRAL
+        Result result = Result.NEUTRAL;
         // Check for collision in any direction
         for (Game.Direction dir : Game.Direction.values()) {
-            collision |= hasCollisionWithEnvironment(critter, dir);
+            // Check for collision with environment in multiplayer or singleplayer mode
+            if (isMultiplayer) {
+                collision |= hasCollisionWithEnvironment(critter, gameObject.game.getPlayerServerPos(), dir, (float) gameObject.game.getInterpolationFactor());
+            } else {
+                collision |= hasCollisionWithEnvironment(critter, dir);
+            }
             if (collision) {
-                result = Result.NEUTRAL;
                 critter.setGravityResult(result);
-//                DSLogger.reportInfo(result.toString(), null);
                 // Not affected by gravity if collision detected
                 return result; // Early exit if collision detected
             }
@@ -1164,104 +1174,106 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        // Initialize test height and time variables
+        // Initialize test height
         final boolean goingDown = jumpVelocity == 0.0f;
         float tstHeight;
-        float tstTime;
+        // Initialize test velocities
+        float tstFallVelocity = fallVelocity;
+        float tstJumpVelocity = jumpVelocity;
         // Simulate movement in small increments to check for collisions
+        final float tstStepTime = (float) Game.TICK_TIME / 3f;
+        // Try to reach max as close as possible to deltaTime within and without collision
         TICKS:
-        for (tstTime = 0f; tstTime <= deltaTime; tstTime += (float) Game.TICK_TIME / 64f) {
-            // Calculate the test height based on whether the critter is going up or down
+        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += tstStepTime) {
+            // Calculate the test height and test velocities based on whether the critter is going up or down
             if (goingDown) {
-                tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                tstHeight = tstFallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                tstFallVelocity = Math.min(tstFallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
                 critter.movePredictorDown(tstHeight);
             } else {
-                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                tstHeight = tstJumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
+                tstJumpVelocity = Math.max(tstJumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
                 critter.movePredictorUp(tstHeight);
             }
 
             // Check for collision in the intended opposite direction
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
-            collision |= hasCollisionYWithEnvironment(critter, direction);
-            if (collision) {
-                // Collision detected, exit the loop
-                // Adjust tstTime to the last successful increment
-                tstTime -= (float) Game.TICK_TIME / 64f;
-                break;
+            // Check for collision with environment in multiplayer or singleplayer mode
+            if (isMultiplayer) {
+                collision |= hasCollisionYWithEnvironment(critter, gameObject.game.getPlayerServerPos(), direction, (float) gameObject.game.getInterpolationFactor());
+            } else {
+                collision |= hasCollisionYWithEnvironment(critter, direction);
             }
 
-            // Continue to next increment
-            if (goingDown) {
-                critter.movePredictorUp(tstHeight);
-            } else {
-                critter.movePredictorDown(tstHeight);
+            // Check if collision detected
+            if (collision) {
+                // Adjust velocities based on collision, resetting the appropriate one
+                if (goingDown) {
+                    fallVelocity = 0.0f;
+                } else {
+                    jumpVelocity = 0.0f;
+                    // FIX: Start falling immediately after collision
+                    fallVelocity = GRAVITY_CONSTANT * tstTime * 0.25f;
+                }
+                result = Result.COLLISION;
+                // Collision detected, exit the loop
+                break;
             }
+            // Continue to next increment
         }
+
         // Loop ended, restore initial predictor position
         critter.getPredictor().set(predInit);
 
-        // Apply gravity effects based on collision detection
+        // No collision detected, apply movement (for the full deltaTime)
         if (!collision) {
-            // No collision detected, apply gravity effects
+            float deltaHeight; // height which will be applied
+            // Calculate the test height and test velocities based on whether the critter is going up or down
+            if (goingDown) {
+                deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
+            } else {
+                deltaHeight =  jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
+            }
+
+            // Adjust for fluid environment
+            if (actorInFluid) {
+                // FIX: Reduce effective height change in fluid
+                deltaHeight *= 0.125f;
+                // FIX: Reduce jump strength in fluid
+                jumpVelocity *= 0.95f;
+            }
+
+            // Apply gravity effects
             // Apply the calculated movement
             if (goingDown) {
-                tstHeight = fallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                // Adjust for fluid environment
-                if (actorInFluid) {
-                    // FIX: Reduce effective height change in fluid
-                    tstHeight *= 0.125f;
-                    // FIX: Reduce jump strength in fluid
-                    jumpVelocity *= 0.95f;
-                }
-                critter.movePredictorYDown(tstHeight);
-                critter.dropY(tstHeight);
-                fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
+                critter.movePredictorYDown(deltaHeight);
+                critter.dropY(deltaHeight);
                 result = Result.FALL;
             } else {
-                tstHeight = jumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                // Adjust for fluid environment
-                if (actorInFluid) {
-                    // FIX: Reduce effective height change in fluid
-                    tstHeight *= 0.125f;
-                    // FIX: Reduce jump strength in fluid
-                    jumpVelocity *= 0.95f;
-                }
-                critter.movePredictorYUp(tstHeight);
-                critter.jumpY(tstHeight);
-                // FIX: More aggressive deceleration
-                jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
+                critter.movePredictorYUp(deltaHeight);
+                critter.jumpY(deltaHeight);
                 result = Result.JUMP;
             }
-
-            // Respawn player if terminal velocity is reached
-            if (fallVelocity == TERMINAL_VELOCITY) {
-                try {
-                    spawnPlayer(); // Respawn player if terminal velocity is reached
-                } catch (Exception ex) {
-                    DSLogger.reportError("Unable to spawn player after the fall!", ex);
-                }
-            }
-
-            // in case of multiplayer join send to the server
-            if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-                gameObject.game.requestSetPlayerPos();
-            }
-        } else {
-            if (goingDown) {
-                fallVelocity = 0.0f;
-            } else {
-                jumpVelocity = 0.0f;
-                // FIX: Start falling immediately after collision
-                fallVelocity = GRAVITY_CONSTANT * tstTime * 0.25f;
-            }
-
-            // Adjust position to be just above the collision point
-            result = Result.COLLISION;
         }
 
-        critter.setGravityResult(result);
+        // Respawn player if terminal velocity is reached
+        if (fallVelocity == TERMINAL_VELOCITY) {
+            try {
+                fallVelocity = 0.0f;
+                jumpVelocity = 0.0f;
+                spawnPlayer(); // Respawn player if terminal velocity is reached
+            } catch (Exception ex) {
+                DSLogger.reportError("Unable to spawn player after the fall!", ex);
+            }
+        }
 
-//        DSLogger.reportInfo(result.toString(), null);
+        // in case of multiplayer join send to the server
+        if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
+            gameObject.game.requestSetPlayerPos();
+        }
+        critter.setGravityResult(result);
 
         return result;
     }
@@ -1396,6 +1408,30 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
+     * Get Interpolated Color for day/night cycle
+     *
+     * @param value (sun intensity) value to interpolate
+     *
+     * @return interpolated color day/night
+     */
+    private static Vector3f getInterpolatedColor(float value) {
+        // Normalize the colour value between night blue and yellowish day
+        float ratio;
+        if (value < 0.0f) {
+            return LevelContainer.NIGHT_SKYBOX_COLOR_RGB;
+        } else if (value >= 0.0f) {
+            Vector3f srcCol = new Vector3f(LevelContainer.SUN_COLOR_RGB);
+            Vector3f dstCol = new Vector3f(LevelContainer.NIGHT_SKYBOX_COLOR_RGB);
+            Vector3f temp = new Vector3f();
+            ratio = value;
+            return srcCol.lerp(dstCol, ratio, temp);
+        } else {
+            // day-colour
+            return LevelContainer.SUN_COLOR_RGB;
+        }
+    }
+
+    /**
      * Perform update to the day/night cycle. Sun position & sunlight is
      * updated. Skybox rotates counter-clockwise (from -right to right)
      */
@@ -1415,10 +1451,10 @@ public class LevelContainer implements GravityEnviroment {
 
             if (inten < 0.0f) { // night
                 SKYBOX.setTexName("night");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(0.15f), 0.15f));
             } else if (inten >= 0.0f) { // day
                 SKYBOX.setTexName("day");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(Math.max(inten, 0.15f)), 0.15f));
             }
 
             final float sunInten = Math.max(inten, 0.0f);

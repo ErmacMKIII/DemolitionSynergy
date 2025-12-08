@@ -984,9 +984,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 } else if (key == GLFW.GLFW_KEY_V && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     gameObject.levelContainer.levelActors.player.switchViewToggle();
-                } else if (key == GLFW.GLFW_KEY_Y && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    Arrays.fill(keys, false);
-                } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
+                }  else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Arrays.fill(keys, false);
                     Editor.selectPrevTexture();
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -1378,9 +1376,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // display ping in game window title
         gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
 
+        // Convert ping from ms to seconds for interpolation
+        double pingSeconds = ping / 1000.0;
         // calculate interpolation factor
-        interpolationFactor = 0.5 * (double) deltaTime / ((double) ping + deltaTime);
+        interpolationFactor = org.joml.Math.clamp(0.0,1.0,1.0 - deltaTime / (pingSeconds + deltaTime));
 
+        // increase wait receive time by delta time (which is multiplied tick time by ticks per update in update loop)
         waitReceiveTime += deltaTime;
     }
 
@@ -1495,6 +1496,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         editorDo(gameObject.levelContainer);
 
                         LevelContainer.updateActorInFluid(gameObject.levelContainer);
+                        // display collision text
+                        gameObject.assertCheckCollision(causingCollision);
                         break;
                     case SINGLE_PLAYER:
                         // player has control
@@ -1507,6 +1510,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
+                        // display collision text
+                        gameObject.assertCheckCollision(causingCollision, gravityResult);
                         break;
                     case MULTIPLAYER_HOST:
                     case MULTIPLAYER_JOIN:
@@ -1520,10 +1525,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
+                        // display collision text
+                        gameObject.assertCheckCollision(causingCollision, gravityResult);
                         break;
                 }
-                // display collision text
-                gameObject.assertCheckCollision(causingCollision);
             }
         } catch (Exception ex) {
             DSLogger.reportError(ex.getMessage(), ex);

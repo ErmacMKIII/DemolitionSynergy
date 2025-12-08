@@ -30,6 +30,8 @@ import rs.alexanderstojanovich.evg.util.HardwareUtils;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
 
+import java.util.Objects;
+
 /**
  * Critter is class of living things. Has capabilities moving. Is collision
  * predictable. However no observation. Renders with body in some shader.
@@ -773,7 +775,7 @@ public class Critter implements Predictable, Moveable, Renderable {
 
     public void setModelClazz(String modelClazz) {
         this.modelClazz = modelClazz;
-        switchBodyModel();
+//        switchBodyModel();
     }
 
     /**
@@ -792,12 +794,19 @@ public class Critter implements Predictable, Moveable, Renderable {
      * @param weapon weapon to switch to
      */
     public void switchWeapon(WeaponIfc weapon) {
-        if (weapon == primaryWeapon) {
-            this.activeHand = Hand.PRIMARY;
-        } else if (weapon == secondaryWeapon) {
-            this.activeHand = Hand.SECONDARY;
-        } else {
-            this.activeHand = Hand.NONE;
+        switch (weapon.getClazz()) {
+            case OneHandedSmallGun:
+                this.secondaryWeapon = weapon;
+                this.activeHand = Hand.SECONDARY;
+                break;
+            case TwoHandedSmallGun:
+            case TwoHandedBigGuns:
+                this.primaryWeapon = weapon;
+                this.activeHand = Hand.PRIMARY;
+                break;
+            default:
+                this.activeHand = Hand.NONE;
+                break;
         }
         this.switchBodyModel(weapon);
     }
