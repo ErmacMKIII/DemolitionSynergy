@@ -45,6 +45,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.util.DSLogger;
+import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 import rs.alexanderstojanovich.evg.weapons.WeaponIfc;
 import rs.alexanderstojanovich.evg.weapons.Weapons;
@@ -1156,7 +1157,6 @@ public class LevelContainer implements GravityEnviroment {
             }
             if (collision) {
                 critter.setGravityResult(result);
-//                DSLogger.reportInfo(result.toString(), null);
                 // Not affected by gravity if collision detected
                 return result; // Early exit if collision detected
             }
@@ -1274,8 +1274,6 @@ public class LevelContainer implements GravityEnviroment {
             gameObject.game.requestSetPlayerPos();
         }
         critter.setGravityResult(result);
-
-//        DSLogger.reportInfo(result.toString(), null);
 
         return result;
     }
@@ -1410,6 +1408,30 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
+     * Get Interpolated Color for day/night cycle
+     *
+     * @param value (sun intensity) value to interpolate
+     *
+     * @return interpolated color day/night
+     */
+    private static Vector3f getInterpolatedColor(float value) {
+        // Normalize the colour value between night blue and yellowish day
+        float ratio;
+        if (value < 0.0f) {
+            return LevelContainer.NIGHT_SKYBOX_COLOR_RGB;
+        } else if (value >= 0.0f) {
+            Vector3f srcCol = new Vector3f(LevelContainer.SUN_COLOR_RGB);
+            Vector3f dstCol = new Vector3f(LevelContainer.NIGHT_SKYBOX_COLOR_RGB);
+            Vector3f temp = new Vector3f();
+            ratio = value;
+            return srcCol.lerp(dstCol, ratio, temp);
+        } else {
+            // day-colour
+            return LevelContainer.SUN_COLOR_RGB;
+        }
+    }
+
+    /**
      * Perform update to the day/night cycle. Sun position & sunlight is
      * updated. Skybox rotates counter-clockwise (from -right to right)
      */
@@ -1429,10 +1451,10 @@ public class LevelContainer implements GravityEnviroment {
 
             if (inten < 0.0f) { // night
                 SKYBOX.setTexName("night");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(0.15f), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(0.15f), 0.15f));
             } else if (inten >= 0.0f) { // day
                 SKYBOX.setTexName("day");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(NIGHT_SKYBOX_COLOR_RGB)).mul(Math.max(inten, 0.15f)), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(Math.max(inten, 0.15f)), 0.15f));
             }
 
             final float sunInten = Math.max(inten, 0.0f);

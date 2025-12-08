@@ -963,6 +963,26 @@ public class Intrface {
     }
 
     /**
+     * Set collision text w/ color according to collision mode.
+     *
+     * @param mode true/false for collision
+     * @param additionalInfo additional info to display
+     */
+    public void setCollText(boolean mode, String additionalInfo) {
+        if (mode) {
+            collText.setContent("Collision!");
+            collText.setColor(GlobalColors.RED_RGBA);
+        } else {
+            collText.setContent("No Collision");
+            collText.setColor(GlobalColors.GREEN_RGBA);
+        }
+
+        if (additionalInfo != null && !additionalInfo.isEmpty()) {
+            collText.setContent(collText.getContent() + " (" + additionalInfo + ")");
+        }
+    }
+
+    /**
      * Toggle ingame help, help is displayed as a long text.
      */
     public void toggleShowHelp() {

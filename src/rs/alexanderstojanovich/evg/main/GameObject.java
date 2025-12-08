@@ -41,10 +41,7 @@ import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.intrface.DynamicText;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
-import rs.alexanderstojanovich.evg.level.BlockEnvironment;
-import rs.alexanderstojanovich.evg.level.Editor;
-import rs.alexanderstojanovich.evg.level.LevelContainer;
-import rs.alexanderstojanovich.evg.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evg.level.*;
 import rs.alexanderstojanovich.evg.net.LevelMapInfo;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -319,7 +316,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                     || ((Game.getCurrentMode() == Game.Mode.MULTIPLAYER_HOST || Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN) && levelContainer.levelActors.player.isRegistered())) {
                 levelContainer.gravityDo(levelContainer.levelActors.player, deltaTime);
             }
-            perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (aoart from shadow ones)
+            perspectiveRenderer.updatePerspective(); // subBufferVertices perspective for all the shaders (apart from shadow ones)
 
             Vector3f pos = levelContainer.levelActors.mainActor().getPos();
             Vector3f view = levelContainer.levelActors.mainActor().getFront();
@@ -383,8 +380,24 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface.update();
     }
 
+    /**
+     * Set collision text for debugging purposes on the screen.
+     *
+     * @param collision collision flag
+     */
     public void assertCheckCollision(boolean collision) {
         intrface.setCollText(collision);
+        intrface.getCollText().unbuffer();
+    }
+
+    /**
+     * Set collision text with gravity result for debugging purposes on the screen.
+     *
+     * @param collision collision flag
+     * @param result gravity result
+     */
+    public void assertCheckCollision(boolean collision, GravityEnviroment.Result result) {
+        intrface.setCollText(collision, result.toString());
         intrface.getCollText().unbuffer();
     }
 
