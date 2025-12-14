@@ -1148,7 +1148,7 @@ public class LevelContainer implements GravityEnviroment {
         final boolean isMultiplayer = gameObject.game.isConnected()
                 && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN
                 && gameObject.game.isAsyncReceivedEnabled()
-                && levelActors.player.getPos().distanceSquared(gameObject.game.playerServerPos) <= 5E-3f;
+                && levelActors.player.getPos().distanceSquared(gameObject.game.playerServerPos) > 5E-3f;
 
         if (isMultiplayer) {
             // In multiplayer, request update player server position, as soon as possible
