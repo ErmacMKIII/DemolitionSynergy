@@ -165,7 +165,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Fixed step game time
      */
-    protected volatile static double accumulator = 0.0;
+    protected static double accumulator = 0.0;
 
     /**
      * Progressive game time
@@ -319,7 +319,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     /**
      * Interpolation factor
      */
-    public double interpolationFactor = 0.5;
+    public double interpolationFactor = 0.0;
 
     /**
      * Access to Game Engine.
@@ -389,89 +389,87 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Action performed is also set if anything from input changes.
      */
     private void handleInput() {
-        if ((ups & (ticksPerUpdate - 1)) == 0) {
-            input.clear(); // reset all input
-            actionPerformed = false;
+        input.clear(); // reset all input
+        actionPerformed = false;
 
-            // W-A-S-D
-            if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
-                actionPerformed = input.directionKeys[Direction.FORWARD.ordinal()] = true;
-            }
+        // W-A-S-D
+        if ((keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP])) {
+            actionPerformed = input.directionKeys[Direction.FORWARD.ordinal()] = true;
+        }
 
-            if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
-                actionPerformed = input.directionKeys[Direction.BACKWARD.ordinal()] = true;
-            }
+        if ((keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN])) {
+            actionPerformed = input.directionKeys[Direction.BACKWARD.ordinal()] = true;
+        }
 
-            if (keys[GLFW.GLFW_KEY_A]) {
-                actionPerformed = input.directionKeys[Direction.LEFT.ordinal()] = true;
-            }
+        if (keys[GLFW.GLFW_KEY_A]) {
+            actionPerformed = input.directionKeys[Direction.LEFT.ordinal()] = true;
+        }
 
-            if (keys[GLFW.GLFW_KEY_D]) {
-                actionPerformed = input.directionKeys[Direction.RIGHT.ordinal()] = true;
-            }
-            //----------------------------------------------------------------------
-            // page up
-            if (keys[GLFW.GLFW_KEY_SPACE]) {
-                actionPerformed = input.jump = true;
-            }
+        if (keys[GLFW.GLFW_KEY_D]) {
+            actionPerformed = input.directionKeys[Direction.RIGHT.ordinal()] = true;
+        }
+        //----------------------------------------------------------------------
+        // page up
+        if (keys[GLFW.GLFW_KEY_SPACE]) {
+            actionPerformed = input.jump = true;
+        }
 
-            // crouch
-            if (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) {
-                actionPerformed = input.crouch = true;
-            }
-            //----------------------------------------------------------------------
-            // page up
-            if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
-                actionPerformed = input.flyUp = true;
-            }
+        // crouch
+        if (keys[GLFW.GLFW_KEY_LEFT_CONTROL] || keys[GLFW.GLFW_KEY_RIGHT_CONTROL]) {
+            actionPerformed = input.crouch = true;
+        }
+        //----------------------------------------------------------------------
+        // page up
+        if (keys[GLFW.GLFW_KEY_PAGE_UP]) {
+            actionPerformed = input.flyUp = true;
+        }
 
-            // page down
-            if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
-                actionPerformed = input.flyDown = true;
+        // page down
+        if (keys[GLFW.GLFW_KEY_PAGE_DOWN]) {
+            actionPerformed = input.flyDown = true;
+        }
+        //----------------------------------------------------------------------
+        // left arrow
+        if (keys[GLFW.GLFW_KEY_LEFT]) {
+            actionPerformed = input.turnLeft = true;
+        }
+        // right arrow
+        if (keys[GLFW.GLFW_KEY_RIGHT]) {
+            actionPerformed = input.turnRight = true;
+        }
+        //----------------------------------------------------------------------
+        for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
+            if (keys[i]) {
+                actionPerformed = input.numericKeys[i - GLFW.GLFW_KEY_0] = true;
             }
-            //----------------------------------------------------------------------
-            // left arrow
-            if (keys[GLFW.GLFW_KEY_LEFT]) {
-                actionPerformed = input.turnLeft = true;
-            }
-            // right arrow
-            if (keys[GLFW.GLFW_KEY_RIGHT]) {
-                actionPerformed = input.turnRight = true;
-            }
-            //----------------------------------------------------------------------
-            for (int i = GLFW.GLFW_KEY_0; i <= GLFW.GLFW_KEY_9; i++) {
-                if (keys[i]) {
-                    actionPerformed = input.numericKeys[i - GLFW.GLFW_KEY_0] = true;
-                }
-            }
-            //----------------------------------------------------------------------
-            if (keys[GLFW.GLFW_KEY_F]) {
-                actionPerformed = input.keyF_pressed = true;
-            }
-            if (keys[GLFW.GLFW_KEY_N]) {
-                actionPerformed = input.keyN_pressed = true;
-            }
-            if (keys[GLFW.GLFW_KEY_R]) {
-                actionPerformed = input.keyR_pressed = true;
-            }
-            //----------------------------------------------------------------------
-            if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-                actionPerformed = input.leftShift = true;
-            }
-            if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
-                actionPerformed = input.rightShift = true;
-            }
-            // Fix: Check mouseButtons array instead of keys array
-            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
-                actionPerformed = input.mouseLeftButton = true;
-            }
-            if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
-                actionPerformed = input.mouseRightButton = true;
-            }
-            //----------------------------------------------------------------------
-            if (moveMouse) {
-                actionPerformed = true;
-            }
+        }
+        //----------------------------------------------------------------------
+        if (keys[GLFW.GLFW_KEY_F]) {
+            actionPerformed = input.keyF_pressed = true;
+        }
+        if (keys[GLFW.GLFW_KEY_N]) {
+            actionPerformed = input.keyN_pressed = true;
+        }
+        if (keys[GLFW.GLFW_KEY_R]) {
+            actionPerformed = input.keyR_pressed = true;
+        }
+        //----------------------------------------------------------------------
+        if (keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
+            actionPerformed = input.leftShift = true;
+        }
+        if (keys[GLFW.GLFW_KEY_RIGHT_SHIFT]) {
+            actionPerformed = input.rightShift = true;
+        }
+        // Fix: Check mouseButtons array instead of keys array
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT]) {
+            actionPerformed = input.mouseLeftButton = true;
+        }
+        if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
+            actionPerformed = input.mouseRightButton = true;
+        }
+        //----------------------------------------------------------------------
+        if (moveMouse) {
+            actionPerformed = true;
         }
     }
 
@@ -1099,7 +1097,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // choose the one which fits by unique checksum
         RequestIfc request;
         synchronized (requestList) {
-            request = requestList.filter(req -> req.getId().equals(response.getId())).getFirstOrNull();
+            request = requestList.filter(req -> req != null && req.getId().equals(response.getId())).getFirstOrNull();
             requestList.remove(request);
         }
         if (request != null) {
@@ -1376,11 +1374,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         // display ping in game window title
         gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameObject.game.getServerHostName() + String.format(" (%.1f ms)", ping));
 
-        // Convert ping from ms to seconds for interpolation
-        double pingSeconds = ping / 1000.0;
-        // calculate interpolation factor
-        interpolationFactor = org.joml.Math.clamp(0.0,1.0,1.0 - deltaTime / (pingSeconds + deltaTime));
-
         // increase wait receive time by delta time (which is multiplied tick time by ticks per update in update loop)
         waitReceiveTime += deltaTime;
     }
@@ -1410,41 +1403,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         if ((ups & (ticksPerUpdate - 1)) == 0) {
             // Update World (Sun, Earth motion, etc..)
             gameObject.update((float) deltaTime * ticksPerUpdate);
-
-            // Multiplayer update - get player info ~ 250 ms
-            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled()) {
-                try {
-                    // Send a simple player info message with magic bytes prepended
-                    final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
-                    piReq.send(this, session);
-                    synchronized (requestList) {
-                        if (requestList.size() < MAX_SIZE) {
-                            requestList.add(piReq);
-                        }
-                    }
-                } catch (Exception ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                }
-            }
-
-            // Multiplayer update - get position ~ 125 ms
-            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (ups & (TPS_EIGHTH - 1)) == 0 && isAsyncReceivedEnabled()) {
-                // request get player position (interpolation)
-                this.requestGetPlayerPos();
-
-                // update Environment player model guns etc.
-                this.requestUpdatePlayer();
-
-                // request update player view & pos
-                this.requestGetOtherPlayersPos();
-            }
-
-            // Multiplayer update - set player position
-            if ((Game.currentMode == Mode.MULTIPLAYER_JOIN) && isConnected() && (actionPerformed || moveMouse) && isAsyncReceivedEnabled()) {
-                // request to set player view/position. Send update to the server.
-                this.requestSetPlayerPos();
-            }
-
         }
 
         // receive (connection) responses async
@@ -1479,7 +1437,49 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Update main actor (from input).
+     * Update multiplayer (client).
+     */
+    public void updateMultiplayer() {
+        // Multiplayer update - get player info ~ 250 ms
+        if (((ups & (TPS_QUARTER - 1)) == 0 && isAsyncReceivedEnabled())) {
+            try {
+                // Send a simple player info message with magic bytes prepended
+                final RequestIfc piReq = new Request(RequestIfc.RequestType.GET_PLAYER_INFO, DSObject.DataType.VOID, null);
+                piReq.send(this, session);
+                synchronized (requestList) {
+                    if (requestList.size() < MAX_SIZE) {
+                        requestList.add(piReq);
+                    }
+                }
+            } catch (Exception ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+            }
+        }
+
+        // request get player position (interpolation)
+        this.requestGetPlayerPos();
+
+        // update Environment player model guns etc.
+        this.requestUpdatePlayer();
+
+        // request update player view & pos
+        this.requestGetOtherPlayersPos();
+
+        // Multiplayer update - set player position
+        if ((actionPerformed || moveMouse)) {
+            // request to set player view/position. Send update to the server.
+            this.requestSetPlayerPos();
+        } else {
+            // end of multiplayer update - client - synchronize client pos with server
+            this.interpolationFactor = 0.0;
+            // set player position from server
+            this.playerServerPos.set(gameObject.levelContainer.levelActors.player.getPos());
+        }
+    }
+
+    /**
+     * Update main actor (from input). Called from main loop.
+     * Uses ticks per update to reduce calls.
      */
     public void updateMainActor() {
         try {
@@ -1525,6 +1525,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                         gravityResult = gameObject.levelContainer.levelActors.player.gravityResult();
                         jumpPerformed &= !(LevelContainer.isActorInFluid() || gravityResult == GravityEnviroment.Result.NEUTRAL || gravityResult == GravityEnviroment.Result.COLLISION);
                         crouchPerformed = false;
+
+                        // update multiplayer
+                        if (Game.currentMode == Mode.MULTIPLAYER_JOIN && isConnected() && isAsyncReceivedEnabled()) {
+                            updateMultiplayer();
+                        }
+
                         // display collision text
                         gameObject.assertCheckCollision(causingCollision, gravityResult);
                         break;

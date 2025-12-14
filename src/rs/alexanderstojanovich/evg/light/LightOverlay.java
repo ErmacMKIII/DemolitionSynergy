@@ -65,10 +65,11 @@ public class LightOverlay extends Quad {
 
             if (LevelContainer.isActorInFluidChk(lc)) {
                 texture.bind(shaderProgram, "ifcTexture");
-                color = new Vector4f(GlobalColors.BLUE, 0.05f);
+                Vector4f temp = new Vector4f();
+                color = color.lerp(new Vector4f(GlobalColors.BLUE, 0.15f), 0.5f, temp);
             } else {
+                color = new Vector4f(LevelContainer.SKYBOX.getPrimaryRGBColor(), 0.15f);
                 Texture.EMPTY.bind(shaderProgram, "ifcTexture");
-                color = GlobalColors.TRANSPARENT;
             }
             shaderProgram.updateUniform(color, "color");
 

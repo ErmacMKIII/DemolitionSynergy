@@ -48,6 +48,7 @@ import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
+import rs.alexanderstojanovich.evg.weapons.Weapons;
 
 /**
  * Game Engine composed of Game (Loop), Game Renderer and core components.
@@ -540,6 +541,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
         levelContainer.levelActors.player.setPos(new Vector3f());
         levelContainer.levelActors.player.setRegistered(false);
+        levelContainer.levelActors.player.setPrimaryWeapon(Weapons.NONE);
+        levelContainer.levelActors.player.setSecondaryWeapon(Weapons.NONE);
+        levelContainer.levelActors.player.switchWeapon(Critter.Hand.NONE);
         levelContainer.levelActors.spectator.setPos(new Vector3f());
         levelContainer.levelActors.npcList.clear();
         levelContainer.levelActors.otherPlayers.clear();

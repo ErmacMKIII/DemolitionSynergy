@@ -1138,12 +1138,23 @@ public class LevelContainer implements GravityEnviroment {
      */
     @Override
     public Result gravityDo(Critter critter, float deltaTime) {
+        // Initialize collision flag, gravity will be applied unless collision detected
         boolean collision = false;
+
+        // Cache interpolation factor
+        final float interpolationFactor = (float) gameObject.game.getInterpolationFactor();
 
         // Cache multiplayer mode
         final boolean isMultiplayer = gameObject.game.isConnected()
                 && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN
-                && gameObject.game.isAsyncReceivedEnabled();
+                && gameObject.game.isAsyncReceivedEnabled()
+                && levelActors.player.getPos().distanceSquared(gameObject.game.playerServerPos) <= 5E-3f;
+
+        if (isMultiplayer) {
+            // In multiplayer, request update player server position, as soon as possible
+            gameObject.game.requestGetPlayerPos();
+        }
+
         // Hold gravity result as outcome of this method
         // Initialize as NEUTRAL
         Result result = Result.NEUTRAL;
@@ -1151,7 +1162,7 @@ public class LevelContainer implements GravityEnviroment {
         for (Game.Direction dir : Game.Direction.values()) {
             // Check for collision with environment in multiplayer or singleplayer mode
             if (isMultiplayer) {
-                collision |= hasCollisionWithEnvironment(critter, gameObject.game.getPlayerServerPos(), dir, (float) gameObject.game.getInterpolationFactor());
+                collision |= hasCollisionWithEnvironment(critter, gameObject.game.playerServerPos, dir, interpolationFactor);
             } else {
                 collision |= hasCollisionWithEnvironment(critter, dir);
             }
@@ -1160,6 +1171,11 @@ public class LevelContainer implements GravityEnviroment {
                 // Not affected by gravity if collision detected
                 return result; // Early exit if collision detected
             }
+        }
+
+        if (isMultiplayer) {
+            // In multiplayer, request update player server position, as soon as possible
+            gameObject.game.requestGetPlayerPos();
         }
 
         // Store initial predictor position
@@ -1181,7 +1197,7 @@ public class LevelContainer implements GravityEnviroment {
         float tstFallVelocity = fallVelocity;
         float tstJumpVelocity = jumpVelocity;
         // Simulate movement in small increments to check for collisions
-        final float tstStepTime = (float) Game.TICK_TIME / 3f;
+        final float tstStepTime = (float) Game.TICK_TIME;
         // Try to reach max as close as possible to deltaTime within and without collision
         TICKS:
         for (float tstTime = 0f; tstTime <= deltaTime; tstTime += tstStepTime) {
@@ -1200,7 +1216,7 @@ public class LevelContainer implements GravityEnviroment {
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
             // Check for collision with environment in multiplayer or singleplayer mode
             if (isMultiplayer) {
-                collision |= hasCollisionYWithEnvironment(critter, gameObject.game.getPlayerServerPos(), direction, (float) gameObject.game.getInterpolationFactor());
+                collision |= hasCollisionYWithEnvironment(critter, gameObject.game.playerServerPos, direction, interpolationFactor);
             } else {
                 collision |= hasCollisionYWithEnvironment(critter, direction);
             }
@@ -1256,23 +1272,25 @@ public class LevelContainer implements GravityEnviroment {
                 critter.jumpY(deltaHeight);
                 result = Result.JUMP;
             }
-        }
 
-        // Respawn player if terminal velocity is reached
-        if (fallVelocity == TERMINAL_VELOCITY) {
-            try {
-                fallVelocity = 0.0f;
-                jumpVelocity = 0.0f;
-                spawnPlayer(); // Respawn player if terminal velocity is reached
-            } catch (Exception ex) {
-                DSLogger.reportError("Unable to spawn player after the fall!", ex);
+            // Respawn player if terminal velocity is reached
+            if (fallVelocity == TERMINAL_VELOCITY) {
+                try {
+                    fallVelocity = 0.0f;
+                    jumpVelocity = 0.0f;
+                    spawnPlayer(); // Respawn player if terminal velocity is reached
+                } catch (Exception ex) {
+                    DSLogger.reportError("Unable to spawn player after the fall!", ex);
+                }
+            }
+
+            // in case of multiplayer join send to the server
+            if (isMultiplayer) {
+                // Send updated position to server
+                gameObject.game.requestSetPlayerPos();
             }
         }
 
-        // in case of multiplayer join send to the server
-        if (gameObject.game.isConnected() && Game.getCurrentMode() == Game.Mode.MULTIPLAYER_JOIN && gameObject.game.isAsyncReceivedEnabled()) {
-            gameObject.game.requestSetPlayerPos();
-        }
         critter.setGravityResult(result);
 
         return result;
@@ -1456,7 +1474,6 @@ public class LevelContainer implements GravityEnviroment {
                 SKYBOX.setTexName("day");
                 SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(Math.max(inten, 0.15f)), 0.15f));
             }
-
             final float sunInten = Math.max(inten, 0.0f);
             SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(sunInten), 1.0f));
             SUNLIGHT.setIntensity(sunInten * SUN_INTENSITY);
