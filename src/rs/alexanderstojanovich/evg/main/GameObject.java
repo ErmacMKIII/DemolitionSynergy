@@ -64,8 +64,8 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public final Assets GameAssets = new Assets();
 
-    protected boolean initializedWindow = false;
-    protected boolean initializedCore = false;
+    private final boolean initializedWindow;
+    private final boolean initializedCore;
 
     private final Configuration cfg = Configuration.getInstance();
 

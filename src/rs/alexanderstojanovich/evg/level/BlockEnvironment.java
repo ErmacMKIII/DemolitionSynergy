@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.DoubleSummaryStatistics;
 import java.util.HashMap;
 import java.util.Map;
 import org.joml.Vector3f;
@@ -33,6 +34,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
  * Module with blocks from all the chunks. Effectively ready for rendering after
@@ -215,7 +217,7 @@ public class BlockEnvironment {
 
                 // Only process if these face bits are currently visible
                 if ((currentFaceBits & faceMask) != 0) {
-                    processFaceBitGroup(vqueue, camera, tex, faceBitMap, currentFaceBits);
+                    processFaceBitGroup(vqueue, camera, tex, faceBitMap, currentFaceBits, faceMask);
                 }
             }
         }
@@ -229,10 +231,11 @@ public class BlockEnvironment {
      * @param tex current texture being processed
      * @param faceBitMap map of face bits to tuples for this texture
      * @param faceBits current face bits being processed
+     * @param faceMask bitmask of currently visible faces to check against
      */
     private void processFaceBitGroup(IList<Integer> vqueue, Camera camera,
             String tex, Map<Integer, Tuple> faceBitMap,
-            int faceBits) {
+            int faceBits, int faceMask) {
         Tuple tuple;
         synchronized (optimizedTuples) {
             // Get or create tuple for this texture/facebits combination
@@ -245,7 +248,7 @@ public class BlockEnvironment {
         }
 
         // Process blocks from visible chunks
-        boolean modified = processChunkBlocks(vqueue, camera, tuple);
+        boolean modified = processChunkBlocks(vqueue, camera, tuple, faceMask);
 
         if (modified) {
             tuple.setBuffered(false);
@@ -256,12 +259,13 @@ public class BlockEnvironment {
     /**
      * Processes blocks from visible chunks for a specific tuple.
      *
-     * @param vqueue visible chunk IDs
-     * @param camera game camera
-     * @param tuple the tuple being updated
+     * @param vqueue   visible chunk IDs
+     * @param camera   game camera
+     * @param tuple    the tuple being updated
+     * @param faceMask bitmask of currently visible faces
      * @return true if the tuple was modified, false otherwise
      */
-    private boolean processChunkBlocks(IList<Integer> vqueue, Camera camera, Tuple tuple) {
+    private boolean processChunkBlocks(IList<Integer> vqueue, Camera camera, Tuple tuple, int faceMask) {
         boolean modified = false;
 
         final float angleDegrees = 15f;
@@ -274,7 +278,26 @@ public class BlockEnvironment {
                 tuple.texName(), tuple.faceBits(), vqueue,
                 camera, angleDegrees
         );
+
+        // Further filter blocks for fluid visibility optimization
         if (filterBlks != null && !filterBlks.isEmpty()) {
+            // If the tuple is fluid (water), we can skip adding blocks which won't be rendered because of being blocked by solid blocks.
+            if (!tuple.isSolid()) {
+                filterBlks.removeIf(blk -> {
+                    int someVal = faceMask;
+                    // count solid neighbors to determine if this fluid block view is completely blocked
+                    for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+                        Vector3f adjPos = blk.getAdjacentPos(j);
+                        if (LevelContainer.AllBlockMap.isLocationPopulated(adjPos, true)) {
+                            someVal &= ~(1 << j); // clear bit if solid neighbor exists
+                        }
+                    }
+                    // if someVal is zero, all potentially visible faces are blocked by solid neighbors
+                    return someVal == 0;
+                });
+
+            }
+
             modified |= tuple.blockList.addAll(filterBlks);
         }
 

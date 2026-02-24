@@ -23,12 +23,12 @@ import java.nio.IntBuffer;
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
-public class ItemSystem {
+public class Items {
 
     /**
      * Some count used in buffers (Float Buffer & Integer Buffer). It references to max count of weapons.
      */
-    public static final int SOME_COUNT = 256;
+    public static final int SOME_COUNT = 384;
 
     /**
      * Some count for vertices. Max count of vertices for the model.
@@ -57,6 +57,13 @@ public class ItemSystem {
      * Index buffer object ID
      */
     private int ibo;
+
+    /**
+     * Last processed face bits for incremental optimization (same concept as BlockEnvironment).
+     */
+    private int lastFaceBits = 0;
+
+    private static final int FACE_BITS_MASK = 0x3F;
 
     /**
      * Is (item system) ready for rendering
@@ -217,33 +224,49 @@ public class ItemSystem {
 
     /**
      * Preprocesses (weapon) items from visible chunks to meet specific conditions.
+     * Uses incremental face-bit processing (similar to BlockEnvironment) to spread
+     * work across multiple frames.
      *
      * @param vqueue visible (chunk) queue
      * @param camera game camera
      */
     public void preprocessItems(IList<Integer> vqueue, Camera camera) {
-        // Clear items that cannot be rendered
         boolean modified = false;
+
+        // Advance face bits counter for incremental processing (same as BlockEnvironment)
+        lastFaceBits = (lastFaceBits + 1) & FACE_BITS_MASK;
+
+        // Only process visible chunks when face bits pass is active (non-zero)
+        final boolean shouldProcess = lastFaceBits != 0;
+
         synchronized (selectedWeaponItems) {
-            modified |= selectedWeaponItems.removeIf((x -> !camera.doesSeeEff(x, 7.5f)));
+            modified |= selectedWeaponItems.removeIf(x -> !camera.doesSeeEff(x, 7.5f));
         }
 
-        // For all weapon items
-        for (int chunkId : vqueue) {
-            // if visible queue contains chunk (determined from chunk function)
-            // and camera does see the model (eff means better method, more effective)
-            for (Model weapon : allWeaponItems.getAllByKey1(chunkId)) {
-                synchronized (selectedWeaponItems) {
-                    modified |= selectedWeaponItems.addIfAbsent(weapon);
+        if (shouldProcess) {
+            // For all weapon items in visible chunks
+            for (int chunkId : vqueue) {
+                for (Model weapon : allWeaponItems.getAllByKey1(chunkId)) {
+                    synchronized (selectedWeaponItems) {
+                        modified |= selectedWeaponItems.addIfAbsent(weapon);
+                    }
                 }
             }
         }
 
-        // If anything modified reset buffered flag
+        // Reset face bits cycle on completion (full 64-bit cycle done)
+        if (lastFaceBits == FACE_BITS_MASK) {
+            // enable only visible vertices for all items (for rendering optimization)
+            // allWeaponItems.forEach(weapon -> { if (camera.enableOnlyVisibleVertices(weapon, 22.5f)) { weapon.unbuffer(); } });
+            lastFaceBits = 0;
+        }
+
+        // If anything modified, reset buffered flag
         if (modified) {
             this.buffered = false;
         }
     }
+
 
     /**
      * Render selected items.

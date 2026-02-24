@@ -333,8 +333,8 @@ public class Camera implements Observer { // is 3D looking camera
         // Use Set for deduplication with better performance characteristics
         final Set<Vector3f> seenPositions = new HashSet<>(vertexCount);
 
-        for (int i = 0; i < vertexCount; i++) {
-            Vector3f vertexPos = vertices[i].getPos();
+        for (Vertex vertex : vertices) {
+            Vector3f vertexPos = vertex.getPos();
 
             // Skip duplicate positions
             if (!seenPositions.add(vertexPos)) {
@@ -359,7 +359,7 @@ public class Camera implements Observer { // is 3D looking camera
      *
      * @param model observation model
      * @param degrees angle degrees of front view
-     * @return whether or not the camera does see the model
+     * @return whether the camera does see the model
      */
     public boolean doesSeeEff(Model model, float degrees) {
         final float cosine = (float) Math.cos(Math.toRadians(degrees));
@@ -380,8 +380,8 @@ public class Camera implements Observer { // is 3D looking camera
         // Use Set for deduplication with better performance characteristics
         final Set<Vector3f> seenPositions = new HashSet<>(vertexCount);
 
-        for (int i = 0; i < vertexCount; i++) {
-            Vector3f vertexPos = vertices[i].getPos();
+        for (Vertex vertex : vertices) {
+            Vector3f vertexPos = vertex.getPos();
 
             // Skip duplicate positions
             if (!seenPositions.add(vertexPos)) {
@@ -397,6 +397,52 @@ public class Camera implements Observer { // is 3D looking camera
         }
 
         return false;
+    }
+
+    /**
+     * Optimized function to enable only visible vertices of the model based on
+     * camera's position and front vector. Uses efficient vector operations,
+     * avoids object creation in loops, and provides early exit.
+     *
+     * @param model observation model
+     * @param degrees angle degrees of front view
+     * @return whether the camera does see the model
+     */
+    public boolean enableOnlyVisibleVertices(Model model, float degrees) {
+        final float cosine = (float) Math.cos(Math.toRadians(degrees));
+        final Vector3f camFrontNeg = new Vector3f(-front.x, -front.y, -front.z);
+
+        final Vector3f directionToVertex = new Vector3f();
+        final Vector3f modelToCam = new Vector3f();
+
+        model.pos.sub(pos, modelToCam);
+
+        final Mesh firstMesh = model.meshes.getFirst();
+        final Vertex[] vertices = firstMesh.vertices.toArray(Vertex[]::new);
+        final int vertexCount = vertices.length;
+
+        final Set<Vector3f> seenPositions = new HashSet<>(vertexCount);
+        boolean changed = false;
+
+        for (Vertex vertex : vertices) {
+            Vector3f vertexPos = vertex.getPos();
+
+            if (!seenPositions.add(vertexPos)) {
+                continue;
+            }
+
+            directionToVertex.set(vertexPos).add(modelToCam).normalize();
+
+            boolean shouldBeVisible = directionToVertex.dot(camFrontNeg) <= cosine;
+
+            // Only update and flag change if state differs
+            if (vertex.isEnabled() != shouldBeVisible) {
+                vertex.setEnabled(shouldBeVisible);
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     @Override

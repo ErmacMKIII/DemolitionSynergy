@@ -108,14 +108,18 @@ public class LevelContainer implements GravityEnviroment {
      * Main source of light. Outside of skybox.
      */
     public static final Model SUN = ModelUtils.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
-    public static final Vector4f SUN_COLOR_RGBA = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
-    public static final Vector3f SUN_COLOR_RGB = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
+
+    public static final Vector4f SUN_COLOR_RGBA_MORNING = new Vector4f(0.75f, 0.0f, 0.125f, 1.0f); // red orange color
+    public static final Vector3f SUN_COLOR_RGB_MORNING = new Vector3f(0.75f, 0.0f, 0.125f); // red-orange  color RGB
+
+    public static final Vector4f SUN_COLOR_RGBA_NOON = new Vector4f(0.75f, 0.5f, 0.25f, 1.0f); // orange-yellow color
+    public static final Vector3f SUN_COLOR_RGB_NOON = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color RGB
 
     public static final float SUN_SCALE = 32.0f;
     public static final float SUN_INTENSITY = (float) (1 << 28); // 268.4M
 
     public static final LightSource SUNLIGHT
-            = new LightSource(SUN.pos, SUN_COLOR_RGB, SUN_INTENSITY);
+            = new LightSource(SUN.pos, SUN_COLOR_RGB_MORNING, SUN_INTENSITY);
 
     public final Chunks chunks = new Chunks();
     public final BlockEnvironment blockEnvironment;
@@ -130,6 +134,9 @@ public class LevelContainer implements GravityEnviroment {
 
     public static final Vector3f NIGHT_SKYBOX_COLOR_RGB = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
     public static final Vector4f NIGHT_SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 0.15f); // cool bluish color for SKYBOX
+
+    public static final Vector3f DAY_SKYBOX_COLOR_RGB = new Vector3f(0.15f, 0.45f, 0.95f); // cool bluish color for SKYBOX
+    public static final Vector4f DAY_SKYBOX_COLOR = new Vector4f(0.15f, 0.45f, 0.95f, 0.15f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_BLOCKS = 131070;
 
@@ -147,7 +154,7 @@ public class LevelContainer implements GravityEnviroment {
     /**
      * Various items like e.g. weapons on the ground
      */
-    public final ItemSystem items = new ItemSystem();
+    public final Items items = new Items();
 
     /**
      * Module responsible for caching chunks in SSD/HDD file(s).
@@ -257,7 +264,7 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.nullifyNormalsForFace(Block.BOTTOM);
         SKYBOX.setPrimaryColorAlpha(0.15f);
 
-        SUN.setPrimaryRGBColor(new Vector3f(SUN_COLOR_RGB));
+        SUN.setPrimaryRGBColor(new Vector3f(SUN_COLOR_RGB_MORNING));
         SUN.pos = new Vector3f(0.0f, -10240.0f, 0.0f);
         SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
@@ -1138,9 +1145,6 @@ public class LevelContainer implements GravityEnviroment {
      */
     @Override
     public Result gravityDo(Critter critter, float deltaTime) {
-        // Initialize collision flag, gravity will be applied unless collision detected
-        boolean collision = false;
-
         // Cache interpolation factor
         final float interpolationFactor = (float) gameObject.game.getInterpolationFactor();
 
@@ -1151,118 +1155,116 @@ public class LevelContainer implements GravityEnviroment {
                 && levelActors.player.getPos().distanceSquared(gameObject.game.playerServerPos) > 5E-3f;
 
         if (isMultiplayer) {
-            // In multiplayer, request update player server position, as soon as possible
             gameObject.game.requestGetPlayerPos();
         }
 
-        // Hold gravity result as outcome of this method
-        // Initialize as NEUTRAL
         Result result = Result.NEUTRAL;
-        // Check for collision in any direction
+
+        // --- Initial broad collision check (only relevant directions, not all) ---
+        // Only check XZ directions to prevent false positives from vertical checks
+        final Game.Direction gravityDir = (jumpVelocity <= 0.0f) ? Game.Direction.DOWN : Game.Direction.UP;
+        boolean initialCollision = false;
         for (Game.Direction dir : Game.Direction.values()) {
-            // Check for collision with environment in multiplayer or singleplayer mode
+            if (dir == gravityDir) continue; // skip gravity direction, handled below
+            boolean col;
             if (isMultiplayer) {
-                collision |= hasCollisionWithEnvironment(critter, gameObject.game.playerServerPos, dir, interpolationFactor);
+                col = hasCollisionWithEnvironment(critter, gameObject.game.playerServerPos, dir, interpolationFactor);
             } else {
-                collision |= hasCollisionWithEnvironment(critter, dir);
+                col = hasCollisionWithEnvironment(critter, dir);
             }
-            if (collision) {
-                critter.setGravityResult(result);
-                // Not affected by gravity if collision detected
-                return result; // Early exit if collision detected
+            if (col) {
+                initialCollision = true;
+                break;
             }
         }
 
-        if (isMultiplayer) {
-            // In multiplayer, request update player server position, as soon as possible
-            gameObject.game.requestGetPlayerPos();
+        if (initialCollision) {
+            critter.setGravityResult(result);
+            return result; // NEUTRAL — don't apply gravity if already colliding sideways/above
         }
-
-        // Store initial predictor position
-        final Vector3f predInit = new Vector3f(critter.getPredictor());
 
         // FIX: Switch to falling immediately when jump velocity depletes
         if (jumpVelocity <= 0.0f) {
             jumpVelocity = 0.0f;
-            // Ensure smooth transition to falling
             if (fallVelocity == 0.0f && !actorInFluid) {
-                fallVelocity = GRAVITY_CONSTANT * deltaTime * 0.5f; // Gentle start
+                fallVelocity = GRAVITY_CONSTANT * deltaTime * 0.5f;
             }
         }
 
-        // Initialize test height
-        final boolean goingDown = jumpVelocity == 0.0f;
-        float tstHeight;
-        // Initialize test velocities
+        final boolean goingDown = (jumpVelocity == 0.0f);
+
+        // Save original predictor position — we must restore it after each tick probe
+        final Vector3f predInit = new Vector3f(critter.getPredictor());
+
+        boolean collision = false;
         float tstFallVelocity = fallVelocity;
         float tstJumpVelocity = jumpVelocity;
-        // Simulate movement in small increments to check for collisions
         final float tstStepTime = (float) Game.TICK_TIME;
-        // Try to reach max as close as possible to deltaTime within and without collision
+
         TICKS:
-        for (float tstTime = 0f; tstTime <= deltaTime; tstTime += tstStepTime) {
-            // Calculate the test height and test velocities based on whether the critter is going up or down
+        for (float tstTime = tstStepTime; tstTime <= deltaTime; tstTime += tstStepTime) {
+            // FIX: always restore predictor before probing each tick
+            critter.getPredictor().set(predInit);
+
+            float tstHeight;
             if (goingDown) {
                 tstHeight = tstFallVelocity * tstTime + (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                tstFallVelocity = Math.min(tstFallVelocity + GRAVITY_CONSTANT * tstTime, TERMINAL_VELOCITY);
                 critter.movePredictorDown(tstHeight);
             } else {
                 tstHeight = tstJumpVelocity * tstTime - (GRAVITY_CONSTANT * tstTime * tstTime) / 2.0f;
-                tstJumpVelocity = Math.max(tstJumpVelocity - GRAVITY_CONSTANT * tstTime, 0.0f);
+                if (tstHeight < 0.0f) {
+                    // Jump arc crossed zero — treat as falling from this tick
+                    critter.getPredictor().set(predInit);
+                    break;
+                }
                 critter.movePredictorUp(tstHeight);
             }
 
-            // Check for collision in the intended opposite direction
+            // FIX: use fresh boolean per tick, not accumulated
+            boolean tickCollision;
             Game.Direction direction = goingDown ? Game.Direction.DOWN : Game.Direction.UP;
-            // Check for collision with environment in multiplayer or singleplayer mode
             if (isMultiplayer) {
-                collision |= hasCollisionYWithEnvironment(critter, gameObject.game.playerServerPos, direction, interpolationFactor);
+                tickCollision = hasCollisionYWithEnvironment(critter, gameObject.game.playerServerPos, direction, interpolationFactor);
             } else {
-                collision |= hasCollisionYWithEnvironment(critter, direction);
+                tickCollision = hasCollisionYWithEnvironment(critter, direction);
             }
 
-            // Check if collision detected
-            if (collision) {
-                // Adjust velocities based on collision, resetting the appropriate one
+            if (tickCollision) {
+                // FIX: restore predictor to last safe position (predInit)
+                critter.getPredictor().set(predInit);
+
                 if (goingDown) {
                     fallVelocity = 0.0f;
                 } else {
                     jumpVelocity = 0.0f;
-                    // FIX: Start falling immediately after collision
                     fallVelocity = GRAVITY_CONSTANT * tstTime * 0.25f;
                 }
+                collision = true;
                 result = Result.COLLISION;
-                // Collision detected, exit the loop
-                break;
+                break TICKS;
             }
-            // Continue to next increment
         }
 
-        // Loop ended, restore initial predictor position
+        // Always restore predictor to baseline after probing
         critter.getPredictor().set(predInit);
 
-        // No collision detected, apply movement (for the full deltaTime)
         if (!collision) {
-            float deltaHeight; // height which will be applied
-            // Calculate the test height and test velocities based on whether the critter is going up or down
+            // No collision — apply full deltaTime movement
+            float deltaHeight;
             if (goingDown) {
                 deltaHeight = fallVelocity * deltaTime + (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
                 fallVelocity = Math.min(fallVelocity + GRAVITY_CONSTANT * deltaTime, TERMINAL_VELOCITY);
             } else {
-                deltaHeight =  jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+                deltaHeight = jumpVelocity * deltaTime - (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
                 jumpVelocity = Math.max(jumpVelocity - GRAVITY_CONSTANT * deltaTime, 0.0f);
             }
 
-            // Adjust for fluid environment
+            // Adjust for fluid
             if (actorInFluid) {
-                // FIX: Reduce effective height change in fluid
                 deltaHeight *= 0.125f;
-                // FIX: Reduce jump strength in fluid
                 jumpVelocity *= 0.95f;
             }
 
-            // Apply gravity effects
-            // Apply the calculated movement
             if (goingDown) {
                 critter.movePredictorYDown(deltaHeight);
                 critter.dropY(deltaHeight);
@@ -1273,26 +1275,23 @@ public class LevelContainer implements GravityEnviroment {
                 result = Result.JUMP;
             }
 
-            // Respawn player if terminal velocity is reached
-            if (fallVelocity == TERMINAL_VELOCITY) {
+            // Respawn on terminal velocity
+            if (fallVelocity >= TERMINAL_VELOCITY) {
                 try {
                     fallVelocity = 0.0f;
                     jumpVelocity = 0.0f;
-                    spawnPlayer(); // Respawn player if terminal velocity is reached
+                    spawnPlayer();
                 } catch (Exception ex) {
                     DSLogger.reportError("Unable to spawn player after the fall!", ex);
                 }
             }
 
-            // in case of multiplayer join send to the server
             if (isMultiplayer) {
-                // Send updated position to server
                 gameObject.game.requestSetPlayerPos();
             }
         }
 
         critter.setGravityResult(result);
-
         return result;
     }
 
@@ -1426,28 +1425,38 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     /**
-     * Get Interpolated Color for day/night cycle
+     * Get interpolated color for day/night cycle using smooth step interpolation.
      *
-     * @param value (sun intensity) value to interpolate
-     *
-     * @return interpolated color day/night
+     * @param value     current sun intensity value
+     * @param threshold minimum threshold below which colA (night) is returned
+     * @param colA      color for night (below threshold)
+     * @param colB      color for day (at/above threshold)
+     * @return smoothly interpolated color between night and day
      */
-    private static Vector3f getInterpolatedColor(float value) {
-        // Normalize the colour value between night blue and yellowish day
-        float ratio;
-        if (value < 0.0f) {
-            return LevelContainer.NIGHT_SKYBOX_COLOR_RGB;
-        } else if (value >= 0.0f) {
-            Vector3f srcCol = new Vector3f(LevelContainer.SUN_COLOR_RGB);
-            Vector3f dstCol = new Vector3f(LevelContainer.NIGHT_SKYBOX_COLOR_RGB);
-            Vector3f temp = new Vector3f();
-            ratio = value;
-            return srcCol.lerp(dstCol, ratio, temp);
-        } else {
-            // day-colour
-            return LevelContainer.SUN_COLOR_RGB;
+    private static Vector3f getInterpolatedColor(float value, float threshold, Vector3f colA, Vector3f colB) {
+        if (value <= threshold) {
+            return new Vector3f(colA);
         }
+
+        // Normalize value to [0.0, 1.0] range above threshold
+        // Assume max value is 1.0 (sine output range)
+        final float maxValue = 1.0f;
+        float t = (value - threshold) / (maxValue - threshold);
+
+        // Clamp t to [0, 1] to prevent overshoot
+        t = Math.min(1.0f, Math.max(0.0f, t));
+
+        // Apply smooth-step easing: 3t² - 2t³
+        t = t * t * (3.0f - 2.0f * t);
+
+        // Linearly interpolate between colA and colB using smoothed t
+        return new Vector3f(
+                colA.x + t * (colB.x - colA.x),
+                colA.y + t * (colB.y - colA.y),
+                colA.z + t * (colB.z - colA.z)
+        );
     }
+
 
     /**
      * Perform update to the day/night cycle. Sun position & sunlight is
@@ -1456,27 +1465,29 @@ public class LevelContainer implements GravityEnviroment {
     public void update() { // call it externally from the main thread 
         if (!working) { // don't subBufferVertices if working, it may screw up!   
             final float now = (float) GameTime.Now().getTime();
-            float dtime = now - lastCycledDayTime;
+            float deltaTime = now - lastCycledDayTime;
             lastCycledDayTime = now;
 
-            final float dangle = org.joml.Math.toRadians(dtime * 360.0f / 24.0f);
+            final float deltaAngle = org.joml.Math.toRadians(deltaTime * 360.0f / 24.0f);
 
-            SKYBOX.setrY(SKYBOX.getrY() + dangle);
-            SUN.pos.rotateZ(dangle);
+            SKYBOX.setrY(SKYBOX.getrY() + deltaAngle);
+            SUN.pos.rotateZ(deltaAngle);
 
             final float sunAngle = org.joml.Math.atan2(SUN.pos.y, SUN.pos.x);
             float inten = org.joml.Math.sin(sunAngle);
 
             if (inten < 0.0f) { // night
                 SKYBOX.setTexName("night");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(0.15f), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten, 0f, LevelContainer.NIGHT_SKYBOX_COLOR_RGB, LevelContainer.DAY_SKYBOX_COLOR_RGB))).mul(0.15f), 0.15f));
             } else if (inten >= 0.0f) { // day
                 SKYBOX.setTexName("day");
-                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten))).mul(Math.max(inten, 0.15f)), 0.15f));
+                SKYBOX.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(inten, 0f, LevelContainer.NIGHT_SKYBOX_COLOR_RGB, LevelContainer.DAY_SKYBOX_COLOR_RGB))).mul(Math.max(inten, 0.15f)), 0.15f));
             }
-            final float sunInten = Math.max(inten, 0.0f);
-            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(SUN_COLOR_RGB)).mul(sunInten), 1.0f));
-            SUNLIGHT.setIntensity(sunInten * SUN_INTENSITY);
+            final float sunIntensity = Math.max(inten, 0.0f);
+
+            SUN.setPrimaryRGBAColor(new Vector4f((new Vector3f(getInterpolatedColor(sunIntensity, 0f, LevelContainer.SUN_COLOR_RGB_MORNING, LevelContainer.SUN_COLOR_RGB_NOON)).mul(sunIntensity)), 1.0f));
+            SUNLIGHT.setColor(new Vector3f(getInterpolatedColor(sunIntensity, 0f, LevelContainer.SUN_COLOR_RGB_MORNING, LevelContainer.SUN_COLOR_RGB_NOON).mul(sunIntensity)));
+            SUNLIGHT.setIntensity(sunIntensity * SUN_INTENSITY);
             SUNLIGHT.pos.set(SUN.pos);
 
             // always handleInput sunlight (sun/pos)
