@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (C) 2022 Aleksandar Stojanovic <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,11 @@
  */
 package rs.alexanderstojanovich.evg.cache;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryUtil;
@@ -39,21 +36,29 @@ import rs.alexanderstojanovich.evg.util.VectorFloatUtils;
 
 /**
  * Cache Module is used for caching chunks to not overweight Game Renderer.
+ * Uses NIO FileChannel for fast bulk I/O operations.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class CacheModule {
 
-    public static final int TEX_LEN = 5; // 5 B
+    public static final int TEX_LEN = 5;   // 5 B
     public static final int VEC3_LEN = 12; // 12 B
     public static final int VEC4_LEN = 16; // 16 B
-    public static final int BOOL_LEN = 1; // 1 B
+    public static final int BOOL_LEN = 1;  // 1 B
 
-    public static final int BLOCK_SIZE = 34;
+    // Layout per block: TEX_LEN + VEC3_LEN + VEC4_LEN + BOOL_LEN = 34 B
+    public static final int BLOCK_SIZE = TEX_LEN + VEC3_LEN + VEC4_LEN + BOOL_LEN; // 34 B
 
-    public static final int DEFAULT_BUFFER_SIZE = 16384; // 16 KB
-    public static final int MEMORY_SIZE = 0x1000000;
-    private static final ByteBuffer MEMORY = MemoryUtil.memCalloc(MEMORY_SIZE); // 16 MB
+    // Header layout: INT(blockCount=4) = 4 B
+    public static final int HEADER_SIZE = Integer.BYTES; // 4 B
+
+    public static final int DEFAULT_BUFFER_SIZE = 65536; // 64 KB
+    public static final int MEMORY_SIZE = 0x1000000;     // 16 MB
+
+    // Per-instance direct ByteBuffer — avoids shared-state concurrency issues
+    private final ByteBuffer MEMORY = MemoryUtil.memCalloc(MEMORY_SIZE);
+
     private final LevelContainer levelContainer;
     public static final IList<CachedInfo> CACHED_CHUNKS = new GapList<>();
     public static final int BLOCKS_PER_RUN = Configuration.getInstance().getBlocksPerRun();
@@ -63,13 +68,12 @@ public class CacheModule {
     }
 
     /**
-     * Size of the chunk (in blocks) when is loaded.
+     * Size of the chunk (in blocks) when loaded (not cached).
      *
      * @param id chunk id
-     *
      * @return loaded size of the chunk
      */
-    public int loadedSize(int id) { // for debugging purposes
+    public int loadedSize(int id) {
         int size = 0;
         if (!CacheModule.isCached(id)) {
             IList<Block> blkList = levelContainer.chunks.getBlockList(id);
@@ -79,26 +83,23 @@ public class CacheModule {
     }
 
     /**
-     * Size of the chunk in blocks when is cached.
+     * Size of the chunk in blocks when cached.
      *
      * @param id chunk id
-     *
-     * @return loaded size of the chunk
+     * @return cached size of the chunk (block count)
      */
-    public static int cachedSize(int id) { // for debugging purposes
-        int size = 0;
+    public static int cachedSize(int id) {
         if (CacheModule.isCached(id)) {
             CachedInfo info = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
             if (info != null) {
-                size = info.blockSize;
+                return info.blockSize;
             }
         }
-        return size;
+        return 0;
     }
 
-    // total loaded + cached size
     /**
-     * Return total loaded + cached size
+     * Return total loaded + cached block count.
      *
      * @return total (loaded + cached) size
      */
@@ -108,8 +109,7 @@ public class CacheModule {
             if (CacheModule.isCached(id)) {
                 result += CacheModule.cachedSize(id);
             } else {
-                IList<Block> blkList = levelContainer.chunks.getBlockList(id);
-                result += blkList.size();
+                result += levelContainer.chunks.getBlockList(id).size();
             }
         }
         return result;
@@ -117,67 +117,53 @@ public class CacheModule {
 
     //--------------------------------------------------------------------------
     /**
-     * Save Memory Buffer to Disk (SSD or HardDrive)
+     * Write MEMORY buffer to disk via NIO FileChannel (fast bulk write).
      *
-     * @param filename filename of cached file to save
+     * @param filename target cache file path
      */
     private void saveMemToDisk(String filename) {
-        BufferedOutputStream bos = null;
         File file = new File(filename);
         if (file.exists()) {
             file.delete();
         }
-        try {
-            bos = new BufferedOutputStream(new FileOutputStream(file), DEFAULT_BUFFER_SIZE);
-            final byte[] buff = new byte[MEMORY.limit()];
-            MEMORY.get(buff);
-            bos.write(buff);
-            MEMORY.clear();
-        } catch (FileNotFoundException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw");
+             FileChannel fc = raf.getChannel()) {
+            // MEMORY is already flipped (limit = data size, position = 0)
+            while (MEMORY.hasRemaining()) {
+                fc.write(MEMORY);
+            }
+            fc.force(false); // flush OS page cache to disk
         } catch (IOException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-        if (bos != null) {
-            try {
-                bos.close();
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
+        } finally {
+            MEMORY.clear();
         }
     }
 
     /**
-     * Load Memory Buffer from Disk (SSD or HardDrive)
+     * Read disk file into MEMORY buffer via NIO FileChannel (fast bulk read).
      *
-     * @param filename filename of cached file to load
-     *
+     * @param filename source cache file path
+     * @param length   number of bytes to read
      */
     private void loadDiskToMem(String filename, int length) {
         File file = new File(filename);
-        if (file.exists()) {
-            BufferedInputStream bis = null;
-            try {
-                bis = new BufferedInputStream(new FileInputStream(file), DEFAULT_BUFFER_SIZE);
-                final byte[] buff = new byte[MEMORY_SIZE];
-                int someLen = bis.read(buff, 0, length);
-                MEMORY.clear();
-                MemoryUtil.memSet(MEMORY, (byte) 0x00);
-                MEMORY.put(buff, 0, someLen);
-                MEMORY.flip();
-            } catch (FileNotFoundException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            } catch (IOException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
+        if (!file.exists()) {
+            return;
+        }
+        MEMORY.clear();
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r");
+             FileChannel fc = raf.getChannel()) {
+            // Limit how many bytes we pull into MEMORY
+            MEMORY.limit(Math.min(length, MEMORY_SIZE));
+            while (MEMORY.hasRemaining()) {
+                int read = fc.read(MEMORY);
+                if (read == -1) break;
             }
-            if (bis != null) {
-                try {
-                    bis.close();
-                } catch (IOException ex) {
-                    DSLogger.reportFatalError(ex.getMessage(), ex);
-                }
-            }
-
+        } catch (IOException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        } finally {
+            MEMORY.flip(); // prepare for reading
         }
     }
 
@@ -186,154 +172,197 @@ public class CacheModule {
     }
 
     /**
-     * Save chunk to Disk.
+     * Save chunk to disk using NIO bulk I/O.
      *
      * @param id chunk id
-     * @return is operation performed (chunks modified)
+     * @return true if chunk was saved, false if already cached or empty
      */
     public boolean saveToDisk(int id) {
-        boolean op = false;
-        if (!CacheModule.isCached(id)) {
-            // DETERMINING WHICH CHUNK
-            IList<Block> blocks = this.levelContainer.chunks.getBlockList(id);
-            // REMOVE OPREATIONS
-            if (!blocks.isEmpty()) {
-                // better than tuples clear (otherwise much slower to load)
-                // this indicates that add with no transfer on fluid blocks will be used!                
-                this.levelContainer.chunks.tupleList.forEach(t -> t.blockList.removeAll(blocks));
-                // SAVE OPERATIONS
-                MEMORY.put((byte) id);
-                MEMORY.putInt((int) blocks.size());
-                for (Block blk : blocks) {
-                    byte[] texName = blk.texName.getBytes();
-                    MEMORY.put(texName);
-                    byte[] vec3fPosBytes = VectorFloatUtils.vec3fToByteArray(blk.pos);
-                    MEMORY.put(vec3fPosBytes);
-                    Vector4f primCol = blk.getPrimaryRGBAColor();
-                    byte[] vec4fColByte = VectorFloatUtils.vec4fToByteArray(primCol);
-                    MEMORY.put(vec4fColByte);
-                    if (blk.isSolid()) {
-                        MEMORY.put((byte) 0xFF);
-                    } else {
-                        MEMORY.put((byte) 0x00);
-                    }
-                }
-                MEMORY.flip();
-                final int cachedSize = MEMORY.limit();
-
-                File cacheDir = new File(Game.CACHE);
-                if (!cacheDir.exists()) {
-                    cacheDir.mkdir();
-                }
-
-                String fileName = getFileName(id);
-                saveMemToDisk(fileName);
-//                DSLogger.reportInfo("pos=" + pos, null);
-
-                // ADD TO CACHED
-                CACHED_CHUNKS.add(new CachedInfo(id, blocks.size(), cachedSize, fileName));
-                DSLogger.reportDebug("ChunkId=" + id + " cached to " + fileName, null);
-                op = true;
-            }
+        if (CacheModule.isCached(id)) {
+            return false;
         }
 
-        return op;
+        IList<Block> blocks = levelContainer.chunks.getBlockList(id);
+        if (blocks.isEmpty()) {
+            return false;
+        }
+
+        // Ensure cache directory exists
+        File cacheDir = new File(Game.CACHE);
+        if (!cacheDir.exists()) {
+            cacheDir.mkdir();
+        }
+
+        final int blockCount = blocks.size();
+
+        // Pre-calculate required buffer size: header + blocks
+        final int requiredBytes = HEADER_SIZE + blockCount * BLOCK_SIZE;
+        if (requiredBytes > MEMORY_SIZE) {
+            DSLogger.reportError("Chunk " + id + " too large to cache (" + requiredBytes + " B)", null);
+            return false;
+        }
+
+        MEMORY.clear();
+
+        // --- Write header ---
+        MEMORY.putInt(blockCount);
+
+        // --- Write blocks in bulk ---
+        for (Block blk : blocks) {
+            // texName: exactly TEX_LEN bytes
+            byte[] texBytes = blk.texName.getBytes();
+            MEMORY.put(texBytes, 0, Math.min(texBytes.length, TEX_LEN));
+            // pad if shorter than TEX_LEN
+            for (int p = texBytes.length; p < TEX_LEN; p++) {
+                MEMORY.put((byte) 0);
+            }
+            // position (12 B)
+            MEMORY.put(VectorFloatUtils.vec3fToByteArray(blk.pos));
+            // color (16 B)
+            MEMORY.put(VectorFloatUtils.vec4fToByteArray(blk.getPrimaryRGBAColor()));
+            // solid flag (1 B)
+            MEMORY.put(blk.isSolid() ? (byte) 0xFF : (byte) 0x00);
+        }
+
+        MEMORY.flip(); // prepare for writing
+        final int cachedSize = MEMORY.limit();
+
+        String fileName = getFileName(id);
+        saveMemToDisk(fileName);
+
+        // Remove blocks from tuples efficiently using a Set-based removal
+        final IList<Block> blockSnapshot = blocks;
+        levelContainer.chunks.tupleList.forEach(t -> t.blockList.removeIf(blockSnapshot::contains));
+
+        CACHED_CHUNKS.add(new CachedInfo(id, blockCount, cachedSize, fileName));
+        DSLogger.reportDebug("ChunkId=" + id + " cached to " + fileName + " (" + blockCount + " blocks, " + cachedSize + " B)", null);
+
+        return true;
     }
 
     /**
-     * Load chunk from Disk.
+     * Load chunk from disk using NIO bulk I/O.
+     * Supports partial loading controlled by BLOCKS_PER_RUN.
      *
      * @param id chunk id
-     * @return is operation performed (chunks modified)
+     * @return true if any blocks were loaded, false if not cached
      */
     public boolean loadFromDisk(int id) {
-        boolean op = false;
-        // IF ITS NOT CACHED TO DISK
-        if (CacheModule.isCached(id)) {
-            // LOAD INTO MEMORY
-            String fileName = getFileName(id);
-            CachedInfo cachedInfo = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
-            int remainingSize = cachedInfo.cachedSize - cachedInfo.readBytes;
-            loadDiskToMem(fileName, remainingSize);
-            int len;
-            if (remainingSize == cachedInfo.cachedSize) {
-                // INIT BLOCK ARRAY                
-                len = MEMORY.getInt();
-                cachedInfo.readBytes += 3;
-            } else {
-                MEMORY.position(cachedInfo.readBytes);
-                len = cachedInfo.blockSize - cachedInfo.readBlocks;
-            }
-            // READ BLOCK ARRAY                                              
-            int runlen = Math.min(len, BLOCKS_PER_RUN);
-            for (int i = 0; i < runlen; i++) {
-                char[] texNameArr = new char[TEX_LEN];
-                for (int k = 0; k < texNameArr.length; k++) {
-                    texNameArr[k] = (char) MEMORY.get();
-                }
-                String texName = String.valueOf(texNameArr);
+        if (!CacheModule.isCached(id)) {
+            return false;
+        }
 
-                byte[] vec3fPosBytes = new byte[VEC3_LEN];
-                MEMORY.get(vec3fPosBytes);
-                Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(vec3fPosBytes);
+        String fileName = getFileName(id);
+        CachedInfo cachedInfo = CACHED_CHUNKS.getIf(ci -> ci.chunkId == id);
+        if (cachedInfo == null) {
+            return false;
+        }
 
-                byte[] vec4fColBytes = new byte[VEC4_LEN];
-                Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(vec4fColBytes);
+        // Calculate how many blocks remain to read
+        int blocksRemaining = cachedInfo.blockSize - cachedInfo.readBlocks;
+        if (blocksRemaining <= 0) {
+            // Nothing left — clean up
+            finalizeCacheEntry(id, cachedInfo, fileName);
+            return false;
+        }
 
-                boolean solid = MEMORY.get() != (byte) 0x00;
-                Block block = new Block(texName, blockPos, blockCol, solid);
-                // PUT ALL BLOCK WHERE THEY BELONG TO                
-                levelContainer.chunks.addBlock(block);
+        // Determine run size for this call
+        int runLen = Math.min(blocksRemaining, BLOCKS_PER_RUN);
 
-                cachedInfo.readBytes += BLOCK_SIZE;
-                cachedInfo.readBlocks++;
-            }
+        // Calculate byte offset for this run: header + already-read blocks
+        int byteOffset = HEADER_SIZE + cachedInfo.readBlocks * BLOCK_SIZE;
+        int bytesToRead = runLen * BLOCK_SIZE;
 
-            MEMORY.clear();
+        // Load only the needed slice from disk
+        loadDiskToMem(fileName, byteOffset + bytesToRead);
 
-            // REMOVE FROM CACHED
-            if (cachedInfo.cachedSize - cachedInfo.readBytes == 0) {
-                CACHED_CHUNKS.removeIf(ci -> ci.chunkId == id);
-                DSLogger.reportDebug("ChunkId=" + id + " restored from " + fileName, null);
-                File file = new File(fileName);
-                if (file.exists()) {
+        if (MEMORY.limit() < byteOffset + bytesToRead) {
+            DSLogger.reportError("Cache file " + fileName + " is shorter than expected", null);
+            return false;
+        }
+
+        // Seek to the block data offset
+        MEMORY.position(byteOffset);
+
+        // --- Read blocks in bulk ---
+        for (int i = 0; i < runLen; i++) {
+            // texName (TEX_LEN bytes)
+            byte[] texBytes = new byte[TEX_LEN];
+            MEMORY.get(texBytes);
+            String texName = new String(texBytes).trim();
+
+            // position (12 B)
+            byte[] vec3fPosBytes = new byte[VEC3_LEN];
+            MEMORY.get(vec3fPosBytes);
+            Vector3f blockPos = VectorFloatUtils.vec3fFromByteArray(vec3fPosBytes);
+
+            // color (16 B) — fix: was never read from MEMORY in original code!
+            byte[] vec4fColBytes = new byte[VEC4_LEN];
+            MEMORY.get(vec4fColBytes);
+            Vector4f blockCol = VectorFloatUtils.vec4fFromByteArray(vec4fColBytes);
+
+            // solid flag (1 B)
+            boolean solid = MEMORY.get() != (byte) 0x00;
+
+            Block block = new Block(texName, blockPos, blockCol, solid);
+            levelContainer.chunks.addBlock(block);
+
+            cachedInfo.readBytes += BLOCK_SIZE;
+            cachedInfo.readBlocks++;
+        }
+
+        MEMORY.clear();
+
+        // If all blocks have been read, remove from cache registry and delete file
+        if (cachedInfo.readBlocks >= cachedInfo.blockSize) {
+            finalizeCacheEntry(id, cachedInfo, fileName);
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove cache entry from registry and delete the cache file.
+     */
+    private void finalizeCacheEntry(int id, CachedInfo cachedInfo, String fileName) {
+        CACHED_CHUNKS.removeIf(ci -> ci.chunkId == id);
+        DSLogger.reportDebug("ChunkId=" + id + " fully restored from " + fileName
+                + " (" + cachedInfo.blockSize + " blocks)", null);
+        File file = new File(fileName);
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+
+    /**
+     * Delete all cache files and clear registry.
+     */
+    public static void deleteCache() {
+        File cache = new File(Game.CACHE);
+        if (cache.exists()) {
+            File[] files = cache.listFiles();
+            if (files != null) {
+                for (File file : files) {
                     file.delete();
                 }
             }
-            op = true;
-        }
-
-        return op;
-    }
-
-    /**
-     * Delete all the cache files.
-     */
-    public static void deleteCache() {
-        // deleting cache
-        File cache = new File(Game.CACHE);
-        if (cache.exists()) {
-            for (File file : cache.listFiles()) {
-                file.delete(); // deleting all chunk files
-            }
             cache.delete();
         }
-
         CACHED_CHUNKS.clear();
     }
 
     /**
-     * Clean up used resources (MEMORY)
+     * Release native MEMORY buffer.
      */
-    public static void release() {
+    public void release() {
         MemoryUtil.memFree(MEMORY);
     }
 
     /**
-     * Is cached.
+     * Check whether a chunk is currently cached to disk.
      *
      * @param chunkId chunk id
-     * @return is chunk cached or not cached (loaded)
+     * @return true if cached, false if loaded in memory
      */
     public static boolean isCached(int chunkId) {
         return CACHED_CHUNKS.containsIf(ci -> ci.chunkId == chunkId);
@@ -346,5 +375,4 @@ public class CacheModule {
     public static IList<CachedInfo> getCACHED_CHUNKS() {
         return CACHED_CHUNKS;
     }
-
 }

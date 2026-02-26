@@ -240,7 +240,7 @@ public class Items {
         final boolean shouldProcess = lastFaceBits != 0;
 
         synchronized (selectedWeaponItems) {
-            modified |= selectedWeaponItems.removeIf(x -> !camera.doesSeeEff(x, 7.5f));
+            modified |= selectedWeaponItems.removeIf(weapon -> weapon != null && !camera.doesSeeEff(weapon, 7.5f));
         }
 
         if (shouldProcess) {
@@ -281,10 +281,8 @@ public class Items {
             bufferAll();
         }
 
-        synchronized (selectedWeaponItems) {
-            // Draw method
-            Model.render(selectedWeaponItems, vbo, ibo, lightSources, shaderProgram);
-        }
+        // Draw method taking read-only list of selected items (preprocessed)
+        Model.render(selectedWeaponItems.immutableList(), vbo, ibo, lightSources, shaderProgram);
     }
 
     /**

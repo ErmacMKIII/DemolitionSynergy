@@ -177,6 +177,15 @@ public class GameRenderer extends Thread implements Executor {
     }
 
     /**
+     * Is idle. Game is idle if it is rendering last frame.
+     *
+     * @return is idle bool
+     */
+    public static boolean isIdle() {
+        return isLastFrame();
+    }
+
+    /**
      * Should or Could Game Render render. Game can be rendered (again) if
      * lesser than enough passes and if is not updating.
      *

@@ -251,7 +251,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      */
     public boolean utilChunkOperations() {
         this.chunkOperationPerformed = false;
-        this.chunkOperationPerformed |= this.levelContainer.chunkOperations();
+        this.chunkOperationPerformed = this.levelContainer.chunkOperations();
         return chunkOperationPerformed;
     }
 
@@ -479,7 +479,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.intrface.release();
         this.waterRenderer.release();
         this.shadowRenderer.release();
-        CacheModule.release();
+        this.levelContainer.cacheModule.release();
         DSLogger.reportDebug("Cache buffer deleted.", null);
         this.levelContainer.levelBuffer.release();
         this.levelContainer.blockEnvironment.release();

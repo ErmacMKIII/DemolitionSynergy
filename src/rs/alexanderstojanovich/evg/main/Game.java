@@ -39,6 +39,7 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioDatagramConnector;
+import org.joml.Math;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
@@ -100,7 +101,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final float AMOUNT = 8f;
     public static final float CROUCH_STR_AMOUNT = 4f;
     public static final float JUMP_STR_AMOUNT = 7.5f;
-    public static final float ANGLE = 0.0005f * AMOUNT * (org.joml.Math.PI_f);
+    public static final float ANGLE = 0.0005f * AMOUNT * (Math.PI_f);
 
     /**
      * Direction of the game player motion when key is pressed
@@ -161,6 +162,22 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
     public static final String CHARACTER_ENTRY = "character/";
+
+    /**
+     * Tick counter for chunk operation scheduling.
+     */
+    private int chunkOpPhase = 0;
+
+    /**
+     * Timer accumulator for triggering chunk geometry updates when idle (no input).
+     * Fires every ~500ms to keep chunks updated even without player interaction.
+     */
+    private double chunkIdleTimer = 0.0;
+
+    /**
+     * Interval (in seconds) between idle chunk geometry updates.
+     */
+    private static final double CHUNK_IDLE_TRIGGER_INTERVAL = 4 * TICK_TIME;
 
     /**
      * Fixed step game time
@@ -505,7 +522,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // Handle left movement with collision detection
-        if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
+        if (input.directionKeys[Direction.LEFT.ordinal()]) {
             causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.LEFT);
             if (causingCollision) {
                 obs.moveRight(amount);
@@ -515,7 +532,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // Handle right movement with collision detection
-        if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
+        if (input.directionKeys[Direction.RIGHT.ordinal()]) {
             causingCollision = LevelContainer.hasCollisionWithEnvironment(obs, Direction.RIGHT);
             if (causingCollision) {
                 obs.moveLeft(amount);
@@ -595,7 +612,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // Handle left XZ movement with predictor-based collision
-        if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
+        if (input.directionKeys[Direction.LEFT.ordinal()]) {
             player.movePredictorXZLeft(amountXZ);
             causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.LEFT);
             if (causingCollision) {
@@ -606,7 +623,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
         }
 
         // Handle right XZ movement with predictor-based collision
-        if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
+        if (input.directionKeys[Direction.RIGHT.ordinal()]) {
             player.movePredictorXZRight(amountXZ);
             causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.RIGHT);
             if (causingCollision) {
@@ -677,7 +694,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param amountXZ movement amount on XZ plane
      * @param amountY vertical movement amount on Y-axis when jump
      * @param amountYNeg vertical movement amount on Y-axis when sink
-     * @throws java.lang.Exception if deserialization fails
+     * @throws Exception if deserialization fails
      */
     public void multiPlayerDo(LevelContainer lc, float amountXZ, float amountY, float amountYNeg) throws Exception {
         causingCollision = false;
@@ -708,7 +725,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
 
             // Handle left XZ movement with server-interpolated collision
-            if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
+            if (input.directionKeys[Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
                 causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.LEFT, (float) interpolationFactor);
                 if (!causingCollision) {
@@ -719,7 +736,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
 
             // Handle right XZ movement with server-interpolated collision
-            if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
+            if (input.directionKeys[Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
                 causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, playerServerPos, Direction.RIGHT, (float) interpolationFactor);
                 if (!causingCollision) {
@@ -776,7 +793,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
 
             // Handle left XZ movement
-            if (input.directionKeys[Game.Direction.LEFT.ordinal()]) {
+            if (input.directionKeys[Direction.LEFT.ordinal()]) {
                 player.movePredictorXZLeft(amountXZ);
                 causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.LEFT);
                 if (!causingCollision) {
@@ -787,7 +804,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             }
 
             // Handle right XZ movement
-            if (input.directionKeys[Game.Direction.RIGHT.ordinal()]) {
+            if (input.directionKeys[Direction.RIGHT.ordinal()]) {
                 player.movePredictorXZRight(amountXZ);
                 causingCollision = LevelContainer.hasCollisionXZWithEnvironment((Critter) player, Direction.RIGHT);
                 if (!causingCollision) {
@@ -1070,7 +1087,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * Process received response (client-side)
      *
      * @param response client received response
-     * @throws java.lang.Exception if spawn player fails
+     * @throws Exception if spawn player fails
      */
     public void process(ResponseIfc response) throws Exception {
         if (response.getChecksum() == 0L && String.valueOf(response.getData()).contains(":")) {
@@ -1318,7 +1335,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      *
      *
      * @param deltaTime time interval between updates
-     * @throws java.lang.Exception
+     * @throws Exception
      */
     public void waitAsync(double deltaTime) throws Exception {
         if (!isAsyncReceivedEnabled() || requestList.isEmpty()) {
@@ -1419,22 +1436,60 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     }
 
     /**
-     * Heavy util operation. Takes lot of CPU time. Load chunks into game.
+     * Phased chunk loading: spreads work across multiple ticks to reduce
+     * per-tick CPU spike without threading complexity.
+     *
+     * Phase 0: createOrUpdateChunkLists + utilChunkOperations
+     * Phase 1: updateNoptimizeChunks (always — regardless of renderer state)
      */
-    public void loadChunks() {
-        if ((ups & (ticksPerUpdate - 1)) == 0) {
-            // update chunk (integer) list            
-            boolean changed = gameObject.createOrUpdateChunkLists();
-            // call utility functions (chunk loading etc.)
-            if (changed) {
-                gameObject.utilChunkOperations();
-            }
-            // optimize chunks by merging all chunks of blocks into single environment
-            if (!GameRenderer.couldRender()) {
-                gameObject.updateNoptimizeChunks();
-            }
+    public void loadChunks(double deltaTime) {
+        if ((ups & (ticksPerUpdate - 1)) != 0) {
+            return;
+        }
+
+        // Advance idle timer; only ticks when player is not providing input
+        boolean hasInput = actionPerformed || moveMouse;
+        if (!hasInput) {
+            chunkIdleTimer += deltaTime;
+        } else {
+            chunkIdleTimer = 0.0; // reset when input resumes
+        }
+
+        // Fire idle trigger once interval is reached, then reset
+        boolean onTimerTrigger = false;
+        if (chunkIdleTimer >= CHUNK_IDLE_TRIGGER_INTERVAL) {
+            onTimerTrigger = true;
+            chunkIdleTimer = 0.0;
+        }
+
+        // Track if any chunk list changes occurred in phase 0
+        boolean changed;
+
+        switch (chunkOpPhase) {
+            case 0:
+                // Data phase: update lists and cache I/O (no GL)
+                changed = gameObject.createOrUpdateChunkLists();
+                if (changed) {
+                    gameObject.utilChunkOperations();
+                }
+                chunkOpPhase = 1;
+                break;
+
+            case 1:
+                // Geometry phase: rebuild/optimize chunk geometry (GL-safe, main thread)
+                // Run if player is actively providing input OR idle timer has fired
+                if (hasInput || onTimerTrigger) {
+                    gameObject.updateNoptimizeChunks();
+                }
+                chunkOpPhase = 0;
+                break;
+
+            default:
+                chunkOpPhase = 0;
+                break;
         }
     }
+
 
     /**
      * Update multiplayer (client).
@@ -1600,8 +1655,8 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
             // Fixed time-step
             while (accumulator >= TICK_TIME) {
-                // Load chunks for the environment
-                loadChunks();
+                // Staged async chunk loading (non-blocking)
+                loadChunks(TICK_TIME);
 
                 // Update with fixed timestep (environment)
                 updateEnvironment(TICK_TIME);
@@ -2071,13 +2126,13 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             // This will load level to main buffer
             gameObject.levelContainer.levelBuffer.loadLevelFromFile(mapFileOrNull);
         } else {
-            for (int attempt = 0; attempt < MAX_ATTEMPTS && downloadStatus == Game.DownloadStatus.PENDING; attempt++) {
+            for (int attempt = 0; attempt < MAX_ATTEMPTS && downloadStatus == DownloadStatus.PENDING; attempt++) {
                 // This will load level to upload buffer if successful
                 // Operation is blocking
                 this.downloadLevel();
             }
 
-            if (downloadStatus == Game.DownloadStatus.ERROR) {
+            if (downloadStatus == DownloadStatus.ERROR) {
                 DSLogger.reportError("Failed to download level! Disconnect!", null);
                 gameObject.intrface.getConsole().write("Failed to download level! Disconnect!", Command.Status.FAILED);
                 this.disconnectFromServer();
@@ -2085,7 +2140,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 return false;
             }
 
-            if (downloadStatus == Game.DownloadStatus.WARNING) {
+            if (downloadStatus == DownloadStatus.WARNING) {
                 DSLogger.reportWarning("Connected to empty world - disconnect!", null);
                 gameObject.intrface.getConsole().write("Connected to empty world - disconnect!");
                 this.disconnectFromServer();
@@ -2096,10 +2151,10 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
         // If level map is correct (altogether) with checksum loaded from the file
         // Or game has download level with OK Status
-        if (lvlMapIsCorrect || downloadStatus == Game.DownloadStatus.OK) {
+        if (lvlMapIsCorrect || downloadStatus == DownloadStatus.OK) {
             try {
                 // If world level was obtained via download (so located in upload buffer)
-                if (!lvlMapIsCorrect && downloadStatus == Game.DownloadStatus.OK) {
+                if (!lvlMapIsCorrect) {
                     // Copy from upload to main buffer
                     gameObject.levelContainer.levelBuffer.copyUpload2MainBuffer();
                     // Load downloaded level (from fragments)

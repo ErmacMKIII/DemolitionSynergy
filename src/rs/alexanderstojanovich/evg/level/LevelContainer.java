@@ -1405,24 +1405,36 @@ public class LevelContainer implements GravityEnviroment {
     public boolean chunkOperations() {
         boolean changed = false;
 
-        if (!working) {
-            for (int i = lastIteration; i < iterationMax; i++) {
-                int chunkId = vChnkIdList.get(i % vChnkIdList.size());
+        if (working) {
+            return false;
+        }
+
+        // Load visible chunks from disk
+        if (!vChnkIdList.isEmpty()) {
+            int vSize = vChnkIdList.size();
+            for (int i = 0; i < Math.min(iterationMax, vSize); i++) {
+                int idx = (lastIteration + i) % vSize;
+                int chunkId = vChnkIdList.get(idx);
                 changed |= cacheModule.loadFromDisk(chunkId);
             }
-
-            if (!changed) { // avoid same time save/load
-                for (int i = lastIteration; i < iterationMax; i++) {
-                    int chunkId = iChnkIdList.get(i % iChnkIdList.size());
-                    changed |= cacheModule.saveToDisk(chunkId);
-                }
-            }
-
-            lastIteration = (lastIteration + iterationMax) & (Chunk.CHUNK_NUM - 1);
         }
+
+        // Save invisible chunks to disk only if no load occurred (avoid race condition)
+        if (!changed && !iChnkIdList.isEmpty()) {
+            int iSize = iChnkIdList.size();
+            for (int i = 0; i < Math.min(iterationMax, iSize); i++) {
+                int idx = (lastIteration + i) % iSize;
+                int chunkId = iChnkIdList.get(idx);
+                changed |= cacheModule.saveToDisk(chunkId);
+            }
+        }
+
+        // Advance iteration cursor, wrapping around total chunk count
+        lastIteration = (lastIteration + iterationMax) % Chunk.CHUNK_NUM;
 
         return changed;
     }
+
 
     /**
      * Get interpolated color for day/night cycle using smooth step interpolation.

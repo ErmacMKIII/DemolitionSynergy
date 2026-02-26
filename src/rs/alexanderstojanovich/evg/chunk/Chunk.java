@@ -48,7 +48,7 @@ public interface Chunk { // some operations are mutually exclusive
     /**
      * Bound to determine vec x/z length of the chunk
      */
-    public static final int BOUND = 256;
+    public static final int BOUND = 128;
 
     /**
      * Some mask constant - used for Block ID generation
