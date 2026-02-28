@@ -87,7 +87,8 @@ public class Window {
     }
 
     /**
-     * Create new window
+     * Create new window with given width, height and title.
+     * Notice that this is private method and should be called only from getInstance() method to ensure that only one window is created.
      *
      * @param width window width
      * @param height window height

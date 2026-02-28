@@ -28,7 +28,10 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 
+import java.util.Objects;
+
 /**
+ * Level editor class. Handles block selection and placement logic in the level.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -104,8 +107,8 @@ public class Editor {
             // detect ray intersection
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
-                int primaryKey = locVal.blkId;
-                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
+                String primaryKey = locVal.blkId;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && Objects.equals(blk0.getId(), primaryKey));
 
                 break SCAN;
             }
@@ -145,8 +148,8 @@ public class Editor {
             // detect ray intersection
             TexByte locVal = AllBlockMap.getLocation(adjPosAlign);
             if (locVal != null && !locVal.solid && Block.intersectsRay(adjPosAlign, cameraFront, cameraPos)) {
-                int primaryKey = locVal.blkId;
-                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && blk0.getId() == primaryKey);
+                String primaryKey = locVal.blkId;
+                selectedCurr = lc.chunks.getTotalList().getIf(blk0 -> blk0.pos.equals(adjPosAlign) && Objects.equals(blk0.getId(), primaryKey));
 
                 break SCAN;
             }
@@ -265,6 +268,12 @@ public class Editor {
         }
     }
 
+    /**
+     * Check if new block can be placed on currently selected location.
+     *
+     * @param lc level container
+     * @return true if block cannot be placed, false otherwise
+     */
     private static boolean cannotPlace(LevelContainer lc) {
         boolean cant = false;
         boolean placeOccupied = LevelContainer.AllBlockMap.isLocationPopulated(selectedNew.pos);
@@ -292,6 +301,11 @@ public class Editor {
         return cant;
     }
 
+    /**
+     * Place currently selected block
+     *
+     * @param lc level container
+     */
     public static void add(LevelContainer lc) {
         if (selectedNew != null) {
             if (!cannotPlace(lc) && !lc.levelActors.mainCamera().intersects(selectedNew)) {
@@ -304,6 +318,10 @@ public class Editor {
         deselect();
     }
 
+    /**
+     * Remove currently selected block
+     * @param lc level container
+     */
     public static void remove(LevelContainer lc) {
         if (selectedCurr != null) {
             lc.chunks.removeBlock(selectedCurr);
@@ -313,6 +331,9 @@ public class Editor {
         deselect();
     }
 
+    /**
+     * Apply currently selected texture to new block
+     */
     private static void selectTexture() {
         if (selectedNew != null) {
             String texName = Assets.TEX_WORLD[texValue];
@@ -320,6 +341,9 @@ public class Editor {
         }
     }
 
+    /**
+     * Cycle through textures (for better visibility of block placement)
+     */
     public static void selectPrevTexture() {
         if (selectedNew != null) {
             if (texValue > 0) {
@@ -329,6 +353,9 @@ public class Editor {
         }
     }
 
+    /**
+     * Cycle through textures (for better visibility of block placement)
+     */
     public static void selectNextTexture() {
         if (selectedNew != null) {
             if (texValue < Assets.TEX_WORLD.length - 1) {
@@ -338,6 +365,9 @@ public class Editor {
         }
     }
 
+    /**
+     * Cycle through block colors (for better visibility of block placement)
+     */
     public static void cycleBlockColor() {
         if (selectedNew != null) {
             GlobalColors.ColorName[] values = GlobalColors.ColorName.values();

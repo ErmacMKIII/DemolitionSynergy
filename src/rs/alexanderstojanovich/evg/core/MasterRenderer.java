@@ -34,6 +34,12 @@ public class MasterRenderer implements CoreRenderer {
     private static GLCapabilities glCaps; // GL context   
     private final GameObject gameObject;
 
+    /**
+     * Master Renderer constructor. Notice that GameObject is passed in the
+     * constructor, so Master Renderer can load GL context from the Window.
+     *
+     * @param gameObject game object containing window and other resources
+     */
     public MasterRenderer(GameObject gameObject) {
         this.gameObject = gameObject;
     }

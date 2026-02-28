@@ -637,6 +637,7 @@ public class ModelUtils {
      *
      * @return unique int
      */
+    @Deprecated
     public static int blockSpecsToUniqueInt(String texName, Vector3f pos) {
         // Direct computation - 10-15 CPU operations total
 
@@ -655,4 +656,28 @@ public class ModelUtils {
         // 3. Combine: 1 operation
         return texHash ^ posHash;
     }
+
+    /**
+     * Convert block specs {texName, VEC3} to unique compact string.
+     * Used for block id generation as string key.
+     *
+     * @param texName texName[5] string
+     * @param pos float3(x,y,z) vector
+     *
+     * @return unique compact string (lowest length possible)
+     */
+    public static String blockSpecsToUniqueString(String texName, Vector3f pos) {
+        // Encode position components as base-36 integers (compact representation)
+        int px = (int)(pos.x * Chunk.GRID_SIZE) & Chunk.SOME_MASK;
+        int py = (int)(pos.y * Chunk.GRID_SIZE) & Chunk.SOME_MASK;
+        int pz = (int)(pos.z * Chunk.GRID_SIZE) & Chunk.SOME_MASK;
+
+        // Base-36 encoding gives shortest string per integer
+        // texName is already 5 chars, positions encoded in base-36
+        return texName
+                + Integer.toString(px, 36)
+                + Integer.toString(py, 36)
+                + Integer.toString(pz, 36);
+    }
+
 }

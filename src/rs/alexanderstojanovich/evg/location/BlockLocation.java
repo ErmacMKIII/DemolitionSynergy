@@ -36,7 +36,7 @@ public class BlockLocation {
      * Big static array of location property (what type of block occupies x-y-z space)
      */
     protected final TexByte[][][] locationMap = new TexByte[Chunk.BOUND][Chunk.BOUND][Chunk.BOUND];
-    public final Key1List<TexByte, Integer> locationProperties = new Key1List.Builder<TexByte, Integer>()
+    public final Key1List<TexByte, String> locationProperties = new Key1List.Builder<TexByte, String>()
             .withListBig(true)
             .withKey1Map(TexByte::getBlkId).withKey1Duplicates(true)
             .build();
@@ -75,7 +75,7 @@ public class BlockLocation {
      * @param solid is block solid (or not)
      * @param blkId unique block id (property of block)
      */
-    public void putLocation(Vector4f color, Vector3f pos, String texname, int bits, boolean solid, int blkId) {
+    public void putLocation(Vector4f color, Vector3f pos, String texname, int bits, boolean solid, String blkId) {
         int i = (int) ((pos.x + Chunk.BOUND) / 2.0f);
         int j = (int) ((pos.z + Chunk.BOUND) / 2.0f);
         int k = (int) ((pos.y + Chunk.BOUND) / 2.0f);
@@ -180,7 +180,7 @@ public class BlockLocation {
      *
      * @return List of Vector3f of populated locationMap(s)
      */
-    public Key1List<TexByte, Integer> getPopulatedLocationProperties() {
+    public Key1List<TexByte, String> getPopulatedLocationProperties() {
         return locationProperties;
     }
 
@@ -190,7 +190,7 @@ public class BlockLocation {
      * @param blkId blk primary (key) id
      * @return List of Vector3f of populated locationMap(s)
      */
-    public IList<TexByte> getPopulatedLocationProperties(int blkId) {
+    public IList<TexByte> getPopulatedLocationProperties(String blkId) {
         return locationProperties.getAllByKey1(blkId);
     }
 
@@ -496,7 +496,7 @@ public class BlockLocation {
      *
      * @return XYZ Locations Where one Y maps into several XYZ
      */
-    public Key1List<TexByte, Integer> getLocationProperties() {
+    public Key1List<TexByte, String> getLocationProperties() {
         return locationProperties;
     }
 

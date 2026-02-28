@@ -123,7 +123,7 @@ public class Tuple extends Series {
      * @return block if found (null if not found)
      */
     public Block getBlock(Vector3f pos) {
-        Integer key = ModelUtils.blockSpecsToUniqueInt(this.texName(), pos);
+        String key = ModelUtils.blockSpecsToUniqueString(this.texName(), pos);
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -131,8 +131,8 @@ public class Tuple extends Series {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = candidate.getId();
-            int res = candInt.compareTo(key);
+            String cand = candidate.getId();
+            int res = cand.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -149,8 +149,8 @@ public class Tuple extends Series {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = candidate.getId();
-            int res = candInt.compareTo(key);
+            String cand = candidate.getId();
+            int res = cand.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {
@@ -182,8 +182,8 @@ public class Tuple extends Series {
      * @param blkId block unique id
      * @return block if found (null if not found)
      */
-    public Block getBlock(Vector3f pos, int blkId) {
-        Integer key = blkId;
+    public Block getBlock(Vector3f pos, String blkId) {
+        String key = blkId;
 
         int left = 0;
         int right = this.blockList.size() - 1;
@@ -191,7 +191,7 @@ public class Tuple extends Series {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = candidate.getId();
+            String candInt = candidate.getId();
             int res = candInt.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
@@ -209,8 +209,8 @@ public class Tuple extends Series {
         while (left <= right) {
             int mid = left + (right - left) / 2;
             Block candidate = this.blockList.get(mid);
-            Integer candInt = candidate.getId();
-            int res = candInt.compareTo(key);
+            String cand = candidate.getId();
+            int res = cand.compareTo(key);
             if (res < 0) {
                 left = mid + 1;
             } else if (res == 0) {

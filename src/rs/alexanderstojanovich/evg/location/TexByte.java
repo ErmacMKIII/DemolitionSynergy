@@ -21,6 +21,7 @@ import org.joml.Vector4f;
 
 /**
  * Location property. Used in {@link BlockLocation} class.
+ * Contains all the properties of block occupying the place, like color, texture name, facebits and solid property. Used for rendering and collision detection.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
@@ -45,7 +46,7 @@ public class TexByte {
     /**
      * Unique block id (provide faster search)
      */
-    public final int blkId;
+    public final String blkId;
 
     /**
      * Get properties of block.
@@ -55,7 +56,7 @@ public class TexByte {
      * @param solid is block solid
      * @param blkId block id (primary key) occupying the slot
      */
-    public TexByte(Vector4f color, String texName, boolean solid, int blkId) {
+    public TexByte(Vector4f color, String texName, boolean solid, String blkId) {
         this.color = color;
         this.texName = texName;
         this.solid = solid;
@@ -71,7 +72,7 @@ public class TexByte {
      * @param solid is block solid
      * @param blkId block id (primary key) occupying the slot
      */
-    public TexByte(Vector4f color, String texName, byte byteValue, boolean solid, int blkId) {
+    public TexByte(Vector4f color, String texName, byte byteValue, boolean solid, String blkId) {
         this.color = color;
         this.texName = texName;
         this.byteValue = byteValue;
@@ -120,7 +121,7 @@ public class TexByte {
      *
      * @return
      */
-    public int getBlkId() {
+    public String getBlkId() {
         return blkId;
     }
 
@@ -131,7 +132,7 @@ public class TexByte {
         hash = 97 * hash + Objects.hashCode(this.texName);
         hash = 97 * hash + this.byteValue;
         hash = 97 * hash + (this.solid ? 1 : 0);
-        hash = 97 * hash + this.blkId;
+        hash = 97 * hash + this.blkId.hashCode();
         return hash;
     }
 
