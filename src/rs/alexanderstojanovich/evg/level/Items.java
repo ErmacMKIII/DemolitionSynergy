@@ -10,6 +10,7 @@ import org.magicwerk.brownies.collections.Key1List;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
 import rs.alexanderstojanovich.evg.core.Camera;
 import rs.alexanderstojanovich.evg.light.LightSources;
+import rs.alexanderstojanovich.evg.main.Configuration;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
@@ -24,6 +25,11 @@ import java.nio.IntBuffer;
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Items {
+
+    /**
+     * Configuration instance. Used for configuration values (if needed).
+     */
+    public static final Configuration cfg = Configuration.getInstance();
 
     /**
      * Some count used in buffers (Float Buffer & Integer Buffer). It references to max count of weapons.
@@ -233,40 +239,54 @@ public class Items {
     public void preprocessItems(IList<Integer> vqueue, Camera camera) {
         boolean modified = false;
 
-        // Advance face bits counter for incremental processing (same as BlockEnvironment)
-        lastFaceBits = (lastFaceBits + 1) & FACE_BITS_MASK;
-
-        // Only process visible chunks when face bits pass is active (non-zero)
-        final boolean shouldProcess = lastFaceBits != 0;
-
+        // Remove items no longer visible to camera
         synchronized (selectedWeaponItems) {
             modified |= selectedWeaponItems.removeIf(weapon -> weapon != null && !camera.doesSeeEff(weapon, 7.5f));
         }
 
-        if (shouldProcess) {
-            // For all weapon items in visible chunks
-            for (int chunkId : vqueue) {
-                for (Model weapon : allWeaponItems.getAllByKey1(chunkId)) {
-                    synchronized (selectedWeaponItems) {
-                        modified |= selectedWeaponItems.addIfAbsent(weapon);
+        // Process configured number of face bits in this pass (same as BlockEnvironment.processVisibleChunks)
+        int currentFaceBits = lastFaceBits;
+        final int passes = cfg.getOptimizationPasses();
+        for (int i = 0; i < passes; i++) {
+            currentFaceBits = (currentFaceBits + 1) & FACE_BITS_MASK;
+
+            // Only process visible chunks when face bits pass is active (non-zero)
+            if (currentFaceBits != 0) {
+                for (int chunkId : vqueue) {
+                    IList<Model> allWeaponsInChunk = allWeaponItems.getAllByKey1(chunkId);
+                    int total = allWeaponsInChunk.size();
+                    if (total == 0) continue;
+
+                    // Calculate sublist slice for this pass index
+                    int baseSize = total / passes;
+                    int remainder = total % passes;
+                    int beginIndex = i * baseSize + Math.min(i, remainder);
+                    int endIndex = beginIndex + baseSize + (i < remainder ? 1 : 0);
+
+                    // Clamp to valid range
+                    beginIndex = Math.min(beginIndex, total);
+                    endIndex = Math.min(endIndex, total);
+
+                    if (beginIndex >= endIndex) continue;
+
+                    IList<Model> slice = new GapList<>(allWeaponsInChunk.subList(beginIndex, endIndex));
+                    for (Model weapon : slice) {
+                        synchronized (selectedWeaponItems) {
+                            modified |= selectedWeaponItems.addIfAbsent(weapon);
+                        }
                     }
                 }
             }
         }
 
-        // Reset face bits cycle on completion (full 64-bit cycle done)
-        if (lastFaceBits == FACE_BITS_MASK) {
-            // enable only visible vertices for all items (for rendering optimization)
-            // allWeaponItems.forEach(weapon -> { if (camera.enableOnlyVisibleVertices(weapon, 22.5f)) { weapon.unbuffer(); } });
-            lastFaceBits = 0;
-        }
+        // Advance face bits counter for next call
+        lastFaceBits = (lastFaceBits + passes) & FACE_BITS_MASK;
 
         // If anything modified, reset buffered flag
         if (modified) {
             this.buffered = false;
         }
     }
-
 
     /**
      * Render selected items.

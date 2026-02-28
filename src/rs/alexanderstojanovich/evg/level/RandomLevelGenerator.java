@@ -673,7 +673,19 @@ public class RandomLevelGenerator {
                     usedLocations.add(loc);
                 }
 
+                Vector3f aboveLoc = new Vector3f(loc.x, loc.y + 2f, loc.z);
+
+                // Skip if the block above is occupied (weapon would spawn inside it)
+                if (LevelContainer.AllBlockMap.isLocationPopulated(aboveLoc)) {
+                    levelContainer.incProgress(100.0f / (float) totalCount);
+                    continue;
+                }
+
+                // loc.y is the center of the solid block
+                // Block height = 2.0f, so top face is at loc.y + 1.0f
+                // Add another +1.0f to place weapon above the surface
                 Vector3f wepLoc = new Vector3f(loc.x, loc.y + 2f, loc.z);
+
                 Model weaponItem = randWeapon.asItem(wepLoc, GlobalColors.WHITE_RGBA);
 
                 // add to level container
