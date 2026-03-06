@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evg.intrface;
 
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 
 /**
  *

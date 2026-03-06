@@ -40,6 +40,7 @@ import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.main.GameRenderer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
 import rs.alexanderstojanovich.evg.util.PlainTextReader;
@@ -172,7 +173,7 @@ public class Intrface {
             guideText.setAlignment(Text.ALIGNMENT_CENTER);
             guideText.alignToNextChar(this);
 
-            progressBar = new ProgressBar(5, 10, Texture.getOrDefault("suntx"), this);
+            progressBar = new ProgressBar(5, 10, (Texture) TextureIfc.getOrDefault("suntx"), this);
             progressBar.quad.setPos(new Vector2f(-1.0f, -0.77f));
             progressBar.quad.color = new Vector4f(2.0f, 1.67f, 0.1f, 1.0f);
 

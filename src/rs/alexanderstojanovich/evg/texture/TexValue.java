@@ -17,29 +17,47 @@
 package rs.alexanderstojanovich.evg.texture;
 
 /**
- *
+ * Texture value. Used in Texture atlas. Contains texture reference, value and grid size. Value is used for calculating texture coordinates, while grid size is used for calculating texture coordinates and atlas size.
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class TexValue {
 
-    protected final Texture texture;
+    protected final TextureIfc texture;
     protected final int value;
     protected final int gridSize;
 
-    public TexValue(Texture texture, int value, int gridSize) {
+    /**
+     * Create texture value.
+     * @param texture texture reference
+     * @param value texture value (used for calculating texture coordinates)
+     * @param gridSize grid size (used for calculating texture coordinates and atlas size)
+     */
+    public TexValue(TextureIfc texture, int value, int gridSize) {
         this.texture = texture;
         this.value = value;
         this.gridSize = gridSize;
     }
 
-    public Texture getTexture() {
+    /**
+     * Get texture reference.
+     * @return texture reference
+     */
+    public TextureIfc getTexture() {
         return texture;
     }
 
+    /**
+     * Get texture value.
+     * @return texture value
+     */
     public int getValue() {
         return value;
     }
 
+    /**
+     * Get grid size.
+     * @return grid size
+     */
     public int getGridSize() {
         return gridSize;
     }

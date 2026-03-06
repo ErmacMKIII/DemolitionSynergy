@@ -31,6 +31,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.models.Vertex;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -79,7 +80,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         // Allocate memory for the vertex data buffer
         if (bigFloatBuff == null || bigFloatBuff.capacity() == 0) {
             bigFloatBuff = MemoryUtil.memCallocFloat(someSize);
-        } else if (bigFloatBuff.capacity() != 0 && bigFloatBuff.capacity() < someSize) {
+        } else if (bigFloatBuff.capacity() < someSize) {
             bigFloatBuff = MemoryUtil.memRealloc(bigFloatBuff, someSize);
         }
         // Set buffer position and limit
@@ -220,6 +221,13 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         return true;
     }
 
+    /**
+     * Calculate the number of indices needed based on the face bits of the block.
+     * Each face bit represents a visible face of the block, and each face contributes 6 indices (2 triangles).
+     *
+     * @param bitValue the integer representing the face bits of the block
+     * @return the total number of indices needed for rendering the block
+     */
     public static int checkSize(int bitValue) {
         // Initialize a counter for counting ones
         int onesCount = 0;
@@ -236,6 +244,11 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
         return onesCount * 6;
     }
 
+    /**
+     * Buffer index data prior rendering
+     *
+     * @return if index data was successfully buffered
+     */
     public boolean bufferIndices() { // Call before rendering        
         int blkIndex = 0;
 
@@ -370,7 +383,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
             for (Block block : blockList) {
                 block.transform(shaderProgram);
 
-                Texture primaryTexture = Texture.getOrDefault(block.getTexName());
+                TextureIfc primaryTexture = TextureIfc.getOrDefault(block.getTexName());
                 if (primaryTexture != null) {
                     block.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -430,7 +443,7 @@ public class Series { // mutual class for both solid blocks and fluid blocks wit
                 if (predicate.test(block)) {
                     block.transform(shaderProgram);
 
-                    Texture primaryTexture = Texture.getOrDefault(block.getTexName());
+                    TextureIfc primaryTexture = TextureIfc.getOrDefault(block.getTexName());
                     if (primaryTexture != null) {
                         block.primaryColor(shaderProgram);
                         primaryTexture.bind(0, shaderProgram, "modelTexture0");

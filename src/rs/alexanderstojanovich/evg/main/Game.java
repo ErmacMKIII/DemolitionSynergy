@@ -1061,7 +1061,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
      * @param session session with (server) endpoint
      * @param message object message received
      *
-     * @throws Exception
+     * @throws Exception if processing of received message fails
      */
     @Override
     public void messageReceived(IoSession session, Object message) throws Exception { // pool-3-thread-1
@@ -1155,10 +1155,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                     DSLogger.reportInfo(String.format("Server response: %s : %s", response.getResponseStatus().toString(), String.valueOf(response.getData())), null);
                     gameObject.intrface.getConsole().write(String.valueOf(response.getData()));
                     // Set value for world info
-                    LevelMapInfo jsonWorldInfo = LevelMapInfo.fromJson(String.valueOf(response.getData()));
                     // Request to get fragments from the world
                     // To Load the world via download of such fragments
-                    this.worldInfo = jsonWorldInfo;
+                    this.worldInfo = LevelMapInfo.fromJson(String.valueOf(response.getData()));
                     // notify wait on disconnect
                     synchronized (requestList) {
                         requestList.notifyAll();

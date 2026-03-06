@@ -34,6 +34,7 @@ import rs.alexanderstojanovich.evg.models.Block;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureArray;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -275,7 +276,8 @@ public class BlockEnvironment {
 
         // Filter each visible chunk for relevant & visible blocks
         IList<Block> filterBlks = chunks.getFilteredBlockListMK2(
-                tuple.texName(), tuple.faceBits(), vqueue,
+                tuple.texName(),
+                tuple.faceBits(), vqueue,
                 camera, angleDegrees
         );
 
@@ -450,43 +452,46 @@ public class BlockEnvironment {
             optimizedTuples.filter(ot -> !ot.isBuffered() && ot.faceBits() > 0).forEach(Tuple::bufferAll);
             filtered = optimizedTuples.filter(ot -> ot.isBuffered() && ot.faceBits() > 0);
         }
+
+        final TextureArray worldTexture = gameObject.GameAssets.WORLD;
         Tuple.renderInstanced(
                 filtered,
-                shaderProgram, lightSources, gameObject.GameAssets.WORLD,
+                shaderProgram, lightSources, worldTexture,
                 waterTexture, shadowTexture
         );
+
     }
 
-    /**
-     * Static render (faster). Batched & Instanced rendering is being used.
-     * Experimental.
-     *
-     * @param shaderProgram voxel shader
-     * @param renderFlag what is renderered
-     */
-    @Deprecated
-    public void renderStaticTBO(ShaderProgram shaderProgram, int renderFlag) {
-        if (optimizedTuples.isEmpty()) {
-            return;
-        }
-
-        final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
-        final boolean renderWater = (renderFlag & WATER_MASK) != 0;
-        final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
-
-        final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
-        final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-        final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
-
-        if (!tupleBuffObj.isBuffered()) {
-            tupleBuffObj.bufferBatchAll();
-        }
-
-        Tuple.renderInstanced(
-                optimizedTuples, tupleBuffObj,
-                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
-        );
-    }
+//    /**
+//     * Static render (faster). Batched & Instanced rendering is being used.
+//     * Experimental.
+//     *
+//     * @param shaderProgram voxel shader
+//     * @param renderFlag what is renderered
+//     */
+//    @Deprecated
+//    public void renderStaticTBO(ShaderProgram shaderProgram, int renderFlag) {
+//        if (optimizedTuples.isEmpty()) {
+//            return;
+//        }
+//
+//        final boolean renderLights = (renderFlag & LIGHT_MASK) != 0;
+//        final boolean renderWater = (renderFlag & WATER_MASK) != 0;
+//        final boolean renderShadow = (renderFlag & SHADOW_MASK) != 0;
+//
+//        final LightSources lightSources = (renderLights) ? gameObject.levelContainer.lightSources : LightSources.NONE;
+//        final Texture waterTexture = (renderWater) ? gameObject.waterRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+//        final Texture shadowTexture = (renderShadow) ? gameObject.shadowRenderer.getFrameBuffer().getTexture() : Texture.EMPTY;
+//
+//        if (!tupleBuffObj.isBuffered()) {
+//            tupleBuffObj.bufferBatchAll();
+//        }
+//
+//        Tuple.renderInstanced(
+//                optimizedTuples, tupleBuffObj,
+//                shaderProgram, lightSources, gameObject.GameAssets.WORLD, waterTexture, shadowTexture
+//        );
+//    }
 
     public GameObject getGameObject() {
         return gameObject;

@@ -43,6 +43,7 @@ import rs.alexanderstojanovich.evg.location.TexByte;
 import rs.alexanderstojanovich.evg.main.Game;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 import rs.alexanderstojanovich.evg.util.BlockUtils;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.GlobalColors;
@@ -128,7 +129,7 @@ public class Block extends Model {
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
-        Material material = new Material(Texture.getOrDefault(texName));
+        Material material = new Material(TextureIfc.getOrDefault(texName));
         material.color = new Vector4f(GlobalColors.WHITE, solid ? 1.0f : 0.5f);
         materials.add(material);
         width = height = depth = 2.0f;
@@ -141,7 +142,7 @@ public class Block extends Model {
         final Mesh mesh = new Mesh();
         deepCopyTo(mesh, texName);
         meshes.add(mesh);
-        Material material = new Material(Texture.getOrDefault(texName));
+        Material material = new Material(TextureIfc.getOrDefault(texName));
         material.color = primaryRGBAColor;
         materials.add(material);
         this.solid = solid;
@@ -156,8 +157,8 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(IList<Vertex> vertices, String texName) {
-        int texGridSize = Texture.getOrDefaultGridSize(texName);
-        int texIndex = Texture.getOrDefaultIndex(texName);
+        int texGridSize = TextureIfc.getOrDefaultGridSize(texName);
+        int texIndex = TextureIfc.getOrDefaultIndex(texName);
         int row = texIndex / texGridSize;
         int col = texIndex % texGridSize;
         final float oneOver = 1.0f / (float) texGridSize;
@@ -174,8 +175,8 @@ public class Block extends Model {
 
     // cuz regular shallow copy doesn't work, for List of integers is applicable
     public static void deepCopyTo(Mesh mesh, String texName) {
-        int texGridSize = Texture.getOrDefaultGridSize(texName);
-        int texIndex = Texture.getOrDefaultIndex(texName);
+        int texGridSize = TextureIfc.getOrDefaultGridSize(texName);
+        int texIndex = TextureIfc.getOrDefaultIndex(texName);
         int row = texIndex / texGridSize;
         int col = texIndex % texGridSize;
         final float oneOver = 1.0f / (float) texGridSize;
@@ -221,7 +222,7 @@ public class Block extends Model {
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
 
-            Texture primaryTexture = Texture.getOrDefault(texName);
+            TextureIfc primaryTexture = TextureIfc.getOrDefault(texName);
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
@@ -273,7 +274,7 @@ public class Block extends Model {
             shaderProgram.bindAttribute(1, "normal");
             shaderProgram.bindAttribute(2, "uv");
 
-            Texture primaryTexture = Texture.TEX_STORE.get(texName).getTexture();
+            TextureIfc primaryTexture = Texture.TEX_STORE.get(texName).getTexture();
             if (primaryTexture != null) { // this is primary texture
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }

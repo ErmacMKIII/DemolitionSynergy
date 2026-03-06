@@ -32,6 +32,7 @@ import rs.alexanderstojanovich.evg.light.LightSources;
 import rs.alexanderstojanovich.evg.main.GameTime;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 
 /**
  *
@@ -155,7 +156,7 @@ public class Model implements Renderable, Comparable<Model> {
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
-                Texture primaryTexture = Texture.getOrDefault(texName);
+                TextureIfc primaryTexture = TextureIfc.getOrDefault(texName);
                 if (primaryTexture != null) {
                     primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -220,7 +221,7 @@ public class Model implements Renderable, Comparable<Model> {
                 lightSources.updateLightsInShaderIfModified(shaderProgram);
 
                 // Bind textures
-                Texture primaryTexture = Texture.getOrDefault(texName);
+                TextureIfc primaryTexture = TextureIfc.getOrDefault(texName);
                 if (primaryTexture != null) {
                     primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -303,7 +304,7 @@ public class Model implements Renderable, Comparable<Model> {
                 model.transform(shaderProgram);
 
                 // Bind primary texture
-                Texture primaryTexture = Texture.getOrDefault(model.texName);
+                TextureIfc primaryTexture = TextureIfc.getOrDefault(model.texName);
                 if (primaryTexture != null) {
                     model.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");

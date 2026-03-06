@@ -21,12 +21,13 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 
 /**
- *
+ * Vertex class. Contains position, normal and uv coordinates. Used for rendering and collision detection.
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Vertex {
 
     public static final int SIZE = 8; // size in floats -> it means 8 floats
+    public static final int EXTENDED_SIZE = 9; // size in floats with color -> it means 9 floats
 
     private Vector3f pos; // VEC3
     private Vector3f normal; // VEC3

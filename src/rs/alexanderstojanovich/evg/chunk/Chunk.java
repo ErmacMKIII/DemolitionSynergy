@@ -81,8 +81,9 @@ public interface Chunk { // some operations are mutually exclusive
     //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     /**
-     * Binary search of the tuple. Tuples are sorted by name ascending.
+     * Binary search of the tuple. Tuples are sorted by name ascending. (Legacy)
      * Complexity is logarithmic.
+     * Consider using getTuple with faceBits only if you want to find any tuple with this faceBits, otherwise use this one.
      *
      * @param tupleList provided tuple list
      * @param keyTexture texture name part
@@ -257,7 +258,7 @@ public interface Chunk { // some operations are mutually exclusive
     }
 
     /**
-     * Transfer block between two tuples. Block will be transfered from tuple
+     * Transfer block between two tuples. Block will be transferred from tuple
      * with formFaceBits to tuple with current facebits.
      *
      * @param tupleList provided tuple list
@@ -269,7 +270,7 @@ public interface Chunk { // some operations are mutually exclusive
         String texture = block.getTexName();
 
         Tuple srcTuple = getTuple(tupleList, texture, formFaceBits);
-        if (srcTuple != null) { // lazy aaah!
+        if (srcTuple != null) {
             srcTuple.blockList.remove(block);
             if (srcTuple.getBlockList().isEmpty()) {
                 tupleList.remove(srcTuple);
@@ -288,7 +289,7 @@ public interface Chunk { // some operations are mutually exclusive
     }
 
     /**
-     * Transfer block between two tuples. Block will be transfered from tuple
+     * Transfer block between two tuples. Block will be transferred from tuple
      * with formFaceBits to tuple with current facebits.
      *
      * @param tupleList provided tuple list
@@ -297,19 +298,18 @@ public interface Chunk { // some operations are mutually exclusive
     public static void transfer(IList<Tuple> tupleList, IList<TransferUnit> blkUnits) { // update fluids use this to transfer fluid blocks between tuples
         for (TransferUnit unit : blkUnits) {
             Block block = unit.block;
-            String texture = block.getTexName();
 
-            Tuple srcTuple = getTuple(tupleList, texture, unit.bitsBefore);
-            if (srcTuple != null) { // lazy aaah!
+            Tuple srcTuple = getTuple(tupleList, block.texName, unit.bitsBefore);
+            if (srcTuple != null) {
                 srcTuple.blockList.remove(block);
                 if (srcTuple.getBlockList().isEmpty()) {
                     tupleList.remove(srcTuple);
                 }
             }
 
-            Tuple dstTuple = getTuple(tupleList, texture, unit.bitsAfter);
+            Tuple dstTuple = getTuple(tupleList, block.texName, unit.bitsAfter);
             if (dstTuple == null) {
-                dstTuple = new Tuple(texture, unit.bitsAfter);
+                dstTuple = new Tuple(block.texName, unit.bitsAfter);
                 tupleList.add(dstTuple);
                 tupleList.sort(Tuple.TUPLE_COMP);
             }

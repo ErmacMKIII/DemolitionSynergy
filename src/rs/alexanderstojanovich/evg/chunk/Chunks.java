@@ -212,7 +212,7 @@ public class Chunks {
      * Gets the chunk block list using chunk id.
      *
      * This version (MK2) uses access to chunk id as key to provide faster
-     * filtering.
+     * filtering. (Legacy)
      *
      * @param texName tuple texName
      * @param faceBits face bits of the tuple
@@ -241,7 +241,7 @@ public class Chunks {
      * Gets the chunk block list using chunk id.
      *
      * This version (MK2) uses access to chunk id as key to provide faster
-     * filtering.
+     * filtering. (Legacy)
      *
      * @param texName tuple texName
      * @param faceBits face bits of the tuple

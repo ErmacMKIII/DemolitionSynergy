@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.level.LevelContainer;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureIfc;
 
 /**
  *
@@ -51,7 +52,7 @@ public class LightSources {
     public LinkedHashMap<Vector3f, LightSource> lightMap = new LinkedHashMap<>();
 
     public LightSources() {
-        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, Texture.getOrDefault("waterfx"), null);
+        this.lightOverlay = new LightOverlay(Window.MIN_WIDTH, Window.MIN_HEIGHT, (Texture) TextureIfc.getOrDefault("waterfx"), null);
     }
 
     /**

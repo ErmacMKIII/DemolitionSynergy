@@ -19,8 +19,10 @@ package rs.alexanderstojanovich.evg.resources;
 import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.main.Game;
+import rs.alexanderstojanovich.evg.main.GameObject;
 import rs.alexanderstojanovich.evg.models.Model;
 import rs.alexanderstojanovich.evg.texture.Texture;
+import rs.alexanderstojanovich.evg.texture.TextureArray;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 import rs.alexanderstojanovich.evg.util.ModelUtils;
 
@@ -34,6 +36,8 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 public class Assets {
 
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
+    public static final String[] TEX_WORLD_FILENAMES = {"crate.png", "doom0.png", "stone.png", "water.png", "reflc.png"};
+
     public static final int GRID_SIZE_WORLD = 3;
 
     public final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png", Texture.Format.RGBA8);
@@ -54,8 +58,26 @@ public class Assets {
     public final int GRID_SIZE_PLAYER_WEAPONS = 4;
     public final int GRID_SIZE_PLAYER = 5;
 
-    public final Texture WORLD = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
+    /**
+     * Texture array of world textures. Used for world rendering. Notice that
+     * texture array is used for better performance, since all world textures
+     * are sampled in the same shader, so they are stored in the same texture
+     * object and accessed by index.
+     */
+    public final TextureArray WORLD = new TextureArray(Game.WORLD_ENTRY, TEX_WORLD_FILENAMES, Texture.Format.RGBA8); // = Texture.buildTextureAtlas("WORLD", Game.WORLD_ENTRY, TEX_WORLD, GRID_SIZE_WORLD, Texture.Format.RGBA8);
+    /**
+     * Texture array of player textures. Used for player rendering. Notice that
+     * texture array is used for better performance, since all player textures
+     * are sampled in the same shader, so they are stored in the same texture
+     * object and accessed by index.
+     */
     public final Texture PLAYER = Texture.buildTextureAtlas("PLAYER", Game.CHARACTER_ENTRY, TEX_PLAYER, GRID_SIZE_PLAYER, Texture.Format.RGBA8);
+    /**
+     * Texture array of player weapon textures. Used for player rendering. Notice
+     * that texture array is used for better performance, since all player
+     * weapon textures are sampled in the same shader, so they are stored in the
+     * same texture object and accessed by index.
+     */
     public final Texture PLAYER_WEAPONS = Texture.buildTextureAtlas("WEAPONS", Game.WEAPON_ENTRY, TEX_WEAPONS, GRID_SIZE_PLAYER_WEAPONS, Texture.Format.RGBA8);
 
     public final Texture WATERFX = new Texture(Game.WORLD_ENTRY, "waterfx.png", Texture.Format.RGB5_A1);
@@ -356,6 +378,9 @@ public class Assets {
         DSLogger.reportDebug("Textures loaded!", null);
     }
 
+    /**
+     * Buffer All Models. Call from Game Renderer.
+     */
     public void bufferAllModels() {
         ALEX_BODY_DEFAULT.bufferAll();
 
