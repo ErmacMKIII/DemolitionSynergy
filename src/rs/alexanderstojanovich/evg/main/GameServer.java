@@ -32,11 +32,7 @@ import org.magicwerk.brownies.collections.GapList;
 import org.magicwerk.brownies.collections.IList;
 import rs.alexanderstojanovich.evg.intrface.Command;
 import rs.alexanderstojanovich.evg.level.LevelActors;
-import rs.alexanderstojanovich.evg.net.ClientInfo;
-import rs.alexanderstojanovich.evg.net.DSMachine;
-import rs.alexanderstojanovich.evg.net.DSObject;
-import rs.alexanderstojanovich.evg.net.Response;
-import rs.alexanderstojanovich.evg.net.ResponseIfc;
+import rs.alexanderstojanovich.evg.net.*;
 import rs.alexanderstojanovich.evg.util.DSLogger;
 
 /**
@@ -67,7 +63,10 @@ public class GameServer implements DSMachine, Runnable {
     public static int TotalFailedAttempts = 0;
 
     public static final Configuration config = Configuration.getInstance();
-    protected String worldName = "My World";
+    /**
+     * Name of the game world, cheksum and size in bytes in world info.
+     */
+    public final LevelMapInfo worldInfo = new LevelMapInfo("My World", 0,0);
     public static int DEFAULT_PORT = 13667;
     protected String localIP = config.getLocalIP();
     protected int port = config.getServerPort();
@@ -141,17 +140,6 @@ public class GameServer implements DSMachine, Runnable {
     protected DatagramAcceptor acceptor;
 
     /**
-     * Create new game server (UDP protocol based)
-     *
-     * @param gameObject game object
-     * @param name world name
-     */
-    public GameServer(GameObject gameObject, String name) {
-        this.gameObject = gameObject;
-        this.worldName = name;
-    }
-
-    /**
      * Start endpoint.
      */
     public void startServer() {
@@ -205,7 +193,7 @@ public class GameServer implements DSMachine, Runnable {
                 clients.removeIf(cli -> cli.timeToLive <= 0 || kicklist.contains(cli.uniqueId));
 
                 // Update server window title with current player count
-                GameServer.this.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldName + " - Player Count: " + (1 + GameServer.this.clients.size()));
+                GameServer.this.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldInfo.worldname + " - Player Count: " + (1 + GameServer.this.clients.size()));
             }
         };
         timerClientChk.scheduleAtFixedRate(task1, 1000L, 1000L);
@@ -225,7 +213,7 @@ public class GameServer implements DSMachine, Runnable {
             // Reset server window title
             gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE);
 
-            // Kick all players (and close their sessions internally)            
+            // Kick all players (and close their sessions internally)
             clients.immutableList().forEach(cli -> kickPlayer(cli.uniqueId));
 
             // (Close session(s))
@@ -233,7 +221,7 @@ public class GameServer implements DSMachine, Runnable {
 
             // Set a shutdown timeout on the acceptor itself
             acceptor.setCloseOnDeactivation(true);
-            // Close acceptor without blocking            
+            // Close acceptor without blocking
             CompletableFuture.runAsync(() -> {
                 acceptor.unbind(endpoint);
                 acceptor.dispose();
@@ -312,7 +300,7 @@ public class GameServer implements DSMachine, Runnable {
             acceptor.bind(endpoint);
 
             // Update server window title with current player count
-            gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + worldName + " - Player Count: " + (1 + clients.size()));
+            gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + GameServer.this.worldInfo.worldname + " - Player Count: " + (1 + clients.size()));
 
             DSLogger.reportInfo(String.format("Game Server (%s:%d) started!", this.localIP, this.port), null);
             gameObject.intrface.getConsole().write(String.format("Game Server (%s:%d) started!", this.localIP, this.port));
@@ -376,7 +364,7 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     public String getWorldName() {
-        return worldName;
+        return GameServer.this.worldInfo.worldname;
     }
 
     public int getPort() {
@@ -414,7 +402,7 @@ public class GameServer implements DSMachine, Runnable {
     }
 
     public void setWorldName(String worldName) {
-        this.worldName = worldName;
+        GameServer.this.worldInfo.worldname = worldName;
     }
 
     public void setPort(int port) {

@@ -173,15 +173,15 @@ public class GameServerProcessor extends IoHandlerAdapter {
             case HELLO:
                 ClientInfo clientInfo = gameServer.clients.getIf(c -> c.getUniqueId().equals(clientGuid));
                 if (clientInfo != null && clientInfo.timeToLive == GameServer.TIME_TO_LIVE) {
-                    msg = String.format("Bad Request - You are already connected to %s, v%s!", gameServer.worldName, gameServer.version);
+                    msg = String.format("Bad Request - You are already connected to %s, v%s!", gameServer.worldInfo.worldname, gameServer.version);
                     response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                     response.send(clientGuid, gameServer, session);
                 } else if (clientInfo == null) {
                     // Send a simple message with magic bytes prepended
-                    msg = String.format("Hello, you are connected to %s, v%s, for help append \"help\" without quotes. Welcome!", gameServer.worldName, gameServer.version);
+                    msg = String.format("Hello, you are connected to %s, v%s, for help append \"help\" without quotes. Welcome!", gameServer.worldInfo.worldname, gameServer.version);
                     response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                     gameServer.clients.add(new ClientInfo(session, clientHostName, clientGuid, GameServer.TIME_TO_LIVE));
-                    gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
+                    gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldInfo.worldname + " - Player Count: " + (gameServer.clients.size()));
                     response.send(clientGuid, gameServer, session);
                 }
                 break;
@@ -192,14 +192,14 @@ public class GameServerProcessor extends IoHandlerAdapter {
                         levelActors = gameServer.gameObject.game.gameObject.levelContainer.levelActors;
                         if ((levelActors.otherPlayers.getIf(ot -> ot.uniqueId.equals(newPlayerUniqueId)) == null)) {
                             levelActors.otherPlayers.add(new Critter(this.gameServer.gameObject.GameAssets, newPlayerUniqueId, new Model(gameServer.gameObject.GameAssets.ALEX_BODY_DEFAULT)));
-                            msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
+                            msg = String.format("Player ID is registered!", gameServer.worldInfo.worldname, gameServer.version);
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
 
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s has connected.", newPlayerUniqueId));
                             DSLogger.reportInfo(String.format("Player %s has connected.", newPlayerUniqueId), null);
 
                         } else {
-                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
+                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldInfo.worldname, gameServer.version);
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                         }
                         break;
@@ -218,10 +218,10 @@ public class GameServerProcessor extends IoHandlerAdapter {
                             gameServer.gameObject.intrface.getConsole().write(String.format("Player %s (%s) has connected.", info.name, info.uniqueId));
                             DSLogger.reportInfo(String.format("Player %s (%s) has connected.", info.name, info.uniqueId), null);
 
-                            msg = String.format("Player ID is registered!", gameServer.worldName, gameServer.version);
+                            msg = String.format("Player ID is registered!", gameServer.worldInfo.worldname, gameServer.version);
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                         } else {
-                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldName, gameServer.version);
+                            msg = String.format("Player ID is invalid or already exists!", gameServer.worldInfo.worldname, gameServer.version);
                             response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.ERR, DSObject.DataType.STRING, msg);
                         }
                         break;
@@ -237,7 +237,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(clientGuid, gameServer, session);
                 gameServer.clients.removeIf(c -> c.uniqueId.equals(clientGuid));
-                gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldName + " - Player Count: " + (gameServer.clients.size()));
+                gameServer.gameObject.gameWindow.setTitle(GameObject.WINDOW_TITLE + " - " + gameServer.worldInfo.worldname + " - Player Count: " + (gameServer.clients.size()));
                 if (clientGuid != null) {
                     GameServer.performCleanUp(gameServer.gameObject, clientGuid, false);
                 }
@@ -249,7 +249,7 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 response.send(clientGuid, gameServer, session);
                 break;
             case PING:
-                msg = String.format("You pinged %s", gameServer.worldName);
+                msg = String.format("You pinged %s", gameServer.worldInfo.worldname);
                 response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.STRING, msg);
                 response.send(clientGuid, gameServer, session);
                 break;
@@ -408,49 +408,8 @@ public class GameServerProcessor extends IoHandlerAdapter {
                 break;
             case WORLD_INFO:
                 // Locate all level map files with dat or ndat extension
-                final File clientDir = new File("./");
-                final String worldNameEscaped = Pattern.quote(gameServer.worldName);
-                Pattern pattern = Pattern.compile(worldNameEscaped + "\\.(n)?dat$", Pattern.CASE_INSENSITIVE);
-                List<String> datFileList = Arrays.asList(clientDir.list((dir, name) -> pattern.matcher(name).find()));
-                GapList<String> datFileListCopy = GapList.create(datFileList);
-                String mapFileOrNull = datFileListCopy.getFirstOrNull();
-                CRC32C checksum = new CRC32C();
-
-                if (mapFileOrNull == null) {
-                    mapFileOrNull = gameServer.worldName + ".ndat";
-                    okey = gameServer.gameObject.levelContainer.levelBuffer.saveLevelToFile(mapFileOrNull);
-                    if (!okey) {
-                        return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Level still does not exist!");
-                    }
-                }
-
-                if (mapFileOrNull == null) {
-                    return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Level still does not exist!");
-                }
-
-                File mapFileLevel = new File(mapFileOrNull);
-                if (!mapFileLevel.exists()) {
-                    return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Level still does not exist!");
-                }
-
-                // calculating file size & checksum
-                // with attend to send to the client
-                try (FileChannel fileChannel = new FileInputStream(mapFileLevel).getChannel()) {
-                    int sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
-                    ByteBuffer buffc = ByteBuffer.allocate((int) fileChannel.size());
-                    while ((fileChannel.read(buffc)) > 0) {
-                        // Do nothing, just read the file into the mainBuffer
-                    }
-                    buffc.flip();
-                    checksum.update(buffc);
-
-                    LevelMapInfo mapInfo = new LevelMapInfo(gameServer.worldName, checksum.getValue(), sizeBytes);
-                    response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, mapInfo.toString());
-                    response.send(clientGuid, gameServer, session);
-                } catch (IOException ex) {
-                    DSLogger.reportError(ex.getMessage(), ex);
-                    return new Result(Status.INTERNAL_ERROR, clientHostName, clientGuid, "Internal error - Unable to read the level file!");
-                }
+                response = new Response(request.getId(), request.getChecksum(), ResponseIfc.ResponseStatus.OK, DSObject.DataType.OBJECT, gameServer.worldInfo.toString());
+                response.send(clientGuid, gameServer, session);
                 break;
             case SET_PLAYER_INFO:
                 switch (request.getDataType()) {

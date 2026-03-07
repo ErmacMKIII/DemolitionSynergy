@@ -16,16 +16,29 @@
  */
 package rs.alexanderstojanovich.evg.main;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
+import java.util.zip.CRC32C;
+
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evg.audio.AudioPlayer;
 import rs.alexanderstojanovich.evg.cache.CacheModule;
 import rs.alexanderstojanovich.evg.chunk.Chunk;
@@ -42,7 +55,10 @@ import rs.alexanderstojanovich.evg.intrface.DynamicText;
 import rs.alexanderstojanovich.evg.intrface.Intrface;
 import rs.alexanderstojanovich.evg.intrface.Quad;
 import rs.alexanderstojanovich.evg.level.*;
+import rs.alexanderstojanovich.evg.net.DSObject;
 import rs.alexanderstojanovich.evg.net.LevelMapInfo;
+import rs.alexanderstojanovich.evg.net.Response;
+import rs.alexanderstojanovich.evg.net.ResponseIfc;
 import rs.alexanderstojanovich.evg.resources.Assets;
 import rs.alexanderstojanovich.evg.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evg.texture.Texture;
@@ -667,7 +683,59 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
         // Save level to file asynchronously
         CompletableFuture.supplyAsync(() -> {
-            return levelContainer.levelBuffer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
+            boolean chk = false;
+            chk |= levelContainer.levelBuffer.saveLevelToFile(gameServer.getWorldName() + ".ndat");
+
+            // Locate all level map files with dat or ndat extension
+            final File clientDir = new File("./");
+            final String worldNameEscaped = Pattern.quote(gameServer.worldInfo.worldname);
+            Pattern pattern = Pattern.compile(worldNameEscaped + "\\.(n)?dat$", Pattern.CASE_INSENSITIVE);
+            List<String> datFileList = Arrays.asList(clientDir.list((dir, name) -> pattern.matcher(name).find()));
+            GapList<String> datFileListCopy = GapList.create(datFileList);
+            String mapFileOrNull = datFileListCopy.getFirstOrNull();
+            CRC32C checksum = new CRC32C();
+
+            if (mapFileOrNull == null) {
+                mapFileOrNull = gameServer.worldInfo.worldname + ".ndat";
+                chk = gameServer.gameObject.levelContainer.levelBuffer.saveLevelToFile(mapFileOrNull);
+                if (!chk) {
+                    gameServer.gameObject.intrface.getConsole().write("Internal error - Level still does not exist!", Command.Status.FAILED);
+                    DSLogger.reportError("Internal error - Level still does not exist!", null);
+                }
+            }
+
+            if (mapFileOrNull == null) {
+                gameServer.gameObject.intrface.getConsole().write("Internal error - Level still does not exist!", Command.Status.FAILED);
+                DSLogger.reportError("Internal error - Level still does not exist!", null);
+            }
+
+            File mapFileLevel = new File(mapFileOrNull);
+            if (!mapFileLevel.exists()) {
+                gameServer.gameObject.intrface.getConsole().write("Internal error - Level still does not exist!", Command.Status.FAILED);
+                DSLogger.reportError("Internal error - Level still does not exist!", null);
+            }
+
+            // calculating file size & checksum
+            // with attend to send to the client
+            int sizeBytes = 0;
+            try (FileChannel fileChannel = new FileInputStream(mapFileLevel).getChannel()) {
+                sizeBytes = (int) Files.size(Path.of(mapFileOrNull));
+                ByteBuffer buffc = ByteBuffer.allocate((int) fileChannel.size());
+                while ((fileChannel.read(buffc)) > 0) {
+                    // Do nothing, just read the file into the mainBuffer
+                }
+                buffc.flip();
+                checksum.update(buffc);
+            } catch (IOException ex) {
+                DSLogger.reportError(ex.getMessage(), ex);
+                gameServer.gameObject.intrface.getConsole().write("Internal error - Unable to read the level file!", Command.Status.FAILED);
+                DSLogger.reportError("Internal error - Unable to read the level file!", null);
+            }
+
+            gameServer.worldInfo.chksum = checksum.getValue();
+            gameServer.worldInfo.sizebytes = sizeBytes;
+
+            return true;
         }, this.TaskExecutor).thenApply((Boolean rez) -> {
             // Copy content to multiplayer upload
             levelContainer.levelBuffer.copyMain2UploadBuffer();
@@ -706,10 +774,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
                 }
             }
             // If resulted is success
-            if (game.getWorldInfo() != LevelMapInfo.NULL) {
+            if (!game.getWorldInfo().worldname.isEmpty() && game.getWorldInfo().sizebytes > 0L && game.getWorldInfo().chksum != 0L) {
                 game.loadWorldMultiplayer(game.worldInfo);
                 // It is successful
                 success = true;
+            } else {
+                DSLogger.reportWarning("Not able to get world info from server. Disconnecting.", null);
+                intrface.getConsole().write("Not able to get world info from server. Disconnecting.", Command.Status.WARNING);
+                game.disconnectFromServer();
+                this.clearEverything();
             }
         } else {
             DSLogger.reportWarning("Not able to register player. Disconnecting.", null);

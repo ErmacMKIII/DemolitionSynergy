@@ -28,14 +28,25 @@ import rs.alexanderstojanovich.evg.util.ModelUtils;
 
 /**
  * Game assets.
- *
  * All game textures and models.
  *
  * @author Aleksandar Stojanovic <coas91@rocketmail.com>
  */
 public class Assets {
 
+    /**
+     * Texture names for world textures. Used for world rendering. Notice that
+     * texture array is used for better performance, since all world textures are
+     * sampled in the same shader, so they are stored in the same texture object
+     * and accessed by index.
+     */
     public static final String[] TEX_WORLD = {"crate", "doom0", "stone", "water", "reflc"};
+    /**
+     * Texture names for world textures with file extensions. Used for world
+     * rendering. Notice that texture array is used for better performance, since
+     * all world textures are sampled in the same shader, so they are stored in
+     * the same texture object and accessed by index.
+     */
     public static final String[] TEX_WORLD_FILENAMES = {"crate.png", "doom0.png", "stone.png", "water.png", "reflc.png"};
 
     public static final int GRID_SIZE_WORLD = 3;

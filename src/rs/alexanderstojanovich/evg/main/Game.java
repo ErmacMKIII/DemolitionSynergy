@@ -1491,7 +1491,7 @@ public class Game extends IoHandlerAdapter implements DSMachine {
 
 
     /**
-     * Update multiplayer (client).
+     * Update multiplayer (client). Called from main loop when in multiplayer join mode. Uses ticks per update to reduce calls.
      */
     public void updateMultiplayer() {
         // Multiplayer update - get player info ~ 250 ms
