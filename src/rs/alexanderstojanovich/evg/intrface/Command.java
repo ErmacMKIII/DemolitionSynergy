@@ -724,11 +724,11 @@ public class Command implements Callable<Object> {
                     if (command.args.isEmpty()) {
                         int totalSize = LevelContainer.AllBlockMap.getPopulation();
                         int cachedSize = 0;
-                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
+                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS()) {
                             cachedSize += ci.cachedSize;
                         }
                         result = String.format("TotalSize= %d | TotalChunks= %d\nCachedChunks= %d | CachedSize= %d",
-                                totalSize, Chunk.CHUNK_NUM, CacheModule.CACHED_CHUNKS.size(), cachedSize);
+                                totalSize, Chunk.CHUNK_NUM, CacheModule.CACHED_CHUNKS().size(), cachedSize);
                         command.status = Status.SUCCEEDED;
                     } else {
                         chunkId = (int) command.args.get(0);
@@ -753,10 +753,10 @@ public class Command implements Callable<Object> {
             case CACHE:
                 StringBuilder sb = new StringBuilder();
                 if (command.mode == Mode.GET) {
-                    if (CacheModule.CACHED_CHUNKS.isEmpty()) {
+                    if (CacheModule.CACHED_CHUNKS().isEmpty()) {
                         sb.append("<empty>");
                     } else {
-                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS) {
+                        for (CachedInfo ci : CacheModule.CACHED_CHUNKS()) {
                             sb.append(String.format("ChunkId= %d | BlockSize= %d| CachedSize= %d | FileName= %s",
                                     ci.chunkId, ci.blockSize, ci.cachedSize, ci.fileName));
                         }

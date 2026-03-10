@@ -169,6 +169,12 @@ public class Game extends IoHandlerAdapter implements DSMachine {
     private int chunkOpPhase = 0;
 
     /**
+     * Tracks whether chunk operations occurred in phase 0,
+     * so phase 1 can react accordingly.
+     */
+    private boolean pendingChunkOp = false;
+
+    /**
      * Timer accumulator for triggering chunk geometry updates when idle (no input).
      * Fires every ~500ms to keep chunks updated even without player interaction.
      */
@@ -1469,7 +1475,9 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 // Data phase: update lists and cache I/O (no GL)
                 changed = gameObject.createOrUpdateChunkLists();
                 if (changed) {
-                    gameObject.utilChunkOperations();
+                    pendingChunkOp = gameObject.utilChunkOperations();
+                } else {
+                    pendingChunkOp = false;
                 }
                 chunkOpPhase = 1;
                 break;
@@ -1477,9 +1485,11 @@ public class Game extends IoHandlerAdapter implements DSMachine {
             case 1:
                 // Geometry phase: rebuild/optimize chunk geometry (GL-safe, main thread)
                 // Run if player is actively providing input OR idle timer has fired
-                if (hasInput || onTimerTrigger) {
+                // OR chunk operations were performed in phase 0
+                if (hasInput || onTimerTrigger || pendingChunkOp) {
                     gameObject.updateNoptimizeChunks();
                 }
+                pendingChunkOp = false; // consume the flag
                 chunkOpPhase = 0;
                 break;
 
@@ -1488,7 +1498,6 @@ public class Game extends IoHandlerAdapter implements DSMachine {
                 break;
         }
     }
-
 
     /**
      * Update multiplayer (client). Called from main loop when in multiplayer join mode. Uses ticks per update to reduce calls.

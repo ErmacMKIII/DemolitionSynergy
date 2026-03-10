@@ -495,7 +495,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.intrface.release();
         this.waterRenderer.release();
         this.shadowRenderer.release();
-        this.levelContainer.cacheModule.release();
+        CacheModule.releaseThreadLocalMemory();
         DSLogger.reportDebug("Cache buffer deleted.", null);
         this.levelContainer.levelBuffer.release();
         this.levelContainer.blockEnvironment.release();

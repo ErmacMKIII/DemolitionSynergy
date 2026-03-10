@@ -320,17 +320,15 @@ public class Texture implements TextureIfc {
      * @param format    texture format
      * @return Texture Atlas as one big Texture
      */
-    public static Texture buildTextureAtlas(String atlasName, String subDir,
-                                            String[] texNames, int gridSize, Format format) {
+    public static Texture buildTextureAtlas(String atlasName, String subDir, String[] texNames, int gridSize, Format format) {
         Texture result = new Texture(atlasName, format);
         Graphics2D g2d = result.image.createGraphics();
         final int texUnitSize = Math.round(TEX_SIZE / (float) gridSize);
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,  RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2d.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        g2d.setRenderingHint(RenderingHints.KEY_DITHERING,     RenderingHints.VALUE_DITHER_ENABLE);
+        g2d.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
         g2d.setColor(new Color(0.0f, 0.0f, 0.0f, 0.0f));
-
         int index = 0;
         OUTER:
         for (String texName : texNames) {
@@ -338,22 +336,27 @@ public class Texture implements TextureIfc {
             if (!fileName.toLowerCase().endsWith(".png")) {
                 fileName += ".png";
             }
+            BufferedImage image = ImageUtils.loadImage(subDir, fileName);
 
-            BufferedImage tile = ImageUtils.loadImage(subDir, fileName);
-            if (tile == null) {
-                DSLogger.reportWarning("Atlas tile not found: " + texName, null);
-                index++;
-                continue;
-            }
-            int col = index % gridSize;
             int row = index / gridSize;
-            if (row >= gridSize) break OUTER;
-            g2d.drawImage(tile, col * texUnitSize, row * texUnitSize,
-                    texUnitSize, texUnitSize, null);
-            TEX_STORE.put(texName, new TexValue(result, index, gridSize));
+            int col = index % gridSize;
+
+            int x = row * texUnitSize;
+            int y = col * texUnitSize;
+
+            g2d.drawImage(image, x, y, texUnitSize, texUnitSize, null);
+
+            TexValue texValue = new TexValue(result, index, gridSize);
+            TEX_STORE.put(texName, texValue);
             index++;
         }
+
         g2d.dispose();
+//        try {
+//            ImageIO.write(result.image, "PNG", new File(atlasName+ ".png"));
+//        } catch (IOException ex) {
+//            DSLogger.reportInfo(ex.getMessage(), null);
+//        }
         return result;
     }
 

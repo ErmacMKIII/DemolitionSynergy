@@ -16,7 +16,14 @@
  */
 package rs.alexanderstojanovich.evg.level;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -1388,7 +1395,7 @@ public class LevelContainer implements GravityEnviroment {
     /**
      * Method to determine visible chunks.
      *
-     * @return
+     * @return true if the visible/invisible chunk lists were changed; false otherwise
      */
     public boolean determineVisible() {
         boolean changed = Chunk.determineVisible(vChnkIdList, iChnkIdList, levelActors.mainCamera());
@@ -1398,43 +1405,73 @@ public class LevelContainer implements GravityEnviroment {
 
     /**
      * Method for saving invisible chunks / loading visible chunks. Operates
-     * using the Cache module.
+     * using the Cache module. Runs load and save tasks in parallel up to iterationMax threads.
      *
      * @return true if any chunks were loaded or saved; false otherwise
      */
     public boolean chunkOperations() {
-        boolean changed = false;
-
         if (working) {
             return false;
         }
 
-        // Load visible chunks from disk
-        if (!vChnkIdList.isEmpty()) {
-            int vSize = vChnkIdList.size();
-            for (int i = 0; i < Math.min(iterationMax, vSize); i++) {
-                int idx = (lastIteration + i) % vSize;
-                int chunkId = vChnkIdList.get(idx);
-                changed |= cacheModule.loadFromDisk(chunkId);
-            }
-        }
+        final AtomicBoolean changed = new AtomicBoolean(false);
+        final ExecutorService executor = Executors.newFixedThreadPool(iterationMax);
 
-        // Save invisible chunks to disk only if no load occurred (avoid race condition)
-        if (!changed && !iChnkIdList.isEmpty()) {
-            int iSize = iChnkIdList.size();
-            for (int i = 0; i < Math.min(iterationMax, iSize); i++) {
-                int idx = (lastIteration + i) % iSize;
-                int chunkId = iChnkIdList.get(idx);
-                changed |= cacheModule.saveToDisk(chunkId);
+        try {
+            // Load visible chunks from disk in parallel
+            if (!vChnkIdList.isEmpty()) {
+                final int vSize = vChnkIdList.size();
+                final int loadCount = Math.min(iterationMax, vSize);
+                final List<Callable<Void>> loadTasks = new ArrayList<>(loadCount);
+
+                for (int i = 0; i < loadCount; i++) {
+                    final int idx = (lastIteration + i) % vSize;
+                    final int chunkId = vChnkIdList.get(idx);
+                    loadTasks.add(() -> {
+                        boolean result = cacheModule.loadFromDisk(chunkId);
+                        if (result) {
+                            changed.set(true);
+                        }
+                        return null;
+                    });
+                }
+
+                executor.invokeAll(loadTasks);
             }
+
+            // Save invisible chunks to disk only if no load occurred
+            if (!iChnkIdList.isEmpty()) {
+                final int iSize = iChnkIdList.size();
+                final int saveCount = Math.min(iterationMax, iSize);
+                final List<Callable<Void>> saveTasks = new ArrayList<>(saveCount);
+
+                for (int i = 0; i < saveCount; i++) {
+                    final int idx = (lastIteration + i) % iSize;
+                    final int chunkId = iChnkIdList.get(idx);
+                    saveTasks.add(() -> {
+                        boolean result = cacheModule.saveToDisk(chunkId);
+                        if (result) {
+                            changed.set(true);
+                        }
+                        return null;
+                    });
+                }
+
+                executor.invokeAll(saveTasks);
+            }
+
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            DSLogger.reportError("chunkOperations interrupted!", ex);
+        } finally {
+            executor.shutdown();
         }
 
         // Advance iteration cursor, wrapping around total chunk count
         lastIteration = (lastIteration + iterationMax) % Chunk.CHUNK_NUM;
 
-        return changed;
+        return changed.get();
     }
-
 
     /**
      * Get interpolated color for day/night cycle using smooth step interpolation.

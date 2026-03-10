@@ -67,7 +67,7 @@ public class Assets {
     public final Texture LIGHT_BULB = new Texture(Game.INTRFACE_ENTRY, "lbulb.png", Texture.Format.RGBA8);
 
     public final int GRID_SIZE_PLAYER_WEAPONS = 4;
-    public final int GRID_SIZE_PLAYER = 5;
+    public final int GRID_SIZE_PLAYER = 2;
 
     /**
      * Texture array of world textures. Used for world rendering. Notice that
@@ -343,22 +343,6 @@ public class Assets {
     public static final String[] TEX_PLAYER = {
         "alex",
         "steve",
-        W01M9,
-        W02M1,
-        W03DE,
-        W04UZ,
-        W05M5,
-        W06P9,
-        W07AK,
-        W08M4,
-        W09G3,
-        W10M6,
-        W11MS,
-        W12W2,
-        W13B9,
-        W14R7,
-        W15DR,
-        W16M8
     };
 
     /**
